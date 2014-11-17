@@ -156,8 +156,8 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	SGEN_ASSERT (5, stored_size == SGEN_ALIGN_UP (stored_size), "Size is not aligned");
 
 	/* we know the 2-word header is ptr-free */
-	if (last_set < LARGE_BITMAP_SIZE + OBJECT_HEADER_WORDS && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
-		desc = DESC_TYPE_LARGE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
+	if (last_set < BITMAP_NUM_BITS + OBJECT_HEADER_WORDS && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
+		desc = DESC_TYPE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
 		SGEN_LOG (6, "Largebitmap descriptor %p, size: %zd, last set: %d", (void*)desc, stored_size, last_set);
 		return (void*) desc;
 	}
@@ -244,7 +244,7 @@ mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 		return bitmap;
 	}
 
-	case DESC_TYPE_LARGE_BITMAP: {
+	case DESC_TYPE_BITMAP: {
 		gsize bmap = (d >> LOW_TYPE_BITS) << OBJECT_HEADER_WORDS;
 
 		bitmap = g_new0 (gsize, 1);
@@ -367,7 +367,7 @@ sgen_init_descriptors (void)
 	mono_counters_register ("# scanned SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
 	mono_counters_register ("# scanned COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
 	mono_counters_register ("# scanned VECTOR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
-	mono_counters_register ("# scanned LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
+	mono_counters_register ("# scanned BITMAP", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_BITMAP - 1]);
 	mono_counters_register ("# scanned COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
 	mono_counters_register ("# scanned COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
 
@@ -375,7 +375,7 @@ sgen_init_descriptors (void)
 	mono_counters_register ("# copied SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
 	mono_counters_register ("# copied COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
 	mono_counters_register ("# copied VECTOR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
-	mono_counters_register ("# copied LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
+	mono_counters_register ("# copied BITMAP", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_BITMAP - 1]);
 	mono_counters_register ("# copied COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
 	mono_counters_register ("# copied COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
 #endif

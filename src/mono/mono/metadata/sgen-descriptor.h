@@ -42,7 +42,7 @@
 #define VECTOR_ELSIZE_SHIFT 3
 #define VECTOR_BITMAP_SHIFT 16
 #define VECTOR_BITMAP_SIZE (GC_BITS_PER_WORD - VECTOR_BITMAP_SHIFT)
-#define LARGE_BITMAP_SIZE (GC_BITS_PER_WORD - LOW_TYPE_BITS)
+#define BITMAP_NUM_BITS (GC_BITS_PER_WORD - LOW_TYPE_BITS)
 #define MAX_ELEMENT_SIZE 0x3ff
 #define VECTOR_SUBTYPE_PTRFREE (DESC_TYPE_V_PTRFREE << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_REFS    (DESC_TYPE_V_REFS << VECTOR_INFO_SHIFT)
@@ -82,7 +82,7 @@ enum {
 	 * object's class.
 	 */
 	DESC_TYPE_RUN_LENGTH = 1,   /* 16 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
-	DESC_TYPE_LARGE_BITMAP = 2, /* | 29-61 bitmap bits */
+	DESC_TYPE_BITMAP = 2,	    /* | 29-61 bitmap bits */
 	DESC_TYPE_SMALL_PTRFREE = 3,
 	DESC_TYPE_MAX_SMALL_OBJ = 3,
 	DESC_TYPE_COMPLEX = 4,      /* index for bitmap into complex_descriptors */
@@ -179,7 +179,7 @@ sgen_gc_descr_has_references (mword desc)
  * choosen run-length, instead: add an assert to check.
  */
 #ifdef __GNUC__
-#define OBJ_LARGE_BITMAP_FOREACH_PTR(desc,obj)	do {		\
+#define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {		\
 		/* there are pointers */			\
 		void **_objptr = (void**)(obj);			\
 		gsize _bmap = (desc) >> LOW_TYPE_BITS;		\
@@ -193,7 +193,7 @@ sgen_gc_descr_has_references (mword desc)
 		} while (_bmap);				\
 	} while (0)
 #else
-#define OBJ_LARGE_BITMAP_FOREACH_PTR(desc,obj)	do {	\
+#define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
 		void **_objptr = (void**)(obj);	\
 		gsize _bmap = (desc) >> LOW_TYPE_BITS;	\
