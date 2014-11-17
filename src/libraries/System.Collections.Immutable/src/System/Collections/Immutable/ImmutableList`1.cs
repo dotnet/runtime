@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(ImmutableList<>.DebuggerProxy))]
+    [DebuggerTypeProxy(typeof(ImmutableListDebuggerProxy<>))]
     public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>
     {
         /// <summary>
@@ -3146,58 +3146,48 @@ namespace System.Collections.Immutable
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable list that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableListDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableList<T> list;
 
         /// <summary>
-        /// A simple view of the immutable list that the debugger can show to the developer.
+        /// The simple view of the collection.
         /// </summary>
-        [ExcludeFromCodeCoverage]
-        private class DebuggerProxy
+        private T[] cachedContents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableListDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="list">The list to display in the debugger</param>
+        public ImmutableListDebuggerProxy(ImmutableList<T> list)
         {
-            /// <summary>
-            /// The collection to be enumerated.
-            /// </summary>
-            private readonly ImmutableList<T>.Node list;
+            Requires.NotNull(list, "list");
+            this.list = list;
+        }
 
-            /// <summary>
-            /// The simple view of the collection.
-            /// </summary>
-            private T[] cachedContents;
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="list">The list to display in the debugger</param>
-            public DebuggerProxy(ImmutableList<T> list)
+        /// <summary>
+        /// Gets a simple debugger-viewable list.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Contents
+        {
+            get
             {
-                Requires.NotNull(list, "list");
-                this.list = list.root;
-            }
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="builder">The list to display in the debugger</param>
-            public DebuggerProxy(ImmutableList<T>.Builder builder)
-            {
-                Requires.NotNull(builder, "builder");
-                this.list = builder.Root;
-            }
-
-            /// <summary>
-            /// Gets a simple debugger-viewable list.
-            /// </summary>
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Contents
-            {
-                get
+                if (this.cachedContents == null)
                 {
-                    if (this.cachedContents == null)
-                    {
-                        this.cachedContents = this.list.ToArray(this.list.Count);
-                    }
-
-                    return this.cachedContents;
+                    this.cachedContents = this.list.ToArray(this.list.Count);
                 }
+
+                return this.cachedContents;
             }
         }
     }

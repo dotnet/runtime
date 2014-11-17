@@ -20,7 +20,7 @@ namespace System.Collections.Immutable
     /// We implement IList{T} because it gives us IndexOf(T), which is important for some folks.
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(ImmutableSortedSet<>.DebuggerProxy))]
+    [DebuggerTypeProxy(typeof(ImmutableSortedSetDebuggerProxy<>))]
     public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList
     {
         /// <summary>
@@ -2155,48 +2155,48 @@ namespace System.Collections.Immutable
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableSortedSetDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableSortedSet<T> set;
 
         /// <summary>
-        /// A simple view of the immutable collection that the debugger can show to the developer.
+        /// The simple view of the collection.
         /// </summary>
-        [ExcludeFromCodeCoverage]
-        private class DebuggerProxy
+        private T[] contents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableSortedSetDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="set">The collection to display in the debugger</param>
+        public ImmutableSortedSetDebuggerProxy(ImmutableSortedSet<T> set)
         {
-            /// <summary>
-            /// The collection to be enumerated.
-            /// </summary>
-            private readonly ImmutableSortedSet<T> set;
+            Requires.NotNull(set, "set");
+            this.set = set;
+        }
 
-            /// <summary>
-            /// The simple view of the collection.
-            /// </summary>
-            private T[] contents;
-
-            /// <summary>   
-            /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-            /// </summary>
-            /// <param name="set">The collection to display in the debugger</param>
-            public DebuggerProxy(ImmutableSortedSet<T> set)
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] Contents
+        {
+            get
             {
-                Requires.NotNull(set, "set");
-                this.set = set;
-            }
-
-            /// <summary>
-            /// Gets a simple debugger-viewable collection.
-            /// </summary>
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public T[] Contents
-            {
-                get
+                if (this.contents == null)
                 {
-                    if (this.contents == null)
-                    {
-                        this.contents = this.set.ToArray(this.set.Count);
-                    }
-
-                    return this.contents;
+                    this.contents = this.set.ToArray(this.set.Count);
                 }
+
+                return this.contents;
             }
         }
     }
