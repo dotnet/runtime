@@ -1242,11 +1242,8 @@ namespace System.Collections.Immutable
                 this.current = null;
                 if (this.stack != null && this.stack.Owner == this.poolUserId)
                 {
-                    using (var stack = this.stack.Use(this))
-                    {
-                        stack.Value.Clear();
-                    }
-
+                    var stack = this.stack.Use(this);
+                    stack.Clear();
                     enumeratingStacks.TryAdd(this, this.stack);
                     this.stack = null;
                 }
@@ -1261,20 +1258,18 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
                 this.ThrowIfChanged();
 
-                using (var stack = this.stack.Use(this))
+                var stack = this.stack.Use(this);
+                if (stack.Count > 0)
                 {
-                    if (stack.Value.Count > 0)
-                    {
-                        IBinaryTree<T> n = stack.Value.Pop().Value;
-                        this.current = n;
-                        this.PushNext(this.reverse ? n.Left : n.Right);
-                        return true;
-                    }
-                    else
-                    {
-                        this.current = null;
-                        return false;
-                    }
+                    IBinaryTree<T> n = stack.Pop().Value;
+                    this.current = n;
+                    this.PushNext(this.reverse ? n.Left : n.Right);
+                    return true;
+                }
+                else
+                {
+                    this.current = null;
+                    return false;
                 }
             }
 
@@ -1287,11 +1282,8 @@ namespace System.Collections.Immutable
 
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.current = null;
-                using (var stack = this.stack.Use(this))
-                {
-                    stack.Value.Clear();
-                }
-
+                var stack = this.stack.Use(this);
+                stack.Clear();
                 this.PushNext(this.root);
             }
 
@@ -1338,13 +1330,11 @@ namespace System.Collections.Immutable
             private void PushNext(IBinaryTree<T> node)
             {
                 Requires.NotNull(node, "node");
-                using (var stack = this.stack.Use(this))
+                var stack = this.stack.Use(this);
+                while (!node.IsEmpty)
                 {
-                    while (!node.IsEmpty)
-                    {
-                        stack.Value.Push(new RefAsValueType<IBinaryTree<T>>(node));
-                        node = this.reverse ? node.Right : node.Left;
-                    }
+                    stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
+                    node = this.reverse ? node.Right : node.Left;
                 }
             }
         }

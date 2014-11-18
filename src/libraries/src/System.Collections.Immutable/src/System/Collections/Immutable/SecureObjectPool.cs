@@ -98,11 +98,18 @@ namespace System.Collections.Immutable
             set { this.owner = value; }
         }
 
-        internal SecurePooledObjectUser Use<TCaller>(TCaller caller)
+        /// <summary>
+        /// Returns the recyclable value if it hasn't been reclaimed already.
+        /// </summary>
+        /// <typeparam name="TCaller">The type of renter of the object.</typeparam>
+        /// <param name="caller">The renter of the object.</param>
+        /// <returns>The rented object.</returns>
+        /// <exception cref="ObjectDisposedException">Thrown if <paramref name="caller"/> is no longer the renter of the value.</exception>
+        internal T Use<TCaller>(TCaller caller)
             where TCaller : ISecurePooledObjectUser
         {
             this.ThrowDisposedIfNotOwned(caller);
-            return new SecurePooledObjectUser(this);
+            return this.value;
         }
 
         internal void ThrowDisposedIfNotOwned<TCaller>(TCaller caller)
@@ -111,25 +118,6 @@ namespace System.Collections.Immutable
             if (caller.PoolUserId != this.owner)
             {
                 throw new ObjectDisposedException(caller.GetType().FullName);
-            }
-        }
-
-        internal struct SecurePooledObjectUser : IDisposable
-        {
-            private readonly SecurePooledObject<T> value;
-
-            internal SecurePooledObjectUser(SecurePooledObject<T> value)
-            {
-                this.value = value;
-            }
-
-            internal T Value
-            {
-                get { return this.value.value; }
-            }
-
-            public void Dispose()
-            {
             }
         }
     }
