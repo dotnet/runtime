@@ -3127,6 +3127,7 @@ do_ret (VerifyContext *ctx)
 static void
 do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 {
+	MonoError error;
 	int param_count, i;
 	MonoMethodSignature *sig;
 	ILStackDesc *value;
@@ -3156,12 +3157,15 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual)
 		}
 	}
 
-	if (!(sig = mono_method_get_signature_full (method, ctx->image, method_token, ctx->generic_context)))
-		sig = mono_method_get_signature (method, ctx->image, method_token);
+	if (!(sig = mono_method_get_signature_checked (method, ctx->image, method_token, ctx->generic_context, &error))) {
+		mono_error_cleanup (&error);
+		sig = mono_method_get_signature_checked (method, ctx->image, method_token, NULL, &error);
+	}
 
 	if (!sig) {
 		char *name = mono_type_get_full_name (method->klass);
-		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not resolve signature of %s:%s at 0x%04x", name, method->name, ctx->ip_offset));
+		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Could not resolve signature of %s:%s at 0x%04x due to: %s", name, method->name, ctx->ip_offset, mono_error_get_message (&error)));
+		mono_error_cleanup (&error);
 		g_free (name);
 		return;
 	}

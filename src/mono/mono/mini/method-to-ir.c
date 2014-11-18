@@ -8184,7 +8184,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					} else if (constrained_call) {
 						fsig = mono_method_signature (cmethod);
 					} else {
-						fsig = mono_method_get_signature_full (cmethod, image, token, generic_context);
+						fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
+						CHECK_CFG_ERROR;
 					}
 				}
 
@@ -9716,9 +9717,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			if (!cmethod || mono_loader_get_last_error ())
 				LOAD_ERROR;
-			fsig = mono_method_get_signature (cmethod, image, token);
-			if (!fsig)
-				LOAD_ERROR;
+			fsig = mono_method_get_signature_checked (cmethod, image, token, NULL, &cfg->error);
+			CHECK_CFG_ERROR;
 
 			mono_save_token_info (cfg, image, token, cmethod);
 

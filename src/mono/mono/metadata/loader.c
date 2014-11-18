@@ -976,7 +976,17 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 MonoMethodSignature*
 mono_method_get_signature (MonoMethod *method, MonoImage *image, guint32 token)
 {
-	return mono_method_get_signature_full (method, image, token, NULL);
+	MonoError error;
+	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, NULL, &error);
+
+	g_assert (!mono_loader_get_last_error ());
+
+	if (!res) {
+		g_assert (!mono_error_ok (&error));
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+	}
+	return res;
 }
 
 /* this is only for the typespec array methods */
