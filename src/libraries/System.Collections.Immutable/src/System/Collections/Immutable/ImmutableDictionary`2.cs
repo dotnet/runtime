@@ -694,6 +694,14 @@ namespace System.Collections.Immutable
 
         #endregion
 
+        /// <summary>
+        /// Gets the root node (for testing purposes).
+        /// </summary>
+        internal ImmutableSortedDictionary<int, HashBucket>.Node Root
+        {
+            get { return this.root; }
+        }
+
         #region IDictionary Methods
 
         /// <summary>
