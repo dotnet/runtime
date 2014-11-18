@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<!-- Comment Random Details -Seed=9 Include Attributes=True Cycle/Random Attr=True #of Attributes=4 %of time=75 Include Non-elements=False JavaDSO_Compat=True -->
+<!-- Comment: Data Details -  Database=C:\Program Files\Microsoft Office\Office\Samples\Northwind.mdb Recordset=Orders-200 Hierarchy=True Levels=OrderID;CustomerID;EmployeeID;OrderDate; -->
+<ROOT>
+	<OrderIDs>
+		<OrderID Value="10330">10330</OrderID>
+		<CustomerIDs>
+			<CustomerID Attributes="2" CollatingOrder="1033" Type="10">LILAS</CustomerID>
+			<EmployeeIDs>
+				<EmployeeID>3</EmployeeID>
+				<OrderDates>
+					<OrderDate Name="OrderDate">11/16/94</OrderDate>
+					<RequiredDate OrdinalPosition="4" Size="8">12/14/94</RequiredDate>
+					<ShippedDate>11/28/94</ShippedDate>
+					<ShipVia>1</ShipVia>
+					<Freight SourceField="Freight" SourceTable="Orders">12.75</Freight>
+					<ShipName ValidateOnSet="False" DataUpdatable="False">LILA-Supermercado</ShipName>
+					<ShipAddress ForeignName="Error" DefaultValue="">Carrera 52 con Ave. Bolívar #65-98 Llano Largo</ShipAddress>
+					<ShipCity ValidationRule="">Barquisimeto</ShipCity>
+					<ShipRegion>Lara</ShipRegion>
+					<ShipPostalCode ValidationText="" Required="False" AllowZeroLength="False">3508</ShipPostalCode>
+					<ShipCountry FieldSize="Error" OriginalValue="Error" VisibleValue="Error">Venezuela</ShipCountry>
+				</OrderDates>
+			</EmployeeIDs>
+		</CustomerIDs>
+	</OrderIDs>
+	<OrderIDs>
+		<OrderID ColumnWidth="945" ColumnOrder="0" ColumnHidden="False">10331</OrderID>
+		<CustomerIDs>
+			<CustomerID ColumnWidth="3090" Caption="Customer">BONAP</CustomerID>
+			<EmployeeIDs>
+				<EmployeeID>9</EmployeeID>
+				<OrderDates>
+					<OrderDate>11/16/94</OrderDate>
+					<RequiredDate FilterLookup="1" Value="12/28/94" Attributes="1">12/28/94</RequiredDate>
+					<ShippedDate>11/21/94</ShippedDate>
+					<ShipVia CollatingOrder="1033" Type="4">1</ShipVia>
+					<Freight Name="Freight" OrdinalPosition="7" Size="8">10.19</Freight>
+					<ShipName SourceField="ShipName">Bon app'</ShipName>
+					<ShipAddress>12, rue des Bouchers</ShipAddress>
+					<ShipCity>Marseille</ShipCity>
+					<ShipRegion SourceTable="Orders" ValidateOnSet="False" DataUpdatable="False"></ShipRegion>
+					<ShipPostalCode>13008</ShipPostalCode>
+					<ShipCountry>France</ShipCountry>
+				</OrderDates>
+			</EmployeeIDs>
+		</CustomerIDs>
+	</OrderIDs>
+	<OrderIDs>
+		<OrderID ForeignName="Error">10332</OrderID>
+		<CustomerIDs>
+			<CustomerID DefaultValue="" ValidationRule="">MEREP</CustomerID>
+			<EmployeeIDs>
+				<EmployeeID ValidationText="" Required="False">3</EmployeeID>
+				<OrderDates>
+					<OrderDate>11/17/94</OrderDate>
+					<RequiredDate AllowZeroLength="False">12/25/94</RequiredDate>
+					<ShippedDate FieldSize="Error" OriginalValue="Error">11/21/94</ShippedDate>
+					<ShipVia>2</ShipVia>
+					<Freight>52.84</Freight>
+					<ShipName>Mère Paillarde</ShipName>
+					<ShipAddress VisibleValue="Error" Description="Street address only -- no post-office box allowed.">43 rue St. Laurent</ShipAddress>
+					<ShipCity ColumnHidden="False" ColumnWidth="1395" Caption="Ship City">Montréal</ShipCity>
+					<ShipRegion>Québec</ShipRegion>
+					<ShipPostalCode DisplayControl="109" FilterLookup="1">H1J 1C3</ShipPostalCode>
+					<ShipCountry>Canada</ShipCountry>
+				</OrderDates>
+				<OrderDates>
+					<OrderDate>11/17/94</OrderDate>
+					<RequiredDate AllowZeroLength="False">12/29/94</RequiredDate>
+					<ShippedDate FieldSize="Error" OriginalValue="Error">11/21/94</ShippedDate>
+					<ShipVia>2</ShipVia>
+					<Freight>5.99</Freight>
+					<ShipName>Mère Paillarde</ShipName>
+					<ShipAddress VisibleValue="Error" Description="Street address only -- no post-office box allowed.">43 rue St. Laurent</ShipAddress>
+					<ShipCity ColumnHidden="False" ColumnWidth="1395" Caption="Ship City">Squiam</ShipCity>
+					<ShipRegion>NW</ShipRegion>
+					<ShipPostalCode DisplayControl="109" FilterLookup="1">H1J 1C3</ShipPostalCode>
+					<ShipCountry>USA</ShipCountry>
+				</OrderDates>
+				<OrderDates>
+					<OrderDate>11/17/94</OrderDate>
+					<RequiredDate AllowZeroLength="False">4/3/95</RequiredDate>
+					<ShippedDate FieldSize="Error" OriginalValue="Error">5/1/95</ShippedDate>
+					<ShipVia>2</ShipVia>
+					<Freight>152.84</Freight>
+					<ShipName>UPS</ShipName>
+					<ShipAddress VisibleValue="Error" Description="Street address only -- no post-office box allowed.">444 44th Ave SE</ShipAddress>
+					<ShipCity ColumnHidden="False" ColumnWidth="1395" Caption="Ship City">Portland</ShipCity>
+					<ShipRegion>NW</ShipRegion>
+					<ShipPostalCode DisplayControl="109" FilterLookup="1">H1J 1C3</ShipPostalCode>
+					<ShipCountry>USA</ShipCountry>
+				</OrderDates>
+			</EmployeeIDs>
+		</CustomerIDs>
+	</OrderIDs>
+	<OrderIDs>
+		<OrderID Value="10333" Attributes="17">10333</OrderID>
+		<CustomerIDs>
+			<CustomerID CollatingOrder="1033" Type="10" Name="CustomerID">WARTH</CustomerID>
+			<EmployeeIDs>
+				<EmployeeID>5</EmployeeID>
+				<OrderDates>
+					<OrderDate OrdinalPosition="3">11/18/94</OrderDate>
+					<RequiredDate>12/16/94</RequiredDate>
+					<ShippedDate Size="8" SourceField="ShippedDate">11/25/94</ShippedDate>
+					<ShipVia SourceTable="Orders" ValidateOnSet="False">3</ShipVia>
+					<Freight DataUpdatable="False" ForeignName="Error" DefaultValue="0">0.59</Freight>
+					<ShipName>Wartian Herkku</ShipName>
+					<ShipAddress ValidationRule="" ValidationText="" Required="False">Torikatu 38</ShipAddress>
+					<ShipCity AllowZeroLength="False" FieldSize="Error">Oulu</ShipCity>
+					<ShipRegion OriginalValue="Error"></ShipRegion>
+					<ShipPostalCode VisibleValue="Error">90110</ShipPostalCode>
+					<ShipCountry ColumnOrder="0" ColumnHidden="False" ColumnWidth="1380">Finland</ShipCountry>
+				</OrderDates>
+			</EmployeeIDs>
+		</CustomerIDs>
+	</OrderIDs>
+	<OrderIDs>
+		<foo:OrderID xmlns:foo="urn:hello world">10334</foo:OrderID>
+		<CustomerIDs>
+			<CustomerID>VICTE</CustomerID>
+			<EmployeeIDs>
+				<EmployeeID Description="Same entry as in Employees table." DecimalPlaces="255" Caption="Employee">8</EmployeeID>
+				<OrderDates>
+					<OrderDate>11/21/94</OrderDate>
+					<RequiredDate Value="12/19/94">12/19/94</RequiredDate>
+					<ShippedDate>11/28/94</ShippedDate>
+					<ShipVia Attributes="1" CollatingOrder="1033" Type="4">2</ShipVia>
+					<Freight Name="Freight">8.56</Freight>
+					<ShipName>Victuailles en stock</ShipName>
+					<ShipAddress>2, rue du Commerce</ShipAddress>
+					<ShipCity OrdinalPosition="10">Lyon</ShipCity>
+					<ShipRegion Size="15" SourceField="ShipRegion" SourceTable="Orders"></ShipRegion>
+					<ShipPostalCode>69004</ShipPostalCode>
+					<ShipCountry>France</ShipCountry>
+				</OrderDates>
+			</EmployeeIDs>
+		</CustomerIDs>
+	</OrderIDs>
+	<OrderIDs>
+		<OrderID>10335</OrderID>
+		<CustomerIDs>
+			<CustomerID ValidateOnSet="False" DataUpdatable="False" ForeignName="Error">HUNGO</CustomerID>
+			<EmployeeIDs>
+				<EmployeeID DefaultValue="">7</EmployeeID>
+				<OrderDates>
+					<OrderDate ValidationRule="" ValidationText="">11/22/94</OrderDate>
+					<RequiredDate Required="False" AllowZeroLength="False">12/20/94</RequiredDate>
+					<ShippedDate FieldSize="Error" OriginalValue="Error">11/24/94</ShippedDate>
+					<ShipVia VisibleValue="Error" ColumnWidth="1800" ColumnOrder="0">2</ShipVia>
+					<Freight>42.11</Freight>
+					<ShipName ColumnHidden="False">Hungry Owl All-Night Grocers</ShipName>
+					<ShipAddress ColumnWidth="2475">8 Johnstown Road</ShipAddress>
+					<ShipCity DisplayControl="109">Cork</ShipCity>
+					<ShipRegion DisplayControl="109">Co. Cork</ShipRegion>
+					<ShipPostalCode></ShipPostalCode>
+					<ShipCountry Value="Ireland" Test="Test">Ireland</ShipCountry>
+				</OrderDates>
+				<OrderDates>
+					<OrderDate>11/23/94</OrderDate>
+					<RequiredDate>12/21/94</RequiredDate>
+					<ShippedDate Attributes="1" CollatingOrder="1033">11/25/94</ShippedDate>
+					<ShipVia Type="4" Name="ShipVia" OrdinalPosition="6">2</ShipVia>
+					<Freight Size="8">15.51</Freight>
+					<ShipName SourceField="ShipName">Princesa Isabel Vinhos</ShipName>
+					<ShipAddress>Estrada da saúde n. 58</ShipAddress>
+					<ShipCity SourceTable="Orders">Lisboa</ShipCity>
+					<ShipRegion ValidateOnSet="False"></ShipRegion>
+					<ShipPostalCode>1756</ShipPostalCode>
+					<ShipCountry>Portugal</ShipCountry>
+				</OrderDates>
+			</EmployeeIDs>
+		</CustomerIDs>
+	</OrderIDs>
+	<OrderIDs xmlns:bar="urn:cool man">
+		<bar:OrderID DataUpdatable="False" ForeignName="Error">10337</bar:OrderID>
+		<bar:CustomerIDs>
+			<CustomerID DefaultValue="">FRANK</CustomerID>
+			<bar:EmployeeIDs>
+				<EmployeeID ValidationRule="">4</EmployeeID>
+				<bar:OrderDates>
+					<OrderDate>11/24/94</OrderDate>
+					<RequiredDate>12/22/94</RequiredDate>
+					<ShippedDate ValidationText="">11/29/94</ShippedDate>
+					<ShipVia Required="False" AllowZeroLength="False" FieldSize="Error">3</ShipVia>
+					<bar:Freight OriginalValue="Error">108.26</bar:Freight>
+					<ShipName VisibleValue="Error" Description="Name of person or company to receive the shipment." ColumnOrder="0">Frankenversand</ShipName>
+					<ShipAddress>Berliner Platz 43</ShipAddress>
+					<bar:ShipCity>München</bar:ShipCity>
+					<ShipRegion ColumnHidden="False"></ShipRegion>
+					<ShipPostalCode Caption="Ship Postal Code">80805</ShipPostalCode>
+					<ShipCountry Test="Test">Germany</ShipCountry>
+					<Ship.Country>Germany</Ship.Country>
+				</bar:OrderDates>
+				<bar:OrderDates>
+					<OrderDate Caption="Order Date" FilterLookup="1">11/25/94</OrderDate>
+					<RequiredDate>12/23/94</RequiredDate>
+					<ShippedDate>11/29/94</ShippedDate>
+					<ShipVia Required="False" Value="3" Attributes="1" CollatingOrder="1033">3</ShipVia>
+					<bar:Freight>84.21</bar:Freight>
+					<ShipName>Old World Delicatessen</ShipName>
+					<ShipAddress Type="10" Name="ShipAddress">2743 Bering St.</ShipAddress>
+					<bar:ShipCity>Anchorage</bar:ShipCity>
+					<ShipRegion OrdinalPosition="11" Size="15" SourceField="ShipRegion">AK</ShipRegion>
+					<ShipPostalCode SourceTable="Orders" ValidateOnSet="False">99508</ShipPostalCode>
+					<Ship.Country DataUpdatable="False">USA</Ship.Country>
+				</bar:OrderDates>
+			</bar:EmployeeIDs>
+		</bar:CustomerIDs>
+	</OrderIDs>
+</ROOT>
