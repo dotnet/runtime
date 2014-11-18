@@ -240,7 +240,7 @@
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.Xml.XmlDocument</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj">
+    <ProjectReference Include="..\src\System.Xml.XPath.XmlDocument.csproj">
       <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
       <Name>System.Xml.XPath.XmlDocument</Name>
     </ProjectReference>

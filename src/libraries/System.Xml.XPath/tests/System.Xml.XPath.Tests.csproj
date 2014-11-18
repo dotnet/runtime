@@ -19,9 +19,9 @@
     <ProjectGuid>{D0DF902A-2486-4A38-B7A7-232B9B6590E1}</ProjectGuid>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.XPath.XPathDocument.Tests</AssemblyName>
+    <AssemblyName>System.Xml.XPath.Tests</AssemblyName>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
-    <RootNamespace>System.Xml.XPath.XPathDocument.Tests</RootNamespace>
+    <RootNamespace>System.Xml.XPath.Tests</RootNamespace>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -236,7 +236,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
+    <ProjectReference Include="..\src\System.Xml.XPath.csproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Xml.XPath</Name>
     </ProjectReference>
