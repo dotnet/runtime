@@ -1619,11 +1619,8 @@ namespace System.Collections.Immutable
                 this.current = null;
                 if (this.stack != null && this.stack.Owner == this.poolUserId)
                 {
-                    using (var stack = this.stack.Use(this))
-                    {
-                        stack.Value.Clear();
-                    }
-
+                    var stack = this.stack.Use(this);
+                    stack.Clear();
                     EnumeratingStacks.TryAdd(this, this.stack);
                 }
 
@@ -1641,16 +1638,14 @@ namespace System.Collections.Immutable
 
                 if (this.stack != null)
                 {
-                    using (var stack = this.stack.Use(this))
+                    var stack = this.stack.Use(this);
+                    if (this.remainingCount > 0 && stack.Count > 0)
                     {
-                        if (this.remainingCount > 0 && stack.Value.Count > 0)
-                        {
-                            IBinaryTree<T> n = stack.Value.Pop().Value;
-                            this.current = n;
-                            this.PushNext(this.NextBranch(n));
-                            this.remainingCount--;
-                            return true;
-                        }
+                        IBinaryTree<T> n = stack.Pop().Value;
+                        this.current = n;
+                        this.PushNext(this.NextBranch(n));
+                        this.remainingCount--;
+                        return true;
                     }
                 }
 
@@ -1669,30 +1664,28 @@ namespace System.Collections.Immutable
                 this.remainingCount = this.count;
                 if (this.stack != null)
                 {
-                    using (var stack = this.stack.Use(this))
+                    var stack = this.stack.Use(this);
+                    stack.Clear();
+
+                    var node = this.root;
+                    var skipNodes = this.reversed ? this.root.Count - this.startIndex - 1 : this.startIndex;
+                    while (!node.IsEmpty && skipNodes != this.PreviousBranch(node).Count)
                     {
-                        stack.Value.Clear();
-
-                        var node = this.root;
-                        var skipNodes = this.reversed ? this.root.Count - this.startIndex - 1 : this.startIndex;
-                        while (!node.IsEmpty && skipNodes != this.PreviousBranch(node).Count)
+                        if (skipNodes < this.PreviousBranch(node).Count)
                         {
-                            if (skipNodes < this.PreviousBranch(node).Count)
-                            {
-                                stack.Value.Push(new RefAsValueType<IBinaryTree<T>>(node));
-                                node = this.PreviousBranch(node);
-                            }
-                            else
-                            {
-                                skipNodes -= this.PreviousBranch(node).Count + 1;
-                                node = this.NextBranch(node);
-                            }
+                            stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
+                            node = this.PreviousBranch(node);
                         }
-
-                        if (!node.IsEmpty)
+                        else
                         {
-                            stack.Value.Push(new RefAsValueType<IBinaryTree<T>>(node));
+                            skipNodes -= this.PreviousBranch(node).Count + 1;
+                            node = this.NextBranch(node);
                         }
+                    }
+
+                    if (!node.IsEmpty)
+                    {
+                        stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
                     }
                 }
             }
@@ -1758,13 +1751,11 @@ namespace System.Collections.Immutable
                 Requires.NotNull(node, "node");
                 if (!node.IsEmpty)
                 {
-                    using (var stack = this.stack.Use(this))
+                    var stack = this.stack.Use(this);
+                    while (!node.IsEmpty)
                     {
-                        while (!node.IsEmpty)
-                        {
-                            stack.Value.Push(new RefAsValueType<IBinaryTree<T>>(node));
-                            node = this.PreviousBranch(node);
-                        }
+                        stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
+                        node = this.PreviousBranch(node);
                     }
                 }
             }
