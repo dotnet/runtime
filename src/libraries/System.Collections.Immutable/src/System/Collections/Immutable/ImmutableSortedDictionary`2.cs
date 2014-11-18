@@ -1049,11 +1049,8 @@ namespace System.Collections.Immutable
                 this.current = null;
                 if (this.stack != null && this.stack.Owner == this.poolUserId)
                 {
-                    using (var stack = this.stack.Use(this))
-                    {
-                        stack.Value.Clear();
-                    }
-
+                    var stack = this.stack.Use(this);
+                    stack.Clear();
                     enumeratingStacks.TryAdd(this, this.stack);
                 }
 
@@ -1071,15 +1068,13 @@ namespace System.Collections.Immutable
 
                 if (this.stack != null)
                 {
-                    using (var stack = this.stack.Use(this))
+                    var stack = this.stack.Use(this);
+                    if (stack.Count > 0)
                     {
-                        if (stack.Value.Count > 0)
-                        {
-                            IBinaryTree<KeyValuePair<TKey, TValue>> n = stack.Value.Pop().Value;
-                            this.current = n;
-                            this.PushLeft(n.Right);
-                            return true;
-                        }
+                        IBinaryTree<KeyValuePair<TKey, TValue>> n = stack.Pop().Value;
+                        this.current = n;
+                        this.PushLeft(n.Right);
+                        return true;
                     }
                 }
 
@@ -1098,11 +1093,8 @@ namespace System.Collections.Immutable
                 this.current = null;
                 if (this.stack != null)
                 {
-                    using (var stack = this.stack.Use(this))
-                    {
-                        stack.Value.Clear();
-                    }
-
+                    var stack = this.stack.Use(this);
+                    stack.Clear();
                     this.PushLeft(this.root);
                 }
             }
@@ -1150,13 +1142,11 @@ namespace System.Collections.Immutable
             private void PushLeft(IBinaryTree<KeyValuePair<TKey, TValue>> node)
             {
                 Requires.NotNull(node, "node");
-                using (var stack = this.stack.Use(this))
+                var stack = this.stack.Use(this);
+                while (!node.IsEmpty)
                 {
-                    while (!node.IsEmpty)
-                    {
-                        stack.Value.Push(new RefAsValueType<IBinaryTree<KeyValuePair<TKey, TValue>>>(node));
-                        node = node.Left;
-                    }
+                    stack.Push(new RefAsValueType<IBinaryTree<KeyValuePair<TKey, TValue>>>(node));
+                    node = node.Left;
                 }
             }
         }
@@ -2026,7 +2016,7 @@ namespace System.Collections.Immutable
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
     [ExcludeFromCodeCoverage]
-    internal class ImmutableSortedDictionaryDebuggerProxy<TKey,TValue>
+    internal class ImmutableSortedDictionaryDebuggerProxy<TKey, TValue>
     {
         /// <summary>
         /// The collection to be enumerated.
