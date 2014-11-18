@@ -183,6 +183,14 @@ namespace System.Collections.Immutable
 
         #endregion
 
+        /// <summary>
+        /// Gets the root node (for testing purposes).
+        /// </summary>
+        internal Node Root
+        {
+            get { return this.root; }
+        }
+
         #region IImmutableMap<TKey, TValue> Indexers
 
         /// <summary>
@@ -1272,11 +1280,27 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets the depth of the tree below this node.
+            /// Gets the height of the tree beneath this node.
             /// </summary>
-            int IBinaryTree<KeyValuePair<TKey, TValue>>.Height
+            int IBinaryTree.Height
             {
                 get { return this.height; }
+            }
+
+            /// <summary>
+            /// Gets the left branch of this node.
+            /// </summary>
+            IBinaryTree IBinaryTree.Left
+            {
+                get { return this.left; }
+            }
+
+            /// <summary>
+            /// Gets the right branch of this node.
+            /// </summary>
+            IBinaryTree IBinaryTree.Right
+            {
+                get { return this.right; }
             }
 
             /// <summary>
@@ -1290,7 +1314,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the number of elements contained by this node and below.
             /// </summary>
-            int IBinaryTree<KeyValuePair<TKey, TValue>>.Count
+            int IBinaryTree.Count
             {
                 get { throw new NotSupportedException(); }
             }
@@ -1753,12 +1777,12 @@ namespace System.Collections.Immutable
 
                 if (IsRightHeavy(tree))
                 {
-                    return IsLeftHeavy(tree.right) ? DoubleLeft(tree) : RotateLeft(tree);
+                    return Balance(tree.right) < 0 ? DoubleLeft(tree) : RotateLeft(tree);
                 }
 
                 if (IsLeftHeavy(tree))
                 {
-                    return IsRightHeavy(tree.left) ? DoubleRight(tree) : RotateRight(tree);
+                    return Balance(tree.left) > 0 ? DoubleRight(tree) : RotateRight(tree);
                 }
 
                 return tree;

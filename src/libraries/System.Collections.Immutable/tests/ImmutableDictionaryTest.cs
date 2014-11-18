@@ -333,6 +333,11 @@ namespace System.Collections.Immutable.Test
             return ((ImmutableDictionary<TKey, TValue>)dictionary).ValueComparer;
         }
 
+        internal override IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
+        {
+            return ((ImmutableDictionary<TKey, TValue>)dictionary).Root;
+        }
+
         protected void ContainsValueTestHelper<TKey, TValue>(ImmutableDictionary<TKey, TValue> map, TKey key, TValue value)
         {
             Assert.False(map.ContainsValue(value));
