@@ -83,7 +83,7 @@
 
     <!-- Copy build tools to tools directory -->
     <Exec
-      Command="xcopy /e /y &quot;$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\*&quot; &quot;$(ToolsDir)&quot; > $(ToolsDir)BuildTools.xcopy.log" />
+      Command="xcopy /e /y &quot;$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\*&quot; &quot;$(ToolsDir)&quot; > &quot;$(ToolsDir)BuildTools.xcopy.log&quot;" />
   </Target>
   
 </Project>
