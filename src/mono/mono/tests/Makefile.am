@@ -214,6 +214,7 @@ BASE_TEST_CS_SRC=		\
 	array3.cs		\
 	classinit.cs		\
 	classinit2.cs		\
+	classinit3.cs		\
 	synchronized.cs		\
 	async_read.cs		\
 	threadpool.cs		\
