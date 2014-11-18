@@ -826,14 +826,12 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 			return TRUE;
 		}
-		
+
 		if ((ji = mini_jit_info_table_find (domain, (gpointer)(*lmf)->eip, NULL))) {
+			frame->ji = ji;
 		} else {
-			if (!((guint32)((*lmf)->previous_lmf) & 1))
-				/* Top LMF entry */
+			if (!(*lmf)->method)
 				return FALSE;
-			g_assert_not_reached ();
-			/* Trampoline lmf frame */
 			frame->method = (*lmf)->method;
 		}
 
@@ -846,7 +844,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Adjust IP */
 		new_ctx->eip --;
 
-		frame->ji = ji;
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
 		/* Check if we are in a trampoline LMF frame */
