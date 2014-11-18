@@ -333,6 +333,11 @@ namespace System.Collections.Immutable.Test
             return new SortedSet<T>();
         }
 
+        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
+        {
+            return ((ImmutableSortedSet<T>)set).Root;
+        }
+
         /// <summary>
         /// Tests various aspects of a sorted set.
         /// </summary>
