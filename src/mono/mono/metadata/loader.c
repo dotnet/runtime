@@ -869,6 +869,22 @@ inflate_generic_header (MonoMethodHeader *header, MonoGenericContext *context)
 MonoMethodSignature*
 mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context)
 {
+	MonoError error;
+	MonoMethodSignature *res = mono_method_get_signature_checked (method, image, token, context, &error);
+
+	g_assert (!mono_loader_get_last_error ());
+
+	if (!res) {
+		g_assert (!mono_error_ok (&error));
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+	}
+	return res;
+}
+
+MonoMethodSignature*
+mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error)
+{
 	int table = mono_metadata_token_table (token);
 	int idx = mono_metadata_token_index (token);
 	int sig_idx;
@@ -876,23 +892,27 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 	MonoMethodSignature *sig;
 	const char *ptr;
 
+	mono_error_init (error);
+
 	/* !table is for wrappers: we should really assign their own token to them */
 	if (!table || table == MONO_TABLE_METHOD)
-		return mono_method_signature (method);
+		return mono_method_signature_checked (method, error);
 
 	if (table == MONO_TABLE_METHODSPEC) {
 		/* the verifier (do_invoke_method) will turn the NULL into a verifier error */
 		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || !method->is_inflated)
 			return NULL;
 
-		return mono_method_signature (method);
+		return mono_method_signature_checked (method, error);
 	}
 
 	if (method->klass->generic_class)
-		return mono_method_signature (method);
+		return mono_method_signature_checked (method, error);
 
 	if (image_is_dynamic (image)) {
-		sig = mono_reflection_lookup_signature (image, method, token);
+		sig = mono_reflection_lookup_signature (image, method, token, error);
+		if (!sig)
+			return NULL;
 	} else {
 		mono_metadata_decode_row (&image->tables [MONO_TABLE_MEMBERREF], idx-1, cols, MONO_MEMBERREF_SIZE);
 		sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
@@ -903,15 +923,24 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 				guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 				const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
-				mono_loader_set_error_bad_image (g_strdup_printf ("Bad method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
+				//FIXME include the verification error
+				mono_error_set_bad_image (error, image, "Bad method signature class token 0x%08x field name %s token 0x%08x", class, fname, token);
 				return NULL;
 			}
 
 			ptr = mono_metadata_blob_heap (image, sig_idx);
 			mono_metadata_decode_blob_size (ptr, &ptr);
+			/* FIXME make type/signature parsing not produce loader errors */
 			sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
-			if (!sig)
+			g_assert (!mono_loader_get_last_error ());
+
+			if (!sig) {
+				guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+				const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+				//FIXME include the decoding error
+				mono_error_set_bad_image (error, image, "Bad method signature class token 0x%08x field name %s token 0x%08x", class, fname, token);
 				return NULL;
+			}
 			sig = cache_memberref_sig (image, sig_idx, sig);
 		}
 		/* FIXME: we probably should verify signature compat in the dynamic case too*/
@@ -919,22 +948,18 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 			guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
 			const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
 
-			mono_loader_set_error_bad_image (g_strdup_printf ("Incompatible method signature class token 0x%08x field name %s token 0x%08x on image %s", class, fname, token, image->name));
+			mono_error_set_bad_image (error, image, "Incompatible method signature class token 0x%08x field name %s token 0x%08x", class, fname, token);
 			return NULL;
 		}
 	}
 
 	if (context) {
-		MonoError error;
 		MonoMethodSignature *cached;
 
 		/* This signature is not owned by a MonoMethod, so need to cache */
-		sig = inflate_generic_signature_checked (image, sig, context, &error);
-		if (!mono_error_ok (&error)) {/*XXX bubble up this and kill one use of loader errors */
-			mono_loader_set_error_bad_image (g_strdup_printf ("Could not inflate signature %s", mono_error_get_message (&error)));
-			mono_error_cleanup (&error);
+		sig = inflate_generic_signature_checked (image, sig, context, error);
+		if (!mono_error_ok (error))
 			return NULL;
-		}
 
 		cached = mono_metadata_get_inflated_signature (sig, context);
 		if (cached != sig)
@@ -944,6 +969,7 @@ mono_method_get_signature_full (MonoMethod *method, MonoImage *image, guint32 to
 		sig = cached;
 	}
 
+	g_assert (mono_error_ok (error));
 	return sig;
 }
 

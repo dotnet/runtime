@@ -804,5 +804,9 @@ MonoAotCacheConfig *mono_get_aot_cache_config (void) MONO_INTERNAL;
 MonoType *
 mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error) MONO_INTERNAL;
 
+MonoMethodSignature*
+mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+	
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

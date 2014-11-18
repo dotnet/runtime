@@ -11847,16 +11847,18 @@ mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
 }
 
 MonoMethodSignature *
-mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token)
+mono_reflection_lookup_signature (MonoImage *image, MonoMethod *method, guint32 token, MonoError *error)
 {
 	MonoMethodSignature *sig;
 	g_assert (image_is_dynamic (image));
+
+	mono_error_init (error);
 
 	sig = g_hash_table_lookup (((MonoDynamicImage*)image)->vararg_aux_hash, GUINT_TO_POINTER (token));
 	if (sig)
 		return sig;
 
-	return mono_method_signature (method);
+	return mono_method_signature_checked (method, error);
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
