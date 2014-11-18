@@ -1872,9 +1872,25 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the height of the tree beneath this node.
             /// </summary>
-            int IBinaryTree<T>.Height
+            int IBinaryTree.Height
             {
                 get { return this.height; }
+            }
+
+            /// <summary>
+            /// Gets the left branch of this node.
+            /// </summary>
+            IBinaryTree IBinaryTree.Left
+            {
+                get { return this.left; }
+            }
+
+            /// <summary>
+            /// Gets the right branch of this node.
+            /// </summary>
+            IBinaryTree IBinaryTree.Right
+            {
+                get { return this.right; }
             }
 
             /// <summary>

@@ -170,6 +170,11 @@ namespace System.Collections.Immutable.Test
             return new HashSet<T>();
         }
 
+        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
+        {
+            return ((ImmutableHashSet<T>)set).Root;
+        }
+
         /// <summary>
         /// Tests various aspects of an unordered set.
         /// </summary>
