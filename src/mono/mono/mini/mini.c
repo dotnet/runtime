@@ -4138,6 +4138,7 @@ mono_codegen (MonoCompile *cfg)
 		if (bb == cfg->bb_exit) {
 			cfg->epilog_begin = cfg->code_len;
 			mono_arch_emit_epilog (cfg);
+			cfg->epilog_end = cfg->code_len;
 		}
 	}
 
@@ -4646,7 +4647,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 			info = mono_jit_info_get_arch_eh_info (jinfo);
 			g_assert (info);
-			info->epilog_size = cfg->code_size - cfg->epilog_begin;
+			info->epilog_size = cfg->epilog_end - cfg->epilog_begin;
 		}
 		jinfo->unwind_info = unwind_desc;
 		g_free (unwind_info);

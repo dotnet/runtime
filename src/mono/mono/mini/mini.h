@@ -1446,6 +1446,7 @@ typedef struct {
 	guint            code_len;
 	guint            prolog_end;
 	guint            epilog_begin;
+	guint            epilog_end;
 	regmask_t        used_int_regs;
 	guint32          opt;
 	guint32          prof_options;
