@@ -78,7 +78,7 @@ namespace System.Collections.Immutable
         /// <param name="item1">The first element to store in the array.</param>
         /// <param name="item2">The second element to store in the array.</param>
         /// <param name="item3">The third element to store in the array.</param>
-        /// <param name="item4">The third element to store in the array.</param>
+        /// <param name="item4">The fourth element to store in the array.</param>
         /// <returns>A 4-element array.</returns>
         [Pure]
         public static ImmutableArray<T> Create<T>(T item1, T item2, T item3, T item4)
