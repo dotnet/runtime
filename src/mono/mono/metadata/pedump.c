@@ -27,6 +27,7 @@
 #include <mono/metadata/marshal.h>
 #include "mono/utils/mono-digest.h"
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-counters.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
@@ -653,6 +654,7 @@ main (int argc, char *argv [])
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters_init ();
 #endif
+	mono_counters_init ();
 	mono_metadata_init ();
 	mono_images_init ();
 	mono_assemblies_init ();
