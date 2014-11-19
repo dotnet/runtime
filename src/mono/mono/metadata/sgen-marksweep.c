@@ -121,21 +121,6 @@ typedef struct {
 
 #define MS_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] & (ONE_P << (b)))
 #define MS_SET_MARK_BIT(bl,w,b)	((bl)->mark_words [(w)] |= (ONE_P << (b)))
-#define MS_PAR_SET_MARK_BIT(was_marked,bl,w,b)	do {			\
-		mword __old = (bl)->mark_words [(w)];			\
-		mword __bitmask = ONE_P << (b);				\
-		if (__old & __bitmask) {				\
-			was_marked = TRUE;				\
-			break;						\
-		}							\
-		if (SGEN_CAS_PTR ((gpointer*)&(bl)->mark_words [(w)],	\
-						(gpointer)(__old | __bitmask), \
-						(gpointer)__old) ==	\
-				(gpointer)__old) {			\
-			was_marked = FALSE;				\
-			break;						\
-		}							\
-	} while (1)
 
 #define MS_OBJ_ALLOCED(o,b)	(*(void**)(o) && (*(char**)(o) < MS_BLOCK_FOR_BLOCK_INFO (b) || *(char**)(o) >= MS_BLOCK_FOR_BLOCK_INFO (b) + MS_BLOCK_SIZE))
 
@@ -615,8 +600,6 @@ major_alloc_degraded (MonoVTable *vtable, size_t size)
 	return obj;
 }
 
-#define MAJOR_OBJ_IS_IN_TO_SPACE(obj)	FALSE
-
 /*
  * obj is some object.  If it's not in the major heap (i.e. if it's in
  * the nursery or LOS), return FALSE.  Otherwise return whether it's
@@ -850,19 +833,6 @@ major_dump_heap (FILE *heap_dump_file)
 		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
 		if (!MS_MARK_BIT ((block), __word, __bit)) {		\
 			MS_SET_MARK_BIT ((block), __word, __bit);	\
-			if ((block)->has_references)			\
-				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
-			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \
-			INC_NUM_MAJOR_OBJECTS_MARKED ();		\
-		}							\
-	} while (0)
-#define MS_PAR_MARK_OBJECT_AND_ENQUEUE(obj,desc,block,queue) do {	\
-		int __word, __bit;					\
-		gboolean __was_marked;					\
-		SGEN_ASSERT (9, MS_OBJ_ALLOCED ((obj), (block)), "object %p not allocated", obj);	\
-		MS_CALC_MARK_BIT (__word, __bit, (obj));		\
-		MS_PAR_SET_MARK_BIT (__was_marked, (block), __word, __bit); \
-		if (!__was_marked) {					\
 			if ((block)->has_references)			\
 				GRAY_OBJECT_ENQUEUE ((queue), (obj), (desc)); \
 			binary_protocol_mark ((obj), (gpointer)LOAD_VTABLE ((obj)), sgen_safe_object_get_size ((MonoObject*)(obj))); \

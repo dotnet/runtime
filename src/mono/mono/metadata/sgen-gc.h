@@ -67,7 +67,6 @@ NurseryClearPolicy sgen_get_nursery_clear_policy (void) MONO_INTERNAL;
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define SGEN_TV_ELAPSED(start,end) (int)((end-start))
-#define SGEN_TV_ELAPSED_MS(start,end) ((SGEN_TV_ELAPSED((start),(end)) + 5000) / 10000)
 
 #if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
 #define SGEN_POSIX_STW 1
@@ -160,7 +159,6 @@ struct _GCMemSection {
 		mono_mutex_lock (&gc_mutex);			\
 		MONO_GC_LOCKED ();				\
 	} while (0)
-#define TRYLOCK_GC (mono_mutex_trylock (&gc_mutex) == 0)
 #define UNLOCK_GC do { sgen_gc_unlock (); } while (0)
 
 extern LOCK_DECLARE (sgen_interruption_mutex);
@@ -211,11 +209,6 @@ extern long long stat_objects_copied_major;
 	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
 		if (cond)	\
 			mono_gc_printf (gc_debug_file, format, ##__VA_ARGS__);	\
-} } while (0)
-
-#define SGEN_LOG_DO(level, fun) do {	\
-	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
-		fun;	\
 } } while (0)
 
 extern int gc_debug_level;

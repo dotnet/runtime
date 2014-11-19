@@ -29,7 +29,5 @@
 } while (0)
 
 #define COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION sgen_minor_collector.alloc_for_promotion
-#define COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION sgen_minor_collector.par_alloc_for_promotion
-
 
 #include "sgen-copy-object.h"

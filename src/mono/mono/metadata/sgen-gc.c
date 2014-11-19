@@ -371,7 +371,6 @@ mono_gc_flush_info (void)
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
-#define TV_ELAPSED_MS SGEN_TV_ELAPSED_MS
 
 SGEN_TV_DECLARE (sgen_init_timestamp);
 
@@ -382,7 +381,6 @@ NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
 #define pin_object		SGEN_PIN_OBJECT
-#define unpin_object		SGEN_UNPIN_OBJECT
 
 #define ptr_in_nursery sgen_ptr_in_nursery
 
@@ -429,10 +427,6 @@ static volatile mword lowest_heap_address = ~(mword)0;
 static volatile mword highest_heap_address = 0;
 
 LOCK_DECLARE (sgen_interruption_mutex);
-static LOCK_DECLARE (pin_queue_mutex);
-
-#define LOCK_PIN_QUEUE mono_mutex_lock (&pin_queue_mutex)
-#define UNLOCK_PIN_QUEUE mono_mutex_unlock (&pin_queue_mutex)
 
 typedef struct _FinalizeReadyEntry FinalizeReadyEntry;
 struct _FinalizeReadyEntry {
@@ -520,7 +514,6 @@ guint32 tlab_size = (1024 * 4);
 static MonoGCCallbacks gc_callbacks;
 
 #define ALLOC_ALIGN		SGEN_ALLOC_ALIGN
-#define ALLOC_ALIGN_BITS	SGEN_ALLOC_ALIGN_BITS
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 
@@ -4670,7 +4663,6 @@ mono_gc_base_init (void)
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
 	LOCK_INIT (sgen_interruption_mutex);
-	LOCK_INIT (pin_queue_mutex);
 
 	if ((env = g_getenv (MONO_GC_PARAMS_NAME))) {
 		opts = g_strsplit (env, ",", -1);

@@ -46,7 +46,6 @@
 #define MAX_ELEMENT_SIZE 0x3ff
 #define VECTOR_SUBTYPE_PTRFREE (DESC_TYPE_V_PTRFREE << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_REFS    (DESC_TYPE_V_REFS << VECTOR_INFO_SHIFT)
-#define VECTOR_SUBTYPE_RUN_LEN (DESC_TYPE_V_RUN_LEN << VECTOR_INFO_SHIFT)
 #define VECTOR_SUBTYPE_BITMAP  (DESC_TYPE_V_BITMAP << VECTOR_INFO_SHIFT)
 
 #define VECTOR_KIND_SZARRAY  (DESC_TYPE_V_SZARRAY << VECTOR_KIND_SHIFT)
@@ -146,14 +145,6 @@ sgen_gc_descr_has_references (mword desc)
 #define SGEN_OBJECT_HAS_REFERENCES(o)	(SGEN_VTABLE_HAS_REFERENCES (SGEN_LOAD_VTABLE ((o))))
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
-#define OBJ_RUN_LEN_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8);	\
-    } while (0)
-
-#define OBJ_BITMAP_SIZE(size,desc,obj) do { \
-		(size) = ((desc) & 0xfff8);	\
-    } while (0)
-
 #ifdef __GNUC__
 #define PREFETCH(addr)	__builtin_prefetch ((addr))
 #else
