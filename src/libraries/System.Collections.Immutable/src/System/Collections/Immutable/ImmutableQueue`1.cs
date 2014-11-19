@@ -478,7 +478,7 @@ namespace System.Collections.Immutable
             {
                 if (this.disposed)
                 {
-                    throw new ObjectDisposedException(this.GetType().FullName);
+                    Validation.Requires.FailObjectDisposed(this);
                 }
             }
         }

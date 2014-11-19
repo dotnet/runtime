@@ -53,7 +53,7 @@ namespace System.Collections.Immutable
         /// <param name="comparers">The comparers.</param>
         /// <param name="count">The number of elements in the map.</param>
         private ImmutableDictionary(ImmutableSortedDictionary<int, HashBucket>.Node root, Comparers comparers, int count)
-            : this(Requires.NotNull(comparers, "comparers"))
+            : this(Requires.NotNullPassthrough(comparers, "comparers"))
         {
             Requires.NotNull(root, "root");
 
