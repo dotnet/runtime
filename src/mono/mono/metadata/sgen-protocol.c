@@ -29,9 +29,15 @@
 #include "utils/mono-mmap.h"
 #include "utils/mono-threads.h"
 
-/* If not null, dump binary protocol to this file */
-/* FIXME: Don't use FILE - use system calls, otherwise we might deadlock. */
-static FILE *binary_protocol_file = NULL;
+#include <errno.h>
+#ifdef HAVE_UNISTD_H
+#include <fcntl.h>
+#endif
+
+/* FIXME Implement binary protocol IO on systems that don't have unistd */
+#ifdef HAVE_UNISTD_H
+/* If valid, dump binary protocol to this file */
+static int binary_protocol_file = -1;
 
 /* We set this to -1 to indicate an exclusive lock */
 static volatile int binary_protocol_use_count = 0;
@@ -83,27 +89,48 @@ binary_protocol_open_file (void)
 	else
 		filename = filename_or_prefix;
 
-	binary_protocol_file = fopen (filename, "w");
+	do {
+		binary_protocol_file = open (filename, O_CREAT|O_WRONLY|O_TRUNC, 0644);
+		if (binary_protocol_file == -1 && errno != EINTR)
+			break; /* Failed */
+	} while (binary_protocol_file == -1);
 
 	if (file_size_limit > 0)
 		free_filename (filename);
 }
+#endif
 
 void
 binary_protocol_init (const char *filename, long long limit)
 {
+#ifdef HAVE_UNISTD_H
 	filename_or_prefix = sgen_alloc_internal_dynamic (strlen (filename) + 1, INTERNAL_MEM_BINARY_PROTOCOL, TRUE);
 	strcpy (filename_or_prefix, filename);
 
 	file_size_limit = limit;
 
 	binary_protocol_open_file ();
+#endif
 }
 
 gboolean
 binary_protocol_is_enabled (void)
 {
-	return binary_protocol_file != NULL;
+#ifdef HAVE_UNISTD_H
+	return binary_protocol_file != -1;
+#else
+	return FALSE;
+#endif
+}
+
+#ifdef HAVE_UNISTD_H
+
+static void
+close_binary_protocol_file (void)
+{
+	while (close (binary_protocol_file) == -1 && errno == EINTR)
+		;
+	binary_protocol_file = -1;
 }
 
 static gboolean
@@ -156,8 +183,21 @@ unlock_recursive (void)
 static void
 binary_protocol_flush_buffer (BinaryProtocolBuffer *buffer)
 {
+	ssize_t ret;
+	size_t to_write = buffer->index;
+	size_t written = 0;
 	g_assert (buffer->index > 0);
-	fwrite (buffer->buffer, 1, buffer->index, binary_protocol_file);
+
+	while (written < to_write) {
+		ret = write (binary_protocol_file, buffer->buffer + written, to_write - written);
+		if (ret >= 0)
+			written += ret;
+		else if (errno == EINTR)
+			continue;
+		else
+			close_binary_protocol_file ();
+	}
+
 	current_file_size += buffer->index;
 
 	sgen_free_os_memory (buffer, sizeof (BinaryProtocolBuffer), SGEN_ALLOC_INTERNAL);
@@ -169,8 +209,7 @@ binary_protocol_check_file_overflow (void)
 	if (file_size_limit <= 0 || current_file_size < file_size_limit)
 		return;
 
-	fclose (binary_protocol_file);
-	binary_protocol_file = NULL;
+	close_binary_protocol_file ();
 
 	if (current_file_index > 0) {
 		char *filename = filename_for_index (current_file_index - 1);
@@ -183,15 +222,17 @@ binary_protocol_check_file_overflow (void)
 
 	binary_protocol_open_file ();
 }
+#endif
 
 void
 binary_protocol_flush_buffers (gboolean force)
 {
+#ifdef HAVE_UNISTD_H
 	int num_buffers = 0, i;
 	BinaryProtocolBuffer *buf;
 	BinaryProtocolBuffer **bufs;
 
-	if (!binary_protocol_file)
+	if (binary_protocol_file == -1)
 		return;
 
 	if (!force && !try_lock_exclusive ())
@@ -215,15 +256,14 @@ binary_protocol_flush_buffers (gboolean force)
 
 	if (!force)
 		unlock_exclusive ();
-
-	fflush (binary_protocol_file);
+#endif
 }
 
+#ifdef HAVE_UNISTD_H
 static BinaryProtocolBuffer*
 binary_protocol_get_buffer (int length)
 {
 	BinaryProtocolBuffer *buffer, *new_buffer;
-
  retry:
 	buffer = binary_protocol_buffers;
 	if (buffer && buffer->index + length <= BINARY_PROTOCOL_BUFFER_SIZE)
@@ -240,15 +280,16 @@ binary_protocol_get_buffer (int length)
 
 	return new_buffer;
 }
-
+#endif
 
 static void
 protocol_entry (unsigned char type, gpointer data, int size)
 {
+#ifdef HAVE_UNISTD_H
 	int index;
 	BinaryProtocolBuffer *buffer;
 
-	if (!binary_protocol_file)
+	if (binary_protocol_file == -1)
 		return;
 
 	if (sgen_is_worker_thread (mono_native_thread_id_get ()))
@@ -276,6 +317,7 @@ protocol_entry (unsigned char type, gpointer data, int size)
 	g_assert (index <= BINARY_PROTOCOL_BUFFER_SIZE);
 
 	unlock_recursive ();
+#endif
 }
 
 void
@@ -439,9 +481,9 @@ binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size)
 }
 
 void
-binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr, gpointer thread)
+binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr)
 {
-	SGenProtocolPinStage entry = { addr_ptr, addr, thread };
+	SGenProtocolPinStage entry = { addr_ptr, addr };
 	protocol_entry (SGEN_PROTOCOL_PIN_STAGE, &entry, sizeof (SGenProtocolPinStage));
 }
 
