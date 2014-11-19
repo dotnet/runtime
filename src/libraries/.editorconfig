@@ -16,3 +16,8 @@ trim_trailing_whitespace = true
 [*.cs]
 # 4 space indentation
 indent_size = 4
+
+[*.csproj]
+indent_size = 2
+[*.nuspec]
+indent_size = 2
