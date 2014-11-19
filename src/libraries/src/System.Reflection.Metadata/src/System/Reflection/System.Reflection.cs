@@ -32,7 +32,7 @@ namespace System.Reflection
 
         /// <summary>
         /// Used to remove a handler for an event.
-        /// Corresponds to th RemoveOn flag in the Ecma 335 CLI specification.
+        /// Corresponds to the RemoveOn flag in the Ecma 335 CLI specification.
         /// CLS-compliant removers are named with remove_ prefix.
         /// </summary>
         Remover = 0x0010,
