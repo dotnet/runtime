@@ -815,6 +815,12 @@ static void
 register_socket_transport (void);
 #endif
 
+static inline gboolean
+is_debugger_thread (void)
+{
+	return GetCurrentThreadId () == debugger_thread_id;
+}
+
 static int
 parse_address (char *address, char **host, int *port)
 {
@@ -4070,6 +4076,10 @@ appdomain_start_unload (MonoProfiler *prof, MonoDomain *domain)
 {
 	DebuggerTlsData *tls;
 
+	/* This might be called during shutdown on the debugger thread from the CMD_VM_EXIT code */
+	if (is_debugger_thread ())
+		return;
+
 	/*
 	 * Remember the currently unloading appdomain as it is needed to generate
 	 * proper ids for unloading assemblies.
@@ -4083,6 +4093,9 @@ static void
 appdomain_unload (MonoProfiler *prof, MonoDomain *domain)
 {
 	DebuggerTlsData *tls;
+
+	if (is_debugger_thread ())
+		return;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
