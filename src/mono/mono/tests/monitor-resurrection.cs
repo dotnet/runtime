@@ -14,20 +14,23 @@ public class Foo  {
 
 	public static void CreateFoo (int level)
 	{
-		if (level == 0)
-			Foo.reference = new Foo ();
-		else
+		if (level == 0) {
+			reference = new Foo ();
+
+			/* Allocate a MonoThreadsSync for the object */
+			Monitor.Enter (reference);
+			Monitor.Exit (reference);
+			reference = null;
+		} else {
 			CreateFoo (level - 1);
+		}
 	}
 
 	public static int Main() {
 		/* Allocate an object down the stack so it doesn't get pinned */
 		CreateFoo (100);
 
-		/* Allocate a MonoThreadsSync for the object */
-		Monitor.Enter (reference);
-		Monitor.Exit (reference);
-		reference = null;
+		Console.WriteLine (".");
 
 		/* resurrect obj */
 		GC.Collect ();
