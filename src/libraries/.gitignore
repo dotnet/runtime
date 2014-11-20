@@ -180,6 +180,11 @@ UpgradeLog*.htm
 # Microsoft Fakes
 FakesAssemblies/
 
+### MonoDevelop ###
+
+*.pidb
+*.userprefs
+
 ### Windows ###
 
 # Windows image file caches
