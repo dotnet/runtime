@@ -1241,10 +1241,10 @@ namespace System.Collections.Immutable
             {
                 this.root = null;
                 this.current = null;
-                Stack<RefAsValueType<ImmutableSortedSet<T>.Node>> stack;
+                Stack<RefAsValueType<Node>> stack;
                 if (this.stack != null && this.stack.TryUse(ref this, out stack))
                 {
-                    if (stack.Count > 0) stack.Clear();
+                    stack.ClearFastWhenEmpty();
                     enumeratingStacks.TryAdd(this, this.stack);
                     this.stack = null;
                 }
@@ -1284,7 +1284,7 @@ namespace System.Collections.Immutable
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.current = null;
                 var stack = this.stack.Use(ref this);
-                if (stack.Count > 0) stack.Clear();
+                stack.ClearFastWhenEmpty();
                 this.PushNext(this.root);
             }
 
@@ -1296,17 +1296,16 @@ namespace System.Collections.Immutable
                 Contract.Ensures(this.root != null);
                 Contract.EnsuresOnThrow<ObjectDisposedException>(this.root == null);
 
-                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
-                {
-                    Validation.Requires.FailObjectDisposed(ref this);
-                }
-
-                // Regarding the above stack checks:
                 // Since this is a struct, copies might not have been marked as disposed.
                 // But the stack we share across those copies would know.
                 // This trick only works when we have a non-null stack.
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
+
+                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
+                {
+                    Validation.Requires.FailObjectDisposed(this);
+                }
             }
 
             /// <summary>
@@ -1482,7 +1481,6 @@ namespace System.Collections.Immutable
             { 
                 get { return this.height; } 
             }
-
 
             /// <summary>
             /// Gets the left branch of this node.

@@ -360,7 +360,7 @@ namespace System.Collections.Immutable
                 {
                     if (this.disposed)
                     {
-                        Validation.Requires.FailObjectDisposed(ref this);
+                        Validation.Requires.FailObjectDisposed(this);
                     }
                 }
             }

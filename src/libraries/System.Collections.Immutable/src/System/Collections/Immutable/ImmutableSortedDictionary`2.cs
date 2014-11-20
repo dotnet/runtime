@@ -950,8 +950,8 @@ namespace System.Collections.Immutable
             /// <remarks>
             /// We utilize this resource pool to make "allocation free" enumeration achievable.
             /// </remarks>
-            private static readonly SecureObjectPool<Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>>, Enumerator> enumeratingStacks =
-                new SecureObjectPool<Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>>, Enumerator>();
+            private static readonly SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator> enumeratingStacks =
+                new SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>();
 
             /// <summary>
             /// The builder being enumerated, if applicable.
@@ -967,12 +967,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The set being enumerated.
             /// </summary>
-            private ImmutableSortedDictionary<TKey, TValue>.Node root;
+            private Node root;
 
             /// <summary>
             /// The stack to use for enumerating the binary tree.
             /// </summary>
-            private SecurePooledObject<Stack<RefAsValueType<ImmutableSortedDictionary<TKey,TValue>.Node>>> stack;
+            private SecurePooledObject<Stack<RefAsValueType<Node>>> stack;
 
             /// <summary>
             /// The node currently selected.
@@ -989,7 +989,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
-            internal Enumerator(ImmutableSortedDictionary<TKey, TValue>.Node root, Builder builder = null)
+            internal Enumerator(Node root, Builder builder = null)
             {
                 Requires.NotNull(root, "root");
 
@@ -1003,8 +1003,9 @@ namespace System.Collections.Immutable
                 {
                     if (!enumeratingStacks.TryTake(this, out this.stack))
                     {
-                        this.stack = enumeratingStacks.PrepNew(this, new Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>>(root.Height));
+                        this.stack = enumeratingStacks.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
                     }
+
                     this.PushLeft(this.root);
                 }
             }
@@ -1047,10 +1048,10 @@ namespace System.Collections.Immutable
             {
                 this.root = null;
                 this.current = null;
-                Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>> stack;
+                Stack<RefAsValueType<Node>> stack;
                 if (this.stack != null && this.stack.TryUse(ref this, out stack))
                 {
-                    if (stack.Count > 0) stack.Clear();
+                    stack.ClearFastWhenEmpty();
                     enumeratingStacks.TryAdd(this, this.stack);
                 }
 
@@ -1094,7 +1095,7 @@ namespace System.Collections.Immutable
                 if (this.stack != null)
                 {
                     var stack = this.stack.Use(ref this);
-                    if (stack.Count > 0) stack.Clear();
+                    stack.ClearFastWhenEmpty();
                     this.PushLeft(this.root);
                 }
             }
@@ -1104,17 +1105,16 @@ namespace System.Collections.Immutable
             /// </summary>
             internal void ThrowIfDisposed()
             {
-                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
-                {
-                    Validation.Requires.FailObjectDisposed(ref this);
-                }
-
-                // Regarding the above stack checks:
                 // Since this is a struct, copies might not have been marked as disposed.
                 // But the stack we share across those copies would know.
                 // This trick only works when we have a non-null stack.
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
+
+                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
+                {
+                    Validation.Requires.FailObjectDisposed(this);
+                }
             }
 
             /// <summary>
@@ -1133,13 +1133,13 @@ namespace System.Collections.Immutable
             /// Pushes this node and all its Left descendents onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
-            private void PushLeft(ImmutableSortedDictionary<TKey, TValue>.Node node)
+            private void PushLeft(Node node)
             {
                 Requires.NotNull(node, "node");
                 var stack = this.stack.Use(ref this);
                 while (!node.IsEmpty)
                 {
-                    stack.Push(new RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>(node));
+                    stack.Push(new RefAsValueType<Node>(node));
                     node = node.Left;
                 }
             }
@@ -1297,14 +1297,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the value represented by the current node.
             /// </summary>
-            public KeyValuePair<TKey, TValue> Value { get { return new KeyValuePair<TKey, TValue>(this.key, this.value); } }
-
-            /// <summary>
-            /// Gets the value represented by the current node.
-            /// </summary>
-            KeyValuePair<TKey, TValue> IBinaryTree<KeyValuePair<TKey, TValue>>.Value
-            {
-                get { return this.Value; }
+            public KeyValuePair<TKey, TValue> Value 
+            { 
+                get { return new KeyValuePair<TKey, TValue>(this.key, this.value); } 
             }
 
             /// <summary>
