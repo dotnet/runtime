@@ -1,6 +1,6 @@
 # .NET Core
 
-[![Build status](https://ci.appveyor.com/api/projects/status/xje8bkekyu130e9y?svg=true)](https://ci.appveyor.com/project/dotnet-bot/corefx)
+[![Build status](https://ci.appveyor.com/api/projects/status/xje8bkekyu130e9y/branch/master?svg=true)](https://ci.appveyor.com/project/dotnet-bot/corefx/branch/master)
 
 This repository contains the class libraries for .NET Core. This is currently a
 work in progress, and does not currently contain the entire set of libraries
