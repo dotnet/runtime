@@ -289,7 +289,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 37
+#define MINOR_VERSION 38
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -514,7 +514,8 @@ typedef enum {
 typedef enum {
 	CMD_STACK_FRAME_GET_VALUES = 1,
 	CMD_STACK_FRAME_GET_THIS = 2,
-	CMD_STACK_FRAME_SET_VALUES = 3
+	CMD_STACK_FRAME_SET_VALUES = 3,
+	CMD_STACK_FRAME_GET_DOMAIN = 4,
 } CmdStackFrame;
 
 typedef enum {
@@ -9050,6 +9051,11 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		mono_metadata_free_mh (header);
 		break;
 	}
+	case CMD_STACK_FRAME_GET_DOMAIN: {
+		if (CHECK_PROTOCOL_VERSION (2, 38))
+			buffer_add_domainid (buf, frame->domain);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9418,7 +9424,8 @@ static const char* type_cmds_str[] = {
 static const char* stack_frame_cmds_str[] = {
 	"GET_VALUES",
 	"GET_THIS",
-	"SET_VALUES"
+	"SET_VALUES",
+	"GET_DOMAIN",
 };
 
 static const char* array_cmds_str[] = {
