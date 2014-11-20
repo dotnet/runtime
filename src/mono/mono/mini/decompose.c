@@ -1225,13 +1225,6 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 			restart = FALSE;
 
 			for (ins = bb->code; ins; ins = ins->next) {
-
-#ifdef MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS
-				// Try the architecture specific vtype decomposition first.  If that handles the
-				// decomposition for this instruction, then nothing more needs to be done here.
-				if (!mono_arch_decompose_vtype_opts (cfg, ins, bb))
-#endif
-
 				switch (ins->opcode) {
 				case OP_VMOVE: {
 					src_var = get_vreg_to_inst (cfg, ins->sreg1);

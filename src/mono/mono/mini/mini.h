@@ -807,7 +807,6 @@ struct MonoInst {
 		guint16 source_opcode; /*OP_XCONV_R8_TO_I4 needs to know which op was used to do proper widening*/
 		int pc_offset; /* OP_GC_LIVERANGE_START/END */
 		int memory_barrier_kind; /* see mono-memory-model.h for valid values */
-		int additional_regs;	/* For ELF ABI v2 return struct via registers */
 	} backend;
 	
 	MonoClass *klass;
@@ -2299,7 +2298,6 @@ void              mono_decompose_vtype_opts (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_vtype_opts_llvm (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_array_access_opts (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_decompose_soft_float (MonoCompile *cfg) MONO_INTERNAL;
-gboolean          mono_arch_decompose_vtype_opts (MonoCompile *cfg, MonoInst *ins, MonoBasicBlock *bb) MONO_INTERNAL;
 void              mono_handle_global_vregs (MonoCompile *cfg) MONO_INTERNAL;
 void              mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts) MONO_INTERNAL;
 void              mono_if_conversion (MonoCompile *cfg) MONO_INTERNAL;
@@ -2882,11 +2880,6 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal) MONO_INTERNAL;
 #define MONO_IS_ILP32 1
 #else
 #define MONO_IS_ILP32 0
-
-#ifdef MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS
-void mono_arch_handle_multiple_dregs(MonoBasicBlock *, MonoCompile *, MonoInst *, MonoInst *);
-#endif
-
 #endif
 
 #endif /* __MONO_MINI_H__ */

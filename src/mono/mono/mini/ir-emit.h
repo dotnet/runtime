@@ -112,7 +112,6 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         (dest)->flags = 0; \
         (dest)->type = 0; \
         (dest)->dreg = -1;  \
-        (dest)->backend.additional_regs = 0;  \
 	MONO_INST_NULLIFY_SREGS ((dest));		    \
         (dest)->cil_code = (cfg)->ip;  \
 	} while (0)
