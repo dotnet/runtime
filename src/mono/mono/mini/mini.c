@@ -711,9 +711,10 @@ G_GNUC_UNUSED gboolean
 mono_debug_count (void)
 {
 	static int count = 0;
-	count ++;
 	static gboolean inited;
 	static const char *value;
+
+	count ++;
 
 	if (!inited) {
 		value = g_getenv ("COUNT");
