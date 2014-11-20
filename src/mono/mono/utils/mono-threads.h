@@ -113,6 +113,9 @@ typedef struct {
 	/*Tells if this thread was created by the runtime or not.*/
 	gboolean runtime_thread;
 
+	/* Tells if this thread should be ignored or not by runtime services such as GC and profiling */
+	gboolean tools_thread;
+
 	/* suspend machinery, fields protected by suspend_semaphore */
 	MonoSemType suspend_semaphore;
 	int suspend_count;
@@ -200,16 +203,22 @@ typedef struct {
 	gboolean (*thread_state_init_from_handle) (MonoThreadUnwindState *tctx, MonoThreadInfo *info);
 } MonoThreadInfoRuntimeCallbacks;
 
+static inline gboolean
+mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
+{
+	return !((MonoThreadInfo*)info)->tools_thread;
+}
+
 /*
 Requires the world to be stoped
 */
-#define FOREACH_THREAD(thread) MONO_LLS_FOREACH (mono_thread_info_list_head (), thread, THREAD_INFO_TYPE*)
+#define FOREACH_THREAD(thread) MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
 #define END_FOREACH_THREAD MONO_LLS_END_FOREACH
 
 /*
 Snapshot iteration.
 */
-#define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_SAFE (mono_thread_info_list_head (), thread, THREAD_INFO_TYPE*)
+#define FOREACH_THREAD_SAFE(thread) MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), thread, mono_threads_filter_tools_threads, THREAD_INFO_TYPE*)
 #define END_FOREACH_THREAD_SAFE MONO_LLS_END_FOREACH_SAFE
 
 #define mono_thread_info_get_tid(info) ((MonoNativeThreadId)((MonoThreadInfo*)info)->node.key)
@@ -349,7 +358,10 @@ mono_threads_add_async_job (THREAD_INFO_TYPE *info, MonoAsyncJob job) MONO_INTER
 
 MonoAsyncJob
 mono_threads_consume_async_jobs (void) MONO_INTERNAL;
-	
+
+void
+mono_threads_attach_tools_thread (void);
+
 
 #if !defined(HOST_WIN32)
 

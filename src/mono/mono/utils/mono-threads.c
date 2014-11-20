@@ -287,6 +287,31 @@ mono_thread_info_list_head (void)
 	return &thread_list;
 }
 
+/**
+ * mono_threads_attach_tools_thread
+ *
+ * Attach the current thread as a tool thread. DON'T USE THIS FUNCTION WITHOUT READING ALL DISCLAIMERS.
+ *
+ * A tools thread is a very special kind of thread that needs access to core runtime facilities but should
+ * not be counted as a regular thread for high order facilities such as executing managed code or accessing
+ * the managed heap.
+ *
+ * This is intended only to tools such as a profiler than needs to be able to use our lock-free support when
+ * doing things like resolving backtraces in their background processing thread.
+ */
+void
+mono_threads_attach_tools_thread (void)
+{
+	int dummy = 0;
+	MonoThreadInfo *info;
+
+	/* Must only be called once */
+	g_assert (!mono_native_tls_get_value (thread_info_key));
+
+	info = mono_thread_info_attach (&dummy);
+	info->tools_thread = TRUE;
+}
+
 MonoThreadInfo*
 mono_thread_info_attach (void *baseptr)
 {
