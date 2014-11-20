@@ -3199,7 +3199,7 @@ case "x$libgc" in
 		;;
 esac
 
-AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0/3.5 FX (defaults to yes)],            [], [with_profile2=yes])
+AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0/3.5 FX (defaults to yes)],            [], [with_profile2=no])
 AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],                [], [with_profile4=yes])
 AC_ARG_WITH(profile4_5,[  --with-profile4_5=yes,no        If you want to install the 4.5 FX (defaults to yes)],                [], [with_profile4_5=yes])
 AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],     [], [with_monodroid=no])
@@ -3275,7 +3275,6 @@ dnl Consistency settings
 dnl
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS=yes
-   with_profile2=no
    with_profile4=no
    with_profile4_5=no
    with_monodroid=no
@@ -3299,7 +3298,6 @@ AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
-AM_CONDITIONAL(INSTALL_2_0, [test "x$with_profile2" = xyes])
 AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
 AM_CONDITIONAL(INSTALL_4_5, [test "x$with_profile4_5" = xyes])
 AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" != "xno"])
@@ -3744,7 +3742,6 @@ echo "
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
 
    Libraries:
-	.NET 2.0/3.5:  $with_profile2
 	.NET 4.0:      $with_profile4
 	.NET 4.5:      $with_profile4_5
 	MonoDroid:     $with_monodroid
