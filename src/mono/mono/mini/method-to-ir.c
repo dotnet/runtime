@@ -10986,9 +10986,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &cfg->error);
-			CHECK_CFG_ERROR;
-			mono_class_init (klass);
+			klass = mini_get_class (method, read32 (ip + 1), generic_context);
+			CHECK_TYPELOAD (klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -11026,9 +11025,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_INST_NEW (cfg, ins, *ip);
 			--sp;
 			CHECK_OPSIZE (5);
-			klass = mono_class_get_and_inflate_typespec_checked (image, read32 (ip + 1), generic_context, &cfg->error);
-			CHECK_CFG_ERROR;
-			mono_class_init (klass);
+			klass = mini_get_class (method, read32 (ip + 1), generic_context);
+			CHECK_TYPELOAD (klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
 
@@ -12197,10 +12195,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 					val = mono_type_size (type, &ialign);
 				} else {
-					MonoClass *klass = mono_class_get_and_inflate_typespec_checked (image, token, generic_context, &cfg->error);
-					CHECK_CFG_ERROR;
+					MonoClass *klass = mini_get_class (method, token, generic_context);
+					CHECK_TYPELOAD (klass);
 
-					mono_class_init (klass);
 					val = mono_type_size (&klass->byval_arg, &ialign);
 
 					if (mini_is_gsharedvt_klass (cfg, klass))
