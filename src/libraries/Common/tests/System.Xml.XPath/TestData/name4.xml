@@ -1,0 +1,6 @@
+<doc xmlns:prefix1="http://prefix1.htm">
+	<prefix1:elem/>
+	<prefix1:elem  xmlns:prefix2="http://prefix2.htm">
+		<prefix2:elem/>
+	</prefix1:elem>
+</doc>
