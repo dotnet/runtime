@@ -188,10 +188,10 @@ extern LOCK_DECLARE (sgen_interruption_mutex);
 #endif
 
 #ifdef HEAVY_STATISTICS
-extern long long stat_objects_alloced_degraded;
-extern long long stat_bytes_alloced_degraded;
-extern long long stat_copy_object_called_major;
-extern long long stat_objects_copied_major;
+extern guint64 stat_objects_alloced_degraded;
+extern guint64 stat_bytes_alloced_degraded;
+extern guint64 stat_copy_object_called_major;
+extern guint64 stat_objects_copied_major;
 #endif
 
 #define SGEN_ASSERT(level, a, ...) do {	\

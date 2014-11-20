@@ -60,8 +60,8 @@ static int user_descriptors_next = 0;
 static void *all_ref_root_descrs [32];
 
 #ifdef HEAVY_STATISTICS
-static long long stat_scanned_count_per_descriptor [DESC_TYPE_MAX];
-static long long stat_copied_count_per_descriptor [DESC_TYPE_MAX];
+static guint64 stat_scanned_count_per_descriptor [DESC_TYPE_MAX];
+static guint64 stat_copied_count_per_descriptor [DESC_TYPE_MAX];
 #endif
 
 static int
@@ -363,21 +363,21 @@ void
 sgen_init_descriptors (void)
 {
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("# scanned RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
-	mono_counters_register ("# scanned SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
-	mono_counters_register ("# scanned COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
-	mono_counters_register ("# scanned VECTOR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
-	mono_counters_register ("# scanned LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
-	mono_counters_register ("# scanned COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
-	mono_counters_register ("# scanned COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
+	mono_counters_register ("# scanned RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
+	mono_counters_register ("# scanned SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
+	mono_counters_register ("# scanned COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
+	mono_counters_register ("# scanned VECTOR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
+	mono_counters_register ("# scanned LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
+	mono_counters_register ("# scanned COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
+	mono_counters_register ("# scanned COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_scanned_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
 
-	mono_counters_register ("# copied RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
-	mono_counters_register ("# copied SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
-	mono_counters_register ("# copied COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
-	mono_counters_register ("# copied VECTOR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
-	mono_counters_register ("# copied LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
-	mono_counters_register ("# copied COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
-	mono_counters_register ("# copied COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
+	mono_counters_register ("# copied RUN_LENGTH", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_RUN_LENGTH - 1]);
+	mono_counters_register ("# copied SMALL_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_SMALL_PTRFREE - 1]);
+	mono_counters_register ("# copied COMPLEX", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX - 1]);
+	mono_counters_register ("# copied VECTOR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_VECTOR - 1]);
+	mono_counters_register ("# copied LARGE_BITMAP", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_LARGE_BITMAP - 1]);
+	mono_counters_register ("# copied COMPLEX_ARR", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_ARR - 1]);
+	mono_counters_register ("# copied COMPLEX_PTRFREE", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_copied_count_per_descriptor [DESC_TYPE_COMPLEX_PTRFREE - 1]);
 #endif
 }
 

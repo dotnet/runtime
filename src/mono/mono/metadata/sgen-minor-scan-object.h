@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-extern long long stat_scan_object_called_nursery;
+extern guint64 stat_scan_object_called_nursery;
 
 #if defined(SGEN_SIMPLE_NURSERY)
 #define SERIAL_SCAN_OBJECT simple_nursery_serial_scan_object

@@ -172,20 +172,20 @@ static size_t num_major_sections = 0;
 /* one free block list for each block object size */
 static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
 
-static long long stat_major_blocks_alloced = 0;
-static long long stat_major_blocks_freed = 0;
-static long long stat_major_blocks_lazy_swept = 0;
-static long long stat_major_objects_evacuated = 0;
+static guint64 stat_major_blocks_alloced = 0;
+static guint64 stat_major_blocks_freed = 0;
+static guint64 stat_major_blocks_lazy_swept = 0;
+static guint64 stat_major_objects_evacuated = 0;
 
 #if SIZEOF_VOID_P != 8
-static long long stat_major_blocks_freed_ideal = 0;
-static long long stat_major_blocks_freed_less_ideal = 0;
-static long long stat_major_blocks_freed_individual = 0;
-static long long stat_major_blocks_alloced_less_ideal = 0;
+static guint64 stat_major_blocks_freed_ideal = 0;
+static guint64 stat_major_blocks_freed_less_ideal = 0;
+static guint64 stat_major_blocks_freed_individual = 0;
+static guint64 stat_major_blocks_alloced_less_ideal = 0;
 #endif
 
 #ifdef SGEN_COUNT_NUMBER_OF_MAJOR_OBJECTS_MARKED
-static long long num_major_objects_marked = 0;
+static guint64 num_major_objects_marked = 0;
 #define INC_NUM_MAJOR_OBJECTS_MARKED()	(++num_major_objects_marked)
 #else
 #define INC_NUM_MAJOR_OBJECTS_MARKED()
@@ -913,22 +913,22 @@ major_get_and_reset_num_major_objects_marked (void)
 }
 
 #ifdef HEAVY_STATISTICS
-static long long stat_optimized_copy;
-static long long stat_optimized_copy_nursery;
-static long long stat_optimized_copy_nursery_forwarded;
-static long long stat_optimized_copy_nursery_pinned;
-static long long stat_optimized_copy_major;
-static long long stat_optimized_copy_major_small_fast;
-static long long stat_optimized_copy_major_small_slow;
-static long long stat_optimized_copy_major_large;
-static long long stat_optimized_copy_major_forwarded;
-static long long stat_optimized_copy_major_small_evacuate;
-static long long stat_optimized_major_scan;
-static long long stat_optimized_major_scan_no_refs;
+static guint64 stat_optimized_copy;
+static guint64 stat_optimized_copy_nursery;
+static guint64 stat_optimized_copy_nursery_forwarded;
+static guint64 stat_optimized_copy_nursery_pinned;
+static guint64 stat_optimized_copy_major;
+static guint64 stat_optimized_copy_major_small_fast;
+static guint64 stat_optimized_copy_major_small_slow;
+static guint64 stat_optimized_copy_major_large;
+static guint64 stat_optimized_copy_major_forwarded;
+static guint64 stat_optimized_copy_major_small_evacuate;
+static guint64 stat_optimized_major_scan;
+static guint64 stat_optimized_major_scan_no_refs;
 
-static long long stat_drain_prefetch_fills;
-static long long stat_drain_prefetch_fill_failures;
-static long long stat_drain_loops;
+static guint64 stat_drain_prefetch_fills;
+static guint64 stat_drain_prefetch_fill_failures;
+static guint64 stat_drain_loops;
 #endif
 
 static void major_scan_object_with_evacuation (char *start, mword desc, SgenGrayQueue *queue);
@@ -1642,10 +1642,10 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 }
 
 #ifdef HEAVY_STATISTICS
-extern long long marked_cards;
-extern long long scanned_cards;
-extern long long scanned_objects;
-extern long long remarked_cards;
+extern guint64 marked_cards;
+extern guint64 scanned_cards;
+extern guint64 scanned_objects;
+extern guint64 remarked_cards;
 #endif
 
 #define CARD_WORDS_PER_BLOCK (CARDS_PER_BLOCK / SIZEOF_VOID_P)
@@ -1963,15 +1963,15 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES * 8; ++i)
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
 
-	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced);
-	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed);
-	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_lazy_swept);
-	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_objects_evacuated);
+	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced);
+	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed);
+	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_lazy_swept);
+	mono_counters_register ("# major objects evacuated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_objects_evacuated);
 #if SIZEOF_VOID_P != 8
-	mono_counters_register ("# major blocks freed ideally", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed_ideal);
-	mono_counters_register ("# major blocks freed less ideally", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed_less_ideal);
-	mono_counters_register ("# major blocks freed individually", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_freed_individual);
-	mono_counters_register ("# major blocks allocated less ideally", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_major_blocks_alloced_less_ideal);
+	mono_counters_register ("# major blocks freed ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_ideal);
+	mono_counters_register ("# major blocks freed less ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_less_ideal);
+	mono_counters_register ("# major blocks freed individually", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed_individual);
+	mono_counters_register ("# major blocks allocated less ideally", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced_less_ideal);
 #endif
 
 	collector->section_size = MAJOR_SECTION_SIZE;
@@ -2049,20 +2049,20 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		collector->drain_gray_stack = drain_gray_stack;
 
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("Optimized copy", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy);
-	mono_counters_register ("Optimized copy nursery", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery);
-	mono_counters_register ("Optimized copy nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery_forwarded);
-	mono_counters_register ("Optimized copy nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_nursery_pinned);
-	mono_counters_register ("Optimized copy major", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major);
-	mono_counters_register ("Optimized copy major small fast", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_fast);
-	mono_counters_register ("Optimized copy major small slow", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_small_slow);
-	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_copy_major_large);
-	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan);
-	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_optimized_major_scan_no_refs);
+	mono_counters_register ("Optimized copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy);
+	mono_counters_register ("Optimized copy nursery", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_nursery);
+	mono_counters_register ("Optimized copy nursery forwarded", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_nursery_forwarded);
+	mono_counters_register ("Optimized copy nursery pinned", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_nursery_pinned);
+	mono_counters_register ("Optimized copy major", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major);
+	mono_counters_register ("Optimized copy major small fast", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_small_fast);
+	mono_counters_register ("Optimized copy major small slow", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_small_slow);
+	mono_counters_register ("Optimized copy major large", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy_major_large);
+	mono_counters_register ("Optimized major scan", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_major_scan);
+	mono_counters_register ("Optimized major scan no refs", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_major_scan_no_refs);
 
-	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_loops);
-	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fills);
-	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_drain_prefetch_fill_failures);
+	mono_counters_register ("Gray stack drain loops", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_loops);
+	mono_counters_register ("Gray stack prefetch fills", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fills);
+	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fill_failures);
 #endif
 #endif
 

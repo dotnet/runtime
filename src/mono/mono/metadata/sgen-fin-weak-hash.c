@@ -422,12 +422,12 @@ process_stage_entries (int num_entries, volatile gint32 *next_entry, StageEntry 
 }
 
 #ifdef HEAVY_STATISTICS
-static long long stat_overflow_abort = 0;
-static long long stat_wait_for_processing = 0;
-static long long stat_increment_other_thread = 0;
-static long long stat_index_decremented = 0;
-static long long stat_entry_invalidated = 0;
-static long long stat_success = 0;
+static guint64 stat_overflow_abort = 0;
+static guint64 stat_wait_for_processing = 0;
+static guint64 stat_increment_other_thread = 0;
+static guint64 stat_index_decremented = 0;
+static guint64 stat_entry_invalidated = 0;
+static guint64 stat_success = 0;
 #endif
 
 static int
@@ -905,12 +905,12 @@ void
 sgen_init_fin_weak_hash (void)
 {
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("FinWeak Successes", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_success);
-	mono_counters_register ("FinWeak Overflow aborts", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_overflow_abort);
-	mono_counters_register ("FinWeak Wait for processing", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_wait_for_processing);
-	mono_counters_register ("FinWeak Increment other thread", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_increment_other_thread);
-	mono_counters_register ("FinWeak Index decremented", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_index_decremented);
-	mono_counters_register ("FinWeak Entry invalidated", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_entry_invalidated);
+	mono_counters_register ("FinWeak Successes", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_success);
+	mono_counters_register ("FinWeak Overflow aborts", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_overflow_abort);
+	mono_counters_register ("FinWeak Wait for processing", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wait_for_processing);
+	mono_counters_register ("FinWeak Increment other thread", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_increment_other_thread);
+	mono_counters_register ("FinWeak Index decremented", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_index_decremented);
+	mono_counters_register ("FinWeak Entry invalidated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_entry_invalidated);
 #endif
 }
 

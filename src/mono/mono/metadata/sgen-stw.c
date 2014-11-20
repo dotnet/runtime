@@ -201,8 +201,8 @@ count_cards (long long *major_total, long long *major_marked, long long *los_tot
 static TV_DECLARE (stop_world_time);
 static unsigned long max_pause_usec = 0;
 
-static long long time_stop_world;
-static long long time_restart_world;
+static guint64 time_stop_world;
+static guint64 time_restart_world;
 
 /* LOCKING: assumes the GC lock is held */
 int
@@ -327,8 +327,8 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 void
 sgen_init_stw (void)
 {
-	mono_counters_register ("World stop", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_stop_world);
-	mono_counters_register ("World restart", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &time_restart_world);
+	mono_counters_register ("World stop", MONO_COUNTER_GC | MONO_COUNTER_ULONG | MONO_COUNTER_TIME, &time_stop_world);
+	mono_counters_register ("World restart", MONO_COUNTER_GC | MONO_COUNTER_ULONG | MONO_COUNTER_TIME, &time_restart_world);
 }
 
 #endif

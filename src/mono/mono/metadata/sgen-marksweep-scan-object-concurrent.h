@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-extern long long stat_scan_object_called_major;
+extern guint64 stat_scan_object_called_major;
 
 /*
  * FIXME: We use the same scanning function in the concurrent collector whether we scan

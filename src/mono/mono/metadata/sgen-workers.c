@@ -73,10 +73,10 @@ static LOCK_DECLARE (workers_job_queue_mutex);
 static int workers_num_jobs_enqueued = 0;
 static volatile int workers_num_jobs_finished = 0;
 
-static long long stat_workers_stolen_from_self_lock;
-static long long stat_workers_stolen_from_self_no_lock;
-static long long stat_workers_stolen_from_others;
-static long long stat_workers_num_waited;
+static guint64 stat_workers_stolen_from_self_lock;
+static guint64 stat_workers_stolen_from_self_no_lock;
+static guint64 stat_workers_stolen_from_others;
+static guint64 stat_workers_num_waited;
 
 static gboolean
 set_state (State old_state, State new_state)
@@ -600,10 +600,10 @@ sgen_workers_init (int num_workers)
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_JOB_QUEUE_ENTRY, sizeof (JobQueueEntry));
 
-	mono_counters_register ("Stolen from self lock", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self_lock);
-	mono_counters_register ("Stolen from self no lock", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_self_no_lock);
-	mono_counters_register ("Stolen from others", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_stolen_from_others);
-	mono_counters_register ("# workers waited", MONO_COUNTER_GC | MONO_COUNTER_LONG, &stat_workers_num_waited);
+	mono_counters_register ("Stolen from self lock", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_stolen_from_self_lock);
+	mono_counters_register ("Stolen from self no lock", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_stolen_from_self_no_lock);
+	mono_counters_register ("Stolen from others", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_stolen_from_others);
+	mono_counters_register ("# workers waited", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_num_waited);
 }
 
 /* only the GC thread is allowed to start and join workers */

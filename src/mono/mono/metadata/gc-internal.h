@@ -16,11 +16,11 @@
 #include <mono/utils/gc_wrapper.h>
 
 typedef struct {
-	int minor_gc_count;
-	int major_gc_count;
-	long long minor_gc_time;
-	long long major_gc_time;
-	long long major_gc_time_concurrent;
+	guint minor_gc_count;
+	guint major_gc_count;
+	guint64 minor_gc_time;
+	guint64 major_gc_time;
+	guint64 major_gc_time_concurrent;
 } GCStats;
 
 #define mono_domain_finalizers_lock(domain) mono_mutex_lock (&(domain)->finalizable_objects_hash_lock);
