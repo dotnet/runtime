@@ -395,6 +395,9 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 	if (mono_thread_info_get_small_id () == -1)
 		return; //an non-attached thread got the signal
 
+	if (!mono_domain_get () || !mono_native_tls_get_value (mono_jit_tls_id))
+		return; //thread in the process of dettaching
+
 	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
 	/* If we can't consume a profiling request it means we're the initiator. */
