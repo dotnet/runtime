@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Validation;
 
@@ -105,20 +106,34 @@ namespace System.Collections.Immutable
         /// <param name="caller">The renter of the object.</param>
         /// <returns>The rented object.</returns>
         /// <exception cref="ObjectDisposedException">Thrown if <paramref name="caller"/> is no longer the renter of the value.</exception>
-        internal T Use<TCaller>(TCaller caller)
-            where TCaller : ISecurePooledObjectUser
+        internal T Use<TCaller>(ref TCaller caller)
+            where TCaller : struct, ISecurePooledObjectUser
         {
-            this.ThrowDisposedIfNotOwned(caller);
+            if (!IsOwned(ref caller))
+                Requires.FailObjectDisposed(caller);
             return this.value;
         }
 
-        internal void ThrowDisposedIfNotOwned<TCaller>(TCaller caller)
-            where TCaller : ISecurePooledObjectUser
+        internal bool TryUse<TCaller>(ref TCaller caller, out T value)
+            where TCaller : struct, ISecurePooledObjectUser
         {
-            if (caller.PoolUserId != this.owner)
+            if (IsOwned(ref caller))
             {
-                throw new ObjectDisposedException(caller.GetType().FullName);
+                value = this.value;
+                return true;
             }
+            else
+            {
+                value = default(T);
+                return false;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsOwned<TCaller>(ref TCaller caller)
+            where TCaller : struct, ISecurePooledObjectUser
+        {
+            return caller.PoolUserId == this.owner;
         }
     }
 }

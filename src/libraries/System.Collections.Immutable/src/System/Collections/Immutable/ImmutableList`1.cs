@@ -1489,7 +1489,8 @@ namespace System.Collections.Immutable
             /// <remarks>
             /// We utilize this resource pool to make "allocation free" enumeration achievable.
             /// </remarks>
-            private static readonly SecureObjectPool<Stack<RefAsValueType<IBinaryTree<T>>>, Enumerator> EnumeratingStacks = new SecureObjectPool<Stack<RefAsValueType<IBinaryTree<T>>>, Enumerator>();
+            private static readonly SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator> EnumeratingStacks = 
+                new SecureObjectPool<Stack<RefAsValueType<Node>>, Enumerator>();
 
             /// <summary>
             /// The builder being enumerated, if applicable.
@@ -1525,17 +1526,17 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The set being enumerated.
             /// </summary>
-            private IBinaryTree<T> root;
+            private Node root;
 
             /// <summary>
             /// The stack to use for enumerating the binary tree.
             /// </summary>
-            private SecurePooledObject<Stack<RefAsValueType<IBinaryTree<T>>>> stack;
+            private SecurePooledObject<Stack<RefAsValueType<Node>>> stack;
 
             /// <summary>
             /// The node currently selected.
             /// </summary>
-            private IBinaryTree<T> current;
+            private Node current;
 
             /// <summary>
             /// The version of the builder (when applicable) that is being enumerated.
@@ -1550,7 +1551,7 @@ namespace System.Collections.Immutable
             /// <param name="startIndex">The index of the first element to enumerate.</param>
             /// <param name="count">The number of elements in this collection.</param>
             /// <param name="reversed"><c>true</c> if the list should be enumerated in reverse order.</param>
-            internal Enumerator(IBinaryTree<T> root, Builder builder = null, int startIndex = -1, int count = -1, bool reversed = false)
+            internal Enumerator(Node root, Builder builder = null, int startIndex = -1, int count = -1, bool reversed = false)
             {
                 Requires.NotNull(root, "root");
                 Requires.Range(startIndex >= -1, "startIndex");
@@ -1572,11 +1573,11 @@ namespace System.Collections.Immutable
                 {
                     if (!EnumeratingStacks.TryTake(this, out this.stack))
                     {
-                        this.stack = EnumeratingStacks.PrepNew(this, new Stack<RefAsValueType<IBinaryTree<T>>>(root.Height));
+                        this.stack = EnumeratingStacks.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
                     }
-                }
 
-                this.Reset();
+                    this.ResetStack();
+                }
             }
 
             /// <inheritdoc/>
@@ -1617,10 +1618,10 @@ namespace System.Collections.Immutable
             {
                 this.root = null;
                 this.current = null;
-                if (this.stack != null && this.stack.Owner == this.poolUserId)
+                Stack<RefAsValueType<Node>> stack;
+                if (this.stack != null && this.stack.TryUse(ref this, out stack))
                 {
-                    var stack = this.stack.Use(this);
-                    stack.Clear();
+                    stack.ClearFastWhenEmpty();
                     EnumeratingStacks.TryAdd(this, this.stack);
                 }
 
@@ -1638,10 +1639,10 @@ namespace System.Collections.Immutable
 
                 if (this.stack != null)
                 {
-                    var stack = this.stack.Use(this);
+                    var stack = this.stack.Use(ref this);
                     if (this.remainingCount > 0 && stack.Count > 0)
                     {
-                        IBinaryTree<T> n = stack.Pop().Value;
+                        Node n = stack.Pop().Value;
                         this.current = n;
                         this.PushNext(this.NextBranch(n));
                         this.remainingCount--;
@@ -1664,36 +1665,42 @@ namespace System.Collections.Immutable
                 this.remainingCount = this.count;
                 if (this.stack != null)
                 {
-                    var stack = this.stack.Use(this);
-                    stack.Clear();
+                    this.ResetStack();
+                }
+            }
 
-                    var node = this.root;
-                    var skipNodes = this.reversed ? this.root.Count - this.startIndex - 1 : this.startIndex;
-                    while (!node.IsEmpty && skipNodes != this.PreviousBranch(node).Count)
-                    {
-                        if (skipNodes < this.PreviousBranch(node).Count)
-                        {
-                            stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
-                            node = this.PreviousBranch(node);
-                        }
-                        else
-                        {
-                            skipNodes -= this.PreviousBranch(node).Count + 1;
-                            node = this.NextBranch(node);
-                        }
-                    }
+            /// <summary>Resets the stack used for enumeration.</summary>
+            private void ResetStack()
+            {
+                var stack = this.stack.Use(ref this);
+                stack.ClearFastWhenEmpty();
 
-                    if (!node.IsEmpty)
+                var node = this.root;
+                var skipNodes = this.reversed ? this.root.Count - this.startIndex - 1 : this.startIndex;
+                while (!node.IsEmpty && skipNodes != this.PreviousBranch(node).Count)
+                {
+                    if (skipNodes < this.PreviousBranch(node).Count)
                     {
-                        stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
+                        stack.Push(new RefAsValueType<Node>(node));
+                        node = this.PreviousBranch(node);
                     }
+                    else
+                    {
+                        skipNodes -= this.PreviousBranch(node).Count + 1;
+                        node = this.NextBranch(node);
+                    }
+                }
+
+                if (!node.IsEmpty)
+                {
+                    stack.Push(new RefAsValueType<Node>(node));
                 }
             }
 
             /// <summary>
             /// Obtains the right branch of the given node (or the left, if walking in reverse).
             /// </summary>
-            private IBinaryTree<T> NextBranch(IBinaryTree<T> node)
+            private Node NextBranch(Node node)
             {
                 return this.reversed ? node.Left : node.Right;
             }
@@ -1701,7 +1708,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Obtains the left branch of the given node (or the right, if walking in reverse).
             /// </summary>
-            private IBinaryTree<T> PreviousBranch(IBinaryTree<T> node)
+            private Node PreviousBranch(Node node)
             {
                 return this.reversed ? node.Right : node.Left;
             }
@@ -1714,19 +1721,15 @@ namespace System.Collections.Immutable
                 Contract.Ensures(this.root != null);
                 Contract.EnsuresOnThrow<ObjectDisposedException>(this.root == null);
 
-                if (this.root == null)
-                {
-                    throw new ObjectDisposedException(this.GetType().FullName);
-                }
-
                 // Since this is a struct, copies might not have been marked as disposed.
                 // But the stack we share across those copies would know.
                 // This trick only works when we have a non-null stack.
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
-                if (this.stack != null)
+
+                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
                 {
-                    this.stack.ThrowDisposedIfNotOwned(this);
+                    Validation.Requires.FailObjectDisposed(this);
                 }
             }
 
@@ -1746,15 +1749,15 @@ namespace System.Collections.Immutable
             /// Pushes this node and all its Left descendents onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
-            private void PushNext(IBinaryTree<T> node)
+            private void PushNext(Node node)
             {
                 Requires.NotNull(node, "node");
                 if (!node.IsEmpty)
                 {
-                    var stack = this.stack.Use(this);
+                    var stack = this.stack.Use(ref this);
                     while (!node.IsEmpty)
                     {
-                        stack.Push(new RefAsValueType<IBinaryTree<T>>(node));
+                        stack.Push(new RefAsValueType<Node>(node));
                         node = this.PreviousBranch(node);
                     }
                 }
@@ -1863,10 +1866,15 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the height of the tree beneath this node.
             /// </summary>
-            int IBinaryTree.Height
-            {
-                get { return this.height; }
+            public int Height 
+            { 
+                get { return this.height; } 
             }
+
+            /// <summary>
+            /// Gets the left branch of this node.
+            /// </summary>
+            public Node Left { get { return this.left; } }
 
             /// <summary>
             /// Gets the left branch of this node.
@@ -1875,6 +1883,11 @@ namespace System.Collections.Immutable
             {
                 get { return this.left; }
             }
+
+            /// <summary>
+            /// Gets the right branch of this node.
+            /// </summary>
+            public Node Right { get { return this.right; } }
 
             /// <summary>
             /// Gets the right branch of this node.
@@ -1903,9 +1916,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the value represented by the current node.
             /// </summary>
-            T IBinaryTree<T>.Value
-            {
-                get { return this.key; }
+            public T Value 
+            { 
+                get { return this.key; } 
             }
 
             /// <summary>
