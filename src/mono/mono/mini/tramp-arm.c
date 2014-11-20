@@ -499,7 +499,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	guint8 *code, *buf, *tramp;
 	gpointer *constants;
 #ifndef USE_JUMP_TABLES
-	guint32 short_branch;
+	guint32 short_branch = FALSE;
 #endif
 	guint32 size = SPEC_TRAMP_SIZE;
 
