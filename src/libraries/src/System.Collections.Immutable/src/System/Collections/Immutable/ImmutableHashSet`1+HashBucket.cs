@@ -172,7 +172,7 @@ namespace System.Collections.Immutable
                     {
                         // We can promote any element from the list into the first position, but it's most efficient
                         // to remove the root node in the binary tree that implements the list.
-                        int indexOfRootNode = ((IBinaryTree<T>)this.additionalElements).Left.Count;
+                        int indexOfRootNode = this.additionalElements.Left.Count;
                         result = OperationResult.SizeChanged;
                         return new HashBucket(this.additionalElements.Key, this.additionalElements.RemoveAt(indexOfRootNode));
                     }
@@ -360,7 +360,7 @@ namespace System.Collections.Immutable
                 {
                     if (this.disposed)
                     {
-                        throw new ObjectDisposedException(this.GetType().FullName);
+                        Validation.Requires.FailObjectDisposed(this);
                     }
                 }
             }
