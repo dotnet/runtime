@@ -5431,7 +5431,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	*/
 
 //#define DEBUGSSA "logic_run"
-#define DEBUGSSA_CLASS "Tests"
+//#define DEBUGSSA_CLASS "Tests"
 #ifdef DEBUGSSA
 
 	if (!cfg->disable_ssa) {

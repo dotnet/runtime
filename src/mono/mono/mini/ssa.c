@@ -20,7 +20,6 @@
 #include <alloca.h>
 #endif
 
-#define USE_ORIGINAL_VARS
 #define CREATE_PRUNED_SSA
 
 //#define DEBUG_SSA 1

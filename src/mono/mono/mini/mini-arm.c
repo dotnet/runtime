@@ -177,30 +177,7 @@ int mono_exc_esp_offset = 0;
 #define LDR_PC_VAL ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 26) | (0 << 22) | (1 << 20) | (15 << 12))
 #define IS_LDR_PC(val) (((val) & LDR_MASK) == LDR_PC_VAL)
 
-#define ADD_LR_PC_4 ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 25) | (1 << 23) | (ARMREG_PC << 16) | (ARMREG_LR << 12) | 4)
-#define MOV_LR_PC ((ARMCOND_AL << ARMCOND_SHIFT) | (1 << 24) | (0xa << 20) |  (ARMREG_LR << 12) | ARMREG_PC)
 //#define DEBUG_IMT 0
- 
-/* A variant of ARM_LDR_IMM which can handle large offsets */
-#define ARM_LDR_IMM_GENERAL(code, dreg, basereg, offset, scratch_reg) do { \
-	if (arm_is_imm12 ((offset))) { \
-		ARM_LDR_IMM (code, (dreg), (basereg), (offset));	\
-	} else {												\
-		g_assert ((scratch_reg) != (basereg));					   \
-		code = mono_arm_emit_load_imm (code, (scratch_reg), (offset));	\
-		ARM_LDR_REG_REG (code, (dreg), (basereg), (scratch_reg));		\
-	}																	\
-	} while (0)
-
-#define ARM_STR_IMM_GENERAL(code, dreg, basereg, offset, scratch_reg) do {	\
-	if (arm_is_imm12 ((offset))) { \
-		ARM_STR_IMM (code, (dreg), (basereg), (offset));	\
-	} else {												\
-		g_assert ((scratch_reg) != (basereg));					   \
-		code = mono_arm_emit_load_imm (code, (scratch_reg), (offset));	\
-		ARM_STR_REG_REG (code, (dreg), (basereg), (scratch_reg));		\
-	}																	\
-	} while (0)
 
 #ifndef DISABLE_JIT
 static void mono_arch_compute_omit_fp (MonoCompile *cfg);
@@ -1115,8 +1092,6 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
 	return vars;
 }
-
-#define USE_EXTRA_TEMPS 0
 
 GList *
 mono_arch_get_global_int_regs (MonoCompile *cfg)

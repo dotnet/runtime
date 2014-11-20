@@ -33,8 +33,6 @@
 #define S390_THROWSTACK_ACCREGS		(S390_THROWSTACK_FLTREGS+(16*sizeof(gdouble)))
 #define S390_THROWSTACK_SIZE		(S390_THROWSTACK_ACCREGS+(16*sizeof(gint32)))
 
-#define S390_REG_SAVE_R13		(S390_REG_SAVE_OFFSET+(7*sizeof(gulong)))
-
 #define SZ_THROW	384
 
 #define setup_context(ctx)

@@ -113,10 +113,6 @@
 #define printf g_print
 #endif
 
-#if !defined(HAVE_KW_THREAD) || !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR)
-#define MONO_JIT_TLS_DATA_HAS_LMF
-#endif
-
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
 /* Constants used to encode different types of methods in AOT */
@@ -352,15 +348,9 @@ typedef struct {
 #define mono_bitset_foreach_bit(set,b,n) \
 	for (b = 0; b < n; b++)\
 		if (mono_bitset_test_fast(set,b))
-#define mono_bitset_foreach_bit_rev(set,b,n) \
-	for (b = n - 1; b >= 0; b--)\
-		if (mono_bitset_test_fast(set,b))
 #else
 #define mono_bitset_foreach_bit(set,b,n) \
 	for (b = mono_bitset_find_start (set); b < n && b >= 0; b = mono_bitset_find_first (set, b))
-#define mono_bitset_foreach_bit_rev(set,b,n) \
-	for (b = mono_bitset_find_last (set, n - 1); b >= 0; b = b ? mono_bitset_find_last (set, b) : -1)
- 
 #endif
 
 /*
@@ -395,11 +385,6 @@ enum {
 		(dest)->inst.dreg = -1;					\
 		MONO_INST_NULLIFY_SREGS (&(dest)->inst);		\
         (dest)->inst.cil_code = (cfg)->ip;  \
-	} while (0)
-
-#define MONO_INST_NEW_CALL_ARG(cfg,dest,op) do {	\
-		(dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoCallArgParm));	\
-		(dest)->ins.opcode = (op);	\
 	} while (0)
 
 #define MONO_ADD_INS(b,inst) do {	\
@@ -2757,8 +2742,6 @@ enum {
 	 */
 	SIMD_VERSION_INDEX_END = 6 
 };
-
-#define MASK(x) (1 << x)
 
 enum {
 	SIMD_COMP_EQ,

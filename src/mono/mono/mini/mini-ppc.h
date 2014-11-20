@@ -93,7 +93,6 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN 1
 #define MONO_ARCH_EMULATE_FREM 1
-#define MONO_ARCH_BIGMUL_INTRINS 1
 #define MONO_ARCH_GC_MAPS_SUPPORTED 1
 
 /* Parameters used by the register allocator */
@@ -147,7 +146,6 @@ typedef struct MonoCompileArch {
 #define PPC_MINIMAL_PARAM_AREA_SIZE 64
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1
-#define PPC_SMALL_RET_STRUCT_IN_REG 0
 #define PPC_THREAD_PTR_REG ppc_r13
 #else
 #define PPC_RET_ADDR_OFFSET 4
@@ -156,7 +154,6 @@ typedef struct MonoCompileArch {
 #define PPC_MINIMAL_PARAM_AREA_SIZE 0
 #define PPC_LAST_FPARG_REG ppc_f8
 #define PPC_PASS_STRUCTS_BY_VALUE 0
-#define PPC_SMALL_RET_STRUCT_IN_REG 1
 #define PPC_THREAD_PTR_REG ppc_r2
 #endif
 #define PPC_FIRST_ARG_REG ppc_r3
@@ -194,7 +191,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
-#define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
 
 #ifdef MONO_CROSS_COMPILE
 

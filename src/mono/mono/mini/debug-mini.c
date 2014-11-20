@@ -16,7 +16,6 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/threads-types.h>
 
-#define _IN_THE_MONO_DEBUGGER
 #include <mono/metadata/mono-debug-debugger.h>
 
 #include <mono/utils/valgrind.h>

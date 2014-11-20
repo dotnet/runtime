@@ -57,8 +57,6 @@
 
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-#define MONO_ARCH_RETREG1 sparc_i0
-
 #ifdef SPARCV9
 #define MONO_SPARC_STACK_BIAS 2047
 #else
