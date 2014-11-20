@@ -1,0 +1,16 @@
+<?PI1 ?>
+<?PI2 ?>
+<Doc>
+ <!-- Doc Comment -->
+ <Title>XPath test</Title>
+ <Chap>
+   <!-- Chap Comment -->
+   <Title>XPath test</Title>
+   <Para>First paragraph <Para> Nested <Origin/> Paragraph </Para> End of first paragraph </Para>
+   <Para>Second paragraph </Para>
+ </Chap>
+ <Chap>
+   <Title>XPath test</Title>
+   Direct content
+ </Chap>
+</Doc>

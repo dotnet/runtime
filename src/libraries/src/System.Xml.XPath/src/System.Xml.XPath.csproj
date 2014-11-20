@@ -40,6 +40,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <CommonPath>..\..\Common\src</CommonPath>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Diagnostics.Debug" />
@@ -55,25 +58,25 @@
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\System.Xml.Common\System\Xml\Base64Decoder.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\Base64Encoder.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlRawWriterBase64Encoder.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\BinHexDecoder.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\Bits.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\ValidateNames.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlCharType.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlConvertEx.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\ExceptionType.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlReaderExtensions.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlWriterExtensions.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\IncrementalReadDecoders.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\ReadContentAsBinaryHelper.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlRawWriter.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlStandalone.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XmlConst.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\Schema\XmlUntypedConverter.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\Schema\XsdDateTime.cs" />
-    <Compile Include="..\System.Xml.Common\System\Xml\XPathNavigatorEx.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Base64Decoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriterBase64Encoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\BinHexDecoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Bits.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlReaderExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlWriterExtensions.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\IncrementalReadDecoders.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ReadContentAsBinaryHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlRawWriter.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlStandalone.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Schema\XmlUntypedConverter.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Schema\XsdDateTime.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XPathNavigatorEx.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Resources\Strings.Designer.cs">
@@ -169,9 +172,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\System.Xml.Common\System\SR.cs" />
-    <Compile Include="..\System.Xml.Common\System\ArrayT.cs" />
-    <Compile Include="..\System.Xml.Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\SR.cs" />
+    <Compile Include="$(CommonPath)\System\ArrayT.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
