@@ -1575,7 +1575,8 @@ namespace System.Collections.Immutable
                     {
                         this.stack = EnumeratingStacks.PrepNew(this, new Stack<RefAsValueType<Node>>(root.Height));
                     }
-                    ResetStack();
+
+                    this.ResetStack();
                 }
             }
 
@@ -1617,10 +1618,10 @@ namespace System.Collections.Immutable
             {
                 this.root = null;
                 this.current = null;
-                Stack<RefAsValueType<ImmutableList<T>.Node>> stack;
+                Stack<RefAsValueType<Node>> stack;
                 if (this.stack != null && this.stack.TryUse(ref this, out stack))
                 {
-                    if (stack.Count > 0) stack.Clear();
+                    stack.ClearFastWhenEmpty();
                     EnumeratingStacks.TryAdd(this, this.stack);
                 }
 
@@ -1664,14 +1665,15 @@ namespace System.Collections.Immutable
                 this.remainingCount = this.count;
                 if (this.stack != null)
                 {
-                    ResetStack();
+                    this.ResetStack();
                 }
             }
 
+            /// <summary>Resets the stack used for enumeration.</summary>
             private void ResetStack()
             {
                 var stack = this.stack.Use(ref this);
-                if (stack.Count > 0) stack.Clear();
+                stack.ClearFastWhenEmpty();
 
                 var node = this.root;
                 var skipNodes = this.reversed ? this.root.Count - this.startIndex - 1 : this.startIndex;
@@ -1719,17 +1721,16 @@ namespace System.Collections.Immutable
                 Contract.Ensures(this.root != null);
                 Contract.EnsuresOnThrow<ObjectDisposedException>(this.root == null);
 
-                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
-                {
-                    Validation.Requires.FailObjectDisposed(ref this);
-                }
-
-                // Regarding the above stack checks:
                 // Since this is a struct, copies might not have been marked as disposed.
                 // But the stack we share across those copies would know.
                 // This trick only works when we have a non-null stack.
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
+
+                if (this.root == null || (this.stack != null && !this.stack.IsOwned(ref this)))
+                {
+                    Validation.Requires.FailObjectDisposed(this);
+                }
             }
 
             /// <summary>
@@ -1915,14 +1916,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the value represented by the current node.
             /// </summary>
-            public T Value { get { return this.key; } }
-
-            /// <summary>
-            /// Gets the value represented by the current node.
-            /// </summary>
-            T IBinaryTree<T>.Value
-            {
-                get { return this.key; }
+            public T Value 
+            { 
+                get { return this.key; } 
             }
 
             /// <summary>

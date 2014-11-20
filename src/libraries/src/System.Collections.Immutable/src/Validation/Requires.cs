@@ -72,6 +72,7 @@ namespace Validation
         [DebuggerStepThrough]
         private static void FailArgumentNullException(string parameterName)
         {
+            // Separating out this throwing operation helps with inlining of the caller
             throw new ArgumentNullException(parameterName);
         }
 
@@ -135,20 +136,9 @@ namespace Validation
         /// <param name="disposed">The disposed object.</param>
         [DebuggerStepThrough]
         public static void FailObjectDisposed<TDisposed>(TDisposed disposed)
-            where TDisposed : class
         {
-            throw new ObjectDisposedException(disposed.GetType().FullName);
-        }
-
-        /// <summary>
-        /// Throws an ObjectDisposedException for a disposed object.
-        /// </summary>
-        /// <typeparam name="TDisposed">Specifies the type of the disposed object.</typeparam>
-        /// <param name="disposed">The disposed object.</param>
-        [DebuggerStepThrough]
-        public static void FailObjectDisposed<TDisposed>(ref TDisposed disposed) // overload exists for when TDisposed is struct we already have by ref
-            where TDisposed : struct
-        {
+            // separating out this throwing helps with inlining of the caller, especially
+            // due to the retrieval of the type's name
             throw new ObjectDisposedException(disposed.GetType().FullName);
         }
     }

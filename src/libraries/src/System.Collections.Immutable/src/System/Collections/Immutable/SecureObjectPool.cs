@@ -110,7 +110,7 @@ namespace System.Collections.Immutable
             where TCaller : struct, ISecurePooledObjectUser
         {
             if (!IsOwned(ref caller))
-                Requires.FailObjectDisposed(ref caller);
+                Requires.FailObjectDisposed(caller);
             return this.value;
         }
 
