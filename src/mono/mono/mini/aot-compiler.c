@@ -5386,6 +5386,15 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		encode_value (table->num_holes, p, &p);
 	}
 
+	if (jinfo->has_arch_eh_info) {
+		/*
+		 * In AOT mode, the code length is calculated from the address of the previous method,
+		 * which could include alignment padding, so calculating the start of the epilog as
+		 * code_len - epilog_size is correct any more. Save the real code len as a workaround.
+		 */
+		encode_value (jinfo->code_size, p, &p);
+	}
+
 	/* Exception table */
 	if (cfg->compile_llvm) {
 		/*

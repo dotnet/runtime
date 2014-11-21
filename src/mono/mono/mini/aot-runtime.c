@@ -2585,17 +2585,21 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	} else {
 		num_holes = try_holes_info_size = 0;
 	}
+
+	if (has_arch_eh_jit_info) {
+		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
+		arch_eh_jit_info_size = sizeof (MonoArchEHJitInfo);
+		/* Overwrite the original code_len which includes alignment padding */
+		code_len = decode_value (p, &p);
+	} else {
+		arch_eh_jit_info_size = 0;
+	}
+
 	/* Exception table */
 	if (has_clauses)
 		num_clauses = decode_value (p, &p);
 	else
 		num_clauses = 0;
-	if (has_arch_eh_jit_info) {
-		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
-		arch_eh_jit_info_size = sizeof (MonoArchEHJitInfo);
-	} else {
-		arch_eh_jit_info_size = 0;
-	}
 
 	if (from_llvm) {
 		MonoJitExceptionInfo *clauses;
