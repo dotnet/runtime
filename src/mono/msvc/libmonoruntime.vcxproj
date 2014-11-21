@@ -109,7 +109,9 @@
     <ClCompile Include="..\mono\metadata\sgen-os-win32.c" />
     <ClCompile Include="..\mono\metadata\sgen-pinning-stats.c" />
     <ClCompile Include="..\mono\metadata\sgen-pinning.c" />
+    <ClCompile Include="..\mono\metadata\sgen-pointer-queue.c" />
     <ClCompile Include="..\mono\metadata\sgen-protocol.c" />
+    <ClCompile Include="..\mono\metadata\sgen-qsort.c" />
     <ClCompile Include="..\mono\metadata\sgen-simple-nursery.c" />
     <ClCompile Include="..\mono\metadata\sgen-split-nursery.c" />
     <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c" />
