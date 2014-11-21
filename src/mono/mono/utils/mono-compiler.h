@@ -219,6 +219,20 @@
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 
+/*
+ * SSIZE_MAX is not defined in MSVC, so define it here.
+ *
+ * These values come from MinGW64, and are public domain.
+ *
+ */
+#ifndef SSIZE_MAX
+#ifdef _WIN64
+#define SSIZE_MAX _I64_MAX
+#else
+#define SSIZE_MAX INT_MAX
+#endif
+#endif
+
 #endif /* _MSC_VER */
 
 #if !defined(_MSC_VER) && !defined(PLATFORM_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
