@@ -862,7 +862,11 @@ namespace System.Collections.Immutable
             this.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0, "index");
             Requires.Range(count >= 0 && index + count <= this.Length, "count");
-            Requires.NotNull(comparer, "comparer");
+
+            if (comparer == null)
+            {
+                comparer = Comparer<T>.Default;
+            }
 
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)

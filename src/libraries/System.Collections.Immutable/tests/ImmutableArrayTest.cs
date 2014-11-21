@@ -387,7 +387,7 @@ namespace System.Collections.Immutable.Test
             IndexOfTests.LastIndexOfTest(
                 seq => ImmutableArray.CreateRange(seq),
                 (b, v) => b.LastIndexOf(v),
-                (b, v, eq) => b.LastIndexOf(v, eq), 
+                (b, v, eq) => b.LastIndexOf(v, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
@@ -976,13 +976,20 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void SortNullComparer()
+        {
+            var array = ImmutableArray.Create(2, 4, 1, 3);
+            Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort(null));
+            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array uneffected.
+        }
+
+        [Fact]
         public void SortRange()
         {
             var array = ImmutableArray.Create(2, 4, 1, 3);
             Assert.Throws<ArgumentOutOfRangeException>(() => array.Sort(-1, 2, Comparer<int>.Default));
             Assert.Throws<ArgumentOutOfRangeException>(() => array.Sort(1, 4, Comparer<int>.Default));
             Assert.Equal(new int[] { 2, 4, 1, 3 }, array.Sort(array.Length, 0, Comparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => array.Sort(1, 2, null));
             Assert.Equal(new[] { 2, 1, 4, 3 }, array.Sort(1, 2, Comparer<int>.Default));
         }
 
