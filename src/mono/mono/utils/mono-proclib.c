@@ -666,3 +666,13 @@ mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
 	return value;
 }
 
+int
+mono_atexit (void (*func)(void))
+{
+#ifdef PLATFORM_ANDROID
+	/* Some versions of android libc doesn't define atexit () */
+	return 0;
+#else
+	return atexit (func);
+#endif
+}

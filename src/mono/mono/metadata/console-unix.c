@@ -35,6 +35,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/utils/mono-signal-handler.h>
+#include <mono/utils/mono-proclib.h>
 
 /* On solaris, curses.h must come before both termios.h and term.h */
 #ifdef HAVE_CURSES_H
@@ -502,7 +503,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 		if (teardown != NULL)
 			teardown_str = mono_string_to_utf8 (teardown);
 
-		atexit (tty_teardown);
+		mono_atexit (tty_teardown);
 	}
 
 	return TRUE;

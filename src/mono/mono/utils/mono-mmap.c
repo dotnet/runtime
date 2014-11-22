@@ -645,7 +645,7 @@ mono_shared_area (void)
 	header->stats_start = sizeof (SAreaHeader);
 	header->stats_end = sizeof (SAreaHeader);
 
-	atexit (mono_shared_area_remove);
+	mono_atexit (mono_shared_area_remove);
 	return res;
 }
 

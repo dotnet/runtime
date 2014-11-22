@@ -42,6 +42,7 @@
 #include <mono/io-layer/process-private.h>
 
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-proclib.h>
 #undef DEBUG_REFS
 
 #if 0
@@ -286,12 +287,12 @@ wapi_init (void)
 
 	wapi_processes_init ();
 
-	/* Using g_atexit here instead of an explicit function call in
+	/* Using atexit here instead of an explicit function call in
 	 * a cleanup routine lets us cope when a third-party library
 	 * calls exit (eg if an X client loses the connection to its
 	 * server.)
 	 */
-	g_atexit (handle_cleanup);
+	mono_atexit (handle_cleanup);
 }
 
 void

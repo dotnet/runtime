@@ -176,7 +176,6 @@ typedef struct _GMemChunk GMemChunk;
 /*
  * Misc.
  */
-#define g_atexit(func)	((void) atexit (func))
 
 const gchar *    g_getenv(const gchar *variable);
 gboolean         g_setenv(const gchar *variable, const gchar *value, gboolean overwrite);
