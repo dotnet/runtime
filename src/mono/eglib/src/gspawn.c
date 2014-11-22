@@ -438,7 +438,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			}
 
 			if ((flags & G_SPAWN_LEAVE_DESCRIPTORS_OPEN) != 0) {
-				for (i = getdtablesize () - 1; i >= 3; i--)
+				for (i = g_getdtablesize () - 1; i >= 3; i--)
 					close (i);
 			}
 
