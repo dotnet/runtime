@@ -724,7 +724,11 @@ mono_runtime_setup_stat_profiler (void)
 pid_t
 mono_runtime_syscall_fork ()
 {
-#if defined(SYS_fork)
+#if defined(PLATFORM_ANDROID)
+	/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
+	g_assert_not_reached ();
+	return 0;
+#elif defined(SYS_fork)
 	return (pid_t) syscall (SYS_fork);
 #else
 	g_assert_not_reached ();
