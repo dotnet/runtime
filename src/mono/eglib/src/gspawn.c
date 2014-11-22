@@ -53,6 +53,10 @@
 #include <sys/wait.h>
 #endif
 
+#ifdef HAVE_SYS_RESOURCE_H
+#  include <sys/resource.h>
+#endif
+
 #ifdef G_OS_WIN32
 #include <io.h>
 #include <winsock2.h>
@@ -213,6 +217,23 @@ write_all (int fd, const void *vbuf, size_t n)
 	return nwritten;
 }
 
+#ifndef G_OS_WIN32
+static int
+g_getdtablesize (void)
+{
+#ifdef HAVE_GETRLIMIT
+	struct rlimit limit;
+	int res;
+
+	res = getrlimit (RLIMIT_NOFILE, &limit);
+	g_assert (res == 0);
+	return limit.rlim_cur;
+#else
+	return getdtablesize ();
+#endif
+}
+#endif
+
 gboolean
 g_spawn_command_line_sync (const gchar *command_line,
 				gchar **standard_output,
@@ -256,7 +277,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 			close (stderr_pipe [0]);
 			dup2 (stderr_pipe [1], STDERR_FILENO);
 		}
-		for (i = getdtablesize () - 1; i >= 3; i--)
+		for (i = g_getdtablesize () - 1; i >= 3; i--)
 			close (i);
 
 		/* G_SPAWN_SEARCH_PATH is always enabled for g_spawn_command_line_sync */
