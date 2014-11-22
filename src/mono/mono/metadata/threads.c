@@ -44,10 +44,16 @@
 
 #include <mono/metadata/gc-internal.h>
 
+#if defined(PLATFORM_ANDROID) && !defined(TARGET_ARM64)
+#define USE_TKILL_ON_ANDROID 1
+#endif
+
 #ifdef PLATFORM_ANDROID
 #include <errno.h>
 
+#ifdef USE_TKILL_ON_ANDROID
 extern int tkill (pid_t tid, int signal);
+#endif
 #endif
 
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
@@ -4476,7 +4482,7 @@ mono_thread_kill (MonoInternalThread *thread, int signal)
 #  ifdef PTHREAD_POINTER_ID
 	return pthread_kill ((gpointer)(gsize)(thread->tid), mono_thread_get_abort_signal ());
 #  else
-#    ifdef PLATFORM_ANDROID
+#    ifdef USE_TKILL_ON_ANDROID
 	if (thread->android_tid != 0) {
 		int  ret;
 		int  old_errno = errno;

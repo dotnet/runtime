@@ -19,7 +19,11 @@
 
 #include <errno.h>
 
-#if defined(PLATFORM_ANDROID)
+#if defined(PLATFORM_ANDROID) && !defined(TARGET_ARM64)
+#define USE_TKILL_ON_ANDROID 1
+#endif
+
+#ifdef USE_TKILL_ON_ANDROID
 extern int tkill (pid_t tid, int signal);
 #endif
 
@@ -267,7 +271,7 @@ mono_threads_core_clear_interruption (void)
 int
 mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {
-#if defined (PLATFORM_ANDROID)
+#ifdef USE_TKILL_ON_ANDROID
 	int result, old_errno = errno;
 	result = tkill (info->native_handle, signum);
 	if (result < 0) {
