@@ -3,6 +3,7 @@
 
 using Xunit;
 using System;
+using System.Globalization;
 using System.Xml;
 using System.Xml.XPath;
 
@@ -82,7 +83,7 @@ namespace XPathTests.Common
 
             var evaluated = xPathNavigator.Evaluate(xPathExpression);
 
-            return (T)Convert.ChangeType(evaluated, typeof(T));
+            return (T)Convert.ChangeType(evaluated, typeof(T), CultureInfo.InvariantCulture);
         }
 
         internal static void XPathStringTest(string xml, string testExpression, object expected, XmlNamespaceManager namespaceManager = null, string startingNodePath = null)
