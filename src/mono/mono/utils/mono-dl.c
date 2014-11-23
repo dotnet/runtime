@@ -326,7 +326,6 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	void *lib;
 	MonoDlFallbackHandler *dl_fallback = NULL;
 	int lflags = LL_SO_TRFLAGS (flags);
-	gboolean found = FALSE;
 
 	if (error_msg)
 		*error_msg = NULL;
@@ -338,20 +337,8 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		return NULL;
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
-#ifdef PLATFORM_ANDROID
-	/* android-ndk-r10c defines RTLD_DEFAULT as 0 on arm64... (Android Issue Tracker #80446) */
-	if (!name) {
-		lib = RTLD_DEFAULT;
-		found = TRUE;
-	} else {
-		lib = LL_SO_OPEN (name, lflags);
-		found = lib != NULL;
-	}
-#else
 	lib = LL_SO_OPEN (name, lflags);
-	found = lib != NULL;
-#endif
-	if (!found) {
+	if (!lib) {
 		GSList *node;
 		for (node = fallback_handlers; node != NULL; node = node->next){
 			MonoDlFallbackHandler *handler = (MonoDlFallbackHandler *) node->data;
@@ -367,9 +354,8 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 				break;
 			}
 		}
-		found = lib != NULL;
 	}
-	if (!found && !dl_fallback) {
+	if (!lib && !dl_fallback) {
 		char *lname;
 		char *llname;
 		const char *suff;
