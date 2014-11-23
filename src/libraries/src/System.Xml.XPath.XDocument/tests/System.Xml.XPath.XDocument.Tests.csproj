@@ -34,6 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Globalization" />
     <Reference Include="System.IO" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
