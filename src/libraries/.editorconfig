@@ -6,11 +6,12 @@ root = true
 
 # Default settings:
 # A newline ending every file
-# Use spaces as indentation
+# Use 2 spaces as indentation
 # Trim trailing whitespace
 [*]
 insert_final_newline = true
 indent_style = space
+indent_size = 2
 trim_trailing_whitespace = true
 
 [*.cs]
