@@ -974,7 +974,7 @@ namespace System.Xml.Linq
                             // Store the line info of the end element tag.
                             // Note that since we've got EndElement the current container must be an XElement
                             XElement e = c as XElement;
-                            Debug.Assert(e != null, "EndElement recieved but the current container is not an element.");
+                            Debug.Assert(e != null, "EndElement received but the current container is not an element.");
                             if (e != null && li != null && li.HasLineInfo())
                             {
                                 e.SetEndElementLineInfo(li.LineNumber, li.LinePosition);
