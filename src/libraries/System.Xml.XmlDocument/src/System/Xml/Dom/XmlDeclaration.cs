@@ -72,18 +72,20 @@ namespace System.Xml
         {
             get
             {
-                StringBuilder strb = new StringBuilder("version=\"" + Version + "\"");
+                StringBuilder strb = new StringBuilder("version=\"");
+                strb.Append(Version);
+                strb.Append('"');
                 if (Encoding.Length > 0)
                 {
                     strb.Append(" encoding=\"");
                     strb.Append(Encoding);
-                    strb.Append("\"");
+                    strb.Append('"');
                 }
                 if (Standalone.Length > 0)
                 {
                     strb.Append(" standalone=\"");
                     strb.Append(Standalone);
-                    strb.Append("\"");
+                    strb.Append('"');
                 }
                 return strb.ToString();
             }
