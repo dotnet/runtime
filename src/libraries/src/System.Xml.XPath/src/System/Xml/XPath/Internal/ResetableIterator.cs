@@ -35,7 +35,7 @@ namespace MS.Internal.Xml.XPath
             return true;
         }
 
-        // Contruct extension: CurrentPosition should return 0 if MoveNext() wasn't called after Reset()
+        // Construct extension: CurrentPosition should return 0 if MoveNext() wasn't called after Reset()
         // (behavior is not defined for XPathNodeIterator)
         public abstract override int CurrentPosition { get; }
     }

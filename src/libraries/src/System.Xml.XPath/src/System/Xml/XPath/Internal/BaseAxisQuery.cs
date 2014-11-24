@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.XPath
         {
             position = 0;
             currentNode = null; // After this current will not point to context node from Evaluate() call
-                                // But this is ok, becuase there is no public Reset() on XPathNodeIterator
+                                // But this is ok, because there is no public Reset() on XPathNodeIterator
             qyInput.Reset();
         }
 
