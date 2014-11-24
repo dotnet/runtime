@@ -51,7 +51,6 @@
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 #define ALLOC_ALIGN		SGEN_ALLOC_ALIGN
-#define ALLOC_ALIGN_BITS	SGEN_ALLOC_ALIGN_BITS
 #define MAX_SMALL_OBJ_SIZE	SGEN_MAX_SMALL_OBJ_SIZE
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
