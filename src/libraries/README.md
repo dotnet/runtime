@@ -51,7 +51,7 @@ This project is a part of the [.NET Foundation].
 
 To contribute to .NET Core, see the [Contributing Guide].
 
-[Contributing Guide]: https://github.com/Microsoft/dotnet/blob/master/CONTRIBUTING.md
+[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
 
 You are also encouraged to start a discussion by filing an issue or creating a
 gist. See the contributing guides for more details. You can discuss .NET OSS
