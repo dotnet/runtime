@@ -70,18 +70,6 @@
 #define TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define TV_ELAPSED(start,end) (((end) - (start)) / 10)
 
-#ifdef TARGET_WIN32
-#define SHARED_EXT ".dll"
-#elif defined(__ppc__) && defined(TARGET_MACH)
-#define SHARED_EXT ".dylib"
-#elif defined(TARGET_MACH) && defined(TARGET_X86) && !defined(__native_client_codegen__)
-#define SHARED_EXT ".dylib"
-#elif defined(TARGET_MACH) && defined(TARGET_AMD64) && !defined(__native_client_codegen__)
-#define SHARED_EXT ".dylib"
-#else
-#define SHARED_EXT ".so"
-#endif
-
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
@@ -8650,7 +8638,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->aot_opts.outfile)
 		outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 	else
-		outfile_name = g_strdup_printf ("%s%s", acfg->image->name, SHARED_EXT);
+		outfile_name = g_strdup_printf ("%s%s", acfg->image->name, MONO_SOLIB_EXT);
 
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
@@ -8670,7 +8658,7 @@ compile_asm (MonoAotCompile *acfg)
 
 	g_free (command);
 
-	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, SHARED_EXT);
+	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, MONO_SOLIB_EXT);
 	printf ("Stripping the binary: %s\n", com);
 	system (com);
 	g_free (com);*/
@@ -9021,7 +9009,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		if (acfg->aot_opts.outfile)
 			outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
-			outfile_name = g_strdup_printf ("%s%s", acfg->image->name, SHARED_EXT);
+			outfile_name = g_strdup_printf ("%s%s", acfg->image->name, MONO_SOLIB_EXT);
 
 		/* 
 		 * Can't use g_file_open_tmp () as it will be deleted at exit, and
