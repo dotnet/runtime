@@ -383,7 +383,7 @@ namespace System.Xml
                 }
             }
 
-            // This method trims whitespaces from the beginnig and the end of the string and cached writer events
+            // This method trims whitespaces from the beginning and the end of the string and cached writer events
             internal void Trim()
             {
                 // if only one string value -> trim the write spaces directly
