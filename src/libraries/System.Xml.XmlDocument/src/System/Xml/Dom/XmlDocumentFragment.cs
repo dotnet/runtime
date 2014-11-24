@@ -15,7 +15,7 @@ namespace System.Xml
     // document by moving fragments around. It is desirable to have an object 
     // which can hold such fragments and it is quite natural to use a Node for 
     // this purpose. While it is true that a <code>Document</code> object could 
-    // fulfil this role,  a <code>Document</code> object can potentially be a 
+    // fulfill this role,  a <code>Document</code> object can potentially be a 
     // heavyweight  object, depending on the underlying implementation. What is 
     // really needed for this is a very lightweight object.  
     // <code>DocumentFragment</code> is such an object.
