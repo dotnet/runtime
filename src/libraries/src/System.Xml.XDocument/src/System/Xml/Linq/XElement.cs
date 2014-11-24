@@ -117,7 +117,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="other">
         /// The <see cref="XStreamingElement"/> object whose value will be used
-        /// to initialise the new element.
+        /// to initialize the new element.
         /// </param>
         public XElement(XStreamingElement other)
         {
@@ -275,7 +275,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Returns the ancestor(s) of this <see cref="XElement"/> with the matching
         /// <see cref="XName"/>. If this <see cref="XElement"/>'s <see cref="XName"/>
-        /// matches the <see cref="XName"/> passed in then it will be invluded in the 
+        /// matches the <see cref="XName"/> passed in then it will be included in the 
         /// resulting <see cref="IEnumerable"/> or <see cref="XElement"/>.
         /// <seealso cref="XNode.Ancestors()"/>
         /// </summary>

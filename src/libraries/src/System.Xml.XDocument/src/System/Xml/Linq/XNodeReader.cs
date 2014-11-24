@@ -1385,7 +1385,7 @@ namespace System.Xml.Linq
         /// <returns>The first attribute which is not a namespace attribute or null if the end of attributes has bean reached</returns>
         XAttribute GetFirstNonDuplicateNamespaceAttribute(XAttribute candidate)
         {
-            Debug.Assert(omitDuplicateNamespaces, "This method should only be caled if we're omitting duplicate namespace attribute." +
+            Debug.Assert(omitDuplicateNamespaces, "This method should only be called if we're omitting duplicate namespace attribute." +
                                                   "For perf reason it's better to test this flag in the caller method.");
             if (!IsDuplicateNamespaceAttribute(candidate))
             {
