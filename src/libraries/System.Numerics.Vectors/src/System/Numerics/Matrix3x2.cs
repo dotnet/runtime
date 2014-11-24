@@ -454,7 +454,7 @@ namespace System.Numerics
             //  [ M21, M22, 0 ]
             //  [ M31, M32, 1 ]
             //
-            // Sum the diagnonal products:
+            // Sum the diagonal products:
             //  (M11 * M22 * 1) + (M12 * 0 * M31) + (0 * M21 * M32)
             //
             // Subtract the opposite diagonal products:

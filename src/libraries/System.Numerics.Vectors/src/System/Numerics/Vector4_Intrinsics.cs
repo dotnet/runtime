@@ -45,7 +45,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="w">W component.</param>
         /// <param name="x">X component.</param>
-        /// <param name="y">Y conponent.</param>
+        /// <param name="y">Y component.</param>
         /// <param name="z">Z component.</param>
         [JitIntrinsic]
         public Vector4(Single x, Single y, Single z, Single w)
@@ -196,7 +196,7 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Returns a vector whose elements are the square root of each of hte source vector's elements.
+        /// Returns a vector whose elements are the square root of each of the source vector's elements.
         /// </summary>
         /// <param name="value">The source vector.</param>
         /// <returns>The square root vector.</returns>
