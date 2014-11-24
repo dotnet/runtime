@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Tests
     public class MemoryBlockTests
     {
         [Fact]
-        public unsafe void Utf8NullTermintatedStringStartsWithAsciiPrefix()
+        public unsafe void Utf8NullTerminatedStringStartsWithAsciiPrefix()
         {
             byte[] heap;
 
