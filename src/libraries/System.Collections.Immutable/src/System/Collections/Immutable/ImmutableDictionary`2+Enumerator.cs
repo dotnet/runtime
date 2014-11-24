@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.mapEnumerator.Reset();
 
-                // Reseting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
+                // Resetting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
                 this.bucketEnumerator.Dispose();
                 this.bucketEnumerator = default(HashBucket.Enumerator);
             }
