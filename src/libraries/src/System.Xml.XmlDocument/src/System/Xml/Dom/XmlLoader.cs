@@ -367,7 +367,7 @@ namespace System.Xml
                 }
             }
 
-            // For readers that do not break xml decl into attributes, we must parse the xml decl ourselfs. We use version attr, b/c xml decl MUST contain
+            // For readers that do not break xml decl into attributes, we must parse the xml decl ourselves. We use version attr, b/c xml decl MUST contain
             // at least version attr, so if the reader implements them as attr, then version must be present
             if (version == null)
                 XmlParsingHelper.ParseXmlDeclarationValue(reader.Value, out version, out encoding, out standalone);
@@ -402,7 +402,7 @@ namespace System.Xml
         }
 
         // LoadNodeDirect does not use creator functions on XmlDocument. It is used loading nodes that are children of entity nodes, 
-        // becaouse we do not want to let users extend these (if we would allow this, XmlDataDocument would have a problem, becaouse 
+        // because we do not want to let users extend these (if we would allow this, XmlDataDocument would have a problem, because 
         // they do not know that those nodes should not be mapped). It can be also used for an optimized load path when if the 
         // XmlDocument is not extended if XmlDocumentType and XmlDeclaration handling is added.
         private XmlNode LoadNodeDirect()
@@ -637,7 +637,7 @@ namespace System.Xml
 
         internal void LoadInnerXmlElement(XmlElement node, string innerxmltext)
         {
-            //construct a tree underneth the node
+            //construct a tree underneath the node
             XmlNamespaceManager mgr = ParsePartialContent(node, innerxmltext, XmlNodeType.Element);
             //remove the duplicate namesapce
             if (node.ChildNodes.Count > 0)
@@ -671,7 +671,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            // Add this namespace, so it we will behave corectly when setting "<bar xmlns:p="BAR"><foo2 xmlns:p="FOO"/></bar>" as
+                            // Add this namespace, so it we will behave correctly when setting "<bar xmlns:p="BAR"><foo2 xmlns:p="FOO"/></bar>" as
                             // InnerXml on this foo elem where foo is like this "<foo xmlns:p="FOO"></foo>"
                             // If do not do this, then we will remove the inner p prefix definition and will let the 1st p to be in scope for
                             // the subsequent InnerXml_set or setting an EntRef inside.
