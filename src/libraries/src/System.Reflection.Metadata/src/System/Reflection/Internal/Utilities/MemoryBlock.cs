@@ -415,7 +415,7 @@ namespace System.Reflection.Internal
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
-        internal bool Utf8NullTermintatedStringStartsWithAsciiPrefix(int offset, string asciiPrefix)
+        internal bool Utf8NullTerminatedStringStartsWithAsciiPrefix(int offset, string asciiPrefix)
         {
             // Assumes stringAscii conly contains ASCII characters and no nil characters.
 
