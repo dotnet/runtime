@@ -486,7 +486,7 @@ namespace MS.Internal.Xml.Cache
 
             if (idxOverride != 0)
             {
-                // Bypass overriden node by cloning nodes in list leading to it
+                // Bypass overridden node by cloning nodes in list leading to it
                 pageOrig = this.pageNmsp;
                 idxOrig = this.idxNmsp;
                 pageCopy = pageNew;
@@ -509,7 +509,7 @@ namespace MS.Internal.Xml.Cache
                     idxOrig = pageOrig[idxOrig].GetSibling(out pageOrig);
                 }
 
-                // Link farther up in the original chain, just past the last overriden node
+                // Link farther up in the original chain, just past the last overridden node
                 idxOverride = pageOverride[idxOverride].GetSibling(out pageOverride);
 
                 if (idxOverride != 0)

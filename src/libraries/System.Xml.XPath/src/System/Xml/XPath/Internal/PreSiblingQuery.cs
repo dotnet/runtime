@@ -11,13 +11,13 @@ namespace MS.Internal.Xml.XPath
     // Algorithm could be like one for FollowingSibling:
     // - Build InputArrays: pares (first, sentinel)
     // -- Cash all input nodes as sentinel
-    // -- Add firts node of its parent for each input node.
+    // -- Add first node of its parent for each input node.
     // -- Sort these pares by first nodes.
     // - Advance algorithm will look like:
     // -- For each row in InputArays we will output first node + all its following nodes which are < sentinel
-    // -- Before outputing each node in row #I we will check that it is < first node in row #I+1
-    // --- if true we actualy output it
-    // --- if false, we hold with row #I and apply this algorith starting for row #I+1
+    // -- Before outputting each node in row #I we will check that it is < first node in row #I+1
+    // --- if true we actually output it
+    // --- if false, we hold with row #I and apply this algorithm starting for row #I+1
     // --- when we done with #I+1 we continue with row #I
 
     internal class PreSiblingQuery : CacheAxisQuery

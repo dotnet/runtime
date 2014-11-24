@@ -9,7 +9,7 @@ namespace MS.Internal.Xml.XPath
     internal class Operator : AstNode
     {
         public enum Op
-        { // order is alligned with XPathOperator
+        { // order is aligned with XPathOperator
             INVALID,
             /*Logical   */
             OR,

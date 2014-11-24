@@ -41,7 +41,7 @@ namespace MS.Internal.Xml.XPath
             return result;
         }
 
-        // --------------- Expresion Parsing ----------------------
+        // --------------- Expression Parsing ----------------------
 
 
         //The recursive is like 
@@ -242,7 +242,7 @@ namespace MS.Internal.Xml.XPath
         {
             AstNode opnd;
             if (IsPrimaryExpr(this.scanner))
-            { // in this moment we shoud distinct LocationPas vs FilterExpr (which starts from is PrimaryExpr)
+            { // in this moment we should distinct LocationPas vs FilterExpr (which starts from is PrimaryExpr)
                 opnd = ParseFilterExpr(qyInput);
                 if (this.scanner.Kind == XPathScanner.LexKind.Slash)
                 {
@@ -384,7 +384,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 XPathNodeType nodeType = (
                     axisType == Axis.AxisType.Attribute ? XPathNodeType.Attribute :
-                    //                    axisType == Axis.AxisType.Namespace ? XPathNodeType.Namespace : // No Idea why it's this way but othervise Axes doesn't work
+                    //                    axisType == Axis.AxisType.Namespace ? XPathNodeType.Namespace : // No Idea why it's this way but otherwise Axes doesn't work
                     /* default: */                        XPathNodeType.Element
                 );
 

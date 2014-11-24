@@ -8,9 +8,9 @@ using StackNav = MS.Internal.Xml.XPath.ClonableStack<System.Xml.XPath.XPathNavig
 
 namespace MS.Internal.Xml.XPath
 {
-    // This class implements Children axis on Ancestor & Descendant imputs. (as well as id(), preciding, following)
-    // The problem here is that is descenant::*/child::* and ancestor::*/child::* can produce duplicates nodes
-    // The algorithm havily uses the fact that in our implementation of both AncestorQuery and DecsndantQuery return nodes in document order. 
+    // This class implements Children axis on Ancestor & Descendant inputs. (as well as id(), preceding, following)
+    // The problem here is that is descendant::*/child::* and ancestor::*/child::* can produce duplicates nodes
+    // The algorithm heavily uses the fact that in our implementation of both AncestorQuery and DecsndantQuery return nodes in document order. 
     // As result first child is always before or equal of next input. 
     // So we don't need to call DecideNextNode() when needInput == true && stack is empty.
     internal sealed class CacheChildrenQuery : ChildrenQuery
@@ -96,7 +96,7 @@ namespace MS.Internal.Xml.XPath
                     if (currentNode.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator")
                     {
                         XmlNodeOrder order = CompareNodes(lastNode, currentNode);
-                        Debug.Assert(order == XmlNodeOrder.Before, "Algorith error. Nodes expected to be DocOrderDistinct");
+                        Debug.Assert(order == XmlNodeOrder.Before, "Algorithm error. Nodes expected to be DocOrderDistinct");
                     }
                 }
                 lastNode = currentNode.Clone();
