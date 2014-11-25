@@ -29,6 +29,8 @@
  */
 
 #define MEM_ALIGN 8
+#define ALIGN_SIZE(s)	(((s) + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1))
+#define SIZEOF_MEM_POOL	(ALIGN_SIZE (sizeof (MonoMemPool)))
 
 #if MONO_SMALL_CONFIG
 #define MONO_MEMPOOL_PAGESIZE 4096
@@ -91,8 +93,8 @@ mono_mempool_new_size (int initial_size)
 	pool = g_malloc (initial_size);
 
 	pool->next = NULL;
-	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
-	pool->end = pool->pos + initial_size - sizeof (MonoMemPool);
+	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL;
+	pool->end = pool->pos + initial_size - SIZEOF_MEM_POOL;
 	pool->d.allocated = pool->size = initial_size;
 	total_bytes_allocated += initial_size;
 	return pool;
@@ -165,8 +167,8 @@ mono_mempool_empty (MonoMemPool *pool)
 
 	pool->allocated = 0;
 #else
-	pool->pos = (guint8*)pool + sizeof (MonoMemPool);
-	pool->end = pool->pos + pool->size - sizeof (MonoMemPool);
+	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL;
+	pool->end = pool->pos + pool->size - SIZEOF_MEM_POOL;
 #endif
 }
 
@@ -239,7 +241,7 @@ static int
 get_next_size (MonoMemPool *pool, int size)
 {
 	int target = pool->next? pool->next->size: pool->size;
-	size += sizeof (MonoMemPool);
+	size += SIZEOF_MEM_POOL;
 	/* increase the size */
 	target += target / 2;
 	while (target < size) {
@@ -264,8 +266,8 @@ gpointer
 mono_mempool_alloc (MonoMemPool *pool, guint size)
 {
 	gpointer rval;
-	
-	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
+
+	size = ALIGN_SIZE (size);
 
 #ifdef MALLOC_ALLOCATION
 	{
@@ -291,25 +293,25 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 	if (G_UNLIKELY (pool->pos >= pool->end)) {
 		pool->pos -= size;
 		if (size >= 4096) {
-			MonoMemPool *np = g_malloc (sizeof (MonoMemPool) + size);
+			MonoMemPool *np = g_malloc (SIZEOF_MEM_POOL + size);
 			np->next = pool->next;
 			pool->next = np;
-			np->pos = (guint8*)np + sizeof (MonoMemPool);
-			np->size = sizeof (MonoMemPool) + size;
-			np->end = np->pos + np->size - sizeof (MonoMemPool);
-			pool->d.allocated += sizeof (MonoMemPool) + size;
-			total_bytes_allocated += sizeof (MonoMemPool) + size;
-			return (guint8*)np + sizeof (MonoMemPool);
+			np->pos = (guint8*)np + SIZEOF_MEM_POOL;
+			np->size = SIZEOF_MEM_POOL + size;
+			np->end = np->pos + np->size - SIZEOF_MEM_POOL;
+			pool->d.allocated += SIZEOF_MEM_POOL + size;
+			total_bytes_allocated += SIZEOF_MEM_POOL + size;
+			return (guint8*)np + SIZEOF_MEM_POOL;
 		} else {
 			int new_size = get_next_size (pool, size);
 			MonoMemPool *np = g_malloc (new_size);
 			np->next = pool->next;
 			pool->next = np;
-			pool->pos = (guint8*)np + sizeof (MonoMemPool);
-			np->pos = (guint8*)np + sizeof (MonoMemPool);
+			pool->pos = (guint8*)np + SIZEOF_MEM_POOL;
+			np->pos = (guint8*)np + SIZEOF_MEM_POOL;
 			np->size = new_size;
 			np->end = np->pos;
-			pool->end = pool->pos + new_size - sizeof (MonoMemPool);
+			pool->end = pool->pos + new_size - SIZEOF_MEM_POOL;
 			pool->d.allocated += new_size;
 			total_bytes_allocated += new_size;
 
@@ -335,7 +337,7 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 #ifdef MALLOC_ALLOCATION
 	rval = mono_mempool_alloc (pool, size);
 #else
-	size = (size + MEM_ALIGN - 1) & ~(MEM_ALIGN - 1);
+	size = ALIGN_SIZE (size);
 
 	rval = pool->pos;
 	pool->pos = (guint8*)rval + size;
