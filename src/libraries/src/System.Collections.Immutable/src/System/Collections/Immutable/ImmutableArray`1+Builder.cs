@@ -604,7 +604,7 @@ namespace System.Collections.Immutable
             {
                 if (Count > 1)
                 {
-                    Array.Sort(this.elements, 0, this.Count, new Comparer(comparer));
+                    Array.Sort(this.elements, 0, this.Count, Comparer.Create(comparer));
                 }
             }
 
@@ -623,7 +623,7 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
-                    Array.Sort(this.elements, index, count, new Comparer(comparer));
+                    Array.Sort(this.elements, index, count, Comparer.Create(comparer));
                 }
             }
 
@@ -683,9 +683,19 @@ namespace System.Collections.Immutable
 
                 public static readonly Comparer Default = new Comparer(Comparer<T>.Default);
 
-                internal Comparer(IComparer<T> comparer = null)
+                public static Comparer Create(IComparer<T> comparer)
                 {
-                    Requires.NotNull(comparer, "comparer");
+                    if (comparer == null || comparer == Comparer<T>.Default) 
+                    {
+                        return Default;
+                    }
+
+                    return new Comparer(comparer);
+                }
+
+                private Comparer(IComparer<T> comparer)
+                {
+                    Requires.NotNull(comparer, "comparer"); // use Comparer.Default instead of passing null
                     this.comparer = comparer;
                 }
 
