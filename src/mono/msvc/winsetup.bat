@@ -1,5 +1,6 @@
 @echo off
 cd ..
+if exist config.h if not exist cygconfig.h copy config.h cygconfig.h
 copy winconfig.h config.h
 goto end
 :error
