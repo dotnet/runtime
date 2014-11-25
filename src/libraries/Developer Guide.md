@@ -31,5 +31,5 @@ for more details on how to install the **xUnit.net runner for Visual
 Studio** test runner and how you can invoke the tests using Test Explorer.
 
 [xunit]: http://xunit.github.io/
-[xunit-runner]: https://xunit.codeplex.com/wikipage?title=HowToUseVs2012
+[xunit-runner]: http://xunit.github.io/docs/running-v1-tests-in-vs.html
 
