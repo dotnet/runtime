@@ -17,6 +17,7 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "utils/mono-compiler.h"
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-pointer-queue.h"
 
