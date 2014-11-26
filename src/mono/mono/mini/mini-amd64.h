@@ -324,7 +324,10 @@ typedef struct {
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
+/* Temporarily disable native monitor fastpaths until they are updated */
+/*
 #define MONO_ARCH_MONITOR_OBJECT_REG MONO_AMD64_ARG_REG1
+*/
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 #define MONO_ARCH_AOT_SUPPORTED 1
