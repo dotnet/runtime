@@ -12,8 +12,8 @@
 #include "mini-gc.h"
 #include <mono/metadata/gc-internal.h>
 
-//#if 0
-#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
+#if 0
+//#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
 
 #include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/gc-internal.h>

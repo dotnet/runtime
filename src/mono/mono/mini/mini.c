@@ -4125,6 +4125,8 @@ mono_codegen (MonoCompile *cfg)
 
 	cfg->code_len = code - cfg->native_code;
 	cfg->prolog_end = cfg->code_len;
+	cfg->cfa_reg = cfg->cur_cfa_reg;
+	cfg->cfa_offset = cfg->cur_cfa_offset;
 
 	mono_debug_open_method (cfg);
 

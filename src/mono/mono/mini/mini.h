@@ -1612,6 +1612,9 @@ typedef struct {
 	/* The offsets of the locals area relative to the frame pointer */
 	gint locals_min_stack_offset, locals_max_stack_offset;
 
+	/* The current CFA rule */
+	int cur_cfa_reg, cur_cfa_offset;
+
 	/* The final CFA rule at the end of the prolog */
 	int cfa_reg, cfa_offset;
 
