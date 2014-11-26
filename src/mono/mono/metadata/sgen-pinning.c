@@ -322,7 +322,7 @@ pin_from_hash (CementHashEntry *hash, gboolean has_been_reset)
 		sgen_pin_stage_ptr (hash [i].obj);
 		/* FIXME: do pin stats if enabled */
 
-		SGEN_CEMENT_OBJECT (cement_hash [i].obj);
+		SGEN_CEMENT_OBJECT (hash [i].obj);
 	}
 }
 
