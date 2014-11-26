@@ -52,7 +52,7 @@ namespace System.Linq
             this.source = source;
             this.parent = null;
             this.keySelector = keySelector;
-            this.comparer = comparer != null ? comparer : Comparer<TKey>.Default;
+            this.comparer = comparer ?? Comparer<TKey>.Default;
             this.descending = descending;
         }
 
