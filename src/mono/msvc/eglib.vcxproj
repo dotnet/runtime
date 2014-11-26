@@ -129,7 +129,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -145,7 +145,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -161,7 +161,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>MinSpace</Optimization>
@@ -175,7 +175,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <ClCompile>
       <Optimization>MinSpace</Optimization>
@@ -189,7 +189,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
@@ -208,7 +208,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|x64'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
@@ -227,7 +227,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
@@ -244,7 +244,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">
     <PreBuildEvent>
-      <Command>copy ..\eglib\winconfig.h ..\eglib\config.h</Command>
+      <Command>winsetup.bat</Command>
     </PreBuildEvent>
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
