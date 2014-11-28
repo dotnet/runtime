@@ -20,13 +20,13 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the sorted dictionary to enumerate.
             /// </summary>
-            private readonly ImmutableSortedDictionary<int, HashBucket>.Node root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.NodeEnumerable"/> struct.
             /// </summary>
             /// <param name="root">The root.</param>
-            internal NodeEnumerable(ImmutableSortedDictionary<int, HashBucket>.Node root)
+            internal NodeEnumerable(SortedInt32KeyNode<HashBucket> root)
             {
                 Requires.NotNull(root, "root");
                 this.root = root;
