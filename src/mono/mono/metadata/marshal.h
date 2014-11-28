@@ -289,6 +289,9 @@ mono_type_to_stind (MonoType *type) MONO_INTERNAL;
 MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper) MONO_INTERNAL;
 
+WrapperInfo*
+mono_wrapper_info_create (MonoMethodBuilder *mb, WrapperSubtype subtype) MONO_INTERNAL;
+
 void
 mono_marshal_set_wrapper_info (MonoMethod *method, gpointer data) MONO_INTERNAL;
 
@@ -391,6 +394,12 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method) MONO_INTERNAL;
 
 void
 mono_marshal_free_inflated_wrappers (MonoMethod *method) MONO_INTERNAL;
+
+void
+mono_marshal_lock_internal (void) MONO_INTERNAL;
+
+void
+mono_marshal_unlock_internal (void) MONO_INTERNAL;
 
 /* marshaling internal calls */
 
@@ -552,7 +561,7 @@ mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, gu
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method) MONO_INTERNAL;
 
-/* Called from cominterop.c */
+/* Called from cominterop.c/remoting.c */
 
 void
 mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param) MONO_INTERNAL;
@@ -574,11 +583,28 @@ void
 mono_marshal_emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb) MONO_INTERNAL;
 
 void
+mono_marshal_emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb) MONO_INTERNAL;
+
+void
 mono_marshal_use_aot_wrappers (gboolean use) MONO_INTERNAL;
 
 MonoObject *
 mono_marshal_xdomain_copy_value (MonoObject *val) MONO_INTERNAL;
 
+int
+mono_mb_emit_save_args (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolean save_this) MONO_INTERNAL;
+
+void
+mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type) MONO_INTERNAL;
+
+MonoMethod*
+mono_mb_create (MonoMethodBuilder *mb, MonoMethodSignature *sig,
+				int max_stack, WrapperInfo *info) MONO_INTERNAL;
+
+MonoMethod*
+mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
+							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
+							   int max_stack, WrapperInfo *info, gboolean *out_found) MONO_INTERNAL;
 
 #ifndef DISABLE_REMOTING
 
