@@ -130,7 +130,7 @@ static const MonoRuntimeInfo supported_runtimes[] = {
 
 
 /* The stable runtime version */
-#define DEFAULT_RUNTIME_VERSION "v2.0.50727"
+#define DEFAULT_RUNTIME_VERSION "v4.0.30319"
 
 /* Callbacks installed by the JIT */
 static MonoCreateDomainFunc create_domain_hook;
