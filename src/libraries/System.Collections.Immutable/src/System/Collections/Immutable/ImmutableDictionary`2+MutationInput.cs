@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the data structure for the collection.
             /// </summary>
-            private readonly ImmutableSortedDictionary<int, HashBucket>.Node root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// The comparer used when comparing hash buckets.
@@ -38,7 +38,7 @@ namespace System.Collections.Immutable
             /// <param name="comparers">The comparers.</param>
             /// <param name="count">The current number of elements in the collection.</param>
             internal MutationInput(
-                ImmutableSortedDictionary<int, HashBucket>.Node root,
+                SortedInt32KeyNode<HashBucket> root,
                 Comparers comparers,
                 int count)
             {
@@ -61,7 +61,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the root of the data structure for the collection.
             /// </summary>
-            internal ImmutableSortedDictionary<int, HashBucket>.Node Root
+            internal SortedInt32KeyNode<HashBucket> Root
             {
                 get { return this.root; }
             }
