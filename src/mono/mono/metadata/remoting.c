@@ -55,6 +55,9 @@ mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image);
 MONO_API void
 mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
 
+static MonoXDomainMarshalType
+mono_get_xdomain_marshal_type (MonoType *t);
+
 static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 
