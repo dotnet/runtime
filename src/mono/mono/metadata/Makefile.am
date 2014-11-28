@@ -173,6 +173,7 @@ common_sources = \
 	profiler-private.h	\
 	rand.h			\
 	rand.c			\
+	remoting.h		\
 	remoting.c		\
 	runtime.c		\
 	security.c		\

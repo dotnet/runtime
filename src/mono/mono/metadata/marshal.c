@@ -36,6 +36,7 @@
 #include "mono/metadata/attrdefs.h"
 #include "mono/metadata/gc-internal.h"
 #include "mono/metadata/cominterop.h"
+#include "mono/metadata/remoting.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
@@ -244,6 +245,7 @@ mono_marshal_init (void)
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
 
 		mono_cominterop_init ();
+		mono_remoting_init ();
 	}
 }
 

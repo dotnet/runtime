@@ -9,6 +9,7 @@
 
 #include "config.h"
 
+#include "mono/metadata/remoting.h"
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/cominterop.h"
@@ -64,6 +65,9 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 static MonoReflectionType *
 type_from_handle (MonoType *handle);
 
+static mono_mutex_t remoting_mutex;
+static gboolean remoting_mutex_inited;
+
 static MonoClass *byte_array_class;
 static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixexc, *method_rs_appdomain_target;
 static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_rs_serialize_exc;
@@ -76,6 +80,20 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	mono_register_jit_icall (func, name, sig, save);
 }
 
+static inline void
+remoting_lock (void)
+{
+	g_assert (remoting_mutex_inited);
+	mono_mutex_lock (&remoting_mutex);
+}
+
+static inline void
+remoting_unlock (void)
+{
+	g_assert (remoting_mutex_inited);
+	mono_mutex_unlock (&remoting_mutex);
+}
+
 /*
  * Return the hash table pointed to by VAR, lazily creating it if neccesary.
  */
@@ -83,14 +101,14 @@ static GHashTable*
 get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 {
 	if (!(*var)) {
-		mono_marshal_lock_internal ();
+		remoting_lock ();
 		if (!(*var)) {
 			GHashTable *cache = 
 				g_hash_table_new (hash_func, equal_func);
 			mono_memory_barrier ();
 			*var = cache;
 		}
-		mono_marshal_unlock_internal ();
+		remoting_unlock ();
 	}
 	return *var;
 }
@@ -99,16 +117,23 @@ static GHashTable*
 get_cache_full (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func, GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
 {
 	if (!(*var)) {
-		mono_marshal_lock_internal ();
+		remoting_lock ();
 		if (!(*var)) {
 			GHashTable *cache = 
 				g_hash_table_new_full (hash_func, equal_func, key_destroy_func, value_destroy_func);
 			mono_memory_barrier ();
 			*var = cache;
 		}
-		mono_marshal_unlock_internal ();
+		remoting_unlock ();
 	}
 	return *var;
+}
+
+void
+mono_remoting_init (void)
+{
+	mono_mutex_init (&remoting_mutex);
+	remoting_mutex_inited = TRUE;
 }
 
 static void

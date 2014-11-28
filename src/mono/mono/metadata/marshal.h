@@ -18,6 +18,7 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
+#include <mono/metadata/remoting.h>
 
 #define mono_marshal_find_bitfield_offset(type, elem, byte_offset, bitmask) \
 	do { \
@@ -605,40 +606,6 @@ MonoMethod*
 mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack, WrapperInfo *info, gboolean *out_found) MONO_INTERNAL;
-
-#ifndef DISABLE_REMOTING
-
-MonoMethod *
-mono_marshal_get_remoting_invoke (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_xappdomain_invoke (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_remoting_invoke_with_check (MonoMethod *method) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_stfld_wrapper (MonoType *type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_ldfld_wrapper (MonoType *type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_ldflda_wrapper (MonoType *type) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_stfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
-
-MonoMethod *
-mono_marshal_get_proxy_cancast (MonoClass *klass) MONO_INTERNAL;
-
-#endif
 
 G_END_DECLS
 
