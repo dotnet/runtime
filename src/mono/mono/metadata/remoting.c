@@ -9,14 +9,21 @@
 
 #include "config.h"
 
-#ifndef DISABLE_REMOTING
-
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/cominterop.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/debug-helpers.h"
+
+typedef enum {
+	MONO_MARSHAL_NONE,			/* No marshalling needed */
+	MONO_MARSHAL_COPY,			/* Can be copied by value to the new domain */
+	MONO_MARSHAL_COPY_OUT,		/* out parameter that needs to be copied back to the original instance */
+	MONO_MARSHAL_SERIALIZE		/* Value needs to be serialized into the new domain */
+} MonoXDomainMarshalType;
+
+#ifndef DISABLE_REMOTING
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -26,13 +33,6 @@ enum {
 	LAST = 0xff
 };
 #undef OPDEF
-
-typedef enum {
-	MONO_MARSHAL_NONE,			/* No marshalling needed */
-	MONO_MARSHAL_COPY,			/* Can be copied by value to the new domain */
-	MONO_MARSHAL_COPY_OUT,		/* out parameter that needs to be copied back to the original instance */
-	MONO_MARSHAL_SERIALIZE		/* Value needs to be serialized into the new domain */
-} MonoXDomainMarshalType;
 
 struct _MonoRemotingMethods {
 	MonoMethod *invoke;
@@ -399,105 +399,6 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 	mono_mb_free (mb);
 
 	return res;
-}
-
-/* mono_get_xdomain_marshal_type()
- * Returns the kind of marshalling that a type needs for cross domain calls.
- */
-static MonoXDomainMarshalType
-mono_get_xdomain_marshal_type (MonoType *t)
-{
-	switch (t->type) {
-	case MONO_TYPE_VOID:
-		g_assert_not_reached ();
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		return MONO_MARSHAL_NONE;
-	case MONO_TYPE_STRING:
-		return MONO_MARSHAL_COPY;
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY: {
-		MonoClass *elem_class = mono_class_from_mono_type (t)->element_class;
-		if (mono_get_xdomain_marshal_type (&(elem_class->byval_arg)) != MONO_MARSHAL_SERIALIZE)
-			return MONO_MARSHAL_COPY;
-		break;
-	}
-	}
-
-	return MONO_MARSHAL_SERIALIZE;
-}
-
-
-/* mono_marshal_xdomain_copy_value
- * Makes a copy of "val" suitable for the current domain.
- */
-MonoObject *
-mono_marshal_xdomain_copy_value (MonoObject *val)
-{
-	MonoDomain *domain;
-	if (val == NULL) return NULL;
-
-	domain = mono_domain_get ();
-
-	switch (mono_object_class (val)->byval_arg.type) {
-	case MONO_TYPE_VOID:
-		g_assert_not_reached ();
-		break;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8: {
-		return mono_value_box (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject));
-	}
-	case MONO_TYPE_STRING: {
-		MonoString *str = (MonoString *) val;
-		return (MonoObject *) mono_string_new_utf16 (domain, mono_string_chars (str), mono_string_length (str));
-	}
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY: {
-		MonoArray *acopy;
-		MonoXDomainMarshalType mt = mono_get_xdomain_marshal_type (&(mono_object_class (val)->element_class->byval_arg));
-		if (mt == MONO_MARSHAL_SERIALIZE) return NULL;
-		acopy = mono_array_clone_in_domain (domain, (MonoArray *) val);
-		if (mt == MONO_MARSHAL_COPY) {
-			int i, len = mono_array_length (acopy);
-			for (i = 0; i < len; i++) {
-				MonoObject *item = mono_array_get (acopy, gpointer, i);
-				mono_array_setref (acopy, i, mono_marshal_xdomain_copy_value (item));
-			}
-		}
-		return (MonoObject *) acopy;
-	}
-	}
-
-	if (mono_object_class (val) == mono_defaults.stringbuilder_class) {
-		MonoStringBuilder *oldsb = (MonoStringBuilder *) val;
-		MonoStringBuilder *newsb = (MonoStringBuilder *) mono_object_new (domain, mono_defaults.stringbuilder_class);
-		MONO_OBJECT_SETREF (newsb, str, mono_string_new_utf16 (domain, mono_string_chars (oldsb->str), mono_string_length (oldsb->str)));
-		newsb->length = oldsb->length;
-		newsb->max_capacity = (gint32)0x7fffffff;
-		return (MonoObject *) newsb;
-	}
-	return NULL;
 }
 
 /* mono_marshal_xdomain_copy_out_value()
@@ -1965,3 +1866,101 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentPro
 }
 
 #endif /* DISABLE_REMOTING */
+
+/* mono_get_xdomain_marshal_type()
+ * Returns the kind of marshalling that a type needs for cross domain calls.
+ */
+static MonoXDomainMarshalType
+mono_get_xdomain_marshal_type (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_VOID:
+		g_assert_not_reached ();
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+		return MONO_MARSHAL_NONE;
+	case MONO_TYPE_STRING:
+		return MONO_MARSHAL_COPY;
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY: {
+		MonoClass *elem_class = mono_class_from_mono_type (t)->element_class;
+		if (mono_get_xdomain_marshal_type (&(elem_class->byval_arg)) != MONO_MARSHAL_SERIALIZE)
+			return MONO_MARSHAL_COPY;
+		break;
+	}
+	}
+
+	return MONO_MARSHAL_SERIALIZE;
+}
+
+/* mono_marshal_xdomain_copy_value
+ * Makes a copy of "val" suitable for the current domain.
+ */
+MonoObject *
+mono_marshal_xdomain_copy_value (MonoObject *val)
+{
+	MonoDomain *domain;
+	if (val == NULL) return NULL;
+
+	domain = mono_domain_get ();
+
+	switch (mono_object_class (val)->byval_arg.type) {
+	case MONO_TYPE_VOID:
+		g_assert_not_reached ();
+		break;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8: {
+		return mono_value_box (domain, mono_object_class (val), ((char*)val) + sizeof(MonoObject));
+	}
+	case MONO_TYPE_STRING: {
+		MonoString *str = (MonoString *) val;
+		return (MonoObject *) mono_string_new_utf16 (domain, mono_string_chars (str), mono_string_length (str));
+	}
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY: {
+		MonoArray *acopy;
+		MonoXDomainMarshalType mt = mono_get_xdomain_marshal_type (&(mono_object_class (val)->element_class->byval_arg));
+		if (mt == MONO_MARSHAL_SERIALIZE) return NULL;
+		acopy = mono_array_clone_in_domain (domain, (MonoArray *) val);
+		if (mt == MONO_MARSHAL_COPY) {
+			int i, len = mono_array_length (acopy);
+			for (i = 0; i < len; i++) {
+				MonoObject *item = mono_array_get (acopy, gpointer, i);
+				mono_array_setref (acopy, i, mono_marshal_xdomain_copy_value (item));
+			}
+		}
+		return (MonoObject *) acopy;
+	}
+	}
+
+	if (mono_object_class (val) == mono_defaults.stringbuilder_class) {
+		MonoStringBuilder *oldsb = (MonoStringBuilder *) val;
+		MonoStringBuilder *newsb = (MonoStringBuilder *) mono_object_new (domain, mono_defaults.stringbuilder_class);
+		MONO_OBJECT_SETREF (newsb, str, mono_string_new_utf16 (domain, mono_string_chars (oldsb->str), mono_string_length (oldsb->str)));
+		newsb->length = oldsb->length;
+		newsb->max_capacity = (gint32)0x7fffffff;
+		return (MonoObject *) newsb;
+	}
+	return NULL;
+}
