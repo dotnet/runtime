@@ -49,8 +49,6 @@ struct _MonoDebugMethodAddress {
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
-static MonoDebugList *data_tables;
-
 static MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
 
 static gboolean mono_debug_initialized = FALSE;
@@ -62,6 +60,7 @@ static GHashTable *data_table_hash;
 static mono_mutex_t debugger_lock_mutex;
 
 static int initialized = 0;
+static gboolean is_attached = FALSE;
 
 static MonoDebugHandle     *mono_debug_open_image      (MonoImage *image, const guint8 *raw_contents, int size);
 
@@ -81,10 +80,8 @@ create_data_table (MonoDomain *domain)
 	table->mp = mono_mempool_new ();
 	table->method_address_hash = g_hash_table_new (NULL, NULL);
 
-	if (domain) {
-		mono_debug_list_add (&data_tables, table);
+	if (domain)
 		g_hash_table_insert (data_table_hash, domain, table);
-	}
 
 	return table;
 }
@@ -95,7 +92,6 @@ free_data_table (MonoDebugDataTable *table)
 	mono_mempool_destroy (table->mp);
 	g_hash_table_destroy (table->method_address_hash);
 
-	mono_debug_list_remove (&data_tables, table);
 	g_free (table);
 }
 
@@ -118,9 +114,7 @@ free_debug_handle (MonoDebugHandle *handle)
 	if (handle->symfile)
 		mono_debug_close_mono_symbol_file (handle->symfile);
 	/* decrease the refcount added with mono_image_addref () */
-	free_data_table (handle->type_table);
 	mono_image_close (handle->image);
-	g_free (handle->image_file);
 	g_free (handle);
 }
 
@@ -266,9 +260,6 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 
 	handle->image = image;
 	mono_image_addref (image);
-	handle->image_file = g_strdup (mono_image_get_filename (image));
-
-	handle->type_table = create_data_table (NULL);
 
 	handle->symfile = mono_debug_open_mono_symbols (
 		handle, raw_contents, size, FALSE);
@@ -825,39 +816,6 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 	mono_debug_free_source_location (location);
 	return res;
 }
-
-void
-mono_debug_list_add (MonoDebugList **list, gconstpointer data)
-{
-	MonoDebugList *element, **ptr;
-
-	element = g_new0 (MonoDebugList, 1);
-	element->data = data;
-
-	for (ptr = list; *ptr; ptr = &(*ptr)->next)
-		;
-
-	*ptr = element;
-}
-
-void
-mono_debug_list_remove (MonoDebugList **list, gconstpointer data)
-{
-	MonoDebugList **ptr;
-	MonoDebugList *next;
-
-	for (ptr = list; *ptr; ptr = &(*ptr)->next) {
-		if ((*ptr)->data != data)
-			continue;
-
-		next = (*ptr)->next;
-		g_free ((*ptr));
-		*ptr = next;
-		break;
-	}
-}
-
-static gboolean is_attached = FALSE;
 
 void
 mono_set_is_debugger_attached (gboolean attached)
