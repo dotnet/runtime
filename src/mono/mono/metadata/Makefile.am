@@ -148,7 +148,6 @@ common_sources = \
 	mono-debug.h		\
 	mono-debug.c		\
 	mono-debug-debugger.h	\
-	mono-debug-debugger.c	\
 	mono-endian.c		\
 	mono-endian.h		\
 	mono-hash.h		\

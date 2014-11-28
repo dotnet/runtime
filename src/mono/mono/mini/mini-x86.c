@@ -6101,8 +6101,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		g_assert ((code - start) < code_reserve);
 	}
 
-	nacl_global_codeman_validate(&start, code_reserve, &code);
-	mono_debug_add_delegate_trampoline (start, code - start);
+	nacl_global_codeman_validate (&start, code_reserve, &code);
 
 	if (code_len)
 		*code_len = code - start;

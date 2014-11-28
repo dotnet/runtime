@@ -139,9 +139,6 @@ static MonoFreeDomainFunc free_domain_hook;
 /* AOT cache configuration */
 static MonoAotCacheConfig aot_cache_config;
 
-/* This is intentionally not in the header file, so people don't misuse it. */
-extern void _mono_debug_init_corlib (MonoDomain *domain);
-
 static void
 get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRuntimeInfo** runtimes);
 
@@ -845,8 +842,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
 
 	domain->friendly_name = g_path_get_basename (filename);
-
-	_mono_debug_init_corlib (domain);
 
 	return domain;
 }

@@ -72,10 +72,6 @@ static guint32 mono_field_resolve_flags (MonoClassField *field);
 static void mono_class_setup_vtable_full (MonoClass *class, GList *in_setup);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gklass);
 
-
-void (*mono_debugger_class_init_func) (MonoClass *klass) = NULL;
-
-
 /*
 We use gclass recording to allow recursive system f types to be referenced by a parent.
 
@@ -5245,9 +5241,6 @@ mono_class_init (MonoClass *class)
 	class->init_pending = 0;
 
 	mono_loader_unlock ();
-
-	if (mono_debugger_class_init_func)
-		mono_debugger_class_init_func (class);
 
 	return class->exception_type == MONO_EXCEPTION_NONE;
 }

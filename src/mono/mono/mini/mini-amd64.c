@@ -7690,13 +7690,10 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		g_assert ((code - start) < 64);
 	}
 
-	nacl_global_codeman_validate(&start, 64, &code);
-
-	mono_debug_add_delegate_trampoline (start, code - start);
+	nacl_global_codeman_validate (&start, 64, &code);
 
 	if (code_len)
 		*code_len = code - start;
-
 
 	if (mono_jit_map_is_enabled ()) {
 		char *buff;
