@@ -1,7 +1,7 @@
 /*
  * remoting.h: Remoting support
  *
- * (C) 2004 Xamarin, Inc.  http://www.xamarin.com
+ * (C) 2014 Xamarin, Inc.  http://www.xamarin.com
  *
  */
 
