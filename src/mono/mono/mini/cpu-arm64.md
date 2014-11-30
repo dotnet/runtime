@@ -58,6 +58,7 @@ switch: src1:i len:12
 # See the comment in resume_from_signal_handler, we can't copy the fp regs from sigctx to MonoContext on linux,
 # since the corresponding sigctx structures are not well defined.
 seq_point: len:38 clob:c
+il_seq_point: len:0
 
 throw: src1:i len:24
 rethrow: src1:i len:20

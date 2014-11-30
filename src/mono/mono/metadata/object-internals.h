@@ -380,6 +380,7 @@ typedef struct {
 	MonoObject obj;
 	gint32 il_offset;
 	gint32 native_offset;
+	gint64 method_address;
 	MonoReflectionMethod *method;
 	MonoString *filename;
 	gint32 line;

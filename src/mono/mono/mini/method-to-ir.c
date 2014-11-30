@@ -68,6 +68,7 @@
 #include "jit-icalls.h"
 #include "jit.h"
 #include "debugger-agent.h"
+#include "seq-points.h"
 
 #define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20
@@ -7135,7 +7136,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		seq_points = FALSE;
 	}
 
-	if (cfg->gen_seq_points && cfg->method == method) {
+	if (cfg->gen_seq_points_debug_data && cfg->method == method) {
 		minfo = mono_debug_lookup_method (method);
 		if (minfo) {
 			int i, n_il_offsets;

@@ -60,6 +60,7 @@ call: dest:v clob:c len:20
 br: len:16
 switch: src1:i len:40
 seq_point: len:24
+il_seq_point: len:0
 
 int_conv_to_r_un: dest:f src1:i len:32
 throw: src1:i len:24

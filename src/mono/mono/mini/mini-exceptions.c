@@ -52,6 +52,7 @@
 #include "mini.h"
 #include "trace.h"
 #include "debugger-agent.h"
+#include "seq-points.h"
 
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
@@ -690,6 +691,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		}
 		else
 			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, method, NULL));
+		sf->method_address = (gint64) ji->code_start;
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 
 		/*
@@ -698,10 +700,15 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		 * operation, so we shouldn't call this method twice.
 		 */
 		location = mono_debug_lookup_source_location (jinfo_get_method (ji), sf->native_offset, domain);
-		if (location)
+		if (location) {
 			sf->il_offset = location->il_offset;
-		else
-			sf->il_offset = 0;
+		} else {
+			SeqPoint sp;
+			if (find_prev_seq_point_for_native_offset (domain, jinfo_get_method (ji), sf->native_offset, NULL, &sp))
+				sf->il_offset = sp.il_offset;
+			else
+				sf->il_offset = 0;
+		}
 
 		if (need_file_info) {
 			if (location && location->source_file) {
@@ -852,7 +859,13 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 			MonoDebugSourceLocation *source;
 
 			source = mono_debug_lookup_source_location (jinfo_get_method (frame.ji), frame.native_offset, domain);
-			il_offset = source ? source->il_offset : -1;
+			if (source) {
+				il_offset = source->il_offset;
+			} else {
+				SeqPoint sp;
+				if (find_prev_seq_point_for_native_offset (domain, jinfo_get_method (frame.ji), frame.native_offset, NULL, &sp))
+					il_offset = sp.il_offset;
+			}
 			mono_debug_free_source_location (source);
 		} else
 			il_offset = -1;
