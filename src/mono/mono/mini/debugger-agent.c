@@ -995,6 +995,9 @@ mono_debugger_agent_init (void)
 
 	mono_native_tls_alloc (&debugger_tls_id, NULL);
 
+	/* Needed by the hash_table_new_type () call below */
+	mono_gc_base_init ();
+
 	thread_to_tls = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_GC);
 	MONO_GC_REGISTER_ROOT_FIXED (thread_to_tls);
 
