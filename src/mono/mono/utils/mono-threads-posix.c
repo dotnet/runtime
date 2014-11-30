@@ -14,6 +14,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/metadata/threads-types.h>
 #include <limits.h>
 
 #include <errno.h>
