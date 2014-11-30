@@ -6,12 +6,6 @@
 #endif
 #include <errno.h>
 #include <mono/utils/mono-io-portability.h>
-#include <mono/metadata/metadata.h>
-#include <mono/metadata/class.h>
-#include <mono/metadata/class-internals.h>
-#include <mono/metadata/object.h>
-#include <mono/metadata/gc-internal.h>
-#include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
 
 #ifndef DISABLE_PORTABILITY

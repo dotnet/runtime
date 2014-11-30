@@ -16,9 +16,6 @@
 #include <mach/thread_act.h>
 #include <mach/thread_status.h>
 
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-mmap.h>
 
 #include "mach-support.h"

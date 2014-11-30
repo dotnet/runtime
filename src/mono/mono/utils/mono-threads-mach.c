@@ -20,9 +20,6 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/metadata/gc-internal.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/threads-types.h>
 
 void
 mono_threads_init_platform (void)
