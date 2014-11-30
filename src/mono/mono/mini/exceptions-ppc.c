@@ -381,18 +381,18 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 
 		if (aot) {
 			code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_IMAGE, mono_defaults.corlib);
-			ppc_mr (code, ppc_r3, ppc_r11);
+			ppc_mr (code, ppc_r3, ppc_r12);
 			code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-			ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r11);
-			ppc_ldptr (code, ppc_r11, 0, ppc_r11);
+			ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r12);
+			ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
-			ppc_mtctr (code, ppc_r11);
+			ppc_mtctr (code, ppc_r12);
 			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 		} else {
 			ppc_load (code, ppc_r3, (gulong)mono_defaults.corlib);
-			ppc_load_func (code, ppc_r0, mono_exception_from_token);
-			ppc_mtctr (code, ppc_r0);
+			ppc_load_func (code, PPC_CALL_REG, mono_exception_from_token);
+			ppc_mtctr (code, PPC_CALL_REG);
 			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 		}
 	}
@@ -420,14 +420,14 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 		code = mono_arch_emit_load_got_addr (start, code, NULL, &ji);
 		code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_ppc_throw_exception");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r11);
-		ppc_ldptr (code, ppc_r11, 0, ppc_r11);
+		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r12);
+		ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
-		ppc_mtctr (code, ppc_r11);
+		ppc_mtctr (code, ppc_r12);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	} else {
-		ppc_load_func (code, ppc_r0, mono_ppc_throw_exception);
-		ppc_mtctr (code, ppc_r0);
+		ppc_load_func (code, PPC_CALL_REG, mono_ppc_throw_exception);
+		ppc_mtctr (code, PPC_CALL_REG);
 		ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 	}
 	/* we should never reach this breakpoint */

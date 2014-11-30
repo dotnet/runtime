@@ -68,7 +68,13 @@ typedef struct MonoCompileArch {
 #ifdef __mono_ppc64__
 #define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
+
+/* ELFv2 ABI doesn't use function descriptors.  */
+#if _CALL_ELF == 2
+#undef PPC_USES_FUNCTION_DESCRIPTOR
+#else
 #define PPC_USES_FUNCTION_DESCRIPTOR
+#endif
 
 #ifndef __mono_ilp32__
 #define MONO_ARCH_HAVE_TLS_GET 1
@@ -96,7 +102,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_GC_MAPS_SUPPORTED 1
 
 /* Parameters used by the register allocator */
-#define MONO_ARCH_CALLEE_REGS ((0xff << ppc_r3) | (1 << ppc_r11) | (1 << ppc_r12))
+#define MONO_ARCH_CALLEE_REGS ((0xff << ppc_r3) | (1 << ppc_r12) | (1 << ppc_r11))
 #define MONO_ARCH_CALLEE_SAVED_REGS (0xfffff << ppc_r13) /* ppc_13 - ppc_31 */
 
 #if defined(__APPLE__) || defined(__mono_ppc64__)
@@ -161,15 +167,17 @@ typedef struct MonoCompileArch {
 #define PPC_FIRST_FPARG_REG ppc_f1
 #endif
 
+#define PPC_CALL_REG ppc_r12
+
 #if defined(HAVE_WORKING_SIGALTSTACK) && !defined(__APPLE__)
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK 1
 #define MONO_ARCH_SIGNAL_STACK_SIZE (12 * 1024)
 #endif /* HAVE_WORKING_SIGALTSTACK */
 
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-#define MONO_ARCH_IMT_REG ppc_r12
+#define MONO_ARCH_IMT_REG ppc_r11
 
-#define MONO_ARCH_VTABLE_REG	ppc_r12
+#define MONO_ARCH_VTABLE_REG	ppc_r11
 #define MONO_ARCH_RGCTX_REG	MONO_ARCH_IMT_REG
 
 #define MONO_ARCH_NO_IOV_CHECK 1

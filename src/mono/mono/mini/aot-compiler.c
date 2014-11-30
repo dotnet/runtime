@@ -1922,14 +1922,14 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	code = buf;
 
 	/* Load the mscorlib got address */
-	ppc_ldptr (code, ppc_r11, sizeof (gpointer), ppc_r30);
+	ppc_ldptr (code, ppc_r12, sizeof (gpointer), ppc_r30);
 	/* Load the parameter from the GOT */
 	ppc_load (code, ppc_r0, offset * sizeof (gpointer));
-	ppc_ldptr_indexed (code, ppc_r11, ppc_r11, ppc_r0);
+	ppc_ldptr_indexed (code, ppc_r12, ppc_r12, ppc_r0);
 
 	/* Load and check key */
 	labels [1] = code;
-	ppc_ldptr (code, ppc_r0, 0, ppc_r11);
+	ppc_ldptr (code, ppc_r0, 0, ppc_r12);
 	ppc_cmp (code, 0, sizeof (gpointer) == 8 ? 1 : 0, ppc_r0, MONO_ARCH_IMT_REG);
 	labels [2] = code;
 	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
@@ -1940,18 +1940,18 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
 
 	/* Loop footer */
-	ppc_addi (code, ppc_r11, ppc_r11, 2 * sizeof (gpointer));
+	ppc_addi (code, ppc_r12, ppc_r12, 2 * sizeof (gpointer));
 	labels [4] = code;
 	ppc_b (code, 0);
 	mono_ppc_patch (labels [4], labels [1]);
 
 	/* Match */
 	mono_ppc_patch (labels [2], code);
-	ppc_ldptr (code, ppc_r11, sizeof (gpointer), ppc_r11);
-	/* r11 now contains the value of the vtable slot */
+	ppc_ldptr (code, ppc_r12, sizeof (gpointer), ppc_r12);
+	/* r12 now contains the value of the vtable slot */
 	/* this is not a function descriptor on ppc64 */
-	ppc_ldptr (code, ppc_r11, 0, ppc_r11);
-	ppc_mtctr (code, ppc_r11);
+	ppc_ldptr (code, ppc_r12, 0, ppc_r12);
+	ppc_mtctr (code, ppc_r12);
 	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
 	/* Fail */

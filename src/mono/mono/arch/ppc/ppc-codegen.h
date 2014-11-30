@@ -123,7 +123,7 @@ enum {
 	PPC_TRAP_GE_UN = 16 + PPC_TRAP_EQ
 };
 
-#define ppc_emit32(c,x) do { *((guint32 *) (c)) = GUINT32_TO_BE (x); (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
+#define ppc_emit32(c,x) do { *((guint32 *) (c)) = (guint32) (x); (c) = (gpointer)((guint8 *)(c) + sizeof (guint32));} while (0)
 
 #define ppc_is_imm16(val) ((((val)>> 15) == 0) || (((val)>> 15) == -1))
 #define ppc_is_uimm16(val) ((glong)(val) >= 0L && (glong)(val) <= 65535L)
@@ -806,11 +806,15 @@ my and Ximian's copyright to this code. ;)
 		}	\
 	} G_STMT_END
 
+#if _CALL_ELF == 2
+#define ppc_load_func(c,D,V)	      ppc_load_sequence ((c), (D), (V))
+#else
 #define ppc_load_func(c,D,v) G_STMT_START { \
-		ppc_load_sequence ((c), ppc_r11, (guint64)(gsize)(v));	\
-		ppc_ldptr ((c), ppc_r2, sizeof (gpointer), ppc_r11);	\
-		ppc_ldptr ((c), (D), 0, ppc_r11);	\
+		ppc_load_sequence ((c), ppc_r12, (guint64)(gsize)(v));	\
+		ppc_ldptr ((c), ppc_r2, sizeof (gpointer), ppc_r12);	\
+		ppc_ldptr ((c), (D), 0, ppc_r12);	\
 	} G_STMT_END
+#endif
 
 #define ppc_load_multiple_regs(c,D,d,A) G_STMT_START { \
 		int __i, __o = (d);			\
