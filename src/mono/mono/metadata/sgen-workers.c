@@ -245,7 +245,7 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 	mono_mutex_unlock (&workers_job_queue_mutex);
 
 	if (workers_state.data.state != STATE_NURSERY_COLLECTION)
-		workers_signal_enqueue_work_if_necessary (num_entries);
+		workers_signal_enqueue_work_if_necessary (num_entries < workers_num ? num_entries : workers_num);
 }
 
 void
