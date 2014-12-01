@@ -57,7 +57,7 @@ You are also encouraged to start a discussion by filing an issue or creating a
 gist. See the contributing guides for more details. You can discuss .NET OSS
 more generally in the [.NET Foundation forums].
 
-[.NET Foundation forums]: http://www.dotnetfoundation.org/
+[.NET Foundation forums]: http://forums.dotnetfoundation.org/
 
 ## Building and Testing
 
