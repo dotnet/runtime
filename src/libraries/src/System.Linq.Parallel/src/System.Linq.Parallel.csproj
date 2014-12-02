@@ -1,0 +1,229 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    -->
+    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Linq.Parallel</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  
+  <!-- Contract references used -->
+  <ItemGroup>
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  
+  <!-- Compiled Source Files -->
+  <ItemGroup>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    
+    <Compile Include="System\Linq\Parallel\Channels\AsynchronousChannel.cs" />
+    <Compile Include="System\Linq\Parallel\Channels\SynchronousChannel.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\AggregationMinMaxHelpers.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\EmptyEnumerable.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\EnumerableWrapperWeakToStrong.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\IParallelPartitionable.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\OrderedParallelQuery.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\ParallelEnumerableWrapper.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\ParallelQuery.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\QueryAggregationOptions.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\RangeEnumerable.cs" />
+    <Compile Include="System\Linq\Parallel\Enumerables\RepeatEnumerable.cs" />
+    <Compile Include="System\Linq\Errors.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\ArrayMergeHelper.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\AsynchronousChannelMergeEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\DefaultMergeHelper.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\IMergeHelper.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\MergeEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\MergeExecutor.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\OrderPreservingMergeHelper.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\OrderPreservingPipeliningMergeHelper.cs" />
+    <Compile Include="System\Linq\Parallel\Merging\SynchronousChannelMergeEnumerator.cs" />
+    <Compile Include="System\Linq\ParallelEnumerable.cs" />
+    <Compile Include="System\Linq\ParallelExecutionMode.cs" />
+    <Compile Include="System\Linq\ParallelMergeOptions.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\HashRepartitionEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\HashRepartitionStream.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\IPartitionedStreamRecipient.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\OrderedHashRepartitionEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\OrderedHashRepartitionStream.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\PartitionedDataSource.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\PartitionedStream.cs" />
+    <Compile Include="System\Linq\Parallel\Partitioning\UnorderedHashRepartitionStream.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\AssociativeAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\BinaryQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\ExceptQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\GroupJoinQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\HashJoinQueryOperatorEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\IntersectQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\JoinQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\UnionQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\ZipQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\CountAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\DecimalAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\DecimalMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\DecimalSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\DoubleAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\DoubleMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\DoubleSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\FloatAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\FloatMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\FloatSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\InlinedAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\InlinedAggregationOperatorEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\IntAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\IntMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\IntSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\LongAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\LongCountAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\LongMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\LongSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableDecimalAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableDecimalMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableDecimalSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableDoubleAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableDoubleMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableDoubleSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableFloatAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableFloatMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableFloatSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableIntAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableIntMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableIntSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableLongAverageAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableLongMinMaxAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Inlined\NullableLongSumAggregationOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\ListQueryResults.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Options\OrderingQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Options\QueryExecutionOption.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\OrdinalIndexState.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\PartitionedStreamMerger.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\PartitionerQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\QueryOpeningEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\QueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\QueryOperatorEnumerator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\QueryResults.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\QuerySettings.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\ScanQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\UnaryQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\AnyAllSearchOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ConcatQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ContainsSearchOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\DefaultIfEmptyQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\DistinctQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ElementAtQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\FirstQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ForAllOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\GroupByQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\IndexedSelectQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\IndexedWhereQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\LastQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ReverseQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\SelectManyQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\SelectQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\SingleQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\SortQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\TakeOrSkipQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\TakeOrSkipWhileQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\WhereQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\CancellationState.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\OrderPreservingPipeliningSpoolingTask.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\OrderPreservingSpoolingTask.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\QueryLifecycle.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\QueryTask.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\QueryTaskGroupState.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\Scheduling.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\SpoolingTask.cs" />
+    <Compile Include="System\Linq\Parallel\Scheduling\SpoolingTaskBase.cs" />
+    <Compile Include="System\Linq\Parallel\Helpers.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\CancellableEnumerable.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\ExceptionAggregator.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\ExchangeUtilities.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\FixedMaxHeap.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\GrowingArray.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\HashLookup.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\IntValueEvent.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\ListChunk.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\Lookup.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\Pair.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\PairComparer.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\PLINQETWProvider.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\ReverseComparer.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\Shared.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\Sorting.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\TraceHelpers.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\Util.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\Wrapper.cs" />
+    <Compile Include="System\Linq\Parallel\Utils\WrapperEqualityComparer.cs" />
+  </ItemGroup>
+  
+  <!-- Common or Common-branched source files -->
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\SR.cs">
+      <Link>System\SR.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\ArrayT.cs">
+      <Link>System\ArrayT.cs</Link>
+    </Compile>
+  </ItemGroup>
+  
+  <!-- Resource files -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+</Project>
