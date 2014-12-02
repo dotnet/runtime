@@ -537,7 +537,10 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 			fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, *(long long *)buffer);
 		break;
 	case MONO_COUNTER_ULONG:
-		fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, *(unsigned long long *)buffer);
+		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME)
+			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(guint64*)buffer) / 10000.0);
+		else
+			fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, *(unsigned long long *)buffer);
 		break;
 	case MONO_COUNTER_WORD:
 		fprintf (outfile, ENTRY_FMT "%zd\n", counter->name, *(gssize*)buffer);
