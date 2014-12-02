@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    -->
+    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A7074928-82C3-4739-88FE-9B528977950C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Linq.Parallel.Tests</RootNamespace>
+    <AssemblyName>System.Linq.Parallel.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <SignAssembly>false</SignAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  
+  <!-- Compiled Source Files -->
+  <ItemGroup>
+    <Compile Include="AggregateTests.cs" />
+    <Compile Include="AllAnyTests.cs" />
+    <Compile Include="AverageMaxMinTests.cs" />
+    <Compile Include="CastOfTypeTests.cs" />
+    <Compile Include="ContainsTests.cs" />
+    <Compile Include="CountTests.cs" />
+    <Compile Include="DegreeOfParallelismTests.cs" />
+    <Compile Include="ElementAtPartitionerTests.cs" />
+    <Compile Include="ExceptConcatReverseTests.cs" />
+    <Compile Include="ExceptionAndParallelEnumerableExceptionTests.cs" />
+    <Compile Include="ExchangeTests.cs" />
+    <Compile Include="FirstLastSingleDefaultIfEmptyTests.cs" />
+    <Compile Include="ForAllTests.cs" />
+    <Compile Include="GroupByTests.cs" />
+    <Compile Include="OrderByTests.cs" />
+    <Compile Include="ParallelQueryTests.cs" />
+    <Compile Include="PlinqDelegateExceptions.cs" />
+    <Compile Include="PlinqModesTests.cs" />
+    <Compile Include="RangeRepeatTests.cs" />
+    <Compile Include="SelectSelectManyTests.cs" />
+    <Compile Include="SequenceEqualTests.cs" />
+    <Compile Include="SumTests.cs" />
+    <Compile Include="TakeSkipTests.cs" />
+    <Compile Include="TakeWhileSkipWhileTests.cs" />
+    <Compile Include="ThenByTests.cs" />
+    <Compile Include="ToArrayToDictionaryToLookupTests.cs" />
+    <Compile Include="UnionIntersectDistinctTests.cs" />
+    <Compile Include="WhereTests.cs" />
+    <Compile Include="WithCancellationTests.cs" />
+    <Compile Include="ZipJoinGroupJoinTests.cs" />
+  </ItemGroup>
+  
+  <!-- Common or Common-branched source files -->
+  <ItemGroup>
+      <Compile Include="..\..\Common\tests\System\Console.cs" />
+  </ItemGroup>
+  
+  <!-- References used -->
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="xunit">
+      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Linq.Parallel.csproj">
+      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
+      <Name>System.Linq.Parallel</Name>
+    </ProjectReference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="packages.config" /> <!-- NuGet configuration file -->
+  </ItemGroup>
+  
+  <!-- Automatically added by VS -->
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\xunit.1.9.2\lib\net20\xunit.dll')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.1.9.2\lib\net20\xunit.dll'))" />
+  </Target>
+</Project>
