@@ -360,6 +360,7 @@ cpu_load (int kind)
 	FILE *f = fopen ("/proc/loadavg", "r");
 	if (f) {
 		len = fread (buffer, 1, sizeof (buffer) - 1, f);
+		fclose (f);
 		if (len > 0) {
 			buffer [len < 511 ? len : 511] = 0;
 			b = buffer;
@@ -374,7 +375,6 @@ cpu_load (int kind)
 				}
 			}
 		}
-		fclose (f);
 	}
 #endif
 	return 0;
