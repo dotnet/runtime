@@ -1182,7 +1182,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The depth of the tree beneath this node.
             /// </summary>
-            private int height;
+            private byte height; // AVL tree max height <= ~1.44 * log2(maxNodes + 2)
 
             /// <summary>
             /// The left tree.
@@ -1228,7 +1228,7 @@ namespace System.Collections.Immutable
                 this.value = value;
                 this.left = left;
                 this.right = right;
-                this.height = 1 + Math.Max(left.height, right.height);
+                this.height = (byte)(1 + Math.Max(left.height, right.height));
                 this.frozen = frozen;
             }
 
@@ -1974,7 +1974,7 @@ namespace System.Collections.Immutable
                         this.right = right;
                     }
 
-                    this.height = 1 + Math.Max(this.left.height, this.right.height);
+                    this.height = (byte)(1 + Math.Max(this.left.height, this.right.height));
                     return this;
                 }
             }
