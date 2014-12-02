@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using Validation;
 
 namespace System.Collections.Immutable
@@ -162,7 +161,13 @@ namespace System.Collections.Immutable
             /// </summary>
             public IEnumerable<TKey> Keys
             {
-                get { return this.root.Values.SelectMany(b => b).Select(kv => kv.Key); }
+                get 
+                {
+                    foreach (KeyValuePair<TKey, TValue> item in this)
+                    {
+                        yield return item.Key;
+                    }
+                }
             }
 
             /// <summary>
@@ -179,7 +184,13 @@ namespace System.Collections.Immutable
             /// </summary>
             public IEnumerable<TValue> Values
             {
-                get { return this.root.Values.SelectMany(b => b).Select(kv => kv.Value).ToArray(this.Count); }
+                get
+                {
+                    foreach (KeyValuePair<TKey, TValue> item in this)
+                    {
+                        yield return item.Value;
+                    }
+                }
             }
 
             /// <summary>
@@ -564,7 +575,14 @@ namespace System.Collections.Immutable
             [Pure]
             public bool ContainsValue(TValue value)
             {
-                return this.Values.Contains(value, this.ValueComparer);
+                foreach (KeyValuePair<TKey, TValue> item in this)
+                {
+                    if (this.ValueComparer.Equals(value, item.Value))
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             /// <summary>
