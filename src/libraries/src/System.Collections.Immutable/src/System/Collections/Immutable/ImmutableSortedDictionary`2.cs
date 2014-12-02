@@ -1585,7 +1585,14 @@ namespace System.Collections.Immutable
             internal bool ContainsValue(TValue value, IEqualityComparer<TValue> valueComparer)
             {
                 Requires.NotNull(valueComparer, "valueComparer");
-                return this.Values.Contains(value, valueComparer);
+                foreach (KeyValuePair<TKey, TValue> item in this)
+                {
+                    if (valueComparer.Equals(value, item.Value))
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             /// <summary>
@@ -1600,7 +1607,7 @@ namespace System.Collections.Immutable
             [Pure]
             internal bool Contains(KeyValuePair<TKey, TValue> pair, IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
             {
-                Requires.NotNullAllowStructs(pair.Key != null, "key");
+                Requires.NotNullAllowStructs(pair.Key, "key");
                 Requires.NotNull(keyComparer, "keyComparer");
                 Requires.NotNull(valueComparer, "valueComparer");
 
