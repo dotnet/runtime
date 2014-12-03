@@ -1,2 +1,2 @@
-build_script: build.cmd
+build_script: "\"%VS120COMNTOOLS%VsDevCmd.bat\" && build.cmd"
 test: off  # disable automatic test discovery, xUnit already runs as part of build.cmd
