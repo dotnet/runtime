@@ -68,7 +68,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Add content to an <see cref="XStreamingElement"/>
         /// </summary>
-        /// <param name="content">Object containg content to add</param>
+        /// <param name="content">Object containing content to add</param>
         public void Add(object content)
         {
             if (content != null)
@@ -87,7 +87,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Add content to an <see cref="XStreamingElement"/>
         /// </summary>
-        /// <param name="content">array of objects containg content to add</param>
+        /// <param name="content">array of objects containing content to add</param>
         public void Add(params object[] content)
         {
             Add((object)content);
@@ -150,7 +150,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Save the contents of an <see cref="XStreamingElement"/> to an XML writer, not preserving whitepace
+        /// Save the contents of an <see cref="XStreamingElement"/> to an XML writer, not preserving whitespace
         /// </summary>
         /// <param name="writer"><see cref="XmlWriter"/> to write to </param>    
         public void Save(XmlWriter writer)

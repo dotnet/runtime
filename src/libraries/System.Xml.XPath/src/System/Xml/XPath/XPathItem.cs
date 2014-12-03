@@ -9,7 +9,7 @@ namespace System.Xml.XPath
     public abstract class XPathItem
     {
         // Constructor is internal because abstract member was removed and it might be back in some time.
-        // If someone would have created dervived class without that member and we would add it back
+        // If someone would have created derived class without that member and we would add it back
         // it would break his code.
         internal XPathItem() { }
 

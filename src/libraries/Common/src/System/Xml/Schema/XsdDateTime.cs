@@ -598,7 +598,7 @@ namespace System.Xml.Schema
                 this.text = text;
                 this.length = text.Length;
 
-                // Skip leading withitespace
+                // Skip leading whitespace
                 int start = 0;
                 while (start < length && char.IsWhiteSpace(text[start]))
                 {

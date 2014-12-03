@@ -255,7 +255,7 @@ namespace System.Xml
             nsTop = -1;
             // element stack
             stack = new TagInfo[10];
-            top = 0;// 0 is an empty sentanial element
+            top = 0;// 0 is an empty sentential element
             stack[top].Init(-1);
             quoteChar = '"';
 
@@ -1606,8 +1606,8 @@ namespace System.Xml
 
         // This method is used for validation of the DOCTYPE, processing instruction and entity names plus names 
         // written out by the user via WriteName and WriteQualifiedName.
-        // Unfortunatelly the names of elements and attributes are not validated by the XmlTextWriter.
-        // Also this method does not check wheather the character after ':' is a valid start name character. It accepts
+        // Unfortunately the names of elements and attributes are not validated by the XmlTextWriter.
+        // Also this method does not check whether the character after ':' is a valid start name character. It accepts
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
         private unsafe void ValidateName(string name, bool isNCName)
         {

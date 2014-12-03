@@ -239,7 +239,7 @@ namespace System.Numerics
         public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max)
         {
             // This compare order is very important!!!
-            // We must follow HLSL behavior in the case user specfied min value is bigger than max value.
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
             float x = value1.X;
             x = (x > max.X) ? max.X : x;
             x = (x < min.X) ? min.X : x;

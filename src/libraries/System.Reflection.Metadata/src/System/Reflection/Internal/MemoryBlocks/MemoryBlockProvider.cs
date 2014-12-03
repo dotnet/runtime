@@ -25,7 +25,7 @@ namespace System.Reflection.Internal
         /// <exception cref="IOException">Error while reading from the memory source.</exception>
         public AbstractMemoryBlock GetMemoryBlock(int start, int size)
         {
-            // Add canot overflow as it is the sum of two 32-bit values done in 64 bits.
+            // Add cannot overflow as it is the sum of two 32-bit values done in 64 bits.
             // Negative start or size is handle by overflow to greater than maximum size = int.MaxValue. 
             if ((ulong)(unchecked((uint)start)) + unchecked((uint)size) > (ulong)this.Size)
             {

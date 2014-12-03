@@ -81,7 +81,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets the appropriate interpration for the <see cref="Count"/> property; whether to be a count adjustment or total count.
+            /// Gets the appropriate interpretation for the <see cref="Count"/> property; whether to be a count adjustment or total count.
             /// </summary>
             internal CountType CountType
             {
