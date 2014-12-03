@@ -167,7 +167,7 @@ namespace MS.Internal.Xml.XPath
             Debug.Assert(this.expressions.Length == this.comparers.Length);
             Debug.Assert(0 < this.expressions.Length);
             Debug.Assert(0 <= numSorts && numSorts <= this.expressions.Length);
-            // Ajust array sizes if needed.
+            // Adjust array sizes if needed.
             if (numSorts == this.expressions.Length)
             {
                 Query[] newExpressions = new Query[numSorts * 2];
@@ -213,7 +213,7 @@ namespace MS.Internal.Xml.XPath
                 }
             }
 
-            // if after all comparisions, the two sort keys are still equal, preserve the doc order
+            // if after all comparisons, the two sort keys are still equal, preserve the doc order
             return x.OriginalPosition - y.OriginalPosition;
         }
 

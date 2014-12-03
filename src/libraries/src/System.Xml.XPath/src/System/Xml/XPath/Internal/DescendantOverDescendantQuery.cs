@@ -7,9 +7,9 @@ using System.Xml.XPath;
 namespace MS.Internal.Xml.XPath
 {
     // DescendantOverDescendantQuery: for each input it looks for the topmost descendents that matches to ns:name
-    // This is posible when query which has this query as its input (child query) is descendent as well.
+    // This is possible when query which has this query as its input (child query) is descendent as well.
     // Work of this query doesn't depend on DOD of its input. 
-    // It doesn't garate DOD of the output even when input is DOD. 
+    // It doesn't generate DOD of the output even when input is DOD. 
     internal sealed class DescendantOverDescendantQuery : DescendantBaseQuery
     {
         private int level = 0;
@@ -80,7 +80,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         private bool MoveUpUntillNext()
-        { // move up untill we can move next
+        { // move up until we can move next
             while (!currentNode.MoveToNext())
             {
                 --level;

@@ -422,7 +422,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Atomically enqueues an element to the tail of a queue.
+        /// Automatically enqueues an element to the tail of a queue.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the queue.</typeparam>
         /// <param name="location">The variable or field to atomically update.</param>

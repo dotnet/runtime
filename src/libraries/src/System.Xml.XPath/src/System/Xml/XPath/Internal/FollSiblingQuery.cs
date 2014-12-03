@@ -70,7 +70,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     if (nextInput == null)
                     {
-                        nextInput = FetchInput(); // This can happen at the begining and at the end 
+                        nextInput = FetchInput(); // This can happen at the beginning and at the end 
                     }
                     if (elementStk.Count == 0)
                     {

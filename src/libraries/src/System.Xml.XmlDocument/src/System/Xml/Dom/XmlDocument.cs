@@ -18,7 +18,7 @@ namespace System.Xml
         private XmlNamedNodeMap entities;
         private Dictionary<string, List<WeakReference<XmlElement>>> htElementIdMap;
         //This variable represents the actual loading status. Since, IsLoading will
-        //be manipulated soemtimes for adding content to EntityReference this variable
+        //be manipulated sometimes for adding content to EntityReference this variable
         //has been added which would always represent the loading status of document.
         private bool actualLoadingStatus;
 
@@ -390,7 +390,7 @@ namespace System.Xml
                         if (refChild.NodeType != XmlNodeType.XmlDeclaration)
                         {
                             //if refChild is not the XmlDeclaration node, only need to go through the siblings after and including the refChild to
-                            //  make sure no DocType node and XmlDeclaration node after the current posistion.
+                            //  make sure no DocType node and XmlDeclaration node after the current position.
                             return !HasNodeTypeInNextSiblings(XmlNodeType.DocumentType, refChild);
                         }
                     }
@@ -649,7 +649,7 @@ namespace System.Xml
                     case XmlNodeType.EntityReference:
                         newNode = CreateEntityReference(node.Name);
                         // we don't import the children of entity reference because they might result in different
-                        // children nodes given different namesapce context in the new document.
+                        // children nodes given different namespace context in the new document.
                         break;
 
                     case XmlNodeType.Whitespace:

@@ -83,7 +83,7 @@ namespace MS.Internal.Xml.XPath
 
             if (context != null)
             {
-                // In this switch we process some special case in wich we can calculate predicate faster then in generic case
+                // In this switch we process some special case in which we can calculate predicate faster then in generic case
                 switch (cond.StaticType)
                 {
                     case XPathResultType.Number:

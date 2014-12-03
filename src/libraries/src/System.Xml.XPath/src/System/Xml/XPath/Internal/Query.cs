@@ -207,9 +207,9 @@ namespace MS.Internal.Xml.XPath
                 {
                     if (last.NodeType == XPathNodeType.Namespace && curr.NodeType == XPathNodeType.Namespace)
                     {
-                        // NamespaceQuery reports namsespaces in mixed order.
+                        // NamespaceQuery reports namespaces in mixed order.
                         // Ignore this for now. 
-                        // It seams that this doesn't breake other queries becasue NS can't have children
+                        // It seams that this doesn't break other queries because NS can't have children
                     }
                     else
                     {
@@ -226,10 +226,10 @@ namespace MS.Internal.Xml.XPath
         // =================== XPathResultType_Navigator ======================
         // In v.1.0 and v.1.1 XPathResultType.Navigator is defined == to XPathResultType.String
         // This is source for multiple bugs or additional type casts.
-        // To fix all of them in one change in v.2 we internaly use one more value:
+        // To fix all of them in one change in v.2 we internally use one more value:
         public const XPathResultType XPathResultType_Navigator = (XPathResultType)4;
         // The biggest challenge in this change is preserve backward compatibility with v.1.1
-        // To achive this in all places where we accept from or report to user XPathResultType.
+        // To achieve this in all places where we accept from or report to user XPathResultType.
         // On my best knowledge this happens only in XsltContext.ResolveFunction() / IXsltContextFunction.ReturnType
 
 

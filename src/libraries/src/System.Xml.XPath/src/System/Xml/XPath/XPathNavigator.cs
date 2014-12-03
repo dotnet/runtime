@@ -708,7 +708,7 @@ namespace System.Xml.XPath
                 {
                     if (n1.GetType().ToString() != "Microsoft.VisualStudio.Modeling.StoreNavigator")
                     {
-                        Debug.Assert(CompareSiblings(n1.Clone(), n2.Clone()) != CompareSiblings(n2.Clone(), n1.Clone()), "IsSamePosition() on custom navigator returns incosistent results");
+                        Debug.Assert(CompareSiblings(n1.Clone(), n2.Clone()) != CompareSiblings(n2.Clone(), n1.Clone()), "IsSamePosition() on custom navigator returns inconsistent results");
                     }
                     return CompareSiblings(n1, n2);
                 }
@@ -816,7 +816,7 @@ namespace System.Xml.XPath
                 throw XPathException.Create(SR.Xp_BadQueryObject);
 
             // We should clone query because some Query.MatchNode() alter expression state and this may brake
-            // SelectionIterators that are runing using this Query
+            // SelectionIterators that are running using this Query
             // Example of MatchNode() that alret the state is FilterQuery.MatchNode()
             Query query = Query.Clone(cexpr.QueryTree);
 
@@ -1341,7 +1341,7 @@ namespace System.Xml.XPath
         //  3. same id is generated for the same node
         //  4. ids are unique
         //
-        //  id = node type letter + reverse path to root in terms of encoded IndexInParent integers from node to root seperated by 0's if needed
+        //  id = node type letter + reverse path to root in terms of encoded IndexInParent integers from node to root separated by 0's if needed
         internal virtual string UniqueId
         {
             get
