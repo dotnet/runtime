@@ -865,6 +865,8 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 				SeqPoint sp;
 				if (find_prev_seq_point_for_native_offset (domain, jinfo_get_method (frame.ji), frame.native_offset, NULL, &sp))
 					il_offset = sp.il_offset;
+				else
+					il_offset = -1;
 			}
 			mono_debug_free_source_location (source);
 		} else
