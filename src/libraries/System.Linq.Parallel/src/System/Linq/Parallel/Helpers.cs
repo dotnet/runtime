@@ -26,14 +26,17 @@ namespace System.Linq.Parallel
         private int _freeList;
         private IEqualityComparer<TElement> _comparer;
 
+        private const int InitialSize = 7;
+        private const int HashCodeMask = 0x7FFFFFFF;
+
         public Set() : this(null) { }
 
         public Set(IEqualityComparer<TElement> comparer)
         {
             if (comparer == null) comparer = EqualityComparer<TElement>.Default;
             _comparer = comparer;
-            _buckets = new int[7];
-            _slots = new Slot[7];
+            _buckets = new int[InitialSize];
+            _slots = new Slot[InitialSize];
             _freeList = -1;
         }
 
@@ -125,7 +128,7 @@ namespace System.Linq.Parallel
         internal int InternalGetHashCode(TElement value)
         {
             // Work around comparer implementations that throw when passed null
-            return (value == null) ? 0 : _comparer.GetHashCode(value) & 0x7FFFFFFF;
+            return (value == null) ? 0 : _comparer.GetHashCode(value) & HashCodeMask;
         }
 
         internal struct Slot
