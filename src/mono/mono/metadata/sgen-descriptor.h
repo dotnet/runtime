@@ -184,7 +184,7 @@ sgen_gc_descr_has_references (mword desc)
 			while (_objptr < _objptr_end) {	\
 				HANDLE_PTR (_objptr, (obj));	\
 				_objptr++;	\
-			}	\
+			};	\
 		}	\
 	} while (0)
 
@@ -217,7 +217,7 @@ sgen_gc_descr_has_references (mword desc)
 			}	\
 			_bmap >>= 1;	\
 			++_objptr;	\
-		} while (_bmap)		\
+		} while (_bmap);	\
 	} while (0)
 #endif
 
