@@ -84,10 +84,12 @@ namespace System.Linq.Parallel
         // The hash-code used for null elements.
         private const int NULL_ELEMENT_HASH_CODE = 0;
 
+        private const int HashCodeMask = 0x7fffffff;
+
         internal int GetHashCode(TInputOutput element)
         {
             return
-                (0x7fffffff &
+                (HashCodeMask &
                     (_elementComparer == null ?
                         (element == null ? NULL_ELEMENT_HASH_CODE : element.GetHashCode()) :
                         _elementComparer.GetHashCode(element)))
@@ -97,7 +99,7 @@ namespace System.Linq.Parallel
         internal int GetHashCode(THashKey key)
         {
             return
-                (0x7fffffff &
+                (HashCodeMask &
                     (_keyComparer == null ?
                         (key == null ? NULL_ELEMENT_HASH_CODE : key.GetHashCode()) :
                         _keyComparer.GetHashCode(key))) % _distributionMod;
