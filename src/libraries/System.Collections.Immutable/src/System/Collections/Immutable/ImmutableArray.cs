@@ -397,6 +397,19 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;.Builder"/> class with
+        /// the capacity and count set to the specified value.
+        /// </summary>
+        /// <typeparam name="T">The type of elements stored in the array.</typeparam>
+        /// <param name="count">The count of the underlying initial backing array and builder.</param>
+        /// <returns>A new builder.</returns>
+        [Pure]
+        public static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)
+        {
+            return new ImmutableArray<T>.Builder(capacity: count, count: count);
+        }
+
+        /// <summary>
         /// Enumerates a sequence exactly once and produces an immutable array of its contents.
         /// </summary>
         /// <typeparam name="TSource">The type of element in the sequence.</typeparam>

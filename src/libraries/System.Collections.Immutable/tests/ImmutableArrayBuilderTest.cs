@@ -469,6 +469,44 @@ namespace System.Collections.Immutable.Test
             Assert.False(enumerator.MoveNext());
         }
 
+        [Fact]
+        public void ExtractToImmutableNormal()
+        {
+            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            Assert.Equal(2, builder.Count);
+            Assert.Equal(2, builder.Capacity);
+            builder[1] = "b";
+            builder[0] = "a";
+            var array = builder.ExtractToImmutable();
+            Assert.Equal(new[] { "a", "b" }, array);
+            Assert.Equal(0, builder.Count);
+            Assert.Equal(0, builder.Capacity);
+        }
+
+        [Fact]
+        public void ExtractToImmutableRepeat()
+        {
+            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            builder[0] = "a";
+            builder[1] = "b";
+            var array1 = builder.ExtractToImmutable();
+            var array2 = builder.ExtractToImmutable();
+            Assert.Equal(new[] { "a", "b" }, array1);
+            Assert.Equal(0, array2.Length);
+        }
+
+        [Fact]
+        public void ExtractToImmutablePartialFill()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(4);
+            builder.Add(42);
+            builder.Add(13);
+            Assert.Equal(4, builder.Capacity);
+            Assert.Equal(2, builder.Count);
+            var array = builder.ExtractToImmutable();
+            Assert.Equal(new[] { 42, 13, 0, 0 }, array);
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             var builder = new ImmutableArray<T>.Builder(contents.Length);
