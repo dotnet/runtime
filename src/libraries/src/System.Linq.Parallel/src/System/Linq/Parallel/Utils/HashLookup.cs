@@ -25,6 +25,8 @@ namespace System.Linq.Parallel
         private int freeList;
         private IEqualityComparer<TKey> comparer;
 
+        private const int HashCodeMask = 0x7fffffff;
+
         internal HashLookup() : this(null)
         {
         }
@@ -60,7 +62,7 @@ namespace System.Linq.Parallel
 
         private int GetKeyHashCode(TKey key)
         {
-            return 0x7fffffff &
+            return HashCodeMask &
                 (comparer == null ?
                     (key == null ? 0 : key.GetHashCode()) :
                     comparer.GetHashCode(key));
