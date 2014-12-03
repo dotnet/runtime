@@ -472,7 +472,7 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ExtractToImmutableNormal()
         {
-            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            var builder = CreateBuilderWithCount<string>(2);
             Assert.Equal(2, builder.Count);
             Assert.Equal(2, builder.Capacity);
             builder[1] = "b";
@@ -486,7 +486,7 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ExtractToImmutableRepeat()
         {
-            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            var builder = CreateBuilderWithCount<string>(2);
             builder[0] = "a";
             builder[1] = "b";
             var array1 = builder.ExtractToImmutable();
@@ -510,7 +510,7 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ExtractToImmutableThenUse()
         {
-            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            var builder = CreateBuilderWithCount<string>(2);
             Assert.Equal(2, builder.ExtractToImmutable().Length);
             Assert.Equal(0, builder.Capacity);
             builder.Add("a");
@@ -523,11 +523,18 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void ExtractToImmutableAfterClear()
         {
-            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            var builder = CreateBuilderWithCount<string>(2);
             builder[0] = "a";
             builder[1] = "b";
             builder.Clear();
             Assert.Equal(new string[] { null, null }, builder.ExtractToImmutable());
+        }
+
+        private static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)
+        {
+            var builder = ImmutableArray.CreateBuilder<T>(count);
+            builder.Count = count;
+            return builder;
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
