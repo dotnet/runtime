@@ -97,7 +97,7 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// Decodes an compressed integer value starting at offset. 
+        /// Decodes a compressed integer value starting at offset. 
         /// See Metadata Specification section II.23.2: Blobs and signatures.
         /// </summary>
         /// <param name="offset">Offset to the start of the compressed data.</param>
@@ -196,11 +196,11 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// Read UTF8 at the given offset up to the given terminator, null terminator or end-of-block.
+        /// Read UTF8 at the given offset up to the given terminator, null terminator, or end-of-block.
         /// </summary>
         /// <param name="offset">Offset in to the block where the UTF8 bytes start.</param>
-        /// <param name="prefix">UTF-8 encoded prefix to prepend to the bytes at the offset before decoding.</param>
-        /// <param name="utf8Decoder">The UTF8 decoder to use that allows user to adjust fallback and/or reuse existing strings without allocatiing a new one.</param>
+        /// <param name="prefix">UTF8 encoded prefix to prepend to the bytes at the offset before decoding.</param>
+        /// <param name="utf8Decoder">The UTF8 decoder to use that allows user to adjust fallback and/or reuse existing strings without allocating a new one.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
         /// <param name="terminator">A character in the ASCII range that marks the end of the string. 
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
@@ -214,9 +214,8 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// Get number of bytes from offset to given terminator, null terminator, or end-of-block.
-        /// (whichever comes first). returned length does not include the terminator, but numberOfBytesRead
-        /// out paramater does.
+        /// Get number of bytes from offset to given terminator, null terminator, or end-of-block (whichever comes first).
+        /// Returned length does not include the terminator, but numberOfBytesRead out parameter does.
         /// </summary>
         /// <param name="offset">Offset in to the block where the UTF8 bytes start.</param>
         /// <param name="terminator">A character in the ASCII range that marks the end of the string. 
@@ -415,9 +414,9 @@ namespace System.Reflection.Internal
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
-        internal bool Utf8NullTermintatedStringStartsWithAsciiPrefix(int offset, string asciiPrefix)
+        internal bool Utf8NullTerminatedStringStartsWithAsciiPrefix(int offset, string asciiPrefix)
         {
-            // Assumes stringAscii conly contains ASCII characters and no nil characters.
+            // Assumes stringAscii only contains ASCII characters and no nil characters.
 
             CheckBounds(offset, 0);
 
@@ -446,7 +445,7 @@ namespace System.Reflection.Internal
 
         internal int CompareUtf8NullTerminatedStringWithAsciiString(int offset, string asciiString)
         {
-            // Assumes stringAscii conly contains ASCII characters and no nil characters.
+            // Assumes stringAscii only contains ASCII characters and no nil characters.
 
             CheckBounds(offset, 0);
 
