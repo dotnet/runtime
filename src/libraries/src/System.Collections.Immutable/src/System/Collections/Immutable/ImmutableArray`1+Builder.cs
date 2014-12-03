@@ -48,7 +48,7 @@ namespace System.Collections.Immutable
             internal Builder(int capacity, int count)
             {
                 Requires.Range(capacity >= 0, "capacity");
-                Requires.Range(count <= capacity, "count");
+                Requires.Range(count >= 0 && count <= capacity, "count");
                 _elements = new T[capacity];
                 _count = count;
             }
@@ -696,39 +696,7 @@ namespace System.Collections.Immutable
                 var nodes = _elements;
                 for (int i = 0; i < length; i++)
                 {
-<<<<<<< HEAD
-                    nodes[offset + i].Value = items[i].Value;
-                }
-            }
-
-            private sealed class Comparer : IComparer<RefAsValueType<T>>
-            {
-                private readonly IComparer<T> _comparer;
-
-                public static readonly Comparer Default = new Comparer(Comparer<T>.Default);
-
-                public static Comparer Create(IComparer<T> comparer)
-                {
-                    if (comparer == null || comparer == Comparer<T>.Default)
-                    {
-                        return Default;
-                    }
-
-                    return new Comparer(comparer);
-                }
-
-                private Comparer(IComparer<T> comparer)
-                {
-                    Requires.NotNull(comparer, "comparer"); // use Comparer.Default instead of passing null
-                    _comparer = comparer;
-                }
-
-                public int Compare(RefAsValueType<T> x, RefAsValueType<T> y)
-                {
-                    return _comparer.Compare(x.Value, y.Value);
-=======
                     nodes[offset + i] = items[i];
->>>>>>> Added ExtractToImmutable
                 }
             }
         }

@@ -507,6 +507,29 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(new[] { 42, 13, 0, 0 }, array);
         }
 
+        [Fact]
+        public void ExtractToImmutableThenUse()
+        {
+            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            Assert.Equal(2, builder.ExtractToImmutable().Length);
+            Assert.Equal(0, builder.Capacity);
+            builder.Add("a");
+            builder.Add("b");
+            Assert.Equal(2, builder.Count);
+            Assert.True(builder.Capacity >= 2);
+            Assert.Equal(new[] { "a", "b" }, builder.ExtractToImmutable());
+        }
+
+        [Fact]
+        public void ExtractToImmutableAfterClear()
+        {
+            var builder = ImmutableArray.CreateBuilderWithCount<string>(2);
+            builder[0] = "a";
+            builder[1] = "b";
+            builder.Clear();
+            Assert.Equal(new string[] { null, null }, builder.ExtractToImmutable());
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             var builder = new ImmutableArray<T>.Builder(contents.Length);
