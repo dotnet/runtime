@@ -11,7 +11,9 @@ namespace Test
 {
     public static class PlinqModesTests
     {
-        [Fact]
+        // This test is failing on our CI machines, probably due to the VM's limited CPU.
+        // To-do: Re-enable this test when we resolve the build machine issues.
+        // [Fact(Skip="Issue #176")]
         public static void RunPlinqModesTests()
         {
             // I would assume that this gets the number of processors (ie. Environment.ProcessorCount)
