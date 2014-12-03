@@ -43,19 +43,6 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
             /// </summary>
-            /// <param name="capacity">The initial capacity of the internal array.</param>
-            /// <param name="count">The initial count of the builder.</param>
-            internal Builder(int capacity, int count)
-            {
-                Requires.Range(capacity >= 0, "capacity");
-                Requires.Range(count >= 0 && count <= capacity, "count");
-                _elements = new T[capacity];
-                _count = count;
-            }
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Builder"/> class.
-            /// </summary>
             internal Builder()
                 : this(8)
             {

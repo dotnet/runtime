@@ -245,14 +245,6 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void CreateWithCount()
-        {
-            Assert.Equal(2, ImmutableArray.CreateBuilderWithCount<string>(2).Count);
-            Assert.Equal(0, ImmutableArray.CreateBuilderWithCount<string>(0).Count);
-            Assert.Throws(typeof(ArgumentOutOfRangeException), () => ImmutableArray.CreateBuilderWithCount<string>(-1));
-        }
-
-        [Fact]
         public void Covariance()
         {
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
