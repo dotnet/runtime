@@ -36,6 +36,7 @@
   </ItemGroup>
   <Import Project="mono.props" />
   <ItemGroup>
+    <ClCompile Include="..\mono\metadata\remoting.c" />
     <ClCompile Include="..\mono\mini\alias-analysis.c" />
     <ClCompile Include="..\mono\mini\exceptions-amd64.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -63,6 +64,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\mono\mini\mini.c" />
+    <ClInclude Include="..\mono\metadata\remoting.h" />
     <ClInclude Include="..\mono\mini\ir-emit.h" />
     <ClCompile Include="..\mono\mini\method-to-ir.c" />
     <ClCompile Include="..\mono\mini\decompose.c" />
@@ -79,10 +81,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="..\mono\mini\mini.h" />
+    <ClInclude Include="..\mono\mini\seq-points.h" />
     <ClInclude Include="..\mono\mini\version.h" />
     <ClInclude Include="..\mono\mini\optflags-def.h" />
     <ClInclude Include="..\mono\mini\jit-icalls.h " />
     <ClCompile Include="..\mono\mini\jit-icalls.c " />
+    <ClCompile Include="..\mono\mini\seq-points.c" />
     <ClCompile Include="..\mono\mini\trace.c" />
     <ClInclude Include="..\mono\mini\trace.h" />
     <ClInclude Include="..\mono\mini\patch-info.h" />

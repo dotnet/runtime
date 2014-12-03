@@ -267,6 +267,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\eglib\src\garray.c" />
+    <ClCompile Include="..\eglib\src\gbytearray.c" />
     <ClCompile Include="..\eglib\src\gdate-win32.c" />
     <ClCompile Include="..\eglib\src\gdir-win32.c" />
     <ClCompile Include="..\eglib\src\gerror.c" />

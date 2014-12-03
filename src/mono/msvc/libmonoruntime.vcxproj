@@ -70,7 +70,6 @@
     <ClCompile Include="..\mono\metadata\mono-basic-block.c" />
     <ClCompile Include="..\mono\metadata\mono-config.c" />
     <ClCompile Include="..\mono\metadata\mono-cq.c" />
-    <ClCompile Include="..\mono\metadata\mono-debug-debugger.c" />
     <ClCompile Include="..\mono\metadata\mono-debug.c" />
     <ClCompile Include="..\mono\metadata\mono-endian.c" />
     <ClCompile Include="..\mono\metadata\mono-hash.c" />
@@ -256,7 +255,7 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
