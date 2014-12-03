@@ -2361,22 +2361,6 @@ get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 	return *var;
 }
 
-static GHashTable*
-get_cache_full (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func, GDestroyNotify key_destroy_func, GDestroyNotify value_destroy_func)
-{
-	if (!(*var)) {
-		mono_marshal_lock ();
-		if (!(*var)) {
-			GHashTable *cache = 
-				g_hash_table_new_full (hash_func, equal_func, key_destroy_func, value_destroy_func);
-			mono_memory_barrier ();
-			*var = cache;
-		}
-		mono_marshal_unlock ();
-	}
-	return *var;
-}
-
 GHashTable*
 mono_marshal_get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 {

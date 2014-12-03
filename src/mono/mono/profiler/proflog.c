@@ -2066,10 +2066,12 @@ counters_emit (MonoProfiler *profiler)
 	emit_byte (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
 	for (agent = counters; agent; agent = agent->next) {
+		const char *name;
+
 		if (agent->emitted)
 			continue;
 
-		const char *name = mono_counter_get_name (agent->counter);
+		name = mono_counter_get_name (agent->counter);
 		emit_value (logbuffer, mono_counter_get_section (agent->counter));
 		emit_string (logbuffer, name, strlen (name) + 1);
 		emit_value (logbuffer, mono_counter_get_type (agent->counter));

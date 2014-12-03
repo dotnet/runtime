@@ -255,7 +255,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	MonoInst *last;
 	MonoDomain *domain = cfg->domain;
 	int i;
-	GSList **next;
+	GSList **next = NULL;
 	SeqPoint* seq_points;
 	GByteArray* array;
 	gboolean has_debug_data = cfg->gen_seq_points_debug_data;

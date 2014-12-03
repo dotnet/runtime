@@ -633,12 +633,14 @@ mono_counters_dump (int section_mask, FILE *outfile)
 void
 mono_counters_cleanup (void)
 {
+	MonoCounter *counter;
+
 	if (!initialized)
 		return;
 
 	mono_mutex_lock (&counters_mutex);
 
-	MonoCounter *counter = counters;
+	counter = counters;
 	counters = NULL;
 	while (counter) {
 		MonoCounter *tmp = counter;

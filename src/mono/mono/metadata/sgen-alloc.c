@@ -187,8 +187,8 @@ mono_gc_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 	/* FIXME: handle OOM */
 	void **p;
 	char *new_next;
-	TLAB_ACCESS_INIT;
 	size_t real_size = size;
+	TLAB_ACCESS_INIT;
 	
 	CANARIFY_SIZE(size);
 
@@ -378,8 +378,8 @@ mono_gc_try_alloc_obj_nolock (MonoVTable *vtable, size_t size)
 {
 	void **p;
 	char *new_next;
-	TLAB_ACCESS_INIT;
 	size_t real_size = size;
+	TLAB_ACCESS_INIT;
 
 	CANARIFY_SIZE(size);
 

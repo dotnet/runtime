@@ -1819,8 +1819,6 @@ static void _wapi_handle_check_share_by_pid (struct _WapiFileShare *share_info)
 void _wapi_handle_check_share (struct _WapiFileShare *share_info, int fd)
 {
 	gboolean found = FALSE, proc_fds = FALSE;
-	pid_t self = _wapi_getpid ();
-	int pid;
 	int thr_ret, i;
 	
 	/* Prevents entries from expiring under us if we remove this

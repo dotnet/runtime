@@ -70,7 +70,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	if (context) {
 		mono_sigctx_to_monoctx (context, &ctx);
 		info->stopped_ip = MONO_CONTEXT_GET_IP (&ctx);
-		stack_start = MONO_CONTEXT_GET_SP (&ctx) - REDZONE_SIZE;
+		stack_start = (((guint8 *) MONO_CONTEXT_GET_SP (&ctx)) - REDZONE_SIZE);
 	} else {
 		info->stopped_ip = NULL;
 		stack_start = NULL;

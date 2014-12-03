@@ -567,8 +567,6 @@ static int mark_ephemerons_in_range (ScanCopyContext ctx);
 static void clear_unreachable_ephemerons (ScanCopyContext ctx);
 static void null_ephemerons_for_domain (MonoDomain *domain);
 
-static gboolean major_update_or_finish_concurrent_collection (gboolean force_finish);
-
 SgenObjectOperations current_object_ops;
 SgenMajorCollector major_collector;
 SgenMinorCollector sgen_minor_collector;
