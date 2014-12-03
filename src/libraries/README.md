@@ -31,6 +31,11 @@ Today, it contains the following components:
 * **XML**. This includes the DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq as well the corresponding XPath extension methods.
 
+* **Parallel Linq**.  Parallel LINQ (PLINQ) is a parallel implementation of LINQ
+  to Objects. PLINQ implements the full set of LINQ standard query operators as 
+  extension methods for the System.Linq namespace and has additional operators
+  for parallel operations.
+
 More is coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
