@@ -202,8 +202,6 @@ mono_debug_free_method_jit_info
 mono_debug_free_source_location
 mono_debug_il_offset_from_address
 mono_debug_init
-mono_debug_list_add
-mono_debug_list_remove
 mono_debug_lookup_locals
 mono_debug_lookup_method
 mono_debug_lookup_method_addresses

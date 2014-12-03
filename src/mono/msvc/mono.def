@@ -202,8 +202,6 @@ mono_debug_free_method_jit_info
 mono_debug_free_source_location
 mono_debug_il_offset_from_address
 mono_debug_init
-mono_debug_list_add
-mono_debug_list_remove
 mono_debug_lookup_locals
 mono_debug_lookup_method
 mono_debug_lookup_method_addresses
@@ -891,7 +889,6 @@ mono_type_to_unmanaged
 mono_unhandled_exception
 mono_unicode_from_external
 mono_unicode_to_external
-mono_upgrade_remote_class_wrapper
 mono_utf8_from_external
 mono_utf8_validate_and_len
 mono_utf8_validate_and_len_with_bounds

@@ -149,9 +149,6 @@ struct _MonoDebugVarInfo {
 #define MONO_DEBUGGER_MINOR_VERSION			6
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
-MONO_API void mono_debug_list_add (MonoDebugList **list, const void* data);
-MONO_API void mono_debug_list_remove (MonoDebugList **list, const void* data);
-
 MONO_API void mono_debug_init (MonoDebugFormat format);
 MONO_API void mono_debug_open_image_from_memory (MonoImage *image, const mono_byte *raw_contents, int size);
 MONO_API void mono_debug_cleanup (void);
