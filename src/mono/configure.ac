@@ -3207,8 +3207,6 @@ case "x$libgc" in
 		;;
 esac
 
-AC_ARG_WITH(profile2,  [  --with-profile2=yes,no          If you want to install the 2.0/3.5 FX (defaults to yes)],            [], [with_profile2=no])
-AC_ARG_WITH(profile4,  [  --with-profile4=yes,no          If you want to install the 4.0 FX (defaults to yes)],                [], [with_profile4=yes])
 AC_ARG_WITH(profile4_5,[  --with-profile4_5=yes,no        If you want to install the 4.5 FX (defaults to yes)],                [], [with_profile4_5=yes])
 AC_ARG_WITH(monodroid, [  --with-monodroid=yes,no         If you want to build the MonoDroid assemblies (defaults to no)],     [], [with_monodroid=no])
 AC_ARG_WITH(monotouch, [  --with-monotouch=yes,no,only    If you want to build the MonoTouch assemblies (defaults to no)],     [], [with_monotouch=no])
@@ -3243,7 +3241,7 @@ AC_ARG_WITH(mcs_docs,[  --with-mcs-docs=yes,no         If you want to build the 
 		DISABLE_MCS_DOCS=yes
 	fi
 ])
-if test x$with_profile4 != xyes; then
+if test x$with_profile4_5 != xyes; then
 	DISABLE_MCS_DOCS=yes
 fi
 
@@ -3283,7 +3281,6 @@ dnl Consistency settings
 dnl
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS=yes
-   with_profile4=no
    with_profile4_5=no
    with_monodroid=no
    with_monotouch=no
@@ -3306,7 +3303,6 @@ AC_SUBST(OPROFILE_LIBS)
 
 libmono_ldflags="$libmono_ldflags $LIBS"
 
-AM_CONDITIONAL(INSTALL_4_0, [test "x$with_profile4" = xyes])
 AM_CONDITIONAL(INSTALL_4_5, [test "x$with_profile4_5" = xyes])
 AM_CONDITIONAL(INSTALL_MONODROID, [test "x$with_monodroid" != "xno"])
 AM_CONDITIONAL(INSTALL_MONOTOUCH, [test "x$with_monotouch" != "xno"])
@@ -3689,10 +3685,7 @@ fi
         echo "EXTENSION_MODULE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
-	default_profile=net_2_0
-    if test -z "$INSTALL_4_0_TRUE"; then :
-  		default_profile=net_4_0
-    fi
+	default_profile=net_4_5
     if test -z "$INSTALL_MONODROID_TRUE"; then :
   		default_profile=monodroid
     fi
@@ -3750,7 +3743,6 @@ echo "
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
 
    Libraries:
-	.NET 4.0:      $with_profile4
 	.NET 4.5:      $with_profile4_5
 	MonoDroid:     $with_monodroid
 	MonoTouch:     $with_monotouch
