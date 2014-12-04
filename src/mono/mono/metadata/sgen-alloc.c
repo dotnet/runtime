@@ -935,14 +935,16 @@ create_allocator (int atype)
 		g_assert_not_reached ();
 	}
 
-	/* size += ALLOC_ALIGN - 1; */
-	mono_mb_emit_ldloc (mb, size_var);
-	mono_mb_emit_icon (mb, ALLOC_ALIGN - 1);
-	mono_mb_emit_byte (mb, CEE_ADD);
-	/* size &= ~(ALLOC_ALIGN - 1); */
-	mono_mb_emit_icon (mb, ~(ALLOC_ALIGN - 1));
-	mono_mb_emit_byte (mb, CEE_AND);
-	mono_mb_emit_stloc (mb, size_var);
+	if (atype != ATYPE_SMALL) {
+		/* size += ALLOC_ALIGN - 1; */
+		mono_mb_emit_ldloc (mb, size_var);
+		mono_mb_emit_icon (mb, ALLOC_ALIGN - 1);
+		mono_mb_emit_byte (mb, CEE_ADD);
+		/* size &= ~(ALLOC_ALIGN - 1); */
+		mono_mb_emit_icon (mb, ~(ALLOC_ALIGN - 1));
+		mono_mb_emit_byte (mb, CEE_AND);
+		mono_mb_emit_stloc (mb, size_var);
+	}
 
 	/* if (size > MAX_SMALL_OBJ_SIZE) goto slowpath */
 	if (atype != ATYPE_SMALL) {
@@ -1073,6 +1075,15 @@ create_allocator (int atype)
 	return res;
 }
 #endif
+
+int
+mono_gc_get_aligned_size_for_allocator (int size)
+{
+	int aligned_size = size;
+	aligned_size += ALLOC_ALIGN - 1;
+	aligned_size &= ~(ALLOC_ALIGN - 1);
+	return aligned_size;
+}
 
 /*
  * Generate an allocator method implementing the fast path of mono_gc_alloc_obj ().

@@ -1083,6 +1083,12 @@ mono_gc_get_write_barrier (void)
 
 #endif
 
+int
+mono_gc_get_aligned_size_for_allocator (int size)
+{
+	return size;
+}
+
 const char *
 mono_gc_get_gc_name (void)
 {
