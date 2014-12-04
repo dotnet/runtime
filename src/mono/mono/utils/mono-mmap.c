@@ -457,7 +457,7 @@ mono_pages_not_faulted (void *addr, size_t size)
 	gint64 count;
 	int pagesize = mono_pagesize ();
 	int npages = (size + pagesize - 1) / pagesize;
-	guchar *faulted = g_malloc0 (sizeof (char*) * npages);
+	char *faulted = g_malloc0 (sizeof (char*) * npages);
 
 	if (mincore (addr, size, faulted) != 0) {
 		count = -1;
