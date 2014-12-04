@@ -1843,7 +1843,7 @@ namespace System.Collections.Immutable
                 this.key = key;
                 this.left = left;
                 this.right = right;
-                this.height = (byte)(1 + Math.Max(left.height, right.height));
+                this.height = checked((byte)(1 + Math.Max(left.height, right.height)));
                 this.count = 1 + left.count + right.count;
                 this.frozen = frozen;
             }
@@ -3215,7 +3215,7 @@ namespace System.Collections.Immutable
                         this.right = right;
                     }
 
-                    this.height = (byte)(1 + Math.Max(this.left.height, this.right.height));
+                    this.height = checked((byte)(1 + Math.Max(this.left.height, this.right.height)));
                     this.count = 1 + this.left.count + this.right.count;
                     return this;
                 }
