@@ -487,7 +487,6 @@ namespace System.Collections.Immutable
         /// <returns>The new AVL tree.</returns>
         private SortedInt32KeyNode<TValue> RemoveRecursive(int key, out bool mutated)
         {
-            // Skip parameter validation because it's too expensive and pointless in recursive methods.
             if (this.IsEmpty)
             {
                 mutated = false;
@@ -590,9 +589,6 @@ namespace System.Collections.Immutable
         [Pure]
         private SortedInt32KeyNode<TValue> Search(int key)
         {
-            // Arg validation is too expensive for recursive methods.
-            // Callers are expected to have validated parameters.
-
             if (this.IsEmpty || key == this.key)
             {
                 return this;
