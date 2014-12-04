@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -28,7 +29,7 @@ namespace System.Collections.Immutable.Test
             var actual = ImmutableList<int>.Empty;
 
             int seed = (int)DateTime.Now.Ticks;
-            Console.WriteLine("Using random seed {0}", seed);
+            Debug.WriteLine("Using random seed {0}", seed);
             var random = new Random(seed);
 
             for (int iOp = 0; iOp < operationCount; iOp++)
@@ -37,7 +38,7 @@ namespace System.Collections.Immutable.Test
                 {
                     case Operation.Add:
                         int value = random.Next();
-                        Console.WriteLine("Adding \"{0}\" to the list.", value);
+                        Debug.WriteLine("Adding \"{0}\" to the list.", value);
                         expected.Add(value);
                         actual = actual.Add(value);
                         VerifyBalanced(actual);
@@ -45,7 +46,7 @@ namespace System.Collections.Immutable.Test
                     case Operation.AddRange:
                         int inputLength = random.Next(100);
                         int[] values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
-                        Console.WriteLine("Adding {0} elements to the list.", inputLength);
+                        Debug.WriteLine("Adding {0} elements to the list.", inputLength);
                         expected.AddRange(values);
                         actual = actual.AddRange(values);
                         VerifyBalanced(actual);
@@ -53,7 +54,7 @@ namespace System.Collections.Immutable.Test
                     case Operation.Insert:
                         int position = random.Next(expected.Count + 1);
                         value = random.Next();
-                        Console.WriteLine("Adding \"{0}\" to position {1} in the list.", value, position);
+                        Debug.WriteLine("Adding \"{0}\" to position {1} in the list.", value, position);
                         expected.Insert(position, value);
                         actual = actual.Insert(position, value);
                         VerifyBalanced(actual);
@@ -62,7 +63,7 @@ namespace System.Collections.Immutable.Test
                         inputLength = random.Next(100);
                         values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
                         position = random.Next(expected.Count + 1);
-                        Console.WriteLine("Adding {0} elements to position {1} in the list.", inputLength, position);
+                        Debug.WriteLine("Adding {0} elements to position {1} in the list.", inputLength, position);
                         expected.InsertRange(position, values);
                         actual = actual.InsertRange(position, values);
                         VerifyBalanced(actual);
@@ -71,7 +72,7 @@ namespace System.Collections.Immutable.Test
                         if (expected.Count > 0)
                         {
                             position = random.Next(expected.Count);
-                            Console.WriteLine("Removing element at position {0} from the list.", position);
+                            Debug.WriteLine("Removing element at position {0} from the list.", position);
                             expected.RemoveAt(position);
                             actual = actual.RemoveAt(position);
                             VerifyBalanced(actual);
@@ -81,7 +82,7 @@ namespace System.Collections.Immutable.Test
                     case Operation.RemoveRange:
                         position = random.Next(expected.Count);
                         inputLength = random.Next(expected.Count - position);
-                        Console.WriteLine("Removing {0} elements starting at position {1} from the list.", inputLength, position);
+                        Debug.WriteLine("Removing {0} elements starting at position {1} from the list.", inputLength, position);
                         expected.RemoveRange(position, inputLength);
                         actual = actual.RemoveRange(position, inputLength);
                         VerifyBalanced(actual);
@@ -165,7 +166,7 @@ namespace System.Collections.Immutable.Test
         public void AddRangeBalanceTest()
         {
             int randSeed = (int)DateTime.Now.Ticks;
-            Console.WriteLine("Random seed: {0}", randSeed);
+            Debug.WriteLine("Random seed: {0}", randSeed);
             var random = new Random(randSeed);
 
             int expectedTotalSize = 0;
@@ -176,7 +177,7 @@ namespace System.Collections.Immutable.Test
             for (int i = 0; i < 128; i++)
             {
                 int batchSize = random.Next(32);
-                Console.WriteLine("Adding {0} elements to the list", batchSize);
+                Debug.WriteLine("Adding {0} elements to the list", batchSize);
                 list = list.AddRange(Enumerable.Range(expectedTotalSize+1, batchSize));
                 VerifyBalanced(list);
                 expectedTotalSize += batchSize;
@@ -184,7 +185,7 @@ namespace System.Collections.Immutable.Test
 
             // Add a single large batch to the end
             int largeBatchSize = random.Next(32768) + 32768;
-            Console.WriteLine("Adding {0} elements to the list", largeBatchSize);
+            Debug.WriteLine("Adding {0} elements to the list", largeBatchSize);
             list = list.AddRange(Enumerable.Range(expectedTotalSize + 1, largeBatchSize));
             VerifyBalanced(list);
             expectedTotalSize += largeBatchSize;
@@ -198,7 +199,7 @@ namespace System.Collections.Immutable.Test
         public void InsertRangeRandomBalanceTest()
         {
             int randSeed = (int)DateTime.Now.Ticks;
-            Console.WriteLine("Random seed: {0}", randSeed);
+            Debug.WriteLine("Random seed: {0}", randSeed);
             var random = new Random(randSeed);
 
             var immutableList = ImmutableList.CreateBuilder<int>();
