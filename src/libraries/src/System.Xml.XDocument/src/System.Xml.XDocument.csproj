@@ -44,24 +44,70 @@
   <PropertyGroup>
     <CommonPath>..\..\Common\src</CommonPath>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Text.Encoding" />
-    <Reference Include="System.Collections" />
-    <!--System.Collections.Generic.Dictionary`2-->
-    <Reference Include="System.IO" />
-    <Reference Include="System.Runtime.Extensions" />
-    <!--System.Environment.get_CurrentManagedThreadId-->
-    <Reference Include="System.Threading" />
-    <!--For locking-->
-    <Reference Include="System.Reflection" />
-    <!--Need to reimplement Type.IsInstanceOfType-->
-    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Runtime">
+      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Runtime.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Xml.ReaderWriter">
+      <HintPath>..\..\packages\System.Xml.ReaderWriter.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Xml.ReaderWriter.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Resources.ResourceManager">
+      <HintPath>..\..\packages\System.Resources.ResourceManager.4.0.0-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Resources.ResourceManager.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Globalization">
+      <HintPath>..\..\packages\System.Globalization.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Globalization.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Collections">
+      <HintPath>..\..\packages\System.Collections.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Collections.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.IO">
+      <HintPath>..\..\packages\System.IO.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.IO.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Tools">
+      <HintPath>..\..\packages\System.Diagnostics.Tools.4.0.0-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Diagnostics.Tools.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Debug">
+      <HintPath>..\..\packages\System.Diagnostics.Debug.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Diagnostics.Debug.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Reflection">
+      <HintPath>..\..\packages\System.Reflection.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Reflection.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime.Extensions">
+      <HintPath>..\..\packages\System.Runtime.Extensions.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Runtime.Extensions.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading">
+      <HintPath>..\..\packages\System.Threading.4.0.0-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Threading.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Text.Encoding">
+      <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22405\lib\portable-wpa80-win80-net45-aspnetcore50\System.Text.Encoding.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
   </ItemGroup>
+  
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\SR.cs">
       <Link>Resources\SR.cs</Link>
