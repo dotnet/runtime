@@ -20,7 +20,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the data structure for the collection.
             /// </summary>
-            private readonly ImmutableSortedDictionary<int, HashBucket>.Node root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// The equality comparer.
@@ -50,7 +50,7 @@ namespace System.Collections.Immutable
             /// <param name="root">The root.</param>
             /// <param name="equalityComparer">The equality comparer.</param>
             /// <param name="count">The count.</param>
-            internal MutationInput(ImmutableSortedDictionary<int, HashBucket>.Node root, IEqualityComparer<T> equalityComparer, int count)
+            internal MutationInput(SortedInt32KeyNode<HashBucket> root, IEqualityComparer<T> equalityComparer, int count)
             {
                 Requires.NotNull(root, "root");
                 Requires.NotNull(equalityComparer, "equalityComparer");
@@ -63,7 +63,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the root of the data structure for the collection.
             /// </summary>
-            internal ImmutableSortedDictionary<int, HashBucket>.Node Root
+            internal SortedInt32KeyNode<HashBucket> Root
             {
                 get { return this.root; }
             }
