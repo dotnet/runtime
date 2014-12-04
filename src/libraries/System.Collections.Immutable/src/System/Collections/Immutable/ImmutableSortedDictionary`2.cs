@@ -1228,7 +1228,7 @@ namespace System.Collections.Immutable
                 this.value = value;
                 this.left = left;
                 this.right = right;
-                this.height = (byte)(1 + Math.Max(left.height, right.height));
+                this.height = checked((byte)(1 + Math.Max(left.height, right.height)));
                 this.frozen = frozen;
             }
 
@@ -1981,7 +1981,7 @@ namespace System.Collections.Immutable
                         this.right = right;
                     }
 
-                    this.height = (byte)(1 + Math.Max(this.left.height, this.right.height));
+                    this.height = checked((byte)(1 + Math.Max(this.left.height, this.right.height)));
                     return this;
                 }
             }
@@ -1996,7 +1996,7 @@ namespace System.Collections.Immutable
             {
                 // Arg validation is too expensive for recursive methods.
                 // Callers are expected to have validated parameters.
-                if (this.left == null /* PERF: this.IsEmpty */)
+                if (this.IsEmpty)
                 {
                     return this;
                 }

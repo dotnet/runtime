@@ -83,7 +83,6 @@ namespace System.Collections.Immutable
         /// <param name="frozen">Whether this node is prefrozen.</param>
         private SortedInt32KeyNode(int key, TValue value, SortedInt32KeyNode<TValue> left, SortedInt32KeyNode<TValue> right, bool frozen = false)
         {
-            Requires.NotNullAllowStructs(key, "key");
             Requires.NotNull(left, "left");
             Requires.NotNull(right, "right");
             Debug.Assert(!frozen || (left.frozen && right.frozen));
@@ -94,7 +93,7 @@ namespace System.Collections.Immutable
             this.right = right;
             this.frozen = frozen;
 
-            this.height = (byte)(1 + Math.Max(left.height, right.height));
+            this.height = checked((byte)(1 + Math.Max(left.height, right.height)));
         }
 
         /// <summary>
@@ -181,7 +180,6 @@ namespace System.Collections.Immutable
         /// <param name="mutated">Receives a value indicating whether this node tree has mutated because of this operation.</param>
         internal SortedInt32KeyNode<TValue> SetItem(int key, TValue value, IEqualityComparer<TValue> valueComparer, out bool replacedExistingValue, out bool mutated)
         {
-            Requires.NotNullAllowStructs(key, "key");
             Requires.NotNull(valueComparer, "valueComparer");
 
             return this.SetOrAdd(key, value, valueComparer, true, out replacedExistingValue, out mutated);
@@ -195,8 +193,6 @@ namespace System.Collections.Immutable
         /// <returns>The new AVL tree.</returns>
         internal SortedInt32KeyNode<TValue> Remove(int key, out bool mutated)
         {
-            Requires.NotNullAllowStructs(key, "key");
-
             return this.RemoveRecursive(key, out mutated);
         }
 
@@ -208,8 +204,6 @@ namespace System.Collections.Immutable
         [Pure]
         internal TValue GetValueOrDefault(int key)
         {
-            Requires.NotNullAllowStructs(key, "key");
-
             var match = this.Search(key);
             return match.IsEmpty ? default(TValue) : match.value;
         }
@@ -223,8 +217,6 @@ namespace System.Collections.Immutable
         [Pure]
         internal bool TryGetValue(int key, out TValue value)
         {
-            Requires.NotNullAllowStructs(key, "key");
-
             var match = this.Search(key);
             if (match.IsEmpty)
             {
@@ -586,7 +578,7 @@ namespace System.Collections.Immutable
                     this.right = right;
                 }
 
-                this.height = (byte)(1 + Math.Max(this.left.height, this.right.height));
+                this.height = checked((byte)(1 + Math.Max(this.left.height, this.right.height)));
                 return this;
             }
         }
@@ -601,8 +593,7 @@ namespace System.Collections.Immutable
             // Arg validation is too expensive for recursive methods.
             // Callers are expected to have validated parameters.
 
-            if (this.left == null || // PERF: left == null means this.IsEmpty
-                key == this.key)
+            if (this.IsEmpty || key == this.key)
             {
                 return this;
             }
