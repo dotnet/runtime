@@ -363,7 +363,6 @@ namespace System.Collections.Immutable.Test
             }
 
             string timingText = string.Join(Environment.NewLine, timing);
-            //File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing.txt"), );
             Debug.WriteLine("Timing:{0}{1}", Environment.NewLine, timingText);
         }
 
@@ -389,7 +388,6 @@ namespace System.Collections.Immutable.Test
             }
 
             string timingText = string.Join(Environment.NewLine, timing);
-            //File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing_empty.txt"), );
             Debug.WriteLine("Timing_Empty:{0}{1}", Environment.NewLine, timingText);
         }
 
