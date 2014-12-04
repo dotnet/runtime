@@ -27,7 +27,7 @@ namespace System.Collections.Immutable.Test
             var actual = ImmutableSortedDictionary<int, bool>.Empty;
 
             int seed = (int)DateTime.Now.Ticks;
-            Console.WriteLine("Using random seed {0}", seed);
+            Debug.WriteLine("Using random seed {0}", seed);
             var random = new Random(seed);
 
             for (int iOp = 0; iOp < operationCount; iOp++)
@@ -42,7 +42,7 @@ namespace System.Collections.Immutable.Test
                         }
                         while (expected.ContainsKey(key));
                         bool value = random.Next() % 2 == 0;
-                        Console.WriteLine("Adding \"{0}\"={1} to the set.", key, value);
+                        Debug.WriteLine("Adding \"{0}\"={1} to the set.", key, value);
                         expected.Add(key, value);
                         actual = actual.Add(key, value);
                         break;
@@ -64,7 +64,7 @@ namespace System.Collections.Immutable.Test
                         }
 
                         value = random.Next() % 2 == 0;
-                        Console.WriteLine("Setting \"{0}\"={1} to the set (overwrite={2}).", key, value, overwrite);
+                        Debug.WriteLine("Setting \"{0}\"={1} to the set (overwrite={2}).", key, value, overwrite);
                         expected[key] = value;
                         actual = actual.SetItem(key, value);
                         break;
@@ -74,7 +74,7 @@ namespace System.Collections.Immutable.Test
                         {
                             int position = random.Next(expected.Count);
                             key = expected.Skip(position).First().Key;
-                            Console.WriteLine("Removing element \"{0}\" from the set.", key);
+                            Debug.WriteLine("Removing element \"{0}\" from the set.", key);
                             Assert.True(expected.Remove(key));
                             actual = actual.Remove(key);
                         }
@@ -362,7 +362,9 @@ namespace System.Collections.Immutable.Test
                 sw.Reset();
             }
 
-            File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing.txt"), string.Join(Environment.NewLine, timing));
+            string timingText = string.Join(Environment.NewLine, timing);
+            //File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing.txt"), );
+            Debug.WriteLine("Timing:{0}{1}", Environment.NewLine, timingText);
         }
 
         ////[Fact] // not really a functional test -- but very useful to enable when collecting perf traces.
@@ -386,7 +388,9 @@ namespace System.Collections.Immutable.Test
                 sw.Reset();
             }
 
-            File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing_empty.txt"), string.Join(Environment.NewLine, timing));
+            string timingText = string.Join(Environment.NewLine, timing);
+            //File.AppendAllText(Environment.ExpandEnvironmentVariables(@"%TEMP%\timing_empty.txt"), );
+            Debug.WriteLine("Timing_Empty:{0}{1}", Environment.NewLine, timingText);
         }
 
         protected override IImmutableDictionary<TKey, TValue> Empty<TKey, TValue>()
