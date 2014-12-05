@@ -380,7 +380,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 var taskForInputProcessing = new Task(thisTargetCore => ((TargetCore<TInput>)thisTargetCore).ProcessMessagesLoopCore(), this,
                                                       Common.GetCreationOptionsForTask(repeat));
 
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING // PAL doesn't support eventing
                 var etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -792,7 +792,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 _completionSource.TrySetResult(default(VoidResult));
             }
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING // PAL doesn't support eventing
             // We only want to do tracing for block completion if this target core represents the whole block.
             // If it only represents a part of the block (i.e. there's a source associated with it as well),
             // then we shouldn't log just for the first half of the block; the source half will handle logging.
