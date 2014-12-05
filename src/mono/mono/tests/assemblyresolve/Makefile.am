@@ -1,4 +1,4 @@
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_5
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper --debug
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -debug:full -target:library
