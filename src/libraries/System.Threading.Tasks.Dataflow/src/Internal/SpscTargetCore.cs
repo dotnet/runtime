@@ -168,7 +168,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     // We won the race.  This task is now the consumer.
 
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
                     var etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
@@ -344,7 +344,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // seeing m_activeTask as null and queueing a new consumer task even
             // though the block has completed.
 
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
