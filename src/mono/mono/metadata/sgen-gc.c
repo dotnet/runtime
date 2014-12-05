@@ -986,31 +986,36 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 		 * search_start must point to zeroed mem or point to an object.
 		 */
 		do {
-			size_t obj_size;
+			size_t obj_size, canarified_obj_size;
 
 			/* Skip zeros. */
-			if (!*(void**)search_start) {
+			if (!*(void**)search_start /* || (nursery_canaries_enabled () && CANARY_VALID (search_start)) */) {
 				search_start = (void*)ALIGN_UP ((mword)search_start + sizeof (gpointer));
 				/* The loop condition makes sure we don't overrun addr. */
 				continue;
 			}
 
-			obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
+			canarified_obj_size = obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
 
-			if (addr >= search_start && (char*)addr < (char*)search_start + obj_size) {
-				/* This is the object we're looking for. */
-				obj_to_pin = search_start;
-				obj_to_pin_size = obj_size;
-				break;
+			/*
+			 * Filler arrays are marked by an invalid sync word.  We don't
+			 * consider them for pinning.  They are not delimited by canaries,
+			 * either.
+			 */
+			if (((MonoObject*)search_start)->synchronisation != GINT_TO_POINTER (-1)) {
+				CHECK_CANARY_FOR_OBJECT (search_start);
+				CANARIFY_SIZE (canarified_obj_size);
+
+				if (addr >= search_start && (char*)addr < (char*)search_start + obj_size) {
+					/* This is the object we're looking for. */
+					obj_to_pin = search_start;
+					obj_to_pin_size = canarified_obj_size;
+					break;
+				}
 			}
 
 			/* Skip to the next object */
-			if (((MonoObject*)search_start)->synchronisation != GINT_TO_POINTER (-1)) {
-				CHECK_CANARY_FOR_OBJECT (search_start);
-				CANARIFY_SIZE (obj_size);
-				CANARIFY_SIZE (obj_to_pin_size);
-			}
-			search_start = (void*)((char*)search_start + obj_size);
+			search_start = (void*)((char*)search_start + canarified_obj_size);
 		} while (search_start <= addr);
 
 		/* We've searched past the address we were looking for. */
