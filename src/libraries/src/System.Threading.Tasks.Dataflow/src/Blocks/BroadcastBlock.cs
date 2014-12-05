@@ -106,7 +106,7 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BroadcastBlock<T>)state).Complete(), this);
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -270,7 +270,7 @@ namespace System.Threading.Tasks.Dataflow
                     new Task(state => ((BroadcastBlock<T>)state).ConsumeMessagesLoopCore(), this,
                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
                 var etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -860,7 +860,7 @@ namespace System.Threading.Tasks.Dataflow
                     _taskForOutputProcessing = new Task(thisSourceCore => ((BroadcastingSourceCore<TOutput>)thisSourceCore).OfferMessagesLoopCore(), this,
                                                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
                     var etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
@@ -1024,7 +1024,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Now that the completion task is completed, we may propagate completion to the linked targets
                 _targetRegistry.PropagateCompletion(linkedTargets);
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
                 var etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {

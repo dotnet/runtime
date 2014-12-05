@@ -116,7 +116,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.WireCancellationToComplete(
                     dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state).Complete(exception: null, dropPendingMessages: true), _defaultTarget);
             }
-#if FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
