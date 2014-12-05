@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    -->
+    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0C10C503-FD37-4990-BD0F-B79FE22203DD}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Threading.Tasks.Dataflow</RootNamespace>
+    <AssemblyName>System.Threading.Tasks.Dataflow</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile78</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\Phone8\</OutputPath>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">obj\$(TargetFrameworkVersion)\</BaseIntermediateOutputPath>
+    <DocumentationFile>$(OutputPath)System.Threading.Tasks.Dataflow.XML</DocumentationFile>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG;FEATURE_TRACING</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE;FEATURE_TRACING</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Base\DataflowBlock.cs" />
+    <Compile Include="Base\DataflowBlockOptions.cs" />
+    <Compile Include="Base\DataflowLinkOptions.cs" />
+    <Compile Include="Base\DataflowMessageHeader.cs" />
+    <Compile Include="Base\DataflowMessageStatus.cs" />
+    <Compile Include="Base\IDataflowBlock.cs" />
+    <Compile Include="Base\IPropagatorBlock.cs" />
+    <Compile Include="Base\IReceivableSourceBlock.cs" />
+    <Compile Include="Base\ISourceBlock.cs" />
+    <Compile Include="Base\ITargetBlock.cs" />
+    <Compile Include="Blocks\ActionBlock.cs" />
+    <Compile Include="Blocks\BatchBlock.cs" />
+    <Compile Include="Blocks\BatchedJoinBlock.cs" />
+    <Compile Include="Blocks\BroadcastBlock.cs" />
+    <Compile Include="Blocks\BufferBlock.cs" />
+    <Compile Include="Blocks\JoinBlock.cs" />
+    <Compile Include="Blocks\TransformBlock.cs" />
+    <Compile Include="Blocks\TransformManyBlock.cs" />
+    <Compile Include="Blocks\WriteOnceBlock.cs" />
+    <Compile Include="Internal\ActionOnDispose.cs" />
+    <Compile Include="Internal\Common.cs" />
+    <Compile Include="Internal\ConcurrentQueue.cs" />
+    <Compile Include="Internal\EnumerableDebugView.cs" />
+    <Compile Include="Internal\IDebuggerDisplay.cs" />
+    <Compile Include="Internal\ImmutableList.cs" />
+    <Compile Include="Internal\IProducerConsumerCollection.cs" />
+    <Compile Include="Internal\Padding.cs" />
+    <Compile Include="Internal\ProducerConsumerQueues.cs" />
+    <Compile Include="Internal\QueuedMap.cs" />
+    <Compile Include="Internal\ReorderingBuffer.cs" />
+    <Compile Include="Internal\SourceCore.cs" />
+    <Compile Include="Internal\SpscTargetCore.cs" />
+    <Compile Include="Internal\TargetCore.cs" />
+    <Compile Include="Internal\TargetRegistry.cs" />
+    <Compile Include="Internal\Threading.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="XmlDocs\CommonXmlDocComments.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml">
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>System.Threading.Tasks.Dataflow</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
