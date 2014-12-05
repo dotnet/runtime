@@ -146,13 +146,13 @@ namespace System.Collections.Immutable
                         case KeyCollisionBehavior.ThrowIfValueDifferent:
                             if (!valueComparer.Equals(this.firstValue.Value, value))
                             {
-                                throw new ArgumentException(Strings.DuplicateKey);
+                                throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(Strings.DuplicateKey);
+                            throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }
@@ -178,13 +178,13 @@ namespace System.Collections.Immutable
                             var existingEntry = this.additionalElements[keyCollisionIndex];
                             if (!valueComparer.Equals(existingEntry.Value, value))
                             {
-                                throw new ArgumentException(Strings.DuplicateKey);
+                                throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(Strings.DuplicateKey);
+                            throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }

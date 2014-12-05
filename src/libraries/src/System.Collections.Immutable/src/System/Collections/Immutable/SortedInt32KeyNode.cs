@@ -471,7 +471,7 @@ namespace System.Collections.Immutable
                     }
                     else
                     {
-                        throw new ArgumentException(Strings.DuplicateKey);
+                        throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
                     }
                 }
 
