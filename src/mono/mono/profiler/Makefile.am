@@ -69,7 +69,7 @@ PLOG_TESTS_SRC=test-alloc.cs test-busy.cs test-monitor.cs test-excleave.cs \
 	test-heapshot.cs test-traces.cs
 PLOG_TESTS=$(PLOG_TESTS_SRC:.cs=.exe)
 
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_5
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
 MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
