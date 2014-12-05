@@ -1893,6 +1893,13 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentPro
 	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass);
 }
 
+#else /* DISABLE_REMOTING */
+
+void
+mono_remoting_init (void)
+{
+}
+
 #endif /* DISABLE_REMOTING */
 
 /* mono_get_xdomain_marshal_type()
