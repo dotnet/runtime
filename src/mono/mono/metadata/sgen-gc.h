@@ -1221,7 +1221,7 @@ gboolean nursery_canaries_enabled (void) MONO_INTERNAL;
 				char* canary_ptr = (char*) (addr) + sgen_safe_object_get_size_unaligned ((MonoObject *) (addr));	\
 				if (!CANARY_VALID(canary_ptr)) {	\
 					char canary_copy[CANARY_SIZE +1];	\
-					strncpy (canary_copy, canary_ptr, 8);	\
+					strncpy (canary_copy, canary_ptr, CANARY_SIZE);	\
 					canary_copy[CANARY_SIZE] = 0;	\
 					g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, ((MonoObject*)addr)->vtable->klass->name, CANARY_STRING, canary_copy);	\
 				} }
