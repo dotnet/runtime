@@ -2442,6 +2442,12 @@ namespace System.Reflection.Metadata.Tests
         public void CanReadFromSameMemoryMappedPEReaderInParallel()
         {
             // See http://roslyn.codeplex.com/workitem/299
+            //
+            // This simulates the use case where something is holding on
+            // to a PEReader and prepared to produce a MetadataReader
+            // on demand for callers on different threads.
+            //
+
             using (var stream = File.OpenRead(typeof(object).Assembly.Location))
             {
                 Assert.True(stream.Length > StreamMemoryBlockProvider.MemoryMapThreshold);
