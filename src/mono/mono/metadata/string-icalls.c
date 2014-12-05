@@ -65,7 +65,7 @@ ves_icall_System_String_GetLOSLimit (void)
 {
 	int limit = mono_gc_get_los_limit ();
 
-	return (limit - 2 - offsetof (MonoString, chars)) / 2;
+	return (limit - 2 - G_STRUCT_OFFSET (MonoString, chars)) / 2;
 }
 
 void
