@@ -131,7 +131,14 @@ namespace System.Reflection.Internal
             if (lazyMemoryMap == null)
             {
                 // leave the underlying stream open. It will be closed by the Dispose method.
-                var newMemoryMap = MemoryMapLightUp.CreateMemoryMap(this.stream);
+                IDisposable newMemoryMap;
+
+                // CreateMemoryMap might modify the stream (calls FileStream.Flush)
+                lock (this.streamGuard)
+                {
+                    newMemoryMap = MemoryMapLightUp.CreateMemoryMap(this.stream);
+                }
+
                 if (newMemoryMap == null)
                 {
                     accessor = null;

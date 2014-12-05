@@ -4,10 +4,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using TestUtilities;
 using Xunit;
 
@@ -2434,6 +2436,32 @@ namespace System.Reflection.Metadata.Tests
             Assert.False(assemblyRef.IsNil);
             Assert.False(handle.IsNil);
             Assert.Equal(handle.RowId, assemblyRef.RowId);
+        }
+
+        /*[Fact]*/ // TODO: Outer loop stress test
+        public void CanReadFromSameMemoryMappedPEReaderInParallel()
+        {
+            // See http://roslyn.codeplex.com/workitem/299
+            //
+            // This simulates the use case where something is holding on
+            // to a PEReader and prepared to produce a MetadataReader
+            // on demand for callers on different threads.
+            //
+
+            using (var stream = File.OpenRead(typeof(object).Assembly.Location))
+            {
+                Assert.True(stream.Length > StreamMemoryBlockProvider.MemoryMapThreshold);
+
+                for (int i = 0; i < 1000; i++)
+                {
+                    stream.Position = 0;
+
+                    using (var peReader = new PEReader(stream, PEStreamOptions.LeaveOpen))
+                    {
+                        Parallel.For(0, 4, _ => { peReader.GetMetadataReader(); });
+                    }
+                }
+            }
         }
     }
 }
