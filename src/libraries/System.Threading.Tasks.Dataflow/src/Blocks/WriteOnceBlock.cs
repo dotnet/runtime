@@ -98,7 +98,7 @@ namespace System.Threading.Tasks.Dataflow
                         dataflowBlockOptions.CancellationToken, _lazyCompletionTaskSource.Task, state => ((WriteOnceBlock<T>)state).Complete(), this);
                 }
             }
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING // PAL doesn't support eventing
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -126,7 +126,7 @@ namespace System.Threading.Tasks.Dataflow
                 var taskForOutputProcessing = new Task(state => ((WriteOnceBlock<T>)state).OfferToTargetsAndCompleteBlock(), this,
                                                         Common.GetCreationOptionsForTask());
 
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING // PAL doesn't support eventing
                 var etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -203,7 +203,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING // PAL doesn't support eventing
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {

@@ -33,14 +33,14 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE;CONCURRENT_COLLECTIONS</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <DefineConstants>TRACE;CONCURRENT_COLLECTIONS</DefineConstants>
+    <DefineConstants>TRACE;CONCURRENT_COLLECTIONS;FEATURE_TRACING</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
