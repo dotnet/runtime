@@ -36,6 +36,12 @@ Today, it contains the following components:
   extension methods for the System.Linq namespace and has additional operators
   for parallel operations.
 
+* **TPL Dataflow**.  TPL Dataflow promotes actor/agent-oriented designs through 
+  primitives for in-process message passing, dataflow, and pipelining. TDF builds 
+  upon the APIs and scheduling infrastructure provided by the Task Parallel Library
+  (TPL), and integrates with the language support for asynchrony provided by 
+  C#, Visual Basic, and F#.
+
 More is coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
