@@ -989,7 +989,7 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 			size_t obj_size, canarified_obj_size;
 
 			/* Skip zeros. */
-			if (!*(void**)search_start /* || (nursery_canaries_enabled () && CANARY_VALID (search_start)) */) {
+			if (!*(void**)search_start) {
 				search_start = (void*)ALIGN_UP ((mword)search_start + sizeof (gpointer));
 				/* The loop condition makes sure we don't overrun addr. */
 				continue;
