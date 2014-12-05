@@ -1152,9 +1152,8 @@ fail:
 }
 
 static MonoMethod *
-method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx)
+method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx, MonoError *error)
 {
-	MonoError error;
 	MonoMethod *method;
 	MonoClass *klass;
 	MonoTableInfo *tables = image->tables;
@@ -1164,12 +1163,16 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	guint32 cols [MONO_METHODSPEC_SIZE];
 	guint32 token, nindex, param_count;
 
+	mono_error_init (error);
+
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODSPEC], idx - 1, cols, MONO_METHODSPEC_SIZE);
 	token = cols [MONO_METHODSPEC_METHOD];
 	nindex = token >> MONO_METHODDEFORREF_BITS;
 
-	if (!mono_verifier_verify_methodspec_signature (image, cols [MONO_METHODSPEC_SIGNATURE], NULL))
+	if (!mono_verifier_verify_methodspec_signature (image, cols [MONO_METHODSPEC_SIGNATURE], NULL)) {
+		mono_error_set_bad_image (error, image, "Bad method signals signature 0x%08x", idx);
 		return NULL;
+	}
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODSPEC_SIGNATURE]);
 
@@ -1178,25 +1181,28 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	param_count = mono_metadata_decode_value (ptr, &ptr);
 
 	inst = mono_metadata_parse_generic_inst (image, NULL, param_count, ptr, &ptr);
-	if (!inst)
+	if (!inst) {
+		g_assert (!mono_loader_get_last_error ());
+		mono_error_set_bad_image (error, image, "Cannot parse generic instance for methodspec 0x%08x", idx);
 		return NULL;
-
-	if (context && inst->is_open) {
-		inst = mono_metadata_inflate_generic_inst (inst, context, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error); /*FIXME don't swallow error message.*/
-			return NULL;
-		}
 	}
 
-	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF)
+	if (context && inst->is_open) {
+		inst = mono_metadata_inflate_generic_inst (inst, context, error);
+		if (!mono_error_ok (error))
+			return NULL;
+	}
+
+	if ((token & MONO_METHODDEFORREF_MASK) == MONO_METHODDEFORREF_METHODDEF) {
 		method = mono_get_method_full (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, context);
-	else {
-		method = method_from_memberref (image, nindex, context, NULL, &error);
 		if (!method) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+			if (mono_loader_get_last_error ())
+				mono_error_set_from_loader_error (error);
+			else
+				mono_error_set_bad_image (error, image, "Could not resolve methodspec 0x%08x methoddef token 0x%08x", idx, MONO_TOKEN_METHOD_DEF | nindex);
 		}
+	} else {
+		method = method_from_memberref (image, nindex, context, NULL, error);
 	}
 
 	if (!method)
@@ -1212,7 +1218,9 @@ method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 i
 	new_context.class_inst = klass->generic_class ? klass->generic_class->context.class_inst : NULL;
 	new_context.method_inst = inst;
 
-	return mono_class_inflate_generic_method_full (method, klass, &new_context);
+	method = mono_class_inflate_generic_method_full_checked (method, klass, &new_context, error);
+	g_assert (!mono_loader_get_last_error ());
+	return method;
 }
 
 struct _MonoDllMap {
@@ -1786,7 +1794,12 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (table != MONO_TABLE_METHOD) {
 		if (table == MONO_TABLE_METHODSPEC) {
 			if (used_context) *used_context = TRUE;
-			return method_from_methodspec (image, context, idx);
+			result = method_from_methodspec (image, context, idx, &error);
+			if (!result) {
+				mono_loader_set_error_from_mono_error (&error);
+				mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+			}
+			return result;
 		}
 		if (table != MONO_TABLE_MEMBERREF) {
 			g_warning ("got wrong token: 0x%08x\n", token);
