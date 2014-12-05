@@ -75,9 +75,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
             ITargetBlock<int> target = targetProperties.Target;
 
 
-            // Measure the message processing time
-            DateTime startTime = DateTime.Now;
-
             // Feeding loop
             for (int i = 0; i < messageCount; i++)
             {
@@ -142,8 +139,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Swallow OperationCancelledException.
                 ae.Handle(e => e is OperationCanceledException);
             }
-            DateTime finishTime = DateTime.Now;
-
 
             // Tell the capturer we are done
             Task.Delay(1000).Wait();
