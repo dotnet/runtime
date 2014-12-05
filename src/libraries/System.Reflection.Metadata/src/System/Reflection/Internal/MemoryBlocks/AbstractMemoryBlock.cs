@@ -59,7 +59,7 @@ namespace System.Reflection.Internal
         {
             byte[] bytes = new byte[length];
             Marshal.Copy((IntPtr)ptr, bytes, 0, length);
-            return ImmutableArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
+            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
         }
     }
 }
