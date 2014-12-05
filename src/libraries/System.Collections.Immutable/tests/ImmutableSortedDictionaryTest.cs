@@ -305,6 +305,15 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void CollisionExceptionMessageContainsKey()
+        {
+            var map = ImmutableSortedDictionary.Create<string, string>()
+                .Add("a", "1").Add("b", "2");
+            var exception = Assert.Throws<ArgumentException>(() => map.Add("a", "3"));
+            Assert.Contains("'a'", exception.Message);
+        }
+
+        [Fact]
         public void WithComparersEmptyCollection()
         {
             var map = ImmutableSortedDictionary.Create<string, string>();

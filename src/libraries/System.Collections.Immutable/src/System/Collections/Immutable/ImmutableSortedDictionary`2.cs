@@ -908,7 +908,7 @@ namespace System.Collections.Immutable
                         {
                             if (!this.valueComparer.Equals(value, item.Value))
                             {
-                                throw new ArgumentException(Strings.DuplicateKey);
+                                throw new ArgumentException(String.Format(Strings.DuplicateKey, item.Key));
                             }
                         }
                         else
@@ -1873,7 +1873,7 @@ namespace System.Collections.Immutable
                         }
                         else
                         {
-                            throw new ArgumentException(Strings.DuplicateKey);
+                            throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
                         }
                     }
 
