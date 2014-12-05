@@ -281,7 +281,7 @@ namespace System.Reflection.Metadata.Ecma335
             return Metadata.TypeDefinitionHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
         }
 
-        public static ExportedTypeHandle ExpoortedTypeHandle(int rowNumber)
+        public static ExportedTypeHandle ExportedTypeHandle(int rowNumber)
         {
             return Metadata.ExportedTypeHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
         }
