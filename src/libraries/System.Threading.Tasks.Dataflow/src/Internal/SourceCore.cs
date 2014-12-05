@@ -759,7 +759,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _taskForOutputProcessing = new Task(thisSourceCore => ((SourceCore<TOutput>)thisSourceCore).OfferMessagesLoopCore(), this,
                                                      Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
                 var etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -978,7 +978,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
