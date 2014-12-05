@@ -110,7 +110,7 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2>)state)._sharedResources.CompleteEachTarget(), this);
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -351,7 +351,7 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2, T3>)state)._sharedResources.CompleteEachTarget(), this);
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -1318,7 +1318,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             m_taskForInputProcessing = new Task(thisSharedResources => ((JoinBlockTargetSharedResources)thisSharedResources).ProcessMessagesLoopCore(), this,
                                                 Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {

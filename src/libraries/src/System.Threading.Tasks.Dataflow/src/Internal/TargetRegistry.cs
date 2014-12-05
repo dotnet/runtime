@@ -99,7 +99,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Increment the optimization counter if needed
             Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
             if (node.RemainingMessages > 0) _linksWithRemainingMessages++;
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -162,7 +162,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // Decrement the optimization counter if needed
                     if (node.RemainingMessages == 0) _linksWithRemainingMessages--;
                     Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
                     var etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {

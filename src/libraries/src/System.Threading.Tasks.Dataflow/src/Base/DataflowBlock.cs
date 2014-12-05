@@ -124,10 +124,6 @@ namespace System.Threading.Tasks.Dataflow
                 _userProvidedPredicate = predicate;
             }
 
-            private void Hello()
-            {
-            }
-
             /// <summary>Runs the user-provided predicate over an item in the correct execution context.</summary>
             /// <param name="item">The item to evaluate.</param>
             /// <returns>true if the item passed the filter; otherwise, false.</returns>

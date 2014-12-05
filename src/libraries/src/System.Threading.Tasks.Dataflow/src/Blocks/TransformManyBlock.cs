@@ -184,7 +184,7 @@ namespace System.Threading.Tasks.Dataflow
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state).Complete(exception: null, dropPendingMessages: true), _target);
-#if !FEATURE_TRACING // PAL doesn't support eventing
+#if FEATURE_TRACING
             var etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
