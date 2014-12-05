@@ -7219,6 +7219,8 @@ mini_init (const char *filename, const char *runtime_version)
 	ticallbacks.thread_state_init_from_sigctx = mono_thread_state_init_from_sigctx;
 	ticallbacks.thread_state_init_from_handle = mono_thread_state_init_from_handle;
 
+	mono_counters_init ();
+
 	mono_threads_runtime_init (&ticallbacks);
 
 	if (g_getenv ("MONO_DEBUG") != NULL)
