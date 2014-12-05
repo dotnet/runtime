@@ -621,7 +621,7 @@ namespace System.Collections.Immutable
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0 && index + count <= this.Count, "count");
 
-                if (Count > 1)
+                if (count > 1)
                 {
                     Array.Sort(this.elements, index, count, Comparer.Create(comparer));
                 }
