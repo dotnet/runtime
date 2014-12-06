@@ -49,6 +49,17 @@ public struct sc5
 	public byte c4;
 }
 
+public struct FI {
+	public float f1;
+	public float f2;
+	public float f3;
+}
+
+public struct NestedFloat {
+	public FI fi;
+	public float f4;
+}
+
 public class Test
 {
 	[DllImport ("libtest")]
@@ -74,6 +85,9 @@ public class Test
 
 	[DllImport ("libtest", EntryPoint="mono_return_int_su")]
 	public static extern int mono_return_int_su (su a);
+
+	[DllImport ("libtest", EntryPoint="mono_return_nested_float")]
+	public static extern NestedFloat mono_return_nested_float ();
 
         static int Main()
         {
@@ -140,6 +154,10 @@ public class Test
 		s6 = mono_return_sc5(s6);
 		if (s6.c0 != 5 || s6.c1 != 7 || s6.c2 != 9 || s6.c3 != 11 || s6.c4 != 13)
 			return 11;
+
+		var f = mono_return_nested_float ();
+		if (f.fi.f1 != 1.0)
+			return 12;
 
 		return 0;
         }

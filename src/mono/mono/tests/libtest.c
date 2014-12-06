@@ -256,6 +256,28 @@ mono_return_int_su (union su a) {
 	return a.i1;
 }
 
+struct FI {
+	float f1;
+	float f2;
+	float f3;
+};
+
+struct NestedFloat {
+	struct FI fi;
+	float f4;
+};
+
+LIBTEST_API struct NestedFloat STDCALL
+mono_return_nested_float (void)
+{
+	struct NestedFloat f;
+	f.fi.f1 = 1.0;
+	f.fi.f2 = 2.0;
+	f.fi.f3 = 3.0;
+	f.f4 = 4.0;
+	return f;
+}
+
 LIBTEST_API int STDCALL  
 mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							  int f, int g, int h, int i, int j);
