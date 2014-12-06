@@ -32,7 +32,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(ITargetBlockTestHelper.TestNonGreedyPost(new ActionBlock<int>(x => { Task.Delay(1); }, new ExecutionDataflowBlockOptions() { BoundedCapacity = 1 })));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestActionBlockConstructor()
         {
             // SYNC
@@ -66,7 +66,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestActionBlockInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>((Func<int, Task>)null));

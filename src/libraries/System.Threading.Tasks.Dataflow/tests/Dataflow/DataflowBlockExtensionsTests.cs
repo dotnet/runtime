@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public partial class DataflowBlockTests : DataflowBlockTestBase
     {
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestNullTarget()
         {
             const int SHORT_WAIT = 1;
@@ -488,7 +488,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestLinkTo1()
         {
             // Test LinkTo(target, predicate) with two-phase commit
@@ -550,7 +550,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestLinkTo2()
         {
             // Test parameter validation
@@ -694,7 +694,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 Assert.True(localPassed, string.Format("{0}: NopLinkPropagator.Completion", localPassed ? "Success" : "Failure"));
             }
+        }
 
+        //[Fact(Skip = "Outerloop")]
+        public void TestLinkTo3()
+        {
             // Test DataflowLinkOptions.MaxMessages
             {
                 const int LONG_WAIT = 5000;
@@ -832,11 +836,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Log result
                 Assert.True(localPassed, string.Format("{0}: Append {1}", localPassed ? "Success" : "Failure", diagnostics));
             }
-        }
 
-        //[Fact(Skip = "Outerloop")]
-        public void TestLinkTo3()
-        {
             // Test DataflowLinkOptions.PropagateCompletion
             {
                 const int LONG_WAIT = 5000;
