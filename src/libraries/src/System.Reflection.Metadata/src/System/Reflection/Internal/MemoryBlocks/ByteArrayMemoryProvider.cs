@@ -59,7 +59,7 @@ namespace System.Reflection.Internal
                 if (pinned == null)
                 {
                     var newPinned = new StrongBox<GCHandle>(
-                        GCHandle.Alloc(ImmutableArrayInterop.DangerousGetUnderlyingArray(array), GCHandleType.Pinned));
+                        GCHandle.Alloc(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(array), GCHandleType.Pinned));
 
                     if (Interlocked.CompareExchange(ref pinned, newPinned, null) != null)
                     {

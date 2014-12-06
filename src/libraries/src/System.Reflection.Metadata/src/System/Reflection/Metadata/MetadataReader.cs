@@ -951,7 +951,7 @@ namespace System.Reflection.Metadata
         {
             // TODO: We can skip a copy for virtual blobs.
             byte[] bytes = GetBlobBytes(handle);
-            return ImmutableArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
+            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
         }
 
         public BlobReader GetBlobReader(BlobHandle handle)

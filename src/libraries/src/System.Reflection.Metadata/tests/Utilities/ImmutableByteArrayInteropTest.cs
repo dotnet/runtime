@@ -1,19 +1,20 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Runtime.InteropServices;
+using System.Collections.Immutable;
+using System.Reflection.Internal;
 using Xunit;
 
-namespace System.Collections.Immutable.Test
+namespace System.Reflection.Metadata.Tests
 {
-    public class ImmutableArrayInteropTest : ImmutablesTestBase
+    public class ImmutableByteArrayInteropTest
     {
         [Fact]
         public void DangerousCreateFromUnderlyingArray()
         {
-            int[] array = new int[3] { 1, 2, 3 };
-            int[] arrayCopy = array;
-            ImmutableArray<int> immutable = ImmutableArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
+            byte[] array = new byte[3] { 1, 2, 3 };
+            byte[] arrayCopy = array;
+            ImmutableArray<byte> immutable = ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
 
             // DangerousCreateFromUnderlyingArray clears the given parameter as a signal that
             // the mutable array should no longer be modified through mutable references.
@@ -32,8 +33,8 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void DangerousCreateFromUnderlyingArrayNegativeTests()
         {
-            int[] array = null;
-            ImmutableArray<int> immutable = ImmutableArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
+            byte[] array = null;
+            ImmutableArray<byte> immutable = ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
 
             Assert.True(immutable.IsDefault);
         }
@@ -41,8 +42,8 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void DangerousGetUnderlyingArray()
         {
-            ImmutableArray<int> immutable = ImmutableArray.Create(1, 2, 3);
-            int[] array = ImmutableArrayInterop.DangerousGetUnderlyingArray(immutable);
+            ImmutableArray<byte> immutable = ImmutableArray.Create<byte>(1, 2, 3);
+            byte[] array = ImmutableByteArrayInterop.DangerousGetUnderlyingArray(immutable);
 
             Assert.Equal(3, array.Length);
             Assert.Equal(1, array[0]);
@@ -57,9 +58,9 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void DangerousGetUnderlyingArrayNegativeTests()
         {
-            ImmutableArray<int> immutable = default(ImmutableArray<int>);
+            ImmutableArray<byte> immutable = default(ImmutableArray<byte>);
 
-            Assert.Null(ImmutableArrayInterop.DangerousGetUnderlyingArray(immutable));
+            Assert.Null(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(immutable));
         }
     }
 }
