@@ -13,8 +13,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public partial class DataflowBlockTests : DataflowBlockTestBase
     {
-        //[Fact(Skip = "Outerloop")]
-
+        [Fact]
         public void RunBufferBlockTests()
         {
             Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new BufferBlock<int>(new DataflowBlockOptions() { NameFormat = nameFormat }) : new BufferBlock<int>()));
@@ -311,7 +310,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBufferBlockConstructor()
         {
             // without option
@@ -328,7 +327,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.Count != 0, "Constructor failed! Count returned a non zero value for a brand new BufferBlock.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestSourceCoreSpecificsThroughBufferBlock()
         {
             var messageHeader = new DataflowMessageHeader(1);
@@ -345,7 +344,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(!consumed || block.Count != 0, "Failure: SourceCore did not allow a non-linked target to consume");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBufferBlockInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new BufferBlock<int>(null));
@@ -372,7 +371,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBufferBlockCount()
         {
             BufferBlock<int> bufferBlock = new BufferBlock<int>();

@@ -45,7 +45,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestTransformManyBlockConstructor()
         {
             // IEnumerable without option
@@ -75,7 +75,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformManyBlock.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestTransformManyBlockInvalidArgumentValidation()
         {
             bool passed = true;

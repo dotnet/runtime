@@ -42,7 +42,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBroadcastBlockConstructor()
         {
             try
@@ -69,7 +69,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBroadcastBlockInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new BroadcastBlock<int>(i => i, null));
