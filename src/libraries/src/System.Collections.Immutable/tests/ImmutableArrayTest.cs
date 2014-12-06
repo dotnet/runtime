@@ -1163,6 +1163,12 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void Add_ThreadSafety()
         {
+            // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.
+            // This test has a known issue where the two threads will stomp on each others updates, but that's not the point.
+            // The point is that ImmutableArray`1.Add should *never* throw. But if it reads its own T[] field more than once,
+            // it *can* throw because the field can be replaced with an array of another length. 
+            // In fact, much worse can happen where we corrupt data if we are for example copying data out of the array
+            // in (for example) a CopyTo method and we read from the field more than once.
             var array = ImmutableArray.Create<int>();
             Action mutator = () => { for (int i = 0; i < 100; i++) ImmutableInterlocked.InterlockedExchange(ref array, array.Add(1)); };
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
