@@ -345,6 +345,25 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        public async Task TestBufferBlockOutputAvailableAsyncAfterTryReceiveAll()
+        {
+            var buffer = new BufferBlock<object>();
+
+            buffer.Post(null);
+
+            IList<object> items;
+            buffer.TryReceiveAll(out items);
+
+            var outputAvailableAsync = buffer.OutputAvailableAsync();
+
+            buffer.Post(null);
+
+            var completedTask = await Task.WhenAny(outputAvailableAsync, Task.Delay(100));
+
+            Assert.True(completedTask == outputAvailableAsync);
+        }
+
+        [Fact]
         public void TestBufferBlockInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new BufferBlock<int>(null));
@@ -366,7 +385,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 cts.Cancel();
                 try { buffer.Completion.Wait(); }
                 catch { }
-
+                    
                 Assert.False(buffer.Count != 0, string.Format("Iteration {0}: Completed before clearing messages.", iter));
             }
         }

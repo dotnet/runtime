@@ -351,6 +351,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
                             // Increment the next ID. Any new value is good.
                             _nextMessageId.Value++;
 
+                            // Now that the next message has changed, reenable offering if it was disabled
+                            if (!_enableOffering) _enableOffering = true;
+
                             // Now that the block is empty, check to see whether we should complete.
                             CompleteBlockIfPossible();
                         }
