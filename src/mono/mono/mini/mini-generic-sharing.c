@@ -498,12 +498,14 @@ mono_class_get_method_generic (MonoClass *klass, MonoMethod *method)
 	}
 
 	if (method != declaring) {
+		MonoError error;
 		MonoGenericContext context;
 
 		context.class_inst = NULL;
 		context.method_inst = mono_method_get_context (method)->method_inst;
 
-		m = mono_class_inflate_generic_method (m, &context);
+		m = mono_class_inflate_generic_method_checked (m, &context, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	}
 
 	return m;
@@ -565,7 +567,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
-			inflated_method = mono_class_inflate_generic_method (method, context);
+			MonoError error;
+			inflated_method = mono_class_inflate_generic_method_checked (method, context, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
 		mono_class_init (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
@@ -620,7 +624,9 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
-			inflated_method = mono_class_inflate_generic_method (method, context);
+			MonoError error;
+			inflated_method = mono_class_inflate_generic_method_checked (method, context, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
 		mono_class_init (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);

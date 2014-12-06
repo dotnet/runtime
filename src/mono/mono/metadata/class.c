@@ -966,6 +966,12 @@ mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *conte
 	return mono_class_inflate_generic_method_full (method, NULL, context);
 }
 
+MonoMethod *
+mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error)
+{
+	return mono_class_inflate_generic_method_full_checked (method, NULL, context, error);
+}
+
 /**
  * mono_class_inflate_generic_method_full:
  *
@@ -2274,13 +2280,15 @@ mono_class_setup_methods (MonoClass *class)
 MonoMethod*
 mono_class_get_method_by_index (MonoClass *class, int index)
 {
+	MonoError error;
 	/* Avoid calling setup_methods () if possible */
 	if (class->generic_class && !class->methods) {
 		MonoClass *gklass = class->generic_class->container_class;
 		MonoMethod *m;
 
-		m = mono_class_inflate_generic_method_full (
-				gklass->methods [index], class, mono_class_get_context (class));
+		m = mono_class_inflate_generic_method_full_checked (
+				gklass->methods [index], class, mono_class_get_context (class), &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		/*
 		 * If setup_methods () is called later for this class, no duplicates are created,
 		 * since inflate_generic_method guarantees that only one instance of a method
@@ -2319,10 +2327,14 @@ mono_class_get_inflated_method (MonoClass *class, MonoMethod *method)
 
 	for (i = 0; i < gklass->method.count; ++i) {
 		if (gklass->methods [i] == method) {
-			if (class->methods)
+			if (class->methods) {
 				return class->methods [i];
-			else
-				return mono_class_inflate_generic_method_full (gklass->methods [i], class, mono_class_get_context (class));
+			} else {
+				MonoError error;
+				MonoMethod *result = mono_class_inflate_generic_method_full_checked (gklass->methods [i], class, mono_class_get_context (class), &error);
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow this error */
+				return result;
+			}
 		}
 	}
 
@@ -2351,11 +2363,13 @@ mono_class_get_vtable_entry (MonoClass *class, int offset)
 	}
 
 	if (class->generic_class) {
+		MonoError error;
 		MonoClass *gklass = class->generic_class->container_class;
 		mono_class_setup_vtable (gklass);
 		m = gklass->vtable [offset];
 
-		m = mono_class_inflate_generic_method_full (m, class, mono_class_get_context (class));
+		m = mono_class_inflate_generic_method_full_checked (m, class, mono_class_get_context (class), &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow this error */
 	} else {
 		mono_class_setup_vtable (class);
 		if (class->exception_type)
@@ -2412,17 +2426,19 @@ mono_class_setup_properties (MonoClass *class)
 		properties = mono_class_new0 (class, MonoProperty, gklass->ext->property.count + 1);
 
 		for (i = 0; i < gklass->ext->property.count; i++) {
+			MonoError error;
 			MonoProperty *prop = &properties [i];
 
 			*prop = gklass->ext->properties [i];
 
 			if (prop->get)
-				prop->get = mono_class_inflate_generic_method_full (
-					prop->get, class, mono_class_get_context (class));
+				prop->get = mono_class_inflate_generic_method_full_checked (
+					prop->get, class, mono_class_get_context (class), &error);
 			if (prop->set)
-				prop->set = mono_class_inflate_generic_method_full (
-					prop->set, class, mono_class_get_context (class));
+				prop->set = mono_class_inflate_generic_method_full_checked (
+					prop->set, class, mono_class_get_context (class), &error);
 
+			g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 			prop->parent = class;
 		}
 
@@ -2504,8 +2520,11 @@ inflate_method_listz (MonoMethod **methods, MonoClass *class, MonoGenericContext
 
 	retval = g_new0 (MonoMethod*, count + 1);
 	count = 0;
-	for (om = methods, count = 0; *om; ++om, ++count)
-		retval [count] = mono_class_inflate_generic_method_full (*om, class, context);
+	for (om = methods, count = 0; *om; ++om, ++count) {
+		MonoError error;
+		retval [count] = mono_class_inflate_generic_method_full_checked (*om, class, context, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+	}
 
 	return retval;
 }
@@ -2543,14 +2562,21 @@ mono_class_setup_events (MonoClass *class)
 			context = mono_class_get_context (class);
 
 		for (i = 0; i < count; i++) {
+			MonoError error;
 			MonoEvent *event = &events [i];
 			MonoEvent *gevent = &gklass->ext->events [i];
 
+			mono_error_init (&error); //since we do conditional calls, we must ensure the default value is ok
+
 			event->parent = class;
 			event->name = gevent->name;
-			event->add = gevent->add ? mono_class_inflate_generic_method_full (gevent->add, class, context) : NULL;
-			event->remove = gevent->remove ? mono_class_inflate_generic_method_full (gevent->remove, class, context) : NULL;
-			event->raise = gevent->raise ? mono_class_inflate_generic_method_full (gevent->raise, class, context) : NULL;
+			event->add = gevent->add ? mono_class_inflate_generic_method_full_checked (gevent->add, class, context, &error) : NULL;
+			g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+			event->remove = gevent->remove ? mono_class_inflate_generic_method_full_checked (gevent->remove, class, context, &error) : NULL;
+			g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+			event->raise = gevent->raise ? mono_class_inflate_generic_method_full_checked (gevent->raise, class, context, &error) : NULL;
+			g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+
 #ifndef MONO_SMALL_CONFIG
 			event->other = gevent->other ? inflate_method_listz (gevent->other, class, context) : NULL;
 #endif
@@ -4924,10 +4950,12 @@ setup_generic_array_ifaces (MonoClass *class, MonoClass *iface, MonoMethod **met
 	//g_print ("setting up array interface: %s\n", mono_type_get_name_full (&iface->byval_arg, 0));
 
 	for (i = 0; i < generic_array_method_num; i++) {
+		MonoError error;
 		MonoMethod *m = generic_array_method_info [i].array_method;
 		MonoMethod *inflated;
 
-		inflated = mono_class_inflate_generic_method (m, &tmp_context);
+		inflated = mono_class_inflate_generic_method_checked (m, &tmp_context, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
 		methods [pos++] = mono_marshal_get_generic_array_helper (class, iface, generic_array_method_info [i].name, inflated);
 	}
 }
@@ -9526,8 +9554,11 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 
 	if (klass->generic_class && !klass->methods) {
 		res = mono_class_get_method_from_name_flags (klass->generic_class->container_class, name, param_count, flags);
-		if (res)
-			res = mono_class_inflate_generic_method_full (res, klass, mono_class_get_context (klass));
+		if (res) {
+			MonoError error;
+			res = mono_class_inflate_generic_method_full_checked (res, klass, mono_class_get_context (klass), &error);
+			g_assert (mono_error_ok (&error)); /*FIXME proper error handling*/
+		}
 		return res;
 	}
 

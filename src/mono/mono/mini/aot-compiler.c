@@ -3623,6 +3623,7 @@ add_wrappers (MonoAotCompile *acfg)
 					add_method (acfg, mono_marshal_get_native_func_wrapper_aot (klass));
 			}
 		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->generic_container) {
+			MonoError error;
 			MonoGenericContext ctx;
 			MonoMethod *inst, *gshared;
 
@@ -3633,7 +3634,8 @@ add_wrappers (MonoAotCompile *acfg)
 			method = mono_get_delegate_invoke (klass);
 			create_gsharedvt_inst (acfg, method, &ctx);
 
-			inst = mono_class_inflate_generic_method (method, &ctx);
+			inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
 			m = mono_marshal_get_delegate_invoke (inst, NULL);
 			g_assert (m->is_inflated);
@@ -3645,7 +3647,8 @@ add_wrappers (MonoAotCompile *acfg)
 			method = mono_get_delegate_begin_invoke (klass);
 			create_gsharedvt_inst (acfg, method, &ctx);
 
-			inst = mono_class_inflate_generic_method (method, &ctx);
+			inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
 			m = mono_marshal_get_delegate_begin_invoke (inst);
 			g_assert (m->is_inflated);
@@ -3657,7 +3660,8 @@ add_wrappers (MonoAotCompile *acfg)
 			method = mono_get_delegate_end_invoke (klass);
 			create_gsharedvt_inst (acfg, method, &ctx);
 
-			inst = mono_class_inflate_generic_method (method, &ctx);
+			inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
 			m = mono_marshal_get_delegate_end_invoke (inst);
 			g_assert (m->is_inflated);
@@ -3709,6 +3713,7 @@ add_wrappers (MonoAotCompile *acfg)
 			if (method->is_generic) {
 				// FIXME:
 			} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && method->klass->generic_container) {
+				MonoError error;
 				MonoGenericContext ctx;
 				MonoMethod *inst, *gshared, *m;
 
@@ -3716,7 +3721,8 @@ add_wrappers (MonoAotCompile *acfg)
 				 * Create a generic wrapper for a generic instance, and AOT that.
 				 */
 				create_gsharedvt_inst (acfg, method, &ctx);
-				inst = mono_class_inflate_generic_method (method, &ctx);	
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, &error);
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 				m = mono_marshal_get_synchronized_wrapper (inst);
 				g_assert (m->is_inflated);
 				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
@@ -4237,6 +4243,7 @@ add_generic_instances (MonoAotCompile *acfg)
 		 * FIXME: Handle class_inst as well.
 		 */
 		if (context && context->method_inst && context->method_inst->is_open) {
+			MonoError error;
 			MonoGenericContext shared_context;
 			MonoGenericInst *inst;
 			MonoType **type_argv;
@@ -4302,7 +4309,8 @@ add_generic_instances (MonoAotCompile *acfg)
 			else
 				declaring_method = mono_method_get_declaring_generic_method (method);
 
-			method = mono_class_inflate_generic_method (declaring_method, &shared_context);
+			method = mono_class_inflate_generic_method_checked (declaring_method, &shared_context, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
 
 		/* 
@@ -4391,10 +4399,12 @@ add_generic_instances (MonoAotCompile *acfg)
 			get_method = mono_class_get_method_from_name (array_klass, "GetGenericValueImpl", 2);
 
 			if (get_method) {
+				MonoError error;
 				memset (&ctx, 0, sizeof (ctx));
 				args [0] = &mono_defaults.object_class->byval_arg;
 				ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (get_method, &ctx), TRUE, TRUE));
+				add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (get_method, &ctx, &error), TRUE, TRUE));
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 			}
 		}
 
@@ -4408,10 +4418,12 @@ add_generic_instances (MonoAotCompile *acfg)
 
 			while ((m = mono_class_get_methods (interlocked_klass, &iter))) {
 				if ((!strcmp (m->name, "CompareExchange") || !strcmp (m->name, "Exchange")) && m->is_generic) {
+					MonoError error;
 					memset (&ctx, 0, sizeof (ctx));
 					args [0] = &mono_defaults.object_class->byval_arg;
 					ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-					add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (m, &ctx), TRUE, TRUE));
+					add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, &error), TRUE, TRUE));
+					g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 				}
 			}
 		}
@@ -4427,10 +4439,12 @@ add_generic_instances (MonoAotCompile *acfg)
 			if (volatile_klass) {
 				while ((m = mono_class_get_methods (volatile_klass, &iter))) {
 					if ((!strcmp (m->name, "Read") || !strcmp (m->name, "Write")) && m->is_generic) {
+						MonoError error;
 						memset (&ctx, 0, sizeof (ctx));
 						args [0] = &mono_defaults.object_class->byval_arg;
 						ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-						add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method (m, &ctx), TRUE, TRUE));
+						add_extra_method (acfg, mono_marshal_get_native_wrapper (mono_class_inflate_generic_method_checked (m, &ctx, &error), TRUE, TRUE));
+						g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 					}
 				}
 			}
@@ -7623,10 +7637,12 @@ mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
 	g_free (s);
 
 	if (m->is_generic) {
+		MonoError error;
 		memset (&ctx, 0, sizeof (ctx));
 		args [0] = &method->klass->element_class->byval_arg;
 		ctx.method_inst = mono_metadata_get_generic_inst (1, args);
-		m = mono_class_inflate_generic_method (m, &ctx);
+		m = mono_class_inflate_generic_method_checked (m, &ctx, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	}
 
 	return m;

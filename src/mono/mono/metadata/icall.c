@@ -2706,8 +2706,11 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 	if (imethod->context.class_inst) {
 		MonoClass *klass = ((MonoMethod *) imethod)->klass;
 		/*Generic methods gets the context of the GTD.*/
-		if (mono_class_get_context (klass))
-			result = mono_class_inflate_generic_method_full (result, klass, mono_class_get_context (klass));
+		if (mono_class_get_context (klass)) {
+			MonoError error;
+			result = mono_class_inflate_generic_method_full_checked (result, klass, mono_class_get_context (klass), &error);
+			mono_error_raise_exception (&error);
+		}
 	}
 
 	return mono_method_get_object (mono_object_domain (method), result, NULL);
@@ -4806,6 +4809,8 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 {
 	int offset = -1, i;
 	if (method->is_inflated && ((MonoMethodInflated*)method)->context.method_inst) {
+		MonoError error;
+		MonoMethod *result;
 		MonoMethodInflated *inflated = (MonoMethodInflated*)method;
 		//method is inflated, we should inflate it on the other class
 		MonoGenericContext ctx;
@@ -4815,7 +4820,9 @@ mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 			ctx.class_inst = klass->generic_class->context.class_inst;
 		else if (klass->generic_container)
 			ctx.class_inst = klass->generic_container->context.class_inst;
-		return mono_class_inflate_generic_method_full (inflated->declaring, klass, &ctx);
+		result = mono_class_inflate_generic_method_full_checked (inflated->declaring, klass, &ctx, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+		return result;
 	}
 
 	mono_class_setup_methods (method->klass);

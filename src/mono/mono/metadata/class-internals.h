@@ -1031,6 +1031,9 @@ mono_class_inflate_generic_method_full (MonoMethod *method, MonoClass *klass_hin
 MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
+MonoMethod *
+mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+
 MonoMethodInflated*
 mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache) MONO_INTERNAL;
 

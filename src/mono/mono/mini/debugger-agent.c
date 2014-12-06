@@ -8524,8 +8524,11 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					if (imethod->context.class_inst) {
 						MonoClass *klass = ((MonoMethod *) imethod)->klass;
 						/*Generic methods gets the context of the GTD.*/
-						if (mono_class_get_context (klass))
-							result = mono_class_inflate_generic_method_full (result, klass, mono_class_get_context (klass));
+						if (mono_class_get_context (klass)) {
+							MonoError error;
+							result = mono_class_inflate_generic_method_full_checked (result, klass, mono_class_get_context (klass), &error);
+							g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+						}
 					}
 				}
 
@@ -8684,6 +8687,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case CMD_METHOD_MAKE_GENERIC_METHOD: {
+		MonoError error;
 		MonoType **type_argv;
 		int i, type_argc;
 		MonoDomain *d;
@@ -8711,7 +8715,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		tmp_context.class_inst = method->klass->generic_class ? method->klass->generic_class->context.class_inst : NULL;
 		tmp_context.method_inst = ginst;
 
-		inflated = mono_class_inflate_generic_method (method, &tmp_context);
+		inflated = mono_class_inflate_generic_method_checked (method, &tmp_context, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		if (!mono_verifier_is_method_valid_generic_instantiation (inflated))
 			return ERR_INVALID_ARGUMENT;
 		buffer_add_methodid (buf, domain, inflated);

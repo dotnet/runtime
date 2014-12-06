@@ -554,6 +554,7 @@ get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 static MonoMethod*
 get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 {
+	MonoError error;
 	MonoGenericContext context;
 	MonoMethod *method;
 	
@@ -563,7 +564,8 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 
 	method = jinfo_get_method (ji);
 	method = mono_method_get_declaring_generic_method (method);
-	method = mono_class_inflate_generic_method (method, &context);
+	method = mono_class_inflate_generic_method_checked (method, &context, &error);
+	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
 	return method;
 }

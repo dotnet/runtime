@@ -2795,8 +2795,10 @@ mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method)
 #endif
 	{
 		if (method->is_inflated) {
+			MonoError error;
 			/* Have to inflate the result */
-			res = mono_class_inflate_generic_method (res, &((MonoMethodInflated*)method)->context);
+			res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		}
 	}
 

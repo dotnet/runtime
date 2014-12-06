@@ -2018,8 +2018,14 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		return NULL;
 	}
 
-	if (method_context)
-		result = mono_class_inflate_generic_method (result, method_context);
+	if (method_context) {
+		MonoError error;
+		result = mono_class_inflate_generic_method_checked (result, method_context, &error);
+		if (!mono_error_ok (&error)) {
+			mono_error_cleanup (&error);
+			return NULL;
+		}
+	}
 
 	return result;
 }

@@ -4648,6 +4648,7 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 MonoMethod*
 mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt)
 {
+	MonoError error;
 	MonoGenericContext shared_context;
 	MonoMethod *declaring_method, *res;
 	gboolean partial = FALSE;
@@ -4699,7 +4700,9 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		partial = TRUE;
 	}
 
-    res = mono_class_inflate_generic_method (declaring_method, &shared_context);
+    res = mono_class_inflate_generic_method_checked (declaring_method, &shared_context, &error);
+	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+
 	if (!partial) {
 		/* The result should be an inflated method whose parent is not inflated */
 		g_assert (!res->klass->is_inflated);
@@ -6138,8 +6141,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 			if (method->is_inflated)
 				ctx = mono_method_get_context (method);
 			method = info->d.synchronized_inner.method;
-			if (ctx)
-				method = mono_class_inflate_generic_method (method, ctx);
+			if (ctx) {
+				MonoError error;
+				method = mono_class_inflate_generic_method_checked (method, ctx, &error);
+				g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			}
 		}
 	}
 

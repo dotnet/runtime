@@ -2460,14 +2460,18 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 		res = mono_marshal_get_wrapper_info (wrapper);
 		if (res == NULL)
 			return wrapper;
-		if (wrapper->is_inflated)
+		if (wrapper->is_inflated) {
+			MonoError error;
+			MonoMethod *result;
 			/*
 			 * A method cannot be inflated and a wrapper at the same time, so the wrapper info
 			 * contains an uninflated method.
 			 */
-			return mono_class_inflate_generic_method (res, mono_method_get_context (wrapper));
-		else
-			return res;
+			result = mono_class_inflate_generic_method_checked (res, mono_method_get_context (wrapper), &error);
+			g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+			return result;
+		}
+		return res;
 	case MONO_WRAPPER_MANAGED_TO_NATIVE:
 		info = mono_marshal_get_wrapper_info (wrapper);
 		if (info && (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT || info->subtype == WRAPPER_SUBTYPE_PINVOKE))
@@ -2600,7 +2604,9 @@ check_generic_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, gpointe
 	 */
 	def = mono_marshal_find_in_cache (cache, def_key);
 	if (def) {
-		inst = mono_class_inflate_generic_method (def, ctx);
+		MonoError error;
+		inst = mono_class_inflate_generic_method_checked (def, ctx, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 		/* Cache it */
 		mono_memory_barrier ();
 		mono_marshal_lock ();
@@ -2618,12 +2624,14 @@ check_generic_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, gpointe
 static MonoMethod*
 cache_generic_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx, gpointer key)
 {
+	MonoError error;
 	MonoMethod *inst, *res;
 
 	/*
 	 * We use the same cache for the generic definition and the instances.
 	 */
-	inst = mono_class_inflate_generic_method (def, ctx);
+	inst = mono_class_inflate_generic_method_checked (def, ctx, &error);
+	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 	mono_memory_barrier ();
 	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, key);
@@ -2638,6 +2646,7 @@ cache_generic_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *d
 static MonoMethod*
 check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def_method, MonoGenericContext *ctx)
 {
+	MonoError error;
 	MonoMethod *res;
 	MonoMethod *inst, *def;
 
@@ -2653,7 +2662,9 @@ check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method
 	 */
 	def = mono_marshal_find_in_cache (cache, def_method->klass);
 	if (def) {
-		inst = mono_class_inflate_generic_method (def, ctx);
+		inst = mono_class_inflate_generic_method_checked (def, ctx, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+
 		/* Cache it */
 		mono_memory_barrier ();
 		mono_marshal_lock ();
@@ -2671,12 +2682,15 @@ check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method
 static MonoMethod*
 cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx)
 {
+	MonoError error;
 	MonoMethod *inst, *res;
 
 	/*
 	 * We use the same cache for the generic definition and the instances.
 	 */
-	inst = mono_class_inflate_generic_method (def, ctx);
+	inst = mono_class_inflate_generic_method_checked (def, ctx, &error);
+	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+
 	mono_memory_barrier ();
 	mono_marshal_lock ();
 	res = g_hash_table_lookup (cache, orig_method->klass);
@@ -3181,10 +3195,13 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	mono_mb_emit_ldloc (mb, local_prev);
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
-	if (ctx)
-		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method (method, &container->context));
-	else
+	if (ctx) {
+		MonoError error;
+		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, &error));
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	} else {
 		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	}
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_byte (mb, CEE_POP);
 
@@ -8544,8 +8561,11 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	info->d.synchronized_inner.method = method;
 	res = mono_mb_create (mb, sig, 0, info);
 	mono_mb_free (mb);
-	if (ctx)
-		res = mono_class_inflate_generic_method (res, ctx);
+	if (ctx) {
+		MonoError error;
+		res = mono_class_inflate_generic_method_checked (res, ctx, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	}
 	return res;
 }
 
@@ -8686,10 +8706,13 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 
-	if (ctx)
-		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method (method, &container->context), NULL);
-	else
+	if (ctx) {
+		MonoError error;
+		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, &error), NULL);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	} else {
 		mono_mb_emit_managed_call (mb, method, NULL);
+	}
 
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_emit_stloc (mb, ret_local);
@@ -9711,10 +9734,13 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 
-	if (ctx)
-		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method (method, &container->context), NULL);
-	else
+	if (ctx) {
+		MonoError error;
+		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, &error), NULL);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	} else {
 		mono_mb_emit_managed_call (mb, method, NULL);
+	}
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
