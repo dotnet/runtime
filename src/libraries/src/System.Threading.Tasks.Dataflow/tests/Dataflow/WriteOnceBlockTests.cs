@@ -42,7 +42,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestWriteOnceBlockConstructor()
         {
             try
@@ -69,7 +69,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestWriteOnceInvalidArgumentValidation()
         {
             bool passed = true;
@@ -192,7 +192,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Test failed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestStatusAfterComplete()
         {
             bool passed = true;
@@ -216,7 +216,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Test failed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestCanceledLinking()
         {
             bool passed = true;

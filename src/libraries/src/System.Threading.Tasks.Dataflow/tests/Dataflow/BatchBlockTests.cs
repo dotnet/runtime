@@ -43,7 +43,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(TestTriggerBatchRacingWithComplete(greedy: false));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBatchBlockConstructor()
         {
             // size without decline without option
@@ -64,7 +64,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.BatchSize != 45, "Constructor failed! BatchSize doesn't match for a brand new BatchBlock.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBatchInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BatchBlock<int>(-1));

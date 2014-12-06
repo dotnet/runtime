@@ -48,7 +48,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestTransformBlockConstructor()
         {
             // SYNC
@@ -80,7 +80,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestTransformBlockInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>((Func<int, string>)null));
