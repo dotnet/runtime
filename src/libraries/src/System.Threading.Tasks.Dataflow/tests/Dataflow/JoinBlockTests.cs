@@ -47,7 +47,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestJoinBlockConstructor()
         {
             // without decline without option
@@ -65,7 +65,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new JoinBlock.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestJoinInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new JoinBlock<int, int>(null));
@@ -264,7 +264,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestNonGreedyFailToConsumeReservedMessage()
         {
             NullOnConsumeSource<int> source1 = new NullOnConsumeSource<int>();

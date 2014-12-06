@@ -61,7 +61,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBatchedJoinBlockConstructor()
         {
             // *** 2-way BatchedJoinBlock ***
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block3.BatchSize != 45, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
         public void TestBatchedJoinInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, int>(0));
