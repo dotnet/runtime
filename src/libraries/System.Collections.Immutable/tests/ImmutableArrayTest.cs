@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Collections.Immutable.Test
@@ -1157,6 +1158,14 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(0, empty.OfType<int>().Count());
             Assert.Equal(1, oneElement.OfType<int>().Count());
             Assert.Equal(1, twoElementRefTypeWithNull.OfType<string>().Count());
+        }
+
+        [Fact]
+        public void Add_ThreadSafety()
+        {
+            var array = ImmutableArray.Create<int>();
+            Action mutator = () => { for (int i = 0; i < 100; i++) ImmutableInterlocked.InterlockedExchange(ref array, array.Add(1)); };
+            Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
