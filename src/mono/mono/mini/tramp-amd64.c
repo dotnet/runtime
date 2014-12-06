@@ -956,6 +956,8 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	return buf;
 }
 
+#ifdef MONO_ARCH_MONITOR_OBJECT_REG
+
 gpointer
 mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 {
@@ -1201,6 +1203,24 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	return buf;
 }
+
+#else
+
+gpointer
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif
 
 void
 mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
