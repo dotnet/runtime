@@ -1767,9 +1767,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
  */
 static MonoMethod *
 mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
-			    MonoGenericContext *context, gboolean *used_context)
+			    MonoGenericContext *context, gboolean *used_context, MonoError *error)
 {
-	MonoError error;
 	MonoMethod *result;
 	int table = mono_metadata_token_table (token);
 	int idx = mono_metadata_token_index (token);
@@ -1779,13 +1778,17 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	int size;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
+	mono_error_init (error);
+
 	if (image_is_dynamic (image)) {
 		MonoClass *handle_class;
 
 		result = mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context);
+		g_assert (!mono_loader_get_last_error ());
+
 		// This checks the memberref type as well
 		if (result && handle_class != mono_defaults.methodhandle_class) {
-			mono_loader_set_error_bad_image (g_strdup_printf ("Bad method token 0x%08x on image %s.", token, image->name));
+			mono_error_set_bad_image (error, image, "Bad method token 0x%08x on dynamic image", token);
 			return NULL;
 		}
 		return result;
@@ -1794,43 +1797,31 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (table != MONO_TABLE_METHOD) {
 		if (table == MONO_TABLE_METHODSPEC) {
 			if (used_context) *used_context = TRUE;
-			result = method_from_methodspec (image, context, idx, &error);
-			if (!result) {
-				mono_loader_set_error_from_mono_error (&error);
-				mono_error_cleanup (&error); /* FIXME Don't swallow the error */
-			}
-			return result;
+			return method_from_methodspec (image, context, idx, error);
 		}
 		if (table != MONO_TABLE_MEMBERREF) {
-			g_warning ("got wrong token: 0x%08x\n", token);
-			mono_loader_set_error_bad_image (g_strdup_printf ("Bad method token 0x%08x on image %s.", token, image->name));
+			mono_error_set_bad_image (error, image, "Bad method token 0x%08x.", token);
 			return NULL;
 		}
-		result = method_from_memberref (image, idx, context, used_context, &error);
-		if (!result) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
-		}
-		return result;
+		return method_from_memberref (image, idx, context, used_context, error);
 	}
 
 	if (used_context) *used_context = FALSE;
 
 	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
-		mono_loader_set_error_bad_image (g_strdup_printf ("Bad method token 0x%08x on image %s.", token, image->name));
+		mono_error_set_bad_image (error, image, "Bad method token 0x%08x (out of bounds).", token);
 		return NULL;
 	}
 
 	if (!klass) {
 		guint32 type = mono_metadata_typedef_from_method (image, token);
-		if (!type)
-			return NULL;
-		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | type, &error);
-		if (klass == NULL) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		if (!type) {
+			mono_error_set_bad_image (error, image, "Bad method token 0x%08x (could not find corresponding typedef).", token);
 			return NULL;
 		}
+		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | type, error);
+		if (klass == NULL)
+			return NULL;
 	}
 
 	mono_metadata_decode_row (&image->tables [MONO_TABLE_METHOD], idx - 1, cols, 6);
@@ -1862,18 +1853,16 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	 * load_generic_params does a binary search so only call it if the method 
 	 * is generic.
 	 */
-	if (*sig & 0x10)
+	if (*sig & 0x10) {
 		generic_container = mono_metadata_load_generic_params (image, token, container);
+		g_assert (!mono_loader_get_last_error ()); /* FIXME don't swallow this error. */
+	}
 	if (generic_container) {
-		MonoError error;
 		result->is_generic = TRUE;
 		generic_container->owner.method = result;
 		/*FIXME put this before the image alloc*/
-		if (!mono_metadata_load_generic_param_constraints_checked (image, token, generic_container, &error)) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+		if (!mono_metadata_load_generic_param_constraints_checked (image, token, generic_container, error))
 			return NULL;
-		}
 
 		container = generic_container;
 	}
@@ -1900,6 +1889,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
  	if (generic_container)
  		mono_method_set_generic_container (result, generic_container);
 
+	g_assert (!mono_loader_get_last_error ());
 	return result;
 }
 
@@ -1913,6 +1903,7 @@ MonoMethod *
 mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
 {
+	MonoError error;
 	MonoMethod *result = NULL;
 	gboolean used_context = FALSE;
 
@@ -1935,9 +1926,12 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		return result;
 
 
-	result = mono_get_method_from_token (image, token, klass, context, &used_context);
-	if (!result)
+	result = mono_get_method_from_token (image, token, klass, context, &used_context, &error);
+	if (!result) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
 		return NULL;
+	}
 
 	mono_image_lock (image);
 	if (!used_context && !result->is_inflated) {
@@ -2052,11 +2046,15 @@ MonoMethod *
 mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,
 			     MonoGenericContext *context, MonoMethod **cil_method)
 {
+	MonoError error;
 	MonoMethod *result;
 
-	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL);
-	if (!*cil_method)
+	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL, &error);
+	if (!*cil_method) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
 		return NULL;
+	}
 
 	result = get_method_constrained (image, *cil_method, constrained_class, context);
 
