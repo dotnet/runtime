@@ -347,6 +347,18 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestBufferBlockOutputAvailableAsyncAfterTryReceiveAll()
         {
+            var multipleConcurrentTestsTask =
+                Task.WhenAll(
+                    Enumerable.Repeat(-1, 1000)
+                        .Select(_ => GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()));
+            var timeoutTask = Task.Delay(100);
+            var completedTask = await Task.WhenAny(multipleConcurrentTestsTask, timeoutTask);
+
+            Assert.True(completedTask != timeoutTask);
+        }
+
+        private Task GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()
+        {
             var buffer = new BufferBlock<object>();
 
             buffer.Post(null);
@@ -358,9 +370,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
             buffer.Post(null);
 
-            var completedTask = await Task.WhenAny(outputAvailableAsync, Task.Delay(100));
-
-            Assert.True(completedTask == outputAvailableAsync);
+            return outputAvailableAsync;
         }
 
         [Fact]
