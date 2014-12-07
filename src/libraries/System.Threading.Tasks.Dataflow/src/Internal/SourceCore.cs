@@ -196,7 +196,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     _nextMessageReservedFor = null;
                     _targetRegistry.Remove(target, onlyIfReachedMaxMessages: true);
-                    if (!_enableOffering) _enableOffering = true; // reenable offering if it was disabled
+                    _enableOffering = true; // reenable offering if it was disabled
                     _nextMessageId.Value++;
                     CompleteBlockIfPossible();
                     OfferAsyncIfNecessary(isReplacementReplica: false, outgoingLockKnownAcquired: true);
@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                             _nextMessageId.Value++;
 
                             // Now that the next message has changed, reenable offering if it was disabled
-                            if (!_enableOffering) _enableOffering = true;
+                            _enableOffering = true;
 
                             // If removing this item was the last thing this block will ever do, complete it,
                             CompleteBlockIfPossible();
@@ -352,7 +352,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                             _nextMessageId.Value++;
 
                             // Now that the next message has changed, reenable offering if it was disabled
-                            if (!_enableOffering) _enableOffering = true;
+                            _enableOffering = true;
 
                             // Now that the block is empty, check to see whether we should complete.
                             CompleteBlockIfPossible();
@@ -630,7 +630,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     // The message was accepted, so there's now going to be a new next message.
                     // If offering had been disabled, reenable it.
-                    if (!_enableOffering) _enableOffering = true;
+                    _enableOffering = true;
 
                     // Now that a message has been removed, we need to complete if possible or
                     // or asynchronously offer if necessary.  However, if we're calling this as part of our
