@@ -15,6 +15,22 @@ namespace System.Collections.Immutable
     /// A readonly array with O(1) indexable lookup time.
     /// </summary>
     /// <typeparam name="T">The type of element stored by the array.</typeparam>
+    /// <devremarks>
+    /// This type has a documented contract of being exactly one reference-type field in size.
+    /// Our own ImmutableInterlocked class depends on it, as well as others externally.
+    /// IMPORTANT NOTICE FOR MAINTAINERS AND REVIEWERS:
+    /// This type should be thread-safe. As a struct, it cannot protect its own fields
+    /// from being changed from one thread while its members are executing on other threads
+    /// because structs can change *in place* simply by reassigning the field containing
+    /// this struct. Therefore it is extremely important that
+    /// ** Every member should only dereference <c>this</c> ONCE. **
+    /// If a member needs to reference the array field, that counts as a dereference of <c>this</c>.
+    /// Calling other instance members (properties or methods) also counts as dereferencing <c>this</c>.
+    /// Any member that needs to use <c>this</c> more than once must instead
+    /// assign <c>this</c> to a local variable and use that for the rest of the code instead.
+    /// This effectively copies the one field in the struct to a local variable so that
+    /// it is insulated from other threads.
+    /// </devremarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IImmutableList<T>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable
     {
