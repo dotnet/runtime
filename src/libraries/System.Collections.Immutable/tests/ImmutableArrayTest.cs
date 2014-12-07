@@ -1172,7 +1172,13 @@ namespace System.Collections.Immutable.Test
             // Also noteworthy: this method only tests the thread-safety of the Add method.
             // While it proves the general point, any method that reads 'this' more than once is vulnerable.
             var array = ImmutableArray.Create<int>();
-            Action mutator = () => { for (int i = 0; i < 100; i++) ImmutableInterlocked.InterlockedExchange(ref array, array.Add(1)); };
+            Action mutator = () =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    ImmutableInterlocked.InterlockedExchange(ref array, array.Add(1));
+                }
+            };
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
