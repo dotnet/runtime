@@ -200,6 +200,7 @@ buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-s
 endif
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
+main-sgen.$(OBJEXT): buildver-sgen.h
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
