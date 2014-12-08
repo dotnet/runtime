@@ -1301,12 +1301,8 @@ patch-libtool:
 if NACL_CODEGEN
 test-process-exit:
 else
-EXTRA_DIST += bug-438454.cs bug-438454.exe.stdout.expected threadpool-in-processexit.cs threadpool-in-processexit.exe.stdout.expected
+EXTRA_DIST += threadpool-in-processexit.cs threadpool-in-processexit.exe.stdout.expected
 test-process-exit:
-	@$(MCS) $(srcdir)/bug-438454.cs -out:bug-438454.exe
-	@echo "Testing bug-438454.exe..."
-	@$(RUNTIME) bug-438454.exe > bug-438454.exe.stdout
-	@diff -w bug-438454.exe.stdout $(srcdir)/bug-438454.exe.stdout.expected
 	@$(MCS) $(srcdir)/threadpool-in-processexit.cs -out:threadpool-in-processexit.exe
 	@echo "Testing threadpool-in-processexit.exe..."
 	@$(RUNTIME) threadpool-in-processexit.exe > threadpool-in-processexit.exe.stdout
