@@ -2788,16 +2788,23 @@ namespace System.Collections.Immutable
                 Requires.NotNull(match, "match");
                 Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
-                var builder = ImmutableList<T>.Empty.ToBuilder();
+                ImmutableList<T>.Builder builder = null;
                 foreach (var item in this)
                 {
                     if (match(item))
                     {
+                        if (builder == null)
+                        {
+                            builder = ImmutableList<T>.Empty.ToBuilder();
+                        }
+
                         builder.Add(item);
                     }
                 }
 
-                return builder.ToImmutable();
+                return builder != null ?
+                    builder.ToImmutable() :
+                    ImmutableList<T>.Empty;
             }
 
             /// <summary>
