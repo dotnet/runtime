@@ -191,8 +191,6 @@ buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-stat
 endif
 	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
 mono_boehm-main.$(OBJEXT): buildver-boehm.h
-main.c: buildver-boehm.h
-
 endif
 
 if DISABLE_EXECUTABLES
@@ -202,8 +200,6 @@ buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-s
 endif
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
-main-sgen.c: buildver-sgen.h
-
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
