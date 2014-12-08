@@ -345,6 +345,35 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        public async Task TestBufferBlockOutputAvailableAsyncAfterTryReceiveAll()
+        {
+            var multipleConcurrentTestsTask =
+                Task.WhenAll(
+                    Enumerable.Repeat(-1, 1000)
+                        .Select(_ => GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()));
+            var timeoutTask = Task.Delay(100);
+            var completedTask = await Task.WhenAny(multipleConcurrentTestsTask, timeoutTask);
+
+            Assert.True(completedTask != timeoutTask);
+        }
+
+        private Task GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()
+        {
+            var buffer = new BufferBlock<object>();
+
+            buffer.Post(null);
+
+            IList<object> items;
+            buffer.TryReceiveAll(out items);
+
+            var outputAvailableAsync = buffer.OutputAvailableAsync();
+
+            buffer.Post(null);
+
+            return outputAvailableAsync;
+        }
+
+        [Fact]
         public void TestBufferBlockInvalidArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(() => new BufferBlock<int>(null));
@@ -366,7 +395,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 cts.Cancel();
                 try { buffer.Completion.Wait(); }
                 catch { }
-
+                    
                 Assert.False(buffer.Count != 0, string.Format("Iteration {0}: Completed before clearing messages.", iter));
             }
         }
