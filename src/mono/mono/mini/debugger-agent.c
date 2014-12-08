@@ -4040,6 +4040,9 @@ assembly_load (MonoProfiler *prof, MonoAssembly *assembly, int result)
 static void
 assembly_unload (MonoProfiler *prof, MonoAssembly *assembly)
 {
+	if (is_debugger_thread ())
+		return;
+
 	process_profiler_event (EVENT_KIND_ASSEMBLY_UNLOAD, assembly);
 
 	clear_event_requests_for_assembly (assembly);
