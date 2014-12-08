@@ -1,0 +1,270 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    -->
+    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{10D52320-17B7-476E-BBD2-A1064DD38CBF}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.XPath.XDocument.Tests</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CommonPath>..\..\Common\tests\System.Xml.XPath</CommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Globalization" />
+    <Reference Include="System.IO" />
+    <Reference Include="System.Reflection" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="xunit">
+      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- XPath.XmlDocument navigator -->
+    <Compile Include="XDocument\CreateNavigatorComparer.cs" />
+    <Compile Include="XDocument\NavigatorComparer.cs" />
+    <Compile Include="XDocument\CreateNavigatorFromXDocument.cs" />
+    <Compile Include="XDocument\XDocumentXPathTest.cs" />
+    <Compile Include="$(CommonPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
+    <!-- Common -->
+    <Compile Include="$(CommonPath)\Common\FileHelper.cs" />
+    <Compile Include="$(CommonPath)\Common\ICreateNavigator.cs" />
+    <Compile Include="$(CommonPath)\Common\Utils.cs" />
+    <Compile Include="$(CommonPath)\Common\XPathResult.cs" />
+    <Compile Include="$(CommonPath)\Common\XPathResultToken.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\BooleanFunctionsTests.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\ComplexExpressionsTests.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\NodeSetFunctionsTests.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\NodeSetMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\NumberFunctionsTests.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\ParameterTypeCoercionTests.cs" />
+    <Compile Include="$(CommonPath)\CoreFunctionLibrary\StringFunctionsTests.cs" />
+    <Compile Include="$(CommonPath)\CustomerScenarios\CustomerScenariosTests.cs" />
+    <Compile Include="$(CommonPath)\CustomerScenarios\MatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\BasicMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\BasicsTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\BooleansTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\NodeSetsMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\NodeSetsTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\NumbersTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\SetContextFunctionalTests.cs" />
+    <Compile Include="$(CommonPath)\FuncExpressions\SetContextMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAbbreviatedSyntaxMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAbbreviatedSyntaxTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAxeCombinationsTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAxeComplexExprMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAxeComplexExprTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAxeMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathAxesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathNodeMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathNodeTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathPredicateComplexExprTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathPredicateMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathPredicatePositionTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\PathPredicatesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\StepMatchesTests.cs" />
+    <Compile Include="$(CommonPath)\FuncLocation\StepsTests.cs" />
+    <Compile Include="$(CommonPath)\MiscellaneousCases\GlobalizationTests.cs" />
+    <Compile Include="$(CommonPath)\MiscellaneousCases\LexicalStructureTests.cs" />
+    <Compile Include="$(CommonPath)\MiscellaneousCases\MatchesTests.cs" />
+    <Compile Include="$(CommonPath)\MiscellaneousCases\MiscellaneousCasesTests.cs" />
+    <Compile Include="$(CommonPath)\MiscellaneousCases\NodeSetsTests.cs" />
+    <Compile Include="$(CommonPath)\MiscellaneousCases\RegressionTestsTests.cs" />
+    <Compile Include="$(CommonPath)\TestsWithEncoding\MiscWithEncodings.cs" />
+    <Compile Include="$(CommonPath)\XPathExpressionTests\CompileTests.cs" />
+    <Compile Include="$(CommonPath)\XPathExpressionTests\EvaluateTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(CommonPath)\TestData\91893.xml">
+      <Link>TestData\91893.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\JPN_problem_chars_1.xml">
+      <Link>TestData\JPN_problem_chars_1.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\JPN_problem_chars_2.xml">
+      <Link>TestData\JPN_problem_chars_2.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\KOR_problem_chars_b.xml">
+      <Link>TestData\KOR_problem_chars_b.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\Russian_problem_chars.xml">
+      <Link>TestData\Russian_problem_chars.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\Single_byte_problem_chars_b.xml">
+      <Link>TestData\Single_byte_problem_chars_b.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\Surrogates_1.xml">
+      <Link>TestData\Surrogates_1.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\Thai_risky_chars.xml">
+      <Link>TestData\Thai_risky_chars.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\XQL_Orders_j1.xml">
+      <Link>TestData\XQL_Orders_j1.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\XQL_Orders_j3.xml">
+      <Link>TestData\XQL_Orders_j3.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xql_orders-flat-200a.xml">
+      <Link>TestData\xql_orders-flat-200a.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\books.xml">
+      <Link>TestData\books.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\books_2.xml">
+      <Link>TestData\books_2.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\bookstore.xml">
+      <Link>TestData\bookstore.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\data.xml">
+      <Link>TestData\data.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\data1.xml">
+      <Link>TestData\data1.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\data4.xml">
+      <Link>TestData\data4.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\dummy.xml">
+      <Link>TestData\dummy.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\id4.xml">
+      <Link>TestData\id4.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\lang.xml">
+      <Link>TestData\lang.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\name.xml">
+      <Link>TestData\name.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\name2.xml">
+      <Link>TestData\name2.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\name4.xml">
+      <Link>TestData\name4.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\namespaces.xml">
+      <Link>TestData\namespaces.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\ns_default.xml">
+      <Link>TestData\ns_default.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\ns_prefixes.xml">
+      <Link>TestData\ns_prefixes.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\numbers.xml">
+      <Link>TestData\numbers.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\space.xml">
+      <Link>TestData\space.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\t114730.xml">
+      <Link>TestData\t114730.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\t98598.xml">
+      <Link>TestData\t98598.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\test1.xml">
+      <Link>TestData\test1.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\test63682.xml">
+      <Link>TestData\test63682.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\test63733.xml">
+      <Link>TestData\test63733.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\test66246.xml">
+      <Link>TestData\test66246.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\turkish.xml">
+      <Link>TestData\turkish.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp001.xml">
+      <Link>TestData\xp001.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp002.xml">
+      <Link>TestData\xp002.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp003.xml">
+      <Link>TestData\xp003.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp004.xml">
+      <Link>TestData\xp004.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp005.xml">
+      <Link>TestData\xp005.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp006.xml">
+      <Link>TestData\xp006.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp008.xml">
+      <Link>TestData\xp008.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xp012.xml">
+      <Link>TestData\xp012.xml</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(CommonPath)\TestData\xpC001.xml">
+      <Link>TestData\xpC001.xml</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Xml.XDocument\src\System.Xml.XDocument.csproj">
+      <Project>{442c5a88-29c2-4b00-b1df-730d646d3861}</Project>
+      <Name>System.Xml.XDocument</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj">
+      <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
+      <Name>System.Xml.XmlDocument</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Xml.XPath.XDocument.csproj">
+      <Project>{daa1ea56-c318-4d2e-ab8d-1ab87d9f98f5}</Project>
+      <Name>System.Xml.XPath.XDocument</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj">
+      <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
+      <Name>System.Xml.XPath.XmlDocument</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
+      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
+      <Name>System.Xml.XPath</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\xunit.1.9.2\lib\net20\xunit.dll')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.1.9.2\lib\net20\xunit.dll'))" />
+  </Target>
+</Project>

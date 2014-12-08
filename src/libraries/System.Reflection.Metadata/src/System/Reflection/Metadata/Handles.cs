@@ -2083,7 +2083,7 @@ namespace System.Reflection.Metadata
         //     31: IsVirtual
         //
         // At this time, IsVirtual is always false because namespace names come from type definitions 
-        // and type forwarders only, which never get their namepaces projected.
+        // and type forwarders only, which never get their namespaces projected.
         //
         // For standard Namespace TokenTypeId, the index is to the null-terminated full name of the 
         // namespace in the string heap.

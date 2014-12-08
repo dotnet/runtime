@@ -34,7 +34,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root node of the data structure after the mutation.
             /// </summary>
-            private readonly ImmutableSortedDictionary<int, HashBucket>.Node root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// Either the number of elements added or removed from the collection as a result of the operation (a negative number represents removed elements),
@@ -54,7 +54,7 @@ namespace System.Collections.Immutable
             /// <param name="root">The root node of the result.</param>
             /// <param name="count">The total element count or a count adjustment.</param>
             /// <param name="countType">The appropriate interpretation for the <paramref name="count"/> parameter.</param>
-            internal MutationResult(ImmutableSortedDictionary<int, HashBucket>.Node root, int count, CountType countType = ImmutableHashSet<T>.CountType.Adjustment)
+            internal MutationResult(SortedInt32KeyNode<HashBucket> root, int count, CountType countType = ImmutableHashSet<T>.CountType.Adjustment)
             {
                 Requires.NotNull(root, "root");
                 this.root = root;
@@ -65,7 +65,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the root node of the data structure after the mutation.
             /// </summary>
-            internal ImmutableSortedDictionary<int, HashBucket>.Node Root
+            internal SortedInt32KeyNode<HashBucket> Root
             {
                 get { return this.root; }
             }
@@ -81,7 +81,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets the appropriate interpration for the <see cref="Count"/> property; whether to be a count adjustment or total count.
+            /// Gets the appropriate interpretation for the <see cref="Count"/> property; whether to be a count adjustment or total count.
             /// </summary>
             internal CountType CountType
             {

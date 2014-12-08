@@ -2,12 +2,12 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
 
-  
+
   <PropertyGroup>
     <!-- Work around known Dev14 bug - see
          https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
-    --> 
-     
+    -->
+
     <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
     <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
     <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
@@ -16,7 +16,6 @@
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
   </PropertyGroup>
-  
 
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
@@ -32,15 +31,12 @@
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  <PropertyGroup>
+    <CommonPath>..\..\Common\src</CommonPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
@@ -58,21 +54,24 @@
     <Reference Include="System.Text.Encoding" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\System.Xml.Common\System\Xml\Ref.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\SecureStringHasher.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlTextWriter.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\Base64Encoder.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlTextWriterBase64Encoder.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\BinHexEncoder.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlConvertEx.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\ExceptionType.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlConst.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlCharType.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\ValidateNames.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlParsingHelper.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\Xml\XmlNameHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Ref.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\SecureStringHasher.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlTextWriter.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\Base64Encoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlTextWriterBase64Encoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\BinHexEncoder.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlConvertEx.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ExceptionType.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlConst.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlCharType.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\ValidateNames.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlParsingHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Xml\XmlNameHelper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Resources\SR.cs</Link>
+    </Compile>
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -116,9 +115,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\System.Xml.Common\System\SR.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\ArrayT.cs" />
-    <Compile Include="..\..\System.Xml.Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\ArrayT.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">

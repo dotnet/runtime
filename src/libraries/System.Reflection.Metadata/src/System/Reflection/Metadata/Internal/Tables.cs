@@ -1192,7 +1192,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal uint FindEventMapRowIdFor(TypeDefinitionHandle typeDef)
         {
-            // We do a linear scan here because we dont have these tables sorted
+            // We do a linear scan here because we don't have these tables sorted
             // TODO: We can scan the table to see if it is sorted and use binary search if so.
             // Also, the compilers should make sure it's sorted.
             int rowNumber =
@@ -1323,7 +1323,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal uint FindPropertyMapRowIdFor(TypeDefinitionHandle typeDef)
         {
-            // We do a linear scan here because we dont have these tables sorted.
+            // We do a linear scan here because we don't have these tables sorted.
             // TODO: We can scan the table to see if it is sorted and use binary search if so.
             // Also, the compilers should make sure it's sorted.
             int rowNumber =

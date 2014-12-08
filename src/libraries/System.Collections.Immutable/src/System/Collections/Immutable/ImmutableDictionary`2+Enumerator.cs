@@ -23,7 +23,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The enumerator over the sorted dictionary whose keys are hash values.
             /// </summary>
-            private ImmutableSortedDictionary<int, HashBucket>.Enumerator mapEnumerator;
+            private SortedInt32KeyNode<HashBucket>.Enumerator mapEnumerator;
 
             /// <summary>
             /// The enumerator in use within an individual HashBucket.
@@ -40,10 +40,10 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="root">The root.</param>
             /// <param name="builder">The builder, if applicable.</param>
-            internal Enumerator(ImmutableSortedDictionary<int, HashBucket>.Node root, Builder builder = null)
+            internal Enumerator(SortedInt32KeyNode<HashBucket> root, Builder builder = null)
             {
                 this.builder = builder;
-                this.mapEnumerator = new ImmutableSortedDictionary<int, HashBucket>.Enumerator(root);
+                this.mapEnumerator = new SortedInt32KeyNode<HashBucket>.Enumerator(root);
                 this.bucketEnumerator = default(HashBucket.Enumerator);
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
             }
@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
                 this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
                 this.mapEnumerator.Reset();
 
-                // Reseting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
+                // Resetting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
                 this.bucketEnumerator.Dispose();
                 this.bucketEnumerator = default(HashBucket.Enumerator);
             }

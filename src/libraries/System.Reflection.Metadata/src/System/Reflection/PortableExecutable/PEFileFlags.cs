@@ -9,7 +9,7 @@ namespace System.Reflection.PortableExecutable
         ExecutableImage = 0x0002,        // File is executable  (i.e. no unresolved external references).
         LineNumsStripped = 0x0004,       // Line numbers stripped from file.
         LocalSymsStripped = 0x0008,      // Local symbols stripped from file.
-        AggressiveWSTrim = 0x0010,       // Agressively trim working set
+        AggressiveWSTrim = 0x0010,       // Aggressively trim working set
         LargeAddressAware = 0x0020,      // App can handle >2gb addresses
         BytesReversedLo = 0x0080,        // Bytes of machine word are reversed.
         Bit32Machine = 0x0100,           // 32 bit word machine.

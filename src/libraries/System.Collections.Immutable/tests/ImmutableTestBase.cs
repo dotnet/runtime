@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
@@ -107,7 +108,7 @@ namespace System.Collections.Immutable.Test
 
             int seed = unchecked((int)DateTime.Now.Ticks);
 
-            Console.WriteLine("Random seed {0}", seed);
+            Debug.WriteLine("Random seed {0}", seed);
 
             var random = new Random(seed);
             var inputs = new double[length];

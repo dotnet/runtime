@@ -47,7 +47,7 @@ namespace System.Numerics
         /// <summary>
         /// Constructs a Plane from the given Vector4.
         /// </summary>
-        /// <param name="value">A vector whose first 3 elements descrip the normal vector, 
+        /// <param name="value">A vector whose first 3 elements describe the normal vector, 
         /// and whose W component defines the distance along that normal from the origin.</param>
         public Plane(Vector4 value)
         {

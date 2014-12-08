@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Collections.Immutable.Test
@@ -387,7 +388,7 @@ namespace System.Collections.Immutable.Test
             IndexOfTests.LastIndexOfTest(
                 seq => ImmutableArray.CreateRange(seq),
                 (b, v) => b.LastIndexOf(v),
-                (b, v, eq) => b.LastIndexOf(v, eq), 
+                (b, v, eq) => b.LastIndexOf(v, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
                 (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
@@ -976,13 +977,20 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void SortNullComparer()
+        {
+            var array = ImmutableArray.Create(2, 4, 1, 3);
+            Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort(null));
+            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array uneffected.
+        }
+
+        [Fact]
         public void SortRange()
         {
             var array = ImmutableArray.Create(2, 4, 1, 3);
             Assert.Throws<ArgumentOutOfRangeException>(() => array.Sort(-1, 2, Comparer<int>.Default));
             Assert.Throws<ArgumentOutOfRangeException>(() => array.Sort(1, 4, Comparer<int>.Default));
             Assert.Equal(new int[] { 2, 4, 1, 3 }, array.Sort(array.Length, 0, Comparer<int>.Default));
-            Assert.Throws<ArgumentNullException>(() => array.Sort(1, 2, null));
             Assert.Equal(new[] { 2, 1, 4, 3 }, array.Sort(1, 2, Comparer<int>.Default));
         }
 
@@ -1150,6 +1158,28 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(0, empty.OfType<int>().Count());
             Assert.Equal(1, oneElement.OfType<int>().Count());
             Assert.Equal(1, twoElementRefTypeWithNull.OfType<string>().Count());
+        }
+
+        [Fact]
+        public void Add_ThreadSafety()
+        {
+            // Note the point of this thread-safety test is *not* to test the thread-safety of the test itself.
+            // This test has a known issue where the two threads will stomp on each others updates, but that's not the point.
+            // The point is that ImmutableArray`1.Add should *never* throw. But if it reads its own T[] field more than once,
+            // it *can* throw because the field can be replaced with an array of another length. 
+            // In fact, much worse can happen where we corrupt data if we are for example copying data out of the array
+            // in (for example) a CopyTo method and we read from the field more than once.
+            // Also noteworthy: this method only tests the thread-safety of the Add method.
+            // While it proves the general point, any method that reads 'this' more than once is vulnerable.
+            var array = ImmutableArray.Create<int>();
+            Action mutator = () =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    ImmutableInterlocked.InterlockedExchange(ref array, array.Add(1));
+                }
+            };
+            Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)

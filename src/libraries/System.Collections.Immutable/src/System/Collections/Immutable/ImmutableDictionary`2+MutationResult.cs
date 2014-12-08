@@ -18,7 +18,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root node of the data structure after the mutation.
             /// </summary>
-            private readonly ImmutableSortedDictionary<int, HashBucket>.Node root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// The number of elements added or removed from the collection as a result of the operation (a negative number represents removed elements).
@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="root">The root.</param>
             /// <param name="countAdjustment">The count adjustment.</param>
-            internal MutationResult(ImmutableSortedDictionary<int, HashBucket>.Node root, int countAdjustment)
+            internal MutationResult(SortedInt32KeyNode<HashBucket> root, int countAdjustment)
             {
                 Requires.NotNull(root, "root");
                 this.root = root;
@@ -50,7 +50,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets the root node of the data structure after the mutation.
             /// </summary>
-            internal ImmutableSortedDictionary<int, HashBucket>.Node Root
+            internal SortedInt32KeyNode<HashBucket> Root
             {
                 get { return this.root; }
             }
