@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Linq;
 using Validation;
 
 namespace System.Collections.Immutable
@@ -33,13 +32,13 @@ namespace System.Collections.Immutable
         [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableDictionary<,>.Builder.DebuggerProxy))]
+        [DebuggerTypeProxy(typeof(ImmutableDictionaryBuilderDebuggerProxy<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         {
             /// <summary>
             /// The root of the binary tree that stores the collection.  Contents are typically not entirely frozen.
             /// </summary>
-            private ImmutableSortedDictionary<int, HashBucket>.Node root = ImmutableSortedDictionary<int, HashBucket>.Node.EmptyNode;
+            private SortedInt32KeyNode<HashBucket> root = SortedInt32KeyNode<HashBucket>.EmptyNode;
 
             /// <summary>
             /// The comparers.
@@ -99,7 +98,7 @@ namespace System.Collections.Immutable
                     if (value != this.KeyComparer)
                     {
                         var comparers = Comparers.Get(value, this.ValueComparer);
-                        var input = new MutationInput(ImmutableSortedDictionary<int, HashBucket>.Node.EmptyNode, comparers, 0);
+                        var input = new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, comparers, 0);
                         var result = ImmutableDictionary<TKey, TValue>.AddRange(this, input);
 
                         this.immutable = null;
@@ -162,7 +161,13 @@ namespace System.Collections.Immutable
             /// </summary>
             public IEnumerable<TKey> Keys
             {
-                get { return this.root.Values.SelectMany(b => b).Select(kv => kv.Key); }
+                get 
+                {
+                    foreach (KeyValuePair<TKey, TValue> item in this)
+                    {
+                        yield return item.Key;
+                    }
+                }
             }
 
             /// <summary>
@@ -179,7 +184,13 @@ namespace System.Collections.Immutable
             /// </summary>
             public IEnumerable<TValue> Values
             {
-                get { return this.root.Values.SelectMany(b => b).Select(kv => kv.Value).ToArray(this.Count); }
+                get
+                {
+                    foreach (KeyValuePair<TKey, TValue> item in this)
+                    {
+                        yield return item.Value;
+                    }
+                }
             }
 
             /// <summary>
@@ -219,7 +230,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>
             /// An <see cref="T:System.Collections.Generic.ICollection`1" /> containing the keys of the object that implements <see cref="T:System.Collections.Generic.IDictionary`2" />.
-            ///   </returns>
+            /// </returns>
             ICollection IDictionary.Keys
             {
                 get { return this.Keys.ToArray(this.Count); }
@@ -230,7 +241,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <returns>
             /// An <see cref="T:System.Collections.Generic.ICollection`1" /> containing the values in the object that implements <see cref="T:System.Collections.Generic.IDictionary`2" />.
-            ///   </returns>
+            /// </returns>
             ICollection IDictionary.Values
             {
                 get { return this.Values.ToArray(this.Count); }
@@ -341,7 +352,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (this.count == 0) 
+                if (this.count == 0)
                 {
                     return;
                 }
@@ -375,7 +386,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Gets or sets the root of this data structure.
             /// </summary>
-            private ImmutableSortedDictionary<int, HashBucket>.Node Root
+            private SortedInt32KeyNode<HashBucket> Root
             {
                 get
                 {
@@ -564,7 +575,14 @@ namespace System.Collections.Immutable
             [Pure]
             public bool ContainsValue(TValue value)
             {
-                return this.Values.Contains(value, this.ValueComparer);
+                foreach (KeyValuePair<TKey, TValue> item in this)
+                {
+                    if (this.ValueComparer.Equals(value, item.Value))
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             /// <summary>
@@ -621,7 +639,7 @@ namespace System.Collections.Immutable
             /// <exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only. </exception>
             public void Clear()
             {
-                this.Root = ImmutableSortedDictionary<int, HashBucket>.Node.EmptyNode;
+                this.Root = SortedInt32KeyNode<HashBucket>.EmptyNode;
                 this.count = 0;
             }
 
@@ -711,48 +729,49 @@ namespace System.Collections.Immutable
                 this.count += result.CountAdjustment;
                 return result.CountAdjustment != 0;
             }
-            /// <summary>
-            /// A simple view of the immutable collection that the debugger can show to the developer.
-            /// </summary>
-            [ExcludeFromCodeCoverage]
-            private class DebuggerProxy
+        }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableDictionary<TKey, TValue>.Builder map;
+
+        /// <summary>
+        /// The simple view of the collection.
+        /// </summary>
+        private KeyValuePair<TKey, TValue>[] contents;
+
+        /// <summary>   
+        /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy&lt;TKey, TValue&gt;"/> class.
+        /// </summary>
+        /// <param name="map">The collection to display in the debugger</param>
+        public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
+        {
+            Requires.NotNull(map, "map");
+            this.map = map;
+        }
+
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public KeyValuePair<TKey, TValue>[] Contents
+        {
+            get
             {
-                /// <summary>
-                /// The collection to be enumerated.
-                /// </summary>
-                private readonly ImmutableDictionary<TKey, TValue>.Builder map;
-
-                /// <summary>
-                /// The simple view of the collection.
-                /// </summary>
-                private KeyValuePair<TKey, TValue>[] contents;
-
-                /// <summary>   
-                /// Initializes a new instance of the <see cref="DebuggerProxy"/> class.
-                /// </summary>
-                /// <param name="map">The collection to display in the debugger</param>
-                public DebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
+                if (this.contents == null)
                 {
-                    Requires.NotNull(map, "map");
-                    this.map = map;
+                    this.contents = this.map.ToArray(this.map.Count);
                 }
 
-                /// <summary>
-                /// Gets a simple debugger-viewable collection.
-                /// </summary>
-                [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-                public KeyValuePair<TKey, TValue>[] Contents
-                {
-                    get
-                    {
-                        if (this.contents == null)
-                        {
-                            this.contents = this.map.ToArray(this.map.Count);
-                        }
-
-                        return this.contents;
-                    }
-                }
+                return this.contents;
             }
         }
     }

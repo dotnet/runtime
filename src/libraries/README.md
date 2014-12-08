@@ -1,6 +1,13 @@
 # .NET Core
 
-[![Build status](https://ci.appveyor.com/api/projects/status/github/dotnet/corefx?svg=true)](https://ci.appveyor.com/project/dotnet/corefx)
+[![Build status][build-status-image]][build-status]  [![Issue Stats][pull-requests-image]][pull-requests]  [![Issue Stats][issues-closed-image]][issues-closed]
+
+[build-status-image]: https://ci.appveyor.com/api/projects/status/xje8bkekyu130e9y/branch/master?svg=true
+[build-status]: https://ci.appveyor.com/project/dotnet-bot/corefx/branch/master
+[pull-requests-image]: http://www.issuestats.com/github/dotnet/corefx/badge/pr
+[pull-requests]: http://www.issuestats.com/github/dotnet/corefx
+[issues-closed-image]: http://www.issuestats.com/github/dotnet/corefx/badge/issue
+[issues-closed]: http://www.issuestats.com/github/dotnet/corefx
 
 This repository contains the class libraries for .NET Core. This is currently a
 work in progress, and does not currently contain the entire set of libraries
@@ -23,6 +30,17 @@ Today, it contains the following components:
 
 * **XML**. This includes the DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq as well the corresponding XPath extension methods.
+
+* **Parallel LINQ**.  Parallel LINQ (PLINQ) is a parallel implementation of LINQ
+  to Objects. PLINQ implements the full set of LINQ standard query operators as 
+  extension methods for the System.Linq namespace and has additional operators
+  for parallel operations.
+
+* **TPL Dataflow**.  TPL Dataflow promotes actor/agent-oriented designs through 
+  primitives for in-process message passing, dataflow, and pipelining. TDF builds 
+  upon the APIs and scheduling infrastructure provided by the Task Parallel Library
+  (TPL), and integrates with the language support for asynchrony provided by 
+  C#, Visual Basic, and F#.
 
 More is coming soon. Stay tuned!
 
@@ -51,13 +69,13 @@ This project is a part of the [.NET Foundation].
 
 To contribute to .NET Core, see the [Contributing Guide].
 
-[Contributing Guide]: https://github.com/Microsoft/dotnet/blob/master/CONTRIBUTING.md
+[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
 
 You are also encouraged to start a discussion by filing an issue or creating a
 gist. See the contributing guides for more details. You can discuss .NET OSS
 more generally in the [.NET Foundation forums].
 
-[.NET Foundation forums]: http://www.dotnetfoundation.org/
+[.NET Foundation forums]: http://forums.dotnetfoundation.org/
 
 ## Building and Testing
 

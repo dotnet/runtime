@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  
+
   <PropertyGroup>
-    <BuildToolsVersion>1.0.11-prerelease</BuildToolsVersion>
+    <BuildToolsVersion>1.0.15-prerelease</BuildToolsVersion>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)bin\</BinDir>
     <ToolsDir>$(BinDir)tools\</ToolsDir>
-    
+
     <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
 
     <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
@@ -18,11 +18,11 @@
       Condition="Exists($(NuGetConfigFile))">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
     <PackagesDir>$(SourceDir)packages\</PackagesDir>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <PackageConfigs Include="$(SourceDir)*\packages.config" />
   </ItemGroup>
-  
+
   <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
       <Address ParameterType="System.String" Required="true"/>
@@ -42,7 +42,7 @@
       </Code>
     </Task>
   </UsingTask>
-  
+
   <Target Name="Clean">
     <!-- Execute build tools -->
     <MSBuild
@@ -50,14 +50,16 @@
       SkipNonexistentProjects="true"
       Targets="Clean" />
   </Target>
-  
+
   <Target Name="Build" DependsOnTargets="_RestoreBuildTools">
     <!-- Execute build tools -->
     <MSBuild
       Projects="$(ToolsDir)fxbuild.proj"
       Targets="Build" />
   </Target>
-  
+
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
   <Target Name="BuildFxLocalDependency" DependsOnTargets="_RestoreBuildTools" Returns="$(ProducedPackages)">
     <!-- Execute build tools -->
     <MSBuild
@@ -66,7 +68,7 @@
       <Output TaskParameter="TargetOutputs" ItemName="ProducedPackages" />
     </MSBuild>
   </Target>
-  
+
   <Target
     Name="_RestoreBuildTools"
     Condition="!Exists('$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)') Or !Exists('$(ToolsDir)fxbuild.proj')">
@@ -83,7 +85,7 @@
 
     <!-- Copy build tools to tools directory -->
     <Exec
-      Command="xcopy /e /y &quot;$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\*&quot; &quot;$(ToolsDir)&quot; > $(ToolsDir)BuildTools.xcopy.log" />
+      Command="xcopy /e /y &quot;$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\*&quot; &quot;$(ToolsDir)&quot; > &quot;$(ToolsDir)BuildTools.xcopy.log&quot;" />
   </Target>
-  
+
 </Project>

@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
         /// instance without allocating memory.
         /// </summary>
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableArray<>.Builder.DebuggerProxy))]
+        [DebuggerTypeProxy(typeof(ImmutableArrayBuilderDebuggerProxy<>))]
         public sealed class Builder : IList<T>, IReadOnlyList<T>
         {
             /// <summary>
@@ -590,7 +590,10 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Sort()
             {
-                Array.Sort(this.elements, 0, this.Count, Comparer.Default);
+                if (Count > 1)
+                {
+                    Array.Sort(this.elements, 0, this.Count, Comparer.Default);
+                }
             }
 
             /// <summary>
@@ -599,7 +602,10 @@ namespace System.Collections.Immutable
             /// <param name="comparer">The comparer to use in sorting. If <c>null</c>, the default comparer is used.</param>
             public void Sort(IComparer<T> comparer)
             {
-                Array.Sort(this.elements, 0, this.Count, new Comparer(comparer));
+                if (Count > 1)
+                {
+                    Array.Sort(this.elements, 0, this.Count, Comparer.Create(comparer));
+                }
             }
 
             /// <summary>
@@ -611,11 +617,14 @@ namespace System.Collections.Immutable
             public void Sort(int index, int count, IComparer<T> comparer)
             {
                 // Don't rely on Array.Sort's argument validation since our internal array may exceed
-                // the bounds of the publically addressible region.
+                // the bounds of the publically addressable region.
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0 && index + count <= this.Count, "count");
 
-                Array.Sort(this.elements, index, count, new Comparer(comparer));
+                if (count > 1)
+                {
+                    Array.Sort(this.elements, index, count, Comparer.Create(comparer));
+                }
             }
 
             /// <summary>
@@ -668,45 +677,25 @@ namespace System.Collections.Immutable
                 }
             }
 
-            #region DebuggerProxy
-
-            [ExcludeFromCodeCoverage]
-            private sealed class DebuggerProxy
-            {
-                private readonly Builder builder;
-
-                public DebuggerProxy(Builder builder)
-                {
-                    this.builder = builder;
-                }
-
-                [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-                public T[] A
-                {
-                    get
-                    {
-                        var result = new T[this.builder.Count];
-                        for (int i = 0; i < result.Length; i++)
-                        {
-                            result[i] = this.builder.elements[i].Value;
-                        }
-
-                        return result;
-                    }
-                }
-            }
-
-            #endregion
-
             private sealed class Comparer : IComparer<RefAsValueType<T>>
             {
                 private readonly IComparer<T> comparer;
 
                 public static readonly Comparer Default = new Comparer(Comparer<T>.Default);
 
-                internal Comparer(IComparer<T> comparer = null)
+                public static Comparer Create(IComparer<T> comparer)
                 {
-                    Requires.NotNull(comparer, "comparer");
+                    if (comparer == null || comparer == Comparer<T>.Default) 
+                    {
+                        return Default;
+                    }
+
+                    return new Comparer(comparer);
+                }
+
+                private Comparer(IComparer<T> comparer)
+                {
+                    Requires.NotNull(comparer, "comparer"); // use Comparer.Default instead of passing null
                     this.comparer = comparer;
                 }
 
@@ -714,6 +703,38 @@ namespace System.Collections.Immutable
                 {
                     return this.comparer.Compare(x.Value, y.Value);
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// A simple view of the immutable collection that the debugger can show to the developer.
+    /// </summary>
+    [ExcludeFromCodeCoverage]
+    internal sealed class ImmutableArrayBuilderDebuggerProxy<T>
+    {
+        /// <summary>
+        /// The collection to be enumerated.
+        /// </summary>
+        private readonly ImmutableArray<T>.Builder builder;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableArrayBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// </summary>
+        /// <param name="builder">The collection to display in the debugger</param>
+        public ImmutableArrayBuilderDebuggerProxy(ImmutableArray<T>.Builder builder)
+        {
+            this.builder = builder;
+        }
+
+        /// <summary>
+        /// Gets a simple debugger-viewable collection.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public T[] A
+        {
+            get
+            {
+                return this.builder.ToArray();
             }
         }
     }

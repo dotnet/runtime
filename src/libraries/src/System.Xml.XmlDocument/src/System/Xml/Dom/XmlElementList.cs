@@ -9,17 +9,17 @@ namespace System.Xml
     internal class XmlElementList : XmlNodeList
     {
         string asterisk;
-        int changeCount; //recording the total number that the dom tree has been changed ( insertion and deletetion )
+        int changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
         //the member vars below are saved for further reconstruction        
         string name;         //only one of 2 string groups will be initialized depends on which constructor is called.
         string localName;
         string namespaceURI;
         XmlNode rootNode;
-        // the memeber vars belwo serves the optimization of accessing of the elements in the list
+        // the member vars below serves the optimization of accessing of the elements in the list
         int curInd;       // -1 means the starting point for a new search round
         XmlNode curElem;      // if sets to rootNode, means the starting point for a new search round
         bool empty;        // whether the list is empty
-        bool atomized;     //whether the localname and namespaceuri are aomized
+        bool atomized;     //whether the localname and namespaceuri are atomized
         int matchCount;   // cached list count. -1 means it needs reconstruction
 
         WeakReference listener;   // XmlElementListListener
@@ -287,7 +287,7 @@ namespace System.Xml
     {
         XmlElementList list;
         XmlNode curElem;
-        int changeCount; //save the total number that the dom tree has been changed ( insertion and deletetion ) when this enumerator is created
+        int changeCount; //save the total number that the dom tree has been changed ( insertion and deletion ) when this enumerator is created
 
         public XmlElementListEnumerator(XmlElementList list)
         {

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Xunit;
@@ -32,7 +33,7 @@ namespace System.Collections.Immutable.Test
             var actual = ImmutableSortedSet<int>.Empty;
 
             int seed = (int)DateTime.Now.Ticks;
-            Console.WriteLine("Using random seed {0}", seed);
+            Debug.WriteLine("Using random seed {0}", seed);
             var random = new Random(seed);
 
             for (int iOp = 0; iOp < operationCount; iOp++)
@@ -41,14 +42,14 @@ namespace System.Collections.Immutable.Test
                 {
                     case Operation.Add:
                         int value = random.Next();
-                        Console.WriteLine("Adding \"{0}\" to the set.", value);
+                        Debug.WriteLine("Adding \"{0}\" to the set.", value);
                         expected.Add(value);
                         actual = actual.Add(value);
                         break;
                     case Operation.Union:
                         int inputLength = random.Next(100);
                         int[] values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
-                        Console.WriteLine("Adding {0} elements to the set.", inputLength);
+                        Debug.WriteLine("Adding {0} elements to the set.", inputLength);
                         expected.UnionWith(values);
                         actual = actual.Union(values);
                         break;
@@ -57,7 +58,7 @@ namespace System.Collections.Immutable.Test
                         {
                             int position = random.Next(expected.Count);
                             int element = expected.Skip(position).First();
-                            Console.WriteLine("Removing element \"{0}\" from the set.", element);
+                            Debug.WriteLine("Removing element \"{0}\" from the set.", element);
                             Assert.True(expected.Remove(element));
                             actual = actual.Remove(element);
                         }
@@ -65,7 +66,7 @@ namespace System.Collections.Immutable.Test
                         break;
                     case Operation.Except:
                         var elements = expected.Where(el => random.Next(2) == 0).ToArray();
-                        Console.WriteLine("Removing {0} elements from the set.", elements.Length);
+                        Debug.WriteLine("Removing {0} elements from the set.", elements.Length);
                         expected.ExceptWith(elements);
                         actual = actual.Except(elements);
                         break;
@@ -331,6 +332,11 @@ namespace System.Collections.Immutable.Test
         protected override ISet<T> EmptyMutable<T>()
         {
             return new SortedSet<T>();
+        }
+
+        internal override IBinaryTree GetRootNode<T>(IImmutableSet<T> set)
+        {
+            return ((ImmutableSortedSet<T>)set).Root;
         }
 
         /// <summary>

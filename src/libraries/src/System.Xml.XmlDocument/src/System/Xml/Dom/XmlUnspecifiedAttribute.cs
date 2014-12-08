@@ -25,7 +25,7 @@ namespace System.Xml
             XmlDocument doc = OwnerDocument;
             XmlUnspecifiedAttribute attr = (XmlUnspecifiedAttribute)doc.CreateDefaultAttribute(Prefix, LocalName, NamespaceURI);
             attr.CopyChildren(doc, this, true);
-            attr.fSpecified = true; //When clone, should return the specifed attribute as default
+            attr.fSpecified = true; //When clone, should return the specified attribute as default
             return attr;
         }
 

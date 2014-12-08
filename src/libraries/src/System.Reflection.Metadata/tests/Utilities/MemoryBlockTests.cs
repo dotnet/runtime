@@ -12,32 +12,32 @@ namespace System.Reflection.Metadata.Tests
     public class MemoryBlockTests
     {
         [Fact]
-        public unsafe void Utf8NullTermintatedStringStartsWithAsciiPrefix()
+        public unsafe void Utf8NullTerminatedStringStartsWithAsciiPrefix()
         {
             byte[] heap;
 
             fixed (byte* heapPtr = (heap = new byte[] { 0 }))
             {
-                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix(0, ""));
+                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(0, ""));
             }
 
             fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes("Hello World!\0")))
             {
-                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix("Hello ".Length, "World"));
-                Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix("Hello ".Length, "World?"));
+                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix("Hello ".Length, "World"));
+                Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix("Hello ".Length, "World?"));
             }
 
             fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes("x\0")))
             {
-                Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix(0, "xyz"));
-                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix(0, "x"));
+                Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(0, "xyz"));
+                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(0, "x"));
             }
 
             // bad metadata (#String heap is not nul-terminated):
             fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes("abcx")))
             {
-                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix(3, "x"));
-                Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTermintatedStringStartsWithAsciiPrefix(3, "xyz"));
+                Assert.True(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(3, "x"));
+                Assert.False(new MemoryBlock(heapPtr, heap.Length).Utf8NullTerminatedStringStartsWithAsciiPrefix(3, "xyz"));
             }
         }
 

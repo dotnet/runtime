@@ -268,6 +268,22 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Clears the specified stack.  For empty stacks, it avoids the call to Clear, which
+        /// avoids a call into the runtime's implementation of Array.Clear, helping performance,
+        /// in particular around inlining.  Stack.Count typically gets inlined by today's JIT, while
+        /// stack.Clear and Array.Clear typically don't.
+        /// </summary>
+        /// <typeparam name="T">Specifies the type of data in the stack to be cleared.</typeparam>
+        /// <param name="stack">The stack to clear.</param>
+        internal static void ClearFastWhenEmpty<T>(this Stack<T> stack)
+        {
+            if (stack.Count > 0)
+            {
+                stack.Clear();
+            }
+        }
+
+        /// <summary>
         /// Wraps a List{T} as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>

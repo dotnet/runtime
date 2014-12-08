@@ -222,23 +222,14 @@ namespace System.Collections.Immutable.Test
             }
         }
 
-#if PORTABLE
-        public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
-#endif
-
         [Fact]
         public void ConvertAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).ConvertAll<float>(n => n).IsEmpty);
             var list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(5, 10));
-            Converter<int, double> converter = n => 2.0 * n;
-            Func<int, double> funcConverter = n => converter(n);
-#if PORTABLE
-            var expected = list.ToList().Select(funcConverter).ToList();
-#else
-            var expected = list.ToList().ConvertAll(converter);
-#endif
-            var actual = this.GetListQuery(list).ConvertAll(funcConverter);
+            Func<int, double> converter = n => 2.0 * n;
+            var expected = list.ToList().Select(converter).ToList();
+            var actual = this.GetListQuery(list).ConvertAll(converter);
             Assert.Equal<double>(expected.ToList(), actual.ToList());
         }
 

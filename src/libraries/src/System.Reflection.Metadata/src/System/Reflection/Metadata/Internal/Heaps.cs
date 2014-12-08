@@ -262,7 +262,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");
-            return this.Block.Utf8NullTermintatedStringStartsWithAsciiPrefix(rawHandle.Index, asciiPrefix);
+            return this.Block.Utf8NullTerminatedStringStartsWithAsciiPrefix(rawHandle.Index, asciiPrefix);
         }
 
         /// <summary>

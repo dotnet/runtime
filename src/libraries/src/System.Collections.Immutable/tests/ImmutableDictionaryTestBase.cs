@@ -59,6 +59,7 @@ namespace System.Collections.Immutable.Test
             var map = Empty<int, GenericParameterHelper>();
             map = map.AddRange(Enumerable.Range(1, 100).Select(n => new KeyValuePair<int, GenericParameterHelper>(n, new GenericParameterHelper())));
             CollectionAssertAreEquivalent(map.Select(kv => kv.Key).ToList(), Enumerable.Range(1, 100).ToList());
+            this.VerifyAvlTreeState(map);
             Assert.Equal(100, map.Count);
 
             // Test optimization for empty map.
@@ -359,6 +360,8 @@ namespace System.Collections.Immutable.Test
             Assert.True(addedMap.ContainsKey(key));
             AssertAreSame(value, addedMap.GetValueOrDefault(key));
 
+            this.VerifyAvlTreeState(addedMap);
+
             return addedMap;
         }
 
@@ -411,6 +414,7 @@ namespace System.Collections.Immutable.Test
             for (int i = 0; i < inputs.Length; i++)
             {
                 map = map.Remove(inputs[i]);
+                this.VerifyAvlTreeState(map);
             }
 
             Assert.Equal(0, map.Count);
@@ -424,9 +428,11 @@ namespace System.Collections.Immutable.Test
             Assert.Same(empty, empty.AddRange(Enumerable.Empty<KeyValuePair<int, int>>()));
             var list = new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(3, 5), new KeyValuePair<int, int>(8, 10) };
             var nonEmpty = empty.AddRange(list);
+            this.VerifyAvlTreeState(nonEmpty);
             var halfRemoved = nonEmpty.RemoveRange(Enumerable.Range(1, 5));
             Assert.Equal(1, halfRemoved.Count);
             Assert.True(halfRemoved.ContainsKey(8));
+            this.VerifyAvlTreeState(halfRemoved);
         }
 
         protected void AddExistingKeySameValueTestHelper<TKey, TValue>(IImmutableDictionary<TKey, TValue> map, TKey key, TValue value1, TValue value2)
@@ -560,6 +566,8 @@ namespace System.Collections.Immutable.Test
 
         protected abstract IEqualityComparer<TValue> GetValueComparer<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary);
 
+        internal abstract IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary);
+
         private static void KeysOrValuesTestHelper<T>(ICollection<T> collection, T containedValue)
         {
             Requires.NotNull(collection, "collection");
@@ -579,6 +587,13 @@ namespace System.Collections.Immutable.Test
             nonGeneric.CopyTo(array, 1);
             Assert.Equal(default(T), array[0]);
             Assert.Equal(array.Skip(1), nonGeneric.Cast<T>().ToArray());
+        }
+
+        private void VerifyAvlTreeState<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
+        {
+            var rootNode = this.GetRootNode(dictionary);
+            rootNode.VerifyBalanced();
+            rootNode.VerifyHeightIsWithinTolerance(dictionary.Count);
         }
     }
 }
