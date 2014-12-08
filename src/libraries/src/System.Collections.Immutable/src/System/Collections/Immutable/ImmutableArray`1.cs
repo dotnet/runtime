@@ -860,16 +860,23 @@ namespace System.Collections.Immutable
                 return new ImmutableArray<T>(self.array);
             }
 
-            var removeIndexes = new List<int>();
+            List<int> removeIndexes = null;
             for (int i = 0; i < self.array.Length; i++)
             {
                 if (match(self.array[i]))
                 {
+                    if (removeIndexes == null)
+                    {
+                        removeIndexes = new List<int>();
+                    }
+
                     removeIndexes.Add(i);
                 }
             }
 
-            return self.RemoveAtRange(removeIndexes);
+            return removeIndexes != null ?
+                self.RemoveAtRange(removeIndexes) :
+                self;
         }
 
         /// <summary>
