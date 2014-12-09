@@ -776,17 +776,22 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
  *
  */
 gpointer
-mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot)
 {
-	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER);
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_sync_null, *jump_other_owner, *jump_cmpxchg_failed, *jump_tid, *jump_sync_thin_hash = NULL;
+	guint8 *jump_lock_taken_true = NULL;
 	int tramp_size;
 	int status_offset, nest_offset;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == X86_EAX);
+#ifdef MONO_ARCH_MONITOR_LOCK_TAKEN_REG
+	g_assert (MONO_ARCH_MONITOR_LOCK_TAKEN_REG == X86_EDX);
+#else
+	g_assert (!is_v4);
+#endif
 
 	mono_monitor_threads_sync_members_offset (&status_offset, &nest_offset);
 	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (status_offset) == sizeof (guint32));
@@ -800,6 +805,13 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	x86_push_reg (code, X86_EAX);
 	if (mono_thread_get_tls_offset () != -1) {
+		if (is_v4) {
+			x86_test_membase_imm (code, X86_EDX, 0, 1);
+			/* if *lock_taken is 1, jump to actual trampoline */
+			jump_lock_taken_true = code;
+			x86_branch8 (code, X86_CC_NZ, -1, 1);
+			x86_push_reg (code, X86_EDX);
+		}
 		/* MonoObject* obj is in EAX */
 		/* is obj null? */
 		x86_test_reg_reg (code, X86_EAX, X86_EAX);
@@ -858,6 +870,10 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		jump_cmpxchg_failed = code;
 		x86_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if successful, pop and return */
+		if (is_v4) {
+			x86_pop_reg (code, X86_EDX);
+			x86_mov_membase_imm (code, X86_EDX, 0, 1, 1);
+		}
 		x86_pop_reg (code, X86_EAX);
 		x86_ret (code);
 
@@ -871,6 +887,10 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		x86_branch8 (code, X86_CC_NZ, -1, 1);
 		/* if yes, increment nest */
 		x86_inc_membase (code, X86_ECX, nest_offset);
+		if (is_v4) {
+			x86_pop_reg (code, X86_EDX);
+			x86_mov_membase_imm (code, X86_EDX, 0, 1, 1);
+		}
 		x86_pop_reg (code, X86_EAX);
 		/* return */
 		x86_ret (code);
@@ -882,23 +902,27 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 		x86_patch (jump_sync_null, code);
 		x86_patch (jump_other_owner, code);
 		x86_patch (jump_cmpxchg_failed, code);
-		if (aot) {
-			/* We are calling the generic trampoline directly, the argument is pushed
-			 * on the stack just like a specific trampoline.
-			 */
-			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "generic_trampoline_monitor_enter");
-			x86_jump_reg (code, X86_EAX);
-		} else {
-			x86_jump_code (code, tramp);
+
+		if (is_v4) {
+			x86_pop_reg (code, X86_EDX);
+			x86_patch (jump_lock_taken_true, code);
 		}
+	}
+
+	if (aot) {
+		/* We are calling the generic trampoline directly, the argument is pushed
+		 * on the stack just like a specific trampoline.
+		 */
+		if (is_v4)
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "generic_trampoline_monitor_enter_v4");
+		else
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "generic_trampoline_monitor_enter");
+		x86_jump_reg (code, X86_EAX);
 	} else {
-		/* obj is pushed, jump to the actual trampoline */
-		if (aot) {
-			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "generic_trampoline_monitor_enter");
-			x86_jump_reg (code, X86_EAX);
-		} else {
-			x86_jump_code (code, tramp);
-		}
+		if (is_v4)
+			x86_jump_code (code, mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER_V4));
+		else
+			x86_jump_code (code, mono_get_trampoline_code (MONO_TRAMPOLINE_MONITOR_ENTER));
 	}
 
 	mono_arch_flush_icache (buf, code - buf);
@@ -907,8 +931,12 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_MONITOR, NULL);
 
-	if (info)
-		*info = mono_tramp_info_create ("monitor_enter_trampoline", buf, code - buf, ji, unwind_ops);
+	if (info) {
+		if (is_v4)
+			*info = mono_tramp_info_create ("monitor_enter_v4_trampoline", buf, code - buf, ji, unwind_ops);
+		else
+			*info = mono_tramp_info_create ("monitor_enter_trampoline", buf, code - buf, ji, unwind_ops);
+	}
 
 	return buf;
 }
@@ -1052,7 +1080,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 #else
 
 gpointer
-mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;

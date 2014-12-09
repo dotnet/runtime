@@ -1245,6 +1245,7 @@ typedef enum {
 	MONO_TRAMPOLINE_RESTORE_STACK_PROT,
 	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 	MONO_TRAMPOLINE_MONITOR_ENTER,
+	MONO_TRAMPOLINE_MONITOR_ENTER_V4,
 	MONO_TRAMPOLINE_MONITOR_EXIT,
 	MONO_TRAMPOLINE_VCALL,
 	MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD,
@@ -1258,12 +1259,14 @@ typedef enum {
 	 (t) == MONO_TRAMPOLINE_RESTORE_STACK_PROT ||	\
 	 (t) == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH ||	\
 	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||	\
+	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER_V4 ||	\
 	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT)
 
 /* These trampolines receive an argument directly in a register */
 #define MONO_TRAMPOLINE_TYPE_HAS_ARG(t)		\
 	((t) == MONO_TRAMPOLINE_GENERIC_CLASS_INIT ||	\
 	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER ||		\
+	 (t) == MONO_TRAMPOLINE_MONITOR_ENTER_V4 ||		\
 	 (t) == MONO_TRAMPOLINE_MONITOR_EXIT ||			\
 	 (t) == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
 
@@ -2214,6 +2217,7 @@ MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoDomain *domain,
 gpointer          mono_create_delegate_virtual_trampoline (MonoDomain *domain, MonoClass *klass, MonoMethod *method) MONO_INTERNAL;
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset) MONO_INTERNAL;
 gpointer          mono_create_monitor_enter_trampoline (void) MONO_INTERNAL;
+gpointer          mono_create_monitor_enter_v4_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_monitor_exit_trampoline (void) MONO_INTERNAL;
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr) MONO_INTERNAL;
 gpointer          mono_create_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_offset) MONO_LLVM_INTERNAL;
@@ -2231,6 +2235,7 @@ gpointer          mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *
 void              mono_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
 void              mono_generic_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vtable, guint8 *tramp) MONO_INTERNAL;
 void              mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
+void              mono_monitor_enter_v4_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 void              mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (int slot_index) MONO_INTERNAL;
@@ -2310,7 +2315,7 @@ gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampI
 gpointer  mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info) MONO_INTERNAL;
-gpointer  mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
+gpointer  mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot) MONO_INTERNAL;
 gpointer  mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
 guint8   *mono_arch_create_llvm_native_thunk     (MonoDomain *domain, guint8* addr) MONO_LLVM_INTERNAL;
 GList    *mono_arch_get_allocatable_int_vars    (MonoCompile *cfg) MONO_INTERNAL;

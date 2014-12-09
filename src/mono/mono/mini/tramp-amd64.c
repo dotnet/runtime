@@ -959,7 +959,7 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 
 gpointer
-mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot)
 {
 	guint8 *tramp;
 	guint8 *code, *buf;
@@ -974,6 +974,9 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	int status_reg = AMD64_RAX;
 
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == obj_reg);
+#ifndef MONO_ARCH_MONITOR_LOCK_TAKEN_REG
+	g_assert (!is_v4);
+#endif
 
 	mono_monitor_threads_sync_members_offset (&status_offset, &nest_offset);
 	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (status_offset) == sizeof (guint32));
@@ -1223,7 +1226,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 #else
 
 gpointer
-mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;

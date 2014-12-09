@@ -5056,6 +5056,7 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 		case MONO_PATCH_INFO_RGCTX_FETCH:
 		case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 		case MONO_PATCH_INFO_MONITOR_ENTER:
+		case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 		case MONO_PATCH_INFO_MONITOR_EXIT:
 		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 #if defined(__native_client_codegen__) && defined(__native_client__)

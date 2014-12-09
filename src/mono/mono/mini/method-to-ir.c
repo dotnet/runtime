@@ -153,6 +153,7 @@ static MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline;
 static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm;
+static MonoMethodSignature *helper_sig_monitor_enter_v4_trampoline_llvm;
 
 /*
  * Instruction metadata
@@ -364,6 +365,7 @@ mono_create_helper_signatures (void)
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
 	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");
+	helper_sig_monitor_enter_v4_trampoline_llvm = mono_create_icall_signature ("void object ptr");
 }
 
 static MONO_NEVER_INLINE void
@@ -5585,6 +5587,25 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 
 			return (MonoInst*)call;
+#if defined(MONO_ARCH_MONITOR_LOCK_TAKEN_REG)
+		} else if (strcmp (cmethod->name, "Enter") == 0 && fsig->param_count == 2) {
+			MonoCallInst *call;
+
+			if (COMPILE_LLVM (cfg)) {
+				/*
+				 * Pass the argument normally, the LLVM backend will handle the
+				 * calling convention problems.
+				 */
+				call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_ENTER_V4, NULL, helper_sig_monitor_enter_v4_trampoline_llvm, args);
+			} else {
+				call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_MONITOR_ENTER_V4,
+					    NULL, helper_sig_monitor_enter_exit_trampoline, NULL);
+				mono_call_inst_add_outarg_reg (cfg, call, args [0]->dreg, MONO_ARCH_MONITOR_OBJECT_REG, FALSE);
+				mono_call_inst_add_outarg_reg (cfg, call, args [1]->dreg, MONO_ARCH_MONITOR_LOCK_TAKEN_REG, FALSE);
+			}
+
+			return (MonoInst*)call;
+#endif
 		} else if (strcmp (cmethod->name, "Exit") == 0) {
 			MonoCallInst *call;
 

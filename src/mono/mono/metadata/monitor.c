@@ -872,6 +872,15 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 	*lockTaken = res == 1;
 }
 
+void
+mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
+{
+	if (*lock_taken == 1)
+		mono_raise_exception (mono_get_exception_argument ("lockTaken", "lockTaken is already true"));
+
+	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, INFINITE, lock_taken);
+}
+
 gboolean 
 ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObject *obj)
 {

@@ -3240,6 +3240,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_JIT_TLS_ID:
@@ -4379,6 +4380,9 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_enter")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
+					target = mono_create_ftnptr_malloc (target);
+				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_enter_v4")) {
+					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER_V4, mono_get_root_domain (), NULL);
 					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "specific_trampoline_monitor_exit")) {
 					target = mono_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
