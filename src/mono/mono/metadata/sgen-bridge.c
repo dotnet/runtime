@@ -179,9 +179,12 @@ null_weak_links_to_dead_objects (SgenBridgeProcessor *processor, int generation)
 	}
 
 	/* Null weak links to dead objects. */
-	sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_NURSERY);
-	if (generation == GENERATION_OLD)
-		sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_OLD);
+	sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_NURSERY, FALSE);
+	sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_NURSERY, TRUE);
+	if (generation == GENERATION_OLD) {
+		sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_OLD, FALSE);
+		sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_OLD, TRUE);
+	}
 
 	sgen_hash_table_clean (&alive_hash);
 }

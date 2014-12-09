@@ -31,6 +31,25 @@
 #include "mono/sgen/sgen-conf.h"
 #endif
 
+#ifndef HIDE_POINTER
+#define HIDE_POINTER(p) ((gpointer)~(size_t)(p))
+#endif
+
+#ifndef REVEAL_POINTER
+#define REVEAL_POINTER(p) ((gpointer)~(size_t)(p))
+#endif
+
+typedef enum {
+	HANDLE_TYPE_MIN = 0,
+	HANDLE_WEAK = HANDLE_TYPE_MIN,
+	HANDLE_WEAK_TRACK,
+	HANDLE_NORMAL,
+	HANDLE_PINNED,
+	HANDLE_TYPE_MAX
+} GCHandleType;
+
+void mono_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer *, GCHandleType, gpointer), gpointer user);
+
 typedef struct {
 	guint minor_gc_count;
 	guint major_gc_count;

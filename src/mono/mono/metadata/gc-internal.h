@@ -11,6 +11,7 @@
 #define __MONO_METADATA_GC_INTERNAL_H__
 
 #include <glib.h>
+#include <mono/utils/gc_wrapper.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/sgen/gc-internal-agnostic.h>
@@ -374,6 +375,8 @@ extern gboolean log_finalizers;
 
 /* If set, do not run finalizers. */
 extern gboolean do_not_finalize;
+
+gboolean mono_gc_object_older_than (MonoObject *object, int generation);
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 

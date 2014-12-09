@@ -172,14 +172,6 @@ sgen_aligned_addr_hash (gconstpointer ptr)
 	return GPOINTER_TO_UINT (ptr) >> 3;
 }
 
-/*
- * The link pointer is hidden by negating each bit.  We use the lowest
- * bit of the link (before negation) to store whether it needs
- * resurrection tracking.
- */
-#define HIDE_POINTER(p,t)	((gpointer)(~((size_t)(p)|((t)?1:0))))
-#define REVEAL_POINTER(p)	((gpointer)((~(size_t)(p))&~3L))
-
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~((1 << (bits)) - 1)) == (mword)(start))
 
 #ifdef USER_CONFIG
@@ -786,7 +778,7 @@ void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx);
 
 typedef gboolean (*SgenObjectPredicateFunc) (GCObject *obj, void *user_data);
 
-void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation);
+void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation, gboolean track);
 
 gboolean sgen_gc_is_object_ready_for_finalization (GCObject *object);
 void sgen_gc_lock (void);
@@ -796,7 +788,7 @@ void sgen_queue_finalization_entry (GCObject *obj);
 const char* sgen_generation_name (int generation);
 
 void sgen_finalize_in_range (int generation, ScanCopyContext ctx);
-void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx);
+void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx, gboolean track);
 void sgen_process_fin_stage_entries (void);
 gboolean sgen_have_pending_finalizers (void);
 void sgen_object_register_for_finalization (GCObject *obj, void *user_data);

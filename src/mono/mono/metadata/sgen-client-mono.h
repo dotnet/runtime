@@ -571,7 +571,7 @@ sgen_client_binary_protocol_cleanup (gpointer ptr, gpointer vtable, size_t size)
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolean track, gboolean staged)
+sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolean track)
 {
 #ifdef ENABLE_DTRACE
 	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {

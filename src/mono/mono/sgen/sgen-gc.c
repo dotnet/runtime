@@ -1138,9 +1138,9 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	We must clear weak links that don't track resurrection before processing object ready for
 	finalization so they can be cleared before that.
 	*/
-	sgen_null_link_in_range (generation, TRUE, ctx);
+	sgen_null_link_in_range (generation, TRUE, ctx, FALSE);
 	if (generation == GENERATION_OLD)
-		sgen_null_link_in_range (GENERATION_NURSERY, TRUE, ctx);
+		sgen_null_link_in_range (GENERATION_NURSERY, TRUE, ctx, FALSE);
 
 
 	/* walk the finalization queue and move also the objects that need to be
@@ -1187,9 +1187,9 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 */
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 	for (;;) {
-		sgen_null_link_in_range (generation, FALSE, ctx);
+		sgen_null_link_in_range (generation, FALSE, ctx, TRUE);
 		if (generation == GENERATION_OLD)
-			sgen_null_link_in_range (GENERATION_NURSERY, FALSE, ctx);
+			sgen_null_link_in_range (GENERATION_NURSERY, FALSE, ctx, TRUE);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
 		sgen_drain_gray_stack (-1, ctx);
@@ -2873,7 +2873,7 @@ sgen_gc_init (void)
 	mono_thread_smr_init ();
 #endif
 
-	LOCK_INIT (gc_mutex);
+	mono_mutex_init_recursive (&gc_mutex);
 
 	gc_debug_file = stderr;
 

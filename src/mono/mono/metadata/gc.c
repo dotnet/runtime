@@ -25,6 +25,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/threadpool-ms.h>
 #include <mono/sgen/sgen-conf.h>
+#include <mono/sgen/sgen-gc.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
@@ -529,16 +530,17 @@ ves_icall_System_GC_get_ephemeron_tombstone (void)
 #define mono_allocator_lock() mono_mutex_lock (&allocator_section)
 #define mono_allocator_unlock() mono_mutex_unlock (&allocator_section)
 static mono_mutex_t allocator_section;
+
+#ifndef HAVE_SGEN_GC
 static mono_mutex_t handle_section;
+#endif
 
-typedef enum {
-	HANDLE_WEAK,
-	HANDLE_WEAK_TRACK,
-	HANDLE_NORMAL,
-	HANDLE_PINNED
-} HandleType;
-
-static HandleType mono_gchandle_get_type (guint32 gchandle);
+#define GC_HANDLE_TYPE_SHIFT (3)
+#define GC_HANDLE_TYPE_MASK ((1 << GC_HANDLE_TYPE_SHIFT) - 1)
+#define GC_HANDLE_TYPE(x) (((x) & GC_HANDLE_TYPE_MASK) - 1)
+#define GC_HANDLE_SLOT(x) ((x) >> GC_HANDLE_TYPE_SHIFT)
+#define GC_HANDLE_TYPE_IS_WEAK(x) ((x) <= HANDLE_WEAK_TRACK)
+#define GC_HANDLE_TAG(slot, type) (((slot) << GC_HANDLE_TYPE_SHIFT) | (((type) & GC_HANDLE_TYPE_MASK) + 1))
 
 MonoObject *
 ves_icall_System_GCHandle_GetTarget (guint32 handle)
@@ -583,7 +585,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	MonoObject *obj;
 
-	if (mono_gchandle_get_type (handle) != HANDLE_PINNED)
+	if (GC_HANDLE_TYPE (handle) != HANDLE_PINNED)
 		return (gpointer)-2;
 	obj = mono_gchandle_get_target (handle);
 	if (obj) {
@@ -614,28 +616,52 @@ typedef struct {
 	gpointer *entries;
 	guint32   size;
 	guint8    type;
-	guint     slot_hint : 24; /* starting slot for search */
+	guint     slot_hint : 24; /* starting slot for search in bitmap */
 	/* 2^16 appdomains should be enough for everyone (though I know I'll regret this in 20 years) */
 	/* we alloc this only for weak refs, since we can get the domain directly in the other cases */
 	guint16  *domain_ids;
 } HandleData;
 
+#define BITMAP_SIZE (sizeof (*((HandleData *)NULL)->bitmap) * CHAR_BIT)
+
+static inline gboolean
+slot_occupied (HandleData *handles, guint slot) {
+	return handles->bitmap [slot / BITMAP_SIZE] & (1 << (slot % BITMAP_SIZE));
+}
+
+static inline void
+vacate_slot (HandleData *handles, guint slot) {
+	handles->bitmap [slot / BITMAP_SIZE] &= ~(1 << (slot % BITMAP_SIZE));
+}
+
+static inline void
+occupy_slot (HandleData *handles, guint slot) {
+	handles->bitmap [slot / BITMAP_SIZE] |= 1 << (slot % BITMAP_SIZE);
+}
+
+#define EMPTY_HANDLE_DATA(type) {NULL, NULL, 0, (type), 0}
+
 /* weak and weak-track arrays will be allocated in malloc memory 
  */
 static HandleData gc_handles [] = {
-	{NULL, NULL, 0, HANDLE_WEAK, 0},
-	{NULL, NULL, 0, HANDLE_WEAK_TRACK, 0},
-	{NULL, NULL, 0, HANDLE_NORMAL, 0},
-	{NULL, NULL, 0, HANDLE_PINNED, 0}
+	EMPTY_HANDLE_DATA (HANDLE_WEAK),
+	EMPTY_HANDLE_DATA (HANDLE_WEAK_TRACK),
+	EMPTY_HANDLE_DATA (HANDLE_NORMAL),
+	EMPTY_HANDLE_DATA (HANDLE_PINNED)
 };
 
+
+#ifdef HAVE_SGEN_GC
+#define lock_handles(handles) sgen_gc_lock ()
+#define unlock_handles(handles) sgen_gc_unlock ()
+#else
 #define lock_handles(handles) do {	\
 	MONO_TRY_BLOCKING;	\
 	mono_mutex_lock (&handle_section);	\
 	MONO_FINISH_TRY_BLOCKING;	\
 } while (0)
-
 #define unlock_handles(handles) mono_mutex_unlock (&handle_section)
+#endif
 
 static int
 find_first_unset (guint32 bitmap)
@@ -658,89 +684,109 @@ make_root_descr_all_refs (int numbits, gboolean pinned)
 	return mono_gc_make_root_descr_all_refs (numbits);
 }
 
+static void
+handle_data_alloc_entries (HandleData *handles)
+{
+	handles->size = 32;
+	if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
+		handles->entries = g_malloc0 (sizeof (*handles->entries) * handles->size);
+		handles->domain_ids = g_malloc0 (sizeof (*handles->domain_ids) * handles->size);
+	} else {
+		handles->entries = mono_gc_alloc_fixed (sizeof (*handles->entries) * handles->size, make_root_descr_all_refs (handles->size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
+	}
+	handles->bitmap = g_malloc0 (handles->size / CHAR_BIT);
+}
+
+static gint
+handle_data_next_unset (HandleData *handles)
+{
+	gint slot;
+	for (slot = handles->slot_hint; slot < handles->size / BITMAP_SIZE; ++slot) {
+		if (handles->bitmap [slot] == 0xffffffff)
+			continue;
+		handles->slot_hint = slot;
+		return find_first_unset (handles->bitmap [slot]);
+	}
+	return -1;
+}
+
+static gint
+handle_data_first_unset (HandleData *handles)
+{
+	gint slot;
+	for (slot = 0; slot < handles->slot_hint; ++slot) {
+		if (handles->bitmap [slot] == 0xffffffff)
+			continue;
+		handles->slot_hint = slot;
+		return find_first_unset (handles->bitmap [slot]);
+	}
+	return -1;
+}
+
+/* Returns the index of the current slot in the bitmap. */
+static void
+handle_data_grow (HandleData *handles, gboolean track)
+{
+	guint32 *new_bitmap;
+	guint32 new_size = handles->size * 2; /* always double: we memset to 0 based on this below */
+
+	/* resize and copy the bitmap */
+	new_bitmap = g_malloc0 (new_size / CHAR_BIT);
+	memcpy (new_bitmap, handles->bitmap, handles->size / CHAR_BIT);
+	g_free (handles->bitmap);
+	handles->bitmap = new_bitmap;
+
+	/* resize and copy the entries */
+	if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
+		gpointer *entries;
+		guint16 *domain_ids;
+		gint i;
+		domain_ids = g_malloc0 (sizeof (*handles->domain_ids) * new_size);
+		entries = g_malloc0 (sizeof (*handles->entries) * new_size);
+		memcpy (domain_ids, handles->domain_ids, sizeof (*handles->domain_ids) * handles->size);
+		for (i = 0; i < handles->size; ++i) {
+			MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
+			if (obj) {
+				mono_gc_weak_link_add (&(entries [i]), obj, track);
+				mono_gc_weak_link_remove (&(handles->entries [i]), track);
+			} else {
+				g_assert (!handles->entries [i]);
+			}
+		}
+		g_free (handles->entries);
+		g_free (handles->domain_ids);
+		handles->entries = entries;
+		handles->domain_ids = domain_ids;
+	} else {
+		gpointer *entries;
+		entries = mono_gc_alloc_fixed (sizeof (*handles->entries) * new_size, make_root_descr_all_refs (new_size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
+		mono_gc_memmove_aligned (entries, handles->entries, sizeof (*handles->entries) * handles->size);
+		mono_gc_free_fixed (handles->entries);
+		handles->entries = entries;
+	}
+	handles->slot_hint = handles->size / BITMAP_SIZE;
+	handles->size = new_size;
+}
+
 static guint32
 alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 {
 	gint slot, i;
 	guint32 res;
 	lock_handles (handles);
-	if (!handles->size) {
-		handles->size = 32;
-		if (handles->type > HANDLE_WEAK_TRACK) {
-			handles->entries = mono_gc_alloc_fixed (sizeof (gpointer) * handles->size, make_root_descr_all_refs (handles->size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
-		} else {
-			handles->entries = g_malloc0 (sizeof (gpointer) * handles->size);
-			handles->domain_ids = g_malloc0 (sizeof (guint16) * handles->size);
-		}
-		handles->bitmap = g_malloc0 (handles->size / 8);
-	}
-	i = -1;
-	for (slot = handles->slot_hint; slot < handles->size / 32; ++slot) {
-		if (handles->bitmap [slot] != 0xffffffff) {
-			i = find_first_unset (handles->bitmap [slot]);
-			handles->slot_hint = slot;
-			break;
-		}
-	}
-	if (i == -1 && handles->slot_hint != 0) {
-		for (slot = 0; slot < handles->slot_hint; ++slot) {
-			if (handles->bitmap [slot] != 0xffffffff) {
-				i = find_first_unset (handles->bitmap [slot]);
-				handles->slot_hint = slot;
-				break;
-			}
-		}
-	}
+	if (!handles->size)
+		handle_data_alloc_entries (handles);
+	i = handle_data_next_unset (handles);
+	if (i == -1 && handles->slot_hint != 0)
+		i = handle_data_first_unset (handles);
 	if (i == -1) {
-		guint32 *new_bitmap;
-		guint32 new_size = handles->size * 2; /* always double: we memset to 0 based on this below */
-
-		/* resize and copy the bitmap */
-		new_bitmap = g_malloc0 (new_size / 8);
-		memcpy (new_bitmap, handles->bitmap, handles->size / 8);
-		g_free (handles->bitmap);
-		handles->bitmap = new_bitmap;
-
-		/* resize and copy the entries */
-		if (handles->type > HANDLE_WEAK_TRACK) {
-			gpointer *entries;
-
-			entries = mono_gc_alloc_fixed (sizeof (gpointer) * new_size, make_root_descr_all_refs (new_size, handles->type == HANDLE_PINNED), MONO_ROOT_SOURCE_GC_HANDLE, "gc handles table");
-			mono_gc_memmove_aligned (entries, handles->entries, sizeof (gpointer) * handles->size);
-
-			mono_gc_free_fixed (handles->entries);
-			handles->entries = entries;
-		} else {
-			gpointer *entries;
-			guint16 *domain_ids;
-			domain_ids = g_malloc0 (sizeof (guint16) * new_size);
-			entries = g_malloc0 (sizeof (gpointer) * new_size);
-			memcpy (domain_ids, handles->domain_ids, sizeof (guint16) * handles->size);
-			for (i = 0; i < handles->size; ++i) {
-				MonoObject *obj = mono_gc_weak_link_get (&(handles->entries [i]));
-				if (obj) {
-					mono_gc_weak_link_add (&(entries [i]), obj, track);
-					mono_gc_weak_link_remove (&(handles->entries [i]), track);
-				} else {
-					g_assert (!handles->entries [i]);
-				}
-			}
-			g_free (handles->entries);
-			g_free (handles->domain_ids);
-			handles->entries = entries;
-			handles->domain_ids = domain_ids;
-		}
-
-		/* set i and slot to the next free position */
+		handle_data_grow (handles, track);
 		i = 0;
-		slot = (handles->size + 1) / 32;
-		handles->slot_hint = handles->size + 1;
-		handles->size = new_size;
 	}
-	handles->bitmap [slot] |= 1 << i;
-	slot = slot * 32 + i;
+	slot = handles->slot_hint * BITMAP_SIZE + i;
+	occupy_slot (handles, slot);
 	handles->entries [slot] = NULL;
-	if (handles->type <= HANDLE_WEAK_TRACK) {
+	if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
 		/*FIXME, what to use when obj == null?*/
 		handles->domain_ids [slot] = (obj ? mono_object_get_domain (obj) : mono_domain_get ())->domain_id;
 		if (obj)
@@ -753,10 +799,26 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 	mono_perfcounters->gc_num_handles++;
 #endif
 	unlock_handles (handles);
-	/*g_print ("allocated entry %d of type %d to object %p (in slot: %p)\n", slot, handles->type, obj, handles->entries [slot]);*/
-	res = (slot << 3) | (handles->type + 1);
+	res = GC_HANDLE_TAG (slot, handles->type);
 	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handles->type, res, obj);
 	return res;
+}
+
+void
+mono_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer *, GCHandleType, gpointer), gpointer user)
+{
+	HandleData *handle_data = &gc_handles [handle_type];
+	size_t i;
+	lock_handles (handle_data);
+	for (i = 0; i < handle_data->size; ++i) {
+		gpointer *entry = &handle_data->entries [i];
+		/* Table must contain no garbage pointers. */
+		g_assert (*entry ? slot_occupied (handle_data, i) : TRUE);
+		if (!*entry || !slot_occupied (handle_data, i) || mono_gc_object_older_than (REVEAL_POINTER (*entry), max_generation))
+			continue;
+		*entry = callback (entry, handle_type, user);
+	}
+	unlock_handles (handle_data);
 }
 
 /**
@@ -809,14 +871,6 @@ mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 	return handle;
 }
 
-static HandleType
-mono_gchandle_get_type (guint32 gchandle)
-{
-	guint type = (gchandle & 7) - 1;
-
-	return type;
-}
-
 /**
  * mono_gchandle_get_target:
  * @gchandle: a GCHandle's handle.
@@ -830,15 +884,16 @@ mono_gchandle_get_type (guint32 gchandle)
 MonoObject*
 mono_gchandle_get_target (guint32 gchandle)
 {
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
+	guint slot = GC_HANDLE_SLOT (gchandle);
+	guint type = GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];
 	MonoObject *obj = NULL;
-	if (type > 3)
+	if (type >= HANDLE_TYPE_MAX)
 		return NULL;
+
 	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
+	if (slot < handles->size && slot_occupied (handles, slot)) {
+		if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
 			obj = mono_gc_weak_link_get (&handles->entries [slot]);
 		} else {
 			obj = handles->entries [slot];
@@ -854,15 +909,14 @@ mono_gchandle_get_target (guint32 gchandle)
 static void
 mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 {
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
+	guint slot = GC_HANDLE_SLOT (gchandle);
+	guint type = GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];
 
-	if (type > 3)
-		return;
+	g_assert (type < HANDLE_TYPE_MAX);
 	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
+	if (slot < handles->size && slot_occupied (handles, slot)) {
+		if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
 			if (handles->entries [slot])
 				mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
 			if (obj)
@@ -889,15 +943,17 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 {
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
+	guint slot = GC_HANDLE_SLOT (gchandle);
+	guint type = GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];
 	gboolean result = FALSE;
-	if (type > 3)
+
+	if (type >= HANDLE_TYPE_MAX)
 		return FALSE;
+
 	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
+	if (slot < handles->size && slot_occupied (handles, slot)) {
+		if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
 			result = domain->domain_id == handles->domain_ids [slot];
 		} else {
 			MonoObject *obj;
@@ -925,21 +981,21 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 void
 mono_gchandle_free (guint32 gchandle)
 {
-	guint slot = gchandle >> 3;
-	guint type = (gchandle & 7) - 1;
+	guint slot = GC_HANDLE_SLOT (gchandle);
+	guint type = GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];
-	if (type > 3)
+	if (type >= HANDLE_TYPE_MAX)
 		return;
 
 	lock_handles (handles);
-	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
-		if (handles->type <= HANDLE_WEAK_TRACK) {
+	if (slot < handles->size && slot_occupied (handles, slot)) {
+		if (GC_HANDLE_TYPE_IS_WEAK (handles->type)) {
 			if (handles->entries [slot])
 				mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
 		} else {
 			handles->entries [slot] = NULL;
 		}
-		handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
+		vacate_slot (handles, slot);
 	} else {
 		/* print a warning? */
 	}
@@ -963,22 +1019,22 @@ mono_gchandle_free_domain (MonoDomain *domain)
 {
 	guint type;
 
-	for (type = 0; type < 3; ++type) {
+	for (type = HANDLE_TYPE_MIN; type < HANDLE_PINNED; ++type) {
 		guint slot;
 		HandleData *handles = &gc_handles [type];
 		lock_handles (handles);
 		for (slot = 0; slot < handles->size; ++slot) {
-			if (!(handles->bitmap [slot / 32] & (1 << (slot % 32))))
+			if (!slot_occupied (handles, slot))
 				continue;
-			if (type <= HANDLE_WEAK_TRACK) {
+			if (GC_HANDLE_TYPE_IS_WEAK (type)) {
 				if (domain->domain_id == handles->domain_ids [slot]) {
-					handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
+					vacate_slot (handles, slot);
 					if (handles->entries [slot])
 						mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
 				}
 			} else {
 				if (handles->entries [slot] && mono_object_domain (handles->entries [slot]) == domain) {
-					handles->bitmap [slot / 32] &= ~(1 << (slot % 32));
+					vacate_slot (handles, slot);
 					handles->entries [slot] = NULL;
 				}
 			}
@@ -1174,7 +1230,9 @@ mono_gc_init_finalizer_thread (void)
 void
 mono_gc_init (void)
 {
+#ifndef HAVE_SGEN_GC
 	mono_mutex_init_recursive (&handle_section);
+#endif
 	mono_mutex_init_recursive (&allocator_section);
 
 	mono_mutex_init_recursive (&finalizer_mutex);
@@ -1285,6 +1343,10 @@ mono_gc_cleanup (void)
 
 	mono_reference_queue_cleanup ();
 
+#ifndef HAVE_SGEN_GC
+	mono_mutex_destroy (&handle_section);
+#endif
+
 	mono_mutex_destroy (&allocator_section);
 	mono_mutex_destroy (&finalizer_mutex);
 	mono_mutex_destroy (&reference_queue_mutex);
@@ -1298,7 +1360,9 @@ mono_gc_cleanup (void)
 void
 mono_gc_mutex_cleanup (void)
 {
+#ifndef HAVE_SGEN_GC
 	mono_mutex_destroy (&handle_section);
+#endif
 }
 
 gboolean
@@ -1377,13 +1441,8 @@ reference_queue_proccess (MonoReferenceQueue *queue)
 	RefQueueEntry **iter = &queue->queue;
 	RefQueueEntry *entry;
 	while ((entry = *iter)) {
-#ifdef HAVE_SGEN_GC
-		if (queue->should_be_deleted || !mono_gc_weak_link_get (&entry->dis_link)) {
-			mono_gc_weak_link_remove (&entry->dis_link, TRUE);
-#else
 		if (queue->should_be_deleted || !mono_gchandle_get_target (entry->gchandle)) {
 			mono_gchandle_free ((guint32)entry->gchandle);
-#endif
 			ref_list_remove_element (iter, entry);
 			queue->callback (entry->user_data);
 			g_free (entry);
@@ -1438,11 +1497,7 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 		RefQueueEntry *entry;
 		while ((entry = *iter)) {
 			if (entry->domain == domain) {
-#ifdef HAVE_SGEN_GC
-				mono_gc_weak_link_remove (&entry->dis_link, TRUE);
-#else
 				mono_gchandle_free ((guint32)entry->gchandle);
-#endif
 				ref_list_remove_element (iter, entry);
 				queue->callback (entry->user_data);
 				g_free (entry);
@@ -1506,12 +1561,8 @@ mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *u
 	entry->user_data = user_data;
 	entry->domain = mono_object_domain (obj);
 
-#ifdef HAVE_SGEN_GC
-	mono_gc_weak_link_add (&entry->dis_link, obj, TRUE);
-#else
 	entry->gchandle = mono_gchandle_new_weakref (obj, TRUE);
 	mono_object_register_finalizer (obj);
-#endif
 
 	ref_list_push (&queue->queue, entry);
 	return TRUE;

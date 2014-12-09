@@ -784,9 +784,9 @@ clear_domain_process_object (GCObject *obj, MonoDomain *domain)
 	remove = need_remove_object_for_domain (obj, domain);
 
 	if (remove && obj->synchronisation) {
-		void **dislink = mono_monitor_get_object_monitor_weak_link (obj);
+		guint32 dislink = mono_monitor_get_object_monitor_gchandle (obj);
 		if (dislink)
-			sgen_register_disappearing_link (NULL, dislink, FALSE, TRUE);
+			mono_gchandle_free (dislink);
 	}
 
 	return remove;
@@ -863,8 +863,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 	to memory returned to the OS.*/
 	null_ephemerons_for_domain (domain);
 
-	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		sgen_null_links_if (object_in_domain_predicate, domain, i);
+	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i) {
+		sgen_null_links_if (object_in_domain_predicate, domain, i, FALSE);
+		sgen_null_links_if (object_in_domain_predicate, domain, i, TRUE);
+	}
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
 		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
@@ -2571,19 +2573,27 @@ mono_gc_get_los_limit (void)
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
-	sgen_register_disappearing_link (obj, link_addr, track, FALSE);
+	binary_protocol_dislink_add ((gpointer)link_addr, obj, track);
+	*link_addr = (void*)HIDE_POINTER (obj);
 }
 
 void
 mono_gc_weak_link_remove (void **link_addr, gboolean track)
 {
-	sgen_register_disappearing_link (NULL, link_addr, track, FALSE);
+	binary_protocol_dislink_remove ((gpointer)link_addr, track);
+	*link_addr = NULL;
 }
 
 MonoObject*
 mono_gc_weak_link_get (void **link_addr)
 {
 	return sgen_weak_link_get (link_addr);
+}
+
+gboolean
+mono_gc_object_older_than (MonoObject *object, int generation)
+{
+	return generation == GENERATION_NURSERY && !sgen_ptr_in_nursery (object);
 }
 
 gboolean

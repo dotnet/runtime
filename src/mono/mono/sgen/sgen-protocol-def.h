@@ -307,24 +307,24 @@ MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
-BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_dislink_update, TYPE_POINTER, link, TYPE_POINTER, obj, TYPE_BOOL, track, TYPE_BOOL, staged)
-CUSTOM_PRINT(entry->obj ? printf ("link %p obj %p staged %d track %d", entry->link, entry->obj, entry->staged, entry->track) : printf ("link %p obj %p staged %d", entry->link, entry->obj, entry->staged))
-IS_ALWAYS_MATCH (FALSE)
-MATCH_INDEX (ptr == entry->link ? 0 : ptr == entry->obj ? 1 : BINARY_PROTOCOL_NO_MATCH)
-IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY_HEAVY
-
-BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_dislink_update_staged, TYPE_POINTER, link, TYPE_POINTER, obj, TYPE_BOOL, track, TYPE_INT, index)
-CUSTOM_PRINT(entry->obj ? printf ("link %p obj %p index %d track %d", entry->link, entry->obj, entry->index, entry->track) : printf ("link %p obj %p index %d", entry->link, entry->obj, entry->index))
-IS_ALWAYS_MATCH (FALSE)
-MATCH_INDEX (ptr == entry->link ? 0 : ptr == entry->obj ? 1 : BINARY_PROTOCOL_NO_MATCH)
-IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY_HEAVY
-
-BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_dislink_process_staged, TYPE_POINTER, link, TYPE_POINTER, obj, TYPE_INT, index)
+BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_dislink_add, TYPE_POINTER, link, TYPE_POINTER, obj, TYPE_BOOL, track)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (ptr == entry->link ? 0 : ptr == entry->obj ? 1 : BINARY_PROTOCOL_NO_MATCH)
+IS_VTABLE_MATCH (FALSE)
+END_PROTOCOL_ENTRY_HEAVY
+
+BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_dislink_update, TYPE_POINTER, link, TYPE_POINTER, obj, TYPE_BOOL, track)
+CUSTOM_PRINT(entry->obj ? printf ("link %p obj %p track %d", entry->link, entry->obj, entry->track) : printf ("link %p obj %p", entry->link, entry->obj))
+IS_ALWAYS_MATCH (FALSE)
+MATCH_INDEX (ptr == entry->link ? 0 : ptr == entry->obj ? 1 : BINARY_PROTOCOL_NO_MATCH)
+IS_VTABLE_MATCH (FALSE)
+END_PROTOCOL_ENTRY_HEAVY
+
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_dislink_remove, TYPE_POINTER, link, TYPE_INT, track)
+DEFAULT_PRINT ()
+IS_ALWAYS_MATCH (FALSE)
+MATCH_INDEX (ptr == entry->link ? 0 : BINARY_PROTOCOL_NO_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY_HEAVY
 

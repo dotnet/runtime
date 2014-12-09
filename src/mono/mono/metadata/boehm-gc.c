@@ -1462,4 +1462,9 @@ mono_gc_is_null (void)
 	return FALSE;
 }
 
+gboolean
+mono_gc_object_older_than (MonoObject *object, int generation) {
+	return FALSE;
+}
+
 #endif /* no Boehm GC */

@@ -331,7 +331,7 @@ mono_locks_dump (gboolean include_untaken)
 					to_recycle++;
 			} else {
 				if (!monitor_is_on_freelist (mon->data)) {
-					MonoObject *holder = mono_gc_weak_link_get (&mon->data);
+					MonoObject *holder = (MonoObject *)mono_gchandle_get_target ((guint32)mon->data);
 					if (mon_status_get_owner (mon->status)) {
 						g_print ("Lock %p in object %p held by thread %d, nest level: %d\n",
 							mon, holder, mon_status_get_owner (mon->status), mon->nest);
@@ -387,7 +387,7 @@ mon_new (gsize id)
 		new = NULL;
 		for (marray = monitor_allocated; marray; marray = marray->next) {
 			for (i = 0; i < marray->num_monitors; ++i) {
-				if (marray->monitors [i].data == NULL) {
+				if (mono_gchandle_get_target ((guint32)marray->monitors [i].data) == NULL) {
 					new = &marray->monitors [i];
 					if (new->wait_list) {
 						/* Orphaned events left by aborted threads */
@@ -397,7 +397,7 @@ mon_new (gsize id)
 							new->wait_list = g_slist_remove (new->wait_list, new->wait_list->data);
 						}
 					}
-					mono_gc_weak_link_remove (&new->data, TRUE);
+					mono_gchandle_free ((guint32)new->data);
 					new->data = monitor_freelist;
 					monitor_freelist = new;
 				}
@@ -454,7 +454,7 @@ alloc_mon (MonoObject *obj, gint32 id)
 
 	mono_monitor_allocator_lock ();
 	mon = mon_new (id);
-	mono_gc_weak_link_add (&mon->data, obj, TRUE);
+	mon->data = (void *)(size_t)mono_gchandle_new_weakref (obj, TRUE);
 	mono_monitor_allocator_unlock ();
 
 	return mon;
@@ -465,7 +465,7 @@ static void
 discard_mon (MonoThreadsSync *mon)
 {
 	mono_monitor_allocator_lock ();
-	mono_gc_weak_link_remove (&mon->data, TRUE);
+	mono_gchandle_free ((guint32)mon->data);
 	mon_finalize (mon);
 	mono_monitor_allocator_unlock ();
 }
@@ -1036,8 +1036,8 @@ mono_monitor_exit (MonoObject *obj)
 		mono_monitor_exit_flat (obj, lw);
 }
 
-void**
-mono_monitor_get_object_monitor_weak_link (MonoObject *object)
+guint32
+mono_monitor_get_object_monitor_gchandle (MonoObject *object)
 {
 	LockWord lw;
 
@@ -1045,10 +1045,9 @@ mono_monitor_get_object_monitor_weak_link (MonoObject *object)
 
 	if (lock_word_is_inflated (lw)) {
 		MonoThreadsSync *mon = lock_word_get_inflated_lock (lw);
-		if (mon->data)
-			return &mon->data;
+		return (guint32)mon->data;
 	}
-	return NULL;
+	return 0;
 }
 
 /*
