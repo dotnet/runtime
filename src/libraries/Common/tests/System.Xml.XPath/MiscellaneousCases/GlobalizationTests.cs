@@ -17,7 +17,8 @@ namespace XPathTests.FunctionalTests
         /// <summary>
         /// surrogates : xpath testing, return 7 nodes
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void GlobalizationTest566()
         {
             var xml = "Surrogates_1.xml";

@@ -101,7 +101,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines ancestor-or-self axis with descendant axis
         /// ancestor-or-self::*/descendant::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest23()
         {
             var xml = "books.xml";
@@ -1544,7 +1545,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines ancestor-or-self axis with descendant-or-self axis
         /// ancestor-or-self::node()/descendant-or-self::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest24()
         {
             var xml = "books.xml";
@@ -4182,7 +4184,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines child axis with preceding axis
         /// child::node()/preceding::node()[preceding-sibling::book and following-sibling::magazine]
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest225()
         {
             var xml = "books.xml";
@@ -4667,7 +4670,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant axis with ancestor-or-self axis
         /// descendant::text()/ancestor-or-self::node() [following::text()]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest232()
         {
             var xml = "books.xml";
@@ -6082,7 +6086,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant axis with ancestor-or-self axis
         /// descendant::node()/ancestor-or-self::node() [following::text() or following::text()]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest233()
         {
             var xml = "books.xml";
@@ -8465,7 +8470,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant axis with preceding axis
         /// book/descendant::award/preceding::text()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest239()
         {
             var xml = "books.xml";
@@ -8764,7 +8770,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant axis with preceding-sibling axis
         /// book/descendant::award/preceding-sibling::node()[following-sibling::* = preceding-sibling::*]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest240()
         {
             var xml = "books.xml";
@@ -10601,7 +10608,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines following-sibling axis with ancestor-or-self axis
         /// node()/node()/following-sibling::node()/ancestor-or-self::node()[preceding::node() and following::node() and self::node() and preceding-sibling::node() and following-sibling::node()]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest248()
         {
             var xml = "books.xml";
@@ -14162,7 +14170,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with child axis
         /// descendant-or-self::*/child::text() | descendant-or-self::*/child::processing-instruction() | descendant-or-self::comment()|descendant-or-self::*/attribute::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest262()
         {
             var xml = "books.xml";
@@ -16332,7 +16341,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with descendant-or-self axis
         /// descendant-or-self::node()[position()!=5]/descendant-or-self::node()[@atttribute::*]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest264()
         {
             var xml = "books.xml";
@@ -16651,7 +16661,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with following axis
         /// descendant-or-self::*/following::node()[position()!=7 and descendant-or-self::*]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest265()
         {
             var xml = "books.xml";
@@ -17732,7 +17743,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with following-sibling axis
         /// descendant-or-self::node()/following-sibling::node()[name()='publication']
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest266()
         {
             var xml = "books.xml";
@@ -17802,7 +17814,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with preceding axis
         /// descendant-or-self::node()[position()>=3 and position()<=15]/preceding::node()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest267()
         {
             var xml = "books.xml";
@@ -17864,7 +17877,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with preceding-sibling axis
         /// descendant-or-self::*[self::node]/preceding-sibling::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest268()
         {
             var xml = "books.xml";
@@ -23017,7 +23031,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines preceding-sibling axis with preceding axis
         /// preceding-sibling::*/preceding::node()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest282()
         {
             var xml = "books.xml";
@@ -24058,7 +24073,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// ancestor-or-self::*/descendant::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest288()
         {
             var xml = "books.xml";
@@ -25500,7 +25516,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// ancestor-or-self::*/descendant-or-self::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest289()
         {
             var xml = "books.xml";
@@ -26953,7 +26970,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// ancestor::node()/descendant::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest290()
         {
             var xml = "books.xml";
@@ -31190,7 +31208,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// preceding::*/preceding-sibling::node()[self::* = true()]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2104()
         {
             var xml = "books.xml";
@@ -47685,7 +47704,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following-sibling::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2155()
         {
             var xml = "books.xml";
@@ -48185,7 +48205,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/preceding::node()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest2156()
         {
             var xml = "books.xml";
@@ -54008,7 +54029,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// NSXX: //namespace::*[local-name()=""]/preceding::*
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest2183()
         {
             var xml = "name2.xml";
@@ -55697,7 +55719,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 60400
         /// //@*/preceding::*
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest2189()
         {
             var xml = "books.xml";
@@ -57620,7 +57643,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 63682
         /// //comment()/preceding::node()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesCombinationsTest2199()
         {
             var xml = "test63682.xml";
@@ -57814,7 +57838,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 63682
         /// //descendant-or-self::*/following-sibling::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2201()
         {
             var xml = "books.xml";
@@ -58582,7 +58607,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 63682
         /// descendant-or-self::node()/following-sibling::node()[name()='publication']
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2202()
         {
             var xml = "books.xml";
@@ -59557,7 +59583,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 65291
         /// descendant-or-self::node()/preceding-sibling::node()[name()='publication']
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2205()
         {
             var xml = "books.xml";
@@ -59627,7 +59654,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 65291
         /// descendant-or-self::*[self::node()]/preceding-sibling::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2206()
         {
             var xml = "books.xml";
@@ -60649,7 +60677,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 65292
         /// //ancestor-or-self::*/following-sibling::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2208()
         {
             var xml = "books.xml";
@@ -61433,7 +61462,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 65293
         /// preceding::*/preceding-sibling::node()[self::* = true()]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2210()
         {
             var xml = "books.xml";
@@ -61966,7 +61996,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 65293
         /// preceding::*/preceding-sibling::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2211()
         {
             var xml = "books.xml";
@@ -63742,7 +63773,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 67337
         /// //node|/|//node()/ancestor::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2214()
         {
             var xml = "books.xml";
@@ -65218,7 +65250,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 74132
         /// descendant::*/following-sibling::*[child::*]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesCombinationsTest2220()
         {
             var xml = "books.xml";

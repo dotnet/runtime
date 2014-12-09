@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <Import Project="..\..\Common\tests\Tests.props" />
+  <Import Project="..\Tests.props" />
   <PropertyGroup>
     <!-- Work around known Dev14 bug - see
          https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
@@ -17,63 +17,49 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}</ProjectGuid>
+    <ProjectGuid>{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}</ProjectGuid>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.XDocument.Tests</AssemblyName>
+    <AssemblyName>XunitTraitsDiscoverers</AssemblyName>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
-    <RootNamespace>System.Xml.XDocument.Tests</RootNamespace>
+    <RootNamespace>Xunit.TraitDiscoverers</RootNamespace>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <ItemGroup>
     <None Include="@(TestNone)" />
     <Reference Include="@(TestReference)" />
-    <ProjectReference Include="@(TestProjectReference)" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.IO">
+      <HintPath>..\..\..\packages\System.IO.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Reflection">
+      <HintPath>..\..\..\packages\System.Reflection.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
     <Reference Include="System.Runtime">
-      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Linq">
-      <HintPath>..\..\packages\System.Linq.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Linq.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Xml.ReaderWriter">
-      <HintPath>..\..\packages\System.Xml.ReaderWriter.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Xml.ReaderWriter.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Threading.Tasks">
-      <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
+      <HintPath>..\..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
       <Private>False</Private>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Common\HelperExtensionMethods.cs" />
-    <Compile Include="axes\AxisOrderValidation.cs" />
-    <Compile Include="axes\TestData.cs" />
-    <Compile Include="axes\InvalidParamValidation.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\System.Xml.XDocument.csproj">
-      <Project>{442c5a88-29c2-4b00-b1df-730d646d3861}</Project>
-      <Name>System.Xml.XDocument</Name>
-    </ProjectReference>
+    <Compile Include="ActiveIssueAttribute.cs" />
+    <Compile Include="ActiveIssueDiscoverer.cs" />
+    <Compile Include="OuterLoopAttribute.cs" />
+    <Compile Include="OuterLoopTestsDiscoverer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
