@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)..\..\packages\xunit.runner.visualstudio.0.99.9-build1021\build\net20\xunit.runner.visualstudio.props" Condition="'$(BuildingInsideVisualStudio)' == 'true' and Exists('$(MSBuildThisFileDirectory)..\..\packages\xunit.runner.visualstudio.0.99.9-build1021\build\net20\xunit.runner.visualstudio.props')" />
+  <Import Project="$(MSBuildThisFileDirectory)..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props" Condition="Exists('$(MSBuildThisFileDirectory)..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" />
+  <PropertyGroup>
+    <CommonPath>$(MSBuildThisFileDirectory)</CommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <TestReference Include="System.Runtime.Extensions">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\packages\System.Runtime.Extensions.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Extensions.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </TestReference>
+    <TestReference Include="System.Threading.Tasks">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\packages\System.Threading.Tasks.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </TestReference>
+    <TestReference Include="xunit.abstractions">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\packages\xunit.abstractions.2.0.0-beta5-build2785\lib\net35\xunit.abstractions.dll</HintPath>
+    </TestReference>
+    <TestReference Include="xunit.assert">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\packages\xunit.assert.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10\xunit.assert.dll</HintPath>
+    </TestReference>
+    <TestReference Include="xunit.core">
+      <HintPath>$(MSBuildThisFileDirectory)..\..\packages\xunit.core.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.core.dll</HintPath>
+    </TestReference>
+    <TestProjectReference Include="$(MSBuildThisFileDirectory)XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </TestProjectReference>
+    
+    <!-- This should be relative to the project which include this library -->
+    <TestNone Include="packages.config" />
+  </ItemGroup>
+
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\..\packages\xunit.runner.visualstudio.0.99.9-build1021\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '$(MSBuildThisFileDirectory)..\..\packages\xunit.runner.visualstudio.0.99.9-build1021\build\net20\xunit.runner.visualstudio.props'))" />
+  </Target>
+</Project>

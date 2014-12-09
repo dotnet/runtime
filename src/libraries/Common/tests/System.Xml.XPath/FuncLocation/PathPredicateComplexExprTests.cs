@@ -233,7 +233,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         /// <summary>
         /// descendant::*[position()&lt;last() and count(following::*)> 3 and local-name()!="title"]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest53()
         {
             var xml = "books.xml";
@@ -1499,7 +1500,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         /// Should not select anything, since there is no child element called last-name
         /// descendant::*[position()&lt;last() and count(following::*)> 3 and local-name!="title"]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest54()
         {
             var xml = "books.xml";
@@ -1713,7 +1715,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         /// position on node set
         /// (//node()/ancestor::node())[position()<2]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
         public static void ComplexExpressionsTest56()
         {
             var xml = "books.xml";
@@ -3785,7 +3787,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         /// <summary>
         /// /descendant-or-self::* [position()>=1]/ancestor-or-self::*[position() <=5]/descendant::* [position()=1 or position()=2 or position()>3]/ancestor::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest523()
         {
             var xml = "books.xml";

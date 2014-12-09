@@ -3281,7 +3281,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         /// Position in cascaded predicates
         /// //*[position()=2 and //*[position()=3 and //*[position()=2]]]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void UsingPositionFunctionTest663()
         {
             var xml = "books.xml";

@@ -20,7 +20,8 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal(nodeName, newNode.Name);
         }
 
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void LongElementName()
         {
             var xmlDocument = new XmlDocument();

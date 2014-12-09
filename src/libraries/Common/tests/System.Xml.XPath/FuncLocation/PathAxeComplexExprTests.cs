@@ -42,7 +42,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// Expression combines descendant, attribute axes
         /// /descendant::node() | /descendant::node()/attribute::node() | /descendant::node()/attribute::node()/descendant::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest32()
         {
             var xml = "books.xml";
@@ -6554,7 +6555,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// native gives wrong result for this one
         /// /descendant-or-self::* [position()>=1]/ancestor-or-self::* [position()<=5]/descendant::* [position()=1 or position()=2 or position>3]/ancestor::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest312()
         {
             var xml = "books.xml";
@@ -7353,7 +7355,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// <summary>
         /// /descendant::* [position()>=1]/ancestor-or-self::* [position()<=5]/descendant::* [position()=1 or position()=2 or position>3]/ancestor::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest319()
         {
             var xml = "books.xml";
@@ -7736,7 +7739,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// <summary>
         /// /descendant-or-self::* [position()>=1]/ancestor::* [position()<=5]/descendant::* [position()=1 or position()=2 or position>3]/ancestor::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest320()
         {
             var xml = "books.xml";
@@ -8119,7 +8123,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// <summary>
         /// /descendant-or-self::node() [position()>=1]/ancestor::node()[position() <=5]/descendant::node() [position()=1 or position()=2 or position()>3]/ancestor::*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest321()
         {
             var xml = "books.xml";
@@ -9204,7 +9209,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// <summary>
         /// /descendant-or-self::node()/parent::node()/descendant::node()/preceding::*
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void ComplexExpressionsTest322()
         {
             var xml = "books.xml";
@@ -10323,7 +10329,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// Regression for 63067
         /// following::* | preceding::* | self::* | following-sibling::* | preceding-sibling::* | attribute::* | following::text() | following::comment() | ancestor::* | ancestor-or-self::text() | parent::node() | descendant::text() | descendant::* | child::publication
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest324()
         {
             var xml = "books.xml";
@@ -13366,7 +13373,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// Regression for 63067
         /// /descendant::node() | /descendant::node()/attribute::node() | /descendant::node()/attribute::node()/descendant::node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest329()
         {
             var xml = "books.xml";
@@ -15194,7 +15202,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// Regression for 63067
         /// (child::node | //node()[count(following::node()[count(child::text())&gt;0])&gt;1])|preceding::node()[count(descendant-or-self::*) &gt; 5]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest330()
         {
             var xml = "books.xml";
@@ -16612,7 +16621,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// Regression for 63067
         /// (child::node | //node()[count(following::node()[count(child::text())&gt;0])&gt;1])|preceding::node()[count(descendant-or-self::*) &gt; 5]| //node()/@*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest331()
         {
             var xml = "books.xml";
@@ -18527,7 +18537,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// <summary>
         /// following::*[last()-count(following::*[count(child::node()[string-length(string())&gt;25][string-length(string())&lt;40])])]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest337()
         {
             var xml = "books.xml";
@@ -18608,7 +18619,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// <summary>
         /// preceding::*[last()-count(preceding::*[count(following::node()[string-length(string())&gt;25][string-length(string())&lt;40])])]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void ComplexExpressionsTest340()
         {
             var xml = "books.xml";
