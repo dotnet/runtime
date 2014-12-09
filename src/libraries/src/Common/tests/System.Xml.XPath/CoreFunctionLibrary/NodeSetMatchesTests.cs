@@ -462,7 +462,8 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary.NodeSetFunctions
         /// Data file has no DTD, so no element has an ID, expected empty node-set
         /// id("1")
         /// </summary>
-        //[Fact(Skip = "Issue #20: XPath.XDocument does not support MoveToId(string)")]
+        [Fact]
+        [ActiveIssue(20)]
         public static void MatchesTest2352()
         {
             var xml = "id4.xml";

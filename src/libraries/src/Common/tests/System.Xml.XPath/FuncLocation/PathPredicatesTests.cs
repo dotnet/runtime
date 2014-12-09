@@ -4915,7 +4915,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Predicate filters the elements in the node-set at number 8,10,12,55 (these numbers appear as text nodes in the document)
         /// //* [position() = //*]
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void PredicatesTest1072()
         {
             var xml = "books.xml";
