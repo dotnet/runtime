@@ -5060,7 +5060,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	if (len < 0 || len > ((SIZE_MAX - G_STRUCT_OFFSET (MonoString, chars) - 2) / 2))
 		mono_gc_out_of_memory (-1);
 
-	size = (G_STRUCT_OFFSET (MonoString, chars) + ((len + 1) * 2));
+	size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)len + 1) * 2));
 	g_assert (size > 0);
 
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
