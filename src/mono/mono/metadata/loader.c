@@ -585,7 +585,7 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		field = mono_class_get_field (k, token);
 		if (!field) {
 			if (mono_loader_get_last_error ())
-				mono_loader_set_error_from_mono_error (error);
+				mono_error_set_from_loader_error (error);
 			else
 				mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x", token);
 		}
