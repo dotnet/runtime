@@ -1109,13 +1109,13 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 gpointer
 mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr)
 {
-	guint8 *code, *start;
+	guint8 *code, *buf;
 	int buf_len;
 	gpointer *constants;
 
 	buf_len = 24;
 
-	start = code = mono_domain_code_reserve (domain, buf_len);
+	buf = code = mono_domain_code_reserve (domain, buf_len);
 
 	/* Similar to the specialized trampoline code */
 	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
@@ -1128,13 +1128,13 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	constants [1] = addr;
 	code += 8;
 
-	g_assert ((code - start) <= buf_len);
+	g_assert ((code - buf) <= buf_len);
 
-	nacl_domain_code_validate (domain, &start, buf_len, &code);
-	mono_arch_flush_icache (start, code - start);
+	nacl_domain_code_validate (domain, &buf, buf_len, &code);
+	mono_arch_flush_icache (buf, code - buf);
 	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_GENERICS_TRAMPOLINE, NULL);
 
-	return start;
+	return buf;
 }
 
 #else
