@@ -66,25 +66,25 @@ namespace System.Numerics.Tests
             string v1str = v1.ToString();
             string expectedv1 = string.Format(CultureInfo.CurrentCulture
                 , "<{1:G}{0} {2:G}>"
-                , separator, 2, 3);
+                , new object[] { separator, 2, 3 });
             Assert.Equal(expectedv1, v1str);
 
             string v1strformatted = v1.ToString("c", CultureInfo.CurrentCulture);
             string expectedv1formatted = string.Format(CultureInfo.CurrentCulture
                 , "<{1:c}{0} {2:c}>"
-                , separator, 2, 3);
+                , new object[] { separator, 2, 3 });
             Assert.Equal(expectedv1formatted, v1strformatted);
 
             string v2strformatted = v1.ToString("c", enUsCultureInfo);
             string expectedv2formatted = string.Format(enUsCultureInfo
                 , "<{1:c}{0} {2:c}>"
-                , enUsCultureInfo.NumberFormat.NumberGroupSeparator, 2, 3);
+                , new object[] { enUsCultureInfo.NumberFormat.NumberGroupSeparator, 2, 3 });
             Assert.Equal(expectedv2formatted, v2strformatted);
 
             string v3strformatted = v1.ToString("c");
             string expectedv3formatted = string.Format(CultureInfo.CurrentCulture
                 , "<{1:c}{0} {2:c}>"
-                , separator, 2, 3);
+                , new object[] { separator, 2, 3 });
             Assert.Equal(expectedv3formatted, v3strformatted);
         }
 
