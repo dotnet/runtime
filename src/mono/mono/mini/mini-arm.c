@@ -14,6 +14,7 @@
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap-arm.h>
@@ -704,6 +705,7 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		mono_arch_flush_icache (start, size);
 	}
 
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
 	if (code_size)
 		*code_size = code - start;
 
@@ -886,6 +888,7 @@ create_function_wrapper (gpointer function)
 	ARM_LDM (code, ARMREG_IP, 0xffff);
 
 	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	return start;
 }
@@ -6898,6 +6901,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 #endif
 
 	mono_arch_flush_icache ((guint8*)start, size);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 	mono_stats.imt_thunks_size += code - start;
 
 	g_assert (DISTANCE (start, code) <= size);

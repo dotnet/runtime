@@ -5831,6 +5831,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	}
 
 	nacl_domain_code_validate (domain, &start, size, &code);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
 	return start;
 }
@@ -6119,6 +6120,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		if (!has_target)
 			g_free (buff);
 	}
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
 
 	return start;
 }
@@ -6230,6 +6232,7 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 	/* Load the vtable */
 	x86_mov_reg_membase (code, X86_EAX, X86_ECX, MONO_STRUCT_OFFSET (MonoObject, vtable), 4);
 	x86_jump_membase (code, X86_EAX, offset);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
 
 	return start;
 }

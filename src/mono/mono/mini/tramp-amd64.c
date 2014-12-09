@@ -19,7 +19,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/monitor.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/arch/amd64/amd64-codegen.h>
 
@@ -65,6 +65,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	nacl_domain_code_validate (domain, &start, size, &code);
 
 	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m);
 
 	return start;
 }
@@ -100,6 +101,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	nacl_domain_code_validate (domain, &start, buf_len, &code);
 	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
 	return start;
 }
@@ -129,6 +131,7 @@ mono_arch_get_llvm_imt_trampoline (MonoDomain *domain, MonoMethod *m, int vt_off
 	nacl_domain_code_validate (domain, &start, buf_len, &code);
 
 	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
 	return start;
 }
@@ -182,6 +185,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				addr = thunk_start;
 				g_assert ((((guint64)(addr)) >> 32) == 0);
 				mono_arch_flush_icache (thunk_start, thunk_code - thunk_start);
+				mono_profiler_code_buffer_new (thunk_start, thunk_code - thunk_start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 #endif
 			}
 			if (can_write) {
@@ -248,6 +252,7 @@ mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
 	*(guint64*)thunk_code = (guint64)addr;
 	addr = thunk_start;
 	mono_arch_flush_icache (thunk_start, thunk_code - thunk_start);
+	mono_profiler_code_buffer_new (thunk_start, thunk_code - thunk_start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 	return addr;
 }
 
@@ -696,6 +701,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	nacl_global_codeman_validate (&buf, kMaxCodeSize, &code);
 
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	if (info) {
 		tramp_name = mono_get_generic_trampoline_name (tramp_type);
@@ -718,6 +724,7 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 	nacl_global_codeman_validate(&buf, size, &code);
 
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	if (info)
 		*info = mono_tramp_info_create ("nullified_class_init_trampoline", buf, code - buf, NULL, NULL);
@@ -792,6 +799,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	nacl_domain_code_validate(domain, &buf, size, &code);
 
 	mono_arch_flush_icache (buf, size);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, mono_get_generic_trampoline_simple_name (tramp_type));
 
 	return buf;
 }	
@@ -885,6 +893,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
 	g_assert (code - buf <= tramp_size);
 
@@ -937,6 +946,7 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	g_assert (code - buf <= tramp_size);
 
@@ -1063,6 +1073,7 @@ mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 
 	mono_arch_flush_icache (code, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_MONITOR, NULL);
 	g_assert (code - buf <= tramp_size);
 
 	if (info)
@@ -1182,6 +1193,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 
 	mono_arch_flush_icache (code, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_MONITOR, NULL);
 	g_assert (code - buf <= tramp_size);
 
 	if (info)
@@ -1243,6 +1255,7 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	}
 
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 	g_assert (code - buf <= tramp_size);
 
 	if (info)
