@@ -214,12 +214,9 @@ typedef struct {
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK 1
 #define MONO_ARCH_HAVE_LIVERANGE_OPS 1
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
-/* Temporarily disable native monitor fastpaths until they are updated */
-/*
 #if defined(__linux__) || defined (__APPLE__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
 #endif
-*/
 #if !defined(__native_client_codegen__)
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 #endif
