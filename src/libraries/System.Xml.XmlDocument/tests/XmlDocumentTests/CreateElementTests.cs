@@ -59,14 +59,14 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Throws<NullReferenceException>(() => xmlDocument.CreateElement(null));
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void NamespaceWithNoLocalName()
         {
             var xmlDocument = new XmlDocument();
             Assert.Throws<XmlException>(() => xmlDocument.CreateElement("foo:"));
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void NamespaceAndLocalNameWithColon()
         {
             var xmlDocument = new XmlDocument();

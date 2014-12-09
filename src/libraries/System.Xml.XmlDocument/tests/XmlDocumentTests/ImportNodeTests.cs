@@ -9,7 +9,7 @@ namespace XmlDocumentTests.XmlDocumentTests
 {
     public class ImportNodeTests
     {
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportNullNode()
         {
             var xmlDocument = new XmlDocument();
@@ -18,7 +18,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Throws<InvalidOperationException>(() => xmlDocument.ImportNode(null, true));
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportDocumentNode()
         {
             var xmlDocument = new XmlDocument();
@@ -28,7 +28,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Throws<InvalidOperationException>(() => xmlDocument.ImportNode(toImport, false));
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportDocumentFragment()
         {
             var tempDoc = new XmlDocument();
@@ -46,7 +46,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal(nodeToImport.OuterXml, node.OuterXml);
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportWhiteSpace()
         {
             var whitespace = "        ";
@@ -61,7 +61,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal(whitespace, node.Value);
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportSignificantWhitespace()
         {
             var whitespace = "        \t";
@@ -76,7 +76,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal(whitespace, node.Value);
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportElementDeepFalse()
         {
             var xmlDocument = new XmlDocument();
@@ -96,7 +96,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal(xmlDocument.DocumentElement.Attributes.Count, imported.Attributes.Count);
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportElementDeepTrue()
         {
             var xmlDocument = new XmlDocument();
@@ -116,7 +116,7 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal(xmlDocument.DocumentElement.Attributes.Count, imported.Attributes.Count);
         }
 
-        [Fact]
+        //[Fact] https://github.com/dotnet/corefx/issues/208
         public static void ImportAttributeDeepFalse()
         {
             var xmlDocument = new XmlDocument();
