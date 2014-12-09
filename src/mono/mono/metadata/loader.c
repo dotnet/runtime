@@ -1959,22 +1959,26 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 }
 
 static MonoMethod *
-get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context)
+get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *result;
 	MonoClass *ic = NULL;
 	MonoGenericContext *method_context = NULL;
 	MonoMethodSignature *sig, *original_sig;
 
+	mono_error_init (error);
+
 	mono_class_init (constrained_class);
-	original_sig = sig = mono_method_signature (method);
+	original_sig = sig = mono_method_signature_checked (method, error);
 	if (sig == NULL) {
 		return NULL;
 	}
 
 	if (method->is_inflated && sig->generic_param_count) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		sig = mono_method_signature (imethod->declaring); /*We assume that if the inflated method signature is valid, the declaring method is too*/
+		sig = mono_method_signature_checked (imethod->declaring, error); /*We assume that if the inflated method signature is valid, the declaring method is too*/
+		if (!sig)
+			return NULL;
 		method_context = mono_method_get_context (method);
 
 		original_sig = sig;
@@ -1984,16 +1988,13 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		 * any type argument which a concrete type. See #325283.
 		 */
 		if (method_context->class_inst) {
-			MonoError error;
 			MonoGenericContext ctx;
 			ctx.method_inst = NULL;
 			ctx.class_inst = method_context->class_inst;
 			/*Fixme, property propagate this error*/
-			sig = inflate_generic_signature_checked (method->klass->image, sig, &ctx, &error);
-			if (!mono_error_ok (&error)) {
-				mono_error_cleanup (&error);
+			sig = inflate_generic_signature_checked (method->klass->image, sig, &ctx, error);
+			if (!sig)
 				return NULL;
-			}
 		}
 	}
 
@@ -2003,24 +2004,21 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	result = find_method (constrained_class, ic, method->name, sig, constrained_class);
 	if (sig != original_sig)
 		mono_metadata_free_inflated_signature (sig);
+	g_assert (!mono_loader_get_last_error ()); /* in the hopes that find_method don't leak */
 
 	if (!result) {
 		char *m = mono_method_full_name (method, 1);
-		g_warning ("Missing method %s.%s.%s in assembly %s method %s", method->klass->name_space,
-			   method->klass->name, method->name, image->name, m);
-		g_free (m);
+		mono_error_set_method_load (error, constrained_class, method->name, "Could not find contrained method %s", m);
 		return NULL;
 	}
 
 	if (method_context) {
-		MonoError error;
-		result = mono_class_inflate_generic_method_checked (result, method_context, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_cleanup (&error);
+		result = mono_class_inflate_generic_method_checked (result, method_context, error);
+		if (!result)
 			return NULL;
-		}
 	}
 
+	g_assert (!mono_loader_get_last_error ());
 	return result;
 }
 
@@ -2028,9 +2026,17 @@ MonoMethod *
 mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class,
 			     MonoGenericContext *context)
 {
+	MonoError error;
+	MonoMethod *result;
 	g_assert (method);
 
-	return get_method_constrained (image, method, constrained_class, context);
+	result = get_method_constrained (image, method, constrained_class, context, &error);
+
+	if (!result) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
+	}
+	return result;
 }
 
 /**
@@ -2056,8 +2062,11 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 		return NULL;
 	}
 
-	result = get_method_constrained (image, *cil_method, constrained_class, context);
-
+	result = get_method_constrained (image, *cil_method, constrained_class, context, &error);
+	if (!result) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
+	}
 	return result;
 }
 
