@@ -2681,12 +2681,13 @@ namespace System.Collections.Immutable
             internal ImmutableList<TOutput>.Node ConvertAll<TOutput>(Func<T, TOutput> converter)
             {
                 var root = ImmutableList<TOutput>.Node.EmptyNode;
-                foreach (var item in this)
+
+                if (this.IsEmpty)
                 {
-                    root = root.Add(converter(item));
+                    return root;
                 }
 
-                return root;
+                return root.AddRange(Linq.Enumerable.Select(this, converter));
             }
 
             /// <summary>
@@ -2788,22 +2789,27 @@ namespace System.Collections.Immutable
                 Requires.NotNull(match, "match");
                 Contract.Ensures(Contract.Result<ImmutableList<T>>() != null);
 
-                ImmutableList<T>.Builder builder = null;
+                if (this.IsEmpty)
+                {
+                    return ImmutableList<T>.Empty;
+                }
+
+                List<T> list = null;
                 foreach (var item in this)
                 {
                     if (match(item))
                     {
-                        if (builder == null)
+                        if (list == null)
                         {
-                            builder = ImmutableList<T>.Empty.ToBuilder();
+                            list = new List<T>();
                         }
 
-                        builder.Add(item);
+                        list.Add(item);
                     }
                 }
 
-                return builder != null ?
-                    builder.ToImmutable() :
+                return list != null ?
+                    ImmutableList.CreateRange(list) :
                     ImmutableList<T>.Empty;
             }
 
