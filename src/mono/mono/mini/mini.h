@@ -2234,6 +2234,7 @@ void              mono_monitor_enter_trampoline (mgreg_t *regs, guint8 *code, Mo
 void              mono_monitor_exit_trampoline (mgreg_t *regs, guint8 *code, MonoObject *obj, guint8 *tramp) MONO_INTERNAL;
 gconstpointer     mono_get_trampoline_func (MonoTrampolineType tramp_type);
 gpointer          mini_get_vtable_trampoline (int slot_index) MONO_INTERNAL;
+const char*       mono_get_generic_trampoline_simple_name (MonoTrampolineType tramp_type) MONO_INTERNAL;
 char*             mono_get_generic_trampoline_name (MonoTrampolineType tramp_type) MONO_INTERNAL;
 char*             mono_get_rgctx_fetch_trampoline_name (int slot) MONO_INTERNAL;
 gpointer          mini_get_nullified_class_init_trampoline (void) MONO_INTERNAL;

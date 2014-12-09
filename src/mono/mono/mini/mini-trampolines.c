@@ -1755,6 +1755,16 @@ static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
 };
 
 /*
+ * mono_get_generic_trampoline_simple_name:
+ *
+ */
+const char*
+mono_get_generic_trampoline_simple_name (MonoTrampolineType tramp_type)
+{
+	return tramp_names [tramp_type];
+}
+
+/*
  * mono_get_generic_trampoline_name:
  *
  *   Returns a pointer to malloc-ed memory.
