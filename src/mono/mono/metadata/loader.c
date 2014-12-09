@@ -2045,21 +2045,26 @@ mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constra
 			     MonoGenericContext *context, MonoMethod **cil_method)
 {
 	MonoError error;
-	MonoMethod *result;
+	MonoMethod *result = mono_get_method_constrained_checked (image, token, constrained_class, context, cil_method, &error);
 
-	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL, &error);
-	if (!*cil_method) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
-		return NULL;
-	}
-
-	result = get_method_constrained (image, *cil_method, constrained_class, context, &error);
-	if (!result) {
+	g_assert (!mono_loader_get_last_error ());
+	if (!mono_error_ok (&error)) {
 		mono_loader_set_error_from_mono_error (&error);
 		mono_error_cleanup (&error);
 	}
 	return result;
+}
+
+MonoMethod *
+mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context, MonoMethod **cil_method, MonoError *error)
+{
+	mono_error_init (error);
+
+	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL, error);
+	if (!*cil_method)
+		return NULL;
+
+	return get_method_constrained (image, *cil_method, constrained_class, context, error);
 }
 
 void
