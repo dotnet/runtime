@@ -1896,6 +1896,36 @@ found_object (uintptr_t obj)
 	tracked_objects [num_tracked_objects - 1] = obj;
 }
 
+static int num_jit_helpers = 0;
+static int jit_helpers_code_size = 0;
+
+static const char*
+code_buffer_desc (int type)
+{
+	switch (type) {
+	case MONO_PROFILER_CODE_BUFFER_METHOD:
+		return "method";
+	case MONO_PROFILER_CODE_BUFFER_METHOD_TRAMPOLINE:
+		return "method trampoline";
+	case MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE:
+		return "unbox trampoline";
+	case MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE:
+		return "imt trampoline";
+	case MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE:
+		return "generics trampoline";
+	case MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE:
+		return "specific trampoline";
+	case MONO_PROFILER_CODE_BUFFER_HELPER:
+		return "misc helper";
+	case MONO_PROFILER_CODE_BUFFER_MONITOR:
+		return "monitor/lock";
+	case MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE:
+		return "delegate invoke";
+	default:
+		return "unspecified";
+	}
+}
+
 #define OBJ_ADDR(diff) ((obj_base + diff) << 3)
 #define LOG_TIME(base,diff) /*fprintf("outfile, time %llu + %llu near offset %d\n", base, diff, p - ctx->buf)*/
 
@@ -2354,6 +2384,30 @@ decode_buffer (ProfContext *ctx)
 			}
 			break;
 		}
+		case TYPE_RUNTIME: {
+			int subtype = *p & 0xf0;
+			uint64_t tdiff = decode_uleb128 (p + 1, &p);
+			LOG_TIME (time_base, tdiff);
+			time_base += tdiff;
+			if (subtype == TYPE_JITHELPER) {
+				int type = decode_uleb128 (p, &p);
+				intptr_t codediff = decode_sleb128 (p, &p);
+				int codelen = decode_uleb128 (p, &p);
+				const char *name;
+				if (type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE) {
+					name = (void*)p;
+					while (*p) p++;
+						p++;
+				} else {
+					name = code_buffer_desc (type);
+				}
+				num_jit_helpers++;
+				jit_helpers_code_size += codelen;
+				if (debug)
+					fprintf (outfile, "jit helper %s, size: %d, code: %p\n", name, codelen, (void*)(ptr_base + codediff));
+			}
+			break;
+		}
 		case TYPE_SAMPLE: {
 			int subtype = *p & 0xf0;
 			if (subtype == TYPE_SAMPLE_HIT) {
@@ -2724,6 +2778,8 @@ dump_jit (void)
 	}
 	fprintf (outfile, "\tCompiled methods: %d\n", compiled_methods);
 	fprintf (outfile, "\tGenerated code size: %d\n", code_size);
+	fprintf (outfile, "\tJIT helpers: %d\n", num_jit_helpers);
+	fprintf (outfile, "\tJIT helpers code size: %d\n", jit_helpers_code_size);
 }
 
 static void

@@ -5,7 +5,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 0
 #define LOG_VERSION_MINOR 4
-#define LOG_DATA_VERSION 7
+#define LOG_DATA_VERSION 8
 /*
  * Changes in data versions:
  * version 2: added offsets in heap walk
@@ -13,6 +13,7 @@
  * version 4: added sample/statistical profiling
  * version 5: added counters sampling
  * version 6: added optional backtrace in sampling info
+ * version 8: added TYPE_RUNTIME and JIT helpers/trampolines
  */
 
 enum {
@@ -24,6 +25,7 @@ enum {
 	TYPE_MONITOR,
 	TYPE_HEAP,
 	TYPE_SAMPLE,
+	TYPE_RUNTIME,
 	/* extended type for TYPE_HEAP */
 	TYPE_HEAP_START  = 0 << 4,
 	TYPE_HEAP_END    = 1 << 4,
@@ -65,6 +67,8 @@ enum {
 	TYPE_SAMPLE_UBIN          = 2 << 4,
 	TYPE_SAMPLE_COUNTERS_DESC = 3 << 4,
 	TYPE_SAMPLE_COUNTERS      = 4 << 4,
+	/* extended type for TYPE_RUNTIME */
+	TYPE_JITHELPER = 1 << 4,
 	TYPE_END
 };
 

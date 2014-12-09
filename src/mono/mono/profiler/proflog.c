@@ -241,18 +241,16 @@ typedef struct _LogBuffer LogBuffer;
  *	[code size: uleb128] size of the generated code
  *	[name: string] full method name
  *
- * type exception format:
- * type: TYPE_EXCEPTION
- * exinfo: TYPE_EXCEPTION_BT flag and one of: TYPE_THROW, TYPE_CLAUSE
+ * type runtime format:
+ * type: TYPE_RUNTIME
+ * exinfo: one of: TYPE_JITHELPER
  * [time diff: uleb128] nanoseconds since last timing
- * if exinfo.low3bits == TYPE_CLAUSE
- * 	[clause type: uleb128] finally/catch/fault/filter
- * 	[clause num: uleb128] the clause number in the method header
- * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
- * 	pointer or the buffer method_base
- * if exinfo.low3bits == TYPE_THROW
- * 	[object: sleb128] the object that was thrown as a difference from obj_base
- *	If the TYPE_EXCEPTION_BT flag is set, a backtrace follows.
+ * if exinfo == TYPE_JITHELPER
+ *	[type: uleb128] MonoProfilerCodeBufferType enum value
+ *	[buffer address: sleb128] pointer to the native code as a diff from ptr_base
+ *	[buffer size: uleb128] size of the generated code
+ *	if type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE
+ *		[name: string] buffer description name
  *
  * type monitor format:
  * type: TYPE_MONITOR
@@ -1128,6 +1126,36 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, int r
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_dump (prof, logbuffer);
+	process_requests (prof);
+}
+
+static void
+code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBufferType type, void *data)
+{
+	uint64_t now;
+	int nlen;
+	char *name;
+	LogBuffer *logbuffer;
+	if (type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE) {
+		name = data;
+		nlen = strlen (name) + 1;
+	} else {
+		name = NULL;
+		nlen = 0;
+	}
+	logbuffer = ensure_logbuf (32 + nlen);
+	now = current_time ();
+	ENTER_LOG (logbuffer, "code buffer");
+	emit_byte (logbuffer, TYPE_JITHELPER | TYPE_RUNTIME);
+	emit_time (logbuffer, now);
+	emit_value (logbuffer, type);
+	emit_ptr (logbuffer, buffer);
+	emit_value (logbuffer, size);
+	if (name) {
+		memcpy (logbuffer->data, name, nlen);
+		logbuffer->data += nlen;
+	}
+	EXIT_LOG (logbuffer);
 	process_requests (prof);
 }
 
@@ -3067,6 +3095,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_thread_name (thread_name);
 	mono_profiler_install_enter_leave (method_enter, method_leave);
 	mono_profiler_install_jit_end (method_jitted);
+	mono_profiler_install_code_buffer_new (code_buffer_new);
 	mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
 	mono_profiler_install_monitor (monitor_event);
 	mono_profiler_install_runtime_initialized (runtime_initialized);
