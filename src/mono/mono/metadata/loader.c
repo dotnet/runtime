@@ -2024,19 +2024,11 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 
 MonoMethod *
 mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class,
-			     MonoGenericContext *context)
+			     MonoGenericContext *context, MonoError *error)
 {
-	MonoError error;
-	MonoMethod *result;
 	g_assert (method);
 
-	result = get_method_constrained (image, method, constrained_class, context, &error);
-
-	if (!result) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
-	}
-	return result;
+	return get_method_constrained (image, method, constrained_class, context, error);
 }
 
 /**

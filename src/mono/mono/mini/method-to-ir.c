@@ -8104,7 +8104,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						if (!((constrained_call->byval_arg.type == MONO_TYPE_VAR ||
 							   constrained_call->byval_arg.type == MONO_TYPE_MVAR) &&
 							  cfg->generic_sharing_context)) {
-							cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_call, generic_context);
+							cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_call, generic_context, &cfg->error);
+							CHECK_CFG_ERROR;
 						}
 					} else {
 						if (cfg->verbose_level > 2)

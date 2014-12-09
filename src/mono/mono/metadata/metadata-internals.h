@@ -796,7 +796,7 @@ MonoException *mono_get_exception_method_access_msg (const char *msg) MONO_INTER
 
 MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context) MONO_INTERNAL;
 
-MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context) MONO_INTERNAL;
+MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
 void mono_type_set_alignment (MonoTypeEnum type, int align) MONO_INTERNAL;
 
