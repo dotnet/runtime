@@ -81,7 +81,7 @@
     <!-- Restore build tools -->
     <Exec
       StandardOutputImportance="Low"
-      Command="&quot;$(NuGetToolPath)&quot; install Microsoft.DotNet.BuildTools -Prerelease -Version $(BuildToolsVersion) -o &quot; $(PackagesDir) &quot; $(NuGetConfigCommandLine)" />
+      Command="&quot;$(NuGetToolPath)&quot; install Microsoft.DotNet.BuildTools -Prerelease -NoCache -Version $(BuildToolsVersion) -o &quot; $(PackagesDir) &quot; $(NuGetConfigCommandLine)" />
 
     <!-- Copy build tools to tools directory -->
     <Exec
