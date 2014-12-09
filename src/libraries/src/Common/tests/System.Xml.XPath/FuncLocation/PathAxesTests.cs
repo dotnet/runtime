@@ -6084,7 +6084,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Return all PI's in the document header (empty node-list for this case).
         /// //*[last()]/preceding::processing-instruction()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesTest1138()
         {
             var xml = "books_2.xml";
@@ -8503,7 +8504,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines following with preceding axis
         /// following::book/preceding::book
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesTest1202()
         {
             var xml = "books.xml";
@@ -10080,7 +10082,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines preceding with preceding axis
         /// preceding::book/preceding::book
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesTest1216()
         {
             var xml = "books.xml";
@@ -11575,7 +11578,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines ancestor with preceding axis
         /// ancestor::*/preceding::book
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesTest1244()
         {
             var xml = "books.xml";
@@ -12138,7 +12142,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// //*[last()]/preceding::processing-instruction()
         /// </summary>
-        //[Fact(Skip = "Issue #17")]
+        [Fact]
+        [ActiveIssue(17)]
         public static void AxesTest1256()
         {
             var xml = "books_2.xml";
@@ -12632,7 +12637,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// //*//*
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesTest1271()
         {
             var xml = "books.xml";
@@ -13731,7 +13737,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// <summary>
         /// //node()//node()
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AxesTest1272()
         {
             var xml = "books.xml";

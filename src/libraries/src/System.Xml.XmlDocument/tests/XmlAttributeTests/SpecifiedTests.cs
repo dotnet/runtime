@@ -8,7 +8,8 @@ namespace XmlDocumentTests.XmlAttributeTests
 {
     public static class SpecifiedTests
     {
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
+        [OuterLoop]
         public static void AttributeSpecifiedTest()
         {
             var xmlDocument = new XmlDocument();

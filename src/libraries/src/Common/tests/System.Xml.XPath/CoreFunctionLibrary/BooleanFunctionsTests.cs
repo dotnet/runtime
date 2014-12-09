@@ -261,7 +261,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         /// expected false
         /// lang("en-us")  is a sub-category of xml-lang="en"
         /// </summary>
-        //[Fact(Skip = "Issue #18: Outer loop test")]
+        [Fact]
         public static void BooleanFunctionsTest2518()
         {
             var xml = "lang.xml";
