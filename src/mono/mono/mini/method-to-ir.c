@@ -8121,7 +8121,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							if (!mini_is_gsharedvt_klass (cfg, constrained_call))
 								g_assert (!cmethod->klass->valuetype);
 						} else {
-							cmethod = mono_get_method_constrained (image, token, constrained_call, generic_context, &cil_method);
+							cmethod = mono_get_method_constrained_checked (image, token, constrained_call, generic_context, &cil_method, &cfg->error);
+							CHECK_CFG_ERROR;
 						}
 					}
 				}
