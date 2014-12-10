@@ -42,6 +42,8 @@ Today, it contains the following components:
   (TPL), and integrates with the language support for asynchrony provided by 
   C#, Visual Basic, and F#.
 
+* **Console**. This represents the standard input, output, and error streams for console applications.
+
 More is coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
