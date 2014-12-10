@@ -12,8 +12,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void Vector3MarshalSizeTest()
         {
-            Assert.Equal(12, Marshal.SizeOf(typeof(Vector3)));
-            Assert.Equal(12, Marshal.SizeOf(new Vector3()));
+            Assert.Equal(12, Marshal.SizeOf<Vector3>());
+            Assert.Equal(12, Marshal.SizeOf<Vector3>(new Vector3()));
         }
 
         [Fact]
