@@ -89,6 +89,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Specified file length was too large for the file system..
+        /// </summary>
+        internal static string ArgumentOutOfRange_FileLengthTooBig {
+            get {
+                return ResourceManager.GetString("ArgumentOutOfRange_FileLengthTooBig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Non-negative number required..
         /// </summary>
         internal static string ArgumentOutOfRange_NeedNonNegNum {
@@ -107,11 +116,47 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Stack empty..
+        /// </summary>
+        internal static string InvalidOperation_EmptyStack {
+            get {
+                return ResourceManager.GetString("InvalidOperation_EmptyStack", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The printf operation failed..
+        /// </summary>
+        internal static string InvalidOperation_PrintF {
+            get {
+                return ResourceManager.GetString("InvalidOperation_PrintF", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The file &apos;{0}&apos; already exists..
+        /// </summary>
+        internal static string IO_FileExists_Name {
+            get {
+                return ResourceManager.GetString("IO_FileExists_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unable to find the specified file..
         /// </summary>
         internal static string IO_FileNotFound {
             get {
                 return ResourceManager.GetString("IO_FileNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not find file &apos;{0}&apos;..
+        /// </summary>
+        internal static string IO_FileNotFound_FileName {
+            get {
+                return ResourceManager.GetString("IO_FileNotFound_FileName", resourceCulture);
             }
         }
         
@@ -134,6 +179,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Could not find a part of the path &apos;{0}&apos;..
+        /// </summary>
+        internal static string IO_PathNotFound_Path {
+            get {
+                return ResourceManager.GetString("IO_PathNotFound_Path", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters..
         /// </summary>
         internal static string IO_PathTooLong {
@@ -143,11 +197,29 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The process cannot access the file &apos;{0}&apos; because it is being used by another process..
+        /// </summary>
+        internal static string IO_SharingViolation_File {
+            get {
+                return ResourceManager.GetString("IO_SharingViolation_File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The process cannot access the file because it is being used by another process..
         /// </summary>
         internal static string IO_SharingViolation_NoFileName {
             get {
                 return ResourceManager.GetString("IO_SharingViolation_NoFileName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The terminfo database is invalid..
+        /// </summary>
+        internal static string IO_TermInfoInvalid {
+            get {
+                return ResourceManager.GetString("IO_TermInfoInvalid", resourceCulture);
             }
         }
         
@@ -188,11 +260,29 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This platform does not support getting the current color..
+        /// </summary>
+        internal static string PlatformNotSupported_GettingColor {
+            get {
+                return ResourceManager.GetString("PlatformNotSupported_GettingColor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Access to the path is denied..
         /// </summary>
         internal static string UnauthorizedAccess_IODenied_NoPathName {
             get {
                 return ResourceManager.GetString("UnauthorizedAccess_IODenied_NoPathName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Access to the path &apos;{0}&apos; is denied..
+        /// </summary>
+        internal static string UnauthorizedAccess_IODenied_Path {
+            get {
+                return ResourceManager.GetString("UnauthorizedAccess_IODenied_Path", resourceCulture);
             }
         }
         
