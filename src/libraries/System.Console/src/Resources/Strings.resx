@@ -60,4 +60,34 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
   </data>
+  <data name="PlatformNotSupported_GettingColor" xml:space="preserve">
+    <value>This platform does not support getting the current color.</value>
+  </data>
+  <data name="IO_TermInfoInvalid" xml:space="preserve">
+    <value>The terminfo database is invalid.</value>
+  </data>
+  <data name="InvalidOperation_PrintF" xml:space="preserve">
+    <value>The printf operation failed.</value>
+  </data>
+  <data name="InvalidOperation_EmptyStack" xml:space="preserve">
+    <value>Stack empty.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
 </root>
