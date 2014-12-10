@@ -308,9 +308,9 @@ namespace System.Collections.Immutable.Test
         public void CollisionExceptionMessageContainsKey()
         {
             var map = ImmutableSortedDictionary.Create<string, string>()
-                .Add("a", "1").Add("b", "2");
-            var exception = Assert.Throws<ArgumentException>(() => map.Add("a", "3"));
-            Assert.Contains("'a'", exception.Message);
+                .Add("firstKey", "1").Add("secondKey", "2");
+            var exception = Assert.Throws<ArgumentException>(() => map.Add("firstKey", "3"));
+            Assert.Contains("firstKey", exception.Message);
         }
 
         [Fact]
