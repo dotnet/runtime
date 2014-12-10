@@ -284,6 +284,30 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Gets an enumerable that can be used as the source for a C# foreach loop
+        /// that will not box the enumerator if it is of a particular type.
+        /// </summary>
+        /// <typeparam name="T">The type of value to be enumerated.</typeparam>
+        /// <typeparam name="TEnumerator">The type of the Enumerator struct.</typeparam>
+        /// <param name="enumerable">The collection to be enumerated.</param>
+        /// <returns>A struct that enumerates the collection.</returns>
+        internal static EnumeratorAdaptor<T, TEnumerator> GetEnumerable<T, TEnumerator>(this IEnumerable<T> enumerable)
+            where TEnumerator : struct, IEnumerator<T>
+        {
+            Requires.NotNull(enumerable, "enumerable");
+
+            var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
+            if (strongEnumerable != null)
+            {
+                return new EnumeratorAdaptor<T, TEnumerator>(strongEnumerable.GetEnumerator());
+            }
+            else
+            {
+                return new EnumeratorAdaptor<T, TEnumerator>(enumerable.GetEnumerator());
+            }
+        }
+
+        /// <summary>
         /// Wraps a List{T} as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
