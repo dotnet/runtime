@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using Validation;
 
 namespace System.Collections.Immutable
@@ -471,7 +472,7 @@ namespace System.Collections.Immutable
                     }
                     else
                     {
-                        throw new ArgumentException(Strings.DuplicateKey);
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
                     }
                 }
 

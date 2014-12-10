@@ -97,7 +97,7 @@ namespace System.Collections.Immutable {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An element with the same key but a different value already exists..
+        ///   Looks up a localized string similar to An element with the same key but a different value already exists. Key: {0}.
         /// </summary>
         internal static string DuplicateKey {
             get {
