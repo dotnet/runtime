@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_InvalidConsoleColor" xml:space="preserve">
+    <value>The ConsoleColor enum value was not defined on that enum. Please use a defined color from the enum.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_NoConsole" xml:space="preserve">
+    <value>There is no console.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
+    <value>Cannot access a closed file.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnknownError_Num" xml:space="preserve">
+    <value>Unknown error '{0}'.</value>
+  </data>
+</root>
