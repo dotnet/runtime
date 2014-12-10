@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Linq;
 using Validation;
 
@@ -908,7 +909,7 @@ namespace System.Collections.Immutable
                         {
                             if (!this.valueComparer.Equals(value, item.Value))
                             {
-                                throw new ArgumentException(String.Format(Strings.DuplicateKey, item.Key));
+                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, item.Key));
                             }
                         }
                         else
@@ -1873,7 +1874,7 @@ namespace System.Collections.Immutable
                         }
                         else
                         {
-                            throw new ArgumentException(String.Format(Strings.DuplicateKey, key));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
                         }
                     }
 
