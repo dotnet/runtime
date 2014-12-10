@@ -1904,10 +1904,24 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
 {
 	MonoError error;
+	MonoMethod *result = mono_get_method_checked (image, token, klass, context, &error);
+	g_assert (!mono_loader_get_last_error ());
+	if (!mono_error_ok (&error)) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
+	}
+	return result;
+}
+
+MonoMethod *
+mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error)
+{
 	MonoMethod *result = NULL;
 	gboolean used_context = FALSE;
 
 	/* We do everything inside the lock to prevent creation races */
+
+	mono_error_init (error);
 
 	mono_image_lock (image);
 
@@ -1926,12 +1940,9 @@ mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		return result;
 
 
-	result = mono_get_method_from_token (image, token, klass, context, &used_context, &error);
-	if (!result) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
+	result = mono_get_method_from_token (image, token, klass, context, &used_context, error);
+	if (!result)
 		return NULL;
-	}
 
 	mono_image_lock (image);
 	if (!used_context && !result->is_inflated) {
