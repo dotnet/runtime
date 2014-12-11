@@ -699,8 +699,8 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Parses a string containing XML into an <see cref="XElement"/> and 
-        /// optionally preserves the Whitespace.  See <see cref="XmlReaderSetting.IgnoreWhitespace"/>.
+        /// Parses a string containing XML into an <see cref="XElement"/> and optionally
+        /// preserves the Whitespace. See <see cref="XmlReaderSettings.IgnoreWhitespace"/>.
         /// </summary>
         /// <remarks>
         /// <list>
@@ -1039,10 +1039,10 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Write this <see cref="XElement"/> to the passed in <see cref="XmlTextWriter"/>.
+        /// Write this <see cref="XElement"/> to the passed in <see cref="XmlWriter"/>.
         /// </summary>
         /// <param name="writer">
-        /// The <see cref="XmlTextWriter"/> to write this <see cref="XElement"/> to.
+        /// The <see cref="XmlWriter"/> to write this <see cref="XElement"/> to.
         /// </param>
         public override void WriteTo(XmlWriter writer)
         {
