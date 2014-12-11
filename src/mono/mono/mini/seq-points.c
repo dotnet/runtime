@@ -140,7 +140,7 @@ seq_point_info_free (gpointer ptr)
 static int
 seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean has_debug_data)
 {
-	int value;
+	int value, i;
 	guint8* ptr0 = ptr;
 
 	value = decode_var_int (ptr, &ptr);
@@ -162,7 +162,8 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 		if (seq_point->next_len) {
 			// store next offset and skip it
 			seq_point->next_offset = ptr - buffer_ptr;
-			ptr += seq_point->next_len;
+			for (i = 0; i < seq_point->next_len; ++i)
+				decode_var_int (ptr, &ptr);
 		}
 	}
 
