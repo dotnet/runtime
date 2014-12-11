@@ -303,6 +303,8 @@ namespace System.Collections.Immutable
             }
             else
             {
+                // Consider for future: we could add more special cases for common
+                // mutable collection types like List<T>+Enumerator and such.
                 return new EnumeratorAdaptor<T, TEnumerator>(enumerable.GetEnumerator());
             }
         }

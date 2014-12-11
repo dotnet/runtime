@@ -15,14 +15,18 @@ namespace System.Collections.Immutable
         where TEnumerator : struct, IEnumerator<T>
     {
         /// <summary>
-        /// The enumerator struct to use if <see cref="enumeratorObject"/> is <c>null</c>.
-        /// </summary>
-        private TEnumerator enumeratorStruct;
-
-        /// <summary>
         /// The enumerator object to use if not null.
         /// </summary>
-        private IEnumerator<T> enumeratorObject;
+        private readonly IEnumerator<T> enumeratorObject;
+
+        /// <summary>
+        /// The enumerator struct to use if <see cref="enumeratorObject"/> is <c>null</c>.
+        /// </summary>
+        /// <remarks>
+        /// This field must NOT be readonly because the field's value is a struct and must be able to mutate
+        /// in-place. A readonly keyword would cause any mutation to take place in a copy rather than the field.
+        /// </remarks>
+        private TEnumerator enumeratorStruct;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumeratorAdaptor{T, TEnumerator}"/> struct
@@ -51,7 +55,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public T Current
         {
-            get { return enumeratorObject != null ? enumeratorObject.Current : enumeratorStruct.Current; }
+            get { return this.enumeratorObject != null ? this.enumeratorObject.Current : this.enumeratorStruct.Current; }
         }
 
         /// <summary>
@@ -59,14 +63,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool MoveNext()
         {
-            if (enumeratorObject != null)
-            {
-                return enumeratorObject.MoveNext();
-            }
-            else
-            {
-                return enumeratorStruct.MoveNext();
-            }
+            return this.enumeratorObject != null ? this.enumeratorObject.MoveNext() : this.enumeratorStruct.MoveNext();
         }
 
         /// <summary>
