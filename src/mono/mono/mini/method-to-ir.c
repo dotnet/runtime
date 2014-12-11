@@ -8812,14 +8812,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Tail prefix / tail call optimization */
 
 			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests */
-			if (ARCH_HAVE_OP_TAIL_CALL) {
-				if (cmethod && (ins_flag & MONO_INST_TAILCALL) && !cfg->gsharedvt && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
-					supported_tail_call = TRUE;
-			} else {
-				if (cmethod && (ins_flag & MONO_INST_TAILCALL) &&
+			/* FIXME: runtime generic context pointer for jumps? */
+			/* FIXME: handle this for generic sharing eventually */
+			if (cmethod && (ins_flag & MONO_INST_TAILCALL) &&
 				!vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
-					supported_tail_call = TRUE;
-			}
+				supported_tail_call = TRUE;
 
 			if (supported_tail_call) {
 				MonoCallInst *call;
