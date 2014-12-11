@@ -44,6 +44,10 @@ Today, it contains the following components:
 
 * **Console**. This represents the standard input, output, and error streams for console applications.
 
+* **Regular Expressions**. System.Text.RegularExpressions is the library that drives 
+  our regular expression engine. The types in this namespace provide useful 
+  functionality for running common operations using regular expressions.
+
 More is coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
