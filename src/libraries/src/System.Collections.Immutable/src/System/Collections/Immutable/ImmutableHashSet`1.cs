@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableHashSetDebuggerProxy<>))]
-    public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection
+    public sealed partial class ImmutableHashSet<T> : IImmutableSet<T>, IHashKeyCollection<T>, IReadOnlyCollection<T>, ICollection<T>, ISet<T>, ICollection, IStrongEnumerable<T, ImmutableHashSet<T>.Enumerator>
     {
         /// <summary>
         /// An empty immutable hash set with the default comparer for <typeparamref name="T"/>.
@@ -635,7 +635,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, "other");
 
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (!Contains(item, origin))
                 {
@@ -716,7 +716,7 @@ namespace System.Collections.Immutable
 
             int count = 0;
             var newRoot = origin.Root;
-            foreach (var item in other)
+            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 int hashCode = origin.EqualityComparer.GetHashCode(item);
                 HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
@@ -744,7 +744,7 @@ namespace System.Collections.Immutable
                 return false;
             }
 
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (Contains(item, origin))
                 {
@@ -808,7 +808,7 @@ namespace System.Collections.Immutable
 
             var newSet = SortedInt32KeyNode<HashBucket>.EmptyNode;
             int count = 0;
-            foreach (var item in other)
+            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (Contains(item, origin))
                 {
@@ -832,7 +832,7 @@ namespace System.Collections.Immutable
 
             int count = 0;
             var newRoot = root;
-            foreach (var item in other)
+            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 int hashCode = equalityComparer.GetHashCode(item);
                 HashBucket bucket;
@@ -947,7 +947,7 @@ namespace System.Collections.Immutable
             }
 
             int matchCount = 0;
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 matchCount++;
                 if (!Contains(item, origin))

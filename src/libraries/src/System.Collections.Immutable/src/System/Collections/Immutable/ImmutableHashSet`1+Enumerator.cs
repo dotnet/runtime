@@ -13,7 +13,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Enumerates the contents of the collection in an allocation-free manner.
         /// </summary>
-        public struct Enumerator : IEnumerator<T>, IDisposable
+        public struct Enumerator : IEnumerator<T>, IStrongEnumerator<T>
         {
             /// <summary>
             /// The builder being enumerated, if applicable.
