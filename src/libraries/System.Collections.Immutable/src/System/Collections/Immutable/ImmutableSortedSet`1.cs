@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableSortedSetDebuggerProxy<>))]
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
     {
         /// <summary>
         /// This is the factor between the small collection's size and the large collection's size in a bulk operation,
@@ -239,7 +239,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(other, "other");
             Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
             var newSet = this.Clear();
-            foreach (var item in other)
+            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (this.Contains(item))
                 {
@@ -259,7 +259,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(other, "other");
 
             var result = this.root;
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 bool mutated;
                 result = result.Remove(item, this.comparer, out mutated);
@@ -468,7 +468,7 @@ namespace System.Collections.Immutable
             }
 
             int count = 0;
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 count++;
                 if (!this.Contains(item))
@@ -526,7 +526,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, "other");
 
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (!this.Contains(item))
                 {
@@ -552,7 +552,7 @@ namespace System.Collections.Immutable
                 return false;
             }
 
-            foreach (T item in other)
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (this.Contains(item))
                 {
@@ -1057,7 +1057,7 @@ namespace System.Collections.Immutable
             // Let's not implement in terms of ImmutableSortedSet.Add so that we're
             // not unnecessarily generating a new wrapping set object for each item.
             var result = this.root;
-            foreach (var item in items)
+            foreach (var item in items.GetEnumerableDisposable<T, Enumerator>())
             {
                 bool mutated;
                 result = result.Add(item, this.comparer, out mutated);
@@ -1123,7 +1123,7 @@ namespace System.Collections.Immutable
         /// corruption and/or exceptions.
         /// </remarks>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public struct Enumerator : IEnumerator<T>, ISecurePooledObjectUser
+        public struct Enumerator : IEnumerator<T>, ISecurePooledObjectUser, IStrongEnumerator<T>
         {
             /// <summary>
             /// The resource pool of reusable mutable stacks for purposes of enumeration.
