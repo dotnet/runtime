@@ -769,7 +769,7 @@ namespace System.Collections.Immutable
             }
 
             int matches = 0;
-            foreach (T item in otherSet.GetEnumerable<T, Enumerator>())
+            foreach (T item in otherSet)
             {
                 if (!Contains(item, origin))
                 {
