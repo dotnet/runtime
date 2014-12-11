@@ -73,7 +73,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		}
 		if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
 			HEAVY_STAT (++stat_optimized_copy_nursery_forwarded);
-			*ptr = forwarded;
+			SGEN_UPDATE_REFERENCE (ptr, forwarded);
 			return sgen_ptr_in_nursery (forwarded);
 		}
 
@@ -103,7 +103,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 			return TRUE;
 		}
 		HEAVY_STAT (++stat_objects_copied_major);
-		*ptr = obj;
+		SGEN_UPDATE_REFERENCE (ptr, obj);
 
 		if (sgen_ptr_in_nursery (obj))
 			return TRUE;
@@ -140,7 +140,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 			char *forwarded;
 			if ((forwarded = SGEN_VTABLE_IS_FORWARDED (vtable_word))) {
 				HEAVY_STAT (++stat_optimized_copy_major_forwarded);
-				*ptr = forwarded;
+				SGEN_UPDATE_REFERENCE (ptr, forwarded);
 				SGEN_ASSERT (9, !sgen_ptr_in_nursery (forwarded), "Cannot be forwarded to nursery.");
 				return FALSE;
 			}
