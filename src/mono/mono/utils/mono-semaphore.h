@@ -38,7 +38,7 @@ typedef sem_t MonoSemType;
 #  define MONO_HAS_SEMAPHORES
 typedef HANDLE MonoSemType;
 #    define MONO_SEM_INIT(addr,initial) do {*(addr) = CreateSemaphore ( NULL,(initial),0x7FFFFFFF,NULL);} while(0)
-#    define MONO_SEM_DESTROY(sem) CloseHandle (*(sem))
+#    define MONO_SEM_DESTROY(sem) do { CloseHandle (*(sem)); (*(sem))=0; } while(0)
 #endif
 
 #define MONO_SEM_WAIT(sem) MONO_SEM_WAIT_ALERTABLE(sem, FALSE)
