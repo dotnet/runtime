@@ -6023,7 +6023,6 @@ gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
 	guint32 esp = regs [X86_ESP];
-	CallInfo *cinfo = NULL;
 	gpointer res;
 	int offset;
 
@@ -6035,8 +6034,6 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 	 * <this=delegate>
 	 */
 	res = ((MonoObject**)esp) [0];
-	if (cinfo)
-		g_free (cinfo);
 	return res;
 }
 
