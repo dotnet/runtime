@@ -11,7 +11,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of value to be enumerated.</typeparam>
     /// <typeparam name="TEnumerator">The type of the enumerator struct.</typeparam>
-    internal struct EnumeratorAdaptor<T, TEnumerator>
+    internal struct DisposableEnumeratorAdapter<T, TEnumerator> : IDisposable
         where TEnumerator : struct, IEnumerator<T>
     {
         /// <summary>
@@ -29,22 +29,22 @@ namespace System.Collections.Immutable
         private TEnumerator enumeratorStruct;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EnumeratorAdaptor{T, TEnumerator}"/> struct
+        /// Initializes a new instance of the <see cref="EnumeratorAdapter{T, TEnumerator}"/> struct
         /// for enumerating over a strongly typed struct enumerator.
         /// </summary>
         /// <param name="enumerator">The initialized enumerator struct.</param>
-        internal EnumeratorAdaptor(TEnumerator enumerator)
+        internal DisposableEnumeratorAdapter(TEnumerator enumerator)
         {
             this.enumeratorStruct = enumerator;
             this.enumeratorObject = null;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EnumeratorAdaptor{T, TEnumerator}"/> struct
+        /// Initializes a new instance of the <see cref="EnumeratorAdapter{T, TEnumerator}"/> struct
         /// for enumerating over a (boxed) <see cref="IEnumerable{T}"/> enumerator.
         /// </summary>
         /// <param name="enumerator">The initialized enumerator object.</param>
-        internal EnumeratorAdaptor(IEnumerator<T> enumerator)
+        internal DisposableEnumeratorAdapter(IEnumerator<T> enumerator)
         {
             this.enumeratorStruct = default(TEnumerator);
             this.enumeratorObject = enumerator;
@@ -67,12 +67,27 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Disposes the underlying enumerator.
+        /// </summary>
+        public void Dispose()
+        {
+            if (this.enumeratorObject != null)
+            {
+                this.enumeratorObject.Dispose();
+            }
+            else
+            {
+                this.enumeratorStruct.Dispose();
+            }
+        }
+
+        /// <summary>
         /// Returns a copy of this struct. 
         /// </summary>
         /// <remarks>
         /// This member is here so that it can be used in C# foreach loops.
         /// </remarks>
-        public EnumeratorAdaptor<T, TEnumerator> GetEnumerator()
+        public DisposableEnumeratorAdapter<T, TEnumerator> GetEnumerator()
         {
             return this;
         }

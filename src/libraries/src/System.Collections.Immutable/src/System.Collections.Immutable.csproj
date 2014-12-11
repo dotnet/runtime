@@ -59,7 +59,8 @@
     <Compile Include="System\Collections\Generic\ISortKeyCollection.cs" />
     <Compile Include="System\Collections\Immutable\AllocFreeConcurrentStack.cs" />
     <Compile Include="System\Collections\Immutable\DictionaryEnumerator.cs" />
-    <Compile Include="System\Collections\Immutable\EnumeratorAdaptor`2.cs" />
+    <Compile Include="System\Collections\Immutable\DisposableEnumeratorAdapter`2.cs" />
+    <Compile Include="System\Collections\Immutable\EnumeratorAdapter`2.cs" />
     <Compile Include="System\Collections\Immutable\IBinaryTree.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableArray.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableDictionary.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="System\Collections\Immutable\IImmutableSet.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableStack.cs" />
     <Compile Include="System\Collections\Immutable\IStrongEnumerable`2.cs" />
+    <Compile Include="System\Collections\Immutable\IStrongEnumerator`1.cs" />
     <Compile Include="System\Collections\Immutable\SortedInt32KeyNode.cs" />
     <Compile Include="System\Collections\Immutable\IOrderedCollection.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray.cs" />
