@@ -495,7 +495,9 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 		vtable_slot = NULL;
 		generic_shared = TRUE;
 
-		g_assert (code);
+		if (!ARCH_HAVE_OP_TAIL_CALL)
+			/* Tail calls can be made from gshared code */
+			g_assert (code);
 
 		if (m->is_inflated && mono_method_get_context (m)->method_inst) {
 #ifdef MONO_ARCH_RGCTX_REG
