@@ -6432,7 +6432,7 @@ clear_types_for_assembly (MonoAssembly *assembly)
 	MonoDomain *domain = mono_domain_get ();
 	AgentDomainInfo *info = NULL;
 
-	if (!domain)
+	if (!domain || !domain_jit_info (domain))
 		/* Can happen during shutdown */
 		return;
 
