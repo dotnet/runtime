@@ -189,6 +189,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		}
 		return FALSE;
 	}
+	SGEN_ASSERT (0, FALSE, "How is this happening?");
 	return FALSE;
 }
 
