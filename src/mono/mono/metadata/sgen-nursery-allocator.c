@@ -208,7 +208,7 @@ dump_alloc_records (void)
 	printf ("------------------------------------DUMP RECORDS----------------------------\n");
 	for (i = 0; i < next_record; ++i) {
 		AllocRecord *rec = alloc_records + i;
-		printf ("obj [%p, %p] size %zd reason %s seq %d tid %zx\n", rec->address, rec_end (rec), rec->size, get_reason_name (rec), rec->seq, (size_t)rec->tid);
+		printf ("obj [%p, %p] size %d reason %s seq %d tid %x\n", rec->address, rec_end (rec), (int)rec->size, get_reason_name (rec), rec->seq, (size_t)rec->tid);
 	}
 }
 
@@ -235,7 +235,7 @@ verify_alloc_records (void)
 			hole_size = rec->address - rec_end (prev);
 			max_hole = MAX (max_hole, hole_size);
 		}
-		printf ("obj [%p, %p] size %zd hole to prev %d reason %s seq %d tid %zx\n", rec->address, rec_end (rec), rec->size, hole_size, get_reason_name (rec), rec->seq, (size_t)rec->tid);
+		printf ("obj [%p, %p] size %d hole to prev %d reason %s seq %d tid %zx\n", rec->address, rec_end (rec), (int)rec->size, hole_size, get_reason_name (rec), rec->seq, (size_t)rec->tid);
 		prev = rec;
 	}
 	printf ("SUMMARY total alloc'd %d holes %d max_hole %d\n", total, holes, max_hole);
