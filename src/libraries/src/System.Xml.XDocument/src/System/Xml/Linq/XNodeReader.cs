@@ -1304,7 +1304,7 @@ namespace System.Xml.Linq
         /// Determines if the specified attribute would be a duplicate namespace declaration
         ///  - one which we already reported on some ancestor, so it's not necessary to report it here
         /// </summary>
-        /// <param name="a">The attribute to test</param>
+        /// <param name="candidateAttribute">The attribute to test.</param>
         /// <returns>true if the attribute is a duplicate namespace declaration attribute</returns>
         bool IsDuplicateNamespaceAttribute(XAttribute candidateAttribute)
         {
