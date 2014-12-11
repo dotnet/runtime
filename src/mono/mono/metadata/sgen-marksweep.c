@@ -138,7 +138,8 @@ static int fast_block_obj_size_indexes [MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES];
 #define MS_BLOCK_TYPE_MAX	4
 
 static gboolean *evacuate_block_obj_sizes;
-static float evacuation_threshold = 0.666f;
+/* Evacuation is broken right now, so disable by default. */
+static float evacuation_threshold = 0; //0.666f;
 static float concurrent_evacuation_threshold = 0.666f;
 static gboolean want_evacuation = FALSE;
 
