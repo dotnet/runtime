@@ -2,9 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Reflection;
 using Validation;
 
 namespace System.Collections.Immutable
@@ -284,28 +286,60 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets an enumerable that can be used as the source for a C# foreach loop
+        /// Gets a non-disposable enumerable that can be used as the source for a C# foreach loop
+        /// that will not box the enumerator if it is of a particular type.
+        /// </summary>
+        /// <typeparam name="T">The type of value to be enumerated.</typeparam>
+        /// <typeparam name="TEnumerator">
+        /// The type of the Enumerator struct. This must NOT implement <see cref="IDisposable"/> (or <see cref="IEnumerator{T}"/>).
+        /// If it does, call <see cref="GetEnumerableDisposable{T, TEnumerator}"/> instead.
+        /// </typeparam>
+        /// <param name="enumerable">The collection to be enumerated.</param>
+        /// <returns>A struct that enumerates the collection.</returns>
+        internal static EnumeratorAdapter<T, TEnumerator> GetEnumerable<T, TEnumerator>(this IEnumerable<T> enumerable)
+            where TEnumerator : struct, IStrongEnumerator<T>
+        {
+            Requires.NotNull(enumerable, "enumerable");
+
+            // This debug-only check is sufficient to cause test failures to flag errors so they never get checked in.
+            Debug.Assert(!typeof(IDisposable).GetTypeInfo().IsAssignableFrom(typeof(TEnumerator).GetTypeInfo()), "The enumerator struct implements IDisposable. Call GetEnumerableDisposable instead.");
+
+            var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
+            if (strongEnumerable != null)
+            {
+                return new EnumeratorAdapter<T, TEnumerator>(strongEnumerable.GetEnumerator());
+            }
+            else
+            {
+                // Consider for future: we could add more special cases for common
+                // mutable collection types like List<T>+Enumerator and such.
+                return new EnumeratorAdapter<T, TEnumerator>(enumerable.GetEnumerator());
+            }
+        }
+
+        /// <summary>
+        /// Gets a disposable enumerable that can be used as the source for a C# foreach loop
         /// that will not box the enumerator if it is of a particular type.
         /// </summary>
         /// <typeparam name="T">The type of value to be enumerated.</typeparam>
         /// <typeparam name="TEnumerator">The type of the Enumerator struct.</typeparam>
         /// <param name="enumerable">The collection to be enumerated.</param>
         /// <returns>A struct that enumerates the collection.</returns>
-        internal static EnumeratorAdaptor<T, TEnumerator> GetEnumerable<T, TEnumerator>(this IEnumerable<T> enumerable)
-            where TEnumerator : struct, IEnumerator<T>
+        internal static DisposableEnumeratorAdapter<T, TEnumerator> GetEnumerableDisposable<T, TEnumerator>(this IEnumerable<T> enumerable)
+            where TEnumerator : struct, IStrongEnumerator<T>, IEnumerator<T>
         {
             Requires.NotNull(enumerable, "enumerable");
 
             var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
             if (strongEnumerable != null)
             {
-                return new EnumeratorAdaptor<T, TEnumerator>(strongEnumerable.GetEnumerator());
+                return new DisposableEnumeratorAdapter<T, TEnumerator>(strongEnumerable.GetEnumerator());
             }
             else
             {
                 // Consider for future: we could add more special cases for common
                 // mutable collection types like List<T>+Enumerator and such.
-                return new EnumeratorAdaptor<T, TEnumerator>(enumerable.GetEnumerator());
+                return new DisposableEnumeratorAdapter<T, TEnumerator>(enumerable.GetEnumerator());
             }
         }
 
