@@ -130,8 +130,8 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		return FALSE;
 	} else {
 		mword vtable_word = *(mword*)obj;
-		mword desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
-		int type = desc & DESC_TYPE_MASK;
+		mword desc;
+		int type;
 
 		HEAVY_STAT (++stat_optimized_copy_major);
 
@@ -146,6 +146,11 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 			}
 		}
 #endif
+
+		SGEN_ASSERT (9, !SGEN_VTABLE_IS_PINNED (vtable_word), "Pinned object in non-pinned block?");
+
+		desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
+		type = desc & DESC_TYPE_MASK;
 
 		if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
 #ifdef HEAVY_STATISTICS
