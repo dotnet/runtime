@@ -402,11 +402,12 @@ namespace System.Xml.Linq
         /// XML.  Optionally whitespace can be preserved.
         /// </summary>
         /// <remarks>
-        /// This method uses <see cref="XmlReader.Create"/> method passing it a StringReader
-        /// constructed from the passed in XML String.  If LoadOptions.PreserveWhitespace
-        /// is enabled then <see cref="XmlReaderSettings.IgnoreWhitespace"/> is
-        /// set to false.  See <see cref="XmlReaderSettings.IgnoreWhitespace"/>
-        /// for more information on whitespace handling.
+        /// This method uses <see cref="XmlReader.Create(TextReader, XmlReaderSettings)"/>,
+        /// passing it a StringReader constructed from the passed in XML String. If
+        /// <see cref="LoadOptions.PreserveWhitespace"/> is enabled then
+        /// <see cref="XmlReaderSettings.IgnoreWhitespace"/> is set to false. See
+        /// <see cref="XmlReaderSettings.IgnoreWhitespace"/> for more information on
+        /// whitespace handling.
         /// </remarks>
         /// <param name="text">
         /// A string containing XML.

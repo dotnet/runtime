@@ -347,7 +347,7 @@ namespace System
         /// <summary>Provides access to and processing of the terminfo database.</summary>
         internal static class TermInfo
         {
-            /// <summar>Provides a terminfo database.</summary>
+            /// <summary>Provides a terminfo database.</summary>
             internal sealed class Database
             {
                 /// <summary>Lazily-initialized instance of the database.</summary>
@@ -530,7 +530,7 @@ namespace System
                 }
 
                 /// <summary>Gets a number from the numbers section by the number's well-known index.</summary>
-                /// <param name="stringTableIndex">The index of the string to find.</param>
+                /// <param name="numberIndex">The index of the string to find.</param>
                 /// <returns>The number if it's in the database; otherwise, -1.</returns>
                 public int GetNumber(int numberIndex)
                 {
@@ -624,6 +624,7 @@ namespace System
 
                 /// <summary>Evaluates a terminfo formatting string, using the supplied arguments and processing data structures.</summary>
                 /// <param name="format">The format string.</param>
+                /// <param name="pos">The position in <paramref name="format"/> to start processing.</param>
                 /// <param name="args">The arguments to the format string.</param>
                 /// <param name="stack">The stack to use as the format string is evaluated.</param>
                 /// <param name="dynamicVars">A lazily-initialized collection of variables.</param>
