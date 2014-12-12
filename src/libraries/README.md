@@ -54,6 +54,10 @@ Today, it contains the following components:
   our regular expression engine. The types in this namespace provide useful 
   functionality for running common operations using regular expressions.
 
+* **Microsoft.Win32 Primitives**. Provides common types for Win32-based libraries.
+
+* **Microsoft.Win32 Registry**. Provides support for accessing and modifying the Windows Registry.
+
 More is coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
