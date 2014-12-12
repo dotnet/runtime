@@ -251,7 +251,7 @@ namespace System.Xml.Linq
         public static explicit operator bool (XAttribute attribute)
         {
             if (attribute == null) throw new ArgumentNullException("attribute");
-            return XmlConvert.ToBoolean(XHelper.ToLower_InvariantCulture(attribute.value));
+            return XmlConvert.ToBoolean(attribute.value.ToLowerInvariant());
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace System.Xml.Linq
         public static explicit operator bool? (XAttribute attribute)
         {
             if (attribute == null) return null;
-            return XmlConvert.ToBoolean(XHelper.ToLower_InvariantCulture(attribute.value));
+            return XmlConvert.ToBoolean(attribute.value.ToLowerInvariant());
         }
 
         /// <summary>
