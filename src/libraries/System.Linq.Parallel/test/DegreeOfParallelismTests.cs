@@ -13,8 +13,8 @@ namespace Test
 {
     public class DegreeOfParallelismTests
     {
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunDopTests()
         {
             RunDopTest(1, false);
@@ -23,8 +23,8 @@ namespace Test
             RunDopTest(513, true);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunDopBarrierTest()
         {
             RunDopBarrierTestCore(1);
@@ -35,8 +35,8 @@ namespace Test
             //RunDopBarrierTest(512);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunDopPipeliningTest()
         {
             RunDopPipeliningTestCore(1000000, 1);
@@ -45,8 +45,8 @@ namespace Test
             RunDopPipeliningTestCore(1000000, 512);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunDopPipeliningTestSleep()
         {
             RunDopPipeliningTestSleepCore(1, 1);

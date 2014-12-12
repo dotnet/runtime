@@ -77,7 +77,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>()));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunJoinBlockConformanceTests()
         {
             // Test Post/Receive single block
@@ -291,7 +292,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestJoinNonGreedyCombo()
         {
             JoinBlock<int, int> join = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
@@ -340,7 +342,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(localPassed, string.Format("TryReceive - {0}", localPassed ? "Passed" : "FAILED"));
         }
 
-        //[Fact(Skip = "outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestJoinCancelationWaits()
         {
             bool passed = true;
@@ -410,7 +413,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(localPassed, string.Format("Join is canceled ({0}) - {1}", join.Completion.Status, localPassed ? "Passed" : "FAILED"));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestJoinWithFaultedTarget()
         {
             bool passed = true;

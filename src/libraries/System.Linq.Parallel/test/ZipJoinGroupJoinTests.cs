@@ -65,8 +65,8 @@ namespace Test
             RunJoinTest1(1024 * 8, 1024);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunJoinTest1_LongRunning()
         {
             RunJoinTest1(1024, 1024 * 8);
@@ -94,8 +94,8 @@ namespace Test
             RunJoinTest2Core(1024 * 8, 1024);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunJoinTest2_LongRunning()
         {
             RunJoinTest2Core(1024, 1024 * 8);
@@ -113,8 +113,8 @@ namespace Test
             RunJoinTest3Core(0, 1);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunJoinTest3_LongRunning()
         {
             RunJoinTest3Core(1024 * 8, 1024);
@@ -136,8 +136,8 @@ namespace Test
             RunJoinWithInnerJoinTest1Core(4, 4, 4, true);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunJoinWithInnerJoinTest1_LongRunning()
         {
             RunJoinWithInnerJoinTest1Core(1024 * 1024, 1024 * 4, 1024, true);
@@ -414,8 +414,8 @@ namespace Test
             RunGroupJoinTest1Core(1024 * 8, 1024);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunGroupJoinTest1_LongRunning()
         {
             RunGroupJoinTest1Core(1024, 1024 * 8);
@@ -443,8 +443,8 @@ namespace Test
             RunGroupJoinTest2Core(1024 * 8, 1024);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunGroupJoinTest2_LongRunning()
         {
             RunGroupJoinTest2Core(1024, 1024 * 8);

@@ -120,7 +120,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestAsObservableAndAsObserver()
         {
             // Test that preset data flows correctly
@@ -696,7 +697,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestLinkTo3()
         {
             // Test DataflowLinkOptions.MaxMessages
@@ -923,13 +925,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestSendAsync()
         {
             // Test argument validation
             {
                 bool localPassed = true;
-                Assert.Throws<ArgumentNullException>(() => ((ITargetBlock<int>)null).SendAsync(42));
+                Assert.ThrowsAsync<ArgumentNullException>(() => ((ITargetBlock<int>)null).SendAsync(42));
                 Assert.True(localPassed, string.Format("{0}: Argument validation", localPassed ? "Success" : "Failure"));
             }
 
@@ -1035,7 +1038,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestReceive()
         {
             // Test argument validation
@@ -1150,14 +1154,15 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return null;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestReceiveAsync()
         {
             // Test argument validation
             {
                 bool localPassed = true;
                 var buffer = new BufferBlock<int>();
-                Assert.Throws<ArgumentNullException>(() => ((IReceivableSourceBlock<int>)null).ReceiveAsync());
+                Assert.ThrowsAsync<ArgumentNullException>(() => ((IReceivableSourceBlock<int>)null).ReceiveAsync());
                 Assert.True(localPassed, string.Format("{0}: Argument validation", localPassed ? "Success" : "Failure"));
             }
 
@@ -1401,20 +1406,21 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestChoose2()
         {
             // Argument validation
             {
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int>(null, i => { }, new BufferBlock<int>(), i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int>(new BufferBlock<int>(), i => { }, null, i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int>(new BufferBlock<int>(), null, new BufferBlock<int>(), i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int>(new BufferBlock<int>(), i => { }, new BufferBlock<int>(), null));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int>(new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }, null));
             }
 
@@ -1571,24 +1577,25 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestChoose3()
         {
             // Argument validation
             {
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(null, i => { }, new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(new BufferBlock<int>(), i => { }, null, i => { }, new BufferBlock<int>(), i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }, null, i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(new BufferBlock<int>(), null, new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(new BufferBlock<int>(), i => { }, new BufferBlock<int>(), null, new BufferBlock<int>(), i => { }));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }, new BufferBlock<int>(), null));
-                Assert.Throws<ArgumentNullException>(
+                Assert.ThrowsAsync<ArgumentNullException>(
                     () => DataflowBlock.Choose<int, int, int>(new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }, new BufferBlock<int>(), i => { }, null));
             }
 
@@ -1822,7 +1829,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestChooseWithLinkTracking()
         {
             Assert.True(TestChooseWithLinkTrackingOverload(n: 2, cancelBeforeChoose: true));
@@ -1879,7 +1887,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return localPassed;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestNoDeadlockOnChoose()
         {
             const int ITERATIONS = 1000;
@@ -1907,7 +1916,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Console.WriteLine("Test passed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestEncapsulate()
         {
             var buffer = new BufferBlock<int>();
@@ -1972,7 +1982,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestOutputAvailableAsync()
         {
             for (int c = 0; c < 2; c++)
@@ -1983,9 +1994,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 // Test argument validation
                 {
-                    Assert.Throws<ArgumentNullException>(
+                    Assert.ThrowsAsync<ArgumentNullException>(
                         () => DataflowBlock.OutputAvailableAsync<int>(null));
-                    Assert.Throws<ArgumentNullException>(
+                    Assert.ThrowsAsync<ArgumentNullException>(
                         () => DataflowBlock.OutputAvailableAsync<int>(null, cancellationToken));
                 }
 

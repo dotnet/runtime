@@ -82,9 +82,8 @@ namespace Test
             }
         }
 
-        // This test is failing on our CI machines, probably due to the VM's limited CPU.
-        // To-do: Re-enable this test when we resolve the build machine issues.
-        // [Fact(Skip="Issue #176")]
+        [Fact]
+        [ActiveIssue(176)]
         public static void RunOrderedUnionTest1()
         {
             for (int len = 1; len <= 300; len += 3)

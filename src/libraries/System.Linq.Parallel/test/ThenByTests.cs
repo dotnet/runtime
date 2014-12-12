@@ -38,8 +38,8 @@ namespace Test
             RunThenByComposedWithWhereSelect1(1024 * 128, true);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunThenByComposedWithJoinJoinTests_LongRunning()
         {
             RunThenByComposedWithJoinJoin(1024 * 512, 1024 * 128, false);

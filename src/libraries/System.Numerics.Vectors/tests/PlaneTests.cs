@@ -347,14 +347,15 @@ namespace System.Numerics.Tests
             PlanePlusFloat b;
         }
 
-        //// A test to make sure the fields are laid out how we expect
-        //[Fact]
-        //public unsafe void PlaneFieldOffsetTest()
-        //{
-        //    Plane* ptr = (Plane*)0;
+        // A test to make sure the fields are laid out how we expect
+        [Fact]
+        [ActiveIssue(234)]
+        public unsafe void PlaneFieldOffsetTest()
+        {
+            Plane* ptr = (Plane*)0;
 
-        //    Assert.Equal(new IntPtr(0), new IntPtr(&ptr->Normal));
-        //    Assert.Equal(new IntPtr(12), new IntPtr(&ptr->D));
-        //}
+            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->Normal));
+            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->D));
+        }
     }
 }

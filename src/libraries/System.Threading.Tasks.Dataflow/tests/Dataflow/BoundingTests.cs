@@ -7,7 +7,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public partial class DataflowBlockTests : DataflowBlockTestBase
     {
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunBoundingTests()
         {
             var options = new DataflowBlockOptions() { BoundedCapacity = ITargetBlockTestHelper.BOUNDED_CAPACITY };

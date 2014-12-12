@@ -13,7 +13,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public partial class DataflowBlockTests : DataflowBlockTestBase
     {
-        [Fact]        
+        [Fact]
+        [OuterLoop]
         public void RunTransformBlockTests()
         {
             Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new TransformBlock<int, int>(x => x, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat }) : new TransformBlock<int, int>(x => x)));
@@ -132,7 +133,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
         //
         // The test that verifies that internally, TransformBlock does not get confused
         // between Func<T, Task<object>> and Func<T, object>.
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunTransformCtorOverloadTest()
         {
             bool passed = true;
@@ -176,7 +178,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Test failed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunTransformBlockConformanceTests()
         {
             bool passed = true;

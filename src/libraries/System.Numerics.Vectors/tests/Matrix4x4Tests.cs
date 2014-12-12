@@ -2463,31 +2463,32 @@ namespace System.Numerics.Tests
             Matrix4x4PlusFloat b;
         }
 
-        //// A test to make sure the fields are laid out how we expect
-        //[Fact]
-        //public unsafe void Matrix4x4FieldOffsetTest()
-        //{
-        //    Matrix4x4* ptr = (Matrix4x4*)0;
+        // A test to make sure the fields are laid out how we expect
+        [Fact]
+        [ActiveIssue(234)]
+        public unsafe void Matrix4x4FieldOffsetTest()
+        {
+            Matrix4x4* ptr = (Matrix4x4*)0;
 
-        //    Assert.Equal(new IntPtr(0), new IntPtr(&ptr->M11));
-        //    Assert.Equal(new IntPtr(4), new IntPtr(&ptr->M12));
-        //    Assert.Equal(new IntPtr(8), new IntPtr(&ptr->M13));
-        //    Assert.Equal(new IntPtr(12), new IntPtr(&ptr->M14));
+            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->M11));
+            Assert.Equal(new IntPtr(4), new IntPtr(&ptr->M12));
+            Assert.Equal(new IntPtr(8), new IntPtr(&ptr->M13));
+            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->M14));
 
-        //    Assert.Equal(new IntPtr(16), new IntPtr(&ptr->M21));
-        //    Assert.Equal(new IntPtr(20), new IntPtr(&ptr->M22));
-        //    Assert.Equal(new IntPtr(24), new IntPtr(&ptr->M23));
-        //    Assert.Equal(new IntPtr(28), new IntPtr(&ptr->M24));
+            Assert.Equal(new IntPtr(16), new IntPtr(&ptr->M21));
+            Assert.Equal(new IntPtr(20), new IntPtr(&ptr->M22));
+            Assert.Equal(new IntPtr(24), new IntPtr(&ptr->M23));
+            Assert.Equal(new IntPtr(28), new IntPtr(&ptr->M24));
 
-        //    Assert.Equal(new IntPtr(32), new IntPtr(&ptr->M31));
-        //    Assert.Equal(new IntPtr(36), new IntPtr(&ptr->M32));
-        //    Assert.Equal(new IntPtr(40), new IntPtr(&ptr->M33));
-        //    Assert.Equal(new IntPtr(44), new IntPtr(&ptr->M34));
+            Assert.Equal(new IntPtr(32), new IntPtr(&ptr->M31));
+            Assert.Equal(new IntPtr(36), new IntPtr(&ptr->M32));
+            Assert.Equal(new IntPtr(40), new IntPtr(&ptr->M33));
+            Assert.Equal(new IntPtr(44), new IntPtr(&ptr->M34));
 
-        //    Assert.Equal(new IntPtr(48), new IntPtr(&ptr->M41));
-        //    Assert.Equal(new IntPtr(52), new IntPtr(&ptr->M42));
-        //    Assert.Equal(new IntPtr(56), new IntPtr(&ptr->M43));
-        //    Assert.Equal(new IntPtr(60), new IntPtr(&ptr->M44));
-        //}
+            Assert.Equal(new IntPtr(48), new IntPtr(&ptr->M41));
+            Assert.Equal(new IntPtr(52), new IntPtr(&ptr->M42));
+            Assert.Equal(new IntPtr(56), new IntPtr(&ptr->M43));
+            Assert.Equal(new IntPtr(60), new IntPtr(&ptr->M44));
+        }
     }
 }

@@ -965,16 +965,17 @@ namespace System.Numerics.Tests
             QuaternionPlusFloat b;
         }
 
-        //// A test to make sure the fields are laid out how we expect
-        //[Fact]
-        //public unsafe void QuaternionFieldOffsetTest()
-        //{
-        //    Quaternion* ptr = (Quaternion*)0;
+        // A test to make sure the fields are laid out how we expect
+        [Fact]
+        [ActiveIssue(234)]
+        public unsafe void QuaternionFieldOffsetTest()
+        {
+            Quaternion* ptr = (Quaternion*)0;
 
-        //    Assert.Equal(new IntPtr(0), new IntPtr(&ptr->X));
-        //    Assert.Equal(new IntPtr(4), new IntPtr(&ptr->Y));
-        //    Assert.Equal(new IntPtr(8), new IntPtr(&ptr->Z));
-        //    Assert.Equal(new IntPtr(12), new IntPtr(&ptr->W));
-        //}
+            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->X));
+            Assert.Equal(new IntPtr(4), new IntPtr(&ptr->Y));
+            Assert.Equal(new IntPtr(8), new IntPtr(&ptr->Z));
+            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->W));
+        }
     }
 }

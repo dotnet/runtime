@@ -80,7 +80,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Argument Validation failed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunWriteOnceBlockConformanceTests()
         {
             bool passed = true, localPassed = true;
@@ -240,7 +241,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Test failed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestWriteOnceCloning()
         {
             // Test cloning when a clone function is provided

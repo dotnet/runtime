@@ -41,8 +41,8 @@ namespace Test
             RunIndexedWhereTest2(32);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunIndexedWhereTest_LongRunning()
         {
             RunIndexedWhereTest1(1024);
