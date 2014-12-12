@@ -360,11 +360,13 @@ dump_verify_info (MonoImage *image, int flags)
 
 		for (i = 0; i < m->rows; ++i) {
 			MonoMethod *method;
+			MonoError error;
 			mono_loader_clear_error ();
 
-			method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | (i+1), NULL);
+			method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i+1), NULL, NULL, &error);
 			if (!method) {
-				g_print ("Warning: Cannot lookup method with token 0x%08x\n", i + 1);
+				g_print ("Warning: Cannot lookup method with token 0x%08x due to %s\n", i + 1, mono_error_get_message (&error));
+				mono_error_cleanup (&error);
 				continue;
 			}
 			errors = mono_method_verify (method, flags);

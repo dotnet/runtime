@@ -2239,11 +2239,18 @@ mono_class_setup_methods (MonoClass *class)
 		for (i = 0; i < class->interface_count; i++)
 			setup_generic_array_ifaces (class, class->interfaces [i], methods, first_generic + i * count_generic);
 	} else {
+		MonoError error;
+
 		count = class->method.count;
 		methods = mono_class_alloc (class, sizeof (MonoMethod*) * count);
 		for (i = 0; i < count; ++i) {
 			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
-			methods [i] = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | idx, class);
+			methods [i] = mono_get_method_checked (class->image, MONO_TOKEN_METHOD_DEF | idx, class, NULL, &error);
+			if (!methods [i]) {
+				printf ("FUU %s\n", class->name);
+				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not load method %d due to %s", i, mono_error_get_message (&error)));
+				mono_error_cleanup (&error);
+			}
 		}
 	}
 
@@ -2467,11 +2474,14 @@ mono_class_setup_properties (MonoClass *class)
 
 				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
 
-				if (class->image->uncompressed_metadata)
+				if (class->image->uncompressed_metadata) {
+					MonoError error;
 					/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
-					method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
-				else
+					method = mono_get_method_checked (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class, NULL, &error);
+					mono_error_cleanup (&error); /* FIXME don't swallow this error */
+				} else {
 					method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				}
 
 				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 				case METHOD_SEMANTIC_SETTER:
@@ -2609,11 +2619,14 @@ mono_class_setup_events (MonoClass *class)
 
 				mono_metadata_decode_row (msemt, j, cols, MONO_METHOD_SEMA_SIZE);
 
-				if (class->image->uncompressed_metadata)
+				if (class->image->uncompressed_metadata) {
+					MonoError error;
 					/* It seems like the MONO_METHOD_SEMA_METHOD column needs no remapping */
-					method = mono_get_method (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class);
-				else
+					method = mono_get_method_checked (class->image, MONO_TOKEN_METHOD_DEF | cols [MONO_METHOD_SEMA_METHOD], class, NULL, &error);
+					mono_error_cleanup (&error); /* FIXME don't swallow this error */
+				} else {
 					method = class->methods [cols [MONO_METHOD_SEMA_METHOD] - 1 - class->method.first];
+				}
 
 				switch (cols [MONO_METHOD_SEMA_SEMANTICS]) {
 				case METHOD_SEMANTIC_ADD_ON:
@@ -8500,10 +8513,16 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	}
 	case MONO_TOKEN_METHOD_DEF:
 	case MONO_TOKEN_METHOD_SPEC: {
+		MonoError error;
 		MonoMethod *meth;
-		meth = mono_get_method_full (image, token, NULL, context);
+		meth = mono_get_method_checked (image, token, NULL, context, &error);
 		if (handle_class)
 			*handle_class = mono_defaults.methodhandle_class;
+		if (!meth) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+			return NULL;
+		}
 		return meth;
 	}
 	case MONO_TOKEN_MEMBER_REF: {
@@ -8525,10 +8544,15 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 			}
 			return field;
 		} else {
+			MonoError error;
 			MonoMethod *meth;
-			meth = mono_get_method_full (image, token, NULL, context);
+			meth = mono_get_method_checked (image, token, NULL, context, &error);
 			if (handle_class)
 				*handle_class = mono_defaults.methodhandle_class;
+			if (!meth) {
+				mono_loader_set_error_from_mono_error (&error);
+				mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+			}
 			return meth;
 		}
 	}
@@ -8958,7 +8982,10 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 		}
 
 		if (i < klass->method.count) {
-			res = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
+			MonoError error;
+			res = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass, NULL, &error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+
 			/* Add 1 here so the if (*iter) check fails */
 			*iter = GUINT_TO_POINTER (i + 1);
 			return res;
@@ -9510,6 +9537,7 @@ find_method_in_metadata (MonoClass *klass, const char *name, int param_count, in
 
 	/* Search directly in the metadata to avoid calling setup_methods () */
 	for (i = 0; i < klass->method.count; ++i) {
+		MonoError error;
 		guint32 cols [MONO_METHOD_SIZE];
 		MonoMethod *method;
 		MonoMethodSignature *sig;
@@ -9518,13 +9546,21 @@ find_method_in_metadata (MonoClass *klass, const char *name, int param_count, in
 		mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, klass->method.first + i, cols, MONO_METHOD_SIZE);
 
 		if (!strcmp (mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]), name)) {
-			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
+			method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass, NULL, &error);
+			if (!method) {
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
+				continue;
+			}
 			if (param_count == -1) {
 				res = method;
 				break;
 			}
-			sig = mono_method_signature (method);
-			if (sig && sig->param_count == param_count) {
+			sig = mono_method_signature_checked (method, &error);
+			if (!sig) {
+				mono_error_cleanup (&error); /* FIXME don't swallow the error */
+				continue;
+			}
+			if (sig->param_count == param_count) {
 				res = method;
 				break;
 			}

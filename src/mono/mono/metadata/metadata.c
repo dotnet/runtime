@@ -5696,16 +5696,26 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 MonoMethod*
 method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context)
 {
+	MonoError error;
+	MonoMethod *result = NULL;
 	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
 
 	switch (tok & MONO_METHODDEFORREF_MASK) {
 	case MONO_METHODDEFORREF_METHODDEF:
-		return mono_get_method_full (m, MONO_TOKEN_METHOD_DEF | idx, NULL, context);
+		result = mono_get_method_checked (m, MONO_TOKEN_METHOD_DEF | idx, NULL, context, &error);
+		break;
 	case MONO_METHODDEFORREF_METHODREF:
-		return mono_get_method_full (m, MONO_TOKEN_MEMBER_REF | idx, NULL, context);
+		result = mono_get_method_checked (m, MONO_TOKEN_MEMBER_REF | idx, NULL, context, &error);
+		break;
+	default:
+		g_assert_not_reached ();
 	}
-	g_assert_not_reached ();
-	return NULL;
+
+	if (!mono_error_ok (&error)) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error);
+	}
+	return result;
 }
 
 /*
