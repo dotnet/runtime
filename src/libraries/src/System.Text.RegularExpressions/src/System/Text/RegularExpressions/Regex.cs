@@ -124,7 +124,7 @@ namespace System.Text.RegularExpressions
             else
                 cultureKey = CultureInfo.CurrentCulture.ToString();
 
-            String key = ((int)options).ToString(NumberFormatInfo.InvariantInfo) + ":" + cultureKey + ":" + pattern;
+            var key = new CachedCodeEntryKey(options, cultureKey, pattern);
             cached = LookupCachedAndUpdate(key);
 
             _pattern = pattern;
@@ -916,7 +916,7 @@ namespace System.Text.RegularExpressions
         /*
          * Find code cache based on options+pattern
          */
-        private static CachedCodeEntry LookupCachedAndUpdate(String key)
+        private static CachedCodeEntry LookupCachedAndUpdate(CachedCodeEntryKey key)
         {
             lock (s_livecode)
             {
@@ -938,7 +938,7 @@ namespace System.Text.RegularExpressions
         /*
          * Add current code to the cache
          */
-        private CachedCodeEntry CacheCode(String key)
+        private CachedCodeEntry CacheCode(CachedCodeEntryKey key)
         {
             CachedCodeEntry newcached = null;
 
@@ -1003,13 +1003,54 @@ namespace System.Text.RegularExpressions
      */
     public delegate String MatchEvaluator(Match match);
 
+    /*
+     * Used as a key for CacheCodeEntry
+     */
+    internal struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
+    {
+        private readonly RegexOptions _options;
+        private readonly string _cultureKey;
+        private readonly string _pattern;
+
+        internal CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern)
+        {
+            _options = options;
+            _cultureKey = cultureKey;
+            _pattern = pattern;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CachedCodeEntryKey ? Equals((CachedCodeEntryKey)obj) : false;
+        }
+
+        public bool Equals(CachedCodeEntryKey other)
+        {
+            return this == other;
+        }
+
+        public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right)
+        {
+            return left._options == right._options && left._cultureKey == right._cultureKey && left._pattern == right._pattern;
+        }
+
+        public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right)
+        {
+            return !(left == right);
+        }
+
+        public override int GetHashCode()
+        {
+            return ((int)_options) ^ _cultureKey.GetHashCode() ^ _pattern.GetHashCode();
+        }
+    }
 
     /*
      * Used to cache byte codes
      */
     internal sealed class CachedCodeEntry
     {
-        internal string _key;
+        internal CachedCodeEntryKey _key;
         internal RegexCode _code;
         internal Dictionary<Int32, Int32> _caps;
         internal Dictionary<String, Int32> _capnames;
@@ -1018,7 +1059,7 @@ namespace System.Text.RegularExpressions
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
 
-        internal CachedCodeEntry(string key, Dictionary<String, Int32> capnames, String[] capslist, RegexCode code, Dictionary<Int32, Int32> caps, int capsize, ExclusiveReference runner, SharedReference repl)
+        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<String, Int32> capnames, String[] capslist, RegexCode code, Dictionary<Int32, Int32> caps, int capsize, ExclusiveReference runner, SharedReference repl)
         {
             _key = key;
             _capnames = capnames;
