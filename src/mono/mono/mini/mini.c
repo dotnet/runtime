@@ -4850,7 +4850,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->full_aot = full_aot;
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
-	cfg->gen_seq_points = TRUE;
+	cfg->gen_seq_points = debug_options.gen_seq_points_debug_data;
 	cfg->gen_seq_points_debug_data = debug_options.gen_seq_points_debug_data;
 
 	cfg->explicit_null_checks = debug_options.explicit_null_checks;
