@@ -6933,6 +6933,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		for (i = 0; next && i < sig->param_count + sig->hasthis; ++i) {
 			ArgInfo *ainfo = cinfo->args + i;
 			gboolean match = FALSE;
+
+			while (next && next->opcode == OP_IL_SEQ_POINT)
+				next = next->next;
+			if (!next)
+				break;
 			
 			ins = cfg->args [i];
 			if (ins->opcode != OP_REGVAR) {
