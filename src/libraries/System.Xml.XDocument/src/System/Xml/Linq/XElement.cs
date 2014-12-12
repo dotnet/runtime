@@ -1093,7 +1093,7 @@ namespace System.Xml.Linq
         public static explicit operator bool (XElement element)
         {
             if (element == null) throw new ArgumentNullException("element");
-            return XmlConvert.ToBoolean(XHelper.ToLower_InvariantCulture(element.Value));
+            return XmlConvert.ToBoolean(element.Value.ToLowerInvariant());
         }
 
         /// <summary>
@@ -1113,7 +1113,7 @@ namespace System.Xml.Linq
         public static explicit operator bool? (XElement element)
         {
             if (element == null) return null;
-            return XmlConvert.ToBoolean(XHelper.ToLower_InvariantCulture(element.Value));
+            return XmlConvert.ToBoolean(element.Value.ToLowerInvariant());
         }
 
         /// <summary>
