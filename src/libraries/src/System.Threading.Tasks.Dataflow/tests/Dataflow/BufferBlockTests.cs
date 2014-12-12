@@ -43,7 +43,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return block;
         }
 
-        //[Fact(Skip = "outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestBufferBlockBounding()
         {
             const int WAIT_TIMEOUT = 4000; // wait at most 4 seconds for a particularly race-condition
@@ -381,7 +382,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<int>(new BufferBlock<int>()));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestBufferBlockCompletionOrder()
         {
             const int ITERATIONS = 1000;
@@ -419,7 +421,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(bufferBlock.Count != 0, string.Format("BufferBlock.Count failed! expected {0}, actual {1}", 0, bufferBlock.Count));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunBufferBlockConformanceTests()
         {
             bool localPassed;

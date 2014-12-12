@@ -73,7 +73,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<int[]>(new BatchBlock<int>(1)));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestBatchNonGreedyCombo()
         {
             bool passed = true;
@@ -145,7 +146,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(localPassed, string.Format("{0}", passed ? "Passed" : "FAILED"));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunBatchBlockConformanceTests()
         {
             bool localPassed;

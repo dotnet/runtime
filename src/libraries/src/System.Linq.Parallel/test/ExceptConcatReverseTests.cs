@@ -233,8 +233,8 @@ namespace Test
             RunReverseTest2_RangeCore(33, 66);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunReverseTest2_Range_LongRunning()
         {
             RunReverseTest2_RangeCore(0, 1024 * 3);

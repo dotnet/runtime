@@ -234,9 +234,8 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
-        // TODO: Issue #26: MetadataStringComparer needs to use the user-supplied encoding.
-        //       Add more test cases when fixing this and re-enabling the test.
-        /*[Fact]*/
+        [Fact]
+        [ActiveIssue(26)]
         public unsafe void ComparisonToInvalidByteSequenceMatchesFallback()
         {
             // dangling lead byte

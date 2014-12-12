@@ -75,7 +75,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => Task.Factory.StartNew(() => { }), null));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunActionBlockConformanceTests()
         {
             // SYNC
@@ -446,7 +447,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestDynamicParallelism()
         {
             bool passed = false, executingFirst = false;
@@ -486,7 +488,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Test failed: executingFirst is false.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestReleasingOfPostponedMessages()
         {
             const int excess = 5;

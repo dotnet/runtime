@@ -74,8 +74,8 @@ namespace Test
             RunOrderByComposedWithOrderBy(1024 * 128, true, DataDistributionType.Random);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunOrderByComposedWithJoinJoinTests_LongRunning()
         {
             RunOrderByComposedWithJoinJoin(1024 * 512, 1024 * 128, false);

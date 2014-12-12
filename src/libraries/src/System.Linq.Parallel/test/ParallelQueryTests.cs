@@ -10,9 +10,8 @@ namespace Test
 {
     public static class ParallelQueryTests
     {
-        // Disabled due to known bug
-        // To-do: Make a procedure to follow for handling tests that fail due to a known bug.
-        // [Fact]
+        [Fact]
+        [ActiveIssue(235)]
         public static void RunTests()
         {
             LeftOperator[] leftOps = new LeftOperator[] {
