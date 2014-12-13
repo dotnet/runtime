@@ -96,7 +96,7 @@ namespace MS.Internal.Xml.XPath
                     if (currentNode.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator")
                     {
                         XmlNodeOrder order = CompareNodes(lastNode, currentNode);
-                        Debug.Assert(order == XmlNodeOrder.Before, "Algorithm error. Nodes expected to be DocOrderDistinct");
+                        System.Diagnostics.Debug.Assert(order == XmlNodeOrder.Before, "Algorithm error. Nodes expected to be DocOrderDistinct");
                     }
                 }
                 lastNode = currentNode.Clone();
