@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Dataflow.Internal;
 
 namespace System.Threading.Tasks.Dataflow
@@ -258,6 +259,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="Post"]/*' />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Post(TInput item)
         {
             // Even though this method is available with the exact same functionality as an extension method
@@ -265,10 +267,7 @@ namespace System.Threading.Tasks.Dataflow
             // which for very high-throughput scenarios shows up as noticeable overhead on certain architectures.  
             // We can eliminate that call for direct ActionBlock usage by providing the same method as an instance method.
 
-            var status = _defaultTarget != null ?
-                _defaultTarget.OfferMessage(Common.SingleMessageHeader, item, null, false) :
-                _spscTarget.OfferMessage(Common.SingleMessageHeader, item, null, false);
-            return status == DataflowMessageStatus.Accepted;
+            return _spscTarget != null ? _spscTarget.Post(item) : _defaultTarget.Post(item);
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
