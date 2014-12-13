@@ -17,6 +17,7 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Diagnostics;
 using System.Security;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
@@ -181,6 +182,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _decliningPermanently = true;
                 CompleteBlockIfPossible();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal bool Post(TInput messageValue)
+        {
+            return OfferMessage(Common.SingleMessageHeader, messageValue, null, false) == DataflowMessageStatus.Accepted;
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />

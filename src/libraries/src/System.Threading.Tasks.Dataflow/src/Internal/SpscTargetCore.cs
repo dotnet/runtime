@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security;
 
 #pragma warning disable 0420 // turn off warning for passing volatiles to interlocked operations
@@ -81,6 +82,23 @@ namespace System.Threading.Tasks.Dataflow.Internal
             _owningTarget = owningTarget;
             _action = action;
             _dataflowBlockOptions = dataflowBlockOptions;
+        }
+
+        internal bool Post(TInput messageValue)
+        {
+            if (_decliningPermanently)
+                return false;
+
+            _messages.Enqueue(messageValue);
+
+            Interlocked.MemoryBarrier();
+
+            if (_activeConsumer == null)
+            {
+                ScheduleConsumerIfNecessary(false);
+            }
+
+            return true;
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
