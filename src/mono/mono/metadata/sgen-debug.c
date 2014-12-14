@@ -943,6 +943,147 @@ sgen_check_for_xdomain_refs (void)
 		scan_object_for_xdomain_refs (bigobj->data, sgen_los_object_size (bigobj), NULL);
 }
 
+/* If not null, dump the heap after each collection into this file */
+static FILE *heap_dump_file = NULL;
+
+void
+sgen_dump_occupied (char *start, char *end, char *section_start)
+{
+	fprintf (heap_dump_file, "<occupied offset=\"%td\" size=\"%td\"/>\n", start - section_start, end - start);
+}
+
+void
+sgen_dump_section (GCMemSection *section, const char *type)
+{
+	char *start = section->data;
+	char *end = section->data + section->size;
+	char *occ_start = NULL;
+	GCVTable *vt;
+	char *old_start G_GNUC_UNUSED = NULL; /* just for debugging */
+
+	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
+
+	while (start < end) {
+		guint size;
+		MonoClass *class G_GNUC_UNUSED;
+
+		if (!*(void**)start) {
+			if (occ_start) {
+				sgen_dump_occupied (occ_start, start, section->data);
+				occ_start = NULL;
+			}
+			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
+			continue;
+		}
+		g_assert (start < section->next_data);
+
+		if (!occ_start)
+			occ_start = start;
+
+		vt = (GCVTable*)LOAD_VTABLE (start);
+		class = vt->klass;
+
+		size = SGEN_ALIGN_UP (safe_object_get_size ((MonoObject*) start));
+
+		/*
+		fprintf (heap_dump_file, "<object offset=\"%d\" class=\"%s.%s\" size=\"%d\"/>\n",
+				start - section->data,
+				vt->klass->name_space, vt->klass->name,
+				size);
+		*/
+
+		old_start = start;
+		start += size;
+	}
+	if (occ_start)
+		sgen_dump_occupied (occ_start, start, section->data);
+
+	fprintf (heap_dump_file, "</section>\n");
+}
+
+static void
+dump_object (MonoObject *obj, gboolean dump_location)
+{
+	static char class_name [1024];
+
+	MonoClass *class = mono_object_class (obj);
+	int i, j;
+
+	/*
+	 * Python's XML parser is too stupid to parse angle brackets
+	 * in strings, so we just ignore them;
+	 */
+	i = j = 0;
+	while (class->name [i] && j < sizeof (class_name) - 1) {
+		if (!strchr ("<>\"", class->name [i]))
+			class_name [j++] = class->name [i];
+		++i;
+	}
+	g_assert (j < sizeof (class_name));
+	class_name [j] = 0;
+
+	fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%zd\"",
+			class->name_space, class_name,
+			safe_object_get_size (obj));
+	if (dump_location) {
+		const char *location;
+		if (sgen_ptr_in_nursery (obj))
+			location = "nursery";
+		else if (safe_object_get_size (obj) <= SGEN_MAX_SMALL_OBJ_SIZE)
+			location = "major";
+		else
+			location = "LOS";
+		fprintf (heap_dump_file, " location=\"%s\"", location);
+	}
+	fprintf (heap_dump_file, "/>\n");
+}
+
+void
+sgen_debug_enable_heap_dump (const char *filename)
+{
+	heap_dump_file = fopen (filename, "w");
+	if (heap_dump_file) {
+		fprintf (heap_dump_file, "<sgen-dump>\n");
+		sgen_pin_stats_enable ();
+	}
+}
+
+void
+sgen_debug_dump_heap (const char *type, int num, const char *reason)
+{
+	ObjectList *list;
+	LOSObject *bigobj;
+
+	if (!heap_dump_file)
+		return;
+
+	fprintf (heap_dump_file, "<collection type=\"%s\" num=\"%d\"", type, num);
+	if (reason)
+		fprintf (heap_dump_file, " reason=\"%s\"", reason);
+	fprintf (heap_dump_file, ">\n");
+	fprintf (heap_dump_file, "<other-mem-usage type=\"mempools\" size=\"%ld\"/>\n", mono_mempool_get_bytes_allocated ());
+	sgen_dump_internal_mem_usage (heap_dump_file);
+	fprintf (heap_dump_file, "<pinned type=\"stack\" bytes=\"%zu\"/>\n", sgen_pin_stats_get_pinned_byte_count (PIN_TYPE_STACK));
+	/* fprintf (heap_dump_file, "<pinned type=\"static-data\" bytes=\"%d\"/>\n", pinned_byte_counts [PIN_TYPE_STATIC_DATA]); */
+	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", sgen_pin_stats_get_pinned_byte_count (PIN_TYPE_OTHER));
+
+	fprintf (heap_dump_file, "<pinned-objects>\n");
+	for (list = sgen_pin_stats_get_object_list (); list; list = list->next)
+		dump_object (list->obj, TRUE);
+	fprintf (heap_dump_file, "</pinned-objects>\n");
+
+	sgen_dump_section (nursery_section, "nursery");
+
+	major_collector.dump_heap (heap_dump_file);
+
+	fprintf (heap_dump_file, "<los>\n");
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		dump_object ((MonoObject*)bigobj->data, FALSE);
+	fprintf (heap_dump_file, "</los>\n");
+
+	fprintf (heap_dump_file, "</collection>\n");
+}
+
 static int
 compare_xrefs (const void *a_ptr, const void *b_ptr)
 {
