@@ -7,14 +7,6 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    [DllImport(LIBC, EntryPoint = "strerror")]
-    private static extern IntPtr strerror_core(int errno);
-
-    internal static string strerror(int errno)
-    {
-        return Marshal.PtrToStringAnsi(strerror_core(errno));
-    }
-
     /// <summary>
     /// Validates the result of system call that returns greater than or equal to 0 on success
     /// and less than 0 on failure, with errno set to the error code.
@@ -64,6 +56,8 @@ internal static partial class Interop
         EACCES = 13,
         EEXIST = 17,
         EXDEV = 18,
+        EISDIR = 21,
+        EINVAL = 22,
         EFBIG = 27,
         ENAMETOOLONG = 36,
         ECANCELED = 125,
@@ -80,6 +74,13 @@ internal static partial class Interop
     {
         switch ((Errors)errno)
         {
+            case Errors.EINVAL:
+                throw new ArgumentException();
+
+            case Errors.EISDIR:
+                isDirectory = true;
+                goto case Errors.ENOENT;
+
             case Errors.ENOENT:
                 if (isDirectory)
                 {

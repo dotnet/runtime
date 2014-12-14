@@ -164,6 +164,7 @@
     <Compile Include="Interop\Interop.manual.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.CoreFileIO.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.Errors.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.strerror.Unix.cs" />
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
