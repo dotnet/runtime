@@ -1196,6 +1196,16 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 				binary_protocol_pin_stage (start, (void*)addr);
 				count++;
 			}
+
+			/*
+			 * FIXME: It seems we're registering objects from all over the heap
+			 * (at least from the nursery and the LOS), but we're only
+			 * registering pinned addresses in the nursery.  What's up with
+			 * that?
+			 *
+			 * Also, why wouldn't we register addresses once the pinning queue
+			 * is sorted and uniqued?
+			 */
 			if (ptr_in_nursery ((void*)addr))
 				sgen_pin_stats_register_address ((char*)addr, pin_type);
 		}
