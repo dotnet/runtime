@@ -33,10 +33,13 @@ gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
  */
 void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
 
-void sgen_client_null_ephemerons_for_domain (MonoDomain *domain);
-
 /*
  * If the client has registered any internal memory types, this must return a string
  * describing the given type.  Only used for debugging.
  */
 const char* sgen_client_description_for_internal_mem_type (int type);
+
+void sgen_client_pre_collection_checks (void);
+
+gboolean sgen_client_handle_gc_debug (const char *opt);
+void sgen_client_print_gc_debug_usage (void);

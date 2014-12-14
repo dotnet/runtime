@@ -22,7 +22,12 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/monitor.h"
+#include "metadata/sgen-layout-stats.h"
 #include "metadata/sgen-client.h"
+
+/* If set, check that there are no references to the domain left at domain unload */
+gboolean sgen_mono_xdomain_checks = FALSE;
 
 static gboolean
 ptr_on_stack (void *ptr)
@@ -175,8 +180,8 @@ typedef struct {
 static EphemeronLinkNode *ephemeron_list;
 
 /* LOCKING: requires that the GC lock is held */
-void
-sgen_client_null_ephemerons_for_domain (MonoDomain *domain)
+static void
+null_ephemerons_for_domain (MonoDomain *domain)
 {
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
 
@@ -346,6 +351,179 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 	return TRUE;
 }
 
+static gboolean
+need_remove_object_for_domain (char *start, MonoDomain *domain)
+{
+	if (mono_object_domain (start) == domain) {
+		SGEN_LOG (4, "Need to cleanup object %p", start);
+		binary_protocol_cleanup (start, (gpointer)SGEN_LOAD_VTABLE (start), sgen_safe_object_get_size ((MonoObject*)start));
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static void
+process_object_for_domain_clearing (char *start, MonoDomain *domain)
+{
+	GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (start);
+	if (vt->klass == mono_defaults.internal_thread_class)
+		g_assert (mono_object_domain (start) == mono_get_root_domain ());
+	/* The object could be a proxy for an object in the domain
+	   we're deleting. */
+#ifndef DISABLE_REMOTING
+	if (mono_defaults.real_proxy_class->supertypes && mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
+		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
+
+		/* The server could already have been zeroed out, so
+		   we need to check for that, too. */
+		if (server && (!SGEN_LOAD_VTABLE (server) || mono_object_domain (server) == domain)) {
+			SGEN_LOG (4, "Cleaning up remote pointer in %p to object %p", start, server);
+			((MonoRealProxy*)start)->unwrapped_server = NULL;
+		}
+	}
+#endif
+}
+
+static gboolean
+clear_domain_process_object (char *obj, MonoDomain *domain)
+{
+	gboolean remove;
+
+	process_object_for_domain_clearing (obj, domain);
+	remove = need_remove_object_for_domain (obj, domain);
+
+	if (remove && ((MonoObject*)obj)->synchronisation) {
+		void **dislink = mono_monitor_get_object_monitor_weak_link ((MonoObject*)obj);
+		if (dislink)
+			sgen_register_disappearing_link (NULL, dislink, FALSE, TRUE);
+	}
+
+	return remove;
+}
+
+static void
+clear_domain_process_minor_object_callback (char *obj, size_t size, MonoDomain *domain)
+{
+	if (clear_domain_process_object (obj, domain)) {
+		CANARIFY_SIZE (size);
+		memset (obj, 0, size);
+	}
+}
+
+static void
+clear_domain_process_major_object_callback (char *obj, size_t size, MonoDomain *domain)
+{
+	clear_domain_process_object (obj, domain);
+}
+
+static void
+clear_domain_free_major_non_pinned_object_callback (char *obj, size_t size, MonoDomain *domain)
+{
+	if (need_remove_object_for_domain (obj, domain))
+		major_collector.free_non_pinned_object (obj, size);
+}
+
+static void
+clear_domain_free_major_pinned_object_callback (char *obj, size_t size, MonoDomain *domain)
+{
+	if (need_remove_object_for_domain (obj, domain))
+		major_collector.free_pinned_object (obj, size);
+}
+
+/*
+ * When appdomains are unloaded we can easily remove objects that have finalizers,
+ * but all the others could still be present in random places on the heap.
+ * We need a sweep to get rid of them even though it's going to be costly
+ * with big heaps.
+ * The reason we need to remove them is because we access the vtable and class
+ * structures to know the object size and the reference bitmap: once the domain is
+ * unloaded the point to random memory.
+ */
+void
+mono_gc_clear_domain (MonoDomain * domain)
+{
+	LOSObject *bigobj, *prev;
+	int i;
+
+	LOCK_GC;
+
+	binary_protocol_domain_unload_begin (domain);
+
+	sgen_stop_world (0);
+
+	if (sgen_concurrent_collection_in_progress ())
+		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE);
+	SGEN_ASSERT (0, !sgen_concurrent_collection_in_progress (), "We just ordered a synchronous collection.  Why are we collecting concurrently?");
+
+	major_collector.finish_sweeping ();
+
+	sgen_process_fin_stage_entries ();
+	sgen_process_dislink_stage_entries ();
+
+	sgen_clear_nursery_fragments ();
+
+	if (sgen_mono_xdomain_checks && domain != mono_get_root_domain ()) {
+		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
+		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);
+		sgen_check_for_xdomain_refs ();
+	}
+
+	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
+	to memory returned to the OS.*/
+	null_ephemerons_for_domain (domain);
+
+	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
+		sgen_null_links_for_domain (domain, i);
+
+	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
+		sgen_remove_finalizers_for_domain (domain, i);
+
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
+
+	/* We need two passes over major and large objects because
+	   freeing such objects might give their memory back to the OS
+	   (in the case of large objects) or obliterate its vtable
+	   (pinned objects with major-copying or pinned and non-pinned
+	   objects with major-mark&sweep), but we might need to
+	   dereference a pointer from an object to another object if
+	   the first object is a proxy. */
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
+	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+		clear_domain_process_object (bigobj->data, domain);
+
+	prev = NULL;
+	for (bigobj = los_object_list; bigobj;) {
+		if (need_remove_object_for_domain (bigobj->data, domain)) {
+			LOSObject *to_free = bigobj;
+			if (prev)
+				prev->next = bigobj->next;
+			else
+				los_object_list = bigobj->next;
+			bigobj = bigobj->next;
+			SGEN_LOG (4, "Freeing large object %p", bigobj->data);
+			sgen_los_free_object (to_free);
+			continue;
+		}
+		prev = bigobj;
+		bigobj = bigobj->next;
+	}
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_NON_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
+
+	if (domain == mono_get_root_domain ()) {
+		sgen_pin_stats_print_class_stats ();
+		sgen_object_layout_dump (stdout);
+	}
+
+	sgen_restart_world (0, NULL);
+
+	binary_protocol_domain_unload_end (domain);
+	binary_protocol_flush_buffers (FALSE);
+
+	UNLOCK_GC;
+}
+
 const char*
 sgen_client_description_for_internal_mem_type (int type)
 {
@@ -357,9 +535,35 @@ sgen_client_description_for_internal_mem_type (int type)
 }
 
 void
+sgen_client_pre_collection_checks (void)
+{
+	if (sgen_mono_xdomain_checks) {
+		sgen_clear_nursery_fragments ();
+		sgen_check_for_xdomain_refs ();
+	}
+}
+
+void
 sgen_client_init (void)
 {
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
+}
+
+gboolean
+sgen_client_handle_gc_debug (const char *opt)
+{
+	if (!strcmp (opt, "xdomain-checks")) {
+		sgen_mono_xdomain_checks = TRUE;
+	} else {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+void
+sgen_client_print_gc_debug_usage (void)
+{
+	fprintf (stderr, "  xdomain-checks\n");
 }
 
 #endif
