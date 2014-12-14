@@ -10,7 +10,7 @@ namespace Microsoft.Win32.Primitives.Tests
     public static class Win32ExceptionTestType
     {
         [Fact]
-        public static void InstentiateException()
+        public static void InstantiateException()
         {
             Win32Exception ex = new Win32Exception(5);
             Assert.True(ex.HResult == E_FAIL);
