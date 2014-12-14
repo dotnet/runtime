@@ -3106,26 +3106,6 @@ report_internal_mem_usage (void)
  * ######################################################################
  */
 
-static inline gboolean
-sgen_major_is_object_alive (void *object)
-{
-	mword objsize;
-
-	/* Oldgen objects can be pinned and forwarded too */
-	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
-		return TRUE;
-
-	/*
-	 * FIXME: major_collector.is_object_live() also calculates the
-	 * size.  Avoid the double calculation.
-	 */
-	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)object));
-	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
-		return sgen_los_object_is_pinned (object);
-
-	return major_collector.is_object_live (object);
-}
-
 /*
  * If the object has been forwarded it means it's still referenced from a root. 
  * If it is pinned it's still alive as well.
@@ -3137,22 +3117,6 @@ sgen_is_object_alive (void *object)
 {
 	if (ptr_in_nursery (object))
 		return sgen_nursery_is_object_alive (object);
-
-	return sgen_major_is_object_alive (object);
-}
-
-/*
- * This function returns true if @object is either alive or it belongs to the old gen
- * and we're currently doing a minor collection.
- */
-static inline int
-sgen_is_object_alive_for_current_gen (char *object)
-{
-	if (ptr_in_nursery (object))
-		return sgen_nursery_is_object_alive (object);
-
-	if (current_collection_generation == GENERATION_NURSERY)
-		return TRUE;
 
 	return sgen_major_is_object_alive (object);
 }

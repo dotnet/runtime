@@ -1031,6 +1031,44 @@ void sgen_nursery_alloc_prepare_for_major (void);
 
 char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references);
 
+/* Finalization/ephemeron support */
+
+static inline gboolean
+sgen_major_is_object_alive (void *object)
+{
+	mword objsize;
+
+	/* Oldgen objects can be pinned and forwarded too */
+	if (SGEN_OBJECT_IS_PINNED (object) || SGEN_OBJECT_IS_FORWARDED (object))
+		return TRUE;
+
+	/*
+	 * FIXME: major_collector.is_object_live() also calculates the
+	 * size.  Avoid the double calculation.
+	 */
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)object));
+	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
+		return sgen_los_object_is_pinned (object);
+
+	return major_collector.is_object_live (object);
+}
+
+/*
+ * This function returns true if @object is either alive or it belongs to the old gen
+ * and we're currently doing a minor collection.
+ */
+static inline int
+sgen_is_object_alive_for_current_gen (char *object)
+{
+	if (sgen_ptr_in_nursery (object))
+		return sgen_nursery_is_object_alive (object);
+
+	if (current_collection_generation == GENERATION_NURSERY)
+		return TRUE;
+
+	return sgen_major_is_object_alive (object);
+}
+
 /* TLS Data */
 
 extern MonoNativeTlsKey thread_info_key;
