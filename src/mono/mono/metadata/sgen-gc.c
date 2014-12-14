@@ -213,6 +213,7 @@
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-layout-stats.h"
+#include "metadata/sgen-client.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -350,8 +351,6 @@ static SGEN_TV_DECLARE (last_minor_collection_end_tv);
 
 int gc_debug_level = 0;
 FILE* gc_debug_file;
-
-static MonoGCFinalizerCallbacks fin_callbacks;
 
 /*
 void
@@ -3195,13 +3194,6 @@ has_critical_finalizer (MonoObject *obj)
 	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
 
-static gboolean
-is_finalization_aware (MonoObject *obj)
-{
-	MonoVTable *vt = ((MonoVTable*)LOAD_VTABLE (obj));
-	return (vt->gc_bits & SGEN_GC_BIT_FINALIZER_AWARE) == SGEN_GC_BIT_FINALIZER_AWARE;
-}
-
 void
 sgen_queue_finalization_entry (MonoObject *obj)
 {
@@ -3216,8 +3208,7 @@ sgen_queue_finalization_entry (MonoObject *obj)
 		fin_ready_list = entry;
 	}
 
-	if (fin_callbacks.object_queued_for_finalization && is_finalization_aware (obj))
-		fin_callbacks.object_queued_for_finalization (obj);
+	sgen_client_object_queued_for_finalization (obj);
 
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_FINALIZE_ENQUEUE_ENABLED ())) {
@@ -5027,31 +5018,6 @@ sgen_get_remset (void)
 	return &remset;
 }
 
-guint
-mono_gc_get_vtable_bits (MonoClass *class)
-{
-	guint res = 0;
-	/* FIXME move this to the bridge code */
-	if (sgen_need_bridge_processing ()) {
-		switch (sgen_bridge_class_kind (class)) {
-		case GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS:
-		case GC_BRIDGE_OPAQUE_BRIDGE_CLASS:
-			res = SGEN_GC_BIT_BRIDGE_OBJECT;
-			break;
-		case GC_BRIDGE_OPAQUE_CLASS:
-			res = SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT;
-			break;
-		case GC_BRIDGE_TRANSPARENT_CLASS:
-			break;
-		}
-	}
-	if (fin_callbacks.is_class_finalization_aware) {
-		if (fin_callbacks.is_class_finalization_aware (class))
-			res |= SGEN_GC_BIT_FINALIZER_AWARE;
-	}
-	return res;
-}
-
 void
 mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
 {
@@ -5084,18 +5050,5 @@ sgen_timestamp (void)
 	SGEN_TV_GETTIME (timestamp);
 	return SGEN_TV_ELAPSED (sgen_init_timestamp, timestamp);
 }
-
-void
-mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
-{
-	if (callbacks->version != MONO_GC_FINALIZER_EXTENSION_VERSION)
-		g_error ("Invalid finalizer callback version. Expected %d but got %d\n", MONO_GC_FINALIZER_EXTENSION_VERSION, callbacks->version);
-
-	fin_callbacks = *callbacks;
-}
-
-
-
-
 
 #endif /* HAVE_SGEN_GC */

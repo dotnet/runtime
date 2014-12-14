@@ -22,6 +22,7 @@
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-client.h"
 
 static gboolean
 ptr_on_stack (void *ptr)
@@ -107,6 +108,56 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 #endif
 
 	sgen_get_remset ()->wbarrier_object_copy (obj, src);
+}
+
+static MonoGCFinalizerCallbacks fin_callbacks;
+
+guint
+mono_gc_get_vtable_bits (MonoClass *class)
+{
+	guint res = 0;
+	/* FIXME move this to the bridge code */
+	if (sgen_need_bridge_processing ()) {
+		switch (sgen_bridge_class_kind (class)) {
+		case GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS:
+		case GC_BRIDGE_OPAQUE_BRIDGE_CLASS:
+			res = SGEN_GC_BIT_BRIDGE_OBJECT;
+			break;
+		case GC_BRIDGE_OPAQUE_CLASS:
+			res = SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT;
+			break;
+		case GC_BRIDGE_TRANSPARENT_CLASS:
+			break;
+		}
+	}
+	if (fin_callbacks.is_class_finalization_aware) {
+		if (fin_callbacks.is_class_finalization_aware (class))
+			res |= SGEN_GC_BIT_FINALIZER_AWARE;
+	}
+	return res;
+}
+
+static gboolean
+is_finalization_aware (MonoObject *obj)
+{
+	MonoVTable *vt = ((MonoVTable*)SGEN_LOAD_VTABLE (obj));
+	return (vt->gc_bits & SGEN_GC_BIT_FINALIZER_AWARE) == SGEN_GC_BIT_FINALIZER_AWARE;
+}
+
+void
+sgen_client_object_queued_for_finalization (MonoObject *obj)
+{
+	if (fin_callbacks.object_queued_for_finalization && is_finalization_aware (obj))
+		fin_callbacks.object_queued_for_finalization (obj);
+}
+
+void
+mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
+{
+	if (callbacks->version != MONO_GC_FINALIZER_EXTENSION_VERSION)
+		g_error ("Invalid finalizer callback version. Expected %d but got %d\n", MONO_GC_FINALIZER_EXTENSION_VERSION, callbacks->version);
+
+	fin_callbacks = *callbacks;
 }
 
 #endif
