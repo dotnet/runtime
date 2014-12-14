@@ -3614,17 +3614,6 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Scan
 	} END_FOREACH_THREAD
 }
 
-static gboolean
-ptr_on_stack (void *ptr)
-{
-	gpointer stack_start = &stack_start;
-	SgenThreadInfo *info = mono_thread_info_current ();
-
-	if (ptr >= stack_start && ptr < (gpointer)info->stack_end)
-		return TRUE;
-	return FALSE;
-}
-
 static void*
 sgen_thread_register (SgenThreadInfo* info, void *addr)
 {
@@ -3883,11 +3872,6 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	if (obj)
 		binary_protocol_wbarrier (ptr, obj, (gpointer)LOAD_VTABLE (obj));
 
-	if (ptr_in_nursery (ptr) || ptr_on_stack (ptr)) {
-		SGEN_LOG (8, "Skipping remset at %p", ptr);
-		return;
-	}
-
 	/*
 	 * We need to record old->old pointer locations for the
 	 * concurrent collector.
@@ -3946,82 +3930,6 @@ void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size
 		bitmap >>= 1;
 	}
 }
-
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj) do {					\
-		gpointer o = *(gpointer*)(ptr);				\
-		if ((o)) {						\
-			gpointer d = ((char*)dest) + ((char*)(ptr) - (char*)(obj)); \
-			binary_protocol_wbarrier (d, o, (gpointer) LOAD_VTABLE (o)); \
-		}							\
-	} while (0)
-
-static void
-scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword desc)
-{
-#define SCAN_OBJECT_NOVTABLE
-#include "sgen-scan-object.h"
-}
-#endif
-
-void
-mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
-{
-	HEAVY_STAT (++stat_wbarrier_value_copy);
-	g_assert (klass->valuetype);
-
-	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, klass->gc_descr, klass->name, klass);
-
-	if (ptr_in_nursery (dest) || ptr_on_stack (dest) || !SGEN_CLASS_HAS_REFERENCES (klass)) {
-		size_t element_size = mono_class_value_size (klass, NULL);
-		size_t size = count * element_size;
-		mono_gc_memmove_atomic (dest, src, size);		
-		return;
-	}
-
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	if (binary_protocol_is_heavy_enabled ()) {
-		size_t element_size = mono_class_value_size (klass, NULL);
-		int i;
-		for (i = 0; i < count; ++i) {
-			scan_object_for_binary_protocol_copy_wbarrier ((char*)dest + i * element_size,
-					(char*)src + i * element_size - sizeof (MonoObject),
-					(mword) klass->gc_descr);
-		}
-	}
-#endif
-
-	remset.wbarrier_value_copy (dest, src, count, klass);
-}
-
-/**
- * mono_gc_wbarrier_object_copy:
- *
- * Write barrier to call when obj is the result of a clone or copy of an object.
- */
-void
-mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
-{
-	int size;
-
-	HEAVY_STAT (++stat_wbarrier_object_copy);
-
-	if (ptr_in_nursery (obj) || ptr_on_stack (obj)) {
-		size = mono_object_class (obj)->instance_size;
-		mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-				size - sizeof (MonoObject));
-		return;	
-	}
-
-#ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	if (binary_protocol_is_heavy_enabled ())
-		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
-#endif
-
-	remset.wbarrier_object_copy (obj, src);
-}
-
 
 /*
  * ######################################################################
