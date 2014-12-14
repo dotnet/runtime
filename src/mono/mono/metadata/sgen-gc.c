@@ -287,7 +287,6 @@ static gboolean do_scan_starts_check = FALSE;
 static gboolean allow_synchronous_major = TRUE;
 static gboolean disable_minor_collections = FALSE;
 static gboolean disable_major_collections = FALSE;
-gboolean do_pin_stats = FALSE;
 static gboolean do_verify_nursery = FALSE;
 static gboolean do_dump_nursery_content = FALSE;
 static gboolean enable_nursery_canaries = FALSE;
@@ -796,8 +795,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
 	if (domain == mono_get_root_domain ()) {
-		if (G_UNLIKELY (do_pin_stats))
-			sgen_pin_stats_print_class_stats ();
+		sgen_pin_stats_print_class_stats ();
 		sgen_object_layout_dump (stdout);
 	}
 
@@ -839,8 +837,7 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 
 	remset.record_pointer (ptr);
 
-	if (G_UNLIKELY (do_pin_stats))
-		sgen_pin_stats_register_global_remset (obj);
+	sgen_pin_stats_register_global_remset (obj);
 
 	SGEN_LOG (8, "Adding global remset for %p", ptr);
 	binary_protocol_global_remset (ptr, obj, (gpointer)SGEN_LOAD_VTABLE (obj));
@@ -1046,8 +1043,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 
 			pin_object (obj_to_pin);
 			GRAY_OBJECT_ENQUEUE (queue, obj_to_pin, desc);
-			if (G_UNLIKELY (do_pin_stats))
-				sgen_pin_stats_register_object (obj_to_pin, obj_to_pin_size);
+			sgen_pin_stats_register_object (obj_to_pin, obj_to_pin_size);
 			definitely_pinned [count] = obj_to_pin;
 			count++;
 		}
@@ -1097,8 +1093,7 @@ sgen_pin_object (void *object, GrayQueue *queue)
 	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
 	++objects_pinned;
-	if (G_UNLIKELY (do_pin_stats))
-		sgen_pin_stats_register_object (object, safe_object_get_size (object));
+	sgen_pin_stats_register_object (object, safe_object_get_size (object));
 
 	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor_safe (object));
 
@@ -1203,10 +1198,8 @@ conservatively_pin_objects_from (void **start, void **end, void *start_nursery, 
 				binary_protocol_pin_stage (start, (void*)addr);
 				count++;
 			}
-			if (G_UNLIKELY (do_pin_stats)) { 
-				if (ptr_in_nursery ((void*)addr))
-					sgen_pin_stats_register_address ((char*)addr, pin_type);
-			}
+			if (ptr_in_nursery ((void*)addr))
+				sgen_pin_stats_register_address ((char*)addr, pin_type);
 		}
 		start++;
 	}
@@ -2554,8 +2547,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
 				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
-			if (G_UNLIKELY (do_pin_stats))
-				sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
+			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
 
 			if (profile_roots)
@@ -4825,7 +4817,7 @@ mono_gc_base_init (void)
 			} else if (!strcmp (opt, "print-allowance")) {
 				debug_print_allowance = TRUE;
 			} else if (!strcmp (opt, "print-pinning")) {
-				do_pin_stats = TRUE;
+				sgen_pin_stats_enable ();
 			} else if (!strcmp (opt, "verify-before-allocs")) {
 				verify_before_allocs = 1;
 				has_per_allocation_action = TRUE;
@@ -4889,7 +4881,7 @@ mono_gc_base_init (void)
 				heap_dump_file = fopen (filename, "w");
 				if (heap_dump_file) {
 					fprintf (heap_dump_file, "<sgen-dump>\n");
-					do_pin_stats = TRUE;
+					sgen_pin_stats_enable ();
 				}
 			} else if (g_str_has_prefix (opt, "binary-protocol=")) {
 				char *filename = strchr (opt, '=') + 1;

@@ -492,6 +492,7 @@ void sgen_free_internal (void *addr, int type);
 void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure);
 void sgen_free_internal_dynamic (void *addr, size_t size, int type);
 
+void sgen_pin_stats_enable (void);
 void sgen_pin_stats_register_object (char *obj, size_t size);
 void sgen_pin_stats_register_global_remset (char *obj);
 void sgen_pin_stats_print_class_stats (void);
@@ -1120,8 +1121,6 @@ extern NurseryClearPolicy nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
 
 extern LOCK_DECLARE (gc_mutex);
-
-extern int do_pin_stats;
 
 /* Nursery helpers. */
 
