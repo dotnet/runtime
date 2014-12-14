@@ -295,7 +295,8 @@ sgen_sources = \
 	sgen-thread-pool.h	\
 	sgen-tagged-pointer.h	\
 	sgen-mono.c		\
-	sgen-client.h
+	sgen-client.h		\
+	sgen-client-mono.h
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)

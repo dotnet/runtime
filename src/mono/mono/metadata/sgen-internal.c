@@ -26,6 +26,7 @@
 #include "utils/mono-mmap.h"
 #include "utils/lock-free-alloc.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-client.h"
 
 /* keep each size a multiple of ALLOC_ALIGN */
 #if SIZEOF_VOID_P == 4
@@ -132,7 +133,6 @@ description_for_type (int type)
 	case INTERNAL_MEM_MS_TABLES: return "marksweep-tables";
 	case INTERNAL_MEM_MS_BLOCK_INFO: return "marksweep-block-info";
 	case INTERNAL_MEM_MS_BLOCK_INFO_SORT: return "marksweep-block-info-sort";
-	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
 	case INTERNAL_MEM_THREAD_POOL_JOB: return "thread-pool-job";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
@@ -150,8 +150,11 @@ description_for_type (int type)
 	case INTERNAL_MEM_CARDTABLE_MOD_UNION: return "cardtable-mod-union";
 	case INTERNAL_MEM_BINARY_PROTOCOL: return "binary-protocol";
 	case INTERNAL_MEM_TEMPORARY: return "temporary";
-	default:
-		g_assert_not_reached ();
+	default: {
+		const char *description = sgen_client_description_for_internal_mem_type (type);
+		SGEN_ASSERT (0, description, "Unknown internal mem type");
+		return description;
+	}
 	}
 }
 

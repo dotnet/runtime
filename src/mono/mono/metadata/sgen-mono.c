@@ -160,4 +160,206 @@ mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
 	fin_callbacks = *callbacks;
 }
 
+typedef struct _EphemeronLinkNode EphemeronLinkNode;
+
+struct _EphemeronLinkNode {
+	EphemeronLinkNode *next;
+	char *array;
+};
+
+typedef struct {
+       void *key;
+       void *value;
+} Ephemeron;
+
+static EphemeronLinkNode *ephemeron_list;
+
+/* LOCKING: requires that the GC lock is held */
+void
+sgen_client_null_ephemerons_for_domain (MonoDomain *domain)
+{
+	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
+
+	while (current) {
+		MonoObject *object = (MonoObject*)current->array;
+
+		if (object)
+			SGEN_ASSERT (0, object->vtable, "Can't have objects without vtables.");
+
+		if (object && object->vtable->domain == domain) {
+			EphemeronLinkNode *tmp = current;
+
+			if (prev)
+				prev->next = current->next;
+			else
+				ephemeron_list = current->next;
+
+			current = current->next;
+			sgen_free_internal (tmp, INTERNAL_MEM_EPHEMERON_LINK);
+		} else {
+			prev = current;
+			current = current->next;
+		}
+	}
+}
+
+/* LOCKING: requires that the GC lock is held */
+void
+sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
+{
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
+	SgenGrayQueue *queue = ctx.queue;
+	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
+	MonoArray *array;
+	Ephemeron *cur, *array_end;
+	char *tombstone;
+
+	while (current) {
+		char *object = current->array;
+
+		if (!sgen_is_object_alive_for_current_gen (object)) {
+			EphemeronLinkNode *tmp = current;
+
+			SGEN_LOG (5, "Dead Ephemeron array at %p", object);
+
+			if (prev)
+				prev->next = current->next;
+			else
+				ephemeron_list = current->next;
+
+			current = current->next;
+			sgen_free_internal (tmp, INTERNAL_MEM_EPHEMERON_LINK);
+
+			continue;
+		}
+
+		copy_func ((void**)&object, queue);
+		current->array = object;
+
+		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", object);
+
+		array = (MonoArray*)object;
+		cur = mono_array_addr (array, Ephemeron, 0);
+		array_end = cur + mono_array_length_fast (array);
+		tombstone = (char*)((MonoVTable*)SGEN_LOAD_VTABLE (object))->domain->ephemeron_tombstone;
+
+		for (; cur < array_end; ++cur) {
+			char *key = (char*)cur->key;
+
+			if (!key || key == tombstone)
+				continue;
+
+			SGEN_LOG (5, "[%td] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
+				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
+				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
+
+			if (!sgen_is_object_alive_for_current_gen (key)) {
+				cur->key = tombstone;
+				cur->value = NULL;
+				continue;
+			}
+		}
+		prev = current;
+		current = current->next;
+	}
+}
+
+/*
+LOCKING: requires that the GC lock is held
+
+Limitations: We scan all ephemerons on every collection since the current design doesn't allow for a simple nursery/mature split.
+*/
+gboolean
+sgen_client_mark_ephemerons (ScanCopyContext ctx)
+{
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
+	SgenGrayQueue *queue = ctx.queue;
+	gboolean nothing_marked = TRUE;
+	EphemeronLinkNode *current = ephemeron_list;
+	MonoArray *array;
+	Ephemeron *cur, *array_end;
+	char *tombstone;
+
+	for (current = ephemeron_list; current; current = current->next) {
+		char *object = current->array;
+		SGEN_LOG (5, "Ephemeron array at %p", object);
+
+		/*It has to be alive*/
+		if (!sgen_is_object_alive_for_current_gen (object)) {
+			SGEN_LOG (5, "\tnot reachable");
+			continue;
+		}
+
+		copy_func ((void**)&object, queue);
+
+		array = (MonoArray*)object;
+		cur = mono_array_addr (array, Ephemeron, 0);
+		array_end = cur + mono_array_length_fast (array);
+		tombstone = (char*)((MonoVTable*)SGEN_LOAD_VTABLE (object))->domain->ephemeron_tombstone;
+
+		for (; cur < array_end; ++cur) {
+			char *key = cur->key;
+
+			if (!key || key == tombstone)
+				continue;
+
+			SGEN_LOG (5, "[%td] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
+				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
+				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
+
+			if (sgen_is_object_alive_for_current_gen (key)) {
+				char *value = cur->value;
+
+				copy_func ((void**)&cur->key, queue);
+				if (value) {
+					if (!sgen_is_object_alive_for_current_gen (value))
+						nothing_marked = FALSE;
+					copy_func ((void**)&cur->value, queue);
+				}
+			}
+		}
+	}
+
+	SGEN_LOG (5, "Ephemeron run finished. Is it done %d", nothing_marked);
+	return nothing_marked;
+}
+
+gboolean
+mono_gc_ephemeron_array_add (MonoObject *obj)
+{
+	EphemeronLinkNode *node;
+
+	LOCK_GC;
+
+	node = sgen_alloc_internal (INTERNAL_MEM_EPHEMERON_LINK);
+	if (!node) {
+		UNLOCK_GC;
+		return FALSE;
+	}
+	node->array = (char*)obj;
+	node->next = ephemeron_list;
+	ephemeron_list = node;
+
+	SGEN_LOG (5, "Registered ephemeron array %p", obj);
+
+	UNLOCK_GC;
+	return TRUE;
+}
+
+const char*
+sgen_client_description_for_internal_mem_type (int type)
+{
+	switch (type) {
+	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
+	default:
+		return NULL;
+	}
+}
+
+void
+sgen_client_init (void)
+{
+	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
+}
+
 #endif
