@@ -337,6 +337,42 @@ mono_debug_lookup_method (MonoMethod *method)
 	return minfo;
 }
 
+typedef struct
+{
+	gboolean found;
+	MonoImage *image;
+} LookupImageData;
+
+static void
+lookup_image_func (gpointer key, gpointer value, gpointer user_data)
+{
+	MonoDebugHandle *handle = (MonoDebugHandle *) value;
+	LookupImageData *data = (LookupImageData *) user_data;
+
+	if (data->found)
+		return;
+
+	if (handle->image == data->image)
+		data->found = TRUE;
+}
+
+gboolean
+mono_debug_image_has_debug_info (MonoImage *image)
+{
+	LookupImageData data;
+
+	if (!mono_debug_handles)
+		return FALSE;
+
+	memset (&data, 0, sizeof (data));
+	data.image = image;
+
+	mono_debugger_lock ();
+	g_hash_table_foreach (mono_debug_handles, lookup_image_func, &data);
+	mono_debugger_unlock ();
+	return data.found;
+}
+
 static inline void
 write_leb128 (guint32 value, guint8 *ptr, guint8 **rptr)
 {
