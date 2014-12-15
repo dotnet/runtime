@@ -152,16 +152,16 @@ namespace System.Reflection.Metadata.Tests
 
         sealed class CustomDecoder : MetadataStringDecoder
         {
-            GetString getString;
+            private GetString _getString;
             public CustomDecoder(Encoding encoding, GetString getString)
                 : base(encoding)
             {
-                this.getString = getString;
+                _getString = getString;
             }
 
             public override unsafe string GetString(byte* bytes, int byteCount)
             {
-                return getString(bytes, byteCount);
+                return _getString(bytes, byteCount);
             }
         }
 

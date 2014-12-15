@@ -29,8 +29,8 @@ namespace System.Xml
     // are assumed to trigger the evaluation.
     internal class XmlEntityReference : XmlLinkedNode
     {
-        string name;
-        XmlLinkedNode lastChild;
+        private string _name;
+        private XmlLinkedNode _lastChild;
 
         protected internal XmlEntityReference(string name, XmlDocument doc) : base(doc)
         {
@@ -41,20 +41,20 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xdom_InvalidCharacter_EntityReference);
                 }
             }
-            this.name = doc.NameTable.Add(name);
+            _name = doc.NameTable.Add(name);
             doc.fEntRefNodesPresent = true;
         }
 
         // Gets the name of the node.
         public override string Name
         {
-            get { return name; }
+            get { return _name; }
         }
 
         // Gets the name of the node without the namespace prefix.
         public override string LocalName
         {
-            get { return name; }
+            get { return _name; }
         }
 
         // Gets or sets the value of the node.
@@ -81,7 +81,7 @@ namespace System.Xml
         public override XmlNode CloneNode(bool deep)
         {
             Debug.Assert(OwnerDocument != null);
-            XmlEntityReference eref = OwnerDocument.CreateEntityReference(name);
+            XmlEntityReference eref = OwnerDocument.CreateEntityReference(_name);
             return eref;
         }
 
@@ -123,9 +123,9 @@ namespace System.Xml
         {
             get
             {
-                return lastChild;
+                return _lastChild;
             }
-            set { lastChild = value; }
+            set { _lastChild = value; }
         }
 
         internal override bool IsValidChildType(XmlNodeType type)
@@ -150,7 +150,7 @@ namespace System.Xml
         // Saves the node to the specified XmlWriter.
         public override void WriteTo(XmlWriter w)
         {
-            w.WriteEntityRef(name);
+            w.WriteEntityRef(_name);
         }
 
         // Saves all the children of the node to the specified XmlWriter.
@@ -197,7 +197,7 @@ namespace System.Xml
             get
             {
                 //get the associate entity and return its baseUri
-                XmlEntity ent = OwnerDocument.GetEntityNode(name);
+                XmlEntity ent = OwnerDocument.GetEntityNode(_name);
                 if (ent != null)
                 {
                     if (ent.SystemId != null && ent.SystemId.Length > 0)

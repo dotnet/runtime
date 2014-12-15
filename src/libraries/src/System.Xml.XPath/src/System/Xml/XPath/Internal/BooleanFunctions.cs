@@ -12,31 +12,31 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class BooleanFunctions : ValueQuery
     {
-        Query arg;
-        FT funcType;
+        private Query _arg;
+        private FT _funcType;
 
         public BooleanFunctions(FT funcType, Query arg)
         {
-            this.arg = arg;
-            this.funcType = funcType;
+            _arg = arg;
+            _funcType = funcType;
         }
         private BooleanFunctions(BooleanFunctions other) : base(other)
         {
-            this.arg = Clone(other.arg);
-            this.funcType = other.funcType;
+            _arg = Clone(other._arg);
+            _funcType = other._funcType;
         }
 
         public override void SetXsltContext(XsltContext context)
         {
-            if (arg != null)
+            if (_arg != null)
             {
-                arg.SetXsltContext(context);
+                _arg.SetXsltContext(context);
             }
         }
 
         public override object Evaluate(XPathNodeIterator nodeIterator)
         {
-            switch (funcType)
+            switch (_funcType)
             {
                 case FT.FuncBoolean: return toBoolean(nodeIterator);
                 case FT.FuncNot: return Not(nodeIterator);
@@ -58,8 +58,8 @@ namespace MS.Internal.Xml.XPath
 
         internal bool toBoolean(XPathNodeIterator nodeIterator)
         {
-            object result = arg.Evaluate(nodeIterator);
-            if (result is XPathNodeIterator) return arg.Advance() != null;
+            object result = _arg.Evaluate(nodeIterator);
+            if (result is XPathNodeIterator) return _arg.Advance() != null;
             if (result is string) return toBoolean((string)result);
             if (result is double) return toBoolean((double)result);
             if (result is bool) return (bool)result;
@@ -71,12 +71,12 @@ namespace MS.Internal.Xml.XPath
 
         private bool Not(XPathNodeIterator nodeIterator)
         {
-            return !(bool)arg.Evaluate(nodeIterator);
+            return !(bool)_arg.Evaluate(nodeIterator);
         }
 
         private bool Lang(XPathNodeIterator nodeIterator)
         {
-            string str = arg.Evaluate(nodeIterator).ToString();
+            string str = _arg.Evaluate(nodeIterator).ToString();
             string lang = nodeIterator.Current.XmlLang;
             return (
                lang.StartsWith(str, StringComparison.OrdinalIgnoreCase) &&
@@ -89,10 +89,10 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", funcType.ToString());
-            if (arg != null)
+            w.WriteAttributeString("name", _funcType.ToString());
+            if (_arg != null)
             {
-                arg.PrintQuery(w);
+                _arg.PrintQuery(w);
             }
             w.WriteEndElement();
         }

@@ -14,13 +14,13 @@ namespace System.Reflection.Internal
     /// </remarks>
     internal unsafe sealed class NativeHeapMemoryBlock : AbstractMemoryBlock
     {
-        private byte* pointer;
-        private readonly int size;
+        private byte* _pointer;
+        private readonly int _size;
 
         internal NativeHeapMemoryBlock(int size)
         {
-            this.pointer = (byte*)Marshal.AllocHGlobal(size);
-            this.size = size;
+            _pointer = (byte*)Marshal.AllocHGlobal(size);
+            _size = size;
         }
 
         ~NativeHeapMemoryBlock()
@@ -30,23 +30,23 @@ namespace System.Reflection.Internal
 
         protected override void Dispose(bool disposing)
         {
-            Marshal.FreeHGlobal((IntPtr)pointer);
-            pointer = null;
+            Marshal.FreeHGlobal((IntPtr)_pointer);
+            _pointer = null;
         }
 
         public override byte* Pointer
         {
-            get { return pointer; }
+            get { return _pointer; }
         }
 
         public override int Size
         {
-            get { return size; }
+            get { return _size; }
         }
 
         public override ImmutableArray<byte> GetContent(int offset)
         {
-            var result = CreateImmutableArray(this.pointer + offset, this.size - offset);
+            var result = CreateImmutableArray(_pointer + offset, _size - offset);
             GC.KeepAlive(this);
             return result;
         }

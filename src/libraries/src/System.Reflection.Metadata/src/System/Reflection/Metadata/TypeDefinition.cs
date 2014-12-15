@@ -9,28 +9,28 @@ namespace System.Reflection.Metadata
 {
     public struct TypeDefinition
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint treatmentAndRowId;
+        private readonly uint _treatmentAndRowId;
 
         internal TypeDefinition(MetadataReader reader, uint treatmentAndRowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(treatmentAndRowId != 0);
 
-            this.reader = reader;
-            this.treatmentAndRowId = treatmentAndRowId;
+            _reader = reader;
+            _treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private TypeDefTreatment Treatment
         {
-            get { return (TypeDefTreatment)(treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (TypeDefTreatment)(_treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         private TypeDefinitionHandle Handle
@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.TypeDefTable.GetFlags(Handle);
+                    return _reader.TypeDefTable.GetFlags(Handle);
                 }
 
                 return GetProjectedFlags();
@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.TypeDefTable.GetName(Handle);
+                    return _reader.TypeDefTable.GetName(Handle);
                 }
 
                 return GetProjectedName();
@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.TypeDefTable.GetNamespace(Handle);
+                    return _reader.TypeDefTable.GetNamespace(Handle);
                 }
 
                 return GetProjectedNamespace();
@@ -93,7 +93,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.TypeDefTable.GetExtends(Handle);
+                    return _reader.TypeDefTable.GetExtends(Handle);
                 }
 
                 return GetProjectedBaseType();
@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata
 
         public TypeLayout GetLayout()
         {
-            uint classLayoutRowId = reader.ClassLayoutTable.FindRow(Handle);
+            uint classLayoutRowId = _reader.ClassLayoutTable.FindRow(Handle);
             if (classLayoutRowId == 0)
             {
                 // NOTE: We don't need a bool/TryGetLayout because zero also means use default:
@@ -119,8 +119,8 @@ namespace System.Reflection.Metadata
                 return default(TypeLayout);
             }
 
-            int size = (int)reader.ClassLayoutTable.GetClassSize(classLayoutRowId);
-            int packingSize = reader.ClassLayoutTable.GetPackingSize(classLayoutRowId);
+            int size = (int)_reader.ClassLayoutTable.GetClassSize(classLayoutRowId);
+            int packingSize = _reader.ClassLayoutTable.GetPackingSize(classLayoutRowId);
             return new TypeLayout(size, packingSize);
         }
 
@@ -129,32 +129,32 @@ namespace System.Reflection.Metadata
         /// </summary>
         public TypeDefinitionHandle GetDeclaringType()
         {
-            return reader.NestedClassTable.FindEnclosingType(Handle);
+            return _reader.NestedClassTable.FindEnclosingType(Handle);
         }
 
         public GenericParameterHandleCollection GetGenericParameters()
         {
-            return reader.GenericParamTable.FindGenericParametersForType(Handle);
+            return _reader.GenericParamTable.FindGenericParametersForType(Handle);
         }
 
         public MethodDefinitionHandleCollection GetMethods()
         {
-            return new MethodDefinitionHandleCollection(reader, Handle);
+            return new MethodDefinitionHandleCollection(_reader, Handle);
         }
 
         public FieldDefinitionHandleCollection GetFields()
         {
-            return new FieldDefinitionHandleCollection(reader, Handle);
+            return new FieldDefinitionHandleCollection(_reader, Handle);
         }
 
         public PropertyDefinitionHandleCollection GetProperties()
         {
-            return new PropertyDefinitionHandleCollection(reader, Handle);
+            return new PropertyDefinitionHandleCollection(_reader, Handle);
         }
 
         public EventDefinitionHandleCollection GetEvents()
         {
-            return new EventDefinitionHandleCollection(reader, Handle);
+            return new EventDefinitionHandleCollection(_reader, Handle);
         }
 
         /// <summary>
@@ -162,34 +162,34 @@ namespace System.Reflection.Metadata
         /// </summary>
         public ImmutableArray<TypeDefinitionHandle> GetNestedTypes()
         {
-            return reader.GetNestedTypes(Handle);
+            return _reader.GetNestedTypes(Handle);
         }
 
         public MethodImplementationHandleCollection GetMethodImplementations()
         {
-            return new MethodImplementationHandleCollection(reader, Handle);
+            return new MethodImplementationHandleCollection(_reader, Handle);
         }
 
         public InterfaceImplementationHandleCollection GetInterfaceImplementations()
         {
-            return new InterfaceImplementationHandleCollection(reader, Handle);
+            return new InterfaceImplementationHandleCollection(_reader, Handle);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
         public DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes()
         {
-            return new DeclarativeSecurityAttributeHandleCollection(reader, Handle);
+            return new DeclarativeSecurityAttributeHandleCollection(_reader, Handle);
         }
 
         #region Projections
 
         private TypeAttributes GetProjectedFlags()
         {
-            var flags = reader.TypeDefTable.GetFlags(Handle);
+            var flags = _reader.TypeDefTable.GetFlags(Handle);
             var treatment = Treatment;
 
             switch (treatment & TypeDefTreatment.KindMask)
@@ -234,7 +234,7 @@ namespace System.Reflection.Metadata
 
         private StringHandle GetProjectedName()
         {
-            var name = reader.TypeDefTable.GetName(Handle);
+            var name = _reader.TypeDefTable.GetName(Handle);
 
             switch (Treatment & TypeDefTreatment.KindMask)
             {
@@ -254,13 +254,13 @@ namespace System.Reflection.Metadata
             //       to a virtual namespace name, then that assumption will need to be removed.
 
             // no change:
-            return reader.TypeDefTable.GetNamespace(Handle);
+            return _reader.TypeDefTable.GetNamespace(Handle);
         }
 
         private Handle GetProjectedBaseType()
         {
             // no change:
-            return reader.TypeDefTable.GetExtends(Handle);
+            return _reader.TypeDefTable.GetExtends(Handle);
         }
         #endregion
     }

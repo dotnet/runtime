@@ -1326,26 +1326,26 @@ namespace System.Xml
     [DebuggerDisplay("{ToString()}")]
     internal struct DebuggerDisplayXmlNodeProxy
     {
-        private XmlNode node;
+        private XmlNode _node;
 
         public DebuggerDisplayXmlNodeProxy(XmlNode node)
         {
-            this.node = node;
+            _node = node;
         }
 
         public override string ToString()
         {
-            XmlNodeType nodeType = node.NodeType;
+            XmlNodeType nodeType = _node.NodeType;
             string result = nodeType.ToString();
             switch (nodeType)
             {
                 case XmlNodeType.Element:
                 case XmlNodeType.EntityReference:
-                    result += ", Name=\"" + node.Name + "\"";
+                    result += ", Name=\"" + _node.Name + "\"";
                     break;
                 case XmlNodeType.Attribute:
                 case XmlNodeType.ProcessingInstruction:
-                    result += ", Name=\"" + node.Name + "\", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(node.Value) + "\"";
+                    result += ", Name=\"" + _node.Name + "\", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_node.Value) + "\"";
                     break;
                 case XmlNodeType.Text:
                 case XmlNodeType.CDATA:
@@ -1353,10 +1353,10 @@ namespace System.Xml
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.XmlDeclaration:
-                    result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(node.Value) + "\"";
+                    result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_node.Value) + "\"";
                     break;
                 case XmlNodeType.DocumentType:
-                    XmlDocumentType documentType = (XmlDocumentType)node;
+                    XmlDocumentType documentType = (XmlDocumentType)_node;
                     result += ", Name=\"" + documentType.Name + "\", SYSTEM=\"" + documentType.SystemId + "\", PUBLIC=\"" + documentType.PublicId + "\", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(documentType.InternalSubset) + "\"";
                     break;
                 default:

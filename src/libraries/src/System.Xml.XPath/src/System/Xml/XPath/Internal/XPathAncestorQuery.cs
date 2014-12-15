@@ -8,15 +8,15 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class XPathAncestorQuery : CacheAxisQuery
     {
-        private bool matchSelf;
+        private bool _matchSelf;
 
         public XPathAncestorQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest, bool matchSelf) : base(qyInput, name, prefix, typeTest)
         {
-            this.matchSelf = matchSelf;
+            _matchSelf = matchSelf;
         }
         private XPathAncestorQuery(XPathAncestorQuery other) : base(other)
         {
-            this.matchSelf = other.matchSelf;
+            _matchSelf = other._matchSelf;
         }
 
         public override object Evaluate(XPathNodeIterator context)
@@ -27,7 +27,7 @@ namespace MS.Internal.Xml.XPath
             XPathNavigator input;
             while ((input = qyInput.Advance()) != null)
             {
-                if (matchSelf)
+                if (_matchSelf)
                 {
                     if (matches(input))
                     {
@@ -64,7 +64,7 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            if (matchSelf)
+            if (_matchSelf)
             {
                 w.WriteAttributeString("self", "yes");
             }

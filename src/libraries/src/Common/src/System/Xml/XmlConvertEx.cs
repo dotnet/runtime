@@ -7,8 +7,8 @@ namespace System.Xml
 {
     internal static class XmlConvertEx
     {
-        private static XmlCharType xmlCharType = XmlCharType.Instance;
-        private static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
+        private static XmlCharType s_xmlCharType = XmlCharType.Instance;
+        private static readonly char[] s_WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
 
         #region XPath
         public static double ToXPathDouble(object o)
@@ -56,12 +56,12 @@ namespace System.Xml
 
         public static string TrimString(string value)
         {
-            return value.Trim(WhitespaceChars);
+            return value.Trim(s_WhitespaceChars);
         }
 
         public static string[] SplitString(string value)
         {
-            return value.Split(WhitespaceChars, StringSplitOptions.RemoveEmptyEntries);
+            return value.Split(s_WhitespaceChars, StringSplitOptions.RemoveEmptyEntries);
         }
 
         public static Uri ToUri(string s)
@@ -210,7 +210,7 @@ namespace System.Xml
             int len = data.Length;
             for (; ;)
             {
-                while (i < len && (xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
+                while (i < len && (s_xmlCharType.charProperties[data[i]] & XmlCharType.fCharData) != 0)
                 {
                     i++;
                 }
@@ -261,13 +261,13 @@ namespace System.Xml
         // Trim beginning of a string using XML whitespace characters
         public static string TrimStringStart(string value)
         {
-            return value.TrimStart(WhitespaceChars);
+            return value.TrimStart(s_WhitespaceChars);
         }
 
         // Trim end of a string using XML whitespace characters
         public static string TrimStringEnd(string value)
         {
-            return value.TrimEnd(WhitespaceChars);
+            return value.TrimEnd(s_WhitespaceChars);
         }
     }
 }

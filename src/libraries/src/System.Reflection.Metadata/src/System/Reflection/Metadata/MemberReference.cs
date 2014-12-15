@@ -8,28 +8,28 @@ namespace System.Reflection.Metadata
 {
     public struct MemberReference
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint treatmentAndRowId;
+        private readonly uint _treatmentAndRowId;
 
         internal MemberReference(MetadataReader reader, uint treatmentAndRowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(treatmentAndRowId != 0);
 
-            this.reader = reader;
-            this.treatmentAndRowId = treatmentAndRowId;
+            _reader = reader;
+            _treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private MemberRefTreatment Treatment
         {
-            get { return (MemberRefTreatment)(treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (MemberRefTreatment)(_treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         private MemberReferenceHandle Handle
@@ -46,7 +46,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MemberRefTable.GetClass(Handle);
+                    return _reader.MemberRefTable.GetClass(Handle);
                 }
 
                 return GetProjectedParent();
@@ -59,7 +59,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MemberRefTable.GetName(Handle);
+                    return _reader.MemberRefTable.GetName(Handle);
                 }
 
                 return GetProjectedName();
@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MemberRefTable.GetSignature(Handle);
+                    return _reader.MemberRefTable.GetSignature(Handle);
                 }
 
                 return GetProjectedSignature();
@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public MemberReferenceKind GetKind()
         {
-            BlobReader blobReader = reader.GetBlobReader(this.Signature);
+            BlobReader blobReader = _reader.GetBlobReader(this.Signature);
             SignatureHeader header = blobReader.ReadSignatureHeader();
 
             switch (header.Kind)
@@ -102,7 +102,7 @@ namespace System.Reflection.Metadata
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
         #region Projections
@@ -110,7 +110,7 @@ namespace System.Reflection.Metadata
         private Handle GetProjectedParent()
         {
             // no change
-            return reader.MemberRefTable.GetClass(Handle);
+            return _reader.MemberRefTable.GetClass(Handle);
         }
 
         private StringHandle GetProjectedName()
@@ -120,13 +120,13 @@ namespace System.Reflection.Metadata
                 return StringHandle.FromVirtualIndex(StringHandle.VirtualIndex.Dispose);
             }
 
-            return reader.MemberRefTable.GetName(Handle);
+            return _reader.MemberRefTable.GetName(Handle);
         }
 
         private BlobHandle GetProjectedSignature()
         {
             // no change
-            return reader.MemberRefTable.GetSignature(Handle);
+            return _reader.MemberRefTable.GetSignature(Handle);
         }
         #endregion
     }

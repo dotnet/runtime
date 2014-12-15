@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // This file is auto-generated, do not make permanent modifications.
 
@@ -166,7 +166,6 @@ namespace System.Numerics
         internal Double double_0;
         [FieldOffset(8)]
         internal Double double_1;
-
         #endregion Internal Storage Fields
     }
 }

@@ -26,8 +26,8 @@ namespace System.Xml.Linq
     /// </remarks>
     public abstract class XNode : XObject
     {
-        static XNodeDocumentOrderComparer documentOrderComparer;
-        static XNodeEqualityComparer equalityComparer;
+        private static XNodeDocumentOrderComparer s_documentOrderComparer;
+        private static XNodeEqualityComparer s_equalityComparer;
 
         internal XNode next;
 
@@ -78,8 +78,8 @@ namespace System.Xml.Linq
         {
             get
             {
-                if (documentOrderComparer == null) documentOrderComparer = new XNodeDocumentOrderComparer();
-                return documentOrderComparer;
+                if (s_documentOrderComparer == null) s_documentOrderComparer = new XNodeDocumentOrderComparer();
+                return s_documentOrderComparer;
             }
         }
 
@@ -90,8 +90,8 @@ namespace System.Xml.Linq
         {
             get
             {
-                if (equalityComparer == null) equalityComparer = new XNodeEqualityComparer();
-                return equalityComparer;
+                if (s_equalityComparer == null) s_equalityComparer = new XNodeEqualityComparer();
+                return s_equalityComparer;
             }
         }
 

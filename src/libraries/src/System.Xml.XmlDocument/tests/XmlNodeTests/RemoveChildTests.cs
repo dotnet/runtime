@@ -9,7 +9,7 @@ namespace XmlDocumentTests.XmlNodeTests
 {
     public class RemoveChildTests
     {
-        private static readonly XmlNodeType[] XmlNodeTypes = new XmlNodeType[] { XmlNodeType.Whitespace, XmlNodeType.SignificantWhitespace, XmlNodeType.CDATA, XmlNodeType.Text, XmlNodeType.Comment };
+        private static readonly XmlNodeType[] s_XmlNodeTypes = new XmlNodeType[] { XmlNodeType.Whitespace, XmlNodeType.SignificantWhitespace, XmlNodeType.CDATA, XmlNodeType.Text, XmlNodeType.Comment };
         private enum InsertType { InsertBefore, InsertAfter }
 
         [Fact]
@@ -201,7 +201,7 @@ namespace XmlDocumentTests.XmlNodeTests
         {
             var xml = @"<TMC>text<!-- comments --><![CDATA[ &lt; &amp; <tag> < ! > & </tag> 	 ]]></TMC>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertBefore, nodeType);
         }
 
@@ -210,7 +210,7 @@ namespace XmlDocumentTests.XmlNodeTests
         {
             var xml = @"<TCS xml:space=""preserve"">text<!-- comments -->   	</TCS>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertBefore, nodeType);
         }
 
@@ -220,7 +220,7 @@ namespace XmlDocumentTests.XmlNodeTests
             var xml = @"<WMT>
             <!-- comments -->text</WMT>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertBefore, nodeType);
         }
 
@@ -231,7 +231,7 @@ namespace XmlDocumentTests.XmlNodeTests
             <E/>
         </WEW>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertAfter, nodeType);
         }
 
@@ -240,7 +240,7 @@ namespace XmlDocumentTests.XmlNodeTests
         {
             var xml = @"<TET>text1<E/>text2</TET>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertAfter, nodeType);
         }
 
@@ -249,7 +249,7 @@ namespace XmlDocumentTests.XmlNodeTests
         {
             var xml = @" <SES xml:space=""preserve""> 	<E/>		</SES>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertAfter, nodeType);
         }
 
@@ -258,7 +258,7 @@ namespace XmlDocumentTests.XmlNodeTests
         {
             var xml = @"<CEC><![CDATA[ &lt; &amp; <tag> < ! > & </tag> 	 ]]><E/><![CDATA[ &lt; &amp; <tag> < ! > & </tag> 	 ]]></CEC>";
 
-            foreach (var nodeType in XmlNodeTypes)
+            foreach (var nodeType in s_XmlNodeTypes)
                 DeleteNonTextNodeBase(xml, InsertType.InsertAfter, nodeType);
         }
 

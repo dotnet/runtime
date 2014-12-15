@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata
 {
     public sealed class HandleComparer : IEqualityComparer<Handle>, IComparer<Handle>
     {
-        private static readonly HandleComparer _default = new HandleComparer();
+        private static readonly HandleComparer s_default = new HandleComparer();
 
         private HandleComparer()
         {
@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
 
         public static HandleComparer Default
         {
-            get { return _default; }
+            get { return s_default; }
         }
 
         public bool Equals(Handle x, Handle y)

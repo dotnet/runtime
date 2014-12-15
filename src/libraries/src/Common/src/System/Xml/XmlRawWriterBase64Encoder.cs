@@ -5,16 +5,16 @@ namespace System.Xml
 {
     internal partial class XmlRawWriterBase64Encoder : Base64Encoder
     {
-        XmlRawWriter rawWriter;
+        private XmlRawWriter _rawWriter;
 
         internal XmlRawWriterBase64Encoder(XmlRawWriter rawWriter)
         {
-            this.rawWriter = rawWriter;
+            _rawWriter = rawWriter;
         }
 
         internal override void WriteChars(char[] chars, int index, int count)
         {
-            rawWriter.WriteRaw(chars, index, count);
+            _rawWriter.WriteRaw(chars, index, count);
         }
     }
 }
