@@ -1,28 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <PropertyGroup>
-    <BuildToolsVersion>1.0.16-prerelease</BuildToolsVersion>
-    <SkipTestAssemblies Condition="'$(SkipTestAssemblies)'==''">System.Threading.Tasks.Dataflow.Tests;System.Linq.Parallel.Tests</SkipTestAssemblies>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(ProjectDir)bin\</BinDir>
-    <ToolsDir>$(BinDir)tools\</ToolsDir>
-
-    <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
-
-    <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
-    <NuGetConfigCommandLine
-      Condition="Exists($(NuGetConfigFile))">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
-    <PackagesDir>$(SourceDir)packages\</PackagesDir>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageConfigs Include="$(SourceDir)*\packages.config" />
-  </ItemGroup>
+  <Import Project="dir.props" />
 
   <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
@@ -44,35 +22,9 @@
     </Task>
   </UsingTask>
 
-  <Target Name="Clean">
-    <!-- Execute build tools -->
-    <MSBuild
-      Projects="$(ToolsDir)fxbuild.proj"
-      SkipNonexistentProjects="true"
-      Targets="Clean" />
-  </Target>
-
-  <Target Name="Build" DependsOnTargets="_RestoreBuildTools">
-    <!-- Execute build tools -->
-    <MSBuild
-      Projects="$(ToolsDir)fxbuild.proj"
-      Properties="SkipTestAssemblies=$(SkipTestAssemblies)"
-      Targets="Build" />
-  </Target>
-
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
-  <Target Name="BuildFxLocalDependency" DependsOnTargets="_RestoreBuildTools" Returns="$(ProducedPackages)">
-    <!-- Execute build tools -->
-    <MSBuild
-      Projects="$(ToolsDir)fxbuild.proj"
-      Targets="BuildFxLocalDependency">
-      <Output TaskParameter="TargetOutputs" ItemName="ProducedPackages" />
-    </MSBuild>
-  </Target>
-
   <Target
     Name="_RestoreBuildTools"
+    BeforeTargets="Build;Clean"
     Condition="!Exists('$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)') Or !Exists('$(ToolsDir)fxbuild.proj')">
     <!-- Download latest nuget.exe -->
     <DownloadFile
@@ -90,4 +42,9 @@
       Command="xcopy /e /y &quot;$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\*&quot; &quot;$(ToolsDir)&quot; > &quot;$(ToolsDir)BuildTools.xcopy.log&quot;" />
   </Target>
 
+  <ItemGroup>
+    <Project Include="src\dirs.proj" />
+  </ItemGroup>
+  
+  <Import Project="dir.traversal.targets" />
 </Project>

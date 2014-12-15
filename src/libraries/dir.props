@@ -1,0 +1,12 @@
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <BinDir>$(ProjectDir)bin\</BinDir>
+    <ToolsDir>$(BinDir)tools\</ToolsDir>
+
+    <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
+    <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
+    <PackagesDir>$(SourceDir)packages\</PackagesDir>
+  </PropertyGroup>
+</Project>

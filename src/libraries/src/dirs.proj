@@ -1,0 +1,47 @@
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+
+  <Import Project="$(ToolsDir)depending.targets" />
+  <Target Name="RestoreAllPackages" BeforeTargets="Build;Clean" DependsOnTargets="EnsureDependencies" />
+
+  <ItemGroup>
+    <Project Include="*\src\*.csproj">
+      <Properties>BaseOutputPath=$(ProjectDir)</Properties>
+    </Project>
+    <!-- <Project Include="*\tests\*.csproj" /> -->
+  </ItemGroup>
+
+  <Import Project="..\dir.traversal.targets" />
+  
+  <PropertyGroup>
+    <OutDir>$(BaseOutputPathWithConfig)</OutDir>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsDir)packages.targets" />
+  <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
+  
+  <Import Project="$(ToolsDir)tests.targets" />
+  <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
+  
+  <!--
+    Name="Build"
+    DependsOnTargets="
+      EnsureDependencies;
+      BuildBinaries;
+      BuildPackages;
+      RunTests;
+      GitPush" />
+
+  <Target
+    Name="Clean"
+    DependsOnTargets="
+      CleanBinaries" />
+
+  <Target
+    Name="Rebuild"
+    DependsOnTargets="
+      Clean;
+      Rebuild" />
+      -->
+
+</Project>
