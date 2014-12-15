@@ -7,34 +7,34 @@ namespace MS.Internal.Xml.XPath
 {
     internal class IteratorFilter : XPathNodeIterator
     {
-        private XPathNodeIterator innerIterator;
-        private string name;
-        private int position = 0;
+        private XPathNodeIterator _innerIterator;
+        private string _name;
+        private int _position = 0;
 
         internal IteratorFilter(XPathNodeIterator innerIterator, string name)
         {
-            this.innerIterator = innerIterator;
-            this.name = name;
+            _innerIterator = innerIterator;
+            _name = name;
         }
 
         private IteratorFilter(IteratorFilter it)
         {
-            this.innerIterator = it.innerIterator.Clone();
-            this.name = it.name;
-            this.position = it.position;
+            _innerIterator = it._innerIterator.Clone();
+            _name = it._name;
+            _position = it._position;
         }
 
         public override XPathNodeIterator Clone() { return new IteratorFilter(this); }
-        public override XPathNavigator Current { get { return innerIterator.Current; } }
-        public override int CurrentPosition { get { return this.position; } }
+        public override XPathNavigator Current { get { return _innerIterator.Current; } }
+        public override int CurrentPosition { get { return _position; } }
 
         public override bool MoveNext()
         {
-            while (innerIterator.MoveNext())
+            while (_innerIterator.MoveNext())
             {
-                if (innerIterator.Current.LocalName == this.name)
+                if (_innerIterator.Current.LocalName == _name)
                 {
-                    this.position++;
+                    _position++;
                     return true;
                 }
             }

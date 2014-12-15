@@ -27,7 +27,7 @@ namespace System.Xml.Linq
     /// </remarks>
     public class XElement : XContainer
     {
-        static IEnumerable<XElement> emptySequence;
+        private static IEnumerable<XElement> s_emptySequence;
 
         /// <summary>
         /// Gets an empty collection of elements.
@@ -36,8 +36,8 @@ namespace System.Xml.Linq
         {
             get
             {
-                if (emptySequence == null) emptySequence = new XElement[0];
-                return emptySequence;
+                if (s_emptySequence == null) s_emptySequence = new XElement[0];
+                return s_emptySequence;
             }
         }
 

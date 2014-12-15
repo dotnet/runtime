@@ -10,62 +10,62 @@ namespace System.Xml.Linq
 {
     internal struct Inserter
     {
-        XContainer parent;
-        XNode previous;
-        string text;
+        private XContainer _parent;
+        private XNode _previous;
+        private string _text;
 
         public Inserter(XContainer parent, XNode anchor)
         {
-            this.parent = parent;
-            this.previous = anchor;
-            this.text = null;
+            _parent = parent;
+            _previous = anchor;
+            _text = null;
         }
 
         public void Add(object content)
         {
             AddContent(content);
-            if (text != null)
+            if (_text != null)
             {
-                if (parent.content == null)
+                if (_parent.content == null)
                 {
-                    if (parent.SkipNotify())
+                    if (_parent.SkipNotify())
                     {
-                        parent.content = text;
+                        _parent.content = _text;
                     }
                     else
                     {
-                        if (text.Length > 0)
+                        if (_text.Length > 0)
                         {
-                            InsertNode(new XText(text));
+                            InsertNode(new XText(_text));
                         }
                         else
                         {
-                            if (parent is XElement)
+                            if (_parent is XElement)
                             {
                                 // Change in the serialization of an empty element: 
                                 // from empty tag to start/end tag pair
-                                parent.NotifyChanging(parent, XObjectChangeEventArgs.Value);
-                                if (parent.content != null) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
-                                parent.content = text;
-                                parent.NotifyChanged(parent, XObjectChangeEventArgs.Value);
+                                _parent.NotifyChanging(_parent, XObjectChangeEventArgs.Value);
+                                if (_parent.content != null) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
+                                _parent.content = _text;
+                                _parent.NotifyChanged(_parent, XObjectChangeEventArgs.Value);
                             }
                             else
                             {
-                                parent.content = text;
+                                _parent.content = _text;
                             }
                         }
                     }
                 }
-                else if (text.Length > 0)
+                else if (_text.Length > 0)
                 {
-                    if (previous is XText && !(previous is XCData))
+                    if (_previous is XText && !(_previous is XCData))
                     {
-                        ((XText)previous).Value += text;
+                        ((XText)_previous).Value += _text;
                     }
                     else
                     {
-                        parent.ConvertTextToNode();
-                        InsertNode(new XText(text));
+                        _parent.ConvertTextToNode();
+                        InsertNode(new XText(_text));
                     }
                 }
             }
@@ -110,93 +110,93 @@ namespace System.Xml.Linq
 
         void AddNode(XNode n)
         {
-            parent.ValidateNode(n, previous);
+            _parent.ValidateNode(n, _previous);
             if (n.parent != null)
             {
                 n = n.CloneNode();
             }
             else
             {
-                XNode p = parent;
+                XNode p = _parent;
                 while (p.parent != null) p = p.parent;
                 if (n == p) n = n.CloneNode();
             }
-            parent.ConvertTextToNode();
-            if (text != null)
+            _parent.ConvertTextToNode();
+            if (_text != null)
             {
-                if (text.Length > 0)
+                if (_text.Length > 0)
                 {
-                    if (previous is XText && !(previous is XCData))
+                    if (_previous is XText && !(_previous is XCData))
                     {
-                        ((XText)previous).Value += text;
+                        ((XText)_previous).Value += _text;
                     }
                     else
                     {
-                        InsertNode(new XText(text));
+                        InsertNode(new XText(_text));
                     }
                 }
-                text = null;
+                _text = null;
             }
             InsertNode(n);
         }
 
         void AddString(string s)
         {
-            parent.ValidateString(s);
-            text += s;
+            _parent.ValidateString(s);
+            _text += s;
         }
 
         // Prepends if previous == null, otherwise inserts after previous
         void InsertNode(XNode n)
         {
-            bool notify = parent.NotifyChanging(n, XObjectChangeEventArgs.Add);
+            bool notify = _parent.NotifyChanging(n, XObjectChangeEventArgs.Add);
             if (n.parent != null) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
-            n.parent = parent;
-            if (parent.content == null || parent.content is string)
+            n.parent = _parent;
+            if (_parent.content == null || _parent.content is string)
             {
                 n.next = n;
-                parent.content = n;
+                _parent.content = n;
             }
-            else if (previous == null)
+            else if (_previous == null)
             {
-                XNode last = (XNode)parent.content;
+                XNode last = (XNode)_parent.content;
                 n.next = last.next;
                 last.next = n;
             }
             else
             {
-                n.next = previous.next;
-                previous.next = n;
-                if (parent.content == previous) parent.content = n;
+                n.next = _previous.next;
+                _previous.next = n;
+                if (_parent.content == _previous) _parent.content = n;
             }
-            previous = n;
-            if (notify) parent.NotifyChanged(n, XObjectChangeEventArgs.Add);
+            _previous = n;
+            if (notify) _parent.NotifyChanged(n, XObjectChangeEventArgs.Add);
         }
     }
 
     internal struct NamespaceCache
     {
-        XNamespace ns;
-        string namespaceName;
+        private XNamespace _ns;
+        private string _namespaceName;
 
         public XNamespace Get(string namespaceName)
         {
-            if ((object)namespaceName == (object)this.namespaceName) return this.ns;
-            this.namespaceName = namespaceName;
-            this.ns = XNamespace.Get(namespaceName);
-            return this.ns;
+            if ((object)namespaceName == (object)_namespaceName) return _ns;
+            _namespaceName = namespaceName;
+            _ns = XNamespace.Get(namespaceName);
+            return _ns;
         }
     }
 
     internal struct ElementWriter
     {
-        XmlWriter writer;
-        NamespaceResolver resolver;
+        private XmlWriter _writer;
+        private NamespaceResolver _resolver;
 
         public ElementWriter(XmlWriter writer)
         {
-            this.writer = writer;
-            this.resolver = new NamespaceResolver();
+            _writer = writer;
+            _resolver = new NamespaceResolver();
         }
 
         public void WriteElement(XElement e)
@@ -219,7 +219,7 @@ namespace System.Xml.Linq
                         string s = e.content as string;
                         if (s != null)
                         {
-                            writer.WriteString(s);
+                            _writer.WriteString(s);
                             WriteFullEndElement();
                         }
                         else
@@ -231,7 +231,7 @@ namespace System.Xml.Linq
                 }
                 else
                 {
-                    n.WriteTo(writer);
+                    n.WriteTo(_writer);
                 }
                 while (n != root && n == n.parent.content)
                 {
@@ -247,7 +247,7 @@ namespace System.Xml.Linq
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
-            string prefix = resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
+            string prefix = _resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
             if (prefix != null) return prefix;
             if ((object)namespaceName == (object)XNamespace.xmlPrefixNamespace) return "xml";
             if ((object)namespaceName == (object)XNamespace.xmlnsPrefixNamespace) return "xmlns";
@@ -268,7 +268,7 @@ namespace System.Xml.Linq
                         a = a.next;
                         if (a.IsNamespaceDeclaration)
                         {
-                            resolver.AddFirst(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
+                            _resolver.AddFirst(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
                         }
                     } while (a != e.lastAttr);
                 }
@@ -277,7 +277,7 @@ namespace System.Xml.Linq
 
         void PushElement(XElement e)
         {
-            resolver.PushScope();
+            _resolver.PushScope();
             XAttribute a = e.lastAttr;
             if (a != null)
             {
@@ -286,7 +286,7 @@ namespace System.Xml.Linq
                     a = a.next;
                     if (a.IsNamespaceDeclaration)
                     {
-                        resolver.Add(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
+                        _resolver.Add(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
                     }
                 } while (a != e.lastAttr);
             }
@@ -294,21 +294,21 @@ namespace System.Xml.Linq
 
         void WriteEndElement()
         {
-            writer.WriteEndElement();
-            resolver.PopScope();
+            _writer.WriteEndElement();
+            _resolver.PopScope();
         }
 
         void WriteFullEndElement()
         {
-            writer.WriteFullEndElement();
-            resolver.PopScope();
+            _writer.WriteFullEndElement();
+            _resolver.PopScope();
         }
 
         void WriteStartElement(XElement e)
         {
             PushElement(e);
             XNamespace ns = e.Name.Namespace;
-            writer.WriteStartElement(GetPrefixOfNamespace(ns, true), e.Name.LocalName, ns.NamespaceName);
+            _writer.WriteStartElement(GetPrefixOfNamespace(ns, true), e.Name.LocalName, ns.NamespaceName);
             XAttribute a = e.lastAttr;
             if (a != null)
             {
@@ -318,7 +318,7 @@ namespace System.Xml.Linq
                     ns = a.Name.Namespace;
                     string localName = a.Name.LocalName;
                     string namespaceName = ns.NamespaceName;
-                    writer.WriteAttributeString(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value);
+                    _writer.WriteAttributeString(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value);
                 } while (a != e.lastAttr);
             }
         }
@@ -334,36 +334,36 @@ namespace System.Xml.Linq
             public NamespaceDeclaration prev;
         }
 
-        int scope;
-        NamespaceDeclaration declaration;
-        NamespaceDeclaration rover;
+        private int _scope;
+        private NamespaceDeclaration _declaration;
+        private NamespaceDeclaration _rover;
 
         public void PushScope()
         {
-            scope++;
+            _scope++;
         }
 
         public void PopScope()
         {
-            NamespaceDeclaration d = declaration;
+            NamespaceDeclaration d = _declaration;
             if (d != null)
             {
                 do
                 {
                     d = d.prev;
-                    if (d.scope != scope) break;
-                    if (d == declaration)
+                    if (d.scope != _scope) break;
+                    if (d == _declaration)
                     {
-                        declaration = null;
+                        _declaration = null;
                     }
                     else
                     {
-                        declaration.prev = d.prev;
+                        _declaration.prev = d.prev;
                     }
-                    rover = null;
-                } while (d != declaration && declaration != null);
+                    _rover = null;
+                } while (d != _declaration && _declaration != null);
             }
-            scope--;
+            _scope--;
         }
 
         public void Add(string prefix, XNamespace ns)
@@ -371,17 +371,17 @@ namespace System.Xml.Linq
             NamespaceDeclaration d = new NamespaceDeclaration();
             d.prefix = prefix;
             d.ns = ns;
-            d.scope = scope;
-            if (declaration == null)
+            d.scope = _scope;
+            if (_declaration == null)
             {
-                declaration = d;
+                _declaration = d;
             }
             else
             {
-                d.prev = declaration.prev;
+                d.prev = _declaration.prev;
             }
-            declaration.prev = d;
-            rover = null;
+            _declaration.prev = d;
+            _rover = null;
         }
 
         public void AddFirst(string prefix, XNamespace ns)
@@ -389,26 +389,26 @@ namespace System.Xml.Linq
             NamespaceDeclaration d = new NamespaceDeclaration();
             d.prefix = prefix;
             d.ns = ns;
-            d.scope = scope;
-            if (declaration == null)
+            d.scope = _scope;
+            if (_declaration == null)
             {
                 d.prev = d;
             }
             else
             {
-                d.prev = declaration.prev;
-                declaration.prev = d;
+                d.prev = _declaration.prev;
+                _declaration.prev = d;
             }
-            declaration = d;
-            rover = null;
+            _declaration = d;
+            _rover = null;
         }
 
         // Only elements allow default namespace declarations. The rover 
         // caches the last namespace declaration used by an element.
         public string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
-            if (rover != null && rover.ns == ns && (allowDefaultNamespace || rover.prefix.Length > 0)) return rover.prefix;
-            NamespaceDeclaration d = declaration;
+            if (_rover != null && _rover.ns == ns && (allowDefaultNamespace || _rover.prefix.Length > 0)) return _rover.prefix;
+            NamespaceDeclaration d = _declaration;
             if (d != null)
             {
                 do
@@ -416,7 +416,7 @@ namespace System.Xml.Linq
                     d = d.prev;
                     if (d.ns == ns)
                     {
-                        NamespaceDeclaration x = declaration.prev;
+                        NamespaceDeclaration x = _declaration.prev;
                         while (x != d && x.prefix != d.prefix)
                         {
                             x = x.prev;
@@ -425,7 +425,7 @@ namespace System.Xml.Linq
                         {
                             if (allowDefaultNamespace)
                             {
-                                rover = d;
+                                _rover = d;
                                 return d.prefix;
                             }
                             else if (d.prefix.Length > 0)
@@ -434,7 +434,7 @@ namespace System.Xml.Linq
                             }
                         }
                     }
-                } while (d != declaration);
+                } while (d != _declaration);
             }
             return null;
         }
@@ -442,35 +442,35 @@ namespace System.Xml.Linq
 
     internal struct StreamingElementWriter
     {
-        XmlWriter writer;
-        XStreamingElement element;
-        List<XAttribute> attributes;
-        NamespaceResolver resolver;
+        private XmlWriter _writer;
+        private XStreamingElement _element;
+        private List<XAttribute> _attributes;
+        private NamespaceResolver _resolver;
 
         public StreamingElementWriter(XmlWriter w)
         {
-            writer = w;
-            element = null;
-            attributes = new List<XAttribute>();
-            resolver = new NamespaceResolver();
+            _writer = w;
+            _element = null;
+            _attributes = new List<XAttribute>();
+            _resolver = new NamespaceResolver();
         }
 
         void FlushElement()
         {
-            if (element != null)
+            if (_element != null)
             {
                 PushElement();
-                XNamespace ns = element.Name.Namespace;
-                writer.WriteStartElement(GetPrefixOfNamespace(ns, true), element.Name.LocalName, ns.NamespaceName);
-                foreach (XAttribute a in attributes)
+                XNamespace ns = _element.Name.Namespace;
+                _writer.WriteStartElement(GetPrefixOfNamespace(ns, true), _element.Name.LocalName, ns.NamespaceName);
+                foreach (XAttribute a in _attributes)
                 {
                     ns = a.Name.Namespace;
                     string localName = a.Name.LocalName;
                     string namespaceName = ns.NamespaceName;
-                    writer.WriteAttributeString(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value);
+                    _writer.WriteAttributeString(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value);
                 }
-                element = null;
-                attributes.Clear();
+                _element = null;
+                _attributes.Clear();
             }
         }
 
@@ -478,7 +478,7 @@ namespace System.Xml.Linq
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
-            string prefix = resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
+            string prefix = _resolver.GetPrefixOfNamespace(ns, allowDefaultNamespace);
             if (prefix != null) return prefix;
             if ((object)namespaceName == (object)XNamespace.xmlPrefixNamespace) return "xml";
             if ((object)namespaceName == (object)XNamespace.xmlnsPrefixNamespace) return "xmlns";
@@ -487,12 +487,12 @@ namespace System.Xml.Linq
 
         void PushElement()
         {
-            resolver.PushScope();
-            foreach (XAttribute a in attributes)
+            _resolver.PushScope();
+            foreach (XAttribute a in _attributes)
             {
                 if (a.IsNamespaceDeclaration)
                 {
-                    resolver.Add(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
+                    _resolver.Add(a.Name.NamespaceName.Length == 0 ? string.Empty : a.Name.LocalName, XNamespace.Get(a.Value));
                 }
             }
         }
@@ -541,38 +541,38 @@ namespace System.Xml.Linq
 
         void WriteAttribute(XAttribute a)
         {
-            if (element == null) throw new InvalidOperationException(SR.InvalidOperation_WriteAttribute);
-            attributes.Add(a);
+            if (_element == null) throw new InvalidOperationException(SR.InvalidOperation_WriteAttribute);
+            _attributes.Add(a);
         }
 
         void WriteNode(XNode n)
         {
             FlushElement();
-            n.WriteTo(writer);
+            n.WriteTo(_writer);
         }
 
         internal void WriteStreamingElement(XStreamingElement e)
         {
             FlushElement();
-            element = e;
+            _element = e;
             Write(e.content);
-            bool contentWritten = element == null;
+            bool contentWritten = _element == null;
             FlushElement();
             if (contentWritten)
             {
-                writer.WriteFullEndElement();
+                _writer.WriteFullEndElement();
             }
             else
             {
-                writer.WriteEndElement();
+                _writer.WriteEndElement();
             }
-            resolver.PopScope();
+            _resolver.PopScope();
         }
 
         void WriteString(string s)
         {
             FlushElement();
-            writer.WriteString(s);
+            _writer.WriteString(s);
         }
     }
 

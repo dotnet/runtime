@@ -989,24 +989,23 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix3x2_2x
         {
-            Matrix3x2 a;
-            Matrix3x2 b;
+            private Matrix3x2 _a;
+            private Matrix3x2 _b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix3x2PlusFloat
         {
-            Matrix3x2 v;
-            float f;
+            private Matrix3x2 _v;
+            private float _f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix3x2PlusFloat_2x
         {
-            Matrix3x2PlusFloat a;
-            Matrix3x2PlusFloat b;
+            private Matrix3x2PlusFloat _a;
+            private Matrix3x2PlusFloat _b;
         }
-
         //// A test to make sure the fields are laid out how we expect
         //[Fact]
         //public unsafe void Matrix3x2FieldOffsetTest()

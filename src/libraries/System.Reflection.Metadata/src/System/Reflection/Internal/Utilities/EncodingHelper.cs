@@ -55,7 +55,7 @@ namespace System.Reflection.Internal
 
         // The pooled buffers for (2) and (3) above. Use AcquireBuffer(int) and ReleaseBuffer(byte[])
         // instead of the pool directly to implement the size check.
-        private static readonly ObjectPool<byte[]> pool = new ObjectPool<byte[]>(() => new byte[PooledBufferSize]);
+        private static readonly ObjectPool<byte[]> _pool = new ObjectPool<byte[]>(() => new byte[PooledBufferSize]);
 
         public static string DecodeUtf8(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
         {
@@ -107,14 +107,14 @@ namespace System.Reflection.Internal
                 return new byte[byteCount];
             }
 
-            return pool.Allocate();
+            return _pool.Allocate();
         }
 
         private static void ReleaseBuffer(byte[] buffer)
         {
             if (buffer.Length == PooledBufferSize)
             {
-                pool.Free(buffer);
+                _pool.Free(buffer);
             }
         }
 
@@ -125,18 +125,18 @@ namespace System.Reflection.Internal
         internal delegate string Encoding_GetString(Encoding encoding, byte* bytes, int byteCount); // only internal for test hook
         private delegate string String_CreateStringFromEncoding(byte* bytes, int byteCount, Encoding encoding);
 
-        private static Encoding_GetString getStringPlatform = LoadGetStringPlatform(); // only non-readonly for test hook
+        private static Encoding_GetString s_getStringPlatform = LoadGetStringPlatform(); // only non-readonly for test hook
 
         public static string GetString(this Encoding encoding, byte* bytes, int byteCount)
         {
             Debug.Assert(encoding != null);
 
-            if (getStringPlatform == null)
+            if (s_getStringPlatform == null)
             {
                 return GetStringPortable(encoding, bytes, byteCount);
             }
 
-            return getStringPlatform(encoding, bytes, byteCount);
+            return s_getStringPlatform(encoding, bytes, byteCount);
         }
 
         private static unsafe string GetStringPortable(Encoding encoding, byte* bytes, int byteCount)
@@ -266,8 +266,8 @@ namespace System.Reflection.Internal
         // Test hook to force portable implementation and ensure light is functioning.
         internal static bool TestOnly_LightUpEnabled
         {
-            get { return getStringPlatform != null; }
-            set { getStringPlatform = value ? LoadGetStringPlatform() : null; }
+            get { return s_getStringPlatform != null; }
+            set { s_getStringPlatform = value ? LoadGetStringPlatform() : null; }
         }
         #endregion
     }

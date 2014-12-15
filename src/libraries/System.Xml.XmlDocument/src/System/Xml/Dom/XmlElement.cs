@@ -8,9 +8,9 @@ namespace System.Xml
     // Represents an element.
     public class XmlElement : XmlLinkedNode
     {
-        XmlName name;
-        XmlAttributeCollection attributes;
-        XmlLinkedNode lastChild; // == this for empty elements otherwise it is the last child
+        private XmlName _name;
+        private XmlAttributeCollection _attributes;
+        private XmlLinkedNode _lastChild; // == this for empty elements otherwise it is the last child
 
         internal XmlElement(XmlName name, bool empty, XmlDocument doc) : base(doc)
         {
@@ -23,10 +23,10 @@ namespace System.Xml
             }
             if (name.LocalName.Length == 0)
                 throw new ArgumentException(SR.Xdom_Empty_LocalName);
-            this.name = name;
+            _name = name;
             if (empty)
             {
-                this.lastChild = this;
+                _lastChild = this;
             }
         }
 
@@ -37,8 +37,8 @@ namespace System.Xml
 
         internal XmlName XmlName
         {
-            get { return name; }
-            set { name = value; }
+            get { return _name; }
+            set { _name = value; }
         }
 
         // Creates a duplicate of this node.
@@ -72,26 +72,26 @@ namespace System.Xml
         // Gets the name of the node.
         public override string Name
         {
-            get { return name.Name; }
+            get { return _name.Name; }
         }
 
         // Gets the name of the current node without the namespace prefix.
         public override string LocalName
         {
-            get { return name.LocalName; }
+            get { return _name.LocalName; }
         }
 
         // Gets the namespace URI of this node.
         public override string NamespaceURI
         {
-            get { return name.NamespaceURI; }
+            get { return _name.NamespaceURI; }
         }
 
         // Gets or sets the namespace prefix of this node.
         public override string Prefix
         {
-            get { return name.Prefix; }
-            set { name = name.OwnerDocument.AddXmlName(value, LocalName, NamespaceURI); }
+            get { return _name.Prefix; }
+            set { _name = _name.OwnerDocument.AddXmlName(value, LocalName, NamespaceURI); }
         }
 
         // Gets the type of the current node.
@@ -113,7 +113,7 @@ namespace System.Xml
         {
             get
             {
-                return name.OwnerDocument;
+                return _name.OwnerDocument;
             }
         }
 
@@ -132,19 +132,19 @@ namespace System.Xml
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (lastChild == null
-                || lastChild == this)
+            if (_lastChild == null
+                || _lastChild == this)
             { // if LastNode == null 
                 newNode.next = newNode;
-                lastChild = newNode; // LastNode = newNode;
+                _lastChild = newNode; // LastNode = newNode;
                 newNode.SetParentForLoad(this);
             }
             else
             {
-                XmlLinkedNode refNode = lastChild; // refNode = LastNode;
+                XmlLinkedNode refNode = _lastChild; // refNode = LastNode;
                 newNode.next = refNode.next;
                 refNode.next = newNode;
-                lastChild = newNode; // LastNode = newNode;
+                _lastChild = newNode; // LastNode = newNode;
                 if (refNode.IsText
                     && newNode.IsText)
                 {
@@ -167,24 +167,24 @@ namespace System.Xml
         {
             get
             {
-                return lastChild == this;
+                return _lastChild == this;
             }
 
             set
             {
                 if (value)
                 {
-                    if (lastChild != this)
+                    if (_lastChild != this)
                     {
                         RemoveAllChildren();
-                        lastChild = this;
+                        _lastChild = this;
                     }
                 }
                 else
                 {
-                    if (lastChild == this)
+                    if (_lastChild == this)
                     {
-                        lastChild = null;
+                        _lastChild = null;
                     }
                 }
             }
@@ -194,12 +194,12 @@ namespace System.Xml
         {
             get
             {
-                return lastChild == this ? null : lastChild;
+                return _lastChild == this ? null : _lastChild;
             }
 
             set
             {
-                lastChild = value;
+                _lastChild = value;
             }
         }
 
@@ -228,18 +228,18 @@ namespace System.Xml
         {
             get
             {
-                if (attributes == null)
+                if (_attributes == null)
                 {
                     lock (OwnerDocument.objLock)
                     {
-                        if (attributes == null)
+                        if (_attributes == null)
                         {
-                            attributes = new XmlAttributeCollection(this);
+                            _attributes = new XmlAttributeCollection(this);
                         }
                     }
                 }
 
-                return attributes;
+                return _attributes;
             }
         }
 
@@ -249,10 +249,10 @@ namespace System.Xml
         {
             get
             {
-                if (this.attributes == null)
+                if (_attributes == null)
                     return false;
                 else
-                    return this.attributes.Count > 0;
+                    return _attributes.Count > 0;
             }
         }
 
@@ -454,7 +454,7 @@ namespace System.Xml
                         // No content; use a short end element <a />
                         writer.WriteEndElement();
                     }
-                    else if (e.lastChild == null)
+                    else if (e._lastChild == null)
                     {
                         // No actual content; use a full end element <a></a>
                         writer.WriteFullEndElement();
@@ -515,7 +515,7 @@ namespace System.Xml
         public virtual XmlNode RemoveAttributeAt(int i)
         {
             if (HasAttributes)
-                return attributes.RemoveAt(i);
+                return _attributes.RemoveAt(i);
             return null;
         }
 
@@ -524,7 +524,7 @@ namespace System.Xml
         {
             if (HasAttributes)
             {
-                attributes.RemoveAll();
+                _attributes.RemoveAll();
             }
         }
 

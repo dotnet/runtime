@@ -8,13 +8,13 @@ namespace System.Reflection.Metadata
 {
     public struct AssemblyReference
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use raw uint.
-        private readonly uint treatmentAndRowId;
+        private readonly uint _treatmentAndRowId;
 
-        private static readonly Version version_1_1_0_0 = new Version(1, 1, 0, 0);
-        private static readonly Version version_4_0_0_0 = new Version(4, 0, 0, 0);
+        private static readonly Version s_version_1_1_0_0 = new Version(1, 1, 0, 0);
+        private static readonly Version s_version_4_0_0_0 = new Version(4, 0, 0, 0);
 
         internal AssemblyReference(MetadataReader reader, uint treatmentAndRowId)
         {
@@ -24,18 +24,18 @@ namespace System.Reflection.Metadata
             // only virtual bit can be set in highest byte:
             Debug.Assert((treatmentAndRowId & ~(TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0);
 
-            this.reader = reader;
-            this.treatmentAndRowId = treatmentAndRowId;
+            _reader = reader;
+            _treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private bool IsVirtual
         {
-            get { return (treatmentAndRowId & TokenTypeIds.VirtualTokenMask) != 0; }
+            get { return (_treatmentAndRowId & TokenTypeIds.VirtualTokenMask) != 0; }
         }
 
         public Version Version
@@ -48,12 +48,12 @@ namespace System.Reflection.Metadata
                 }
 
                 // change mscorlib version:
-                if (RowId == reader.WinMDMscorlibRef)
+                if (RowId == _reader.WinMDMscorlibRef)
                 {
-                    return version_4_0_0_0;
+                    return s_version_4_0_0_0;
                 }
 
-                return reader.AssemblyRefTable.GetVersion(RowId);
+                return _reader.AssemblyRefTable.GetVersion(RowId);
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Reflection.Metadata
                     return GetVirtualFlags();
                 }
 
-                return reader.AssemblyRefTable.GetFlags(RowId);
+                return _reader.AssemblyRefTable.GetFlags(RowId);
             }
         }
 
@@ -79,7 +79,7 @@ namespace System.Reflection.Metadata
                     return GetVirtualName();
                 }
 
-                return reader.AssemblyRefTable.GetName(RowId);
+                return _reader.AssemblyRefTable.GetName(RowId);
             }
         }
 
@@ -92,7 +92,7 @@ namespace System.Reflection.Metadata
                     return GetVirtualCulture();
                 }
 
-                return reader.AssemblyRefTable.GetCulture(RowId);
+                return _reader.AssemblyRefTable.GetCulture(RowId);
             }
         }
 
@@ -105,7 +105,7 @@ namespace System.Reflection.Metadata
                     return GetVirtualPublicKeyOrToken();
                 }
 
-                return reader.AssemblyRefTable.GetPublicKeyOrToken(RowId);
+                return _reader.AssemblyRefTable.GetPublicKeyOrToken(RowId);
             }
         }
 
@@ -118,7 +118,7 @@ namespace System.Reflection.Metadata
                     return GetVirtualHashValue();
                 }
 
-                return reader.AssemblyRefTable.GetHashValue(RowId);
+                return _reader.AssemblyRefTable.GetHashValue(RowId);
             }
         }
 
@@ -129,7 +129,7 @@ namespace System.Reflection.Metadata
                 return GetVirtualCustomAttributes();
             }
 
-            return new CustomAttributeHandleCollection(reader, AssemblyReferenceHandle.FromRowId(RowId));
+            return new CustomAttributeHandleCollection(_reader, AssemblyReferenceHandle.FromRowId(RowId));
         }
 
         #region Virtual Rows
@@ -138,16 +138,16 @@ namespace System.Reflection.Metadata
             switch ((AssemblyReferenceHandle.VirtualIndex)RowId)
             {
                 case AssemblyReferenceHandle.VirtualIndex.System_Numerics_Vectors:
-                    return version_1_1_0_0;
+                    return s_version_1_1_0_0;
                 default:
-                    return version_4_0_0_0;
+                    return s_version_4_0_0_0;
             }
         }
 
         private AssemblyFlags GetVirtualFlags()
         {
             // use flags from mscorlib ref (specifically PublicKey flag):
-            return reader.AssemblyRefTable.GetFlags(reader.WinMDMscorlibRef);
+            return _reader.AssemblyRefTable.GetFlags(_reader.WinMDMscorlibRef);
         }
 
         private StringHandle GetVirtualName()
@@ -194,11 +194,11 @@ namespace System.Reflection.Metadata
                 case AssemblyReferenceHandle.VirtualIndex.System_Runtime_WindowsRuntime:
                 case AssemblyReferenceHandle.VirtualIndex.System_Runtime_WindowsRuntime_UI_Xaml:
                     // use key or token from mscorlib ref:
-                    return reader.AssemblyRefTable.GetPublicKeyOrToken(reader.WinMDMscorlibRef);
+                    return _reader.AssemblyRefTable.GetPublicKeyOrToken(_reader.WinMDMscorlibRef);
 
                 default:
                     // use contract assembly key or token:
-                    var hasFullKey = (reader.AssemblyRefTable.GetFlags(reader.WinMDMscorlibRef) & AssemblyFlags.PublicKey) != 0;
+                    var hasFullKey = (_reader.AssemblyRefTable.GetFlags(_reader.WinMDMscorlibRef) & AssemblyFlags.PublicKey) != 0;
                     return BlobHandle.FromVirtualIndex(hasFullKey ? BlobHandle.VirtualIndex.ContractPublicKey : BlobHandle.VirtualIndex.ContractPublicKeyToken, 0);
             }
         }
@@ -211,7 +211,7 @@ namespace System.Reflection.Metadata
         private CustomAttributeHandleCollection GetVirtualCustomAttributes()
         {
             // return custom attributes applied on mscorlib ref
-            return new CustomAttributeHandleCollection(reader, AssemblyReferenceHandle.FromRowId(reader.WinMDMscorlibRef));
+            return new CustomAttributeHandleCollection(_reader, AssemblyReferenceHandle.FromRowId(_reader.WinMDMscorlibRef));
         }
         #endregion
     }
