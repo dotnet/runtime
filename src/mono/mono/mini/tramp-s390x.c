@@ -50,6 +50,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/arch/s390x/s390x-codegen.h>
 
 #include "mini.h"
@@ -108,6 +109,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	g_assert ((code - start) <= 28);
 
 	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, method);
 
 	return start;
 }
@@ -134,9 +136,6 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 		S390_EMIT_CALL((orig_code - 14), addr);
 		mono_arch_flush_icache (orig_code - 14, 12);
 	} else {
-fprintf(stderr, "%p %02x %02x %02x %02x\n",
-&orig_code[-14], orig_code[-12], orig_code[-11], orig_code[-6], orig_code[-5]);
-fflush(stderr);
 		/* This is the 'brasl' instruction */
 		orig_code    -= 4;
 		displace = ((gssize) addr - (gssize) (orig_code - 2)) / 2;
@@ -199,6 +198,9 @@ mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 	code = buf = mono_global_codeman_reserve (16);
 
 	s390_br (code, s390_r14);
+
+	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	if (info)
 		*info = mono_tramp_info_create ("nullified_class_init_trampoline", 
@@ -402,6 +404,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 	
 	if (info) {
 		tramp_name = mono_get_generic_trampoline_name (tramp_type);
@@ -468,6 +471,8 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (code, buf - code);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, 
+				       (void *) mono_get_generic_trampoline_simple_name (tramp_type));
 
 	/* Sanity check */
 	g_assert ((buf - code) <= SPECIFIC_TRAMPOLINE_SIZE);
@@ -583,6 +588,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	s390_jg (code, displace);
 
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
 	g_assert (code - buf <= tramp_size);
 
@@ -631,6 +637,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m,
 	g_assert ((code - start) < buf_len);
 
 	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 
 	return(start);
 }	
@@ -701,6 +708,7 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	}
 
 	mono_arch_flush_icache (buf, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
 	g_assert (code - buf <= tramp_size);
 
 	if (info)

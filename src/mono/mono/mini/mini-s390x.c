@@ -5638,6 +5638,8 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 		mono_arch_flush_icache (start, size);
 	}
 
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
+
 	if (code_len)
 		*code_len = code - start;
 
@@ -5912,8 +5914,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 	}
 
 	mono_arch_flush_icache ((guint8*)start, (code - start));
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
-	if (!fail_tramp)
+	if (!fail_tramp) 
 		mono_stats.imt_thunks_size += (code - start);
 
 	g_assert (code - start <= size);

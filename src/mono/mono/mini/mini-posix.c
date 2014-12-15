@@ -300,7 +300,7 @@ MONO_SIG_HANDLER_FUNC (static, sigusr1_signal_handler)
 
 static int profiling_signal_in_use;
 
-#if defined(__ia64__) || defined(__sparc__) || defined(sparc) || defined(__s390__) || defined(s390)
+#if defined(__ia64__) || defined(__sparc__) || defined(sparc)
 
 MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 {
