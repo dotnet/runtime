@@ -8197,20 +8197,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				mono_save_token_info (cfg, image, token, cil_method);
 
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					/*
-					 * Need to emit an implicit seq point after every non-void call so single stepping through nested calls like
-					 * foo (bar (), baz ())
-					 * works correctly. MS does this also:
-					 * http://stackoverflow.com/questions/6937198/making-your-net-language-step-correctly-in-the-debugger
-					 * The problem with this approach is that the debugger will stop after all calls returning a value,
-					 * even for simple cases, like:
-					 * int i = foo ();
-					 */
-					/* Special case a few common successor opcodes */
-					if (!(ip + 5 < end && (ip [5] == CEE_POP || ip [5] == CEE_NOP)) && !(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
-						need_seq_point = TRUE;
-				}
+				if (!(ip + 5 < end && (ip [5] == CEE_NOP)) && !(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
+					need_seq_point = TRUE;
 
 				n = fsig->param_count + fsig->hasthis;
 
@@ -9886,6 +9874,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			
 			ip += 5;
 			inline_costs += 5;
+			if (!(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip - header->code)))
+				emit_seq_point (cfg, method, ip, FALSE, TRUE);
 			break;
 		}
 		case CEE_CASTCLASS:
