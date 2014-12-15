@@ -362,8 +362,6 @@ mono_gc_flush_info (void)
 
 SGEN_TV_DECLARE (sgen_init_timestamp);
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
@@ -495,9 +493,6 @@ static MonoGCCallbacks gc_callbacks;
 static void *moved_objects [MOVED_OBJECTS_NUM];
 static int moved_objects_idx = 0;
 
-/* Vtable of the objects used to fill out nursery fragments before a collection */
-static MonoVTable *array_fill_vtable;
-
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 MonoNativeThreadId main_gc_thread = NULL;
 #endif
@@ -580,6 +575,8 @@ gray_queue_enable_redirect (SgenGrayQueue *queue)
 void
 sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
+	MonoVTable *array_fill_vtable = sgen_client_get_array_fill_vtable ();
+
 	while (start < end) {
 		size_t size;
 		char *obj;
@@ -1775,9 +1772,9 @@ verify_nursery (void)
 		if (do_dump_nursery_content) {
 			if (cur > hole_start)
 				SGEN_LOG (1, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
-			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_get_array_fill_vtable ());
+			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
 		}
-		if (nursery_canaries_enabled () && (MonoVTable*)SGEN_LOAD_VTABLE (cur) != array_fill_vtable) {
+		if (nursery_canaries_enabled () && (MonoVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
 			CHECK_CANARY_FOR_OBJECT (cur);
 			CANARIFY_SIZE (size);
 		}
@@ -4516,34 +4513,6 @@ NurseryClearPolicy
 sgen_get_nursery_clear_policy (void)
 {
 	return nursery_clear_policy;
-}
-
-MonoVTable*
-sgen_get_array_fill_vtable (void)
-{
-	if (!array_fill_vtable) {
-		static MonoClass klass;
-		static char _vtable[sizeof(MonoVTable)+8];
-		MonoVTable* vtable = (MonoVTable*) ALIGN_TO(_vtable, 8);
-		gsize bmap;
-
-		MonoDomain *domain = mono_get_root_domain ();
-		g_assert (domain);
-
-		klass.element_class = mono_defaults.byte_class;
-		klass.rank = 1;
-		klass.instance_size = sizeof (MonoArray);
-		klass.sizes.element_size = 1;
-		klass.name = "array_filler_type";
-
-		vtable->klass = &klass;
-		bmap = 0;
-		vtable->gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 1);
-		vtable->rank = 1;
-
-		array_fill_vtable = vtable;
-	}
-	return array_fill_vtable;
 }
 
 void

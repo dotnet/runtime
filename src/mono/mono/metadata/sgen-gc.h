@@ -1021,7 +1021,6 @@ void sgen_alloc_init_heavy_stats (void);
 char* sgen_nursery_alloc_get_upper_alloc_bound (void);
 void* sgen_nursery_alloc (size_t size);
 void* sgen_nursery_alloc_range (size_t size, size_t min_size, size_t *out_alloc_size);
-MonoVTable* sgen_get_array_fill_vtable (void);
 gboolean sgen_can_alloc_size (size_t size);
 void sgen_nursery_retire_region (void *address, ptrdiff_t size);
 

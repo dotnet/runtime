@@ -115,6 +115,59 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	sgen_get_remset ()->wbarrier_object_copy (obj, src);
 }
 
+#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
+
+/* Vtable of the objects used to fill out nursery fragments before a collection */
+static MonoVTable *array_fill_vtable;
+
+MonoVTable*
+sgen_client_get_array_fill_vtable (void)
+{
+	if (!array_fill_vtable) {
+		static MonoClass klass;
+		static char _vtable[sizeof(MonoVTable)+8];
+		MonoVTable* vtable = (MonoVTable*) ALIGN_TO(_vtable, 8);
+		gsize bmap;
+
+		MonoDomain *domain = mono_get_root_domain ();
+		g_assert (domain);
+
+		klass.element_class = mono_defaults.byte_class;
+		klass.rank = 1;
+		klass.instance_size = sizeof (MonoArray);
+		klass.sizes.element_size = 1;
+		klass.name = "array_filler_type";
+
+		vtable->klass = &klass;
+		bmap = 0;
+		vtable->gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 1);
+		vtable->rank = 1;
+
+		array_fill_vtable = vtable;
+	}
+	return array_fill_vtable;
+}
+
+gboolean
+sgen_client_array_fill_range (char *start, size_t size)
+{
+	MonoArray *o;
+
+	if (size < sizeof (MonoArray)) {
+		memset (start, 0, size);
+		return FALSE;
+	}
+
+	o = (MonoArray*)start;
+	o->obj.vtable = sgen_client_get_array_fill_vtable ();
+	/* Mark this as not a real object */
+	o->obj.synchronisation = GINT_TO_POINTER (-1);
+	o->bounds = NULL;
+	o->max_length = (mono_array_size_t)(size - sizeof (MonoArray));
+
+	return TRUE;
+}
+
 static MonoGCFinalizerCallbacks fin_callbacks;
 
 guint

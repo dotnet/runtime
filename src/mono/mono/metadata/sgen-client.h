@@ -20,6 +20,21 @@
 void sgen_client_init (void);
 
 /*
+ * Returns the vtable used for dummy objects to fill the nursery for ease and speed of
+ * walking.  Must be a valid vtable that is not used by any actual objects.  Must be
+ * idempotent.
+ */
+MonoVTable* sgen_client_get_array_fill_vtable (void);
+
+/*
+ * Fill the given range with a dummy object.  Its vtable must be the one returned by
+ * `sgen_client_get_array_fill_vtable()`.  If the range is too short to be filled with an
+ * object, null it.  Return `TRUE` if the range was filled with an object, `FALSE` if it was
+ * nulled.
+ */
+gboolean sgen_client_array_fill_range (char *start, size_t size);
+
+/*
  * Called after an object is enqueued for finalization.  This is a very low-level callback.
  * It should almost certainly be a NOP.
  */

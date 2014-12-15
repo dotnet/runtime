@@ -71,6 +71,7 @@
 #include "metadata/sgen-bridge.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-client.h"
 #include "metadata/mono-gc.h"
 #include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
@@ -667,25 +668,15 @@ sgen_clear_nursery_fragments (void)
 void
 sgen_clear_range (char *start, char *end)
 {
-	MonoArray *o;
 	size_t size = end - start;
 
 	if ((start && !end) || (start > end))
 		g_error ("Invalid range [%p %p]", start, end);
 
-	if (size < sizeof (MonoArray)) {
-		memset (start, 0, size);
-		return;
+	if (sgen_client_array_fill_range (start, size)) {
+		sgen_set_nursery_scan_start (start);
+		SGEN_ASSERT (0, start + sgen_safe_object_get_size ((MonoObject*)start) == end, "Array fill produced wrong size");
 	}
-
-	o = (MonoArray*)start;
-	o->obj.vtable = sgen_get_array_fill_vtable ();
-	/* Mark this as not a real object */
-	o->obj.synchronisation = GINT_TO_POINTER (-1);
-	o->bounds = NULL;
-	o->max_length = (mono_array_size_t)(size - sizeof (MonoArray));
-	sgen_set_nursery_scan_start (start);
-	g_assert (start + sgen_safe_object_get_size ((MonoObject*)o) == end);
 }
 
 void
