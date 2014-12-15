@@ -83,24 +83,18 @@ namespace System.Text.RegularExpressions
         {
             if (_captureMap != null)
             {
-                Object o;
-
-                o = _captureMap[groupnum];
-                if (o == null)
-                    return Group._emptygroup;
-                //throw new ArgumentOutOfRangeException("groupnum");
-
-                return GetGroupImpl((int)o);
+                int groupNumImpl;
+                if (_captureMap.TryGetValue(groupnum, out groupNumImpl))
+                {
+                    return GetGroupImpl(groupNumImpl);
+                }
             }
-            else
+            else if (groupnum < _match._matchcount.Length && groupnum >= 0)
             {
-                //if (groupnum >= _match._regex.CapSize || groupnum < 0)
-                //   throw new ArgumentOutOfRangeException("groupnum");
-                if (groupnum >= _match._matchcount.Length || groupnum < 0)
-                    return Group._emptygroup;
-
                 return GetGroupImpl(groupnum);
             }
+
+            return Group._emptygroup;
         }
 
 
