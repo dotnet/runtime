@@ -89,10 +89,17 @@ namespace System.Threading.Tasks.Dataflow.Internal
             if (_decliningPermanently)
                 return false;
 
+            // Store the offered message into the queue.
             _messages.Enqueue(messageValue);
 
-            Interlocked.MemoryBarrier();
+            Interlocked.MemoryBarrier(); // ensure the read of m_activeConsumer doesn't move up before the writes in Enqueue
 
+            // Make sure there's an active task available to handle processing this message.  If we find the task
+            // is null, we'll try to schedule one using an interlocked operation.  If we find the task is non-null,
+            // then there must be a task actively running.  If there's a race where the task is about to complete
+            // and nulls out its reference (using a barrier), it'll subsequently check whether there are any messages in the queue,
+            // and since we put the messages into the queue before now, it'll find them and use an interlocked
+            // to re-launch itself.
             if (_activeConsumer == null)
             {
                 ScheduleConsumerIfNecessary(false);
@@ -104,31 +111,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
         internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, bool consumeToAccept)
         {
-            // Fast path: if we're not declining messages and if we're not required to go
-            // back to the source to consume the offered message, just take the message.
-            if (!_decliningPermanently && !consumeToAccept)
-            {
-                // Store the offered message into the queue.
-                _messages.Enqueue(messageValue);
-
-                Interlocked.MemoryBarrier(); // ensure the read of m_activeConsumer doesn't move up before the writes in Enqueue
-
-                // Make sure there's an active task available to handle processing this message.  If we find the task
-                // is null, we'll try to schedule one using an interlocked operation.  If we find the task is non-null,
-                // then there must be a task actively running.  If there's a race where the task is about to complete
-                // and nulls out its reference (using a barrier), it'll subsequently check whether there are any messages in the queue,
-                // and since we put the messages into the queue before now, it'll find them and use an interlocked
-                // to re-launch itself.
-                if (_activeConsumer == null)
-                {
-                    ScheduleConsumerIfNecessary(isReplica: false);
-                }
-
-                return DataflowMessageStatus.Accepted;
-            }
-
-            // Take the slow path.  Separated out to enable the fast path to be inlined.
-            return OfferMessage_Slow(messageHeader, messageValue, source, consumeToAccept);
+            // If we're not required to go back to the source to consume the offered message, try fast path.
+            return !consumeToAccept && Post(messageValue) ? 
+                DataflowMessageStatus.Accepted :
+                OfferMessage_Slow(messageHeader, messageValue, source, consumeToAccept);
         }
 
         /// <summary>Implements the slow path for OfferMessage.</summary>
@@ -160,7 +146,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 if (!consumed) return DataflowMessageStatus.NotAvailable;
             }
 
-            // See the "fast path" comments in OfferMessage
+            // See the "fast path" comments in Post
             _messages.Enqueue(messageValue);
             Interlocked.MemoryBarrier(); // ensure the read of m_activeConsumer doesn't move up before the writes in Enqueue
             if (_activeConsumer == null)

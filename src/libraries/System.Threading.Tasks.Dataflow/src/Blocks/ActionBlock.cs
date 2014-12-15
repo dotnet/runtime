@@ -267,7 +267,7 @@ namespace System.Threading.Tasks.Dataflow
             // which for very high-throughput scenarios shows up as noticeable overhead on certain architectures.  
             // We can eliminate that call for direct ActionBlock usage by providing the same method as an instance method.
 
-            return _spscTarget != null ? _spscTarget.Post(item) : _defaultTarget.Post(item);
+            return _defaultTarget != null ? _defaultTarget.Post(item) : _spscTarget.Post(item);
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
