@@ -220,41 +220,38 @@ namespace System.Numerics.Tests
 
         void DecomposeTest(float yaw, float pitch, float roll, Vector3 expectedTranslation, Vector3 expectedScales)
         {
-            DecomposeTest(yaw, pitch, roll, expectedTranslation, expectedScales, true);
-        }
-
-        void DecomposeTest(float yaw, float pitch, float roll, Vector3 expectedTranslation, Vector3 expectedScales, bool expectedResult)
-        {
-            Quaternion expectedRotation = Quaternion.CreateFromYawPitchRoll(
-                MathHelper.ToRadians(yaw), MathHelper.ToRadians(pitch), MathHelper.ToRadians(roll));
+            Quaternion expectedRotation = Quaternion.CreateFromYawPitchRoll(MathHelper.ToRadians(yaw),
+                                                                            MathHelper.ToRadians(pitch),
+                                                                            MathHelper.ToRadians(roll));
 
             Matrix4x4 m = Matrix4x4.CreateScale(expectedScales) *
-                        Matrix4x4.CreateFromQuaternion(expectedRotation) *
-                        Matrix4x4.CreateTranslation(expectedTranslation);
+                          Matrix4x4.CreateFromQuaternion(expectedRotation) *
+                          Matrix4x4.CreateTranslation(expectedTranslation);
 
             Vector3 scales;
             Quaternion rotation;
             Vector3 translation;
 
             bool actualResult = Matrix4x4.Decompose(m, out scales, out rotation, out translation);
-            Assert.Equal(expectedResult, actualResult);
-            if (expectedResult)
+            Assert.True(actualResult, "Matrix4x4.Decompose did not return expected value.");
+
+            bool scaleIsZeroOrNegative = expectedScales.X <= 0 ||
+                                         expectedScales.Y <= 0 ||
+                                         expectedScales.Z <= 0;
+
+            if (scaleIsZeroOrNegative)
             {
-                Assert.True(MathHelper.Equal(expectedScales, scales),
-                    String.Format("Matrix4x4.Decompose did not return expected value Expected:{0} actual:{1}.", expectedScales, scales));
+                Assert.True(MathHelper.Equal(Math.Abs(expectedScales.X), Math.Abs(scales.X)), "Matrix4x4.Decompose did not return expected value.");
+                Assert.True(MathHelper.Equal(Math.Abs(expectedScales.Y), Math.Abs(scales.Y)), "Matrix4x4.Decompose did not return expected value.");
+                Assert.True(MathHelper.Equal(Math.Abs(expectedScales.Z), Math.Abs(scales.Z)), "Matrix4x4.Decompose did not return expected value.");
             }
             else
             {
-                Assert.True(MathHelper.Equal(Math.Abs(expectedScales.X), Math.Abs(scales.X)) &&
-                    MathHelper.Equal(Math.Abs(expectedScales.Y), Math.Abs(scales.Y))
-                    && MathHelper.Equal(Math.Abs(expectedScales.Z), Math.Abs(scales.Z)),
-                        String.Format("Matrix4x4.Decompose did not return expected value Expected:{0} actual:{1}.", expectedScales, scales));
-
+                Assert.True(MathHelper.Equal(expectedScales, scales), String.Format("Matrix4x4.Decompose did not return expected value Expected:{0} actual:{1}.", expectedScales, scales));
+                Assert.True(MathHelper.EqualRotation(expectedRotation, rotation), String.Format("Matrix4x4.Decompose did not return expected value. Expected:{0} actual:{1}.", expectedRotation, rotation));
             }
-            Assert.True(MathHelper.EqualRotation(expectedRotation, rotation),
-                String.Format("Matrix4x4.Decompose did not return expected value. Expected:{0} actual:{1}.", expectedRotation, rotation));
-            Assert.True(MathHelper.Equal(expectedTranslation, translation),
-                String.Format("Matrix4x4.Decompose did not return expected value. Expected:{0} actual:{1}.", expectedTranslation, translation));
+
+            Assert.True(MathHelper.Equal(expectedTranslation, translation), String.Format("Matrix4x4.Decompose did not return expected value. Expected:{0} actual:{1}.", expectedTranslation, translation));
         }
 
         // Various rotation decompose test.
@@ -277,7 +274,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        // Various scaled matrix decomposite test.
+        // Various scaled matrix decompose test.
         [Fact]
         public void Matrix4x4DecomposeTest02()
         {
@@ -294,32 +291,44 @@ namespace System.Numerics.Tests
             DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(-2, 1, 1));
 
             // Small scales.
-            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(1e-6f, 2e-6f, 3e-6f), false);
-            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(1e-6f, 3e-6f, 2e-6f), false);
-            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(2e-6f, 1e-6f, 3e-6f), false);
-            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(2e-6f, 3e-6f, 1e-6f), false);
-            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(3e-6f, 1e-6f, 2e-6f), false);
-            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(3e-6f, 2e-6f, 1e-6f), false);
+            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(1e-4f, 2e-4f, 3e-4f));
+            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(1e-4f, 3e-4f, 2e-4f));
+            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(2e-4f, 1e-4f, 3e-4f));
+            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(2e-4f, 3e-4f, 1e-4f));
+            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(3e-4f, 1e-4f, 2e-4f));
+            DecomposeTest(0, 0, 0, Vector3.Zero, new Vector3(3e-4f, 2e-4f, 1e-4f));
+
+            // Zero scales.
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(0, 0, 0));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(1, 0, 0));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(0, 1, 0));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(0, 0, 1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(0, 1, 1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(1, 0, 1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(1, 1, 0));
+
+            // Negative scales.
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(-1, -1, -1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(1, -1, -1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(-1, 1, -1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(-1, -1, 1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(-1, 1, 1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(1, -1, 1));
+            DecomposeTest(0, 0, 0, new Vector3(10, 20, 30), new Vector3(1, 1, -1));
         }
 
         void DecomposeScaleTest(float sx, float sy, float sz)
         {
-            Matrix4x4 m = Matrix4x4.CreateScale(1, 2e-6f, 1e-6f);
-            m.M11 = sx;
-            m.M12 = sy;
-            m.M13 = sz;
+            Matrix4x4 m = Matrix4x4.CreateScale(sx, sy, sz);
 
-            Vector3 expectedScales = new Vector3(1, 2e-6f, 1e-6f);
+            Vector3 expectedScales = new Vector3(sx, sy, sz);
             Vector3 scales;
             Quaternion rotation;
             Vector3 translation;
 
             bool actualResult = Matrix4x4.Decompose(m, out scales, out rotation, out translation);
-            Assert.Equal(false, actualResult);
-            Assert.True(MathHelper.Equal(Math.Abs(expectedScales.X), Math.Abs(scales.X)) &&
-                MathHelper.Equal(Math.Abs(expectedScales.Y), Math.Abs(scales.Y))
-                && MathHelper.Equal(Math.Abs(expectedScales.Z), Math.Abs(scales.Z)), "Matrix4x4.Decompose did not return expected value.");
-
+            Assert.True(actualResult, "Matrix4x4.Decompose did not return expected value.");
+            Assert.True(MathHelper.Equal(expectedScales, scales), "Matrix4x4.Decompose did not return expected value.");
             Assert.True(MathHelper.EqualRotation(Quaternion.Identity, rotation), "Matrix4x4.Decompose did not return expected value.");
             Assert.True(MathHelper.Equal(Vector3.Zero, translation), "Matrix4x4.Decompose did not return expected value.");
         }
@@ -328,12 +337,23 @@ namespace System.Numerics.Tests
         [Fact]
         public void Matrix4x4DecomposeTest03()
         {
-            DecomposeScaleTest(1, 2e-6f, 3e-6f);
-            DecomposeScaleTest(1, 3e-6f, 2e-6f);
-            DecomposeScaleTest(2e-6f, 1, 3e-6f);
-            DecomposeScaleTest(2e-6f, 3e-6f, 1);
-            DecomposeScaleTest(3e-6f, 1, 2e-6f);
-            DecomposeScaleTest(3e-6f, 2e-6f, 1);
+            DecomposeScaleTest(1, 2e-4f, 3e-4f);
+            DecomposeScaleTest(1, 3e-4f, 2e-4f);
+            DecomposeScaleTest(2e-4f, 1, 3e-4f);
+            DecomposeScaleTest(2e-4f, 3e-4f, 1);
+            DecomposeScaleTest(3e-4f, 1, 2e-4f);
+            DecomposeScaleTest(3e-4f, 2e-4f, 1);
+        }
+
+        [Fact]
+        public void Matrix4x4DecomposeTest04()
+        {
+            Vector3 scales;
+            Quaternion rotation;
+            Vector3 translation;
+
+            Assert.False(Matrix4x4.Decompose(GenerateMatrixNumberFrom1To16(), out scales, out rotation, out translation), "decompose should have failed.");
+            Assert.False(Matrix4x4.Decompose(new Matrix4x4(Matrix3x2.CreateSkew(1, 2)), out scales, out rotation, out translation), "decompose should have failed.");
         }
 
         // Transform by quaternion test

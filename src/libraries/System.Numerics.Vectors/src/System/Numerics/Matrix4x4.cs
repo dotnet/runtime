@@ -1638,14 +1638,14 @@ namespace System.Numerics
                         }
                         #endregion
 
-                        *(pCanonicalBasis + cc) = Vector3.Cross(*pVectorBasis[b], *pVectorBasis[a]);
+                        *pVectorBasis[b] = Vector3.Cross(*pVectorBasis[a], *(pCanonicalBasis + cc));
                     }
 
                     *pVectorBasis[b] = Vector3.Normalize(*pVectorBasis[b]);
 
                     if (pfScales[c] < EPSILON)
                     {
-                        *pVectorBasis[b] = Vector3.Cross(*pVectorBasis[c], *pVectorBasis[a]);
+                        *pVectorBasis[c] = Vector3.Cross(*pVectorBasis[a], *pVectorBasis[b]);
                     }
 
                     *pVectorBasis[c] = Vector3.Normalize(*pVectorBasis[c]);
