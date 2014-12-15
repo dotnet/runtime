@@ -8197,7 +8197,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				mono_save_token_info (cfg, image, token, cil_method);
 
-				if (!(ip + 5 < end && (ip [5] == CEE_NOP)) && !(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
+				if (!(ip + 5 < end && (ip [5] == CEE_POP)) && !(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
 					need_seq_point = TRUE;
 
 				n = fsig->param_count + fsig->hasthis;
