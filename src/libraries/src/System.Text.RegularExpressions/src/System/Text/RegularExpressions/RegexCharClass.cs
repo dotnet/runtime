@@ -489,7 +489,7 @@ namespace System.Text.RegularExpressions
             DigitClass = "\x00\x00\x01" + (char)((int)UnicodeCategory.DecimalDigitNumber + 1);
             NotDigitClass = "\x00\x00\x01" + unchecked((char)(-((int)UnicodeCategory.DecimalDigitNumber + 1)));
 
-#if DBG
+#if DEBUG
             // make sure the _propTable is correctly ordered
             int len = _propTable.Length;
             for (int i = 0; i < len - 1; i++)
@@ -1252,7 +1252,7 @@ namespace System.Text.RegularExpressions
             throw new ArgumentException(SR.Format(SR.MakeException, pattern, SR.Format(SR.UnknownProperty, capname)));
         }
 
-#if DBG
+#if DEBUG
 
         /*
          * SetDescription()

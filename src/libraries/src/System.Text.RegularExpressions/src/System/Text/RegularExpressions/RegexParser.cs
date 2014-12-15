@@ -1610,7 +1610,7 @@ namespace System.Text.RegularExpressions
                     return RegexOptions.Singleline;
                 case 'x':
                     return RegexOptions.IgnorePatternWhitespace;
-#if DBG
+#if DEBUG
                 case 'd':
                     return RegexOptions.Debug;
 #endif

@@ -385,7 +385,8 @@ namespace System.Text.RegularExpressions
         {
             return _pattern;
         }
-#if DBG
+
+#if DEBUG
         public String Dump(String indent)
         {
             StringBuilder sb = new StringBuilder();

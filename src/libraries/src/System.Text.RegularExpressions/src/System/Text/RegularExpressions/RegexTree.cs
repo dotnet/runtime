@@ -30,7 +30,8 @@ namespace System.Text.RegularExpressions
         internal String[] _capslist;
         internal RegexOptions _options;
         internal int _captop;
-#if DBG
+
+#if DEBUG
         internal void Dump()
         {
             _root.Dump();

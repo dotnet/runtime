@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions
 
             for (; ;)
             {
-#if DBG
+#if DEBUG
                 if (_runregex.Debug)
                 {
                     Debug.WriteLine("");
@@ -147,7 +147,7 @@ namespace System.Text.RegularExpressions
                         InitMatch();
                         initted = true;
                     }
-#if DBG
+#if DEBUG
                     if (_runregex.Debug)
                     {
                         Debug.WriteLine("Executing engine starting at " + _runtextpos.ToString(CultureInfo.InvariantCulture));
@@ -227,7 +227,7 @@ namespace System.Text.RegularExpressions
             if (0 > _timeoutOccursAt && 0 < currentMillis)
                 return;
 
-#if DBG
+#if DEBUG
             if (_runregex.Debug)
             {
                 Debug.WriteLine("");
@@ -555,7 +555,8 @@ namespace System.Text.RegularExpressions
         {
             return _runmatch.MatchLength(cap);
         }
-#if DBG
+
+#if DEBUG
         /*
          * Dump the current state
          */
