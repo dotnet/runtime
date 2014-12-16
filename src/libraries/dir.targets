@@ -17,7 +17,6 @@
     <AssemblySearchPaths>
       {HintPathFromItem};
       $(OutDir);
-      {TargetFrameworkDirectory};
     </AssemblySearchPaths>
     <!-- For our projects we don't want to resolve from the usual paths for now only hint paths and output directory 
       {CandidateAssemblyFiles};
@@ -28,8 +27,20 @@
     -->
   </PropertyGroup>
 
+  <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
+  <Target Name="AddDesignTimeFacadeReferences"
+      Condition="'$(TargetingPortable)' != 'true'"
+      BeforeTargets="ResolveReferences"
+      DependsOnTargets="GetReferenceAssemblyPaths"
+  >
+    <ItemGroup>
+      <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
+      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" />
+    </ItemGroup>
+  </Target>
+
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
-  
+
 </Project>
