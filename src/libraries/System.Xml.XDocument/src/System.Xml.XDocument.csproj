@@ -9,16 +9,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XDocument</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
-    <FileAlignment>512</FileAlignment>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <!--BinHexDecoder contains unsafe code-->
-    <ExternallyShipping>true</ExternallyShipping>
-    <DefineConstants>$(DefineConstants);SILVERLIGHT;PROJECTN</DefineConstants>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>;SILVERLIGHT;PROJECTN</DefineConstants>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <DefineConstants>$(DefineConstants);SILVERLIGHT</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

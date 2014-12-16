@@ -17,10 +17,6 @@
     <FileAlignment>512</FileAlignment>
     <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
     <ExternallyShipping>false</ExternallyShipping>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
