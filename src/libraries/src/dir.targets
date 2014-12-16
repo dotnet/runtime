@@ -6,7 +6,7 @@
 
   <!-- Setup the default target for projects not already explicitly targeting portable -->
   <PropertyGroup Condition="'$(TargetingPortable)' != 'true'">
-    <!-- Setting a default portable profile, although nothing should resolve from them as we want to use the pacakge refs -->
+    <!-- Setting a default portable profile, although nothing should resolve from there as we want to use the pacakge refs -->
     <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
     <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.5</TargetFrameworkVersion>
