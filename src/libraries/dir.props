@@ -1,12 +1,27 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)bin\</BinDir>
     <ToolsDir>$(BinDir)tools\</ToolsDir>
-
-    <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
-    <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
     <PackagesDir>$(SourceDir)packages\</PackagesDir>
   </PropertyGroup>
+
+  <!-- Common nuget properties -->
+  <PropertyGroup>
+    <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
+    <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
+    <NuGetConfigCommandLine
+      Condition="Exists($(NuGetConfigFile))">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
+  </PropertyGroup>
+
+  <!-- Common build tool properties -->
+  <PropertyGroup>
+    <BuildToolsVersion>1.0.15-prerelease</BuildToolsVersion>
+    <BuildToolsInstallSempahore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSempahore>
+
+    <BuildToolsTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsTargetInputs>
+    <BuildToolsTargetOutputs>$(BuildToolsInstallSempahore)</BuildToolsTargetOutputs>
+  </PropertyGroup>  
 </Project>

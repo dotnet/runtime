@@ -4,7 +4,7 @@
     <TargetingPortable>true</TargetingPortable>
   </PropertyGroup>
 
-  <!-- Setup the default target framework -->
+  <!-- Setup the default target for projects not already explicitly targeting portable -->
   <PropertyGroup Condition="'$(TargetingPortable)' != 'true'">
     <!-- Setting a default portable profile, although nothing should resolve from them as we want to use the pacakge refs -->
     <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
@@ -14,75 +14,22 @@
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
     <ImplicitlyExpandTargetFramework Condition="'$(ImplicitlyExpandTargetFramework)' == ''">false</ImplicitlyExpandTargetFramework>
 
-    <AssemblySearchPaths Condition="'$(TargetingPortable)' != 'true'">
+    <AssemblySearchPaths>
       {HintPathFromItem};
       $(OutDir);
       {TargetFrameworkDirectory};
     </AssemblySearchPaths>
     <!-- For our projects we don't want to resolve from the usual paths for now only hint paths and output directory 
       {CandidateAssemblyFiles};
-            $(ReferencePath);
+      $(ReferencePath);
       {TargetFrameworkDirectory};
       {Registry:$(FrameworkRegistryBase),$(TargetFrameworkVersion),$(AssemblyFoldersSuffix)$(AssemblyFoldersExConditions)};
       {RawFileName};
     -->
   </PropertyGroup>
 
-  <!-- Import build targets -->
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 
-  <PropertyGroup>
-    <BuildDependsOn>
-      RestoreDependentPackages;
-      $(BuildDependsOn)
-    </BuildDependsOn>
-  </PropertyGroup>
+  <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
   
-  <Target Name="RestoreDependentPackages" Condition="Exists('$(MSBuildProjectDirectory)\packages.config')">
-    <ItemGroup>
-      <PackageConfigs Include="$(MSBuildProjectDirectory)\packages.config" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
-      <NuGetConfigCommandLine
-      Condition="Exists($(NuGetConfigFile))">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
-    </PropertyGroup>
-
-    <!-- Restore Packages -->
-    <Exec
-      Condition="'@(PackageConfigs)'!=''"
-      StandardOutputImportance="Low"
-      Command="&quot;$(NuGetToolPath)&quot; restore &quot;%(PackageConfigs.FullPath)&quot; -PackagesDirectory &quot;$(PackagesDir) &quot; $(NuGetConfigCommandLine)" />
-  </Target>
-
-  <!--
-  <Import Project="binaries.targets" />
-  <Import Project="packages.targets" />
-  <Import Project="tests.targets" />
-  <Import Project="gitpush.targets" />
-  
-      EnsureDependencies;
-      BuildBinaries;
-      BuildPackages;
-      RunTests;
-      GitPush
-  -->
-
-  <!-- binaries.targets
-      Configuration=$(Configuration);
-      Platform=$(Platform);
-      BaseOutputPath=$(BaseOutputPath);
-      BaseIntermediateOutputPath=$(BaseIntermediateOutputPath);
-      
-      ToolsDir=$(ToolsDir);
-
-      CoreResGenDependsOn=$(CoreResGenDependsOn);GenerateResourcesSource;GenerateStringResources;
-      CustomBeforeMicrosoftCommonTargets=$(ToolsDir)beforecommon.targets;
-          <OutDir Condition="'$(OutDir)'==''">$(BaseOutputPath)\bin\$(Configuration)\</OutDir>
-          
-          Import =resources.targets
-          Import =sign.targets
-  -->
-
 </Project>

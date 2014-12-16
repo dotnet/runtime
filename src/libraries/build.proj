@@ -2,6 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
+  <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
   <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
       <Address ParameterType="System.String" Required="true"/>
@@ -22,10 +23,12 @@
     </Task>
   </UsingTask>
 
-  <Target
-    Name="_RestoreBuildTools"
-    BeforeTargets="Build;Clean"
-    Condition="!Exists('$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)') Or !Exists('$(ToolsDir)fxbuild.proj')">
+  <Target Name="_RestoreBuildTools"
+    BeforeTargets="Build"
+    Inputs="$(BuildToolsTargetInputs)"
+    Outputs="$(BuildToolsTargetOutputs)"
+    >
+
     <!-- Download latest nuget.exe -->
     <DownloadFile
       Condition="!Exists($(NuGetToolPath))"
@@ -38,8 +41,13 @@
       Command="&quot;$(NuGetToolPath)&quot; install Microsoft.DotNet.BuildTools -Prerelease -NoCache -Version $(BuildToolsVersion) -o &quot; $(PackagesDir) &quot; $(NuGetConfigCommandLine)" />
 
     <!-- Copy build tools to tools directory -->
-    <Exec
-      Command="xcopy /e /y &quot;$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\*&quot; &quot;$(ToolsDir)&quot; > &quot;$(ToolsDir)BuildTools.xcopy.log&quot;" />
+    <ItemGroup>
+      <BuildToolFiles Include="$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BuildToolFiles)" DestinationFolder="$(ToolsDir)" />
+
+    <Touch Files="$(BuildToolsInstallSempahore)" AlwaysCreate="true" />
+
   </Target>
 
   <ItemGroup>
@@ -47,4 +55,9 @@
   </ItemGroup>
   
   <Import Project="dir.traversal.targets" />
+  
+  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
+  <Target Name="Clean">
+    <RemoveDir Directories="$(BinDir)" />
+  </Target>
 </Project>
