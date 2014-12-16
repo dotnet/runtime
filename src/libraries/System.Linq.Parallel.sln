@@ -5,7 +5,7 @@ VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Parallel", "System.Linq.Parallel\src\System.Linq.Parallel.csproj", "{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Parallel.Tests", "System.Linq.Parallel\test\System.Linq.Parallel.Tests.csproj", "{A7074928-82C3-4739-88FE-9B528977950C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Linq.Parallel.Tests", "System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj", "{A7074928-82C3-4739-88FE-9B528977950C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
 EndProject
