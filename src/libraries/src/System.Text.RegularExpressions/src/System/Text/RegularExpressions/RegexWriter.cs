@@ -170,19 +170,14 @@ namespace System.Text.RegularExpressions
          */
         internal int StringCode(String str)
         {
-            Int32 i;
-
             if (_counting)
                 return 0;
 
             if (str == null)
                 str = String.Empty;
 
-            if (_stringhash.ContainsKey(str))
-            {
-                i = (Int32)_stringhash[str];
-            }
-            else
+            Int32 i;
+            if (!_stringhash.TryGetValue(str, out i))
             {
                 i = _stringtable.Count;
                 _stringhash[str] = i;
