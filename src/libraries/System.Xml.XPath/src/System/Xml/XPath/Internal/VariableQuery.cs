@@ -10,12 +10,12 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class VariableQuery : ExtensionQuery
     {
-        private IXsltContextVariable variable;
+        private IXsltContextVariable _variable;
 
         public VariableQuery(string name, string prefix) : base(prefix, name) { }
         private VariableQuery(VariableQuery other) : base(other)
         {
-            this.variable = other.variable;
+            _variable = other._variable;
         }
 
         public override void SetXsltContext(XsltContext context)
@@ -28,9 +28,9 @@ namespace MS.Internal.Xml.XPath
             if (this.xsltContext != context)
             {
                 xsltContext = context;
-                variable = xsltContext.ResolveVariable(prefix, name);
+                _variable = xsltContext.ResolveVariable(prefix, name);
                 // Since null is allowed for ResolveFunction, allow it for ResolveVariable as well
-                if (variable == null)
+                if (_variable == null)
                 {
                     throw XPathException.Create(SR.Xp_UndefVar, QName);
                 }
@@ -44,18 +44,18 @@ namespace MS.Internal.Xml.XPath
                 throw XPathException.Create(SR.Xp_NoContext);
             }
 
-            return ProcessResult(variable.Evaluate(xsltContext));
+            return ProcessResult(_variable.Evaluate(xsltContext));
         }
 
         public override XPathResultType StaticType
         {
             get
             {
-                if (variable != null)
+                if (_variable != null)
                 {  // Temp. fix to overcome dependency on static type
                     return GetXPathType(Evaluate(null));
                 }
-                XPathResultType result = variable != null ? variable.VariableType : XPathResultType.Any;
+                XPathResultType result = _variable != null ? _variable.VariableType : XPathResultType.Any;
                 if (result == XPathResultType.Error)
                 {
                     // In v.1 we confused Error & Any so now for backward compatibility we should allow users to return any of them.

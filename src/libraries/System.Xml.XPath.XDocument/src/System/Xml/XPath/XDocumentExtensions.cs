@@ -9,14 +9,14 @@ namespace System.Xml.XPath
     {
         private class XDocumentNavigable : IXPathNavigable
         {
-            private XNode node;
+            private XNode _node;
             public XDocumentNavigable(XNode n)
             {
-                this.node = n;
+                _node = n;
             }
             public XPathNavigator CreateNavigator()
             {
-                return node.CreateNavigator();
+                return _node.CreateNavigator();
             }
         }
         public static IXPathNavigable ToXPathNavigable(this XNode node)

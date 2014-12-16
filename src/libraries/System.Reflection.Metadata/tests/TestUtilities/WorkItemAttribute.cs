@@ -14,17 +14,17 @@ namespace TestUtilities
     {
         public const string WorkItemAttributeName = "WorkItem";
 
-        private readonly int id;
-        private readonly string description;
+        private readonly int _id;
+        private readonly string _description;
 
         public int Id
         {
-            get { return id; }
+            get { return _id; }
         }
 
         public string Description
         {
-            get { return description; }
+            get { return _description; }
         }
 
         public WorkItemAttribute(int id)
@@ -35,8 +35,8 @@ namespace TestUtilities
         public WorkItemAttribute(int id, string description)
             : base(WorkItemAttributeName, id.ToString())
         {
-            this.id = id;
-            this.description = description;
+            _id = id;
+            _description = description;
         }
     }
 }

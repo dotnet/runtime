@@ -5,16 +5,16 @@ namespace System.Xml
 {
     internal abstract partial class Base64Encoder
     {
-        byte[] leftOverBytes;
-        int leftOverBytesCount;
-        char[] charsLine;
+        private byte[] _leftOverBytes;
+        private int _leftOverBytesCount;
+        private char[] _charsLine;
 
         internal const int Base64LineSize = 76;
         internal const int LineSizeInBytes = Base64LineSize / 4 * 3;
 
         internal Base64Encoder()
         {
-            charsLine = new char[Base64LineSize];
+            _charsLine = new char[Base64LineSize];
         }
 
         internal abstract void WriteChars(char[] chars, int index, int count);
@@ -39,39 +39,39 @@ namespace System.Xml
             }
 
             // encode left-over buffer
-            if (leftOverBytesCount > 0)
+            if (_leftOverBytesCount > 0)
             {
-                int i = leftOverBytesCount;
+                int i = _leftOverBytesCount;
                 while (i < 3 && count > 0)
                 {
-                    leftOverBytes[i++] = buffer[index++];
+                    _leftOverBytes[i++] = buffer[index++];
                     count--;
                 }
 
                 // the total number of buffer we have is less than 3 -> return
                 if (count == 0 && i < 3)
                 {
-                    leftOverBytesCount = i;
+                    _leftOverBytesCount = i;
                     return;
                 }
 
                 // encode the left-over buffer and write out
-                int leftOverChars = Convert.ToBase64CharArray(leftOverBytes, 0, 3, charsLine, 0);
-                WriteChars(charsLine, 0, leftOverChars);
+                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes, 0, 3, _charsLine, 0);
+                WriteChars(_charsLine, 0, leftOverChars);
             }
 
             // store new left-over buffer
-            leftOverBytesCount = count % 3;
-            if (leftOverBytesCount > 0)
+            _leftOverBytesCount = count % 3;
+            if (_leftOverBytesCount > 0)
             {
-                count -= leftOverBytesCount;
-                if (leftOverBytes == null)
+                count -= _leftOverBytesCount;
+                if (_leftOverBytes == null)
                 {
-                    leftOverBytes = new byte[3];
+                    _leftOverBytes = new byte[3];
                 }
-                for (int i = 0; i < leftOverBytesCount; i++)
+                for (int i = 0; i < _leftOverBytesCount; i++)
                 {
-                    leftOverBytes[i] = buffer[index + count + i];
+                    _leftOverBytes[i] = buffer[index + count + i];
                 }
             }
 
@@ -84,8 +84,8 @@ namespace System.Xml
                 {
                     chunkSize = endIndex - index;
                 }
-                int charCount = Convert.ToBase64CharArray(buffer, index, chunkSize, charsLine, 0);
-                WriteChars(charsLine, 0, charCount);
+                int charCount = Convert.ToBase64CharArray(buffer, index, chunkSize, _charsLine, 0);
+                WriteChars(_charsLine, 0, charCount);
 
                 index += chunkSize;
             }
@@ -93,11 +93,11 @@ namespace System.Xml
 
         internal void Flush()
         {
-            if (leftOverBytesCount > 0)
+            if (_leftOverBytesCount > 0)
             {
-                int leftOverChars = Convert.ToBase64CharArray(leftOverBytes, 0, leftOverBytesCount, charsLine, 0);
-                WriteChars(charsLine, 0, leftOverChars);
-                leftOverBytesCount = 0;
+                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes, 0, _leftOverBytesCount, _charsLine, 0);
+                WriteChars(_charsLine, 0, leftOverChars);
+                _leftOverBytesCount = 0;
             }
         }
     }

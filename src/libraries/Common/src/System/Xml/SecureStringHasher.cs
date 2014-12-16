@@ -11,11 +11,11 @@ namespace System.Xml
     // The SecureStringHasher implements IEqualityComparer for strings and therefore can be used in generic IDictionary.
     internal class SecureStringHasher : IEqualityComparer<String>
     {
-        int hashCodeRandomizer;
+        private int _hashCodeRandomizer;
 
         public SecureStringHasher()
         {
-            this.hashCodeRandomizer = Environment.TickCount;
+            _hashCodeRandomizer = Environment.TickCount;
         }
 
 #if false // This is here only for debugging of hashing issues
@@ -31,7 +31,7 @@ namespace System.Xml
 
         public int GetHashCode(String key)
         {
-            int hashCode = hashCodeRandomizer;
+            int hashCode = _hashCodeRandomizer;
             // use key.Length to eliminate the rangecheck
             for (int i = 0; i < key.Length; i++)
             {

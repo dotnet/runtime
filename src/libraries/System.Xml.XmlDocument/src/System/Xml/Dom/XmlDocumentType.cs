@@ -8,19 +8,19 @@ namespace System.Xml
     // Contains information associated with the document type declaration.
     internal class XmlDocumentType : XmlLinkedNode
     {
-        string name;
-        string publicId;
-        string systemId;
-        string internalSubset;
-        XmlNamedNodeMap entities;
-        XmlNamedNodeMap notations;
+        private string _name;
+        private string _publicId;
+        private string _systemId;
+        private string _internalSubset;
+        private XmlNamedNodeMap _entities;
+        private XmlNamedNodeMap _notations;
 
         protected internal XmlDocumentType(string name, string publicId, string systemId, string internalSubset, XmlDocument doc) : base(doc)
         {
-            this.name = name;
-            this.publicId = publicId;
-            this.systemId = systemId;
-            this.internalSubset = internalSubset;
+            _name = name;
+            _publicId = publicId;
+            _systemId = systemId;
+            _internalSubset = internalSubset;
             Debug.Assert(doc != null);
             if (!doc.IsLoading)
             {
@@ -33,13 +33,13 @@ namespace System.Xml
         // Gets the name of the node.
         public override string Name
         {
-            get { return name; }
+            get { return _name; }
         }
 
         // Gets the name of the current node without the namespace prefix.
         public override string LocalName
         {
-            get { return name; }
+            get { return _name; }
         }
 
         // Gets the type of the current node.
@@ -52,7 +52,7 @@ namespace System.Xml
         public override XmlNode CloneNode(bool deep)
         {
             Debug.Assert(OwnerDocument != null);
-            return OwnerDocument.CreateDocumentType(name, publicId, systemId, internalSubset);
+            return OwnerDocument.CreateDocumentType(_name, _publicId, _systemId, _internalSubset);
         }
 
         // 
@@ -73,10 +73,10 @@ namespace System.Xml
         {
             get
             {
-                if (entities == null)
-                    entities = new XmlNamedNodeMap(this);
+                if (_entities == null)
+                    _entities = new XmlNamedNodeMap(this);
 
-                return entities;
+                return _entities;
             }
         }
 
@@ -85,10 +85,10 @@ namespace System.Xml
         {
             get
             {
-                if (notations == null)
-                    notations = new XmlNamedNodeMap(this);
+                if (_notations == null)
+                    _notations = new XmlNamedNodeMap(this);
 
-                return notations;
+                return _notations;
             }
         }
 
@@ -99,27 +99,27 @@ namespace System.Xml
         // Gets the value of the public identifier on the DOCTYPE declaration.
         public string PublicId
         {
-            get { return publicId; }
+            get { return _publicId; }
         }
 
         // Gets the value of
         // the system identifier on the DOCTYPE declaration.
         public string SystemId
         {
-            get { return systemId; }
+            get { return _systemId; }
         }
 
         // Gets the entire value of the DTD internal subset
         // on the DOCTYPE declaration.
         public string InternalSubset
         {
-            get { return internalSubset; }
+            get { return _internalSubset; }
         }
 
         // Saves the node to the specified XmlWriter.
         public override void WriteTo(XmlWriter w)
         {
-            w.WriteDocType(name, publicId, systemId, internalSubset);
+            w.WriteDocType(_name, _publicId, _systemId, _internalSubset);
         }
 
         // Saves all the children of the node to the specified XmlWriter.

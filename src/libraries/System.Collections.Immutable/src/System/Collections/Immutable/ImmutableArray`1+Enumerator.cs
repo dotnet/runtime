@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ namespace System.Collections.Immutable
             /// <summary> 
             /// The array being enumerated.
             /// </summary>
-            private readonly T[] array;
+            private readonly T[] _array;
 
             /// <summary>
             /// The currently enumerated position.
@@ -29,7 +29,7 @@ namespace System.Collections.Immutable
             /// -1 before the first call to <see cref="MoveNext"/>.
             /// >= this.array.Length after MoveNext returns false.
             /// </value>
-            private int index;
+            private int _index;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Enumerator"/> struct.
@@ -37,8 +37,8 @@ namespace System.Collections.Immutable
             /// <param name="array">The array to enumerate.</param>
             internal Enumerator(T[] array)
             {
-                this.array = array;
-                this.index = -1;
+                _array = array;
+                _index = -1;
             }
 
             /// <summary>
@@ -51,7 +51,7 @@ namespace System.Collections.Immutable
                     // PERF: no need to do a range check, we already did in MoveNext.
                     // if user did not call MoveNext or ignored its result (incorrect use)
                     // he will still get an exception from the array access range check.
-                    return this.array[this.index];
+                    return _array[_index];
                 }
             }
 
@@ -61,7 +61,7 @@ namespace System.Collections.Immutable
             /// <returns><c>true</c> if another item exists in the array; <c>false</c> otherwise.</returns>
             public bool MoveNext()
             {
-                return ++this.index < this.array.Length;
+                return ++_index < _array.Length;
             }
         }
 
@@ -73,13 +73,13 @@ namespace System.Collections.Immutable
             /// <summary>
             /// A shareable singleton for enumerating empty arrays.
             /// </summary>
-            private static readonly IEnumerator<T> EmptyEnumerator =
+            private static readonly IEnumerator<T> s_EmptyEnumerator =
                 new EnumeratorObject(ImmutableArray<T>.Empty.array);
 
             /// <summary>
             /// The array being enumerated.
             /// </summary>
-            private readonly T[] array;
+            private readonly T[] _array;
 
             /// <summary>
             /// The currently enumerated position.
@@ -88,15 +88,15 @@ namespace System.Collections.Immutable
             /// -1 before the first call to <see cref="MoveNext"/>.
             /// this.array.Length - 1 after MoveNext returns false.
             /// </value>
-            private int index;
+            private int _index;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Enumerator"/> class.
             /// </summary>
             private EnumeratorObject(T[] array)
             {
-                this.index = -1;
-                this.array = array;
+                _index = -1;
+                _array = array;
             }
 
             /// <summary>
@@ -108,9 +108,9 @@ namespace System.Collections.Immutable
                 {
                     // this.index >= 0 && this.index < this.array.Length
                     // unsigned compare performs the range check above in one compare
-                    if ((uint)this.index < (uint)this.array.Length)
+                    if ((uint)_index < (uint)_array.Length)
                     {
-                        return this.array[this.index];
+                        return _array[_index];
                     }
 
                     // Before first or after last MoveNext.
@@ -132,13 +132,13 @@ namespace System.Collections.Immutable
             /// <returns><c>true</c> if another item exists in the array; <c>false</c> otherwise.</returns>
             public bool MoveNext()
             {
-                int newIndex = this.index + 1;
-                int length = array.Length;
+                int newIndex = _index + 1;
+                int length = _array.Length;
 
                 // unsigned math is used to prevent false positive if index + 1 overflows.
                 if ((uint)newIndex <= (uint)length)
                 {
-                    this.index = newIndex;
+                    _index = newIndex;
                     return (uint)newIndex < (uint)length;
                 }
 
@@ -150,7 +150,7 @@ namespace System.Collections.Immutable
             /// </summary>
             void IEnumerator.Reset()
             {
-                this.index = -1;
+                _index = -1;
             }
 
             /// <summary>
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    return EmptyEnumerator;
+                    return s_EmptyEnumerator;
                 }
             }
         }

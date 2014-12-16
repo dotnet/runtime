@@ -17,16 +17,16 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The enumerator object to use if not null.
         /// </summary>
-        private readonly IEnumerator<T> enumeratorObject;
+        private readonly IEnumerator<T> _enumeratorObject;
 
         /// <summary>
-        /// The enumerator struct to use if <see cref="enumeratorObject"/> is <c>null</c>.
+        /// The enumerator struct to use if <see cref="_enumeratorObject"/> is <c>null</c>.
         /// </summary>
         /// <remarks>
         /// This field must NOT be readonly because the field's value is a struct and must be able to mutate
         /// in-place. A readonly keyword would cause any mutation to take place in a copy rather than the field.
         /// </remarks>
-        private TEnumerator enumeratorStruct;
+        private TEnumerator _enumeratorStruct;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EnumeratorAdapter{T, TEnumerator}"/> struct
@@ -35,8 +35,8 @@ namespace System.Collections.Immutable
         /// <param name="enumerator">The initialized enumerator struct.</param>
         internal DisposableEnumeratorAdapter(TEnumerator enumerator)
         {
-            this.enumeratorStruct = enumerator;
-            this.enumeratorObject = null;
+            _enumeratorStruct = enumerator;
+            _enumeratorObject = null;
         }
 
         /// <summary>
@@ -46,8 +46,8 @@ namespace System.Collections.Immutable
         /// <param name="enumerator">The initialized enumerator object.</param>
         internal DisposableEnumeratorAdapter(IEnumerator<T> enumerator)
         {
-            this.enumeratorStruct = default(TEnumerator);
-            this.enumeratorObject = enumerator;
+            _enumeratorStruct = default(TEnumerator);
+            _enumeratorObject = enumerator;
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public T Current
         {
-            get { return this.enumeratorObject != null ? this.enumeratorObject.Current : this.enumeratorStruct.Current; }
+            get { return _enumeratorObject != null ? _enumeratorObject.Current : _enumeratorStruct.Current; }
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool MoveNext()
         {
-            return this.enumeratorObject != null ? this.enumeratorObject.MoveNext() : this.enumeratorStruct.MoveNext();
+            return _enumeratorObject != null ? _enumeratorObject.MoveNext() : _enumeratorStruct.MoveNext();
         }
 
         /// <summary>
@@ -71,13 +71,13 @@ namespace System.Collections.Immutable
         /// </summary>
         public void Dispose()
         {
-            if (this.enumeratorObject != null)
+            if (_enumeratorObject != null)
             {
-                this.enumeratorObject.Dispose();
+                _enumeratorObject.Dispose();
             }
             else
             {
-                this.enumeratorStruct.Dispose();
+                _enumeratorStruct.Dispose();
             }
         }
 

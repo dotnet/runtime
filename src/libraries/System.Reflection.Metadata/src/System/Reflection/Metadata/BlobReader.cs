@@ -12,16 +12,16 @@ namespace System.Reflection.Metadata
     public unsafe struct BlobReader
     {
         /// <summary>An array containing the '\0' character.</summary>
-        private static readonly char[] _nullCharArray = new char[1] { '\0' };
-        
+        private static readonly char[] s_nullCharArray = new char[1] { '\0' };
+
         internal const int InvalidCompressedInteger = Int32.MaxValue;
 
-        private readonly MemoryBlock block;
+        private readonly MemoryBlock _block;
 
         // Points right behind the last byte of the block.
-        private readonly byte* endPointer;
+        private readonly byte* _endPointer;
 
-        private byte* currentPointer;
+        private byte* _currentPointer;
 
         public unsafe BlobReader(byte* buffer, int length)
         {
@@ -47,25 +47,25 @@ namespace System.Reflection.Metadata
         internal BlobReader(MemoryBlock block)
         {
             Debug.Assert(BitConverter.IsLittleEndian && block.Length >= 0 && (block.Pointer != null || block.Length == 0));
-            this.block = block;
-            this.currentPointer = block.Pointer;
-            this.endPointer = block.Pointer + block.Length;
+            _block = block;
+            _currentPointer = block.Pointer;
+            _endPointer = block.Pointer + block.Length;
         }
 
         private string GetDebuggerDisplay()
         {
-            if (block.Pointer == null)
+            if (_block.Pointer == null)
             {
                 return "<null>";
             }
 
             int displayedBytes;
-            string display = block.GetDebuggerDisplay(out displayedBytes);
+            string display = _block.GetDebuggerDisplay(out displayedBytes);
             if (this.Offset < displayedBytes)
             {
                 display = display.Insert(this.Offset * 3, "*");
             }
-            else if (displayedBytes == block.Length)
+            else if (displayedBytes == _block.Length)
             {
                 display += "*";
             }
@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return block.Length;
+                return _block.Length;
             }
         }
 
@@ -91,7 +91,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (int)(this.currentPointer - block.Pointer);
+                return (int)(_currentPointer - _block.Pointer);
             }
         }
 
@@ -99,23 +99,23 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (int)(this.endPointer - this.currentPointer);
+                return (int)(_endPointer - _currentPointer);
             }
         }
 
         public void Reset()
         {
-            this.currentPointer = block.Pointer;
+            _currentPointer = _block.Pointer;
         }
 
         internal bool SeekOffset(int offset)
         {
-            if (unchecked((uint)offset) >= (uint)block.Length)
+            if (unchecked((uint)offset) >= (uint)_block.Length)
             {
                 return false;
             }
 
-            this.currentPointer = block.Pointer + offset;
+            _currentPointer = _block.Pointer + offset;
             return true;
         }
 
@@ -146,7 +146,7 @@ namespace System.Reflection.Metadata
                 {
                     return false;
                 }
-                this.currentPointer += bytesToSkip;
+                _currentPointer += bytesToSkip;
             }
             return true;
         }
@@ -154,7 +154,7 @@ namespace System.Reflection.Metadata
         internal MemoryBlock GetMemoryBlockAt(int offset, int length)
         {
             CheckBounds(offset, length);
-            return new MemoryBlock(this.currentPointer + offset, length);
+            return new MemoryBlock(_currentPointer + offset, length);
         }
         #endregion
 
@@ -169,7 +169,7 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(int offset, int byteCount)
         {
-            if (unchecked((ulong)(uint)offset + (uint)byteCount) > (ulong)(this.endPointer - this.currentPointer))
+            if (unchecked((ulong)(uint)offset + (uint)byteCount) > (ulong)(_endPointer - _currentPointer))
             {
                 ThrowOutOfBounds();
             }
@@ -178,7 +178,7 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(int byteCount)
         {
-            if (unchecked((uint)byteCount) > (this.endPointer - this.currentPointer))
+            if (unchecked((uint)byteCount) > (_endPointer - _currentPointer))
             {
                 ThrowOutOfBounds();
             }
@@ -187,28 +187,28 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte* GetCurrentPointerAndAdvance(int length)
         {
-            byte* p = this.currentPointer;
+            byte* p = _currentPointer;
 
-            if (unchecked((uint)length) > (uint)(this.endPointer - p))
+            if (unchecked((uint)length) > (uint)(_endPointer - p))
             {
                 ThrowOutOfBounds();
             }
 
-            this.currentPointer = p + length;
+            _currentPointer = p + length;
             return p;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private byte* GetCurrentPointerAndAdvance1()
         {
-            byte* p = this.currentPointer;
+            byte* p = _currentPointer;
 
-            if (p == this.endPointer)
+            if (p == _endPointer)
             {
                 ThrowOutOfBounds();
             }
 
-            this.currentPointer = p + 1;
+            _currentPointer = p + 1;
             return p;
         }
 
@@ -289,8 +289,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public string ReadUTF8(int byteCount)
         {
-            string s = this.block.PeekUtf8(this.Offset, byteCount);
-            this.currentPointer += byteCount;
+            string s = _block.PeekUtf8(this.Offset, byteCount);
+            _currentPointer += byteCount;
             return s;
         }
 
@@ -302,8 +302,8 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public string ReadUTF16(int byteCount)
         {
-            string s = this.block.PeekUtf16(this.Offset, byteCount);
-            this.currentPointer += byteCount;
+            string s = _block.PeekUtf16(this.Offset, byteCount);
+            _currentPointer += byteCount;
             return s;
         }
 
@@ -315,24 +315,24 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public byte[] ReadBytes(int byteCount)
         {
-            byte[] bytes = this.block.PeekBytes(this.Offset, byteCount);
-            this.currentPointer += byteCount;
+            byte[] bytes = _block.PeekBytes(this.Offset, byteCount);
+            _currentPointer += byteCount;
             return bytes;
         }
 
         internal string ReadUtf8NullTerminated()
         {
             int bytesRead;
-            string value = this.block.PeekUtf8NullTerminated(this.Offset, null, MetadataStringDecoder.DefaultUTF8, out bytesRead, '\0');
-            this.currentPointer += bytesRead;
+            string value = _block.PeekUtf8NullTerminated(this.Offset, null, MetadataStringDecoder.DefaultUTF8, out bytesRead, '\0');
+            _currentPointer += bytesRead;
             return value;
         }
 
         private int ReadCompressedIntegerOrInvalid()
         {
             int bytesRead;
-            int value = this.block.PeekCompressedInteger(this.Offset, out bytesRead);
-            this.currentPointer += bytesRead;
+            int value = _block.PeekCompressedInteger(this.Offset, out bytesRead);
+            _currentPointer += bytesRead;
             return value;
         }
 
@@ -373,7 +373,7 @@ namespace System.Reflection.Metadata
         public bool TryReadCompressedSignedInteger(out int value)
         {
             int bytesRead;
-            value = this.block.PeekCompressedInteger(this.Offset, out bytesRead);
+            value = _block.PeekCompressedInteger(this.Offset, out bytesRead);
 
             if (value == InvalidCompressedInteger)
             {
@@ -400,7 +400,7 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            this.currentPointer += bytesRead;
+            _currentPointer += bytesRead;
             return true;
         }
 
@@ -482,7 +482,7 @@ namespace System.Reflection.Metadata
             {
                 // Removal of trailing '\0' is a departure from the spec, but required
                 // for compatibility with legacy compilers.
-                return ReadUTF8(length).TrimEnd(_nullCharArray);
+                return ReadUTF8(length).TrimEnd(s_nullCharArray);
             }
 
             if (ReadByte() != 0xFF)
@@ -500,7 +500,7 @@ namespace System.Reflection.Metadata
         public Handle ReadTypeHandle()
         {
             uint value = (uint)ReadCompressedIntegerOrInvalid();
-            uint tokenType = corEncodeTokenArray[value & 0x3];
+            uint tokenType = s_corEncodeTokenArray[value & 0x3];
 
             if (value == InvalidCompressedInteger || tokenType == 0)
             {
@@ -510,7 +510,7 @@ namespace System.Reflection.Metadata
             return new Handle(tokenType | (value >> 2));
         }
 
-        private static readonly uint[] corEncodeTokenArray = new uint[] { TokenTypeIds.TypeDef, TokenTypeIds.TypeRef, TokenTypeIds.TypeSpec, 0 };
+        private static readonly uint[] s_corEncodeTokenArray = new uint[] { TokenTypeIds.TypeDef, TokenTypeIds.TypeRef, TokenTypeIds.TypeSpec, 0 };
         #endregion
     }
 }
