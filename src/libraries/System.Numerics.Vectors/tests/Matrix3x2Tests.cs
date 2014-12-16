@@ -1006,20 +1006,21 @@ namespace System.Numerics.Tests
             private Matrix3x2PlusFloat _a;
             private Matrix3x2PlusFloat _b;
         }
-        //// A test to make sure the fields are laid out how we expect
-        //[Fact]
-        //public unsafe void Matrix3x2FieldOffsetTest()
-        //{
-        //    Matrix3x2* ptr = (Matrix3x2*)0;
 
-        //    Assert.Equal(new IntPtr(0), new IntPtr(&ptr->M11));
-        //    Assert.Equal(new IntPtr(4), new IntPtr(&ptr->M12));
+        // A test to make sure the fields are laid out how we expect
+        [Fact]
+        public unsafe void Matrix3x2FieldOffsetTest()
+        {
+            Matrix3x2* ptr = (Matrix3x2*)0;
 
-        //    Assert.Equal(new IntPtr(8), new IntPtr(&ptr->M21));
-        //    Assert.Equal(new IntPtr(12), new IntPtr(&ptr->M22));
+            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->M11));
+            Assert.Equal(new IntPtr(4), new IntPtr(&ptr->M12));
 
-        //    Assert.Equal(new IntPtr(16), new IntPtr(&ptr->M31));
-        //    Assert.Equal(new IntPtr(20), new IntPtr(&ptr->M32));
-        //}
+            Assert.Equal(new IntPtr(8), new IntPtr(&ptr->M21));
+            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->M22));
+
+            Assert.Equal(new IntPtr(16), new IntPtr(&ptr->M31));
+            Assert.Equal(new IntPtr(20), new IntPtr(&ptr->M32));
+        }
     }
 }
