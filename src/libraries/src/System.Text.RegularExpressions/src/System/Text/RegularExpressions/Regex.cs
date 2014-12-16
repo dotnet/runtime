@@ -1021,7 +1021,7 @@ namespace System.Text.RegularExpressions
 
         public override bool Equals(object obj)
         {
-            return obj is CachedCodeEntryKey ? Equals((CachedCodeEntryKey)obj) : false;
+            return obj is CachedCodeEntryKey && Equals((CachedCodeEntryKey)obj);
         }
 
         public bool Equals(CachedCodeEntryKey other)
