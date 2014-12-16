@@ -885,6 +885,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 	MONO_BB_FOR_EACH_INS (bb, inst) {
 		switch (inst->opcode) {
 		case OP_NOP:
+		case OP_IL_SEQ_POINT:
 			break;
 		case OP_BR:
 			target_bb = inst->inst_target_bb;
