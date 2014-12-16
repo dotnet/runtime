@@ -14,7 +14,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public partial class DataflowBlockTests : DataflowBlockTestBase
     {
-        // [Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunConcurrentExclusiveSchedulerPairRWTests()
         {
             // Validate reader tasks get scheduled concurrently
@@ -138,7 +139,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        // [Fact(Skip = "outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunConcurrentExclusiveSchedulerPairTests()
         {
             // Validate invalid arguments

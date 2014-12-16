@@ -91,7 +91,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, "Test failed.");
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunTransformManyBlockConformanceTests()
         {
             bool passed = true;

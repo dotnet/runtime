@@ -27,7 +27,8 @@ namespace XmlDocumentTests.XmlNodeTests
             }
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void CloneComplexDocumentTrue()
         {
             var xmlDocument = new XmlDocument();
@@ -102,7 +103,8 @@ namespace XmlDocumentTests.XmlNodeTests
             Assert.Null(cloned.NextSibling);
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void CloneComplexDocumentTrueAndManipulate()
         {
             var xmlDocument = new XmlDocument();

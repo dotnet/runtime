@@ -11,7 +11,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public partial class DataflowBlockTests : DataflowBlockTestBase
     {
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunDataflowBlockOptionsTests()
         {
             // Test base DataflowBlockOptions

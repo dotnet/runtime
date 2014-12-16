@@ -45,7 +45,8 @@ namespace XmlDocumentTests.XmlAttributeTests
             Assert.Equal(xmlDocument, attribute.OwnerDocument);
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void OwnerDocumentOnImportedTree()
         {
             var tempDoc = new XmlDocument();
