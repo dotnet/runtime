@@ -7,30 +7,30 @@ namespace System.Reflection.Metadata
 {
     public struct EventDefinition
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal EventDefinition(MetadataReader reader, EventDefinitionHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            this.reader = reader;
-            this.rowId = handle.RowId;
+            _reader = reader;
+            _rowId = handle.RowId;
         }
 
         private EventDefinitionHandle Handle
         {
-            get { return EventDefinitionHandle.FromRowId(rowId); }
+            get { return EventDefinitionHandle.FromRowId(_rowId); }
         }
 
         public StringHandle Name
         {
             get
             {
-                return reader.EventTable.GetName(Handle);
+                return _reader.EventTable.GetName(Handle);
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.EventTable.GetFlags(Handle);
+                return _reader.EventTable.GetFlags(Handle);
             }
         }
 
@@ -46,13 +46,13 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.EventTable.GetEventType(Handle);
+                return _reader.EventTable.GetEventType(Handle);
             }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
         public EventAccessors GetAccessors()
@@ -62,22 +62,22 @@ namespace System.Reflection.Metadata
             uint fire = 0;
 
             ushort methodCount;
-            var firstRowId = reader.MethodSemanticsTable.FindSemanticMethodsForEvent(Handle, out methodCount);
+            var firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForEvent(Handle, out methodCount);
             for (ushort i = 0; i < methodCount; i++)
             {
                 uint rowId = firstRowId + i;
-                switch (reader.MethodSemanticsTable.GetSemantics(rowId))
+                switch (_reader.MethodSemanticsTable.GetSemantics(rowId))
                 {
                     case MethodSemanticsAttributes.Adder:
-                        adder = reader.MethodSemanticsTable.GetMethod(rowId).RowId;
+                        adder = _reader.MethodSemanticsTable.GetMethod(rowId).RowId;
                         break;
 
                     case MethodSemanticsAttributes.Remover:
-                        remover = reader.MethodSemanticsTable.GetMethod(rowId).RowId;
+                        remover = _reader.MethodSemanticsTable.GetMethod(rowId).RowId;
                         break;
 
                     case MethodSemanticsAttributes.Raiser:
-                        fire = reader.MethodSemanticsTable.GetMethod(rowId).RowId;
+                        fire = _reader.MethodSemanticsTable.GetMethod(rowId).RowId;
                         break;
                         // TODO: expose 'Other' collection on EventAccessors for completeness.
                 }

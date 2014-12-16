@@ -14,9 +14,9 @@ namespace System.Xml.Linq
     /// </remarks>
     public class XDeclaration
     {
-        string version;
-        string encoding;
-        string standalone;
+        private string _version;
+        private string _encoding;
+        private string _standalone;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="XDeclaration"/> class from the
@@ -34,9 +34,9 @@ namespace System.Xml.Linq
         /// </param>
         public XDeclaration(string version, string encoding, string standalone)
         {
-            this.version = version;
-            this.encoding = encoding;
-            this.standalone = standalone;
+            _version = version;
+            _encoding = encoding;
+            _standalone = standalone;
         }
 
         /// <summary>
@@ -49,16 +49,16 @@ namespace System.Xml.Linq
         public XDeclaration(XDeclaration other)
         {
             if (other == null) throw new ArgumentNullException("other");
-            version = other.version;
-            encoding = other.encoding;
-            standalone = other.standalone;
+            _version = other._version;
+            _encoding = other._encoding;
+            _standalone = other._standalone;
         }
 
         internal XDeclaration(XmlReader r)
         {
-            version = r.GetAttribute("version");
-            encoding = r.GetAttribute("encoding");
-            standalone = r.GetAttribute("standalone");
+            _version = r.GetAttribute("version");
+            _encoding = r.GetAttribute("encoding");
+            _standalone = r.GetAttribute("standalone");
             r.Read();
         }
 
@@ -67,8 +67,8 @@ namespace System.Xml.Linq
         /// </summary>
         public string Encoding
         {
-            get { return encoding; }
-            set { encoding = value; }
+            get { return _encoding; }
+            set { _encoding = value; }
         }
 
         /// <summary>
@@ -79,8 +79,8 @@ namespace System.Xml.Linq
         /// </remarks>
         public string Standalone
         {
-            get { return standalone; }
-            set { standalone = value; }
+            get { return _standalone; }
+            set { _standalone = value; }
         }
 
         /// <summary>
@@ -91,8 +91,8 @@ namespace System.Xml.Linq
         /// </remarks>
         public string Version
         {
-            get { return version; }
-            set { version = value; }
+            get { return _version; }
+            set { _version = value; }
         }
 
         /// <summary>
@@ -102,22 +102,22 @@ namespace System.Xml.Linq
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder("<?xml");
-            if (version != null)
+            if (_version != null)
             {
                 sb.Append(" version=\"");
-                sb.Append(version);
+                sb.Append(_version);
                 sb.Append('\"');
             }
-            if (encoding != null)
+            if (_encoding != null)
             {
                 sb.Append(" encoding=\"");
-                sb.Append(encoding);
+                sb.Append(_encoding);
                 sb.Append('\"');
             }
-            if (standalone != null)
+            if (_standalone != null)
             {
                 sb.Append(" standalone=\"");
-                sb.Append(standalone);
+                sb.Append(_standalone);
                 sb.Append('\"');
             }
             sb.Append("?>");

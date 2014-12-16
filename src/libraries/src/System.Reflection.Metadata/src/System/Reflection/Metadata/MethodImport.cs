@@ -5,19 +5,19 @@ namespace System.Reflection.Metadata
 {
     public struct MethodImport
     {
-        private readonly MethodImportAttributes attributes;
-        private readonly StringHandle name;
-        private readonly ModuleReferenceHandle module;
+        private readonly MethodImportAttributes _attributes;
+        private readonly StringHandle _name;
+        private readonly ModuleReferenceHandle _module;
 
         internal MethodImport(MethodImportAttributes attributes, StringHandle name, ModuleReferenceHandle module)
         {
-            this.attributes = attributes;
-            this.name = name;
-            this.module = module;
+            _attributes = attributes;
+            _name = name;
+            _module = module;
         }
 
-        public MethodImportAttributes Attributes { get { return attributes; } }
-        public StringHandle Name { get { return name; } }
-        public ModuleReferenceHandle Module { get { return module; } }
+        public MethodImportAttributes Attributes { get { return _attributes; } }
+        public StringHandle Name { get { return _name; } }
+        public ModuleReferenceHandle Module { get { return _module; } }
     }
 }

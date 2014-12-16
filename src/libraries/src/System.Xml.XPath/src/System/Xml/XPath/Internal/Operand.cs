@@ -7,24 +7,24 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Operand : AstNode
     {
-        private XPathResultType type;
-        private object val;
+        private XPathResultType _type;
+        private object _val;
 
         public Operand(string val)
         {
-            this.type = XPathResultType.String;
-            this.val = val;
+            _type = XPathResultType.String;
+            _val = val;
         }
 
         public Operand(double val)
         {
-            this.type = XPathResultType.Number;
-            this.val = val;
+            _type = XPathResultType.Number;
+            _val = val;
         }
 
         public override AstType Type { get { return AstType.ConstantOperand; } }
-        public override XPathResultType ReturnType { get { return type; } }
+        public override XPathResultType ReturnType { get { return _type; } }
 
-        public object OperandValue { get { return val; } }
+        public object OperandValue { get { return _val; } }
     }
 }

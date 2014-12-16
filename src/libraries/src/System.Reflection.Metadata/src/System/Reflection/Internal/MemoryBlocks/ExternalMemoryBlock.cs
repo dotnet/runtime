@@ -12,39 +12,39 @@ namespace System.Reflection.Internal
     internal unsafe sealed class ExternalMemoryBlock : AbstractMemoryBlock
     {
         // keeps the owner of the memory alive as long as the block is alive:
-        private readonly object memoryOwner;
+        private readonly object _memoryOwner;
 
-        private byte* buffer;
-        private int size;
+        private byte* _buffer;
+        private int _size;
 
         public ExternalMemoryBlock(object memoryOwner, byte* buffer, int size)
         {
-            this.memoryOwner = memoryOwner;
-            this.buffer = buffer;
-            this.size = size;
+            _memoryOwner = memoryOwner;
+            _buffer = buffer;
+            _size = size;
         }
 
         protected override void Dispose(bool disposing)
         {
             Debug.Assert(disposing);
-            this.buffer = null;
-            this.size = 0;
+            _buffer = null;
+            _size = 0;
         }
 
         public override byte* Pointer
         {
-            get { return this.buffer; }
+            get { return _buffer; }
         }
 
         public override int Size
         {
-            get { return this.size; }
+            get { return _size; }
         }
 
         public override ImmutableArray<byte> GetContent(int offset)
         {
-            var result = CreateImmutableArray((this.buffer + offset), this.size - offset);
-            GC.KeepAlive(memoryOwner);
+            var result = CreateImmutableArray((_buffer + offset), _size - offset);
+            GC.KeepAlive(_memoryOwner);
             return result;
         }
     }

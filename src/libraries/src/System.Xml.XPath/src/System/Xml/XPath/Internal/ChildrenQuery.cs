@@ -7,23 +7,23 @@ namespace MS.Internal.Xml.XPath
 {
     internal class ChildrenQuery : BaseAxisQuery
     {
-        XPathNodeIterator iterator = XPathEmptyIterator.Instance;
+        private XPathNodeIterator _iterator = XPathEmptyIterator.Instance;
 
         public ChildrenQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type) { }
         protected ChildrenQuery(ChildrenQuery other) : base(other)
         {
-            this.iterator = Clone(other.iterator);
+            _iterator = Clone(other._iterator);
         }
 
         public override void Reset()
         {
-            iterator = XPathEmptyIterator.Instance;
+            _iterator = XPathEmptyIterator.Instance;
             base.Reset();
         }
 
         public override XPathNavigator Advance()
         {
-            while (!iterator.MoveNext())
+            while (!_iterator.MoveNext())
             {
                 XPathNavigator input = qyInput.Advance();
                 if (input == null)
@@ -34,21 +34,21 @@ namespace MS.Internal.Xml.XPath
                 {
                     if (TypeTest == XPathNodeType.ProcessingInstruction)
                     {
-                        iterator = new IteratorFilter(input.SelectChildren(TypeTest), Name);
+                        _iterator = new IteratorFilter(input.SelectChildren(TypeTest), Name);
                     }
                     else
                     {
-                        iterator = input.SelectChildren(Name, Namespace);
+                        _iterator = input.SelectChildren(Name, Namespace);
                     }
                 }
                 else
                 {
-                    iterator = input.SelectChildren(TypeTest);
+                    _iterator = input.SelectChildren(TypeTest);
                 }
                 position = 0;
             }
             position++;
-            currentNode = iterator.Current;
+            currentNode = _iterator.Current;
             return currentNode;
         } // Advance
 

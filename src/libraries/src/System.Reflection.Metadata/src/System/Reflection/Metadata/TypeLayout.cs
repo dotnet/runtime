@@ -5,28 +5,28 @@ namespace System.Reflection.Metadata
 {
     public struct TypeLayout
     {
-        private readonly int size;
-        private readonly int packingSize;
+        private readonly int _size;
+        private readonly int _packingSize;
 
         public TypeLayout(int size, int packingSize)
         {
-            this.size = size;
-            this.packingSize = packingSize;
+            _size = size;
+            _packingSize = packingSize;
         }
 
         public int Size
         {
-            get { return size; }
+            get { return _size; }
         }
 
         public int PackingSize
         {
-            get { return packingSize; }
+            get { return _packingSize; }
         }
 
         public bool IsDefault
         {
-            get { return size == 0 && packingSize == 0; }
+            get { return _size == 0 && _packingSize == 0; }
         }
     }
 }

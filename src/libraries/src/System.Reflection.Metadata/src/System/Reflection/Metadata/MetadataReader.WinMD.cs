@@ -25,8 +25,8 @@ namespace System.Reflection.Metadata
 
         // Maps names of projected types to projection information for each type.
         // Both arrays are of the same length and sorted by the type name.
-        private static string[] projectedTypeNames;
-        private static ProjectionInfo[] projectionInfos;
+        private static string[] _projectedTypeNames;
+        private static ProjectionInfo[] s_projectionInfos;
 
         private struct ProjectionInfo
         {
@@ -60,22 +60,22 @@ namespace System.Reflection.Metadata
 
             StringHandle name = TypeDefTable.GetName(typeDef);
 
-            int index = StringStream.BinarySearchRaw(projectedTypeNames, name);
+            int index = StringStream.BinarySearchRaw(_projectedTypeNames, name);
             if (index < 0)
             {
                 return TypeDefTreatment.None;
             }
 
             StringHandle namespaceName = TypeDefTable.GetNamespaceString(typeDef);
-            if (StringStream.EqualsRaw(namespaceName, StringStream.GetVirtualValue(projectionInfos[index].ClrNamespace)))
+            if (StringStream.EqualsRaw(namespaceName, StringStream.GetVirtualValue(s_projectionInfos[index].ClrNamespace)))
             {
-                return projectionInfos[index].Treatment;
+                return s_projectionInfos[index].Treatment;
             }
 
             // TODO: we can avoid this comparison if info.DotNetNamespace == info.WinRtNamespace 
-            if (StringStream.EqualsRaw(namespaceName, projectionInfos[index].WinRTNamespace))
+            if (StringStream.EqualsRaw(namespaceName, s_projectionInfos[index].WinRTNamespace))
             {
-                return projectionInfos[index].Treatment | TypeDefTreatment.MarkInternalFlag;
+                return s_projectionInfos[index].Treatment | TypeDefTreatment.MarkInternalFlag;
             }
 
             return TypeDefTreatment.None;
@@ -85,10 +85,10 @@ namespace System.Reflection.Metadata
         {
             InitializeProjectedTypes();
 
-            int index = StringStream.BinarySearchRaw(projectedTypeNames, TypeRefTable.GetName(typeRef));
-            if (index >= 0 && StringStream.EqualsRaw(TypeRefTable.GetNamespace(typeRef), projectionInfos[index].WinRTNamespace))
+            int index = StringStream.BinarySearchRaw(_projectedTypeNames, TypeRefTable.GetName(typeRef));
+            if (index >= 0 && StringStream.EqualsRaw(TypeRefTable.GetNamespace(typeRef), s_projectionInfos[index].WinRTNamespace))
             {
-                isIDisposable = projectionInfos[index].IsIDisposable;
+                isIDisposable = s_projectionInfos[index].IsIDisposable;
                 return index;
             }
 
@@ -98,25 +98,25 @@ namespace System.Reflection.Metadata
 
         internal static AssemblyReferenceHandle GetProjectedAssemblyRef(int projectionIndex)
         {
-            Debug.Assert(projectionInfos != null && projectionIndex >= 0 && projectionIndex < projectionInfos.Length);
-            return AssemblyReferenceHandle.FromVirtualIndex(projectionInfos[projectionIndex].AssemblyRef);
+            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            return AssemblyReferenceHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].AssemblyRef);
         }
 
         internal static StringHandle GetProjectedName(int projectionIndex)
         {
-            Debug.Assert(projectionInfos != null && projectionIndex >= 0 && projectionIndex < projectionInfos.Length);
-            return StringHandle.FromVirtualIndex(projectionInfos[projectionIndex].ClrName);
+            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            return StringHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].ClrName);
         }
 
         internal static StringHandle GetProjectedNamespace(int projectionIndex)
         {
-            Debug.Assert(projectionInfos != null && projectionIndex >= 0 && projectionIndex < projectionInfos.Length);
-            return StringHandle.FromVirtualIndex(projectionInfos[projectionIndex].ClrNamespace);
+            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            return StringHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].ClrNamespace);
         }
 
         private static void InitializeProjectedTypes()
         {
-            if (projectedTypeNames == null || projectionInfos == null)
+            if (_projectedTypeNames == null || s_projectionInfos == null)
             {
                 var systemRuntimeWindowsRuntime = AssemblyReferenceHandle.VirtualIndex.System_Runtime_WindowsRuntime;
                 var systemRuntime = AssemblyReferenceHandle.VirtualIndex.System_Runtime;
@@ -186,8 +186,8 @@ namespace System.Reflection.Metadata
                 Debug.Assert(k == keys.Length && v == keys.Length && k == v);
                 AssertSorted(keys);
 
-                projectedTypeNames = keys;
-                projectionInfos = values;
+                _projectedTypeNames = keys;
+                s_projectionInfos = values;
             }
         }
 
@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata
         internal static string[] GetProjectedTypeNames()
         {
             InitializeProjectedTypes();
-            return projectedTypeNames;
+            return _projectedTypeNames;
         }
 
         #endregion
@@ -219,7 +219,7 @@ namespace System.Reflection.Metadata
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         internal uint CalculateTypeDefTreatmentAndRowId(TypeDefinitionHandle handle)
         {
-            Debug.Assert(metadataKind != MetadataKind.Ecma335);
+            Debug.Assert(_metadataKind != MetadataKind.Ecma335);
 
             TypeDefTreatment treatment;
 
@@ -228,7 +228,7 @@ namespace System.Reflection.Metadata
 
             if ((flags & TypeAttributes.WindowsRuntime) != 0)
             {
-                if (metadataKind == MetadataKind.WindowsMetadata)
+                if (_metadataKind == MetadataKind.WindowsMetadata)
                 {
                     treatment = GetWellKnownTypeDefinitionTreatment(handle);
                     if (treatment != TypeDefTreatment.None)
@@ -246,7 +246,7 @@ namespace System.Reflection.Metadata
                         treatment = TypeDefTreatment.NormalNonAttribute;
                     }
                 }
-                else if (metadataKind == MetadataKind.ManagedWindowsMetadata && NeedsWinRTPrefix(flags, extends))
+                else if (_metadataKind == MetadataKind.ManagedWindowsMetadata && NeedsWinRTPrefix(flags, extends))
                 {
                     // WinMDExp emits two versions of RuntimeClasses and Enums:
                     //
@@ -284,7 +284,7 @@ namespace System.Reflection.Metadata
                     }
                 }
             }
-            else if (metadataKind == MetadataKind.ManagedWindowsMetadata && IsClrImplementationType(handle))
+            else if (_metadataKind == MetadataKind.ManagedWindowsMetadata && IsClrImplementationType(handle))
             {
                 // <CLR> implementation classes are not marked WindowsRuntime, but still need to be modified
                 // by the adapter. 
@@ -316,7 +316,7 @@ namespace System.Reflection.Metadata
 
         internal uint CalculateTypeRefTreatmentAndRowId(TypeReferenceHandle handle)
         {
-            Debug.Assert(metadataKind != MetadataKind.Ecma335);
+            Debug.Assert(_metadataKind != MetadataKind.Ecma335);
 
             bool isIDisposable;
             int projectionIndex = GetProjectionIndexForTypeReference(handle, out isIDisposable);
@@ -414,7 +414,7 @@ namespace System.Reflection.Metadata
                 {
                     treatment = MethodDefTreatment.InterfaceMethod;
                 }
-                else if (metadataKind == MetadataKind.ManagedWindowsMetadata && (parentFlags & TypeAttributes.Public) == 0)
+                else if (_metadataKind == MetadataKind.ManagedWindowsMetadata && (parentFlags & TypeAttributes.Public) == 0)
                 {
                     treatment = MethodDefTreatment.Implementation;
                 }
@@ -670,7 +670,7 @@ namespace System.Reflection.Metadata
 
         internal CustomAttributeValueTreatment CalculateCustomAttributeValueTreatment(CustomAttributeHandle handle)
         {
-            Debug.Assert(metadataKind != MetadataKind.Ecma335);
+            Debug.Assert(_metadataKind != MetadataKind.Ecma335);
 
             var parent = CustomAttributeTable.GetParent(handle);
 
