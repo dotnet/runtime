@@ -19,13 +19,16 @@
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Reflection.Metadata.Tests</AssemblyName>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
     <RootNamespace>System.Reflection.Metadata.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
+    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
     <ExternallyShipping>false</ExternallyShipping>
     <SccProjectName>SAK</SccProjectName>
     <SccLocalPath>SAK</SccLocalPath>
@@ -50,12 +53,17 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <Reference Include="System.Collections">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Collections.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="System.Collections.Immutable, Version=1.1.32.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\System.Collections.Immutable.1.1.32-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net" />
+    <Reference Include="System.Diagnostics.Debug">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Diagnostics.Debug.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Debug.dll</HintPath>
     <Reference Include="xunit.abstractions">
       <HintPath>..\..\packages\xunit.abstractions.2.0.0-beta5-build2785\lib\net35\xunit.abstractions.dll</HintPath>
     </Reference>
@@ -64,6 +72,63 @@
     </Reference>
     <Reference Include="xunit.core">
       <HintPath>..\..\packages\xunit.core.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Diagnostics.Tools">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Diagnostics.Tools.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Tools.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Globalization">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Globalization.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Globalization.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.IO.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.FileSystem">
+      <HintPath>..\..\packages\System.IO.FileSystem.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.FileSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.FileSystem.Primitives">
+      <HintPath>..\..\packages\System.IO.FileSystem.Primitives.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.FileSystem.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Linq">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Linq.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reflection">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Reflection.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reflection.Primitives">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Reflection.Primitives.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Resources.ResourceManager">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Resources.ResourceManager.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Resources.ResourceManager.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Extensions">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Runtime.Extensions.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Handles">
+      <HintPath>..\..\packages\System.Runtime.Handles.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Handles.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.InteropServices">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Runtime.InteropServices.4.0.20-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.InteropServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks">
+      <Private>True</Private>
+      <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -90,26 +155,7 @@
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
     <Compile Include="PortableExecutable\StreamExtensionsTests.cs" />
-    <Compile Include="Resources\Interop\Interop.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Interop.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Resources\Misc\Misc.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Misc.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Resources\Namespace\Namespace.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Namespace.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Resources\NetModule\NetModule.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>NetModule.resx</DependentUpon>
-    </Compile>
+    <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
     <Compile Include="TestUtilities\DiffUtil.cs" />
     <Compile Include="Utilities\BlobReaderTests.cs" />
@@ -118,58 +164,36 @@
     <Compile Include="Utilities\MemoryBlockTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Interop\Interop.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <CustomToolNamespace>TestResources</CustomToolNamespace>
-      <LastGenOutput>Interop.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\Misc\Misc.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Misc.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>TestResources</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\Namespace\Namespace.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Namespace.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>TestResources</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Resources\NetModule\NetModule.resx">
-      <CustomToolNamespace>TestResources</CustomToolNamespace>
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>NetModule.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
     <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
     <None Include="Resources\Namespace\NamespaceTests.cs" />
     <None Include="Resources\Interop\Interop.Mock01.cs" />
     <None Include="Resources\Interop\Interop.Mock01.Impl.cs" />
     <None Include="Resources\Interop\IndexerWithByRefParam.il" />
-    <None Include="Resources\Interop\IndexerWithByRefParam.dll" />
-    <None Include="Resources\Interop\Interop.Mock01.dll" />
-    <None Include="Resources\Interop\Interop.Mock01.Impl.dll" />
+    <EmbeddedResource Include="Resources\Interop\IndexerWithByRefParam.dll" />
+    <EmbeddedResource Include="Resources\Interop\Interop.Mock01.dll" />
+    <EmbeddedResource Include="Resources\Interop\Interop.Mock01.Impl.dll" />
     <None Include="Resources\Misc\CPPClassLibrary2.h" />
-    <None Include="Resources\Misc\CPPClassLibrary2.obj" />
+    <EmbeddedResource Include="Resources\Misc\CPPClassLibrary2.obj" />
     <None Include="Resources\Misc\EmptyType.il" />
-    <None Include="Resources\Misc\EmptyType.dll" />
+    <EmbeddedResource Include="Resources\Misc\EmptyType.dll" />
     <None Include="Resources\Misc\Members.cs" />
-    <None Include="Resources\Misc\Members.dll" />
-    <None Include="Resources\Namespace\NamespaceForwardedCS.dll" />
-    <None Include="Resources\Namespace\NamespaceTests.dll" />
+    <EmbeddedResource Include="Resources\Misc\Members.dll" />
+    <EmbeddedResource Include="Resources\Namespace\NamespaceForwardedCS.dll" />
+    <EmbeddedResource Include="Resources\Namespace\NamespaceTests.dll" />
     <None Include="Resources\NetModule\AppCS.cs" />
-    <None Include="Resources\NetModule\AppCS.exe" />
+    <EmbeddedResource Include="Resources\NetModule\AppCS.exe" />
     <None Include="Resources\NetModule\ModuleCS00.cs" />
-    <None Include="Resources\NetModule\ModuleCS00.mod" />
+    <EmbeddedResource Include="Resources\NetModule\ModuleCS00.mod" />
     <None Include="Resources\NetModule\ModuleCS01.cs" />
-    <None Include="Resources\NetModule\ModuleCS01.mod" />
-    <None Include="Resources\NetModule\ModuleVB01.mod" />
+    <EmbeddedResource Include="Resources\NetModule\ModuleCS01.mod" />
+    <EmbeddedResource Include="Resources\NetModule\ModuleVB01.mod" />
     <None Include="Resources\NetModule\ModuleVB01.vb" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
