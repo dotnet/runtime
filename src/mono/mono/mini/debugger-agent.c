@@ -4903,7 +4903,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 	if (log_level > 0) {
 		ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
 
-		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p), sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (jinfo_get_method (ji), TRUE), MONO_CONTEXT_GET_IP (ctx), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
+		DEBUG (1, fprintf (log_file, "[%p] Single step event (depth=%s) at %s (%p)[0x%x], sp %p, last sp %p\n", (gpointer)GetCurrentThreadId (), ss_depth_to_string (ss_req->depth), mono_method_full_name (jinfo_get_method (ji), TRUE), MONO_CONTEXT_GET_IP (ctx), (int)((guint8*)MONO_CONTEXT_GET_IP (ctx) - (guint8*)ji->code_start), MONO_CONTEXT_GET_SP (ctx), ss_req->last_sp));
 	}
 
 	ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &domain);
@@ -5112,10 +5112,12 @@ static void
 ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch)
 {
 	int i, j, frame_index;
-	SeqPoint *next_sp;
-	SeqPoint local_sp;
+	SeqPoint *next_sp, *parent_sp = NULL;
+	SeqPoint local_sp, local_parent_sp;
 	gboolean found_sp;
 	MonoBreakpoint *bp;
+	MonoSeqPointInfo *parent_info;
+	MonoMethod *parent_sp_method = NULL;
 	gboolean enable_global = FALSE;
 
 	/* Stop the previous operation */
@@ -5130,7 +5132,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 	} else {
 		frame_index = 1;
 
-		if ((!sp || sp->next_len == 0 || ss_req->depth == STEP_DEPTH_OUT || ss_req->depth == STEP_DEPTH_OVER) && ctx) {
+		if (ctx) {
 			/* Need parent frames */
 			if (!tls->context.valid)
 				mono_thread_state_init_from_monoctx (&tls->context, ctx);
@@ -5169,6 +5171,19 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 					sp = NULL;
 					frame_index ++;
 				}
+			} else {
+				/* Have to put a breakpoint into a parent frame since the seq points might not cover all control flow out of the method */
+				while (frame_index < tls->frame_count) {
+					StackFrame *frame = tls->frames [frame_index];
+
+					parent_sp_method = frame->method;
+					found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
+					parent_sp = found_sp ? &local_parent_sp : NULL;
+					if (found_sp && parent_sp->next_len != 0)
+						break;
+					parent_sp = NULL;
+					frame_index ++;
+				}
 			}
 		}
 
@@ -5180,6 +5195,19 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				next_sp = &next[i];
 
 				bp = set_breakpoint (method, next_sp->il_offset, ss_req->req, NULL);
+				ss_req->bps = g_slist_append (ss_req->bps, bp);
+			}
+			g_free (next);
+		}
+
+		if (parent_sp) {
+			SeqPoint* next = g_new(SeqPoint, parent_sp->next_len);
+
+			seq_point_init_next (parent_info, *parent_sp, next);
+			for (i = 0; i < parent_sp->next_len; i++) {
+				next_sp = &next[i];
+
+				bp = set_breakpoint (parent_sp_method, next_sp->il_offset, ss_req->req, NULL);
 				ss_req->bps = g_slist_append (ss_req->bps, bp);
 			}
 			g_free (next);
@@ -5207,7 +5235,6 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				}
 			}
 		}
-
 
 		if (ss_req->depth == STEP_DEPTH_INTO) {
 			/* Enable global stepping so we stop at method entry too */

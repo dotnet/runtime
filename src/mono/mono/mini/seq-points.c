@@ -343,7 +343,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 				if (!next [i])
 					continue;
 
-				printf ("\tIL0x%x ->", sp->il_offset);
+				printf ("\tIL0x%x[0x%0x] ->", sp->il_offset, sp->native_offset);
 				for (l = next [i]; l; l = l->next) {
 					int next_index = GPOINTER_TO_UINT (l->data);
 					printf (" IL0x%x", seq_points [next_index].il_offset);
