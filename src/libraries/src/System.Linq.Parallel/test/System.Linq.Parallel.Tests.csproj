@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props" Condition="Exists('..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <!-- Work around known Dev14 bug - see
@@ -12,8 +13,8 @@
     <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+    <NuGetPackageImportStamp>8be98411</NuGetPackageImportStamp>
   </PropertyGroup>
-  
   <PropertyGroup>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -32,7 +33,6 @@
     <SignAssembly>false</SignAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
@@ -48,7 +48,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  
   <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
@@ -82,12 +81,10 @@
     <Compile Include="WithCancellationTests.cs" />
     <Compile Include="ZipJoinGroupJoinTests.cs" />
   </ItemGroup>
-  
   <!-- Common or Common-branched source files -->
   <ItemGroup>
-      <Compile Include="..\..\Common\tests\System\Console.cs" />
+    <Compile Include="..\..\Common\tests\System\Console.cs" />
   </ItemGroup>
-  
   <!-- References used -->
   <ItemGroup>
     <Reference Include="System.Runtime">
@@ -130,35 +127,42 @@
       <Private>False</Private>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="xunit">
-      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    <Reference Include="xunit.abstractions">
+      <HintPath>..\..\packages\xunit.abstractions.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.abstractions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.assert">
+      <HintPath>..\..\packages\xunit.assert.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10\xunit.assert.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.core">
+      <HintPath>..\..\packages\xunit.core.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.core.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
-  
   <ItemGroup>
+    <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.Linq.Parallel.csproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Linq.Parallel</Name>
     </ProjectReference>
   </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="packages.config" /> <!-- NuGet configuration file -->
-  </ItemGroup>
-  
   <!-- Automatically added by VS -->
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\xunit.1.9.2\lib\net20\xunit.dll')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.1.9.2\lib\net20\xunit.dll'))" />
+    <Error Condition="!Exists('..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props'))" />
   </Target>
 </Project>

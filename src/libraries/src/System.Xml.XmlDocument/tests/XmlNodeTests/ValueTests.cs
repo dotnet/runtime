@@ -9,7 +9,8 @@ namespace XmlDocumentTests.XmlNodeTests
 {
     public static class ValueTests
     {
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void OnDocumentNode()
         {
             var xmlDocument = new XmlDocument();
@@ -30,7 +31,8 @@ namespace XmlDocumentTests.XmlNodeTests
             Assert.Equal("test", attribute.Value);
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void ElementWithNoDescendents()
         {
             var xmlDocument = new XmlDocument();
@@ -40,7 +42,8 @@ namespace XmlDocumentTests.XmlNodeTests
             Assert.Throws<InvalidOperationException>(() => node.Value = "new value");
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void ElementWithDescendents()
         {
             var xmlDocument = new XmlDocument();
@@ -130,7 +133,8 @@ namespace XmlDocumentTests.XmlNodeTests
             Assert.Equal("new comment", commentNode.Value);
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void DocumentFragment()
         {
             var xmlDocument = new XmlDocument();

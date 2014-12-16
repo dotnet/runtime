@@ -60,14 +60,16 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Throws<NullReferenceException>(() => xmlDocument.CreateElement(null));
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void NamespaceWithNoLocalName()
         {
             var xmlDocument = new XmlDocument();
             Assert.Throws<XmlException>(() => xmlDocument.CreateElement("foo:"));
         }
 
-        //[Fact] https://github.com/dotnet/corefx/issues/208
+        [Fact]
+        [ActiveIssue(208)]
         public static void NamespaceAndLocalNameWithColon()
         {
             var xmlDocument = new XmlDocument();
@@ -85,7 +87,8 @@ namespace XmlDocumentTests.XmlDocumentTests
             Assert.Equal("foo:bar", newNode.Name);
         }
 
-        /*[Fact] */
+        [Fact]
+        [ActiveIssue(228)]
         public static void NameWithWhitespace()
         {
             var xmlDocument = new XmlDocument();

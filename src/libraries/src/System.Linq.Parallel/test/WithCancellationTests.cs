@@ -90,9 +90,8 @@ namespace Test
             Assert.NotNull(caughtException);
         }
 
-        // This test is failing on our CI machines, probably due to the VM's limited CPU.
-        // To-do: Re-enable this test when we resolve the build machine issues.
-        // [Fact(Skip="Issue #176")]
+        [Fact]
+        [ActiveIssue(176)]
         public static void CTT_Sorting_ToArray()
         {
             int size = 10000;
@@ -130,9 +129,8 @@ namespace Test
             Assert.Equal(tokenSource.Token, caughtException.CancellationToken);
         }
 
-        // This test is failing on our CI machines, probably due to the VM's limited CPU.
-        // To-do: Re-enable this test when we resolve the build machine issues.
-        // [Fact(Skip="Issue #176")]
+        [Fact]
+        [ActiveIssue(176)]
         public static void CTT_NonSorting_AsynchronousMergerEnumeratorDispose()
         {
             int size = 10000;
@@ -218,9 +216,8 @@ namespace Test
             Assert.NotNull(caughtException);
         }
 
-        // This test is failing on our CI machines, probably due to the VM's limited CPU.
-        // To-do: Re-enable this test when we resolve the build machine issues.
-        // [Fact(Skip="Issue #176")]
+        [Fact]
+        [ActiveIssue(176)]
         public static void CTT_NonSorting_ToArray_ExternalCancel()
         {
             int size = 10000;
@@ -524,6 +521,7 @@ namespace Test
 
         // REPRO 1 -- cancellation
         [Fact]
+        [ActiveIssue(176)]
         public static void SetOperationsThrowAggregateOnCancelOrDispose_1()
         {
             var mre = new ManualResetEvent(false);

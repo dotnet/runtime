@@ -2438,7 +2438,8 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(handle.RowId, assemblyRef.RowId);
         }
 
-        /*[Fact]*/ // TODO: Outer loop stress test
+        [Fact]
+        [OuterLoop]
         public void CanReadFromSameMemoryMappedPEReaderInParallel()
         {
             // See http://roslyn.codeplex.com/workitem/299

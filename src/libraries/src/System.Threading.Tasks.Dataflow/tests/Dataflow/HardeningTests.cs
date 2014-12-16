@@ -17,7 +17,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
     {
         private const int BUFFER_BOUNDED_CAPACITY_10 = 2;
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunHardeningTests1()
         {
             // OfferMessage: All single-target source blocks
@@ -46,7 +47,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(TestHardeningCallback(new ActionBlock<int>(x => { throw new InvalidOperationException("Callback"); }), ""));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunHardeningTests2()
         {
             // OfferMessage: All single-target source blocks
@@ -103,7 +105,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         // Tests IDataflowBlock.Fault
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestFault()
         {
             var nonGreedyExecutionOptions = new ExecutionDataflowBlockOptions() { BoundedCapacity = 1 };
@@ -223,7 +226,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
 #if !PRENET45
         // Test to make sure we appropriately store data into exceptions for debugging purposes
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestExceptionDataStorage()
         {
             const string EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE = "DataflowMessageValue";
@@ -334,7 +338,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
         // means more allocations.  If we're able to eliminate some of these in the future,
         // the test will fail, at which point we should update the numbers in the test accordingly
         // to make the test pass again.
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestClosureUsage()
         {
             bool isDebug = CheckAssemblyConfiguration(typeof(IDataflowBlock).GetTypeInfo().Assembly);
@@ -352,7 +357,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestFaultyTaskScheduler()
         {
             bool passed = true;
@@ -695,7 +701,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return passed;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestHardeningExtensionsSendAsync()
         {
             bool passed = true;
@@ -819,7 +826,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return passed;
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestHardeningExtensionsWithDisposedCancellationTokenSource()
         {
             var cts = new CancellationTokenSource();

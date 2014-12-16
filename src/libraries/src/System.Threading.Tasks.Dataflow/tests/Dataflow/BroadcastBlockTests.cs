@@ -77,7 +77,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<int>(new BroadcastBlock<int>(i => i)));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunBroadcastBlockConformanceTests()
         {
             bool localPassed = true;
@@ -158,7 +159,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void TestBroadcastCloning()
         {
             // Test cloning when a clone function is provided

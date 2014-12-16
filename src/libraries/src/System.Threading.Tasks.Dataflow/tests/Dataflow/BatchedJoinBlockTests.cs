@@ -119,7 +119,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<Tuple<IList<int>, IList<int>, IList<int>>>(new BatchedJoinBlock<int, int, int>(2)));
         }
 
-        //[Fact(Skip = "Outerloop")]
+        [Fact]
+        [OuterLoop]
         public void RunBatchedJoinBlockConformanceTests()
         {
             // Test Post/Receive single block

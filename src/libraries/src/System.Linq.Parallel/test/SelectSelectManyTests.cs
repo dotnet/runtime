@@ -42,8 +42,8 @@ namespace Test
             RunIndexedSelectTest2(32);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunIndexedSelectTest_LongRunning()
         {
             RunIndexedSelectTest1(1024);
@@ -213,8 +213,8 @@ namespace Test
             RunSelectManyTest1Core(32, 32);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunSelectManyTest1_LongRunning()
         {
             RunSelectManyTest1Core(1024 * 2, 1024);
@@ -232,8 +232,8 @@ namespace Test
             RunSelectManyTest2Core(32, 32);
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void RunSelectManyTest2_LongRunning()
         {
             RunSelectManyTest2Core(1024 * 2, 1024);

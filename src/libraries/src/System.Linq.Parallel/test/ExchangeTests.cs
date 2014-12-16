@@ -21,8 +21,8 @@ namespace Test
             }
         }
 
-        // To-do: Re-enable this long-running test as an outer-loop test
-        // [Fact]
+        [Fact]
+        [OuterLoop]
         public static void SimplePartitionMergeWhereScanTest_LongRunning()
         {
             for (int i = 1; i <= 128; i *= 2)
