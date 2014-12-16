@@ -1836,6 +1836,7 @@ typedef struct {
 	 * Next sequence points and flags are required by the debugger agent.
 	 */
 	gboolean gen_seq_points_debug_data;
+	gboolean gen_seq_points_compact_data;
 	gboolean explicit_null_checks;
 	/*
 	 * Fill stack frames with 0x2a in method prologs. This helps with the

@@ -4850,7 +4850,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->full_aot = full_aot;
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
-	cfg->gen_seq_points = debug_options.gen_seq_points_debug_data;
+	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_seq_points_debug_data;
 	cfg->gen_seq_points_debug_data = debug_options.gen_seq_points_debug_data;
 
 	cfg->explicit_null_checks = debug_options.explicit_null_checks;
@@ -6916,6 +6916,8 @@ mini_parse_debug_options (void)
 			debug_options.explicit_null_checks = TRUE;
 		else if (!strcmp (arg, "gen-seq-points"))
 			debug_options.gen_seq_points_debug_data = TRUE;
+		else if (!strcmp (arg, "gen-compact-seq-points"))
+			debug_options.gen_seq_points_compact_data = TRUE;
 		else if (!strcmp (arg, "init-stacks"))
 			debug_options.init_stacks = TRUE;
 		else if (!strcmp (arg, "casts"))
