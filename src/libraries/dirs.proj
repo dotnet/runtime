@@ -1,13 +1,22 @@
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
-  <Import Project="$(ToolsDir)depending.targets" />
-  <Target Name="RestoreAllPackages" BeforeTargets="Build;Clean" DependsOnTargets="EnsureDependencies" />
+  <Target Name="VerifyBuildTools" 
+    Inputs="$(BuildToolsTargetInputs)"
+    Outputs="$(BuildToolsTargetOutputs)"
+    >
+    <Error Condition="!Exists('$(BuildToolsInstallSempahore)')" 
+      Text="The build tools have not been installed. Please run build.cmd from the root of the repo at least once get the tools installed." />
+
+    <!-- If we enter this target at all then the inputs are newer then the outputs so give a warning. -->
+    <Warning Text="Looks like there may be an update to the build tools. Please run build.cmd from the root of the repo to refresh the build tools." /> 
+  </Target>
+
+  <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
+  <Target Name="RestoreAllPackages" BeforeTargets="Build" DependsOnTargets="EnsureDependencies" />
 
   <ItemGroup>
-    <Project Include="*\src\*.csproj">
-      <Properties>BaseOutputPath=$(ProjectDir)</Properties>
-    </Project>
+    <Project Include="*\src\*.csproj" />
     <!-- <Project Include="*\tests\*.csproj" /> -->
   </ItemGroup>
 
@@ -17,31 +26,10 @@
     <OutDir>$(BaseOutputPathWithConfig)</OutDir>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)packages.targets" />
+  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
   <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
   
-  <Import Project="$(ToolsDir)tests.targets" />
+  <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
-  
-  <!--
-    Name="Build"
-    DependsOnTargets="
-      EnsureDependencies;
-      BuildBinaries;
-      BuildPackages;
-      RunTests;
-      GitPush" />
-
-  <Target
-    Name="Clean"
-    DependsOnTargets="
-      CleanBinaries" />
-
-  <Target
-    Name="Rebuild"
-    DependsOnTargets="
-      Clean;
-      Rebuild" />
-      -->
 
 </Project>
