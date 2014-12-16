@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Xunit;
 
@@ -24,8 +25,9 @@ namespace TestUtilities
             private static bool CanBeNull()
             {
                 var type = typeof(T);
-                return !type.IsValueType ||
-                    (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
+                var typeInfo = type.GetTypeInfo();
+                return !typeInfo.IsValueType ||
+                    (typeInfo.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
             }
 
             public static bool IsNull(T @object)
@@ -385,7 +387,7 @@ namespace TestUtilities
                     return;
                 }
 
-                if (allowDerived && typeof(T).IsAssignableFrom(type))
+                if (allowDerived && typeof(T).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()))
                 {
                     // We got a derived type
                     return;

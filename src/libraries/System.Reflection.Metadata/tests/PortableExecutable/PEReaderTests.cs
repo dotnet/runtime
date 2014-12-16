@@ -50,6 +50,8 @@ namespace System.Reflection.Metadata.Tests
             Assert.False(valid.CanRead);
         }
 
+        // TODO: Switch to small checked in native image.
+        /*
         [Fact]
         public void OpenNativeImage()
         {
@@ -61,6 +63,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Throws<InvalidOperationException>(() => reader.GetMetadataReader());
             }
         }
+        */
 
         [Fact]
         public void IL_LazyLoad()
