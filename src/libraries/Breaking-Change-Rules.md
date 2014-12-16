@@ -146,7 +146,7 @@
 
 * Increasing the visibility of a member that is not `virtual`
 
-* Decreasing the visibility of a member when there are _no accessible_ (`public` or `protected`) constructors or the type is `sealed`
+* Decreasing the visibility of a `protected` member when there are _no accessible_ (`public` or `protected`) constructors or the type is `sealed`
 
 * Changing a member from `abstract` to `virtual`
 
@@ -169,7 +169,7 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 * Removing or renaming a member, including a getter or setter from a property or enum members
 
-* Decreasing the visibility of a member when there _are accessible_ (`public` or `protected`) constructors and the type is not `sealed`
+* Decreasing the visibility of a `protected` member when there _are accessible_ (`public` or `protected`) constructors and the type is not `sealed`
 
 * Adding or removing `abstract` from a member
 
