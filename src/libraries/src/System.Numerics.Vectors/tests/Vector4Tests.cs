@@ -799,7 +799,7 @@ namespace System.Numerics.Tests
 
         // A test for Normalize (Vector4f)
         // Normalize vector of length zero
-        //[Fact(Skip="GitHub Issue #22")]
+        [Fact]
         public void Vector4NormalizeTest2()
         {
             Vector4 a = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
