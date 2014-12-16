@@ -2017,7 +2017,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->gen_seq_points) {
+	if (cfg->gen_seq_points_debug_data) {
 		MonoInst *ins;
 
 		if (cfg->compile_aot) {
@@ -6983,7 +6983,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->gen_seq_points) {
+	if (cfg->gen_seq_points_debug_data) {
 		MonoInst *info_var = cfg->arch.seq_point_info_var;
 
 		/* Initialize seq_point_info_var */
