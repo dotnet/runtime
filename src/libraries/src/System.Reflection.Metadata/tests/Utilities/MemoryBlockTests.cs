@@ -180,7 +180,7 @@ namespace System.Reflection.Metadata.Tests
                     Assert.True(ptr != null);
                     Assert.True(prefixed != (ptr == bytes));
                     Assert.Equal(prefixed ? "PrefixTest".Length : "Test".Length, byteCount);
-                    string s = new string((sbyte*)bytes, 0, byteCount, Encoding.UTF8);
+                    string s = Encoding.UTF8.GetString(bytes, byteCount);
                     Assert.Equal(s, prefixed ? "PrefixTest" : "Test");
                     return "Intercepted";
                 }
