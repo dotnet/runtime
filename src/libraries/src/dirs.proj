@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <Project Include="*\src\*.csproj" />
-    <!-- <Project Include="*\tests\*.csproj" /> -->
+    <Project Include="*\tests\*.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.traversal.targets" />
