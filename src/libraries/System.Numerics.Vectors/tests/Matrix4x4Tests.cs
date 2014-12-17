@@ -1505,7 +1505,7 @@ namespace System.Numerics.Tests
                     21.0f, 22.0f, 23.0f, 24.0f,
                     31.0f, 32.0f, 33.0f, 34.0f,
                     41.0f, 42.0f, 43.0f, 44.0f);
-            
+
             string actual = a.ToString();
             Assert.Equal(expected, actual);
         }
@@ -2465,22 +2465,22 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix4x4_2x
         {
-            Matrix4x4 a;
-            Matrix4x4 b;
+            private Matrix4x4 _a;
+            private Matrix4x4 _b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix4x4PlusFloat
         {
-            Matrix4x4 v;
-            float f;
+            private Matrix4x4 _v;
+            private float _f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix4x4PlusFloat_2x
         {
-            Matrix4x4PlusFloat a;
-            Matrix4x4PlusFloat b;
+            private Matrix4x4PlusFloat _a;
+            private Matrix4x4PlusFloat _b;
         }
 
         // A test to make sure the fields are laid out how we expect
