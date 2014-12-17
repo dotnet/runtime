@@ -11,16 +11,16 @@ namespace System.Collections.Immutable.Test
     /// <typeparam name="T">The type to hash</typeparam>
     internal class BadHasher<T> : IEqualityComparer<T>
     {
-        private readonly IEqualityComparer<T> equalityComparer;
+        private readonly IEqualityComparer<T> _equalityComparer;
 
         internal BadHasher(IEqualityComparer<T> equalityComparer = null)
         {
-            this.equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+            _equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
         }
 
         public bool Equals(T x, T y)
         {
-            return this.equalityComparer.Equals(x, y);
+            return _equalityComparer.Equals(x, y);
         }
 
         public int GetHashCode(T obj)

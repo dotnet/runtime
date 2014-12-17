@@ -147,7 +147,7 @@ namespace System.Collections.Immutable.Test
             var newImmutable = builder.ToImmutable();
             Assert.NotSame(collection, newImmutable); // first ToImmutable with changes should be a new instance.
             Assert.Same(newImmutable, builder.ToImmutable()); // second ToImmutable without changes should be the same instance.
-           
+
             collection = collection.Clear(); // now start with an empty collection 
             builder = collection.ToBuilder();
             Assert.Same(collection, builder.ToImmutable()); // again, no changes at all. 
