@@ -7,33 +7,33 @@ namespace System.Reflection.Metadata
 {
     public struct TypeSpecification
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal TypeSpecification(MetadataReader reader, TypeSpecificationHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            this.reader = reader;
-            this.rowId = handle.RowId;
+            _reader = reader;
+            _rowId = handle.RowId;
         }
 
         private TypeSpecificationHandle Handle
         {
-            get { return TypeSpecificationHandle.FromRowId(rowId); }
+            get { return TypeSpecificationHandle.FromRowId(_rowId); }
         }
 
         public BlobHandle Signature
         {
-            get { return reader.TypeSpecTable.GetSignature(Handle); }
+            get { return _reader.TypeSpecTable.GetSignature(Handle); }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
     }
 }

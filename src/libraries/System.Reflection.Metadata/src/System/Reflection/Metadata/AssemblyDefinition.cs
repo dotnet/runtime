@@ -7,12 +7,12 @@ namespace System.Reflection.Metadata
 {
     public struct AssemblyDefinition
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         internal AssemblyDefinition(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            this.reader = reader;
+            _reader = reader;
         }
 
         private Handle Handle
@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.AssemblyTable.GetHashAlgorithm();
+                return _reader.AssemblyTable.GetHashAlgorithm();
             }
         }
 
@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.AssemblyTable.GetVersion();
+                return _reader.AssemblyTable.GetVersion();
             }
         }
 
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.AssemblyTable.GetFlags();
+                return _reader.AssemblyTable.GetFlags();
             }
         }
 
@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.AssemblyTable.GetName();
+                return _reader.AssemblyTable.GetName();
             }
         }
 
@@ -59,7 +59,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.AssemblyTable.GetCulture();
+                return _reader.AssemblyTable.GetCulture();
             }
         }
 
@@ -67,18 +67,18 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.AssemblyTable.GetPublicKey();
+                return _reader.AssemblyTable.GetPublicKey();
             }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
         public DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes()
         {
-            return new DeclarativeSecurityAttributeHandleCollection(reader, Handle);
+            return new DeclarativeSecurityAttributeHandleCollection(_reader, Handle);
         }
     }
 }
