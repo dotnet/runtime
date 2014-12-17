@@ -183,33 +183,33 @@ namespace System.Collections.Immutable.Test
 
         private class DeferredToString
         {
-            private readonly Func<string> generator;
+            private readonly Func<string> _generator;
 
             internal DeferredToString(Func<string> generator)
             {
                 Contract.Requires(generator != null);
-                this.generator = generator;
+                _generator = generator;
             }
 
             public override string ToString()
             {
-                return this.generator();
+                return _generator();
             }
         }
 
         private class NonGenericEnumerableWrapper : IEnumerable
         {
-            private readonly IEnumerable enumerable;
+            private readonly IEnumerable _enumerable;
 
             internal NonGenericEnumerableWrapper(IEnumerable enumerable)
             {
                 Requires.NotNull(enumerable, "enumerable");
-                this.enumerable = enumerable;
+                _enumerable = enumerable;
             }
 
             public IEnumerator GetEnumerator()
             {
-                return this.enumerable.GetEnumerator();
+                return _enumerable.GetEnumerator();
             }
         }
     }

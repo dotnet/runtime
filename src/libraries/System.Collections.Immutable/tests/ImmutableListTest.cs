@@ -178,7 +178,7 @@ namespace System.Collections.Immutable.Test
             {
                 int batchSize = random.Next(32);
                 Debug.WriteLine("Adding {0} elements to the list", batchSize);
-                list = list.AddRange(Enumerable.Range(expectedTotalSize+1, batchSize));
+                list = list.AddRange(Enumerable.Range(expectedTotalSize + 1, batchSize));
                 VerifyBalanced(list);
                 expectedTotalSize += batchSize;
             }

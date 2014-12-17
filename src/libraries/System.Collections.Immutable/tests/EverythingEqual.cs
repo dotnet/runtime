@@ -11,7 +11,7 @@ namespace System.Collections.Immutable.Test
     /// <typeparam name="T"></typeparam>
     internal class EverythingEqual<T> : IEqualityComparer<T>, IEqualityComparer
     {
-        private static EverythingEqual<T> singleton = new EverythingEqual<T>();
+        private static EverythingEqual<T> s_singleton = new EverythingEqual<T>();
 
         private EverythingEqual() { }
 
@@ -19,7 +19,7 @@ namespace System.Collections.Immutable.Test
         {
             get
             {
-                return singleton;
+                return s_singleton;
             }
         }
 
