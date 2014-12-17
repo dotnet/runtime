@@ -43,12 +43,12 @@ namespace System.Reflection.Metadata
     /// </remarks>
     public struct MetadataStringComparer
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         internal MetadataStringComparer(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
+            this.reader = reader;
         }
 
         public bool Equals(StringHandle handle, string value)
@@ -58,7 +58,7 @@ namespace System.Reflection.Metadata
                 ThrowValueArgumentNull();
             }
 
-            return _reader.StringStream.Equals(handle, value, _reader.utf8Decoder);
+            return reader.StringStream.Equals(handle, value, reader.utf8Decoder);
         }
 
         public bool Equals(NamespaceDefinitionHandle handle, string value)
@@ -70,10 +70,10 @@ namespace System.Reflection.Metadata
 
             if (handle.HasFullName)
             {
-                return _reader.StringStream.Equals(handle.GetFullName(), value, _reader.utf8Decoder);
+                return reader.StringStream.Equals(handle.GetFullName(), value, reader.utf8Decoder);
             }
 
-            return value == _reader.namespaceCache.GetFullName(handle);
+            return value == reader.namespaceCache.GetFullName(handle);
         }
 
         public bool StartsWith(StringHandle handle, string value)
@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata
                 ThrowValueArgumentNull();
             }
 
-            return _reader.StringStream.StartsWith(handle, value, _reader.utf8Decoder);
+            return reader.StringStream.StartsWith(handle, value, reader.utf8Decoder);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

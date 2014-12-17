@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -19,17 +19,17 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the data structure for the collection.
             /// </summary>
-            private readonly SortedInt32KeyNode<HashBucket> _root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// The comparer used when comparing hash buckets.
             /// </summary>
-            private readonly Comparers _comparers;
+            private readonly Comparers comparers;
 
             /// <summary>
             /// The current number of elements in the collection.
             /// </summary>
-            private readonly int _count;
+            private readonly int count;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.MutationInput"/> struct.
@@ -42,9 +42,9 @@ namespace System.Collections.Immutable
                 Comparers comparers,
                 int count)
             {
-                _root = root;
-                _comparers = comparers;
-                _count = count;
+                this.root = root;
+                this.comparers = comparers;
+                this.count = count;
             }
 
             /// <summary>
@@ -53,9 +53,9 @@ namespace System.Collections.Immutable
             /// <param name="map">The map.</param>
             internal MutationInput(ImmutableDictionary<TKey, TValue> map)
             {
-                _root = map._root;
-                _comparers = map._comparers;
-                _count = map._count;
+                this.root = map.root;
+                this.comparers = map.comparers;
+                this.count = map.count;
             }
 
             /// <summary>
@@ -63,7 +63,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal SortedInt32KeyNode<HashBucket> Root
             {
-                get { return _root; }
+                get { return this.root; }
             }
 
             /// <summary>
@@ -71,7 +71,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal IEqualityComparer<TKey> KeyComparer
             {
-                get { return _comparers.KeyComparer; }
+                get { return this.comparers.KeyComparer; }
             }
 
             /// <summary>
@@ -79,7 +79,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal IEqualityComparer<KeyValuePair<TKey, TValue>> KeyOnlyComparer
             {
-                get { return _comparers.KeyOnlyComparer; }
+                get { return this.comparers.KeyOnlyComparer; }
             }
 
             /// <summary>
@@ -87,7 +87,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal IEqualityComparer<TValue> ValueComparer
             {
-                get { return _comparers.ValueComparer; }
+                get { return this.comparers.ValueComparer; }
             }
 
             /// <summary>
@@ -95,7 +95,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal IEqualityComparer<HashBucket> HashBucketComparer
             {
-                get { return _comparers.HashBucketEqualityComparer; }
+                get { return this.comparers.HashBucketEqualityComparer; }
             }
 
             /// <summary>
@@ -103,7 +103,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal int Count
             {
-                get { return _count; }
+                get { return this.count; }
             }
         }
     }

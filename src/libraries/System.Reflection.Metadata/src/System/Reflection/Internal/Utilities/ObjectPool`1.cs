@@ -30,12 +30,12 @@ namespace System.Reflection.Internal
         }
 
         // storage for the pool objects.
-        private readonly Element[] _items;
+        private readonly Element[] items;
 
         // factory is stored for the lifetime of the pool. We will call this only when pool needs to
         // expand. compared to "new T()", Func gives more flexibility to implementers and faster
         // than "new T()".
-        private readonly Func<T> _factory;
+        private readonly Func<T> factory;
 
 
         internal ObjectPool(Func<T> factory)
@@ -44,13 +44,13 @@ namespace System.Reflection.Internal
 
         internal ObjectPool(Func<T> factory, int size)
         {
-            _factory = factory;
-            _items = new Element[size];
+            this.factory = factory;
+            this.items = new Element[size];
         }
 
         private T CreateInstance()
         {
-            var inst = _factory();
+            var inst = factory();
             return inst;
         }
 
@@ -64,7 +64,7 @@ namespace System.Reflection.Internal
         /// </remarks>
         internal T Allocate()
         {
-            var items = _items;
+            var items = this.items;
             T inst;
 
             for (int i = 0; i < items.Length; i++)
@@ -98,7 +98,7 @@ namespace System.Reflection.Internal
         /// </remarks>
         internal void Free(T obj)
         {
-            var items = _items;
+            var items = this.items;
             for (int i = 0; i < items.Length; i++)
             {
                 if (items[i].Value == null)

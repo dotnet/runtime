@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
@@ -1363,22 +1363,22 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Vector4_2x
         {
-            private Vector4 _a;
-            private Vector4 _b;
+            Vector4 a;
+            Vector4 b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Vector4PlusFloat
         {
-            private Vector4 _v;
-            private float _f;
+            Vector4 v;
+            float f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Vector4PlusFloat_2x
         {
-            private Vector4PlusFloat _a;
-            private Vector4PlusFloat _b;
+            Vector4PlusFloat a;
+            Vector4PlusFloat b;
         }
 
         [Fact]
@@ -1517,38 +1517,38 @@ namespace System.Numerics.Tests
             public Vector4 RootEmbeddedObject { get { return L0.L1.L2.L3.L4.L5.L6.L7.EmbeddedVector; } }
             public struct Level0
             {
-                private float _buffer0, _buffer1;
+                private float buffer0, buffer1;
                 public Level1 L1;
-                private float _buffer2;
+                private float buffer2;
                 public struct Level1
                 {
-                    private float _buffer0, _buffer1;
+                    private float buffer0, buffer1;
                     public Level2 L2;
-                    private byte _buffer2;
+                    private byte buffer2;
                     public struct Level2
                     {
                         public Level3 L3;
-                        private float _buffer0;
-                        private byte _buffer1;
+                        private float buffer0;
+                        private byte buffer1;
                         public struct Level3
                         {
                             public Level4 L4;
                             public struct Level4
                             {
-                                private float _buffer0;
+                                private float buffer0;
                                 public Level5 L5;
-                                private long _buffer1;
-                                private byte _buffer2;
-                                private double _buffer3;
+                                private long buffer1;
+                                private byte buffer2;
+                                private double buffer3;
                                 public struct Level5
                                 {
-                                    private byte _buffer0;
+                                    private byte buffer0;
                                     public Level6 L6;
                                     public struct Level6
                                     {
-                                        private byte _buffer0;
+                                        private byte buffer0;
                                         public Level7 L7;
-                                        private byte _buffer1, _buffer2;
+                                        private byte buffer1, buffer2;
                                         public struct Level7
                                         {
                                             public Vector4 EmbeddedVector;

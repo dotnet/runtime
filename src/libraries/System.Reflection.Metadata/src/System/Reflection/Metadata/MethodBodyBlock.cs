@@ -11,12 +11,12 @@ namespace System.Reflection.Metadata
 {
     public sealed class MethodBodyBlock
     {
-        private readonly MemoryBlock _il;
-        private readonly int _size;
-        private readonly ushort _maxStack;
-        private readonly bool _localVariablesInitialized;
-        private readonly StandaloneSignatureHandle _localSignature;
-        private readonly ImmutableArray<ExceptionRegion> _exceptionRegions;
+        private readonly MemoryBlock il;
+        private readonly int size;
+        private readonly ushort maxStack;
+        private readonly bool localVariablesInitialized;
+        private readonly StandaloneSignatureHandle localSignature;
+        private readonly ImmutableArray<ExceptionRegion> exceptionRegions;
 
         private MethodBodyBlock(
             bool localVariablesInitialized,
@@ -28,12 +28,12 @@ namespace System.Reflection.Metadata
         {
             Debug.Assert(!exceptionRegions.IsDefault);
 
-            _localVariablesInitialized = localVariablesInitialized;
-            _maxStack = maxStack;
-            _localSignature = localSignatureHandle;
-            _il = il;
-            _exceptionRegions = exceptionRegions;
-            _size = size;
+            this.localVariablesInitialized = localVariablesInitialized;
+            this.maxStack = maxStack;
+            this.localSignature = localSignatureHandle;
+            this.il = il;
+            this.exceptionRegions = exceptionRegions;
+            this.size = size;
         }
 
         /// <summary>
@@ -41,32 +41,32 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int Size
         {
-            get { return _size; }
+            get { return size; }
         }
 
         public int MaxStack
         {
-            get { return _maxStack; }
+            get { return maxStack; }
         }
 
         public bool LocalVariablesInitialized
         {
-            get { return _localVariablesInitialized; }
+            get { return localVariablesInitialized; }
         }
 
         public StandaloneSignatureHandle LocalSignature
         {
-            get { return _localSignature; }
+            get { return localSignature; }
         }
 
         public ImmutableArray<ExceptionRegion> ExceptionRegions
         {
-            get { return _exceptionRegions; }
+            get { return exceptionRegions; }
         }
 
         public byte[] GetILBytes()
         {
-            return _il.ToArray();
+            return il.ToArray();
         }
 
         public ImmutableArray<byte> GetILContent()
@@ -77,7 +77,7 @@ namespace System.Reflection.Metadata
 
         public BlobReader GetILReader()
         {
-            return new BlobReader(_il);
+            return new BlobReader(il);
         }
 
         private const byte ILTinyFormat = 0x02;

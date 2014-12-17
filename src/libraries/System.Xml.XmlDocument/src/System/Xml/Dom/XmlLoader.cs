@@ -10,9 +10,9 @@ namespace System.Xml
 {
     internal class XmlLoader
     {
-        private XmlDocument _doc;
-        private XmlReader _reader;
-        private bool _preserveWhitespace;
+        XmlDocument doc;
+        XmlReader reader;
+        bool preserveWhitespace;
 
 
         public XmlLoader()
@@ -21,17 +21,17 @@ namespace System.Xml
 
         internal void Load(XmlDocument doc, XmlReader reader, bool preserveWhitespace)
         {
-            _doc = doc;
-            _reader = reader;
-            _preserveWhitespace = preserveWhitespace;
+            this.doc = doc;
+            this.reader = reader;
+            this.preserveWhitespace = preserveWhitespace;
             if (doc == null)
                 throw new ArgumentException(SR.Xdom_Load_NoDocument);
             if (reader == null)
                 throw new ArgumentException(SR.Xdom_Load_NoReader);
             doc.SetBaseURI(reader.BaseURI);
-            if (_reader.ReadState != ReadState.Interactive)
+            if (this.reader.ReadState != ReadState.Interactive)
             {
-                if (!_reader.Read())
+                if (!this.reader.Read())
                     return;
             }
             LoadDocSequence(doc);
@@ -40,23 +40,23 @@ namespace System.Xml
         //The function will start loading the document from where current XmlReader is pointing at.
         private void LoadDocSequence(XmlDocument parentDoc)
         {
-            Debug.Assert(_reader != null);
+            Debug.Assert(this.reader != null);
             Debug.Assert(parentDoc != null);
             XmlNode node = null;
             while ((node = LoadNode(true)) != null)
             {
                 parentDoc.AppendChildForLoad(node, parentDoc);
-                if (!_reader.Read())
+                if (!this.reader.Read())
                     return;
             }
         }
 
         internal XmlNode ReadCurrentNode(XmlDocument doc, XmlReader reader)
         {
-            _doc = doc;
-            _reader = reader;
+            this.doc = doc;
+            this.reader = reader;
             // WS are optional only for loading (see XmlDocument.PreserveWhitespace)
-            _preserveWhitespace = true;
+            this.preserveWhitespace = true;
             if (doc == null)
                 throw new ArgumentException(SR.Xdom_Load_NoDocument);
             if (reader == null)
@@ -81,7 +81,7 @@ namespace System.Xml
 
         private XmlNode LoadNode(bool skipOverWhitespace)
         {
-            XmlReader r = _reader;
+            XmlReader r = this.reader;
             XmlNode parent = null;
             XmlElement element;
             do
@@ -91,7 +91,7 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                         bool fEmptyElement = r.IsEmptyElement;
-                        element = _doc.CreateElement(r.Prefix, r.LocalName, r.NamespaceURI);
+                        element = doc.CreateElement(r.Prefix, r.LocalName, r.NamespaceURI);
                         element.IsEmpty = fEmptyElement;
 
                         if (r.MoveToFirstAttribute())
@@ -111,7 +111,7 @@ namespace System.Xml
                         {
                             if (parent != null)
                             {
-                                parent.AppendChildForLoad(element, _doc);
+                                parent.AppendChildForLoad(element, doc);
                             }
                             parent = element;
                             continue;
@@ -148,17 +148,17 @@ namespace System.Xml
                         break;
 
                     case XmlNodeType.Text:
-                        node = _doc.CreateTextNode(r.Value);
+                        node = doc.CreateTextNode(r.Value);
                         break;
 
                     case XmlNodeType.SignificantWhitespace:
-                        node = _doc.CreateSignificantWhitespace(r.Value);
+                        node = doc.CreateSignificantWhitespace(r.Value);
                         break;
 
                     case XmlNodeType.Whitespace:
-                        if (_preserveWhitespace)
+                        if (preserveWhitespace)
                         {
-                            node = _doc.CreateWhitespace(r.Value);
+                            node = doc.CreateWhitespace(r.Value);
                             break;
                         }
                         else if (parent == null && !skipOverWhitespace)
@@ -171,7 +171,7 @@ namespace System.Xml
                             continue;
                         }
                     case XmlNodeType.CDATA:
-                        node = _doc.CreateCDataSection(r.Value);
+                        node = doc.CreateCDataSection(r.Value);
                         break;
 
 
@@ -180,11 +180,11 @@ namespace System.Xml
                         break;
 
                     case XmlNodeType.ProcessingInstruction:
-                        node = _doc.CreateProcessingInstruction(r.Name, r.Value);
+                        node = doc.CreateProcessingInstruction(r.Name, r.Value);
                         break;
 
                     case XmlNodeType.Comment:
-                        node = _doc.CreateComment(r.Value);
+                        node = doc.CreateComment(r.Value);
                         break;
 
                     case XmlNodeType.DocumentType:
@@ -198,7 +198,7 @@ namespace System.Xml
                 Debug.Assert(node != null);
                 if (parent != null)
                 {
-                    parent.AppendChildForLoad(node, _doc);
+                    parent.AppendChildForLoad(node, doc);
                 }
                 else
                 {
@@ -220,25 +220,25 @@ namespace System.Xml
 
         private XmlAttribute LoadAttributeNode()
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.Attribute);
+            Debug.Assert(reader.NodeType == XmlNodeType.Attribute);
 
-            XmlReader r = _reader;
+            XmlReader r = reader;
             if (r.IsDefault)
             {
                 return LoadDefaultAttribute();
             }
 
-            XmlAttribute attr = _doc.CreateAttribute(r.Prefix, r.LocalName, r.NamespaceURI);
+            XmlAttribute attr = doc.CreateAttribute(r.Prefix, r.LocalName, r.NamespaceURI);
             while (r.ReadAttributeValue())
             {
                 XmlNode node;
                 switch (r.NodeType)
                 {
                     case XmlNodeType.Text:
-                        node = _doc.CreateTextNode(r.Value);
+                        node = doc.CreateTextNode(r.Value);
                         break;
                     case XmlNodeType.EntityReference:
-                        node = _doc.CreateEntityReference(r.LocalName);
+                        node = doc.CreateEntityReference(r.LocalName);
                         if (r.CanResolveEntity)
                         {
                             r.ResolveEntity();
@@ -247,7 +247,7 @@ namespace System.Xml
                             // if the reader does not present any children for the ent-ref
                             if (node.FirstChild == null)
                             {
-                                node.AppendChildForLoad(_doc.CreateTextNode(string.Empty), _doc);
+                                node.AppendChildForLoad(doc.CreateTextNode(string.Empty), doc);
                             }
                         }
                         break;
@@ -255,7 +255,7 @@ namespace System.Xml
                         throw UnexpectedNodeType(r.NodeType);
                 }
                 Debug.Assert(node != null);
-                attr.AppendChildForLoad(node, _doc);
+                attr.AppendChildForLoad(node, doc);
             }
 
             return attr;
@@ -263,10 +263,10 @@ namespace System.Xml
 
         private XmlAttribute LoadDefaultAttribute()
         {
-            Debug.Assert(_reader.IsDefault);
+            Debug.Assert(reader.IsDefault);
 
-            XmlReader r = _reader;
-            XmlAttribute attr = _doc.CreateDefaultAttribute(r.Prefix, r.LocalName, r.NamespaceURI);
+            XmlReader r = reader;
+            XmlAttribute attr = doc.CreateDefaultAttribute(r.Prefix, r.LocalName, r.NamespaceURI);
 
             LoadAttributeValue(attr, false);
 
@@ -280,19 +280,19 @@ namespace System.Xml
 
         private void LoadAttributeValue(XmlNode parent, bool direct)
         {
-            XmlReader r = _reader;
+            XmlReader r = reader;
             while (r.ReadAttributeValue())
             {
                 XmlNode node;
                 switch (r.NodeType)
                 {
                     case XmlNodeType.Text:
-                        node = direct ? new XmlText(r.Value, _doc) : _doc.CreateTextNode(r.Value);
+                        node = direct ? new XmlText(r.Value, doc) : doc.CreateTextNode(r.Value);
                         break;
                     case XmlNodeType.EndEntity:
                         return;
                     case XmlNodeType.EntityReference:
-                        node = direct ? new XmlEntityReference(_reader.LocalName, _doc) : _doc.CreateEntityReference(_reader.LocalName);
+                        node = direct ? new XmlEntityReference(reader.LocalName, doc) : doc.CreateEntityReference(reader.LocalName);
                         if (r.CanResolveEntity)
                         {
                             r.ResolveEntity();
@@ -301,7 +301,7 @@ namespace System.Xml
                             // if the reader does not present any children for the ent-ref
                             if (node.FirstChild == null)
                             {
-                                node.AppendChildForLoad(direct ? new XmlText(string.Empty) : _doc.CreateTextNode(string.Empty), _doc);
+                                node.AppendChildForLoad(direct ? new XmlText(string.Empty) : doc.CreateTextNode(string.Empty), doc);
                             }
                         }
                         break;
@@ -309,37 +309,37 @@ namespace System.Xml
                         throw UnexpectedNodeType(r.NodeType);
                 }
                 Debug.Assert(node != null);
-                parent.AppendChildForLoad(node, _doc);
+                parent.AppendChildForLoad(node, doc);
             }
             return;
         }
 
         private XmlEntityReference LoadEntityReferenceNode(bool direct)
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.EntityReference);
-            XmlEntityReference eref = direct ? new XmlEntityReference(_reader.Name, _doc) : _doc.CreateEntityReference(_reader.Name);
-            if (_reader.CanResolveEntity)
+            Debug.Assert(reader.NodeType == XmlNodeType.EntityReference);
+            XmlEntityReference eref = direct ? new XmlEntityReference(reader.Name, this.doc) : doc.CreateEntityReference(reader.Name);
+            if (reader.CanResolveEntity)
             {
-                _reader.ResolveEntity();
-                while (_reader.Read() && _reader.NodeType != XmlNodeType.EndEntity)
+                reader.ResolveEntity();
+                while (reader.Read() && reader.NodeType != XmlNodeType.EndEntity)
                 {
                     XmlNode node = direct ? LoadNodeDirect() : LoadNode(false);
                     if (node != null)
                     {
-                        eref.AppendChildForLoad(node, _doc);
+                        eref.AppendChildForLoad(node, doc);
                     }
                 }
                 // Code internally relies on the fact that an EntRef nodes has at least one child (even an empty text node). Ensure that this holds true,
                 // if the reader does not present any children for the ent-ref
                 if (eref.LastChild == null)
-                    eref.AppendChildForLoad(_doc.CreateTextNode(string.Empty), _doc);
+                    eref.AppendChildForLoad(doc.CreateTextNode(string.Empty), doc);
             }
             return eref;
         }
 
         private XmlDeclaration LoadDeclarationNode()
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.XmlDeclaration);
+            Debug.Assert(reader.NodeType == XmlNodeType.XmlDeclaration);
 
             //parse data
             string version = null;
@@ -348,18 +348,18 @@ namespace System.Xml
 
             // Try first to use the reader to get the xml decl "attributes". Since not all readers are required to support this, it is possible to have
             // implementations that do nothing
-            while (_reader.MoveToNextAttribute())
+            while (reader.MoveToNextAttribute())
             {
-                switch (_reader.Name)
+                switch (reader.Name)
                 {
                     case "version":
-                        version = _reader.Value;
+                        version = reader.Value;
                         break;
                     case "encoding":
-                        encoding = _reader.Value;
+                        encoding = reader.Value;
                         break;
                     case "standalone":
-                        standalone = _reader.Value;
+                        standalone = reader.Value;
                         break;
                     default:
                         Debug.Assert(false);
@@ -370,33 +370,33 @@ namespace System.Xml
             // For readers that do not break xml decl into attributes, we must parse the xml decl ourselves. We use version attr, b/c xml decl MUST contain
             // at least version attr, so if the reader implements them as attr, then version must be present
             if (version == null)
-                XmlParsingHelper.ParseXmlDeclarationValue(_reader.Value, out version, out encoding, out standalone);
+                XmlParsingHelper.ParseXmlDeclarationValue(reader.Value, out version, out encoding, out standalone);
 
-            return _doc.CreateXmlDeclaration(version, encoding, standalone);
+            return doc.CreateXmlDeclaration(version, encoding, standalone);
         }
 
         private XmlDocumentType LoadDocumentTypeNode()
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.DocumentType);
+            Debug.Assert(reader.NodeType == XmlNodeType.DocumentType);
 
             String publicId = null;
             String systemId = null;
-            String internalSubset = _reader.Value;
-            String localName = _reader.LocalName;
-            while (_reader.MoveToNextAttribute())
+            String internalSubset = reader.Value;
+            String localName = reader.LocalName;
+            while (reader.MoveToNextAttribute())
             {
-                switch (_reader.Name)
+                switch (reader.Name)
                 {
                     case "PUBLIC":
-                        publicId = _reader.Value;
+                        publicId = reader.Value;
                         break;
                     case "SYSTEM":
-                        systemId = _reader.Value;
+                        systemId = reader.Value;
                         break;
                 }
             }
 
-            XmlDocumentType dtNode = _doc.CreateDocumentType(localName, publicId, systemId, internalSubset);
+            XmlDocumentType dtNode = doc.CreateDocumentType(localName, publicId, systemId, internalSubset);
 
             return dtNode;
         }
@@ -407,7 +407,7 @@ namespace System.Xml
         // XmlDocument is not extended if XmlDocumentType and XmlDeclaration handling is added.
         private XmlNode LoadNodeDirect()
         {
-            XmlReader r = _reader;
+            XmlReader r = this.reader;
             XmlNode parent = null;
             do
             {
@@ -415,11 +415,11 @@ namespace System.Xml
                 switch (r.NodeType)
                 {
                     case XmlNodeType.Element:
-                        bool fEmptyElement = _reader.IsEmptyElement;
-                        XmlElement element = new XmlElement(_reader.Prefix, _reader.LocalName, _reader.NamespaceURI, _doc);
+                        bool fEmptyElement = reader.IsEmptyElement;
+                        XmlElement element = new XmlElement(reader.Prefix, reader.LocalName, reader.NamespaceURI, this.doc);
                         element.IsEmpty = fEmptyElement;
 
-                        if (_reader.MoveToFirstAttribute())
+                        if (reader.MoveToFirstAttribute())
                         {
                             XmlAttributeCollection attributes = element.Attributes;
                             do
@@ -432,7 +432,7 @@ namespace System.Xml
                         // recursively load all children.
                         if (!fEmptyElement)
                         {
-                            parent.AppendChildForLoad(element, _doc);
+                            parent.AppendChildForLoad(element, doc);
                             parent = element;
                             continue;
                         }
@@ -463,13 +463,13 @@ namespace System.Xml
                         break;
 
                     case XmlNodeType.SignificantWhitespace:
-                        node = new XmlSignificantWhitespace(_reader.Value, _doc);
+                        node = new XmlSignificantWhitespace(reader.Value, this.doc);
                         break;
 
                     case XmlNodeType.Whitespace:
-                        if (_preserveWhitespace)
+                        if (preserveWhitespace)
                         {
-                            node = new XmlWhitespace(_reader.Value, _doc);
+                            node = new XmlWhitespace(reader.Value, this.doc);
                         }
                         else
                         {
@@ -478,29 +478,29 @@ namespace System.Xml
                         break;
 
                     case XmlNodeType.Text:
-                        node = new XmlText(_reader.Value, _doc);
+                        node = new XmlText(reader.Value, this.doc);
                         break;
 
                     case XmlNodeType.CDATA:
-                        node = new XmlCDataSection(_reader.Value, _doc);
+                        node = new XmlCDataSection(reader.Value, this.doc);
                         break;
 
                     case XmlNodeType.ProcessingInstruction:
-                        node = new XmlProcessingInstruction(_reader.Name, _reader.Value, _doc);
+                        node = new XmlProcessingInstruction(reader.Name, reader.Value, this.doc);
                         break;
 
                     case XmlNodeType.Comment:
-                        node = new XmlComment(_reader.Value, _doc);
+                        node = new XmlComment(reader.Value, this.doc);
                         break;
 
                     default:
-                        throw UnexpectedNodeType(_reader.NodeType);
+                        throw UnexpectedNodeType(reader.NodeType);
                 }
 
                 Debug.Assert(node != null);
                 if (parent != null)
                 {
-                    parent.AppendChildForLoad(node, _doc);
+                    parent.AppendChildForLoad(node, doc);
                 }
                 else
                 {
@@ -514,18 +514,18 @@ namespace System.Xml
 
         private XmlAttribute LoadAttributeNodeDirect()
         {
-            XmlReader r = _reader;
+            XmlReader r = reader;
             XmlAttribute attr;
             if (r.IsDefault)
             {
-                XmlUnspecifiedAttribute defattr = new XmlUnspecifiedAttribute(r.Prefix, r.LocalName, r.NamespaceURI, _doc);
+                XmlUnspecifiedAttribute defattr = new XmlUnspecifiedAttribute(r.Prefix, r.LocalName, r.NamespaceURI, this.doc);
                 LoadAttributeValue(defattr, true);
                 defattr.SetSpecified(false);
                 return defattr;
             }
             else
             {
-                attr = new XmlAttribute(r.Prefix, r.LocalName, r.NamespaceURI, _doc);
+                attr = new XmlAttribute(r.Prefix, r.LocalName, r.NamespaceURI, this.doc);
                 LoadAttributeValue(attr, true);
                 return attr;
             }
@@ -536,35 +536,35 @@ namespace System.Xml
         {
             String lang = null;
             XmlSpace spaceMode = XmlSpace.None;
-            XmlDocumentType docType = _doc.DocumentType;
-            String baseURI = _doc.BaseURI;
+            XmlDocumentType docType = this.doc.DocumentType;
+            String baseURI = this.doc.BaseURI;
             //constructing xmlnamespace
             HashSet<string> prefixes = new HashSet<string>();
-            XmlNameTable nt = _doc.NameTable;
+            XmlNameTable nt = this.doc.NameTable;
             XmlNamespaceManager mgr = new XmlNamespaceManager(nt);
             bool bHasDefXmlnsAttr = false;
 
             // Process all xmlns, xmlns:prefix, xml:space and xml:lang attributes
-            while (node != null && node != _doc)
+            while (node != null && node != doc)
             {
                 if (node is XmlElement && ((XmlElement)node).HasAttributes)
                 {
                     mgr.PushScope();
                     foreach (XmlAttribute attr in ((XmlElement)node).Attributes)
                     {
-                        if (attr.Prefix == _doc.strXmlns && !prefixes.Contains(attr.LocalName))
+                        if (attr.Prefix == doc.strXmlns && !prefixes.Contains(attr.LocalName))
                         {
                             // Make sure the next time we will not add this prefix
                             prefixes.Add(attr.LocalName);
                             mgr.AddNamespace(attr.LocalName, attr.Value);
                         }
-                        else if (!bHasDefXmlnsAttr && attr.Prefix.Length == 0 && attr.LocalName == _doc.strXmlns)
+                        else if (!bHasDefXmlnsAttr && attr.Prefix.Length == 0 && attr.LocalName == doc.strXmlns)
                         {
                             // Save the case xmlns="..." where xmlns is the LocalName
                             mgr.AddNamespace(String.Empty, attr.Value);
                             bHasDefXmlnsAttr = true;
                         }
-                        else if (spaceMode == XmlSpace.None && attr.Prefix == _doc.strXml && attr.LocalName == _doc.strSpace)
+                        else if (spaceMode == XmlSpace.None && attr.Prefix == doc.strXml && attr.LocalName == doc.strSpace)
                         {
                             // Save xml:space context
                             if (attr.Value == "default")
@@ -572,7 +572,7 @@ namespace System.Xml
                             else if (attr.Value == "preserve")
                                 spaceMode = XmlSpace.Preserve;
                         }
-                        else if (lang == null && attr.Prefix == _doc.strXml && attr.LocalName == _doc.strLang)
+                        else if (lang == null && attr.Prefix == doc.strXml && attr.LocalName == doc.strLang)
                         {
                             // Save xml:lag context
                             lang = attr.Value;
@@ -600,37 +600,37 @@ namespace System.Xml
         {
             //the function shouldn't be used to set innerxml for XmlDocument node
             Debug.Assert(parentNode.NodeType != XmlNodeType.Document);
-            _doc = parentNode.OwnerDocument;
-            Debug.Assert(_doc != null);
+            this.doc = parentNode.OwnerDocument;
+            Debug.Assert(this.doc != null);
             XmlParserContext pc = GetContext(parentNode);
-            _reader = CreateInnerXmlReader(innerxmltext, nt, pc, _doc);
+            this.reader = CreateInnerXmlReader(innerxmltext, nt, pc, this.doc);
             try
             {
-                _preserveWhitespace = true;
-                bool bOrigLoading = _doc.IsLoading;
-                _doc.IsLoading = true;
+                this.preserveWhitespace = true;
+                bool bOrigLoading = doc.IsLoading;
+                doc.IsLoading = true;
 
                 if (nt == XmlNodeType.Entity)
                 {
                     XmlNode node = null;
-                    while (_reader.Read() && (node = LoadNodeDirect()) != null)
+                    while (reader.Read() && (node = LoadNodeDirect()) != null)
                     {
-                        parentNode.AppendChildForLoad(node, _doc);
+                        parentNode.AppendChildForLoad(node, doc);
                     }
                 }
                 else
                 {
                     XmlNode node = null;
-                    while (_reader.Read() && (node = LoadNode(true)) != null)
+                    while (reader.Read() && (node = LoadNode(true)) != null)
                     {
-                        parentNode.AppendChildForLoad(node, _doc);
+                        parentNode.AppendChildForLoad(node, doc);
                     }
                 }
-                _doc.IsLoading = bOrigLoading;
+                doc.IsLoading = bOrigLoading;
             }
             finally
             {
-                _reader.Dispose();
+                this.reader.Dispose();
             }
             return pc.NamespaceManager;
         }
@@ -661,7 +661,7 @@ namespace System.Xml
                 for (int i = cAttrs - 1; i >= 0; --i)
                 {
                     XmlAttribute attr = attrs[i];
-                    if (attr.Prefix == _doc.strXmlns)
+                    if (attr.Prefix == doc.strXmlns)
                     {
                         string nsUri = mgr.LookupNamespace(attr.LocalName);
                         if (nsUri != null)
@@ -678,7 +678,7 @@ namespace System.Xml
                             mgr.AddNamespace(attr.LocalName, attr.Value);
                         }
                     }
-                    else if (attr.Prefix.Length == 0 && attr.LocalName == _doc.strXmlns)
+                    else if (attr.Prefix.Length == 0 && attr.LocalName == doc.strXmlns)
                     {
                         string nsUri = mgr.DefaultNamespace;
                         if (nsUri != null)
@@ -724,34 +724,34 @@ namespace System.Xml
         internal void ExpandEntityReference(XmlEntityReference eref)
         {
             //when the ent ref is not associated w/ an entity, append an empty string text node as child
-            _doc = eref.OwnerDocument;
-            bool bOrigLoadingState = _doc.IsLoading;
-            _doc.IsLoading = true;
+            this.doc = eref.OwnerDocument;
+            bool bOrigLoadingState = doc.IsLoading;
+            doc.IsLoading = true;
             switch (eref.Name)
             {
                 case "lt":
-                    eref.AppendChildForLoad(_doc.CreateTextNode("<"), _doc);
-                    _doc.IsLoading = bOrigLoadingState;
+                    eref.AppendChildForLoad(doc.CreateTextNode("<"), doc);
+                    doc.IsLoading = bOrigLoadingState;
                     return;
                 case "gt":
-                    eref.AppendChildForLoad(_doc.CreateTextNode(">"), _doc);
-                    _doc.IsLoading = bOrigLoadingState;
+                    eref.AppendChildForLoad(doc.CreateTextNode(">"), doc);
+                    doc.IsLoading = bOrigLoadingState;
                     return;
                 case "amp":
-                    eref.AppendChildForLoad(_doc.CreateTextNode("&"), _doc);
-                    _doc.IsLoading = bOrigLoadingState;
+                    eref.AppendChildForLoad(doc.CreateTextNode("&"), doc);
+                    doc.IsLoading = bOrigLoadingState;
                     return;
                 case "apos":
-                    eref.AppendChildForLoad(_doc.CreateTextNode("'"), _doc);
-                    _doc.IsLoading = bOrigLoadingState;
+                    eref.AppendChildForLoad(doc.CreateTextNode("'"), doc);
+                    doc.IsLoading = bOrigLoadingState;
                     return;
                 case "quot":
-                    eref.AppendChildForLoad(_doc.CreateTextNode("\""), _doc);
-                    _doc.IsLoading = bOrigLoadingState;
+                    eref.AppendChildForLoad(doc.CreateTextNode("\""), doc);
+                    doc.IsLoading = bOrigLoadingState;
                     return;
             }
 
-            XmlNamedNodeMap entities = _doc.Entities;
+            XmlNamedNodeMap entities = doc.Entities;
             foreach (XmlEntity ent in entities)
             {
                 if (Ref.Equal(ent.Name, eref.Name))
@@ -761,14 +761,14 @@ namespace System.Xml
                 }
             }
             //no fit so far
-            if (!(_doc.ActualLoadingStatus))
+            if (!(doc.ActualLoadingStatus))
             {
-                eref.AppendChildForLoad(_doc.CreateTextNode(""), _doc);
-                _doc.IsLoading = bOrigLoadingState;
+                eref.AppendChildForLoad(doc.CreateTextNode(""), doc);
+                doc.IsLoading = bOrigLoadingState;
             }
             else
             {
-                _doc.IsLoading = bOrigLoadingState;
+                doc.IsLoading = bOrigLoadingState;
                 throw new XmlException(SR.Format(SR.Xml_UndeclaredParEntity, eref.Name));
             }
         }

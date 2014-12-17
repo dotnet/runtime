@@ -8,12 +8,12 @@ namespace System.Xml
     // Provides text-manipulation methods that are used by several classes.
     public abstract class XmlCharacterData : XmlLinkedNode
     {
-        private string _data;
+        string data;
 
         //base(doc) will throw exception if doc is null.
         protected internal XmlCharacterData(string data, XmlDocument doc) : base(doc)
         {
-            _data = data;
+            this.data = data;
         }
 
         // Gets or sets the value of the node.
@@ -36,9 +36,9 @@ namespace System.Xml
         {
             get
             {
-                if (_data != null)
+                if (data != null)
                 {
-                    return _data;
+                    return data;
                 }
                 else
                 {
@@ -49,12 +49,12 @@ namespace System.Xml
             set
             {
                 XmlNode parent = ParentNode;
-                XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
+                XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, this.data, value, XmlNodeChangedAction.Change);
 
                 if (args != null)
                     BeforeEvent(args);
 
-                _data = value;
+                data = value;
 
                 if (args != null)
                     AfterEvent(args);
@@ -66,9 +66,9 @@ namespace System.Xml
         {
             get
             {
-                if (_data != null)
+                if (data != null)
                 {
-                    return _data.Length;
+                    return data.Length;
                 }
                 return 0;
             }
@@ -77,14 +77,14 @@ namespace System.Xml
         // Retrieves a substring of the full string from the specified range.
         public virtual String Substring(int offset, int count)
         {
-            int len = _data != null ? _data.Length : 0;
+            int len = data != null ? data.Length : 0;
             if (len > 0)
             {
                 if (len < (offset + count))
                 {
                     count = len - offset;
                 }
-                return _data.Substring(offset, count);
+                return data.Substring(offset, count);
             }
             return String.Empty;
         }
@@ -94,15 +94,15 @@ namespace System.Xml
         public virtual void AppendData(String strData)
         {
             XmlNode parent = ParentNode;
-            int capacity = _data != null ? _data.Length : 0;
+            int capacity = data != null ? data.Length : 0;
             if (strData != null) capacity += strData.Length;
-            string newValue = new StringBuilder(capacity).Append(_data).Append(strData).ToString();
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            string newValue = new StringBuilder(capacity).Append(data).Append(strData).ToString();
+            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, data, newValue, XmlNodeChangedAction.Change);
 
             if (args != null)
                 BeforeEvent(args);
 
-            _data = newValue;
+            this.data = newValue;
 
             if (args != null)
                 AfterEvent(args);
@@ -112,14 +112,14 @@ namespace System.Xml
         public virtual void InsertData(int offset, string strData)
         {
             XmlNode parent = ParentNode;
-            int capacity = _data != null ? _data.Length : 0;
+            int capacity = data != null ? data.Length : 0;
             if (strData != null) capacity += strData.Length;
-            string newValue = new StringBuilder(capacity).Append(_data).Insert(offset, strData).ToString();
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            string newValue = new StringBuilder(capacity).Append(data).Insert(offset, strData).ToString();
+            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, data, newValue, XmlNodeChangedAction.Change);
             if (args != null)
                 BeforeEvent(args);
 
-            _data = newValue;
+            this.data = newValue;
 
             if (args != null)
                 AfterEvent(args);
@@ -130,7 +130,7 @@ namespace System.Xml
         {
             //Debug.Assert(offset >= 0 && offset <= Length);
 
-            int len = _data != null ? _data.Length : 0;
+            int len = data != null ? data.Length : 0;
             if (len > 0)
             {
                 if (len < (offset + count))
@@ -139,14 +139,14 @@ namespace System.Xml
                 }
             }
 
-            string newValue = new StringBuilder(_data).Remove(offset, count).ToString();
+            string newValue = new StringBuilder(data).Remove(offset, count).ToString();
             XmlNode parent = ParentNode;
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, data, newValue, XmlNodeChangedAction.Change);
 
             if (args != null)
                 BeforeEvent(args);
 
-            _data = newValue;
+            this.data = newValue;
 
             if (args != null)
                 AfterEvent(args);
@@ -156,7 +156,7 @@ namespace System.Xml
         // specified string.
         public virtual void ReplaceData(int offset, int count, String strData)
         {
-            int len = _data != null ? _data.Length : 0;
+            int len = data != null ? data.Length : 0;
             if (len > 0)
             {
                 if (len < (offset + count))
@@ -165,16 +165,16 @@ namespace System.Xml
                 }
             }
 
-            StringBuilder temp = new StringBuilder(_data).Remove(offset, count);
+            StringBuilder temp = new StringBuilder(data).Remove(offset, count);
             string newValue = temp.Insert(offset, strData).ToString();
 
             XmlNode parent = ParentNode;
-            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, newValue, XmlNodeChangedAction.Change);
+            XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, data, newValue, XmlNodeChangedAction.Change);
 
             if (args != null)
                 BeforeEvent(args);
 
-            _data = newValue;
+            this.data = newValue;
 
             if (args != null)
                 AfterEvent(args);

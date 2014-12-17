@@ -7,33 +7,33 @@ namespace System.Reflection.Metadata
 {
     public struct StandaloneSignature
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal StandaloneSignature(MetadataReader reader, StandaloneSignatureHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private StandaloneSignatureHandle Handle
         {
-            get { return StandaloneSignatureHandle.FromRowId(_rowId); }
+            get { return StandaloneSignatureHandle.FromRowId(rowId); }
         }
 
         public BlobHandle Signature
         {
-            get { return _reader.StandAloneSigTable.GetSignature(_rowId); }
+            get { return reader.StandAloneSigTable.GetSignature(rowId); }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
     }
 }

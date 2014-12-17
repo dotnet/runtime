@@ -11,11 +11,11 @@ namespace MS.Internal.Xml.XPath
     internal abstract class BaseAxisQuery : Query
     {
         internal Query qyInput;
-        private bool _nameTest;
-        private string _name;
-        private string _prefix;
-        private string _nsUri;
-        private XPathNodeType _typeTest;
+        bool nameTest;
+        string name;
+        string prefix;
+        string nsUri;
+        XPathNodeType typeTest;
 
         // these two things are the state of this class
         // that need to be reset whenever the context changes.
@@ -24,29 +24,29 @@ namespace MS.Internal.Xml.XPath
 
         protected BaseAxisQuery(Query qyInput)
         {
-            _name = string.Empty;
-            _prefix = string.Empty;
-            _nsUri = string.Empty;
+            this.name = string.Empty;
+            this.prefix = string.Empty;
+            this.nsUri = string.Empty;
             this.qyInput = qyInput;
         }
         protected BaseAxisQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest)
         {
             Debug.Assert(qyInput != null);
             this.qyInput = qyInput;
-            _name = name;
-            _prefix = prefix;
-            _typeTest = typeTest;
-            _nameTest = prefix.Length != 0 || name.Length != 0;
-            _nsUri = string.Empty;
+            this.name = name;
+            this.prefix = prefix;
+            this.typeTest = typeTest;
+            this.nameTest = prefix.Length != 0 || name.Length != 0;
+            this.nsUri = string.Empty;
         }
         protected BaseAxisQuery(BaseAxisQuery other) : base(other)
         {
             this.qyInput = Clone(other.qyInput);
-            _name = other._name;
-            _prefix = other._prefix;
-            _nsUri = other._nsUri;
-            _typeTest = other._typeTest;
-            _nameTest = other._nameTest;
+            this.name = other.name;
+            this.prefix = other.prefix;
+            this.nsUri = other.nsUri;
+            this.typeTest = other.typeTest;
+            this.nameTest = other.nameTest;
             this.position = other.position;
             this.currentNode = other.currentNode;
         }
@@ -62,15 +62,15 @@ namespace MS.Internal.Xml.XPath
         public override void SetXsltContext(XsltContext context)
         {
             Debug.Assert(context != null);
-            _nsUri = context.LookupNamespace(_prefix);
+            nsUri = context.LookupNamespace(prefix);
             qyInput.SetXsltContext(context);
         }
 
-        protected string Name { get { return _name; } }
-        protected string Prefix { get { return _prefix; } }
-        protected string Namespace { get { return _nsUri; } }
-        protected bool NameTest { get { return _nameTest; } }
-        protected XPathNodeType TypeTest { get { return _typeTest; } }
+        protected string Name { get { return name; } }
+        protected string Prefix { get { return prefix; } }
+        protected string Namespace { get { return nsUri; } }
+        protected bool NameTest { get { return nameTest; } }
+        protected XPathNodeType TypeTest { get { return typeTest; } }
 
         public override int CurrentPosition { get { return position; } }
         public override XPathNavigator Current { get { return currentNode; } }
@@ -85,9 +85,9 @@ namespace MS.Internal.Xml.XPath
             {
                 if (NameTest)
                 {
-                    if (_name.Equals(e.LocalName) || _name.Length == 0)
+                    if (name.Equals(e.LocalName) || name.Length == 0)
                     {
-                        if (_nsUri.Equals(e.NamespaceURI))
+                        if (nsUri.Equals(e.NamespaceURI))
                         {
                             return true;
                         }
@@ -119,11 +119,11 @@ namespace MS.Internal.Xml.XPath
                     return 0.5;   // a/b a[b] id('s')/a
                 }
                 Debug.Assert(this is AttributeQuery || this is ChildrenQuery);
-                if (_name.Length != 0)
+                if (name.Length != 0)
                 {
                     return 0; // p:foo, foo, processing-instruction("foo")
                 }
-                if (_prefix.Length != 0)
+                if (prefix.Length != 0)
                 {
                     return -0.25; // p:*
                 }

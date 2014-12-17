@@ -18,12 +18,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The underlying wrapped dictionary.
         /// </summary>
-        private readonly IImmutableDictionary<TKey, TValue> _dictionary;
+        private readonly IImmutableDictionary<TKey, TValue> dictionary;
 
         /// <summary>
         /// The key or value enumerable that this instance wraps.
         /// </summary>
-        private readonly IEnumerable<T> _keysOrValues;
+        private readonly IEnumerable<T> keysOrValues;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="KeysOrValuesCollectionAccessor{TKey, TValue, T}"/> class.
@@ -35,8 +35,8 @@ namespace System.Collections.Immutable
             Requires.NotNull(dictionary, "dictionary");
             Requires.NotNull(keysOrValues, "keysOrValues");
 
-            _dictionary = dictionary;
-            _keysOrValues = keysOrValues;
+            this.dictionary = dictionary;
+            this.keysOrValues = keysOrValues;
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace System.Collections.Immutable
         /// <returns>The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.</returns>
         public int Count
         {
-            get { return _dictionary.Count; }
+            get { return this.dictionary.Count; }
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace System.Collections.Immutable
         /// </summary>
         protected IImmutableDictionary<TKey, TValue> Dictionary
         {
-            get { return _dictionary; }
+            get { return this.dictionary; }
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public IEnumerator<T> GetEnumerator()
         {
-            return _keysOrValues.GetEnumerator();
+            return this.keysOrValues.GetEnumerator();
         }
 
         /// <summary>

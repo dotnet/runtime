@@ -24,7 +24,7 @@ namespace System.Xml.Linq
     /// </remarks>
     public class XDocument : XContainer
     {
-        private XDeclaration _declaration;
+        XDeclaration declaration;
 
         ///<overloads>
         /// Initializes a new instance of the <see cref="XDocument"/> class.
@@ -88,7 +88,7 @@ namespace System.Xml.Linq
         public XDocument(XDeclaration declaration, params object[] content)
             : this(content)
         {
-            _declaration = declaration;
+            this.declaration = declaration;
         }
 
         /// <summary>
@@ -101,9 +101,9 @@ namespace System.Xml.Linq
         public XDocument(XDocument other)
             : base(other)
         {
-            if (other._declaration != null)
+            if (other.declaration != null)
             {
-                _declaration = new XDeclaration(other._declaration);
+                declaration = new XDeclaration(other.declaration);
             }
         }
 
@@ -112,8 +112,8 @@ namespace System.Xml.Linq
         /// </summary>
         public XDeclaration Declaration
         {
-            get { return _declaration; }
-            set { _declaration = value; }
+            get { return declaration; }
+            set { declaration = value; }
         }
 
         /// <summary>
@@ -463,11 +463,11 @@ namespace System.Xml.Linq
         public void Save(Stream stream, SaveOptions options)
         {
             XmlWriterSettings ws = GetXmlWriterSettings(options);
-            if (_declaration != null && !string.IsNullOrEmpty(_declaration.Encoding))
+            if (declaration != null && !string.IsNullOrEmpty(declaration.Encoding))
             {
                 try
                 {
-                    ws.Encoding = Encoding.GetEncoding(_declaration.Encoding);
+                    ws.Encoding = Encoding.GetEncoding(declaration.Encoding);
                 }
                 catch (ArgumentException)
                 {
@@ -541,11 +541,11 @@ namespace System.Xml.Linq
         public override void WriteTo(XmlWriter writer)
         {
             if (writer == null) throw new ArgumentNullException("writer");
-            if (_declaration != null && _declaration.Standalone == "yes")
+            if (declaration != null && declaration.Standalone == "yes")
             {
                 writer.WriteStartDocument(true);
             }
-            else if (_declaration != null && _declaration.Standalone == "no")
+            else if (declaration != null && declaration.Standalone == "no")
             {
                 writer.WriteStartDocument(false);
             }

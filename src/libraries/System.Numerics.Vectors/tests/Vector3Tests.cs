@@ -739,6 +739,7 @@ namespace System.Numerics.Tests
             Assert.True(float.IsNegativeInfinity(actual.X), "Vector3f.operator / did not return the expected value.");
             Assert.True(float.IsPositiveInfinity(actual.Y), "Vector3f.operator / did not return the expected value.");
             Assert.True(float.IsPositiveInfinity(actual.Z), "Vector3f.operator / did not return the expected value.");
+
         }
 
         // A test for operator / (Vector3f, Vector3f)
@@ -1122,22 +1123,22 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Vector3_2x
         {
-            private Vector3 _a;
-            private Vector3 _b;
+            Vector3 a;
+            Vector3 b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Vector3PlusFloat
         {
-            private Vector3 _v;
-            private float _f;
+            Vector3 v;
+            float f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Vector3PlusFloat_2x
         {
-            private Vector3PlusFloat _a;
-            private Vector3PlusFloat _b;
+            Vector3PlusFloat a;
+            Vector3PlusFloat b;
         }
 
         [Fact]

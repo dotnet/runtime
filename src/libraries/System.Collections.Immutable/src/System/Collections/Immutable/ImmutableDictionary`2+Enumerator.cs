@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -18,22 +18,22 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The builder being enumerated, if applicable.
             /// </summary>
-            private readonly Builder _builder;
+            private readonly Builder builder;
 
             /// <summary>
             /// The enumerator over the sorted dictionary whose keys are hash values.
             /// </summary>
-            private SortedInt32KeyNode<HashBucket>.Enumerator _mapEnumerator;
+            private SortedInt32KeyNode<HashBucket>.Enumerator mapEnumerator;
 
             /// <summary>
             /// The enumerator in use within an individual HashBucket.
             /// </summary>
-            private HashBucket.Enumerator _bucketEnumerator;
+            private HashBucket.Enumerator bucketEnumerator;
 
             /// <summary>
             /// The version of the builder (when applicable) that is being enumerated.
             /// </summary>
-            private int _enumeratingBuilderVersion;
+            private int enumeratingBuilderVersion;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.Enumerator"/> struct.
@@ -42,10 +42,10 @@ namespace System.Collections.Immutable
             /// <param name="builder">The builder, if applicable.</param>
             internal Enumerator(SortedInt32KeyNode<HashBucket> root, Builder builder = null)
             {
-                _builder = builder;
-                _mapEnumerator = new SortedInt32KeyNode<HashBucket>.Enumerator(root);
-                _bucketEnumerator = default(HashBucket.Enumerator);
-                _enumeratingBuilderVersion = builder != null ? builder.Version : -1;
+                this.builder = builder;
+                this.mapEnumerator = new SortedInt32KeyNode<HashBucket>.Enumerator(root);
+                this.bucketEnumerator = default(HashBucket.Enumerator);
+                this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
             }
 
             /// <summary>
@@ -55,8 +55,8 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    _mapEnumerator.ThrowIfDisposed();
-                    return _bucketEnumerator.Current;
+                    this.mapEnumerator.ThrowIfDisposed();
+                    return this.bucketEnumerator.Current;
                 }
             }
 
@@ -79,15 +79,15 @@ namespace System.Collections.Immutable
             {
                 this.ThrowIfChanged();
 
-                if (_bucketEnumerator.MoveNext())
+                if (this.bucketEnumerator.MoveNext())
                 {
                     return true;
                 }
 
-                if (_mapEnumerator.MoveNext())
+                if (this.mapEnumerator.MoveNext())
                 {
-                    _bucketEnumerator = new HashBucket.Enumerator(_mapEnumerator.Current.Value);
-                    return _bucketEnumerator.MoveNext();
+                    this.bucketEnumerator = new HashBucket.Enumerator(this.mapEnumerator.Current.Value);
+                    return this.bucketEnumerator.MoveNext();
                 }
 
                 return false;
@@ -99,12 +99,12 @@ namespace System.Collections.Immutable
             /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
             public void Reset()
             {
-                _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
-                _mapEnumerator.Reset();
+                this.enumeratingBuilderVersion = builder != null ? builder.Version : -1;
+                this.mapEnumerator.Reset();
 
                 // Resetting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
-                _bucketEnumerator.Dispose();
-                _bucketEnumerator = default(HashBucket.Enumerator);
+                this.bucketEnumerator.Dispose();
+                this.bucketEnumerator = default(HashBucket.Enumerator);
             }
 
             /// <summary>
@@ -112,8 +112,8 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Dispose()
             {
-                _mapEnumerator.Dispose();
-                _bucketEnumerator.Dispose();
+                this.mapEnumerator.Dispose();
+                this.bucketEnumerator.Dispose();
             }
 
             /// <summary>
@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             /// <exception cref="System.InvalidOperationException">Thrown if the collection has changed.</exception>
             private void ThrowIfChanged()
             {
-                if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
+                if (this.builder != null && this.builder.Version != this.enumeratingBuilderVersion)
                 {
                     throw new InvalidOperationException(Strings.CollectionModifiedDuringEnumeration);
                 }

@@ -9,13 +9,13 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct ModuleTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsGUIDHeapRefSizeSmall;
-        private readonly int _GenerationOffset;
-        private readonly int _NameOffset;
-        private readonly int _MVIdOffset;
-        private readonly int _EnCIdOffset;
-        private readonly int _EnCBaseIdOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsGUIDHeapRefSizeSmall;
+        private readonly int GenerationOffset;
+        private readonly int NameOffset;
+        private readonly int MVIdOffset;
+        private readonly int EnCIdOffset;
+        private readonly int EnCBaseIdOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -28,56 +28,56 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsGUIDHeapRefSizeSmall = guidHeapRefSize == 2;
-            _GenerationOffset = 0;
-            _NameOffset = _GenerationOffset + sizeof(UInt16);
-            _MVIdOffset = _NameOffset + stringHeapRefSize;
-            _EnCIdOffset = _MVIdOffset + guidHeapRefSize;
-            _EnCBaseIdOffset = _EnCIdOffset + guidHeapRefSize;
-            this.RowSize = _EnCBaseIdOffset + guidHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsGUIDHeapRefSizeSmall = guidHeapRefSize == 2;
+            this.GenerationOffset = 0;
+            this.NameOffset = this.GenerationOffset + sizeof(UInt16);
+            this.MVIdOffset = this.NameOffset + stringHeapRefSize;
+            this.EnCIdOffset = this.MVIdOffset + guidHeapRefSize;
+            this.EnCBaseIdOffset = this.EnCIdOffset + guidHeapRefSize;
+            this.RowSize = this.EnCBaseIdOffset + guidHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, this.RowSize * (int)numberOfRows);
         }
 
         internal ushort GetGeneration()
         {
             Debug.Assert(NumberOfRows > 0);
-            return this.Block.PeekUInt16(_GenerationOffset);
+            return this.Block.PeekUInt16(this.GenerationOffset);
         }
 
         internal StringHandle GetName()
         {
             Debug.Assert(NumberOfRows > 0);
-            return StringHandle.FromIndex(this.Block.PeekReference(_NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal GuidHandle GetMvid()
         {
             Debug.Assert(NumberOfRows > 0);
-            return GuidHandle.FromIndex(this.Block.PeekReference(_MVIdOffset, _IsGUIDHeapRefSizeSmall));
+            return GuidHandle.FromIndex(this.Block.PeekReference(this.MVIdOffset, this.IsGUIDHeapRefSizeSmall));
         }
 
         internal GuidHandle GetEncId()
         {
             Debug.Assert(NumberOfRows > 0);
-            return GuidHandle.FromIndex(this.Block.PeekReference(_EnCIdOffset, _IsGUIDHeapRefSizeSmall));
+            return GuidHandle.FromIndex(this.Block.PeekReference(this.EnCIdOffset, this.IsGUIDHeapRefSizeSmall));
         }
 
         internal GuidHandle GetEncBaseId()
         {
             Debug.Assert(NumberOfRows > 0);
-            return GuidHandle.FromIndex(this.Block.PeekReference(_EnCBaseIdOffset, _IsGUIDHeapRefSizeSmall));
+            return GuidHandle.FromIndex(this.Block.PeekReference(this.EnCBaseIdOffset, this.IsGUIDHeapRefSizeSmall));
         }
     }
 
     internal struct TypeRefTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsResolutionScopeRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _ResolutionScopeOffset;
-        private readonly int _NameOffset;
-        private readonly int _NamespaceOffset;
+        private readonly bool IsResolutionScopeRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int ResolutionScopeOffset;
+        private readonly int NameOffset;
+        private readonly int NamespaceOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -90,47 +90,47 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsResolutionScopeRefSizeSmall = resolutionScopeRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _ResolutionScopeOffset = 0;
-            _NameOffset = _ResolutionScopeOffset + resolutionScopeRefSize;
-            _NamespaceOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _NamespaceOffset + stringHeapRefSize;
+            this.IsResolutionScopeRefSizeSmall = resolutionScopeRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.ResolutionScopeOffset = 0;
+            this.NameOffset = this.ResolutionScopeOffset + resolutionScopeRefSize;
+            this.NamespaceOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.NamespaceOffset + stringHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal Handle GetResolutionScope(TypeReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return ResolutionScopeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ResolutionScopeOffset, _IsResolutionScopeRefSizeSmall));
+            return ResolutionScopeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ResolutionScopeOffset, this.IsResolutionScopeRefSizeSmall));
         }
 
         internal StringHandle GetName(TypeReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal StringHandle GetNamespace(TypeReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NamespaceOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NamespaceOffset, this.IsStringHeapRefSizeSmall));
         }
     }
 
     internal struct TypeDefTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsFieldRefSizeSmall;
-        private readonly bool _IsMethodRefSizeSmall;
-        private readonly bool _IsTypeDefOrRefRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _NamespaceOffset;
-        private readonly int _ExtendsOffset;
-        private readonly int _FieldListOffset;
-        private readonly int _MethodListOffset;
+        private readonly bool IsFieldRefSizeSmall;
+        private readonly bool IsMethodRefSizeSmall;
+        private readonly bool IsTypeDefOrRefRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int NamespaceOffset;
+        private readonly int ExtendsOffset;
+        private readonly int FieldListOffset;
+        private readonly int MethodListOffset;
         internal readonly int RowSize;
         internal MemoryBlock Block;
 
@@ -144,66 +144,66 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsFieldRefSizeSmall = fieldRefSize == 2;
-            _IsMethodRefSizeSmall = methodRefSize == 2;
-            _IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _NameOffset = _FlagsOffset + sizeof(UInt32);
-            _NamespaceOffset = _NameOffset + stringHeapRefSize;
-            _ExtendsOffset = _NamespaceOffset + stringHeapRefSize;
-            _FieldListOffset = _ExtendsOffset + typeDefOrRefRefSize;
-            _MethodListOffset = _FieldListOffset + fieldRefSize;
-            this.RowSize = _MethodListOffset + methodRefSize;
+            this.IsFieldRefSizeSmall = fieldRefSize == 2;
+            this.IsMethodRefSizeSmall = methodRefSize == 2;
+            this.IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.NameOffset = this.FlagsOffset + sizeof(UInt32);
+            this.NamespaceOffset = this.NameOffset + stringHeapRefSize;
+            this.ExtendsOffset = this.NamespaceOffset + stringHeapRefSize;
+            this.FieldListOffset = this.ExtendsOffset + typeDefOrRefRefSize;
+            this.MethodListOffset = this.FieldListOffset + fieldRefSize;
+            this.RowSize = this.MethodListOffset + methodRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal TypeAttributes GetFlags(TypeDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (TypeAttributes)this.Block.PeekUInt32(rowOffset + _FlagsOffset);
+            return (TypeAttributes)this.Block.PeekUInt32(rowOffset + this.FlagsOffset);
         }
 
         internal NamespaceDefinitionHandle GetNamespace(TypeDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return NamespaceDefinitionHandle.FromIndexOfFullName(this.Block.PeekReference(rowOffset + _NamespaceOffset, _IsStringHeapRefSizeSmall));
+            return NamespaceDefinitionHandle.FromIndexOfFullName(this.Block.PeekReference(rowOffset + this.NamespaceOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal StringHandle GetNamespaceString(TypeDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NamespaceOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NamespaceOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal StringHandle GetName(TypeDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal Handle GetExtends(TypeDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ExtendsOffset, _IsTypeDefOrRefRefSizeSmall));
+            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ExtendsOffset, this.IsTypeDefOrRefRefSizeSmall));
         }
 
         internal uint GetFieldStart(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekReference(rowOffset + _FieldListOffset, _IsFieldRefSizeSmall);
+            return this.Block.PeekReference(rowOffset + this.FieldListOffset, this.IsFieldRefSizeSmall);
         }
 
         internal uint GetMethodStart(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekReference(rowOffset + _MethodListOffset, _IsMethodRefSizeSmall);
+            return this.Block.PeekReference(rowOffset + this.MethodListOffset, this.IsMethodRefSizeSmall);
         }
 
         internal TypeDefinitionHandle FindTypeContainingMethod(uint methodDefOrPtrRowId, int numberOfMethods)
         {
             uint numOfRows = this.NumberOfRows;
-            int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, _MethodListOffset, methodDefOrPtrRowId, _IsMethodRefSizeSmall);
+            int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, this.MethodListOffset, methodDefOrPtrRowId, this.IsMethodRefSizeSmall);
             uint row = (uint)(slot + 1);
             if (row == 0) return default(TypeDefinitionHandle);
 
@@ -234,7 +234,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal TypeDefinitionHandle FindTypeContainingField(uint fieldDefOrPtrRowId, int numberOfFields)
         {
             uint numOfRows = this.NumberOfRows;
-            int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, _FieldListOffset, fieldDefOrPtrRowId, _IsFieldRefSizeSmall);
+            int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, this.FieldListOffset, fieldDefOrPtrRowId, this.IsFieldRefSizeSmall);
             uint row = (uint)(slot + 1);
             if (row == 0) return default(TypeDefinitionHandle);
 
@@ -266,8 +266,8 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct FieldPtrTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsFieldTableRowRefSizeSmall;
-        private readonly int _FieldOffset;
+        private readonly bool IsFieldTableRowRefSizeSmall;
+        private readonly int FieldOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -279,32 +279,32 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsFieldTableRowRefSizeSmall = fieldTableRowRefSize == 2;
-            _FieldOffset = 0;
-            this.RowSize = _FieldOffset + fieldTableRowRefSize;
+            this.IsFieldTableRowRefSizeSmall = fieldTableRowRefSize == 2;
+            this.FieldOffset = 0;
+            this.RowSize = this.FieldOffset + fieldTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal FieldDefinitionHandle GetFieldFor(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
-            return FieldDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _FieldOffset, _IsFieldTableRowRefSizeSmall));
+            return FieldDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.FieldOffset, this.IsFieldTableRowRefSizeSmall));
         }
 
         internal uint GetRowIdForFieldDefRow(uint fieldDefRowId)
         {
-            return (uint)(this.Block.LinearSearchReference(this.RowSize, _FieldOffset, fieldDefRowId, _IsFieldTableRowRefSizeSmall) + 1);
+            return (uint)(this.Block.LinearSearchReference(this.RowSize, this.FieldOffset, fieldDefRowId, this.IsFieldTableRowRefSizeSmall) + 1);
         }
     }
 
     internal struct FieldTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _SignatureOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int SignatureOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -317,39 +317,39 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _NameOffset = _FlagsOffset + sizeof(UInt16);
-            _SignatureOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _SignatureOffset + blobHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.NameOffset = this.FlagsOffset + sizeof(UInt16);
+            this.SignatureOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.SignatureOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal StringHandle GetName(FieldDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal FieldAttributes GetFlags(FieldDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (FieldAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
+            return (FieldAttributes)this.Block.PeekUInt16(rowOffset + this.FlagsOffset);
         }
 
         internal BlobHandle GetSignature(FieldDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.SignatureOffset, this.IsBlobHeapRefSizeSmall));
         }
     }
 
     internal struct MethodPtrTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsMethodTableRowRefSizeSmall;
-        private readonly int _MethodOffset;
+        private readonly bool IsMethodTableRowRefSizeSmall;
+        private readonly int MethodOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -361,9 +361,9 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsMethodTableRowRefSizeSmall = methodTableRowRefSize == 2;
-            _MethodOffset = 0;
-            this.RowSize = _MethodOffset + methodTableRowRefSize;
+            this.IsMethodTableRowRefSizeSmall = methodTableRowRefSize == 2;
+            this.MethodOffset = 0;
+            this.RowSize = this.MethodOffset + methodTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
@@ -371,27 +371,27 @@ namespace System.Reflection.Metadata.Ecma335
         internal MethodDefinitionHandle GetMethodFor(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
-            return MethodDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _MethodOffset, _IsMethodTableRowRefSizeSmall)); ;
+            return MethodDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.MethodOffset, this.IsMethodTableRowRefSizeSmall)); ;
         }
 
         internal uint GetRowIdForMethodDefRow(uint methodDefRowId)
         {
-            return (uint)(this.Block.LinearSearchReference(this.RowSize, _MethodOffset, methodDefRowId, _IsMethodTableRowRefSizeSmall) + 1);
+            return (uint)(this.Block.LinearSearchReference(this.RowSize, this.MethodOffset, methodDefRowId, this.IsMethodTableRowRefSizeSmall) + 1);
         }
     }
 
     internal struct MethodTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsParamRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _RVAOffset;
-        private readonly int _ImplFlagsOffset;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _SignatureOffset;
-        private readonly int _ParamListOffset;
+        private readonly bool IsParamRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int RVAOffset;
+        private readonly int ImplFlagsOffset;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int SignatureOffset;
+        private readonly int ParamListOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -405,53 +405,53 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsParamRefSizeSmall = paramRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _RVAOffset = 0;
-            _ImplFlagsOffset = _RVAOffset + sizeof(UInt32);
-            _FlagsOffset = _ImplFlagsOffset + sizeof(UInt16);
-            _NameOffset = _FlagsOffset + sizeof(UInt16);
-            _SignatureOffset = _NameOffset + stringHeapRefSize;
-            _ParamListOffset = _SignatureOffset + blobHeapRefSize;
-            this.RowSize = _ParamListOffset + paramRefSize;
+            this.IsParamRefSizeSmall = paramRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.RVAOffset = 0;
+            this.ImplFlagsOffset = this.RVAOffset + sizeof(UInt32);
+            this.FlagsOffset = this.ImplFlagsOffset + sizeof(UInt16);
+            this.NameOffset = this.FlagsOffset + sizeof(UInt16);
+            this.SignatureOffset = this.NameOffset + stringHeapRefSize;
+            this.ParamListOffset = this.SignatureOffset + blobHeapRefSize;
+            this.RowSize = this.ParamListOffset + paramRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal uint GetParamStart(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekReference(rowOffset + _ParamListOffset, _IsParamRefSizeSmall);
+            return this.Block.PeekReference(rowOffset + this.ParamListOffset, this.IsParamRefSizeSmall);
         }
 
         internal BlobHandle GetSignature(MethodDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.SignatureOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal int GetRva(MethodDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return this.Block.PeekInt32(rowOffset + _RVAOffset);
+            return this.Block.PeekInt32(rowOffset + this.RVAOffset);
         }
 
         internal StringHandle GetName(MethodDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal MethodAttributes GetFlags(MethodDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (MethodAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
+            return (MethodAttributes)this.Block.PeekUInt16(rowOffset + this.FlagsOffset);
         }
 
         internal MethodImplAttributes GetImplFlags(MethodDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (MethodImplAttributes)this.Block.PeekUInt16(rowOffset + _ImplFlagsOffset);
+            return (MethodImplAttributes)this.Block.PeekUInt16(rowOffset + this.ImplFlagsOffset);
         }
 
         internal int GetNextRVA(
@@ -460,7 +460,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             int nextRVA = int.MaxValue;
             int endOffset = (int)this.NumberOfRows * this.RowSize;
-            for (int iterOffset = _RVAOffset; iterOffset < endOffset; iterOffset += this.RowSize)
+            for (int iterOffset = this.RVAOffset; iterOffset < endOffset; iterOffset += this.RowSize)
             {
                 int currentRVA = this.Block.PeekInt32(iterOffset);
                 if (currentRVA > rva && currentRVA < nextRVA)
@@ -476,8 +476,8 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct ParamPtrTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsParamTableRowRefSizeSmall;
-        private readonly int _ParamOffset;
+        private readonly bool IsParamTableRowRefSizeSmall;
+        private readonly int ParamOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -489,26 +489,26 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsParamTableRowRefSizeSmall = paramTableRowRefSize == 2;
-            _ParamOffset = 0;
-            this.RowSize = _ParamOffset + paramTableRowRefSize;
+            this.IsParamTableRowRefSizeSmall = paramTableRowRefSize == 2;
+            this.ParamOffset = 0;
+            this.RowSize = this.ParamOffset + paramTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal ParameterHandle GetParamFor(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
-            return ParameterHandle.FromRowId(this.Block.PeekReference(rowOffset + _ParamOffset, _IsParamTableRowRefSizeSmall));
+            return ParameterHandle.FromRowId(this.Block.PeekReference(rowOffset + this.ParamOffset, this.IsParamTableRowRefSizeSmall));
         }
     }
 
     internal struct ParamTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _SequenceOffset;
-        private readonly int _NameOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int SequenceOffset;
+        private readonly int NameOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -520,40 +520,40 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _SequenceOffset = _FlagsOffset + sizeof(UInt16);
-            _NameOffset = _SequenceOffset + sizeof(UInt16);
-            this.RowSize = _NameOffset + stringHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.SequenceOffset = this.FlagsOffset + sizeof(UInt16);
+            this.NameOffset = this.SequenceOffset + sizeof(UInt16);
+            this.RowSize = this.NameOffset + stringHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal ParameterAttributes GetFlags(ParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (ParameterAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
+            return (ParameterAttributes)this.Block.PeekUInt16(rowOffset + this.FlagsOffset);
         }
 
         internal ushort GetSequence(ParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return this.Block.PeekUInt16(rowOffset + _SequenceOffset);
+            return this.Block.PeekUInt16(rowOffset + this.SequenceOffset);
         }
 
         internal StringHandle GetName(ParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
     }
 
     internal struct InterfaceImplTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsTypeDefTableRowRefSizeSmall;
-        private readonly bool _IsTypeDefOrRefRefSizeSmall;
-        private readonly int _ClassOffset;
-        private readonly int _InterfaceOffset;
+        private readonly bool IsTypeDefTableRowRefSizeSmall;
+        private readonly bool IsTypeDefOrRefRefSizeSmall;
+        private readonly int ClassOffset;
+        private readonly int InterfaceOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -567,11 +567,11 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
-            _IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
-            _ClassOffset = 0;
-            _InterfaceOffset = _ClassOffset + typeDefTableRowRefSize;
-            this.RowSize = _InterfaceOffset + typeDefOrRefRefSize;
+            this.IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
+            this.IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
+            this.ClassOffset = 0;
+            this.InterfaceOffset = this.ClassOffset + typeDefTableRowRefSize;
+            this.RowSize = this.InterfaceOffset + typeDefOrRefRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -582,7 +582,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ClassOffset, _IsTypeDefTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ClassOffset, this.IsTypeDefTableRowRefSizeSmall);
         }
 
         internal void GetInterfaceImplRange(
@@ -596,9 +596,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block.BinarySearchReferenceRange(
                 this.NumberOfRows,
                 this.RowSize,
-                _ClassOffset,
+                this.ClassOffset,
                 typeDefRid,
-                _IsTypeDefTableRowRefSizeSmall,
+                this.IsTypeDefTableRowRefSizeSmall,
                 out startRowNumber,
                 out endRowNumber
             );
@@ -618,19 +618,19 @@ namespace System.Reflection.Metadata.Ecma335
         internal Handle GetInterface(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _InterfaceOffset, _IsTypeDefOrRefRefSizeSmall));
+            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.InterfaceOffset, this.IsTypeDefOrRefRefSizeSmall));
         }
     }
 
     internal struct MemberRefTableReader
     {
         internal uint NumberOfRows;
-        private readonly bool _IsMemberRefParentRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _ClassOffset;
-        private readonly int _NameOffset;
-        private readonly int _SignatureOffset;
+        private readonly bool IsMemberRefParentRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int ClassOffset;
+        private readonly int NameOffset;
+        private readonly int SignatureOffset;
         internal readonly int RowSize;
         internal MemoryBlock Block;
 
@@ -644,43 +644,43 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsMemberRefParentRefSizeSmall = memberRefParentRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _ClassOffset = 0;
-            _NameOffset = _ClassOffset + memberRefParentRefSize;
-            _SignatureOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _SignatureOffset + blobHeapRefSize;
+            this.IsMemberRefParentRefSizeSmall = memberRefParentRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.ClassOffset = 0;
+            this.NameOffset = this.ClassOffset + memberRefParentRefSize;
+            this.SignatureOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.SignatureOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal BlobHandle GetSignature(MemberReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.SignatureOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal StringHandle GetName(MemberReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal Handle GetClass(MemberReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return MemberRefParentTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ClassOffset, _IsMemberRefParentRefSizeSmall));
+            return MemberRefParentTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ClassOffset, this.IsMemberRefParentRefSizeSmall));
         }
     }
 
     internal struct ConstantTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsHasConstantRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _TypeOffset;
-        private readonly int _ParentOffset;
-        private readonly int _ValueOffset;
+        private readonly bool IsHasConstantRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int TypeOffset;
+        private readonly int ParentOffset;
+        private readonly int ValueOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -694,12 +694,12 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsHasConstantRefSizeSmall = hasConstantRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _TypeOffset = 0;
-            _ParentOffset = _TypeOffset + sizeof(Byte) + 1; // Alignment here (+1)...
-            _ValueOffset = _ParentOffset + hasConstantRefSize;
-            this.RowSize = _ValueOffset + blobHeapRefSize;
+            this.IsHasConstantRefSizeSmall = hasConstantRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.TypeOffset = 0;
+            this.ParentOffset = this.TypeOffset + sizeof(Byte) + 1; // Alignment here (+1)...
+            this.ValueOffset = this.ParentOffset + hasConstantRefSize;
+            this.RowSize = this.ValueOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -711,19 +711,19 @@ namespace System.Reflection.Metadata.Ecma335
         internal ConstantTypeCode GetType(ConstantHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (ConstantTypeCode)this.Block.PeekByte(rowOffset + _TypeOffset);
+            return (ConstantTypeCode)this.Block.PeekByte(rowOffset + this.TypeOffset);
         }
 
         internal BlobHandle GetValue(ConstantHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _ValueOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.ValueOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal Handle GetParent(ConstantHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return HasConstantTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ParentOffset, _IsHasConstantRefSizeSmall));
+            return HasConstantTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ParentOffset, this.IsHasConstantRefSizeSmall));
         }
 
         internal ConstantHandle FindConstant(
@@ -734,28 +734,28 @@ namespace System.Reflection.Metadata.Ecma335
               this.Block.BinarySearchReference(
                 this.NumberOfRows,
                 this.RowSize,
-                _ParentOffset,
+                this.ParentOffset,
                 HasConstantTag.ConvertToTag(parentToken),
-                _IsHasConstantRefSizeSmall
+                this.IsHasConstantRefSizeSmall
             );
             return ConstantHandle.FromRowId((uint)(foundRowNumber + 1));
         }
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ParentOffset, _IsHasConstantRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ParentOffset, this.IsHasConstantRefSizeSmall);
         }
     }
 
     internal struct CustomAttributeTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsHasCustomAttributeRefSizeSmall;
-        private readonly bool _IsCustomAttriubuteTypeRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _ParentOffset;
-        private readonly int _TypeOffset;
-        private readonly int _ValueOffset;
+        private readonly bool IsHasCustomAttributeRefSizeSmall;
+        private readonly bool IsCustomAttriubuteTypeRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int ParentOffset;
+        private readonly int TypeOffset;
+        private readonly int ValueOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -773,13 +773,13 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsHasCustomAttributeRefSizeSmall = hasCustomAttributeRefSize == 2;
-            _IsCustomAttriubuteTypeRefSizeSmall = customAttributeTypeRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _ParentOffset = 0;
-            _TypeOffset = _ParentOffset + hasCustomAttributeRefSize;
-            _ValueOffset = _TypeOffset + customAttributeTypeRefSize;
-            this.RowSize = _ValueOffset + blobHeapRefSize;
+            this.IsHasCustomAttributeRefSizeSmall = hasCustomAttributeRefSize == 2;
+            this.IsCustomAttriubuteTypeRefSizeSmall = customAttributeTypeRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.ParentOffset = 0;
+            this.TypeOffset = this.ParentOffset + hasCustomAttributeRefSize;
+            this.ValueOffset = this.TypeOffset + customAttributeTypeRefSize;
+            this.RowSize = this.ValueOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
             this.PtrTable = null;
 
@@ -788,32 +788,32 @@ namespace System.Reflection.Metadata.Ecma335
                 this.PtrTable = this.Block.BuildPtrTable(
                     (int)numberOfRows,
                     this.RowSize,
-                    _ParentOffset,
-                    _IsHasCustomAttributeRefSizeSmall);
+                    this.ParentOffset,
+                    this.IsHasCustomAttributeRefSizeSmall);
             }
         }
 
         internal Handle GetParent(CustomAttributeHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return HasCustomAttributeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ParentOffset, _IsHasCustomAttributeRefSizeSmall));
+            return HasCustomAttributeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ParentOffset, this.IsHasCustomAttributeRefSizeSmall));
         }
 
         internal Handle GetConstructor(CustomAttributeHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return CustomAttributeTypeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _TypeOffset, _IsCustomAttriubuteTypeRefSizeSmall));
+            return CustomAttributeTypeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.TypeOffset, this.IsCustomAttriubuteTypeRefSizeSmall));
         }
 
         internal BlobHandle GetValue(CustomAttributeHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _ValueOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.ValueOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         private uint GetParentTag(int index)
         {
-            return this.Block.PeekReference(index * this.RowSize + _ParentOffset, _IsHasCustomAttributeRefSizeSmall);
+            return this.Block.PeekReference(index * this.RowSize + this.ParentOffset, this.IsHasCustomAttributeRefSizeSmall);
         }
 
         internal void GetAttributeRange(Handle parentHandle, out int firstImplRowId, out int lastImplRowId)
@@ -825,9 +825,9 @@ namespace System.Reflection.Metadata.Ecma335
                 this.Block.BinarySearchReferenceRange(
                     this.PtrTable,
                     this.RowSize,
-                    _ParentOffset,
+                    this.ParentOffset,
                     HasCustomAttributeTag.ConvertToTag(parentHandle),
-                    _IsHasCustomAttributeRefSizeSmall,
+                    this.IsHasCustomAttributeRefSizeSmall,
                     out startRowNumber,
                     out endRowNumber
                 );
@@ -837,9 +837,9 @@ namespace System.Reflection.Metadata.Ecma335
                 this.Block.BinarySearchReferenceRange(
                     this.NumberOfRows,
                     this.RowSize,
-                    _ParentOffset,
+                    this.ParentOffset,
                     HasCustomAttributeTag.ConvertToTag(parentHandle),
-                    _IsHasCustomAttributeRefSizeSmall,
+                    this.IsHasCustomAttributeRefSizeSmall,
                     out startRowNumber,
                     out endRowNumber
                 );
@@ -859,17 +859,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ParentOffset, _IsHasCustomAttributeRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ParentOffset, this.IsHasCustomAttributeRefSizeSmall);
         }
     }
 
     internal struct FieldMarshalTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsHasFieldMarshalRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _ParentOffset;
-        private readonly int _NativeTypeOffset;
+        private readonly bool IsHasFieldMarshalRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int ParentOffset;
+        private readonly int NativeTypeOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -883,11 +883,11 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsHasFieldMarshalRefSizeSmall = hasFieldMarshalRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _ParentOffset = 0;
-            _NativeTypeOffset = _ParentOffset + hasFieldMarshalRefSize;
-            this.RowSize = _NativeTypeOffset + blobHeapRefSize;
+            this.IsHasFieldMarshalRefSizeSmall = hasFieldMarshalRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.ParentOffset = 0;
+            this.NativeTypeOffset = this.ParentOffset + hasFieldMarshalRefSize;
+            this.RowSize = this.NativeTypeOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -899,13 +899,13 @@ namespace System.Reflection.Metadata.Ecma335
         internal Handle GetParent(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return HasFieldMarshalTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ParentOffset, _IsHasFieldMarshalRefSizeSmall));
+            return HasFieldMarshalTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ParentOffset, this.IsHasFieldMarshalRefSizeSmall));
         }
 
         internal BlobHandle GetNativeType(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _NativeTypeOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NativeTypeOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal uint FindFieldMarshalRowId(Handle handle)
@@ -914,27 +914,27 @@ namespace System.Reflection.Metadata.Ecma335
               this.Block.BinarySearchReference(
                 this.NumberOfRows,
                 this.RowSize,
-                _ParentOffset,
+                this.ParentOffset,
                 HasFieldMarshalTag.ConvertToTag(handle),
-                _IsHasFieldMarshalRefSizeSmall
+                this.IsHasFieldMarshalRefSizeSmall
             );
             return (uint)(foundRowNumber + 1);
         }
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ParentOffset, _IsHasFieldMarshalRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ParentOffset, this.IsHasFieldMarshalRefSizeSmall);
         }
     }
 
     internal struct DeclSecurityTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsHasDeclSecurityRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _ActionOffset;
-        private readonly int _ParentOffset;
-        private readonly int _PermissionSetOffset;
+        private readonly bool IsHasDeclSecurityRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int ActionOffset;
+        private readonly int ParentOffset;
+        private readonly int PermissionSetOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -948,12 +948,12 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsHasDeclSecurityRefSizeSmall = hasDeclSecurityRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _ActionOffset = 0;
-            _ParentOffset = _ActionOffset + sizeof(UInt16);
-            _PermissionSetOffset = _ParentOffset + hasDeclSecurityRefSize;
-            this.RowSize = _PermissionSetOffset + blobHeapRefSize;
+            this.IsHasDeclSecurityRefSizeSmall = hasDeclSecurityRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.ActionOffset = 0;
+            this.ParentOffset = this.ActionOffset + sizeof(UInt16);
+            this.PermissionSetOffset = this.ParentOffset + hasDeclSecurityRefSize;
+            this.RowSize = this.PermissionSetOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -965,19 +965,19 @@ namespace System.Reflection.Metadata.Ecma335
         internal DeclarativeSecurityAction GetAction(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return (DeclarativeSecurityAction)this.Block.PeekUInt16(rowOffset + _ActionOffset);
+            return (DeclarativeSecurityAction)this.Block.PeekUInt16(rowOffset + this.ActionOffset);
         }
 
         internal Handle GetParent(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return HasDeclSecurityTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ParentOffset, _IsHasDeclSecurityRefSizeSmall));
+            return HasDeclSecurityTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ParentOffset, this.IsHasDeclSecurityRefSizeSmall));
         }
 
         internal BlobHandle GetPermissionSet(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _PermissionSetOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.PermissionSetOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal void GetAttributeRange(Handle parentToken, out int firstImplRowId, out int lastImplRowId)
@@ -987,9 +987,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block.BinarySearchReferenceRange(
                 this.NumberOfRows,
                 this.RowSize,
-                _ParentOffset,
+                this.ParentOffset,
                 HasDeclSecurityTag.ConvertToTag(parentToken),
-                _IsHasDeclSecurityRefSizeSmall,
+                this.IsHasDeclSecurityRefSizeSmall,
                 out startRowNumber,
                 out endRowNumber);
 
@@ -1007,17 +1007,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ParentOffset, _IsHasDeclSecurityRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ParentOffset, this.IsHasDeclSecurityRefSizeSmall);
         }
     }
 
     internal struct ClassLayoutTableReader
     {
         internal uint NumberOfRows;
-        private readonly bool _IsTypeDefTableRowRefSizeSmall;
-        private readonly int _PackagingSizeOffset;
-        private readonly int _ClassSizeOffset;
-        private readonly int _ParentOffset;
+        private readonly bool IsTypeDefTableRowRefSizeSmall;
+        private readonly int PackagingSizeOffset;
+        private readonly int ClassSizeOffset;
+        private readonly int ParentOffset;
         internal readonly int RowSize;
         internal MemoryBlock Block;
 
@@ -1029,11 +1029,11 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
-            _PackagingSizeOffset = 0;
-            _ClassSizeOffset = _PackagingSizeOffset + sizeof(UInt16);
-            _ParentOffset = _ClassSizeOffset + sizeof(UInt32);
-            this.RowSize = _ParentOffset + typeDefTableRowRefSize;
+            this.IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
+            this.PackagingSizeOffset = 0;
+            this.ClassSizeOffset = this.PackagingSizeOffset + sizeof(UInt16);
+            this.ParentOffset = this.ClassSizeOffset + sizeof(UInt32);
+            this.RowSize = this.ParentOffset + typeDefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -1045,39 +1045,39 @@ namespace System.Reflection.Metadata.Ecma335
         internal TypeDefinitionHandle GetParent(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _ParentOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.ParentOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         internal ushort GetPackingSize(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekUInt16(rowOffset + _PackagingSizeOffset);
+            return this.Block.PeekUInt16(rowOffset + this.PackagingSizeOffset);
         }
 
         internal uint GetClassSize(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _ClassSizeOffset);
+            return this.Block.PeekUInt32(rowOffset + this.ClassSizeOffset);
         }
 
         // Returns RowId (0 means we there is no record in this table corresponding to the specified type).
         internal uint FindRow(TypeDefinitionHandle typeDef)
         {
-            return (uint)(1 + this.Block.BinarySearchReference(this.NumberOfRows, this.RowSize, _ParentOffset, typeDef.RowId, _IsTypeDefTableRowRefSizeSmall));
+            return (uint)(1 + this.Block.BinarySearchReference(this.NumberOfRows, this.RowSize, this.ParentOffset, typeDef.RowId, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ParentOffset, _IsTypeDefTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ParentOffset, this.IsTypeDefTableRowRefSizeSmall);
         }
     }
 
     internal struct FieldLayoutTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsFieldTableRowRefSizeSmall;
-        private readonly int _OffsetOffset;
-        private readonly int _FieldOffset;
+        private readonly bool IsFieldTableRowRefSizeSmall;
+        private readonly int OffsetOffset;
+        private readonly int FieldOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1089,10 +1089,10 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsFieldTableRowRefSizeSmall = fieldTableRowRefSize == 2;
-            _OffsetOffset = 0;
-            _FieldOffset = _OffsetOffset + sizeof(UInt32);
-            this.RowSize = _FieldOffset + fieldTableRowRefSize;
+            this.IsFieldTableRowRefSizeSmall = fieldTableRowRefSize == 2;
+            this.OffsetOffset = 0;
+            this.FieldOffset = this.OffsetOffset + sizeof(UInt32);
+            this.RowSize = this.FieldOffset + fieldTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -1110,9 +1110,9 @@ namespace System.Reflection.Metadata.Ecma335
               this.Block.BinarySearchReference(
                 this.NumberOfRows,
                 this.RowSize,
-                _FieldOffset,
+                this.FieldOffset,
                 handle.RowId,
-                _IsFieldTableRowRefSizeSmall
+                this.IsFieldTableRowRefSizeSmall
             );
 
             return (uint)(rowNumber + 1);
@@ -1121,26 +1121,26 @@ namespace System.Reflection.Metadata.Ecma335
         internal uint GetOffset(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _OffsetOffset);
+            return this.Block.PeekUInt32(rowOffset + this.OffsetOffset);
         }
 
         internal FieldDefinitionHandle GetField(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return FieldDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _FieldOffset, _IsFieldTableRowRefSizeSmall));
+            return FieldDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.FieldOffset, this.IsFieldTableRowRefSizeSmall));
         }
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _FieldOffset, _IsFieldTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.FieldOffset, this.IsFieldTableRowRefSizeSmall);
         }
     }
 
     internal struct StandAloneSigTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _SignatureOffset;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int SignatureOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1151,26 +1151,26 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _SignatureOffset = 0;
-            this.RowSize = _SignatureOffset + blobHeapRefSize;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.SignatureOffset = 0;
+            this.RowSize = this.SignatureOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal BlobHandle GetSignature(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.SignatureOffset, this.IsBlobHeapRefSizeSmall));
         }
     }
 
     internal struct EventMapTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsTypeDefTableRowRefSizeSmall;
-        private readonly bool _IsEventRefSizeSmall;
-        private readonly int _ParentOffset;
-        private readonly int _EventListOffset;
+        private readonly bool IsTypeDefTableRowRefSizeSmall;
+        private readonly bool IsEventRefSizeSmall;
+        private readonly int ParentOffset;
+        private readonly int EventListOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1182,11 +1182,11 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
-            _IsEventRefSizeSmall = eventRefSize == 2;
-            _ParentOffset = 0;
-            _EventListOffset = _ParentOffset + typeDefTableRowRefSize;
-            this.RowSize = _EventListOffset + eventRefSize;
+            this.IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
+            this.IsEventRefSizeSmall = eventRefSize == 2;
+            this.ParentOffset = 0;
+            this.EventListOffset = this.ParentOffset + typeDefTableRowRefSize;
+            this.RowSize = this.EventListOffset + eventRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
@@ -1198,9 +1198,9 @@ namespace System.Reflection.Metadata.Ecma335
             int rowNumber =
               this.Block.LinearSearchReference(
                 this.RowSize,
-                _ParentOffset,
+                this.ParentOffset,
                 typeDef.RowId,
-                _IsTypeDefTableRowRefSizeSmall
+                this.IsTypeDefTableRowRefSizeSmall
             );
             return (uint)(rowNumber + 1);
         }
@@ -1208,21 +1208,21 @@ namespace System.Reflection.Metadata.Ecma335
         internal TypeDefinitionHandle GetParentType(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _ParentOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.ParentOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         internal uint GetEventListStartFor(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekReference(rowOffset + _EventListOffset, _IsEventRefSizeSmall);
+            return this.Block.PeekReference(rowOffset + this.EventListOffset, this.IsEventRefSizeSmall);
         }
     }
 
     internal struct EventPtrTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsEventTableRowRefSizeSmall;
-        private readonly int _EventOffset;
+        private readonly bool IsEventTableRowRefSizeSmall;
+        private readonly int EventOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1234,27 +1234,27 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsEventTableRowRefSizeSmall = eventTableRowRefSize == 2;
-            _EventOffset = 0;
-            this.RowSize = _EventOffset + eventTableRowRefSize;
+            this.IsEventTableRowRefSizeSmall = eventTableRowRefSize == 2;
+            this.EventOffset = 0;
+            this.RowSize = this.EventOffset + eventTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal EventDefinitionHandle GetEventFor(int rowId)
         {
             int rowOffset = (rowId - 1) * this.RowSize;
-            return EventDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _EventOffset, _IsEventTableRowRefSizeSmall));
+            return EventDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.EventOffset, this.IsEventTableRowRefSizeSmall));
         }
     }
 
     internal struct EventTableReader
     {
         internal uint NumberOfRows;
-        private readonly bool _IsTypeDefOrRefRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _EventTypeOffset;
+        private readonly bool IsTypeDefOrRefRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int EventTypeOffset;
         internal readonly int RowSize;
         internal MemoryBlock Block;
 
@@ -1266,41 +1266,41 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _NameOffset = _FlagsOffset + sizeof(UInt16);
-            _EventTypeOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _EventTypeOffset + typeDefOrRefRefSize;
+            this.IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.NameOffset = this.FlagsOffset + sizeof(UInt16);
+            this.EventTypeOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.EventTypeOffset + typeDefOrRefRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal EventAttributes GetFlags(EventDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (EventAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
+            return (EventAttributes)this.Block.PeekUInt16(rowOffset + this.FlagsOffset);
         }
 
         internal StringHandle GetName(EventDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal Handle GetEventType(EventDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _EventTypeOffset, _IsTypeDefOrRefRefSizeSmall));
+            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.EventTypeOffset, this.IsTypeDefOrRefRefSizeSmall));
         }
     }
 
     internal struct PropertyMapTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsTypeDefTableRowRefSizeSmall;
-        private readonly bool _IsPropertyRefSizeSmall;
-        private readonly int _ParentOffset;
-        private readonly int _PropertyListOffset;
+        private readonly bool IsTypeDefTableRowRefSizeSmall;
+        private readonly bool IsPropertyRefSizeSmall;
+        private readonly int ParentOffset;
+        private readonly int PropertyListOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1313,11 +1313,11 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
-            _IsPropertyRefSizeSmall = propertyRefSize == 2;
-            _ParentOffset = 0;
-            _PropertyListOffset = _ParentOffset + typeDefTableRowRefSize;
-            this.RowSize = _PropertyListOffset + propertyRefSize;
+            this.IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
+            this.IsPropertyRefSizeSmall = propertyRefSize == 2;
+            this.ParentOffset = 0;
+            this.PropertyListOffset = this.ParentOffset + typeDefTableRowRefSize;
+            this.RowSize = this.PropertyListOffset + propertyRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
@@ -1329,9 +1329,9 @@ namespace System.Reflection.Metadata.Ecma335
             int rowNumber =
               this.Block.LinearSearchReference(
                 this.RowSize,
-                _ParentOffset,
+                this.ParentOffset,
                 typeDef.RowId,
-                _IsTypeDefTableRowRefSizeSmall
+                this.IsTypeDefTableRowRefSizeSmall
             );
             return (uint)(rowNumber + 1);
         }
@@ -1339,13 +1339,13 @@ namespace System.Reflection.Metadata.Ecma335
         internal TypeDefinitionHandle GetParentType(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _ParentOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.ParentOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         internal uint GetPropertyListStartFor(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            uint propertyList = this.Block.PeekReference(rowOffset + _PropertyListOffset, _IsPropertyRefSizeSmall);
+            uint propertyList = this.Block.PeekReference(rowOffset + this.PropertyListOffset, this.IsPropertyRefSizeSmall);
             return propertyList;
         }
     }
@@ -1353,8 +1353,8 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct PropertyPtrTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsPropertyTableRowRefSizeSmall;
-        private readonly int _PropertyOffset;
+        private readonly bool IsPropertyTableRowRefSizeSmall;
+        private readonly int PropertyOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1366,9 +1366,9 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsPropertyTableRowRefSizeSmall = propertyTableRowRefSize == 2;
-            _PropertyOffset = 0;
-            this.RowSize = _PropertyOffset + propertyTableRowRefSize;
+            this.IsPropertyTableRowRefSizeSmall = propertyTableRowRefSize == 2;
+            this.PropertyOffset = 0;
+            this.RowSize = this.PropertyOffset + propertyTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
@@ -1378,18 +1378,18 @@ namespace System.Reflection.Metadata.Ecma335
         // ^ requires rowId <= this.NumberOfRows;
         {
             int rowOffset = (rowId - 1) * this.RowSize;
-            return PropertyDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _PropertyOffset, _IsPropertyTableRowRefSizeSmall));
+            return PropertyDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.PropertyOffset, this.IsPropertyTableRowRefSizeSmall));
         }
     }
 
     internal struct PropertyTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _SignatureOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int SignatureOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1402,42 +1402,42 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _NameOffset = _FlagsOffset + sizeof(UInt16);
-            _SignatureOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _SignatureOffset + blobHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.NameOffset = this.FlagsOffset + sizeof(UInt16);
+            this.SignatureOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.SignatureOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal PropertyAttributes GetFlags(PropertyDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (PropertyAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
+            return (PropertyAttributes)this.Block.PeekUInt16(rowOffset + this.FlagsOffset);
         }
 
         internal StringHandle GetName(PropertyDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal BlobHandle GetSignature(PropertyDefinitionHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.SignatureOffset, this.IsBlobHeapRefSizeSmall));
         }
     }
 
     internal struct MethodSemanticsTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsMethodTableRowRefSizeSmall;
-        private readonly bool _IsHasSemanticRefSizeSmall;
-        private readonly int _SemanticsFlagOffset;
-        private readonly int _MethodOffset;
-        private readonly int _AssociationOffset;
+        private readonly bool IsMethodTableRowRefSizeSmall;
+        private readonly bool IsHasSemanticRefSizeSmall;
+        private readonly int SemanticsFlagOffset;
+        private readonly int MethodOffset;
+        private readonly int AssociationOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1451,12 +1451,12 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsMethodTableRowRefSizeSmall = methodTableRowRefSize == 2;
-            _IsHasSemanticRefSizeSmall = hasSemanticRefSize == 2;
-            _SemanticsFlagOffset = 0;
-            _MethodOffset = _SemanticsFlagOffset + sizeof(UInt16);
-            _AssociationOffset = _MethodOffset + methodTableRowRefSize;
-            this.RowSize = _AssociationOffset + hasSemanticRefSize;
+            this.IsMethodTableRowRefSizeSmall = methodTableRowRefSize == 2;
+            this.IsHasSemanticRefSizeSmall = hasSemanticRefSize == 2;
+            this.SemanticsFlagOffset = 0;
+            this.MethodOffset = this.SemanticsFlagOffset + sizeof(UInt16);
+            this.AssociationOffset = this.MethodOffset + methodTableRowRefSize;
+            this.RowSize = this.AssociationOffset + hasSemanticRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -1468,19 +1468,19 @@ namespace System.Reflection.Metadata.Ecma335
         internal MethodDefinitionHandle GetMethod(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return MethodDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _MethodOffset, _IsMethodTableRowRefSizeSmall));
+            return MethodDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.MethodOffset, this.IsMethodTableRowRefSizeSmall));
         }
 
         internal MethodSemanticsAttributes GetSemantics(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return (MethodSemanticsAttributes)this.Block.PeekUInt16(rowOffset + _SemanticsFlagOffset);
+            return (MethodSemanticsAttributes)this.Block.PeekUInt16(rowOffset + this.SemanticsFlagOffset);
         }
 
         internal Handle GetAssociation(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return HasSemanticsTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _AssociationOffset, _IsHasSemanticRefSizeSmall));
+            return HasSemanticsTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.AssociationOffset, this.IsHasSemanticRefSizeSmall));
         }
 
         // returns rowID
@@ -1504,9 +1504,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block.BinarySearchReferenceRange(
                 this.NumberOfRows,
                 this.RowSize,
-                _AssociationOffset,
+                this.AssociationOffset,
                 searchCodedTag,
-                _IsHasSemanticRefSizeSmall,
+                this.IsHasSemanticRefSizeSmall,
                 out startRowNumber,
                 out endRowNumber
             );
@@ -1523,18 +1523,18 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _AssociationOffset, _IsHasSemanticRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.AssociationOffset, this.IsHasSemanticRefSizeSmall);
         }
     }
 
     internal struct MethodImplTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsTypeDefTableRowRefSizeSmall;
-        private readonly bool _IsMethodDefOrRefRefSizeSmall;
-        private readonly int _ClassOffset;
-        private readonly int _MethodBodyOffset;
-        private readonly int _MethodDeclarationOffset;
+        private readonly bool IsTypeDefTableRowRefSizeSmall;
+        private readonly bool IsMethodDefOrRefRefSizeSmall;
+        private readonly int ClassOffset;
+        private readonly int MethodBodyOffset;
+        private readonly int MethodDeclarationOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1548,12 +1548,12 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
-            _IsMethodDefOrRefRefSizeSmall = methodDefOrRefRefSize == 2;
-            _ClassOffset = 0;
-            _MethodBodyOffset = _ClassOffset + typeDefTableRowRefSize;
-            _MethodDeclarationOffset = _MethodBodyOffset + methodDefOrRefRefSize;
-            this.RowSize = _MethodDeclarationOffset + methodDefOrRefRefSize;
+            this.IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
+            this.IsMethodDefOrRefRefSizeSmall = methodDefOrRefRefSize == 2;
+            this.ClassOffset = 0;
+            this.MethodBodyOffset = this.ClassOffset + typeDefTableRowRefSize;
+            this.MethodDeclarationOffset = this.MethodBodyOffset + methodDefOrRefRefSize;
+            this.RowSize = this.MethodDeclarationOffset + methodDefOrRefRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -1565,19 +1565,19 @@ namespace System.Reflection.Metadata.Ecma335
         internal TypeDefinitionHandle GetClass(MethodImplementationHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _ClassOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.ClassOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         internal Handle GetMethodBody(MethodImplementationHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return MethodDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _MethodBodyOffset, _IsMethodDefOrRefRefSizeSmall));
+            return MethodDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.MethodBodyOffset, this.IsMethodDefOrRefRefSizeSmall));
         }
 
         internal Handle GetMethodDeclaration(MethodImplementationHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return MethodDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _MethodDeclarationOffset, _IsMethodDefOrRefRefSizeSmall));
+            return MethodDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.MethodDeclarationOffset, this.IsMethodDefOrRefRefSizeSmall));
         }
 
         internal void GetMethodImplRange(
@@ -1591,9 +1591,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block.BinarySearchReferenceRange(
                 this.NumberOfRows,
                 this.RowSize,
-                _ClassOffset,
+                this.ClassOffset,
                 typeDefRid,
-                _IsTypeDefTableRowRefSizeSmall,
+                this.IsTypeDefTableRowRefSizeSmall,
                 out startRowNumber,
                 out endRowNumber
             );
@@ -1612,15 +1612,15 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _ClassOffset, _IsTypeDefTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.ClassOffset, this.IsTypeDefTableRowRefSizeSmall);
         }
     }
 
     internal struct ModuleRefTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _NameOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int NameOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1632,24 +1632,24 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _NameOffset = 0;
-            this.RowSize = _NameOffset + stringHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.NameOffset = 0;
+            this.RowSize = this.NameOffset + stringHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal StringHandle GetName(ModuleReferenceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
     }
 
     internal struct TypeSpecTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _SignatureOffset;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int SignatureOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1661,29 +1661,29 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _SignatureOffset = 0;
-            this.RowSize = _SignatureOffset + blobHeapRefSize;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.SignatureOffset = 0;
+            this.RowSize = this.SignatureOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal BlobHandle GetSignature(TypeSpecificationHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _SignatureOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.SignatureOffset, this.IsBlobHeapRefSizeSmall));
         }
     }
 
     internal struct ImplMapTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsModuleRefTableRowRefSizeSmall;
-        private readonly bool _IsMemberForwardRowRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _MemberForwardedOffset;
-        private readonly int _ImportNameOffset;
-        private readonly int _ImportScopeOffset;
+        private readonly bool IsModuleRefTableRowRefSizeSmall;
+        private readonly bool IsMemberForwardRowRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int MemberForwardedOffset;
+        private readonly int ImportNameOffset;
+        private readonly int ImportScopeOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1698,14 +1698,14 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsModuleRefTableRowRefSizeSmall = moduleRefTableRowRefSize == 2;
-            _IsMemberForwardRowRefSizeSmall = memberForwardedRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _MemberForwardedOffset = _FlagsOffset + sizeof(UInt16);
-            _ImportNameOffset = _MemberForwardedOffset + memberForwardedRefSize;
-            _ImportScopeOffset = _ImportNameOffset + stringHeapRefSize;
-            this.RowSize = _ImportScopeOffset + moduleRefTableRowRefSize;
+            this.IsModuleRefTableRowRefSizeSmall = moduleRefTableRowRefSize == 2;
+            this.IsMemberForwardRowRefSizeSmall = memberForwardedRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.MemberForwardedOffset = this.FlagsOffset + sizeof(UInt16);
+            this.ImportNameOffset = this.MemberForwardedOffset + memberForwardedRefSize;
+            this.ImportScopeOffset = this.ImportNameOffset + stringHeapRefSize;
+            this.RowSize = this.ImportScopeOffset + moduleRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -1719,9 +1719,9 @@ namespace System.Reflection.Metadata.Ecma335
             get
             {
                 int rowOffset = (int)(rowId - 1) * this.RowSize;
-                var pInvokeMapFlags = (MethodImportAttributes)Block.PeekUInt16(rowOffset + _FlagsOffset);
-                var importName = StringHandle.FromIndex(Block.PeekReference(rowOffset + _ImportNameOffset, _IsStringHeapRefSizeSmall));
-                var importScope = ModuleReferenceHandle.FromRowId(Block.PeekReference(rowOffset + _ImportScopeOffset, _IsModuleRefTableRowRefSizeSmall));
+                var pInvokeMapFlags = (MethodImportAttributes)Block.PeekUInt16(rowOffset + this.FlagsOffset);
+                var importName = StringHandle.FromIndex(Block.PeekReference(rowOffset + this.ImportNameOffset, this.IsStringHeapRefSizeSmall));
+                var importScope = ModuleReferenceHandle.FromRowId(Block.PeekReference(rowOffset + this.ImportScopeOffset, this.IsModuleRefTableRowRefSizeSmall));
                 return new MethodImport(pInvokeMapFlags, importName, importScope);
             }
         }
@@ -1729,7 +1729,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal Handle GetMemberForwarded(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return MemberForwardedTag.ConvertToToken(Block.PeekTaggedReference(rowOffset + _MemberForwardedOffset, _IsMemberForwardRowRefSizeSmall));
+            return MemberForwardedTag.ConvertToToken(Block.PeekTaggedReference(rowOffset + this.MemberForwardedOffset, this.IsMemberForwardRowRefSizeSmall));
         }
 
         internal uint FindImplForMethod(MethodDefinitionHandle methodDef)
@@ -1744,25 +1744,25 @@ namespace System.Reflection.Metadata.Ecma335
               this.Block.BinarySearchReference(
                 this.NumberOfRows,
                 this.RowSize,
-                _MemberForwardedOffset,
+                this.MemberForwardedOffset,
                 searchCodedTag,
-                _IsMemberForwardRowRefSizeSmall
+                this.IsMemberForwardRowRefSizeSmall
             );
             return (uint)(foundRowNumber + 1);
         }
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _MemberForwardedOffset, _IsMemberForwardRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.MemberForwardedOffset, this.IsMemberForwardRowRefSizeSmall);
         }
     }
 
     internal struct FieldRVATableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsFieldTableRowRefSizeSmall;
-        private readonly int _RVAOffset;
-        private readonly int _FieldOffset;
+        private readonly bool IsFieldTableRowRefSizeSmall;
+        private readonly int RVAOffset;
+        private readonly int FieldOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1775,10 +1775,10 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsFieldTableRowRefSizeSmall = fieldTableRowRefSize == 2;
-            _RVAOffset = 0;
-            _FieldOffset = _RVAOffset + sizeof(UInt32);
-            this.RowSize = _FieldOffset + fieldTableRowRefSize;
+            this.IsFieldTableRowRefSizeSmall = fieldTableRowRefSize == 2;
+            this.RVAOffset = 0;
+            this.FieldOffset = this.RVAOffset + sizeof(UInt32);
+            this.RowSize = this.FieldOffset + fieldTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -1790,7 +1790,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal int GetRVA(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return Block.PeekInt32(rowOffset + _RVAOffset);
+            return Block.PeekInt32(rowOffset + this.RVAOffset);
         }
 
         internal uint FindFieldRVARowId(uint fieldDefRowId)
@@ -1798,9 +1798,9 @@ namespace System.Reflection.Metadata.Ecma335
             int foundRowNumber = Block.BinarySearchReference(
                 this.NumberOfRows,
                 this.RowSize,
-                _FieldOffset,
+                this.FieldOffset,
                 fieldDefRowId,
-                _IsFieldTableRowRefSizeSmall
+                this.IsFieldTableRowRefSizeSmall
             );
 
             return (uint)(foundRowNumber + 1);
@@ -1808,15 +1808,15 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _FieldOffset, _IsFieldTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.FieldOffset, this.IsFieldTableRowRefSizeSmall);
         }
     }
 
     internal struct EnCLogTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly int _TokenOffset;
-        private readonly int _FuncCodeOffset;
+        private readonly int TokenOffset;
+        private readonly int FuncCodeOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1831,30 +1831,30 @@ namespace System.Reflection.Metadata.Ecma335
             // the CLR includes the EnCLog table into the snapshot (but not EnCMap). We pretend EnCLog is empty.
             this.NumberOfRows = (metadataStreamKind == MetadataStreamKind.Compressed) ? 0 : numberOfRows;
 
-            _TokenOffset = 0;
-            _FuncCodeOffset = _TokenOffset + sizeof(uint);
-            this.RowSize = _FuncCodeOffset + sizeof(uint);
+            this.TokenOffset = 0;
+            this.FuncCodeOffset = this.TokenOffset + sizeof(uint);
+            this.RowSize = this.FuncCodeOffset + sizeof(uint);
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal uint GetToken(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _TokenOffset);
+            return this.Block.PeekUInt32(rowOffset + this.TokenOffset);
         }
 
 #pragma warning disable 618 // Edit and continue API marked obsolete to give us more time to refactor
         internal EditAndContinueOperation GetFuncCode(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return (EditAndContinueOperation)this.Block.PeekUInt32(rowOffset + _FuncCodeOffset);
+            return (EditAndContinueOperation)this.Block.PeekUInt32(rowOffset + this.FuncCodeOffset);
         }
     }
 
     internal struct EnCMapTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly int _TokenOffset;
+        private readonly int TokenOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1864,15 +1864,15 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _TokenOffset = 0;
-            this.RowSize = _TokenOffset + sizeof(uint);
+            this.TokenOffset = 0;
+            this.RowSize = this.TokenOffset + sizeof(uint);
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal uint GetToken(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _TokenOffset);
+            return this.Block.PeekUInt32(rowOffset + this.TokenOffset);
         }
     }
 #pragma warning restore 618 // Edit and continue API marked obsolete to give us more time to refactor
@@ -1880,17 +1880,17 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct AssemblyTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _HashAlgIdOffset;
-        private readonly int _MajorVersionOffset;
-        private readonly int _MinorVersionOffset;
-        private readonly int _BuildNumberOffset;
-        private readonly int _RevisionNumberOffset;
-        private readonly int _FlagsOffset;
-        private readonly int _PublicKeyOffset;
-        private readonly int _NameOffset;
-        private readonly int _CultureOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int HashAlgIdOffset;
+        private readonly int MajorVersionOffset;
+        private readonly int MinorVersionOffset;
+        private readonly int BuildNumberOffset;
+        private readonly int RevisionNumberOffset;
+        private readonly int FlagsOffset;
+        private readonly int PublicKeyOffset;
+        private readonly int NameOffset;
+        private readonly int CultureOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1906,66 +1906,66 @@ namespace System.Reflection.Metadata.Ecma335
             //       we ignore all rows but the first one
             this.NumberOfRows = numberOfRows > 1 ? 1 : numberOfRows;
 
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _HashAlgIdOffset = 0;
-            _MajorVersionOffset = _HashAlgIdOffset + sizeof(UInt32);
-            _MinorVersionOffset = _MajorVersionOffset + sizeof(UInt16);
-            _BuildNumberOffset = _MinorVersionOffset + sizeof(UInt16);
-            _RevisionNumberOffset = _BuildNumberOffset + sizeof(UInt16);
-            _FlagsOffset = _RevisionNumberOffset + sizeof(UInt16);
-            _PublicKeyOffset = _FlagsOffset + sizeof(UInt32);
-            _NameOffset = _PublicKeyOffset + blobHeapRefSize;
-            _CultureOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _CultureOffset + stringHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.HashAlgIdOffset = 0;
+            this.MajorVersionOffset = this.HashAlgIdOffset + sizeof(UInt32);
+            this.MinorVersionOffset = this.MajorVersionOffset + sizeof(UInt16);
+            this.BuildNumberOffset = this.MinorVersionOffset + sizeof(UInt16);
+            this.RevisionNumberOffset = this.BuildNumberOffset + sizeof(UInt16);
+            this.FlagsOffset = this.RevisionNumberOffset + sizeof(UInt16);
+            this.PublicKeyOffset = this.FlagsOffset + sizeof(UInt32);
+            this.NameOffset = this.PublicKeyOffset + blobHeapRefSize;
+            this.CultureOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.CultureOffset + stringHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal AssemblyHashAlgorithm GetHashAlgorithm()
         {
             Debug.Assert(NumberOfRows == 1);
-            return (AssemblyHashAlgorithm)this.Block.PeekUInt32(_HashAlgIdOffset);
+            return (AssemblyHashAlgorithm)this.Block.PeekUInt32(this.HashAlgIdOffset);
         }
 
         internal Version GetVersion()
         {
             Debug.Assert(NumberOfRows == 1);
             return new Version(
-                this.Block.PeekUInt16(_MajorVersionOffset),
-                this.Block.PeekUInt16(_MinorVersionOffset),
-                this.Block.PeekUInt16(_BuildNumberOffset),
-                this.Block.PeekUInt16(_RevisionNumberOffset));
+                this.Block.PeekUInt16(this.MajorVersionOffset),
+                this.Block.PeekUInt16(this.MinorVersionOffset),
+                this.Block.PeekUInt16(this.BuildNumberOffset),
+                this.Block.PeekUInt16(this.RevisionNumberOffset));
         }
 
         internal AssemblyFlags GetFlags()
         {
             Debug.Assert(NumberOfRows == 1);
-            return (AssemblyFlags)this.Block.PeekUInt32(_FlagsOffset);
+            return (AssemblyFlags)this.Block.PeekUInt32(this.FlagsOffset);
         }
 
         internal BlobHandle GetPublicKey()
         {
             Debug.Assert(NumberOfRows == 1);
-            return BlobHandle.FromIndex(this.Block.PeekReference(_PublicKeyOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(this.PublicKeyOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal StringHandle GetName()
         {
             Debug.Assert(NumberOfRows == 1);
-            return StringHandle.FromIndex(this.Block.PeekReference(_NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal StringHandle GetCulture()
         {
             Debug.Assert(NumberOfRows == 1);
-            return StringHandle.FromIndex(this.Block.PeekReference(_CultureOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(this.CultureOffset, this.IsStringHeapRefSizeSmall));
         }
     }
 
     internal struct AssemblyProcessorTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly int _ProcessorOffset;
+        private readonly int ProcessorOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1976,8 +1976,8 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _ProcessorOffset = 0;
-            this.RowSize = _ProcessorOffset + sizeof(UInt32);
+            this.ProcessorOffset = 0;
+            this.RowSize = this.ProcessorOffset + sizeof(UInt32);
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }
@@ -1985,9 +1985,9 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct AssemblyOSTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly int _OSPlatformIdOffset;
-        private readonly int _OSMajorVersionIdOffset;
-        private readonly int _OSMinorVersionIdOffset;
+        private readonly int OSPlatformIdOffset;
+        private readonly int OSMajorVersionIdOffset;
+        private readonly int OSMinorVersionIdOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -1998,10 +1998,10 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _OSPlatformIdOffset = 0;
-            _OSMajorVersionIdOffset = _OSPlatformIdOffset + sizeof(UInt32);
-            _OSMinorVersionIdOffset = _OSMajorVersionIdOffset + sizeof(UInt32);
-            this.RowSize = _OSMinorVersionIdOffset + sizeof(UInt32);
+            this.OSPlatformIdOffset = 0;
+            this.OSMajorVersionIdOffset = this.OSPlatformIdOffset + sizeof(UInt32);
+            this.OSMinorVersionIdOffset = this.OSMajorVersionIdOffset + sizeof(UInt32);
+            this.RowSize = this.OSMinorVersionIdOffset + sizeof(UInt32);
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }
@@ -2015,17 +2015,17 @@ namespace System.Reflection.Metadata.Ecma335
         internal readonly int NumberOfNonVirtualRows;
         internal readonly int NumberOfVirtualRows;
 
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _MajorVersionOffset;
-        private readonly int _MinorVersionOffset;
-        private readonly int _BuildNumberOffset;
-        private readonly int _RevisionNumberOffset;
-        private readonly int _FlagsOffset;
-        private readonly int _PublicKeyOrTokenOffset;
-        private readonly int _NameOffset;
-        private readonly int _CultureOffset;
-        private readonly int _HashValueOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int MajorVersionOffset;
+        private readonly int MinorVersionOffset;
+        private readonly int BuildNumberOffset;
+        private readonly int RevisionNumberOffset;
+        private readonly int FlagsOffset;
+        private readonly int PublicKeyOrTokenOffset;
+        private readonly int NameOffset;
+        private readonly int CultureOffset;
+        private readonly int HashValueOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2040,18 +2040,18 @@ namespace System.Reflection.Metadata.Ecma335
             this.NumberOfNonVirtualRows = numberOfRows;
             this.NumberOfVirtualRows = (metadataKind == MetadataKind.Ecma335) ? 0 : (int)AssemblyReferenceHandle.VirtualIndex.Count;
 
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _MajorVersionOffset = 0;
-            _MinorVersionOffset = _MajorVersionOffset + sizeof(UInt16);
-            _BuildNumberOffset = _MinorVersionOffset + sizeof(UInt16);
-            _RevisionNumberOffset = _BuildNumberOffset + sizeof(UInt16);
-            _FlagsOffset = _RevisionNumberOffset + sizeof(UInt16);
-            _PublicKeyOrTokenOffset = _FlagsOffset + sizeof(UInt32);
-            _NameOffset = _PublicKeyOrTokenOffset + blobHeapRefSize;
-            _CultureOffset = _NameOffset + stringHeapRefSize;
-            _HashValueOffset = _CultureOffset + stringHeapRefSize;
-            this.RowSize = _HashValueOffset + blobHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.MajorVersionOffset = 0;
+            this.MinorVersionOffset = this.MajorVersionOffset + sizeof(UInt16);
+            this.BuildNumberOffset = this.MinorVersionOffset + sizeof(UInt16);
+            this.RevisionNumberOffset = this.BuildNumberOffset + sizeof(UInt16);
+            this.FlagsOffset = this.RevisionNumberOffset + sizeof(UInt16);
+            this.PublicKeyOrTokenOffset = this.FlagsOffset + sizeof(UInt32);
+            this.NameOffset = this.PublicKeyOrTokenOffset + blobHeapRefSize;
+            this.CultureOffset = this.NameOffset + stringHeapRefSize;
+            this.HashValueOffset = this.CultureOffset + stringHeapRefSize;
+            this.RowSize = this.HashValueOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, this.RowSize * numberOfRows);
         }
 
@@ -2059,49 +2059,49 @@ namespace System.Reflection.Metadata.Ecma335
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
             return new Version(
-                this.Block.PeekUInt16(rowOffset + _MajorVersionOffset),
-                this.Block.PeekUInt16(rowOffset + _MinorVersionOffset),
-                this.Block.PeekUInt16(rowOffset + _BuildNumberOffset),
-                this.Block.PeekUInt16(rowOffset + _RevisionNumberOffset));
+                this.Block.PeekUInt16(rowOffset + this.MajorVersionOffset),
+                this.Block.PeekUInt16(rowOffset + this.MinorVersionOffset),
+                this.Block.PeekUInt16(rowOffset + this.BuildNumberOffset),
+                this.Block.PeekUInt16(rowOffset + this.RevisionNumberOffset));
         }
 
         internal AssemblyFlags GetFlags(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return (AssemblyFlags)this.Block.PeekUInt32(rowOffset + _FlagsOffset);
+            return (AssemblyFlags)this.Block.PeekUInt32(rowOffset + this.FlagsOffset);
         }
 
         internal BlobHandle GetPublicKeyOrToken(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _PublicKeyOrTokenOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.PublicKeyOrTokenOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal StringHandle GetName(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal StringHandle GetCulture(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _CultureOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.CultureOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal BlobHandle GetHashValue(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _HashValueOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.HashValueOffset, this.IsBlobHeapRefSizeSmall));
         }
     }
 
     internal struct AssemblyRefProcessorTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsAssemblyRefTableRowSizeSmall;
-        private readonly int _ProcessorOffset;
-        private readonly int _AssemblyRefOffset;
+        private readonly bool IsAssemblyRefTableRowSizeSmall;
+        private readonly int ProcessorOffset;
+        private readonly int AssemblyRefOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2113,10 +2113,10 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsAssemblyRefTableRowSizeSmall = assembyRefTableRowRefSize == 2;
-            _ProcessorOffset = 0;
-            _AssemblyRefOffset = _ProcessorOffset + sizeof(UInt32);
-            this.RowSize = _AssemblyRefOffset + assembyRefTableRowRefSize;
+            this.IsAssemblyRefTableRowSizeSmall = assembyRefTableRowRefSize == 2;
+            this.ProcessorOffset = 0;
+            this.AssemblyRefOffset = this.ProcessorOffset + sizeof(UInt32);
+            this.RowSize = this.AssemblyRefOffset + assembyRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }
@@ -2124,11 +2124,11 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct AssemblyRefOSTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsAssemblyRefTableRowRefSizeSmall;
-        private readonly int _OSPlatformIdOffset;
-        private readonly int _OSMajorVersionIdOffset;
-        private readonly int _OSMinorVersionIdOffset;
-        private readonly int _AssemblyRefOffset;
+        private readonly bool IsAssemblyRefTableRowRefSizeSmall;
+        private readonly int OSPlatformIdOffset;
+        private readonly int OSMajorVersionIdOffset;
+        private readonly int OSMinorVersionIdOffset;
+        private readonly int AssemblyRefOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2139,12 +2139,12 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsAssemblyRefTableRowRefSizeSmall = assembyRefTableRowRefSize == 2;
-            _OSPlatformIdOffset = 0;
-            _OSMajorVersionIdOffset = _OSPlatformIdOffset + sizeof(UInt32);
-            _OSMinorVersionIdOffset = _OSMajorVersionIdOffset + sizeof(UInt32);
-            _AssemblyRefOffset = _OSMinorVersionIdOffset + sizeof(UInt32);
-            this.RowSize = _AssemblyRefOffset + assembyRefTableRowRefSize;
+            this.IsAssemblyRefTableRowRefSizeSmall = assembyRefTableRowRefSize == 2;
+            this.OSPlatformIdOffset = 0;
+            this.OSMajorVersionIdOffset = this.OSPlatformIdOffset + sizeof(UInt32);
+            this.OSMinorVersionIdOffset = this.OSMajorVersionIdOffset + sizeof(UInt32);
+            this.AssemblyRefOffset = this.OSMinorVersionIdOffset + sizeof(UInt32);
+            this.RowSize = this.AssemblyRefOffset + assembyRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }
@@ -2152,11 +2152,11 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct FileTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _HashValueOffset;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int HashValueOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2168,44 +2168,44 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _NameOffset = _FlagsOffset + sizeof(UInt32);
-            _HashValueOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _HashValueOffset + blobHeapRefSize;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.NameOffset = this.FlagsOffset + sizeof(UInt32);
+            this.HashValueOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.HashValueOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal BlobHandle GetHashValue(AssemblyFileHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _HashValueOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.HashValueOffset, this.IsBlobHeapRefSizeSmall));
         }
 
         internal uint GetFlags(AssemblyFileHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _FlagsOffset);
+            return this.Block.PeekUInt32(rowOffset + this.FlagsOffset);
         }
 
         internal StringHandle GetName(AssemblyFileHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
     }
 
     internal struct ExportedTypeTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsImplementationRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _FlagsOffset;
-        private readonly int _TypeDefIdOffset;
-        private readonly int _TypeNameOffset;
-        private readonly int _TypeNamespaceOffset;
-        private readonly int _ImplementationOffset;
+        private readonly bool IsImplementationRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int FlagsOffset;
+        private readonly int TypeDefIdOffset;
+        private readonly int TypeNameOffset;
+        private readonly int TypeNamespaceOffset;
+        private readonly int ImplementationOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2218,57 +2218,57 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsImplementationRefSizeSmall = implementationRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _FlagsOffset = 0;
-            _TypeDefIdOffset = _FlagsOffset + sizeof(UInt32);
-            _TypeNameOffset = _TypeDefIdOffset + sizeof(UInt32);
-            _TypeNamespaceOffset = _TypeNameOffset + stringHeapRefSize;
-            _ImplementationOffset = _TypeNamespaceOffset + stringHeapRefSize;
-            this.RowSize = _ImplementationOffset + implementationRefSize;
+            this.IsImplementationRefSizeSmall = implementationRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.FlagsOffset = 0;
+            this.TypeDefIdOffset = this.FlagsOffset + sizeof(UInt32);
+            this.TypeNameOffset = this.TypeDefIdOffset + sizeof(UInt32);
+            this.TypeNamespaceOffset = this.TypeNameOffset + stringHeapRefSize;
+            this.ImplementationOffset = this.TypeNamespaceOffset + stringHeapRefSize;
+            this.RowSize = this.ImplementationOffset + implementationRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal StringHandle GetTypeName(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _TypeNameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.TypeNameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal StringHandle GetTypeNamespaceString(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _TypeNamespaceOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.TypeNamespaceOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal NamespaceDefinitionHandle GetTypeNamespace(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return NamespaceDefinitionHandle.FromIndexOfFullName(this.Block.PeekReference(rowOffset + _TypeNamespaceOffset, _IsStringHeapRefSizeSmall));
+            return NamespaceDefinitionHandle.FromIndexOfFullName(this.Block.PeekReference(rowOffset + this.TypeNamespaceOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal Handle GetImplementation(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return ImplementationTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ImplementationOffset, _IsImplementationRefSizeSmall));
+            return ImplementationTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ImplementationOffset, this.IsImplementationRefSizeSmall));
         }
 
         internal TypeAttributes GetFlags(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return (TypeAttributes)this.Block.PeekUInt32(rowOffset + _FlagsOffset);
+            return (TypeAttributes)this.Block.PeekUInt32(rowOffset + this.FlagsOffset);
         }
 
         internal uint GetTypeDefId(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _TypeDefIdOffset);
+            return this.Block.PeekUInt32(rowOffset + this.TypeDefIdOffset);
         }
 
         internal uint GetNamespace(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            uint typeNamespace = this.Block.PeekReference(rowOffset + _TypeNamespaceOffset, _IsStringHeapRefSizeSmall);
+            uint typeNamespace = this.Block.PeekReference(rowOffset + this.TypeNamespaceOffset, this.IsStringHeapRefSizeSmall);
             return typeNamespace;
         }
     }
@@ -2276,12 +2276,12 @@ namespace System.Reflection.Metadata.Ecma335
     internal struct ManifestResourceTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsImplementationRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _OffsetOffset;
-        private readonly int _FlagsOffset;
-        private readonly int _NameOffset;
-        private readonly int _ImplementationOffset;
+        private readonly bool IsImplementationRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int OffsetOffset;
+        private readonly int FlagsOffset;
+        private readonly int NameOffset;
+        private readonly int ImplementationOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2294,47 +2294,47 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsImplementationRefSizeSmall = implementationRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _OffsetOffset = 0;
-            _FlagsOffset = _OffsetOffset + sizeof(UInt32);
-            _NameOffset = _FlagsOffset + sizeof(UInt32);
-            _ImplementationOffset = _NameOffset + stringHeapRefSize;
-            this.RowSize = _ImplementationOffset + implementationRefSize;
+            this.IsImplementationRefSizeSmall = implementationRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.OffsetOffset = 0;
+            this.FlagsOffset = this.OffsetOffset + sizeof(UInt32);
+            this.NameOffset = this.FlagsOffset + sizeof(UInt32);
+            this.ImplementationOffset = this.NameOffset + stringHeapRefSize;
+            this.RowSize = this.ImplementationOffset + implementationRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal StringHandle GetName(ManifestResourceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal Handle GetImplementation(ManifestResourceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return ImplementationTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ImplementationOffset, _IsImplementationRefSizeSmall));
+            return ImplementationTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ImplementationOffset, this.IsImplementationRefSizeSmall));
         }
 
         internal uint GetOffset(ManifestResourceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return this.Block.PeekUInt32(rowOffset + _OffsetOffset);
+            return this.Block.PeekUInt32(rowOffset + this.OffsetOffset);
         }
 
         internal ManifestResourceAttributes GetFlags(ManifestResourceHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (ManifestResourceAttributes)this.Block.PeekUInt32(rowOffset + _FlagsOffset);
+            return (ManifestResourceAttributes)this.Block.PeekUInt32(rowOffset + this.FlagsOffset);
         }
     }
 
     internal struct NestedClassTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsTypeDefTableRowRefSizeSmall;
-        private readonly int _NestedClassOffset;
-        private readonly int _EnclosingClassOffset;
+        private readonly bool IsTypeDefTableRowRefSizeSmall;
+        private readonly int NestedClassOffset;
+        private readonly int EnclosingClassOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2347,10 +2347,10 @@ namespace System.Reflection.Metadata.Ecma335
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
-            _NestedClassOffset = 0;
-            _EnclosingClassOffset = _NestedClassOffset + typeDefTableRowRefSize;
-            this.RowSize = _EnclosingClassOffset + typeDefTableRowRefSize;
+            this.IsTypeDefTableRowRefSizeSmall = typeDefTableRowRefSize == 2;
+            this.NestedClassOffset = 0;
+            this.EnclosingClassOffset = this.NestedClassOffset + typeDefTableRowRefSize;
+            this.RowSize = this.EnclosingClassOffset + typeDefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -2362,13 +2362,13 @@ namespace System.Reflection.Metadata.Ecma335
         internal TypeDefinitionHandle GetNestedClass(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _NestedClassOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.NestedClassOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         internal TypeDefinitionHandle GetEnclosingClass(uint rowId)
         {
             int rowOffset = (int)(rowId - 1) * this.RowSize;
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + _EnclosingClassOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowOffset + this.EnclosingClassOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         internal TypeDefinitionHandle FindEnclosingType(TypeDefinitionHandle nestedTypeDef)
@@ -2377,31 +2377,31 @@ namespace System.Reflection.Metadata.Ecma335
               this.Block.BinarySearchReference(
                 this.NumberOfRows,
                 this.RowSize,
-                _NestedClassOffset,
+                this.NestedClassOffset,
                 nestedTypeDef.RowId,
-                _IsTypeDefTableRowRefSizeSmall);
+                this.IsTypeDefTableRowRefSizeSmall);
 
             if (rowNumber == -1)
                 return default(TypeDefinitionHandle);
 
-            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowNumber * this.RowSize + _EnclosingClassOffset, _IsTypeDefTableRowRefSizeSmall));
+            return TypeDefinitionHandle.FromRowId(this.Block.PeekReference(rowNumber * this.RowSize + this.EnclosingClassOffset, this.IsTypeDefTableRowRefSizeSmall));
         }
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _NestedClassOffset, _IsTypeDefTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.NestedClassOffset, this.IsTypeDefTableRowRefSizeSmall);
         }
     }
 
     internal struct GenericParamTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsTypeOrMethodDefRefSizeSmall;
-        private readonly bool _IsStringHeapRefSizeSmall;
-        private readonly int _NumberOffset;
-        private readonly int _FlagsOffset;
-        private readonly int _OwnerOffset;
-        private readonly int _NameOffset;
+        private readonly bool IsTypeOrMethodDefRefSizeSmall;
+        private readonly bool IsStringHeapRefSizeSmall;
+        private readonly int NumberOffset;
+        private readonly int FlagsOffset;
+        private readonly int OwnerOffset;
+        private readonly int NameOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2414,13 +2414,13 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsTypeOrMethodDefRefSizeSmall = typeOrMethodDefRefSize == 2;
-            _IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
-            _NumberOffset = 0;
-            _FlagsOffset = _NumberOffset + sizeof(UInt16);
-            _OwnerOffset = _FlagsOffset + sizeof(UInt16);
-            _NameOffset = _OwnerOffset + typeOrMethodDefRefSize;
-            this.RowSize = _NameOffset + stringHeapRefSize;
+            this.IsTypeOrMethodDefRefSizeSmall = typeOrMethodDefRefSize == 2;
+            this.IsStringHeapRefSizeSmall = stringHeapRefSize == 2;
+            this.NumberOffset = 0;
+            this.FlagsOffset = this.NumberOffset + sizeof(UInt16);
+            this.OwnerOffset = this.FlagsOffset + sizeof(UInt16);
+            this.NameOffset = this.OwnerOffset + typeOrMethodDefRefSize;
+            this.RowSize = this.NameOffset + stringHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -2432,25 +2432,25 @@ namespace System.Reflection.Metadata.Ecma335
         internal ushort GetNumber(GenericParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return this.Block.PeekUInt16(rowOffset + _NumberOffset);
+            return this.Block.PeekUInt16(rowOffset + this.NumberOffset);
         }
 
         internal GenericParameterAttributes GetFlags(GenericParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return (GenericParameterAttributes)this.Block.PeekUInt16(rowOffset + _FlagsOffset);
+            return (GenericParameterAttributes)this.Block.PeekUInt16(rowOffset + this.FlagsOffset);
         }
 
         internal StringHandle GetName(GenericParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + _NameOffset, _IsStringHeapRefSizeSmall));
+            return StringHandle.FromIndex(this.Block.PeekReference(rowOffset + this.NameOffset, this.IsStringHeapRefSizeSmall));
         }
 
         internal Handle GetOwner(GenericParameterHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return TypeOrMethodDefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _OwnerOffset, _IsTypeOrMethodDefRefSizeSmall));
+            return TypeOrMethodDefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.OwnerOffset, this.IsTypeOrMethodDefRefSizeSmall));
         }
 
         internal GenericParameterHandleCollection FindGenericParametersForType(TypeDefinitionHandle typeDef)
@@ -2477,9 +2477,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block.BinarySearchReferenceRange(
                 this.NumberOfRows,
                 this.RowSize,
-                _OwnerOffset,
+                this.OwnerOffset,
                 searchCodedTag,
-                _IsTypeOrMethodDefRefSizeSmall,
+                this.IsTypeOrMethodDefRefSizeSmall,
                 out startRowNumber,
                 out endRowNumber);
 
@@ -2495,17 +2495,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _OwnerOffset, _IsTypeOrMethodDefRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.OwnerOffset, this.IsTypeOrMethodDefRefSizeSmall);
         }
     }
 
     internal struct MethodSpecTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsMethodDefOrRefRefSizeSmall;
-        private readonly bool _IsBlobHeapRefSizeSmall;
-        private readonly int _MethodOffset;
-        private readonly int _InstantiationOffset;
+        private readonly bool IsMethodDefOrRefRefSizeSmall;
+        private readonly bool IsBlobHeapRefSizeSmall;
+        private readonly int MethodOffset;
+        private readonly int InstantiationOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2517,34 +2517,34 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsMethodDefOrRefRefSizeSmall = methodDefOrRefRefSize == 2;
-            _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
-            _MethodOffset = 0;
-            _InstantiationOffset = _MethodOffset + methodDefOrRefRefSize;
-            this.RowSize = _InstantiationOffset + blobHeapRefSize;
+            this.IsMethodDefOrRefRefSizeSmall = methodDefOrRefRefSize == 2;
+            this.IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
+            this.MethodOffset = 0;
+            this.InstantiationOffset = this.MethodOffset + methodDefOrRefRefSize;
+            this.RowSize = this.InstantiationOffset + blobHeapRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
 
         internal Handle GetMethod(MethodSpecificationHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return MethodDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _MethodOffset, _IsMethodDefOrRefRefSizeSmall));
+            return MethodDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.MethodOffset, this.IsMethodDefOrRefRefSizeSmall));
         }
 
         internal BlobHandle GetInstantiation(MethodSpecificationHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + _InstantiationOffset, _IsBlobHeapRefSizeSmall));
+            return BlobHandle.FromIndex(this.Block.PeekReference(rowOffset + this.InstantiationOffset, this.IsBlobHeapRefSizeSmall));
         }
     }
 
     internal struct GenericParamConstraintTableReader
     {
         internal readonly uint NumberOfRows;
-        private readonly bool _IsGenericParamTableRowRefSizeSmall;
-        private readonly bool _IsTypeDefOrRefRefSizeSmall;
-        private readonly int _OwnerOffset;
-        private readonly int _ConstraintOffset;
+        private readonly bool IsGenericParamTableRowRefSizeSmall;
+        private readonly bool IsTypeDefOrRefRefSizeSmall;
+        private readonly int OwnerOffset;
+        private readonly int ConstraintOffset;
         internal readonly int RowSize;
         internal readonly MemoryBlock Block;
 
@@ -2557,11 +2557,11 @@ namespace System.Reflection.Metadata.Ecma335
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsGenericParamTableRowRefSizeSmall = genericParamTableRowRefSize == 2;
-            _IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
-            _OwnerOffset = 0;
-            _ConstraintOffset = _OwnerOffset + genericParamTableRowRefSize;
-            this.RowSize = _ConstraintOffset + typeDefOrRefRefSize;
+            this.IsGenericParamTableRowRefSizeSmall = genericParamTableRowRefSize == 2;
+            this.IsTypeDefOrRefRefSizeSmall = typeDefOrRefRefSize == 2;
+            this.OwnerOffset = 0;
+            this.ConstraintOffset = this.OwnerOffset + genericParamTableRowRefSize;
+            this.RowSize = this.ConstraintOffset + typeDefOrRefRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
 
             if (!declaredSorted && !CheckSorted())
@@ -2576,9 +2576,9 @@ namespace System.Reflection.Metadata.Ecma335
             this.Block.BinarySearchReferenceRange(
                 this.NumberOfRows,
                 this.RowSize,
-                _OwnerOffset,
+                this.OwnerOffset,
                 genericParameter.RowId,
-                _IsGenericParamTableRowRefSizeSmall,
+                this.IsGenericParamTableRowRefSizeSmall,
                 out startRowNumber,
                 out endRowNumber);
 
@@ -2594,19 +2594,19 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool CheckSorted()
         {
-            return this.Block.IsOrderedByReferenceAscending(this.RowSize, _OwnerOffset, _IsGenericParamTableRowRefSizeSmall);
+            return this.Block.IsOrderedByReferenceAscending(this.RowSize, this.OwnerOffset, this.IsGenericParamTableRowRefSizeSmall);
         }
 
         internal Handle GetConstraint(GenericParameterConstraintHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _ConstraintOffset, _IsTypeDefOrRefRefSizeSmall));
+            return TypeDefOrRefTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + this.ConstraintOffset, this.IsTypeDefOrRefRefSizeSmall));
         }
 
         internal GenericParameterHandle GetOwner(GenericParameterConstraintHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return GenericParameterHandle.FromRowId(this.Block.PeekReference(rowOffset + _OwnerOffset, _IsGenericParamTableRowRefSizeSmall));
+            return GenericParameterHandle.FromRowId(this.Block.PeekReference(rowOffset + this.OwnerOffset, this.IsGenericParamTableRowRefSizeSmall));
         }
     }
 }

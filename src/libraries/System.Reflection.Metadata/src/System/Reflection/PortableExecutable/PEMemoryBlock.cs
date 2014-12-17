@@ -9,23 +9,23 @@ namespace System.Reflection.PortableExecutable
 {
     public struct PEMemoryBlock
     {
-        private readonly AbstractMemoryBlock _block;
-        private readonly int _offset;
+        private readonly AbstractMemoryBlock block;
+        private readonly int offset;
 
         internal PEMemoryBlock(AbstractMemoryBlock block, int offset = 0)
         {
             Debug.Assert(block != null);
             Debug.Assert(offset >= 0 && offset < block.Size);
 
-            _block = block;
-            _offset = offset;
+            this.block = block;
+            this.offset = offset;
         }
 
         public unsafe byte* Pointer
         {
             get
             {
-                return (_block != null) ? _block.Pointer + _offset : null;
+                return (block != null) ? block.Pointer + offset : null;
             }
         }
 
@@ -33,7 +33,7 @@ namespace System.Reflection.PortableExecutable
         {
             get
             {
-                return (_block != null) ? _block.Size - _offset : 0;
+                return (block != null) ? block.Size - offset : 0;
             }
         }
 
@@ -41,7 +41,7 @@ namespace System.Reflection.PortableExecutable
 
         public ImmutableArray<byte> GetContent()
         {
-            return (_block != null) ? _block.GetContent(_offset) : ImmutableArray<byte>.Empty;
+            return (block != null) ? block.GetContent(offset) : ImmutableArray<byte>.Empty;
         }
     }
 }

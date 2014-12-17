@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -28,22 +28,22 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The singleton delegate that freezes the contents of hash buckets when the root of the data structure is frozen.
         /// </summary>
-        private static readonly Action<KeyValuePair<int, HashBucket>> s_FreezeBucketAction = (kv) => kv.Value.Freeze();
+        private static readonly Action<KeyValuePair<int, HashBucket>> FreezeBucketAction = (kv) => kv.Value.Freeze();
 
         /// <summary>
         /// The number of elements in the collection.
         /// </summary>
-        private readonly int _count;
+        private readonly int count;
 
         /// <summary>
         /// The root node of the tree that stores this map.
         /// </summary>
-        private readonly SortedInt32KeyNode<HashBucket> _root;
+        private readonly SortedInt32KeyNode<HashBucket> root;
 
         /// <summary>
         /// The comparer used when comparing hash buckets.
         /// </summary>
-        private readonly Comparers _comparers;
+        private readonly Comparers comparers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;"/> class.
@@ -56,9 +56,9 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(root, "root");
 
-            root.Freeze(s_FreezeBucketAction);
-            _root = root;
-            _count = count;
+            root.Freeze(FreezeBucketAction);
+            this.root = root;
+            this.count = count;
         }
 
         /// <summary>
@@ -67,8 +67,8 @@ namespace System.Collections.Immutable
         /// <param name="comparers">The comparers.</param>
         private ImmutableDictionary(Comparers comparers = null)
         {
-            _comparers = comparers ?? Comparers.Get(EqualityComparer<TKey>.Default, EqualityComparer<TValue>.Default);
-            _root = SortedInt32KeyNode<HashBucket>.EmptyNode;
+            this.comparers = comparers ?? Comparers.Get(EqualityComparer<TKey>.Default, EqualityComparer<TValue>.Default);
+            this.root = SortedInt32KeyNode<HashBucket>.EmptyNode;
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableDictionary<TKey, TValue> Clear()
         {
-            return this.IsEmpty ? this : EmptyWithComparers(_comparers);
+            return this.IsEmpty ? this : EmptyWithComparers(this.comparers);
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public int Count
         {
-            get { return _count; }
+            get { return this.count; }
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public IEqualityComparer<TKey> KeyComparer
         {
-            get { return _comparers.KeyComparer; }
+            get { return this.comparers.KeyComparer; }
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public IEqualityComparer<TValue> ValueComparer
         {
-            get { return _comparers.ValueComparer; }
+            get { return this.comparers.ValueComparer; }
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                foreach (var bucket in _root)
+                foreach (var bucket in this.root)
                 {
                     foreach (var item in bucket.Value)
                     {
@@ -187,7 +187,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                foreach (var bucket in _root)
+                foreach (var bucket in this.root)
                 {
                     foreach (var item in bucket.Value)
                     {
@@ -375,8 +375,8 @@ namespace System.Collections.Immutable
             Requires.NotNull(keys, "keys");
             Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
-            int count = _count;
-            var root = _root;
+            int count = this.count;
+            var root = this.root;
             foreach (var key in keys)
             {
                 int hashCode = this.KeyComparer.GetHashCode(key);
@@ -384,8 +384,8 @@ namespace System.Collections.Immutable
                 if (root.TryGetValue(hashCode, out bucket))
                 {
                     OperationResult result;
-                    var newBucket = bucket.Remove(key, _comparers.KeyOnlyComparer, out result);
-                    root = UpdateRoot(root, hashCode, newBucket, _comparers.HashBucketEqualityComparer);
+                    var newBucket = bucket.Remove(key, this.comparers.KeyOnlyComparer, out result);
+                    root = UpdateRoot(root, hashCode, newBucket, this.comparers.HashBucketEqualityComparer);
                     if (result == OperationResult.SizeChanged)
                     {
                         count--;
@@ -466,8 +466,8 @@ namespace System.Collections.Immutable
                     // When the key comparer is the same but the value comparer is different, we don't need a whole new tree
                     // because the structure of the tree does not depend on the value comparer.
                     // We just need a new root node to store the new value comparer.
-                    var comparers = _comparers.WithValueComparer(valueComparer);
-                    return new ImmutableDictionary<TKey, TValue>(_root, comparers, _count);
+                    var comparers = this.comparers.WithValueComparer(valueComparer);
+                    return new ImmutableDictionary<TKey, TValue>(this.root, comparers, this.count);
                 }
             }
             else
@@ -485,7 +485,7 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey> keyComparer)
         {
-            return this.WithComparers(keyComparer, _comparers.ValueComparer);
+            return this.WithComparers(keyComparer, this.comparers.ValueComparer);
         }
 
         /// <summary>
@@ -503,9 +503,9 @@ namespace System.Collections.Immutable
         [Pure]
         public bool ContainsValue(TValue value)
         {
-            foreach (KeyValuePair<TKey, TValue> item in this)
+            foreach (KeyValuePair<TKey, TValue> item in this) 
             {
-                if (this.ValueComparer.Equals(value, item.Value))
+                if (this.ValueComparer.Equals(value, item.Value)) 
                 {
                     return true;
                 }
@@ -521,7 +521,7 @@ namespace System.Collections.Immutable
         /// </returns>
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_root);
+            return new Enumerator(this.root);
         }
 
         #endregion
@@ -705,7 +705,7 @@ namespace System.Collections.Immutable
         /// </summary>
         internal SortedInt32KeyNode<HashBucket> Root
         {
-            get { return _root; }
+            get { return this.root; }
         }
 
         #region IDictionary Methods
@@ -788,7 +788,7 @@ namespace System.Collections.Immutable
             Requires.Range(arrayIndex >= 0, "arrayIndex");
             Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-            if (_count == 0)
+            if (this.count == 0) 
             {
                 return;
             }
@@ -872,7 +872,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(comparers, "comparers");
 
-            return Empty._comparers == comparers
+            return Empty.comparers == comparers
                 ? Empty
                 : new ImmutableDictionary<TKey, TValue>(comparers);
         }
@@ -1080,9 +1080,9 @@ namespace System.Collections.Immutable
                 return this.Clear();
             }
 
-            if (_root != root)
+            if (this.root != root)
             {
-                return root.IsEmpty ? this.Clear() : new ImmutableDictionary<TKey, TValue>(root, _comparers, adjustedCountIfDifferentRoot);
+                return root.IsEmpty ? this.Clear() : new ImmutableDictionary<TKey, TValue>(root, this.comparers, adjustedCountIfDifferentRoot);
             }
 
             return this;

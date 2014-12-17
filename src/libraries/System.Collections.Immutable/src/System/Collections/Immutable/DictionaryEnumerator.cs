@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -8,28 +8,28 @@ namespace System.Collections.Immutable
 {
     internal class DictionaryEnumerator<TKey, TValue> : IDictionaryEnumerator
     {
-        private readonly IEnumerator<KeyValuePair<TKey, TValue>> _inner;
+        private readonly IEnumerator<KeyValuePair<TKey, TValue>> inner;
 
         internal DictionaryEnumerator(IEnumerator<KeyValuePair<TKey, TValue>> inner)
         {
             Requires.NotNull(inner, "inner");
 
-            _inner = inner;
+            this.inner = inner;
         }
 
         public DictionaryEntry Entry
         {
-            get { return new DictionaryEntry(_inner.Current.Key, _inner.Current.Value); }
+            get { return new DictionaryEntry(this.inner.Current.Key, this.inner.Current.Value); }
         }
 
         public object Key
         {
-            get { return _inner.Current.Key; }
+            get { return this.inner.Current.Key; }
         }
 
         public object Value
         {
-            get { return _inner.Current.Value; }
+            get { return this.inner.Current.Value; }
         }
 
         public object Current
@@ -39,12 +39,12 @@ namespace System.Collections.Immutable
 
         public bool MoveNext()
         {
-            return _inner.MoveNext();
+            return this.inner.MoveNext();
         }
 
         public void Reset()
         {
-            _inner.Reset();
+            this.inner.Reset();
         }
     }
 }

@@ -9,21 +9,21 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class MergeFilterQuery : CacheOutputQuery
     {
-        private Query _child;
+        private Query child;
 
         public MergeFilterQuery(Query input, Query child) : base(input)
         {
-            _child = child;
+            this.child = child;
         }
         private MergeFilterQuery(MergeFilterQuery other) : base(other)
         {
-            _child = Clone(other._child);
+            this.child = Clone(other.child);
         }
 
         public override void SetXsltContext(XsltContext xsltContext)
         {
             base.SetXsltContext(xsltContext);
-            _child.SetXsltContext(xsltContext);
+            child.SetXsltContext(xsltContext);
         }
 
         public override object Evaluate(XPathNodeIterator nodeIterator)
@@ -32,9 +32,9 @@ namespace MS.Internal.Xml.XPath
 
             while (input.Advance() != null)
             {
-                _child.Evaluate(input);
+                child.Evaluate(input);
                 XPathNavigator node;
-                while ((node = _child.Advance()) != null)
+                while ((node = child.Advance()) != null)
                 {
                     Insert(outputBuffer, node);
                 }
@@ -44,7 +44,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNavigator MatchNode(XPathNavigator current)
         {
-            XPathNavigator context = _child.MatchNode(current);
+            XPathNavigator context = child.MatchNode(current);
             if (context == null)
             {
                 return null;
@@ -73,7 +73,7 @@ namespace MS.Internal.Xml.XPath
         {
             w.WriteStartElement(this.GetType().Name);
             input.PrintQuery(w);
-            _child.PrintQuery(w);
+            child.PrintQuery(w);
             w.WriteEndElement();
         }
     }

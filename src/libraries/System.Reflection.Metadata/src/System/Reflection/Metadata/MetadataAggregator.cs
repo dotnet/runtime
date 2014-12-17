@@ -11,9 +11,9 @@ namespace System.Reflection.Metadata.Ecma335
     {
         // For each heap handle and each delta contains aggregate heap lengths.
         // heapSizes[heap kind][reader index] == Sum { 0..index | reader[i].XxxHeapLength }
-        private readonly ImmutableArray<ImmutableArray<int>> _heapSizes;
+        private readonly ImmutableArray<ImmutableArray<int>> heapSizes;
 
-        private readonly ImmutableArray<ImmutableArray<RowCounts>> _rowCounts;
+        private readonly ImmutableArray<ImmutableArray<RowCounts>> rowCounts;
 
         // internal for testing
         internal struct RowCounts : IComparable<RowCounts>
@@ -101,15 +101,15 @@ namespace System.Reflection.Metadata.Ecma335
                 }
             }
 
-            _heapSizes = CalculateHeapSizes(baseHeapSizes, deltaReaders);
-            _rowCounts = CalculateRowCounts(baseTableRowCounts, deltaReaders);
+            this.heapSizes = CalculateHeapSizes(baseHeapSizes, deltaReaders);
+            this.rowCounts = CalculateRowCounts(baseTableRowCounts, deltaReaders);
         }
 
         // for testing only
         internal MetadataAggregator(RowCounts[][] rowCounts, int[][] heapSizes)
         {
-            _rowCounts = ToImmutable(rowCounts);
-            _heapSizes = ToImmutable(heapSizes);
+            this.rowCounts = ToImmutable(rowCounts);
+            this.heapSizes = ToImmutable(heapSizes);
         }
 
         private static void CalculateBaseCounts(
@@ -259,7 +259,7 @@ namespace System.Reflection.Metadata.Ecma335
                 HeapIndex heapIndex;
                 MetadataTokens.TryGetHeapIndex(handle.Kind, out heapIndex);
 
-                var sizes = _heapSizes[(int)heapIndex];
+                var sizes = heapSizes[(int)heapIndex];
 
                 generation = sizes.BinarySearch(rowId);
                 if (generation >= 0)
@@ -288,7 +288,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
             else
             {
-                var sizes = _rowCounts[(int)handle.value >> TokenTypeIds.RowIdBitCount];
+                var sizes = rowCounts[(int)handle.value >> TokenTypeIds.RowIdBitCount];
 
                 generation = sizes.BinarySearch(new RowCounts { AggregateInserts = rowId });
                 if (generation >= 0)

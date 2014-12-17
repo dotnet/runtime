@@ -10,46 +10,46 @@ namespace MS.Internal.Xml.XPath
     //      2. Protect internal query.Current from user who may call MoveNext().
     internal class XPathSelectionIterator : ResetableIterator
     {
-        private XPathNavigator _nav;
-        private Query _query;
-        private int _position;
+        private XPathNavigator nav;
+        private Query query;
+        private int position;
 
         internal XPathSelectionIterator(XPathNavigator nav, Query query)
         {
-            _nav = nav.Clone();
-            _query = query;
+            this.nav = nav.Clone();
+            this.query = query;
         }
 
         protected XPathSelectionIterator(XPathSelectionIterator it)
         {
-            _nav = it._nav.Clone();
-            _query = (Query)it._query.Clone();
-            _position = it._position;
+            this.nav = it.nav.Clone();
+            this.query = (Query)it.query.Clone();
+            this.position = it.position;
         }
 
         public override void Reset()
         {
-            _query.Reset();
+            this.query.Reset();
         }
 
         public override bool MoveNext()
         {
-            XPathNavigator n = _query.Advance();
+            XPathNavigator n = query.Advance();
             if (n != null)
             {
-                _position++;
-                if (!_nav.MoveTo(n))
+                position++;
+                if (!nav.MoveTo(n))
                 {
-                    _nav = n.Clone();
+                    nav = n.Clone();
                 }
                 return true;
             }
             return false;
         }
 
-        public override int Count { get { return _query.Count; } }
-        public override XPathNavigator Current { get { return _nav; } }
-        public override int CurrentPosition { get { return _position; } }
+        public override int Count { get { return query.Count; } }
+        public override XPathNavigator Current { get { return nav; } }
+        public override int CurrentPosition { get { return position; } }
         public override XPathNodeIterator Clone() { return new XPathSelectionIterator(this); }
     }
 }

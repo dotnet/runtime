@@ -9,18 +9,18 @@ namespace System.Reflection.Internal
 {
     internal sealed class ImmutableMemoryStream : Stream
     {
-        private readonly ImmutableArray<byte> _array;
-        private int _position;
+        private readonly ImmutableArray<byte> array;
+        private int position;
 
         internal ImmutableMemoryStream(ImmutableArray<byte> array)
         {
             Debug.Assert(!array.IsDefault);
-            _array = array;
+            this.array = array;
         }
 
         public ImmutableArray<byte> GetBuffer()
         {
-            return _array;
+            return array;
         }
 
         public override bool CanRead
@@ -40,23 +40,23 @@ namespace System.Reflection.Internal
 
         public override long Length
         {
-            get { return _array.Length; }
+            get { return array.Length; }
         }
 
         public override long Position
         {
             get
             {
-                return _position;
+                return position;
             }
             set
             {
-                if (value < 0 || value >= _array.Length)
+                if (value < 0 || value >= array.Length)
                 {
                     throw new ArgumentOutOfRangeException("value");
                 }
 
-                _position = (int)value;
+                position = (int)value;
             }
         }
 
@@ -66,9 +66,9 @@ namespace System.Reflection.Internal
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int result = Math.Min(count, _array.Length - _position);
-            _array.CopyTo(_position, buffer, offset, result);
-            _position += result;
+            int result = Math.Min(count, array.Length - position);
+            array.CopyTo(position, buffer, offset, result);
+            position += result;
             return result;
         }
 
@@ -84,11 +84,11 @@ namespace System.Reflection.Internal
                         break;
 
                     case SeekOrigin.Current:
-                        target = checked(offset + _position);
+                        target = checked(offset + position);
                         break;
 
                     case SeekOrigin.End:
-                        target = checked(offset + _array.Length);
+                        target = checked(offset + array.Length);
                         break;
 
                     default:
@@ -100,12 +100,12 @@ namespace System.Reflection.Internal
                 throw new ArgumentOutOfRangeException("offset");
             }
 
-            if (target < 0 || target >= _array.Length)
+            if (target < 0 || target >= array.Length)
             {
                 throw new ArgumentOutOfRangeException("offset");
             }
 
-            _position = (int)target;
+            position = (int)target;
             return target;
         }
 

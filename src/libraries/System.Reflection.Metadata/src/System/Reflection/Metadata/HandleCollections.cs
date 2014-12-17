@@ -14,20 +14,20 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct GenericParameterHandleCollection : IReadOnlyList<GenericParameterHandle>
     {
-        private readonly int _firstRowId;
-        private readonly ushort _count;
+        private readonly int firstRowId;
+        private readonly ushort count;
 
         internal GenericParameterHandleCollection(int firstRowId, ushort count)
         {
-            _firstRowId = firstRowId;
-            _count = count;
+            this.firstRowId = firstRowId;
+            this.count = count;
         }
 
         public int Count
         {
             get
             {
-                return _count;
+                return count;
             }
         }
 
@@ -35,12 +35,12 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                if (index < 0 || index >= _count)
+                if (index < 0 || index >= count)
                 {
                     ThrowIndexOutOfRange();
                 }
 
-                return GenericParameterHandle.FromRowId((uint)(_firstRowId + index));
+                return GenericParameterHandle.FromRowId((uint)(firstRowId + index));
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.Reflection.Metadata
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_firstRowId, _firstRowId + _count - 1);
+            return new Enumerator(firstRowId, firstRowId + count - 1);
         }
 
         IEnumerator<GenericParameterHandle> IEnumerable<GenericParameterHandle>.GetEnumerator()
@@ -67,19 +67,19 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<GenericParameterHandle>, IEnumerator
         {
-            private readonly int _lastRowId; // inclusive
+            private readonly int lastRowId; // inclusive
 
             // first parameter rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int firstRowId, int lastRowId)
             {
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public GenericParameterHandle Current
@@ -87,7 +87,7 @@ namespace System.Reflection.Metadata
                 get
                 {
                     // PERF: keep this code small to enable inlining.
-                    return GenericParameterHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return GenericParameterHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -95,14 +95,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -128,20 +128,20 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct GenericParameterConstraintHandleCollection : IReadOnlyList<GenericParameterConstraintHandle>
     {
-        private readonly int _firstRowId;
-        private readonly ushort _count;
+        private readonly int firstRowId;
+        private readonly ushort count;
 
         internal GenericParameterConstraintHandleCollection(int firstRowId, ushort count)
         {
-            _firstRowId = firstRowId;
-            _count = count;
+            this.firstRowId = firstRowId;
+            this.count = count;
         }
 
         public int Count
         {
             get
             {
-                return _count;
+                return count;
             }
         }
 
@@ -149,12 +149,12 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                if (index < 0 || index >= _count)
+                if (index < 0 || index >= count)
                 {
                     ThrowIndexOutOfRange();
                 }
 
-                return GenericParameterConstraintHandle.FromRowId((uint)(_firstRowId + index));
+                return GenericParameterConstraintHandle.FromRowId((uint)(firstRowId + index));
             }
         }
 
@@ -166,7 +166,7 @@ namespace System.Reflection.Metadata
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_firstRowId, _firstRowId + _count - 1);
+            return new Enumerator(firstRowId, firstRowId + count - 1);
         }
 
         IEnumerator<GenericParameterConstraintHandle> IEnumerable<GenericParameterConstraintHandle>.GetEnumerator()
@@ -181,19 +181,19 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<GenericParameterConstraintHandle>, IEnumerator
         {
-            private readonly int _lastRowId; // inclusive
+            private readonly int lastRowId; // inclusive
 
             // first parameter rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int firstRowId, int lastRowId)
             {
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public GenericParameterConstraintHandle Current
@@ -201,7 +201,7 @@ namespace System.Reflection.Metadata
                 get
                 {
                     // PERF: keep this code small to enable inlining.
-                    return GenericParameterConstraintHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return GenericParameterConstraintHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -209,14 +209,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -239,17 +239,17 @@ namespace System.Reflection.Metadata
 
     public struct CustomAttributeHandleCollection : IReadOnlyCollection<CustomAttributeHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal CustomAttributeHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
-            _firstRowId = 1;
-            _lastRowId = (int)reader.CustomAttributeTable.NumberOfRows;
+            this.reader = reader;
+            this.firstRowId = 1;
+            this.lastRowId = (int)reader.CustomAttributeTable.NumberOfRows;
         }
 
         internal CustomAttributeHandleCollection(MetadataReader reader, Handle handle)
@@ -257,21 +257,21 @@ namespace System.Reflection.Metadata
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            reader.CustomAttributeTable.GetAttributeRange(handle, out _firstRowId, out _lastRowId);
+            this.reader = reader;
+            reader.CustomAttributeTable.GetAttributeRange(handle, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<CustomAttributeHandle> IEnumerable<CustomAttributeHandle>.GetEnumerator()
@@ -286,21 +286,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<CustomAttributeHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first custom attribute rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public CustomAttributeHandle Current
@@ -309,13 +309,13 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.CustomAttributeTable.PtrTable != null)
+                    if (reader.CustomAttributeTable.PtrTable != null)
                     {
                         return GetCurrentCustomAttributeIndirect();
                     }
                     else
                     {
-                        return CustomAttributeHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return CustomAttributeHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
@@ -323,21 +323,21 @@ namespace System.Reflection.Metadata
             private CustomAttributeHandle GetCurrentCustomAttributeIndirect()
             {
                 return CustomAttributeHandle.FromRowId(
-                    _reader.CustomAttributeTable.PtrTable[(_currentRowId & (int)TokenTypeIds.RIDMask) - 1]);
+                    reader.CustomAttributeTable.PtrTable[(currentRowId & (int)TokenTypeIds.RIDMask) - 1]);
             }
 
             public bool MoveNext()
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -360,17 +360,17 @@ namespace System.Reflection.Metadata
 
     public struct DeclarativeSecurityAttributeHandleCollection : IReadOnlyCollection<DeclarativeSecurityAttributeHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal DeclarativeSecurityAttributeHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
-            _firstRowId = 1;
-            _lastRowId = (int)reader.DeclSecurityTable.NumberOfRows;
+            this.reader = reader;
+            this.firstRowId = 1;
+            this.lastRowId = (int)reader.DeclSecurityTable.NumberOfRows;
         }
 
         internal DeclarativeSecurityAttributeHandleCollection(MetadataReader reader, Handle handle)
@@ -378,21 +378,21 @@ namespace System.Reflection.Metadata
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            reader.DeclSecurityTable.GetAttributeRange(handle, out _firstRowId, out _lastRowId);
+            this.reader = reader;
+            reader.DeclSecurityTable.GetAttributeRange(handle, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<DeclarativeSecurityAttributeHandle> IEnumerable<DeclarativeSecurityAttributeHandle>.GetEnumerator()
@@ -407,21 +407,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<DeclarativeSecurityAttributeHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first custom attribute rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public DeclarativeSecurityAttributeHandle Current
@@ -429,7 +429,7 @@ namespace System.Reflection.Metadata
                 get
                 {
                     // PERF: keep this code small to enable inlining.
-                    return DeclarativeSecurityAttributeHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return DeclarativeSecurityAttributeHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -437,14 +437,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -467,17 +467,17 @@ namespace System.Reflection.Metadata
 
     public struct MethodDefinitionHandleCollection : IReadOnlyCollection<MethodDefinitionHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal MethodDefinitionHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
-            _firstRowId = 1;
-            _lastRowId = (int)reader.MethodDefTable.NumberOfRows;
+            this.reader = reader;
+            this.firstRowId = 1;
+            this.lastRowId = (int)reader.MethodDefTable.NumberOfRows;
         }
 
         internal MethodDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
@@ -485,21 +485,21 @@ namespace System.Reflection.Metadata
             Debug.Assert(reader != null);
             Debug.Assert(!containingType.IsNil);
 
-            _reader = reader;
-            reader.GetMethodRange(containingType, out _firstRowId, out _lastRowId);
+            this.reader = reader;
+            reader.GetMethodRange(containingType, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<MethodDefinitionHandle> IEnumerable<MethodDefinitionHandle>.GetEnumerator()
@@ -514,21 +514,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<MethodDefinitionHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first method rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public MethodDefinitionHandle Current
@@ -537,34 +537,34 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.UseMethodPtrTable)
+                    if (reader.UseMethodPtrTable)
                     {
                         return GetCurrentMethodIndirect();
                     }
                     else
                     {
-                        return MethodDefinitionHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return MethodDefinitionHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
 
             private MethodDefinitionHandle GetCurrentMethodIndirect()
             {
-                return _reader.MethodPtrTable.GetMethodFor(_currentRowId & (int)TokenTypeIds.RIDMask);
+                return reader.MethodPtrTable.GetMethodFor(currentRowId & (int)TokenTypeIds.RIDMask);
             }
 
             public bool MoveNext()
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -587,17 +587,17 @@ namespace System.Reflection.Metadata
 
     public struct FieldDefinitionHandleCollection : IReadOnlyCollection<FieldDefinitionHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal FieldDefinitionHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
-            _firstRowId = 1;
-            _lastRowId = (int)reader.FieldTable.NumberOfRows;
+            this.reader = reader;
+            this.firstRowId = 1;
+            this.lastRowId = (int)reader.FieldTable.NumberOfRows;
         }
 
         internal FieldDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
@@ -605,21 +605,21 @@ namespace System.Reflection.Metadata
             Debug.Assert(reader != null);
             Debug.Assert(!containingType.IsNil);
 
-            _reader = reader;
-            reader.GetFieldRange(containingType, out _firstRowId, out _lastRowId);
+            this.reader = reader;
+            reader.GetFieldRange(containingType, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<FieldDefinitionHandle> IEnumerable<FieldDefinitionHandle>.GetEnumerator()
@@ -634,21 +634,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<FieldDefinitionHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first field rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public FieldDefinitionHandle Current
@@ -657,34 +657,34 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.UseFieldPtrTable)
+                    if (reader.UseFieldPtrTable)
                     {
                         return GetCurrentFieldIndirect();
                     }
                     else
                     {
-                        return FieldDefinitionHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return FieldDefinitionHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
 
             private FieldDefinitionHandle GetCurrentFieldIndirect()
             {
-                return _reader.FieldPtrTable.GetFieldFor(_currentRowId & (int)TokenTypeIds.RIDMask);
+                return reader.FieldPtrTable.GetFieldFor(currentRowId & (int)TokenTypeIds.RIDMask);
             }
 
             public bool MoveNext()
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -707,17 +707,17 @@ namespace System.Reflection.Metadata
 
     public struct PropertyDefinitionHandleCollection : IReadOnlyCollection<PropertyDefinitionHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal PropertyDefinitionHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
-            _firstRowId = 1;
-            _lastRowId = (int)reader.PropertyTable.NumberOfRows;
+            this.reader = reader;
+            this.firstRowId = 1;
+            this.lastRowId = (int)reader.PropertyTable.NumberOfRows;
         }
 
         internal PropertyDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
@@ -725,21 +725,21 @@ namespace System.Reflection.Metadata
             Debug.Assert(reader != null);
             Debug.Assert(!containingType.IsNil);
 
-            _reader = reader;
-            reader.GetPropertyRange(containingType, out _firstRowId, out _lastRowId);
+            this.reader = reader;
+            reader.GetPropertyRange(containingType, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<PropertyDefinitionHandle> IEnumerable<PropertyDefinitionHandle>.GetEnumerator()
@@ -754,21 +754,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<PropertyDefinitionHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first Property rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public PropertyDefinitionHandle Current
@@ -777,34 +777,34 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.UsePropertyPtrTable)
+                    if (reader.UsePropertyPtrTable)
                     {
                         return GetCurrentPropertyIndirect();
                     }
                     else
                     {
-                        return PropertyDefinitionHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return PropertyDefinitionHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
 
             private PropertyDefinitionHandle GetCurrentPropertyIndirect()
             {
-                return _reader.PropertyPtrTable.GetPropertyFor(_currentRowId & (int)TokenTypeIds.RIDMask);
+                return reader.PropertyPtrTable.GetPropertyFor(currentRowId & (int)TokenTypeIds.RIDMask);
             }
 
             public bool MoveNext()
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -827,17 +827,17 @@ namespace System.Reflection.Metadata
 
     public struct EventDefinitionHandleCollection : IReadOnlyCollection<EventDefinitionHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal EventDefinitionHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
-            _firstRowId = 1;
-            _lastRowId = (int)reader.EventTable.NumberOfRows;
+            this.reader = reader;
+            this.firstRowId = 1;
+            this.lastRowId = (int)reader.EventTable.NumberOfRows;
         }
 
         internal EventDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
@@ -845,21 +845,21 @@ namespace System.Reflection.Metadata
             Debug.Assert(reader != null);
             Debug.Assert(!containingType.IsNil);
 
-            _reader = reader;
-            reader.GetEventRange(containingType, out _firstRowId, out _lastRowId);
+            this.reader = reader;
+            reader.GetEventRange(containingType, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<EventDefinitionHandle> IEnumerable<EventDefinitionHandle>.GetEnumerator()
@@ -874,21 +874,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<EventDefinitionHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId;
+            private readonly MetadataReader reader;
+            private readonly int lastRowId;
 
             // first rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public EventDefinitionHandle Current
@@ -897,34 +897,34 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.UseEventPtrTable)
+                    if (reader.UseEventPtrTable)
                     {
                         return GetCurrentEventIndirect();
                     }
                     else
                     {
-                        return EventDefinitionHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return EventDefinitionHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
 
             private EventDefinitionHandle GetCurrentEventIndirect()
             {
-                return _reader.EventPtrTable.GetEventFor(_currentRowId & (int)TokenTypeIds.RIDMask);
+                return reader.EventPtrTable.GetEventFor(currentRowId & (int)TokenTypeIds.RIDMask);
             }
 
             public bool MoveNext()
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -947,8 +947,8 @@ namespace System.Reflection.Metadata
 
     public struct MethodImplementationHandleCollection : IReadOnlyCollection<MethodImplementationHandle>
     {
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal MethodImplementationHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
         {
@@ -956,12 +956,12 @@ namespace System.Reflection.Metadata
 
             if (containingType.IsNil)
             {
-                _firstRowId = 1;
-                _lastRowId = (int)reader.MethodImplTable.NumberOfRows;
+                this.firstRowId = 1;
+                this.lastRowId = (int)reader.MethodImplTable.NumberOfRows;
             }
             else
             {
-                reader.MethodImplTable.GetMethodImplRange(containingType, out _firstRowId, out _lastRowId);
+                reader.MethodImplTable.GetMethodImplRange(containingType, out firstRowId, out lastRowId);
             }
         }
 
@@ -969,13 +969,13 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_firstRowId, _lastRowId);
+            return new Enumerator(firstRowId, lastRowId);
         }
 
         IEnumerator<MethodImplementationHandle> IEnumerable<MethodImplementationHandle>.GetEnumerator()
@@ -990,26 +990,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<MethodImplementationHandle>, IEnumerator
         {
-            private readonly int _lastRowId; // inclusive
+            private readonly int lastRowId; // inclusive
 
             // first impl rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int firstRowId, int lastRowId)
             {
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public MethodImplementationHandle Current
             {
                 get
                 {
-                    return MethodImplementationHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return MethodImplementationHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1017,14 +1017,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1050,31 +1050,31 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct ParameterHandleCollection : IReadOnlyCollection<ParameterHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal ParameterHandleCollection(MetadataReader reader, MethodDefinitionHandle containingMethod)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!containingMethod.IsNil);
-            _reader = reader;
+            this.reader = reader;
 
-            reader.GetParameterRange(containingMethod, out _firstRowId, out _lastRowId);
+            reader.GetParameterRange(containingMethod, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<ParameterHandle> IEnumerable<ParameterHandle>.GetEnumerator()
@@ -1089,21 +1089,21 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<ParameterHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first Parameter rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _lastRowId = lastRowId;
-                _currentRowId = firstRowId - 1;
+                this.reader = reader;
+                this.lastRowId = lastRowId;
+                this.currentRowId = firstRowId - 1;
             }
 
             public ParameterHandle Current
@@ -1112,34 +1112,34 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.UseParamPtrTable)
+                    if (reader.UseParamPtrTable)
                     {
                         return GetCurrentParameterIndirect();
                     }
                     else
                     {
-                        return ParameterHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return ParameterHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
 
             private ParameterHandle GetCurrentParameterIndirect()
             {
-                return _reader.ParamPtrTable.GetParamFor(_currentRowId & (int)TokenTypeIds.RIDMask);
+                return reader.ParamPtrTable.GetParamFor(currentRowId & (int)TokenTypeIds.RIDMask);
             }
 
             public bool MoveNext()
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1162,31 +1162,31 @@ namespace System.Reflection.Metadata
 
     public struct InterfaceImplementationHandleCollection : IReadOnlyCollection<InterfaceImplementationHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
-        private readonly int _firstRowId;
-        private readonly int _lastRowId;
+        private readonly int firstRowId;
+        private readonly int lastRowId;
 
         internal InterfaceImplementationHandleCollection(MetadataReader reader, TypeDefinitionHandle implementingType)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!implementingType.IsNil);
-            _reader = reader;
+            this.reader = reader;
 
-            reader.InterfaceImplTable.GetInterfaceImplRange(implementingType, out _firstRowId, out _lastRowId);
+            reader.InterfaceImplTable.GetInterfaceImplRange(implementingType, out firstRowId, out lastRowId);
         }
 
         public int Count
         {
             get
             {
-                return _lastRowId - _firstRowId + 1;
+                return lastRowId - firstRowId + 1;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader, _firstRowId, _lastRowId);
+            return new Enumerator(reader, firstRowId, lastRowId);
         }
 
         IEnumerator<InterfaceImplementationHandle> IEnumerable<InterfaceImplementationHandle>.GetEnumerator()
@@ -1201,28 +1201,28 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<InterfaceImplementationHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
-            private readonly int _lastRowId; // inclusive
+            private readonly MetadataReader reader;
+            private readonly int lastRowId; // inclusive
 
             // first rid - 1: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(MetadataReader reader, int firstRowId, int lastRowId)
             {
-                _reader = reader;
-                _currentRowId = firstRowId - 1;
-                _lastRowId = lastRowId;
+                this.reader = reader;
+                this.currentRowId = firstRowId - 1;
+                this.lastRowId = lastRowId;
             }
 
             public InterfaceImplementationHandle Current
             {
                 get
                 {
-                    return InterfaceImplementationHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return InterfaceImplementationHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1230,14 +1230,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this code small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1263,22 +1263,22 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct TypeDefinitionHandleCollection : IReadOnlyCollection<TypeDefinitionHandle>
     {
-        private readonly int _lastRowId;
+        private readonly int lastRowId;
 
         // Creates collection that represents the entire TypeDef table.
         internal TypeDefinitionHandleCollection(int lastRowId)
         {
-            _lastRowId = lastRowId;
+            this.lastRowId = lastRowId;
         }
 
         public int Count
         {
-            get { return _lastRowId; }
+            get { return lastRowId; }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_lastRowId);
+            return new Enumerator(lastRowId);
         }
 
         IEnumerator<TypeDefinitionHandle> IEnumerable<TypeDefinitionHandle>.GetEnumerator()
@@ -1293,26 +1293,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<TypeDefinitionHandle>, IEnumerator
         {
-            private readonly int _lastRowId;
+            private readonly int lastRowId;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int lastRowId)
             {
-                _lastRowId = lastRowId;
-                _currentRowId = 0;
+                this.lastRowId = lastRowId;
+                this.currentRowId = 0;
             }
 
             public TypeDefinitionHandle Current
             {
                 get
                 {
-                    return TypeDefinitionHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return TypeDefinitionHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1320,14 +1320,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this method small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1353,22 +1353,22 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct TypeReferenceHandleCollection : IReadOnlyCollection<TypeReferenceHandle>
     {
-        private readonly int _lastRowId;
+        private readonly int lastRowId;
 
         // Creates collection that represents the entire TypeRef table.
         internal TypeReferenceHandleCollection(int lastRowId)
         {
-            _lastRowId = lastRowId;
+            this.lastRowId = lastRowId;
         }
 
         public int Count
         {
-            get { return _lastRowId; }
+            get { return lastRowId; }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_lastRowId);
+            return new Enumerator(lastRowId);
         }
 
         IEnumerator<TypeReferenceHandle> IEnumerable<TypeReferenceHandle>.GetEnumerator()
@@ -1383,26 +1383,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<TypeReferenceHandle>, IEnumerator
         {
-            private readonly int _lastRowId;
+            private readonly int lastRowId;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int lastRowId)
             {
-                _lastRowId = lastRowId;
-                _currentRowId = 0;
+                this.lastRowId = lastRowId;
+                this.currentRowId = 0;
             }
 
             public TypeReferenceHandle Current
             {
                 get
                 {
-                    return TypeReferenceHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return TypeReferenceHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1410,14 +1410,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this method small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1443,22 +1443,22 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct ExportedTypeHandleCollection : IReadOnlyCollection<ExportedTypeHandle>
     {
-        private readonly int _lastRowId;
+        private readonly int lastRowId;
 
         // Creates collection that represents the entire TypeRef table.
         internal ExportedTypeHandleCollection(int lastRowId)
         {
-            _lastRowId = lastRowId;
+            this.lastRowId = lastRowId;
         }
 
         public int Count
         {
-            get { return _lastRowId; }
+            get { return lastRowId; }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_lastRowId);
+            return new Enumerator(lastRowId);
         }
 
         IEnumerator<ExportedTypeHandle> IEnumerable<ExportedTypeHandle>.GetEnumerator()
@@ -1473,26 +1473,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<ExportedTypeHandle>, IEnumerator
         {
-            private readonly int _lastRowId;
+            private readonly int lastRowId;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int lastRowId)
             {
-                _lastRowId = lastRowId;
-                _currentRowId = 0;
+                this.lastRowId = lastRowId;
+                this.currentRowId = 0;
             }
 
             public ExportedTypeHandle Current
             {
                 get
                 {
-                    return ExportedTypeHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return ExportedTypeHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1500,14 +1500,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this method small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1533,22 +1533,22 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct MemberReferenceHandleCollection : IReadOnlyCollection<MemberReferenceHandle>
     {
-        private readonly int _lastRowId;
+        private readonly int lastRowId;
 
         // Creates collection that represents the entire TypeRef table.
         internal MemberReferenceHandleCollection(int lastRowId)
         {
-            _lastRowId = lastRowId;
+            this.lastRowId = lastRowId;
         }
 
         public int Count
         {
-            get { return _lastRowId; }
+            get { return lastRowId; }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_lastRowId);
+            return new Enumerator(lastRowId);
         }
 
         IEnumerator<MemberReferenceHandle> IEnumerable<MemberReferenceHandle>.GetEnumerator()
@@ -1563,26 +1563,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<MemberReferenceHandle>, IEnumerator
         {
-            private readonly int _lastRowId;
+            private readonly int lastRowId;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int lastRowId)
             {
-                _lastRowId = lastRowId;
-                _currentRowId = 0;
+                this.lastRowId = lastRowId;
+                this.currentRowId = 0;
             }
 
             public MemberReferenceHandle Current
             {
                 get
                 {
-                    return MemberReferenceHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return MemberReferenceHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1590,14 +1590,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this method small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1622,16 +1622,16 @@ namespace System.Reflection.Metadata
     {
         // Workaround: JIT doesn't generate good code for nested structures, so use uints.
 
-        private readonly uint _getterRowId;
-        private readonly uint _setterRowId;
+        private readonly uint getterRowId;
+        private readonly uint setterRowId;
 
-        public MethodDefinitionHandle Getter { get { return MethodDefinitionHandle.FromRowId(_getterRowId); } }
-        public MethodDefinitionHandle Setter { get { return MethodDefinitionHandle.FromRowId(_setterRowId); } }
+        public MethodDefinitionHandle Getter { get { return MethodDefinitionHandle.FromRowId(getterRowId); } }
+        public MethodDefinitionHandle Setter { get { return MethodDefinitionHandle.FromRowId(setterRowId); } }
 
         internal PropertyAccessors(uint getterRowId, uint setterRowId)
         {
-            _getterRowId = getterRowId;
-            _setterRowId = setterRowId;
+            this.getterRowId = getterRowId;
+            this.setterRowId = setterRowId;
         }
     }
 
@@ -1639,19 +1639,19 @@ namespace System.Reflection.Metadata
     {
         // Workaround: JIT doesn't generate good code for nested structures, so use uints.
 
-        private readonly uint _adderRowId;
-        private readonly uint _removerRowId;
-        private readonly uint _raiserRowId;
+        private readonly uint adderRowId;
+        private readonly uint removerRowId;
+        private readonly uint raiserRowId;
 
-        public MethodDefinitionHandle Adder { get { return MethodDefinitionHandle.FromRowId(_adderRowId); } }
-        public MethodDefinitionHandle Remover { get { return MethodDefinitionHandle.FromRowId(_removerRowId); } }
-        public MethodDefinitionHandle Raiser { get { return MethodDefinitionHandle.FromRowId(_raiserRowId); } }
+        public MethodDefinitionHandle Adder { get { return MethodDefinitionHandle.FromRowId(adderRowId); } }
+        public MethodDefinitionHandle Remover { get { return MethodDefinitionHandle.FromRowId(removerRowId); } }
+        public MethodDefinitionHandle Raiser { get { return MethodDefinitionHandle.FromRowId(raiserRowId); } }
 
         internal EventAccessors(uint adderRowId, uint removerRowId, uint raiserRowId)
         {
-            _adderRowId = adderRowId;
-            _removerRowId = removerRowId;
-            _raiserRowId = raiserRowId;
+            this.adderRowId = adderRowId;
+            this.removerRowId = removerRowId;
+            this.raiserRowId = raiserRowId;
         }
     }
 
@@ -1660,25 +1660,25 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct AssemblyReferenceHandleCollection : IReadOnlyCollection<AssemblyReferenceHandle>
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         internal AssemblyReferenceHandleCollection(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
+            this.reader = reader;
         }
 
         public int Count
         {
             get
             {
-                return _reader.AssemblyRefTable.NumberOfNonVirtualRows + _reader.AssemblyRefTable.NumberOfVirtualRows;
+                return reader.AssemblyRefTable.NumberOfNonVirtualRows + reader.AssemblyRefTable.NumberOfVirtualRows;
             }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_reader);
+            return new Enumerator(reader);
         }
 
         IEnumerator<AssemblyReferenceHandle> IEnumerable<AssemblyReferenceHandle>.GetEnumerator()
@@ -1693,60 +1693,60 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<AssemblyReferenceHandle>, IEnumerator
         {
-            private readonly MetadataReader _reader;
+            private readonly MetadataReader reader;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
-            private int _virtualRowId;
+            private int virtualRowId;
 
             internal Enumerator(MetadataReader reader)
             {
-                _reader = reader;
-                _currentRowId = 0;
-                _virtualRowId = -1;
+                this.reader = reader;
+                this.currentRowId = 0;
+                this.virtualRowId = -1;
             }
 
             public AssemblyReferenceHandle Current
             {
                 get
                 {
-                    if (_virtualRowId >= 0)
+                    if (virtualRowId >= 0)
                     {
-                        if (_virtualRowId == EnumEnded)
+                        if (virtualRowId == EnumEnded)
                         {
                             return default(AssemblyReferenceHandle);
                         }
 
-                        return AssemblyReferenceHandle.FromVirtualIndex((AssemblyReferenceHandle.VirtualIndex)((uint)_virtualRowId));
+                        return AssemblyReferenceHandle.FromVirtualIndex((AssemblyReferenceHandle.VirtualIndex)((uint)virtualRowId));
                     }
                     else
                     {
-                        return AssemblyReferenceHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                        return AssemblyReferenceHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                     }
                 }
             }
 
             public bool MoveNext()
             {
-                if (_currentRowId < _reader.AssemblyRefTable.NumberOfNonVirtualRows)
+                if (this.currentRowId < reader.AssemblyRefTable.NumberOfNonVirtualRows)
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
 
-                if (_virtualRowId < _reader.AssemblyRefTable.NumberOfVirtualRows - 1)
+                if (this.virtualRowId < reader.AssemblyRefTable.NumberOfVirtualRows - 1)
                 {
-                    _virtualRowId++;
+                    this.virtualRowId++;
                     return true;
                 }
 
-                _currentRowId = EnumEnded;
-                _virtualRowId = EnumEnded;
+                this.currentRowId = EnumEnded;
+                this.virtualRowId = EnumEnded;
                 return false;
             }
 
@@ -1771,22 +1771,22 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct ManifestResourceHandleCollection : IReadOnlyCollection<ManifestResourceHandle>
     {
-        private readonly int _lastRowId;
+        private readonly int lastRowId;
 
         // Creates collection that represents the entire ManifestResource table.
         internal ManifestResourceHandleCollection(int lastRowId)
         {
-            _lastRowId = lastRowId;
+            this.lastRowId = lastRowId;
         }
 
         public int Count
         {
-            get { return _lastRowId; }
+            get { return lastRowId; }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_lastRowId);
+            return new Enumerator(lastRowId);
         }
 
         IEnumerator<ManifestResourceHandle> IEnumerable<ManifestResourceHandle>.GetEnumerator()
@@ -1801,26 +1801,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<ManifestResourceHandle>, IEnumerator
         {
-            private readonly int _lastRowId;
+            private readonly int lastRowId;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int lastRowId)
             {
-                _lastRowId = lastRowId;
-                _currentRowId = 0;
+                this.lastRowId = lastRowId;
+                this.currentRowId = 0;
             }
 
             public ManifestResourceHandle Current
             {
                 get
                 {
-                    return ManifestResourceHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return ManifestResourceHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1828,14 +1828,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this method small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }
@@ -1861,22 +1861,22 @@ namespace System.Reflection.Metadata
     /// </summary>
     public struct AssemblyFileHandleCollection : IReadOnlyCollection<AssemblyFileHandle>
     {
-        private readonly int _lastRowId;
+        private readonly int lastRowId;
 
         // Creates collection that represents the entire AssemblyFile table.
         internal AssemblyFileHandleCollection(int lastRowId)
         {
-            _lastRowId = lastRowId;
+            this.lastRowId = lastRowId;
         }
 
         public int Count
         {
-            get { return _lastRowId; }
+            get { return lastRowId; }
         }
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_lastRowId);
+            return new Enumerator(lastRowId);
         }
 
         IEnumerator<AssemblyFileHandle> IEnumerable<AssemblyFileHandle>.GetEnumerator()
@@ -1891,26 +1891,26 @@ namespace System.Reflection.Metadata
 
         public struct Enumerator : IEnumerator<AssemblyFileHandle>, IEnumerator
         {
-            private readonly int _lastRowId;
+            private readonly int lastRowId;
 
             // 0: initial state
             // EnumEnded: enumeration ended
-            private int _currentRowId;
+            private int currentRowId;
 
             // greater than any RowId and with last 24 bits clear, so that Current returns nil token
             private const int EnumEnded = (int)TokenTypeIds.RIDMask + 1;
 
             internal Enumerator(int lastRowId)
             {
-                _lastRowId = lastRowId;
-                _currentRowId = 0;
+                this.lastRowId = lastRowId;
+                this.currentRowId = 0;
             }
 
             public AssemblyFileHandle Current
             {
                 get
                 {
-                    return AssemblyFileHandle.FromRowId((uint)_currentRowId & TokenTypeIds.RIDMask);
+                    return AssemblyFileHandle.FromRowId((uint)currentRowId & TokenTypeIds.RIDMask);
                 }
             }
 
@@ -1918,14 +1918,14 @@ namespace System.Reflection.Metadata
             {
                 // PERF: keep this method small to enable inlining.
 
-                if (_currentRowId >= _lastRowId)
+                if (this.currentRowId >= lastRowId)
                 {
-                    _currentRowId = EnumEnded;
+                    this.currentRowId = EnumEnded;
                     return false;
                 }
                 else
                 {
-                    _currentRowId++;
+                    this.currentRowId++;
                     return true;
                 }
             }

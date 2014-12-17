@@ -23,7 +23,7 @@ namespace System.Xml
             AllExceptPrefixMapping = 0x3,
         };
 
-        private static XmlCharType s_xmlCharType = XmlCharType.Instance;
+        static XmlCharType xmlCharType = XmlCharType.Instance;
 
         //-----------------------------------------------
         // Nmtoken parsing
@@ -41,7 +41,7 @@ namespace System.Xml
             int i = offset;
             while (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0)
+                if ((xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0)
                 {
                     i++;
                 }
@@ -78,7 +78,7 @@ namespace System.Xml
             int i = offset;
             while (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0 || s[i] == ':')
+                if ((xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0 || s[i] == ':')
                 { // if (xmlCharType.IsNameSingleChar(s[i])) {
                     i++;
                 }
@@ -122,7 +122,7 @@ namespace System.Xml
             int i = offset;
             if (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCStartNameSC) != 0 || s[i] == ':')
+                if ((xmlCharType.charProperties[s[i]] & XmlCharType.fNCStartNameSC) != 0 || s[i] == ':')
                 {
                     i++;
                 }
@@ -140,7 +140,7 @@ namespace System.Xml
                 // Keep parsing until the end of string or an invalid NCName character is reached
                 while (i < s.Length)
                 {
-                    if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0 || s[i] == ':')
+                    if ((xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0 || s[i] == ':')
                     {
                         i++;
                     }
@@ -184,7 +184,7 @@ namespace System.Xml
             int i = offset;
             if (i < s.Length)
             {
-                if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCStartNameSC) != 0)
+                if ((xmlCharType.charProperties[s[i]] & XmlCharType.fNCStartNameSC) != 0)
                 {
                     i++;
                 }
@@ -202,7 +202,7 @@ namespace System.Xml
                 // Keep parsing until the end of string or an invalid NCName character is reached
                 while (i < s.Length)
                 {
-                    if ((s_xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0)
+                    if ((xmlCharType.charProperties[s[i]] & XmlCharType.fNCNameSC) != 0)
                     {
                         i++;
                     }
@@ -305,7 +305,7 @@ namespace System.Xml
 
             Debug.Assert(offsetBadChar < s.Length);
 
-            if (s_xmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !XmlCharType.Instance.IsStartNCNameSingleChar(s[offsetBadChar]))
+            if (xmlCharType.IsNCNameSingleChar(s[offsetBadChar]) && !XmlCharType.Instance.IsStartNCNameSingleChar(s[offsetBadChar]))
             {
                 // The error character is a valid name character, but is not a valid start name character
                 throw new XmlException(SR.Format(SR.Xml_BadStartNameChar, XmlExceptionHelper.BuildCharExceptionArgs(s, offsetBadChar)));

@@ -8,16 +8,16 @@ namespace System.Reflection.Internal
 {
     internal unsafe sealed class MemoryMappedFileBlock : AbstractMemoryBlock
     {
-        private readonly int _size;
-        private IDisposable _accessor; // MemoryMappedViewAccessor
-        private byte* _pointer;
-        private SafeBuffer _safeBuffer;
+        private readonly int size;
+        private IDisposable accessor; // MemoryMappedViewAccessor
+        private byte* pointer;
+        private SafeBuffer safeBuffer;
 
         internal unsafe MemoryMappedFileBlock(IDisposable accessor, int size)
         {
-            _accessor = accessor;
-            _pointer = MemoryMapLightUp.AcquirePointer(accessor, out _safeBuffer);
-            _size = size;
+            this.accessor = accessor;
+            this.pointer = MemoryMapLightUp.AcquirePointer(accessor, out safeBuffer);
+            this.size = size;
         }
 
         ~MemoryMappedFileBlock()
@@ -27,29 +27,29 @@ namespace System.Reflection.Internal
 
         protected override void Dispose(bool disposing)
         {
-            if (_safeBuffer != null)
+            if (safeBuffer != null)
             {
-                _safeBuffer.ReleasePointer();
-                _safeBuffer = null;
+                safeBuffer.ReleasePointer();
+                safeBuffer = null;
             }
 
-            if (_accessor != null)
+            if (accessor != null)
             {
-                _accessor.Dispose();
-                _accessor = null;
+                accessor.Dispose();
+                accessor = null;
             }
 
-            _pointer = null;
+            pointer = null;
         }
 
         public override byte* Pointer
         {
-            get { return _pointer; }
+            get { return this.pointer; }
         }
 
         public override int Size
         {
-            get { return _size; }
+            get { return size; }
         }
 
         public override ImmutableArray<byte> GetContent(int offset)

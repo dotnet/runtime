@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -38,33 +38,33 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the binary tree that stores the collection.  Contents are typically not entirely frozen.
             /// </summary>
-            private SortedInt32KeyNode<HashBucket> _root = SortedInt32KeyNode<HashBucket>.EmptyNode;
+            private SortedInt32KeyNode<HashBucket> root = SortedInt32KeyNode<HashBucket>.EmptyNode;
 
             /// <summary>
             /// The comparers.
             /// </summary>
-            private Comparers _comparers;
+            private Comparers comparers;
 
             /// <summary>
             /// The number of elements in this collection.
             /// </summary>
-            private int _count;
+            private int count;
 
             /// <summary>
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableDictionary<TKey, TValue> _immutable;
+            private ImmutableDictionary<TKey, TValue> immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
             /// </summary>
-            private int _version;
+            private int version;
 
             /// <summary>
             /// The object callers may use to synchronize access to this collection.
             /// </summary>
-            private object _syncRoot;
+            private object syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.Builder"/> class.
@@ -73,10 +73,10 @@ namespace System.Collections.Immutable
             internal Builder(ImmutableDictionary<TKey, TValue> map)
             {
                 Requires.NotNull(map, "map");
-                _root = map._root;
-                _count = map._count;
-                _comparers = map._comparers;
-                _immutable = map;
+                this.root = map.root;
+                this.count = map.count;
+                this.comparers = map.comparers;
+                this.immutable = map;
             }
 
             /// <summary>
@@ -89,7 +89,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    return _comparers.KeyComparer;
+                    return this.comparers.KeyComparer;
                 }
 
                 set
@@ -101,9 +101,9 @@ namespace System.Collections.Immutable
                         var input = new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, comparers, 0);
                         var result = ImmutableDictionary<TKey, TValue>.AddRange(this, input);
 
-                        _immutable = null;
-                        _comparers = comparers;
-                        _count = result.CountAdjustment; // offset from 0
+                        this.immutable = null;
+                        this.comparers = comparers;
+                        this.count = result.CountAdjustment; // offset from 0
                         this.Root = result.Root;
                     }
                 }
@@ -119,7 +119,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    return _comparers.ValueComparer;
+                    return this.comparers.ValueComparer;
                 }
 
                 set
@@ -130,8 +130,8 @@ namespace System.Collections.Immutable
                         // When the key comparer is the same but the value comparer is different, we don't need a whole new tree
                         // because the structure of the tree does not depend on the value comparer.
                         // We just need a new root node to store the new value comparer.
-                        _comparers = _comparers.WithValueComparer(value);
-                        _immutable = null; // invalidate cached immutable
+                        this.comparers = this.comparers.WithValueComparer(value);
+                        this.immutable = null; // invalidate cached immutable
                     }
                 }
             }
@@ -144,7 +144,7 @@ namespace System.Collections.Immutable
             /// <returns>The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.</returns>
             public int Count
             {
-                get { return _count; }
+                get { return this.count; }
             }
 
             /// <summary>
@@ -161,7 +161,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public IEnumerable<TKey> Keys
             {
-                get
+                get 
                 {
                     foreach (KeyValuePair<TKey, TValue> item in this)
                     {
@@ -260,12 +260,12 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_syncRoot == null)
+                    if (this.syncRoot == null)
                     {
-                        Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
+                        Threading.Interlocked.CompareExchange<Object>(ref this.syncRoot, new Object(), null);
                     }
 
-                    return _syncRoot;
+                    return this.syncRoot;
                 }
             }
 
@@ -352,7 +352,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (_count == 0)
+                if (this.count == 0)
                 {
                     return;
                 }
@@ -372,7 +372,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal int Version
             {
-                get { return _version; }
+                get { return this.version; }
             }
 
             /// <summary>
@@ -380,7 +380,7 @@ namespace System.Collections.Immutable
             /// </summary>
             private MutationInput Origin
             {
-                get { return new MutationInput(this.Root, _comparers, _count); }
+                get { return new MutationInput(this.Root, this.comparers, this.count); }
             }
 
             /// <summary>
@@ -390,7 +390,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    return _root;
+                    return this.root;
                 }
 
                 set
@@ -398,14 +398,14 @@ namespace System.Collections.Immutable
                     // We *always* increment the version number because some mutations
                     // may not create a new value of root, although the existing root
                     // instance may have mutated.
-                    _version++;
+                    this.version++;
 
-                    if (_root != value)
+                    if (this.root != value)
                     {
-                        _root = value;
+                        this.root = value;
 
                         // Clear any cached value for the immutable view since it is now invalidated.
-                        _immutable = null;
+                        this.immutable = null;
                     }
                 }
             }
@@ -472,7 +472,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public Enumerator GetEnumerator()
             {
-                return new Enumerator(_root, this);
+                return new Enumerator(this.root, this);
             }
 
             /// <summary>
@@ -521,12 +521,12 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedMap<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
+                if (this.immutable == null)
                 {
-                    _immutable = ImmutableDictionary<TKey, TValue>.Wrap(_root, _comparers, _count);
+                    this.immutable = ImmutableDictionary<TKey, TValue>.Wrap(this.root, this.comparers, this.count);
                 }
 
-                return _immutable;
+                return this.immutable;
             }
 
             #endregion
@@ -640,7 +640,7 @@ namespace System.Collections.Immutable
             public void Clear()
             {
                 this.Root = SortedInt32KeyNode<HashBucket>.EmptyNode;
-                _count = 0;
+                this.count = 0;
             }
 
             /// <summary>
@@ -726,7 +726,7 @@ namespace System.Collections.Immutable
             private bool Apply(MutationResult result)
             {
                 this.Root = result.Root;
-                _count += result.CountAdjustment;
+                this.count += result.CountAdjustment;
                 return result.CountAdjustment != 0;
             }
         }
@@ -741,12 +741,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The collection to be enumerated.
         /// </summary>
-        private readonly ImmutableDictionary<TKey, TValue>.Builder _map;
+        private readonly ImmutableDictionary<TKey, TValue>.Builder map;
 
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private KeyValuePair<TKey, TValue>[] _contents;
+        private KeyValuePair<TKey, TValue>[] contents;
 
         /// <summary>   
         /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy&lt;TKey, TValue&gt;"/> class.
@@ -755,7 +755,7 @@ namespace System.Collections.Immutable
         public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
         {
             Requires.NotNull(map, "map");
-            _map = map;
+            this.map = map;
         }
 
         /// <summary>
@@ -766,12 +766,12 @@ namespace System.Collections.Immutable
         {
             get
             {
-                if (_contents == null)
+                if (this.contents == null)
                 {
-                    _contents = _map.ToArray(_map.Count);
+                    this.contents = this.map.ToArray(this.map.Count);
                 }
 
-                return _contents;
+                return this.contents;
             }
         }
     }

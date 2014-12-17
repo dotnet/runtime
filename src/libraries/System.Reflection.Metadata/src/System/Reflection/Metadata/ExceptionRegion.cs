@@ -5,12 +5,12 @@ namespace System.Reflection.Metadata
 {
     public struct ExceptionRegion
     {
-        private readonly ExceptionRegionKind _kind;
-        private readonly int _tryOffset;
-        private readonly int _tryLength;
-        private readonly int _handlerOffset;
-        private readonly int _handlerLength;
-        private readonly int _classTokenOrFilterOffset;
+        private readonly ExceptionRegionKind kind;
+        private readonly int tryOffset;
+        private readonly int tryLength;
+        private readonly int handlerOffset;
+        private readonly int handlerLength;
+        private readonly int classTokenOrFilterOffset;
 
         internal ExceptionRegion(
             ExceptionRegionKind kind,
@@ -20,17 +20,17 @@ namespace System.Reflection.Metadata
             int handlerLength,
             int classTokenOrFilterOffset)
         {
-            _kind = kind;
-            _tryOffset = tryOffset;
-            _tryLength = tryLength;
-            _handlerOffset = handlerOffset;
-            _handlerLength = handlerLength;
-            _classTokenOrFilterOffset = classTokenOrFilterOffset;
+            this.kind = kind;
+            this.tryOffset = tryOffset;
+            this.tryLength = tryLength;
+            this.handlerOffset = handlerOffset;
+            this.handlerLength = handlerLength;
+            this.classTokenOrFilterOffset = classTokenOrFilterOffset;
         }
 
         public ExceptionRegionKind Kind
         {
-            get { return _kind; }
+            get { return kind; }
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int TryOffset
         {
-            get { return _tryOffset; }
+            get { return tryOffset; }
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int TryLength
         {
-            get { return _tryLength; }
+            get { return tryLength; }
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int HandlerOffset
         {
-            get { return _handlerOffset; }
+            get { return handlerOffset; }
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int HandlerLength
         {
-            get { return _handlerLength; }
+            get { return handlerLength; }
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int FilterOffset
         {
-            get { return (Kind == ExceptionRegionKind.Filter) ? _classTokenOrFilterOffset : -1; }
+            get { return (Kind == ExceptionRegionKind.Filter) ? classTokenOrFilterOffset : -1; }
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public Handle CatchType
         {
-            get { return (Kind == ExceptionRegionKind.Catch) ? new Handle((uint)_classTokenOrFilterOffset) : default(Handle); }
+            get { return (Kind == ExceptionRegionKind.Catch) ? new Handle((uint)classTokenOrFilterOffset) : default(Handle); }
         }
     }
 }

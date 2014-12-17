@@ -8,20 +8,20 @@ namespace System.Xml.Linq
     /// </summary>
     public class XDocumentType : XNode
     {
-        private string _name;
-        private string _publicId;
-        private string _systemId;
-        private string _internalSubset;
+        string name;
+        string publicId;
+        string systemId;
+        string internalSubset;
 
         /// <summary>
         /// Initializes an empty instance of the <see cref="XDocumentType"/> class.
         /// </summary>
         public XDocumentType(string name, string publicId, string systemId, string internalSubset)
         {
-            _name = XmlConvert.VerifyName(name);
-            _publicId = publicId;
-            _systemId = systemId;
-            _internalSubset = internalSubset;
+            this.name = XmlConvert.VerifyName(name);
+            this.publicId = publicId;
+            this.systemId = systemId;
+            this.internalSubset = internalSubset;
         }
 
         /// <summary>
@@ -32,18 +32,18 @@ namespace System.Xml.Linq
         public XDocumentType(XDocumentType other)
         {
             if (other == null) throw new ArgumentNullException("other");
-            _name = other._name;
-            _publicId = other._publicId;
-            _systemId = other._systemId;
-            _internalSubset = other._internalSubset;
+            this.name = other.name;
+            this.publicId = other.publicId;
+            this.systemId = other.systemId;
+            this.internalSubset = other.internalSubset;
         }
 
         internal XDocumentType(XmlReader r)
         {
-            _name = r.Name;
-            _publicId = r.GetAttribute("PUBLIC");
-            _systemId = r.GetAttribute("SYSTEM");
-            _internalSubset = r.Value;
+            name = r.Name;
+            publicId = r.GetAttribute("PUBLIC");
+            systemId = r.GetAttribute("SYSTEM");
+            internalSubset = r.Value;
             r.Read();
         }
 
@@ -54,12 +54,12 @@ namespace System.Xml.Linq
         {
             get
             {
-                return _internalSubset;
+                return internalSubset;
             }
             set
             {
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
-                _internalSubset = value;
+                internalSubset = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
             }
         }
@@ -71,13 +71,13 @@ namespace System.Xml.Linq
         {
             get
             {
-                return _name;
+                return name;
             }
             set
             {
                 value = XmlConvert.VerifyName(value);
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Name);
-                _name = value;
+                name = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Name);
             }
         }
@@ -103,12 +103,12 @@ namespace System.Xml.Linq
         {
             get
             {
-                return _publicId;
+                return publicId;
             }
             set
             {
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
-                _publicId = value;
+                publicId = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
             }
         }
@@ -120,12 +120,12 @@ namespace System.Xml.Linq
         {
             get
             {
-                return _systemId;
+                return systemId;
             }
             set
             {
                 bool notify = NotifyChanging(this, XObjectChangeEventArgs.Value);
-                _systemId = value;
+                systemId = value;
                 if (notify) NotifyChanged(this, XObjectChangeEventArgs.Value);
             }
         }
@@ -139,7 +139,7 @@ namespace System.Xml.Linq
         public override void WriteTo(XmlWriter writer)
         {
             if (writer == null) throw new ArgumentNullException("writer");
-            writer.WriteDocType(_name, _publicId, _systemId, _internalSubset);
+            writer.WriteDocType(name, publicId, systemId, internalSubset);
         }
 
         internal override XNode CloneNode()
@@ -150,16 +150,16 @@ namespace System.Xml.Linq
         internal override bool DeepEquals(XNode node)
         {
             XDocumentType other = node as XDocumentType;
-            return other != null && _name == other._name && _publicId == other._publicId &&
-                _systemId == other.SystemId && _internalSubset == other._internalSubset;
+            return other != null && name == other.name && publicId == other.publicId &&
+                systemId == other.SystemId && internalSubset == other.internalSubset;
         }
 
         internal override int GetDeepHashCode()
         {
-            return _name.GetHashCode() ^
-                (_publicId != null ? _publicId.GetHashCode() : 0) ^
-                (_systemId != null ? _systemId.GetHashCode() : 0) ^
-                (_internalSubset != null ? _internalSubset.GetHashCode() : 0);
+            return name.GetHashCode() ^
+                (publicId != null ? publicId.GetHashCode() : 0) ^
+                (systemId != null ? systemId.GetHashCode() : 0) ^
+                (internalSubset != null ? internalSubset.GetHashCode() : 0);
         }
     }
 }

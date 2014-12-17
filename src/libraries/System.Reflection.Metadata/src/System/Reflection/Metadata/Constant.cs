@@ -7,25 +7,25 @@ namespace System.Reflection.Metadata
 {
     public struct Constant
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal Constant(MetadataReader reader, uint rowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(rowId != 0);
 
-            _reader = reader;
-            _rowId = rowId;
+            this.reader = reader;
+            this.rowId = rowId;
         }
 
         private ConstantHandle Handle
         {
             get
             {
-                return ConstantHandle.FromRowId(_rowId);
+                return ConstantHandle.FromRowId(rowId);
             }
         }
 
@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ConstantTable.GetType(Handle);
+                return reader.ConstantTable.GetType(Handle);
             }
         }
 
@@ -53,7 +53,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ConstantTable.GetValue(Handle);
+                return reader.ConstantTable.GetValue(Handle);
             }
         }
 
@@ -67,7 +67,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ConstantTable.GetParent(Handle);
+                return reader.ConstantTable.GetParent(Handle);
             }
         }
     }

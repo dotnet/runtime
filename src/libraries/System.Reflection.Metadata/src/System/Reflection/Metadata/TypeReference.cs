@@ -8,28 +8,28 @@ namespace System.Reflection.Metadata
 {
     public struct TypeReference
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _treatmentAndRowId;
+        private readonly uint treatmentAndRowId;
 
         internal TypeReference(MetadataReader reader, uint treatmentAndRowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(treatmentAndRowId != 0);
 
-            _reader = reader;
-            _treatmentAndRowId = treatmentAndRowId;
+            this.reader = reader;
+            this.treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private TypeRefTreatment Treatment
         {
-            get { return (TypeRefTreatment)(_treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (TypeRefTreatment)(treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         private TypeReferenceHandle Handle
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return _reader.TypeRefTable.GetResolutionScope(Handle);
+                    return reader.TypeRefTable.GetResolutionScope(Handle);
                 }
 
                 return GetProjectedResolutionScope();
@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return _reader.TypeRefTable.GetName(Handle);
+                    return reader.TypeRefTable.GetName(Handle);
                 }
 
                 return GetProjectedName();
@@ -88,7 +88,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return _reader.TypeRefTable.GetNamespace(Handle);
+                    return reader.TypeRefTable.GetNamespace(Handle);
                 }
 
                 return GetProjectedNamespace();
@@ -121,7 +121,7 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                return _reader.TypeRefTable.GetName(Handle);
+                return reader.TypeRefTable.GetName(Handle);
             }
         }
 

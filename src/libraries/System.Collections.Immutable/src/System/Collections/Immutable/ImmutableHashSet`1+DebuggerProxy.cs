@@ -16,12 +16,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The collection to be enumerated.
         /// </summary>
-        private readonly ImmutableHashSet<T> _set;
+        private readonly ImmutableHashSet<T> set;
 
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private T[] _contents;
+        private T[] contents;
 
         /// <summary>   
         /// Initializes a new instance of the <see cref="ImmutableHashSetDebuggerProxy&lt;T&gt;"/> class.
@@ -30,7 +30,7 @@ namespace System.Collections.Immutable
         public ImmutableHashSetDebuggerProxy(ImmutableHashSet<T> set)
         {
             Requires.NotNull(set, "set");
-            _set = set;
+            this.set = set;
         }
 
         /// <summary>
@@ -41,12 +41,12 @@ namespace System.Collections.Immutable
         {
             get
             {
-                if (_contents == null)
+                if (this.contents == null)
                 {
-                    _contents = _set.ToArray(_set.Count);
+                    this.contents = this.set.ToArray(this.set.Count);
                 }
 
-                return _contents;
+                return this.contents;
             }
         }
     }

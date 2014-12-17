@@ -20,29 +20,29 @@ namespace MS.Internal.Xml.XPath
 
     internal sealed class PrecedingQuery : BaseAxisQuery
     {
-        private XPathNodeIterator _workIterator;
-        private StackNav _ancestorStk;
+        private XPathNodeIterator workIterator;
+        private StackNav ancestorStk;
 
         public PrecedingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest)
         {
-            _ancestorStk = new StackNav();
+            ancestorStk = new StackNav();
         }
         private PrecedingQuery(PrecedingQuery other) : base(other)
         {
-            _workIterator = Clone(other._workIterator);
-            _ancestorStk = other._ancestorStk.Clone();
+            this.workIterator = Clone(other.workIterator);
+            this.ancestorStk = other.ancestorStk.Clone();
         }
 
         public override void Reset()
         {
-            _workIterator = null;
-            _ancestorStk.Clear();
+            workIterator = null;
+            ancestorStk.Clear();
             base.Reset();
         }
 
         public override XPathNavigator Advance()
         {
-            if (_workIterator == null)
+            if (workIterator == null)
             {
                 XPathNavigator last;
                 {
@@ -65,23 +65,23 @@ namespace MS.Internal.Xml.XPath
                 // Fill ancestorStk :
                 do
                 {
-                    _ancestorStk.Push(last.Clone());
+                    ancestorStk.Push(last.Clone());
                 } while (last.MoveToParent());
                 // Create workIterator :
                 // last.MoveToRoot(); We are on root already
-                _workIterator = last.SelectDescendants(XPathNodeType.All, true);
+                workIterator = last.SelectDescendants(XPathNodeType.All, true);
             }
 
-            while (_workIterator.MoveNext())
+            while (workIterator.MoveNext())
             {
-                currentNode = _workIterator.Current;
-                if (currentNode.IsSamePosition(_ancestorStk.Peek()))
+                currentNode = workIterator.Current;
+                if (currentNode.IsSamePosition(ancestorStk.Peek()))
                 {
-                    _ancestorStk.Pop();
-                    if (_ancestorStk.Count == 0)
+                    ancestorStk.Pop();
+                    if (ancestorStk.Count == 0)
                     {
                         currentNode = null;
-                        _workIterator = null;
+                        workIterator = null;
                         Debug.Assert(qyInput.Advance() == null, "we read all qyInput.Advance() already");
                         return null;
                     }

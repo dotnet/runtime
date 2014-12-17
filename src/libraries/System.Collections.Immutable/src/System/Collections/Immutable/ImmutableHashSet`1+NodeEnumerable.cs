@@ -20,7 +20,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the sorted dictionary to enumerate.
             /// </summary>
-            private readonly SortedInt32KeyNode<HashBucket> _root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.NodeEnumerable"/> struct.
@@ -29,7 +29,7 @@ namespace System.Collections.Immutable
             internal NodeEnumerable(SortedInt32KeyNode<HashBucket> root)
             {
                 Requires.NotNull(root, "root");
-                _root = root;
+                this.root = root;
             }
 
             /// <summary>
@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public Enumerator GetEnumerator()
             {
-                return new Enumerator(_root);
+                return new Enumerator(this.root);
             }
 
             /// <summary>

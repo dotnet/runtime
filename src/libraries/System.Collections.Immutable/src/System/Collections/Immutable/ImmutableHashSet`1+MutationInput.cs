@@ -20,17 +20,17 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the data structure for the collection.
             /// </summary>
-            private readonly SortedInt32KeyNode<HashBucket> _root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// The equality comparer.
             /// </summary>
-            private readonly IEqualityComparer<T> _equalityComparer;
+            private readonly IEqualityComparer<T> equalityComparer;
 
             /// <summary>
             /// The current number of elements in the collection.
             /// </summary>
-            private readonly int _count;
+            private readonly int count;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.MutationInput"/> struct.
@@ -39,9 +39,9 @@ namespace System.Collections.Immutable
             internal MutationInput(ImmutableHashSet<T> set)
             {
                 Requires.NotNull(set, "set");
-                _root = set._root;
-                _equalityComparer = set._equalityComparer;
-                _count = set._count;
+                this.root = set.root;
+                this.equalityComparer = set.equalityComparer;
+                this.count = set.count;
             }
 
             /// <summary>
@@ -55,9 +55,9 @@ namespace System.Collections.Immutable
                 Requires.NotNull(root, "root");
                 Requires.NotNull(equalityComparer, "equalityComparer");
                 Requires.Range(count >= 0, "count");
-                _root = root;
-                _equalityComparer = equalityComparer;
-                _count = count;
+                this.root = root;
+                this.equalityComparer = equalityComparer;
+                this.count = count;
             }
 
             /// <summary>
@@ -65,7 +65,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal SortedInt32KeyNode<HashBucket> Root
             {
-                get { return _root; }
+                get { return this.root; }
             }
 
             /// <summary>
@@ -73,7 +73,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal IEqualityComparer<T> EqualityComparer
             {
-                get { return _equalityComparer; }
+                get { return this.equalityComparer; }
             }
 
             /// <summary>
@@ -81,7 +81,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal int Count
             {
-                get { return _count; }
+                get { return this.count; }
             }
         }
     }

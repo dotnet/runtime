@@ -11,25 +11,25 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FunctionQuery : ExtensionQuery
     {
-        private IList<Query> _args;
-        private IXsltContextFunction _function;
+        private IList<Query> args;
+        private IXsltContextFunction function;
 
         public FunctionQuery(string prefix, string name, List<Query> args) : base(prefix, name)
         {
-            _args = args;
+            this.args = args;
         }
         private FunctionQuery(FunctionQuery other) : base(other)
         {
-            _function = other._function;
-            Query[] tmp = new Query[other._args.Count];
+            this.function = other.function;
+            Query[] tmp = new Query[other.args.Count];
             {
                 for (int i = 0; i < tmp.Length; i++)
                 {
-                    tmp[i] = Clone(other._args[i]);
+                    tmp[i] = Clone(other.args[i]);
                 }
-                _args = tmp;
+                args = tmp;
             }
-            _args = tmp;
+            this.args = tmp;
         }
 
         public override void SetXsltContext(XsltContext context)
@@ -41,18 +41,18 @@ namespace MS.Internal.Xml.XPath
             if (this.xsltContext != context)
             {
                 xsltContext = context;
-                foreach (Query argument in _args)
+                foreach (Query argument in args)
                 {
                     argument.SetXsltContext(context);
                 }
-                XPathResultType[] argTypes = new XPathResultType[_args.Count];
-                for (int i = 0; i < _args.Count; i++)
+                XPathResultType[] argTypes = new XPathResultType[args.Count];
+                for (int i = 0; i < args.Count; i++)
                 {
-                    argTypes[i] = _args[i].StaticType;
+                    argTypes[i] = args[i].StaticType;
                 }
-                _function = xsltContext.ResolveFunction(prefix, name, argTypes);
+                function = xsltContext.ResolveFunction(prefix, name, argTypes);
                 // KB article allows to return null, see http://support.microsoft.com/?kbid=324462#6
-                if (_function == null)
+                if (function == null)
                 {
                     throw XPathException.Create(SR.Xp_UndefFunc, QName);
                 }
@@ -67,18 +67,18 @@ namespace MS.Internal.Xml.XPath
             }
 
             // calculate arguments:
-            object[] argVals = new object[_args.Count];
-            for (int i = 0; i < _args.Count; i++)
+            object[] argVals = new object[args.Count];
+            for (int i = 0; i < args.Count; i++)
             {
-                argVals[i] = _args[i].Evaluate(nodeIterator);
+                argVals[i] = args[i].Evaluate(nodeIterator);
                 if (argVals[i] is XPathNodeIterator)
                 {// ForBack Compat. To protect our queries from users.
-                    argVals[i] = new XPathSelectionIterator(nodeIterator.Current, _args[i]);
+                    argVals[i] = new XPathSelectionIterator(nodeIterator.Current, args[i]);
                 }
             }
             try
             {
-                return ProcessResult(_function.Invoke(xsltContext, argVals, nodeIterator.Current));
+                return ProcessResult(function.Invoke(xsltContext, argVals, nodeIterator.Current));
             }
             catch (Exception ex)
             {
@@ -108,7 +108,7 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                XPathResultType result = _function != null ? _function.ReturnType : XPathResultType.Any;
+                XPathResultType result = function != null ? function.ReturnType : XPathResultType.Any;
                 if (result == XPathResultType.Error)
                 {
                     // In v.1 we confused Error & Any so now for backward compatibility we should allow users to return any of them.
@@ -124,7 +124,7 @@ namespace MS.Internal.Xml.XPath
         {
             w.WriteStartElement(this.GetType().Name);
             w.WriteAttributeString("name", prefix.Length != 0 ? prefix + ':' + name : name);
-            foreach (Query arg in _args)
+            foreach (Query arg in this.args)
             {
                 arg.PrintQuery(w);
             }

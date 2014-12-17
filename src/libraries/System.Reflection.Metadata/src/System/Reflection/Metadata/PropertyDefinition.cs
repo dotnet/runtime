@@ -7,30 +7,30 @@ namespace System.Reflection.Metadata
 {
     public struct PropertyDefinition
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal PropertyDefinition(MetadataReader reader, PropertyDefinitionHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private PropertyDefinitionHandle Handle
         {
-            get { return PropertyDefinitionHandle.FromRowId(_rowId); }
+            get { return PropertyDefinitionHandle.FromRowId(rowId); }
         }
 
         public StringHandle Name
         {
             get
             {
-                return _reader.PropertyTable.GetName(Handle);
+                return reader.PropertyTable.GetName(Handle);
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.PropertyTable.GetFlags(Handle);
+                return reader.PropertyTable.GetFlags(Handle);
             }
         }
 
@@ -46,18 +46,18 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.PropertyTable.GetSignature(Handle);
+                return reader.PropertyTable.GetSignature(Handle);
             }
         }
 
         public ConstantHandle GetDefaultValue()
         {
-            return _reader.ConstantTable.FindConstant(Handle);
+            return reader.ConstantTable.FindConstant(Handle);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
 
         public PropertyAccessors GetAccessors()
@@ -66,18 +66,18 @@ namespace System.Reflection.Metadata
             uint setter = 0;
 
             ushort methodCount;
-            var firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
+            var firstRowId = reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
             for (ushort i = 0; i < methodCount; i++)
             {
                 uint rowId = firstRowId + i;
-                switch (_reader.MethodSemanticsTable.GetSemantics(rowId))
+                switch (reader.MethodSemanticsTable.GetSemantics(rowId))
                 {
                     case MethodSemanticsAttributes.Getter:
-                        getter = _reader.MethodSemanticsTable.GetMethod(rowId).RowId;
+                        getter = reader.MethodSemanticsTable.GetMethod(rowId).RowId;
                         break;
 
                     case MethodSemanticsAttributes.Setter:
-                        setter = _reader.MethodSemanticsTable.GetMethod(rowId).RowId;
+                        setter = reader.MethodSemanticsTable.GetMethod(rowId).RowId;
                         break;
                         // TODO: expose 'Other' collection on PropertyAccessors for completeness.
                 }
