@@ -17,8 +17,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
     {
         public static void TestInitialize()
         {
-            //This will work on Desktop although we need System.Text.Encoding.CodePages to make this work on CoreCLR
-            //Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
         /// <summary>
