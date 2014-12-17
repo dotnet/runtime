@@ -947,22 +947,22 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Quaternion_2x
         {
-            Quaternion a;
-            Quaternion b;
+            private Quaternion _a;
+            private Quaternion _b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct QuaternionPlusFloat
         {
-            Quaternion v;
-            float f;
+            private Quaternion _v;
+            private float _f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct QuaternionPlusFloat_2x
         {
-            QuaternionPlusFloat a;
-            QuaternionPlusFloat b;
+            private QuaternionPlusFloat _a;
+            private QuaternionPlusFloat _b;
         }
 
         // A test to make sure the fields are laid out how we expect
