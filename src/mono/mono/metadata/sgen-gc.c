@@ -2937,24 +2937,11 @@ sgen_gc_is_object_ready_for_finalization (void *object)
 	return !sgen_is_object_alive (object);
 }
 
-static gboolean
-has_critical_finalizer (MonoObject *obj)
-{
-	MonoClass *class;
-
-	if (!mono_defaults.critical_finalizer_object)
-		return FALSE;
-
-	class = ((MonoVTable*)LOAD_VTABLE (obj))->klass;
-
-	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
-}
-
 void
 sgen_queue_finalization_entry (MonoObject *obj)
 {
 	FinalizeReadyEntry *entry = sgen_alloc_internal (INTERNAL_MEM_FINALIZE_READY_ENTRY);
-	gboolean critical = has_critical_finalizer (obj);
+	gboolean critical = sgen_client_object_has_critical_finalizer (obj);
 	entry->object = obj;
 	if (critical) {
 		entry->next = critical_fin_list;

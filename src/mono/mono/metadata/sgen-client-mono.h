@@ -43,3 +43,16 @@ extern gboolean sgen_mono_xdomain_checks;
 #else
 #define sgen_client_wbarrier_generic_nostore_check(ptr)
 #endif
+
+static gboolean G_GNUC_UNUSED
+sgen_client_object_has_critical_finalizer (MonoObject *obj)
+{
+	MonoClass *class;
+
+	if (!mono_defaults.critical_finalizer_object)
+		return FALSE;
+
+	class = ((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass;
+
+	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
+}

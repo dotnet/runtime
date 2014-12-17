@@ -34,9 +34,13 @@ MonoVTable* sgen_client_get_array_fill_vtable (void);
  */
 gboolean sgen_client_array_fill_range (char *start, size_t size);
 
+gboolean sgen_client_object_has_critical_finalizer (MonoObject *obj);
+
 /*
  * Called after an object is enqueued for finalization.  This is a very low-level callback.
  * It should almost certainly be a NOP.
+ *
+ * FIXME: Can we merge this with `sgen_client_object_has_critical_finalizer()`?
  */
 void sgen_client_object_queued_for_finalization (MonoObject *obj);
 
