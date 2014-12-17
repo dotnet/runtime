@@ -243,7 +243,7 @@ namespace System.Collections.Immutable.Test
         {
             var builder = this.GetBuilder<string, int>();
             var collection = (ICollection)builder;
-            
+
             collection.CopyTo(new object[0], 0);
 
             builder.Add("b", 2);
