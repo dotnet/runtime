@@ -940,7 +940,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         private static bool CheckAssemblyConfiguration(System.Reflection.Assembly assemblyToCheck)
         {
-            foreach (var attribute in assemblyToCheck.GetCustomAttributes(false))
+            foreach (var attribute in assemblyToCheck.GetCustomAttributes())
             {
                 var debuggableAttribute = attribute as System.Diagnostics.DebuggableAttribute;
                 //if (debuggableAttribute != null) { return debuggableAttribute.IsJITTrackingEnabled; }

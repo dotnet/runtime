@@ -146,18 +146,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 fi = t.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
 
                 if (fi != null) break;
-#if !NETFX_CORE
-                t = t.BaseType;
-#else
                 t = t.GetTypeInfo().BaseType;
-#endif
             }
             return fi.GetValue(obj);
         }
 
         private static bool AllDebuggerTypeProxyPropertiesWork(object obj)
         {
-            var attrs = obj.GetType().GetCustomAttributes(typeof(DebuggerTypeProxyAttribute), false);
+            var attrs = obj.GetType().GetTypeInfo().GetCustomAttributes(typeof(DebuggerTypeProxyAttribute), false).ToArray();
             if (attrs.Length != 1)
             {
                 Console.WriteLine("Incorrect number of DebuggerTypeProxyAttributes");
@@ -206,7 +202,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         private static bool AllDebuggerDisplayReferencesWork(object obj)
         {
-            var attrs = obj.GetType().GetCustomAttributes(typeof(DebuggerDisplayAttribute), false);
+            var attrs = obj.GetType().GetTypeInfo().GetCustomAttributes(typeof(DebuggerDisplayAttribute), false).ToArray();
             if (attrs.Length != 1)
             {
                 Console.WriteLine("Incorrect number of DebuggerDisplayAttributes");
