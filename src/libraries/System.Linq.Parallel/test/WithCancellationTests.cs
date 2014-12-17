@@ -42,6 +42,7 @@ namespace Test
         }
 
         [Fact]
+        [ActiveIssue(240)]
         public static void PreCanceledToken_SimpleEnumerator()
         {
             OperationCanceledException caughtException = null;
@@ -513,6 +514,7 @@ namespace Test
 
         // Regression test for an issue causing ODE if a queryEnumator is disposed before moveNext is called.
         [Fact]
+        [ActiveIssue(240)]
         public static void ImmediateDispose()
         {
             var queryEnumerator = Enumerable.Range(1, 10).AsParallel().Select(x => x).GetEnumerator();
@@ -571,6 +573,7 @@ namespace Test
 
         // throwing a fake OCE(ct) when the ct isn't canceled should produce an AggregateException.
         [Fact]
+        [ActiveIssue(240)]
         public static void SetOperationsThrowAggregateOnCancelOrDispose_2()
         {
             try
@@ -677,6 +680,7 @@ namespace Test
         }
 
         [Fact]
+        [ActiveIssue(240)]
         public static void CancellationCausingNoDataMustThrow()
         {
             OperationCanceledException oce = null;
