@@ -2440,6 +2440,7 @@ namespace System.Reflection.Metadata.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(260)]
         public void CanReadFromSameMemoryMappedPEReaderInParallel()
         {
             // See http://roslyn.codeplex.com/workitem/299
@@ -2449,7 +2450,7 @@ namespace System.Reflection.Metadata.Tests
             // on demand for callers on different threads.
             //
 
-            using (var stream = File.OpenRead(typeof(object).Assembly.Location))
+            /*using (var stream = File.OpenRead(typeof(object).Assembly.Location))
             {
                 Assert.True(stream.Length > StreamMemoryBlockProvider.MemoryMapThreshold);
 
@@ -2462,7 +2463,7 @@ namespace System.Reflection.Metadata.Tests
                         Parallel.For(0, 4, _ => { peReader.GetMetadataReader(); });
                     }
                 }
-            }
+            }*/
         }
     }
 }
