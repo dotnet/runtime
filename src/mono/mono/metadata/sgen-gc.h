@@ -1017,7 +1017,7 @@ void sgen_nursery_allocator_set_nursery_bounds (char *nursery_start, char *nurse
 mword sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpin_queue);
 void sgen_init_nursery_allocator (void);
 void sgen_nursery_allocator_init_heavy_stats (void);
-void sgen_alloc_init_heavy_stats (void);
+void sgen_init_allocator (void);
 char* sgen_nursery_alloc_get_upper_alloc_bound (void);
 void* sgen_nursery_alloc (size_t size);
 void* sgen_nursery_alloc_range (size_t size, size_t min_size, size_t *out_alloc_size);

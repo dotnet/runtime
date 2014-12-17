@@ -1599,7 +1599,6 @@ init_stats (void)
 	mono_counters_register ("# nursery copy_object() failed to space", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_copy_object_failed_to_space);
 
 	sgen_nursery_allocator_init_heavy_stats ();
-	sgen_alloc_init_heavy_stats ();
 #endif
 
 	inited = TRUE;
@@ -3886,6 +3885,7 @@ mono_gc_base_init (void)
 	sgen_init_hash_table ();
 	sgen_init_descriptors ();
 	sgen_init_gray_queues ();
+	sgen_init_allocator ();
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_READY_ENTRY, sizeof (FinalizeReadyEntry));
