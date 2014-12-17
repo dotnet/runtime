@@ -47,17 +47,16 @@
     <Copy SourceFiles="@(BuildToolFiles)" DestinationFolder="$(ToolsDir)" />
 
     <Touch Files="$(BuildToolsInstallSempahore)" AlwaysCreate="true" />
-
   </Target>
 
   <ItemGroup>
     <Project Include="src\dirs.proj" />
   </ItemGroup>
-  
+
   <Import Project="dir.traversal.targets" />
-  
+
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(BinDir)" />
+    <RemoveDir Directories="$(BinDir);$(PackagesDir)" />
   </Target>
 </Project>
