@@ -99,12 +99,12 @@ namespace System.Reflection.Metadata
     public struct ModuleDefinitionHandle : IEquatable<ModuleDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Module;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal ModuleDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static ModuleDefinitionHandle FromRowId(uint rowId)
@@ -114,7 +114,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(ModuleDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator ModuleDefinitionHandle(Handle handle)
@@ -135,43 +135,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(ModuleDefinitionHandle left, ModuleDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ModuleDefinitionHandle && ((ModuleDefinitionHandle)obj).rowId == this.rowId;
+            return obj is ModuleDefinitionHandle && ((ModuleDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(ModuleDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(ModuleDefinitionHandle left, ModuleDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct AssemblyDefinitionHandle : IEquatable<AssemblyDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Assembly;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal AssemblyDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static AssemblyDefinitionHandle FromRowId(uint rowId)
@@ -181,7 +181,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(AssemblyDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator AssemblyDefinitionHandle(Handle handle)
@@ -202,43 +202,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(AssemblyDefinitionHandle left, AssemblyDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is AssemblyDefinitionHandle && ((AssemblyDefinitionHandle)obj).rowId == this.rowId;
+            return obj is AssemblyDefinitionHandle && ((AssemblyDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(AssemblyDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(AssemblyDefinitionHandle left, AssemblyDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct InterfaceImplementationHandle : IEquatable<InterfaceImplementationHandle>
     {
         private const uint tokenType = TokenTypeIds.InterfaceImpl;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal InterfaceImplementationHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static InterfaceImplementationHandle FromRowId(uint rowId)
@@ -248,7 +248,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(InterfaceImplementationHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator InterfaceImplementationHandle(Handle handle)
@@ -269,43 +269,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(InterfaceImplementationHandle left, InterfaceImplementationHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is InterfaceImplementationHandle && ((InterfaceImplementationHandle)obj).rowId == this.rowId;
+            return obj is InterfaceImplementationHandle && ((InterfaceImplementationHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(InterfaceImplementationHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(InterfaceImplementationHandle left, InterfaceImplementationHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct MethodDefinitionHandle : IEquatable<MethodDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodDef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private MethodDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static MethodDefinitionHandle FromRowId(uint rowId)
@@ -315,7 +315,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(MethodDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator MethodDefinitionHandle(Handle handle)
@@ -336,43 +336,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(MethodDefinitionHandle left, MethodDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is MethodDefinitionHandle && ((MethodDefinitionHandle)obj).rowId == this.rowId;
+            return obj is MethodDefinitionHandle && ((MethodDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(MethodDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(MethodDefinitionHandle left, MethodDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct MethodImplementationHandle : IEquatable<MethodImplementationHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodImpl;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private MethodImplementationHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static MethodImplementationHandle FromRowId(uint rowId)
@@ -382,7 +382,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(MethodImplementationHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator MethodImplementationHandle(Handle handle)
@@ -403,43 +403,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(MethodImplementationHandle left, MethodImplementationHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is MethodImplementationHandle && ((MethodImplementationHandle)obj).rowId == this.rowId;
+            return obj is MethodImplementationHandle && ((MethodImplementationHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(MethodImplementationHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(MethodImplementationHandle left, MethodImplementationHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct MethodSpecificationHandle : IEquatable<MethodSpecificationHandle>
     {
         private const uint tokenType = TokenTypeIds.MethodSpec;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private MethodSpecificationHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static MethodSpecificationHandle FromRowId(uint rowId)
@@ -449,7 +449,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(MethodSpecificationHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator MethodSpecificationHandle(Handle handle)
@@ -470,43 +470,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(MethodSpecificationHandle left, MethodSpecificationHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is MethodSpecificationHandle && ((MethodSpecificationHandle)obj).rowId == this.rowId;
+            return obj is MethodSpecificationHandle && ((MethodSpecificationHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(MethodSpecificationHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(MethodSpecificationHandle left, MethodSpecificationHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct TypeDefinitionHandle : IEquatable<TypeDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.TypeDef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private TypeDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static TypeDefinitionHandle FromRowId(uint rowId)
@@ -516,7 +516,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(TypeDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator TypeDefinitionHandle(Handle handle)
@@ -537,43 +537,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(TypeDefinitionHandle left, TypeDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is TypeDefinitionHandle && ((TypeDefinitionHandle)obj).rowId == this.rowId;
+            return obj is TypeDefinitionHandle && ((TypeDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(TypeDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(TypeDefinitionHandle left, TypeDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct ExportedTypeHandle : IEquatable<ExportedTypeHandle>
     {
         private const uint tokenType = TokenTypeIds.ExportedType;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private ExportedTypeHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static ExportedTypeHandle FromRowId(uint rowId)
@@ -583,7 +583,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(ExportedTypeHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator ExportedTypeHandle(Handle handle)
@@ -604,43 +604,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(ExportedTypeHandle left, ExportedTypeHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ExportedTypeHandle && ((ExportedTypeHandle)obj).rowId == this.rowId;
+            return obj is ExportedTypeHandle && ((ExportedTypeHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(ExportedTypeHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(ExportedTypeHandle left, ExportedTypeHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct TypeReferenceHandle : IEquatable<TypeReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.TypeRef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private TypeReferenceHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static TypeReferenceHandle FromRowId(uint rowId)
@@ -650,7 +650,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(TypeReferenceHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator TypeReferenceHandle(Handle handle)
@@ -671,43 +671,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(TypeReferenceHandle left, TypeReferenceHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is TypeReferenceHandle && ((TypeReferenceHandle)obj).rowId == this.rowId;
+            return obj is TypeReferenceHandle && ((TypeReferenceHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(TypeReferenceHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(TypeReferenceHandle left, TypeReferenceHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct TypeSpecificationHandle : IEquatable<TypeSpecificationHandle>
     {
         private const uint tokenType = TokenTypeIds.TypeSpec;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private TypeSpecificationHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static TypeSpecificationHandle FromRowId(uint rowId)
@@ -717,7 +717,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(TypeSpecificationHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator TypeSpecificationHandle(Handle handle)
@@ -738,43 +738,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(TypeSpecificationHandle left, TypeSpecificationHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is TypeSpecificationHandle && ((TypeSpecificationHandle)obj).rowId == this.rowId;
+            return obj is TypeSpecificationHandle && ((TypeSpecificationHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(TypeSpecificationHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(TypeSpecificationHandle left, TypeSpecificationHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct MemberReferenceHandle : IEquatable<MemberReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.MemberRef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private MemberReferenceHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static MemberReferenceHandle FromRowId(uint rowId)
@@ -784,7 +784,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(MemberReferenceHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator MemberReferenceHandle(Handle handle)
@@ -805,43 +805,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(MemberReferenceHandle left, MemberReferenceHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is MemberReferenceHandle && ((MemberReferenceHandle)obj).rowId == this.rowId;
+            return obj is MemberReferenceHandle && ((MemberReferenceHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(MemberReferenceHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(MemberReferenceHandle left, MemberReferenceHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct FieldDefinitionHandle : IEquatable<FieldDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.FieldDef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private FieldDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static FieldDefinitionHandle FromRowId(uint rowId)
@@ -851,7 +851,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(FieldDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator FieldDefinitionHandle(Handle handle)
@@ -872,43 +872,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(FieldDefinitionHandle left, FieldDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is FieldDefinitionHandle && ((FieldDefinitionHandle)obj).rowId == this.rowId;
+            return obj is FieldDefinitionHandle && ((FieldDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(FieldDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(FieldDefinitionHandle left, FieldDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct EventDefinitionHandle : IEquatable<EventDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Event;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private EventDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static EventDefinitionHandle FromRowId(uint rowId)
@@ -918,7 +918,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(EventDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator EventDefinitionHandle(Handle handle)
@@ -939,43 +939,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(EventDefinitionHandle left, EventDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is EventDefinitionHandle && ((EventDefinitionHandle)obj).rowId == this.rowId;
+            return obj is EventDefinitionHandle && ((EventDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(EventDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(EventDefinitionHandle left, EventDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct PropertyDefinitionHandle : IEquatable<PropertyDefinitionHandle>
     {
         private const uint tokenType = TokenTypeIds.Property;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private PropertyDefinitionHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static PropertyDefinitionHandle FromRowId(uint rowId)
@@ -985,7 +985,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(PropertyDefinitionHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator PropertyDefinitionHandle(Handle handle)
@@ -1006,43 +1006,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(PropertyDefinitionHandle left, PropertyDefinitionHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is PropertyDefinitionHandle && ((PropertyDefinitionHandle)obj).rowId == this.rowId;
+            return obj is PropertyDefinitionHandle && ((PropertyDefinitionHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(PropertyDefinitionHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(PropertyDefinitionHandle left, PropertyDefinitionHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct StandaloneSignatureHandle : IEquatable<StandaloneSignatureHandle>
     {
         private const uint tokenType = TokenTypeIds.Signature;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private StandaloneSignatureHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static StandaloneSignatureHandle FromRowId(uint rowId)
@@ -1052,7 +1052,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(StandaloneSignatureHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator StandaloneSignatureHandle(Handle handle)
@@ -1073,43 +1073,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(StandaloneSignatureHandle left, StandaloneSignatureHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is StandaloneSignatureHandle && ((StandaloneSignatureHandle)obj).rowId == this.rowId;
+            return obj is StandaloneSignatureHandle && ((StandaloneSignatureHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(StandaloneSignatureHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(StandaloneSignatureHandle left, StandaloneSignatureHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct ParameterHandle : IEquatable<ParameterHandle>
     {
         private const uint tokenType = TokenTypeIds.ParamDef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private ParameterHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static ParameterHandle FromRowId(uint rowId)
@@ -1119,7 +1119,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(ParameterHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator ParameterHandle(Handle handle)
@@ -1140,43 +1140,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(ParameterHandle left, ParameterHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ParameterHandle && ((ParameterHandle)obj).rowId == this.rowId;
+            return obj is ParameterHandle && ((ParameterHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(ParameterHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(ParameterHandle left, ParameterHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct GenericParameterHandle : IEquatable<GenericParameterHandle>
     {
         private const uint tokenType = TokenTypeIds.GenericParam;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private GenericParameterHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static GenericParameterHandle FromRowId(uint rowId)
@@ -1186,7 +1186,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(GenericParameterHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator GenericParameterHandle(Handle handle)
@@ -1207,43 +1207,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(GenericParameterHandle left, GenericParameterHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is GenericParameterHandle && ((GenericParameterHandle)obj).rowId == this.rowId;
+            return obj is GenericParameterHandle && ((GenericParameterHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(GenericParameterHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(GenericParameterHandle left, GenericParameterHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct GenericParameterConstraintHandle : IEquatable<GenericParameterConstraintHandle>
     {
         private const uint tokenType = TokenTypeIds.GenericParamConstraint;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private GenericParameterConstraintHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static GenericParameterConstraintHandle FromRowId(uint rowId)
@@ -1253,7 +1253,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(GenericParameterConstraintHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator GenericParameterConstraintHandle(Handle handle)
@@ -1274,43 +1274,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(GenericParameterConstraintHandle left, GenericParameterConstraintHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is GenericParameterConstraintHandle && ((GenericParameterConstraintHandle)obj).rowId == this.rowId;
+            return obj is GenericParameterConstraintHandle && ((GenericParameterConstraintHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(GenericParameterConstraintHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(GenericParameterConstraintHandle left, GenericParameterConstraintHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct ModuleReferenceHandle : IEquatable<ModuleReferenceHandle>
     {
         private const uint tokenType = TokenTypeIds.ModuleRef;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private ModuleReferenceHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static ModuleReferenceHandle FromRowId(uint rowId)
@@ -1320,7 +1320,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(ModuleReferenceHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator ModuleReferenceHandle(Handle handle)
@@ -1341,31 +1341,31 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(ModuleReferenceHandle left, ModuleReferenceHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ModuleReferenceHandle && ((ModuleReferenceHandle)obj).rowId == this.rowId;
+            return obj is ModuleReferenceHandle && ((ModuleReferenceHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(ModuleReferenceHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(ModuleReferenceHandle left, ModuleReferenceHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
@@ -1377,7 +1377,7 @@ namespace System.Reflection.Metadata
         //  0..24: Heap index or Virtual index
         // 25..30: TokenTypeId: AssemblyRef
         //     31: IsVirtual
-        private readonly uint token;
+        private readonly uint _token;
 
         internal enum VirtualIndex
         {
@@ -1393,7 +1393,7 @@ namespace System.Reflection.Metadata
 
         private AssemblyReferenceHandle(uint token)
         {
-            this.token = token;
+            _token = token;
         }
 
         internal static AssemblyReferenceHandle FromRowId(uint rowId)
@@ -1410,7 +1410,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(AssemblyReferenceHandle handle)
         {
-            return new Handle(handle.token);
+            return new Handle(handle._token);
         }
 
         public static explicit operator AssemblyReferenceHandle(Handle handle)
@@ -1427,54 +1427,54 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & TokenTypeIds.VirtualBitAndRowIdMask) == 0;
+                return (_token & TokenTypeIds.VirtualBitAndRowIdMask) == 0;
             }
         }
 
         internal bool IsVirtual
         {
-            get { return (token & TokenTypeIds.VirtualTokenMask) != 0; }
+            get { return (_token & TokenTypeIds.VirtualTokenMask) != 0; }
         }
 
-        internal uint Token { get { return token; } }
+        internal uint Token { get { return _token; } }
 
-        internal uint RowId { get { return token & TokenTypeIds.RIDMask; } }
+        internal uint RowId { get { return _token & TokenTypeIds.RIDMask; } }
 
         public static bool operator ==(AssemblyReferenceHandle left, AssemblyReferenceHandle right)
         {
-            return left.token == right.token;
+            return left._token == right._token;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is AssemblyReferenceHandle && ((AssemblyReferenceHandle)obj).token == this.token;
+            return obj is AssemblyReferenceHandle && ((AssemblyReferenceHandle)obj)._token == _token;
         }
 
         public bool Equals(AssemblyReferenceHandle other)
         {
-            return this.token == other.token;
+            return _token == other._token;
         }
 
         public override int GetHashCode()
         {
-            return this.token.GetHashCode();
+            return _token.GetHashCode();
         }
 
         public static bool operator !=(AssemblyReferenceHandle left, AssemblyReferenceHandle right)
         {
-            return left.token != right.token;
+            return left._token != right._token;
         }
     }
 
     public struct CustomAttributeHandle : IEquatable<CustomAttributeHandle>
     {
         private const uint tokenType = TokenTypeIds.CustomAttribute;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private CustomAttributeHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static CustomAttributeHandle FromRowId(uint rowId)
@@ -1484,7 +1484,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(CustomAttributeHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator CustomAttributeHandle(Handle handle)
@@ -1501,47 +1501,47 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return rowId == 0;
+                return _rowId == 0;
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(CustomAttributeHandle left, CustomAttributeHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is CustomAttributeHandle && ((CustomAttributeHandle)obj).rowId == this.rowId;
+            return obj is CustomAttributeHandle && ((CustomAttributeHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(CustomAttributeHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(CustomAttributeHandle left, CustomAttributeHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct DeclarativeSecurityAttributeHandle : IEquatable<DeclarativeSecurityAttributeHandle>
     {
         private const uint tokenType = TokenTypeIds.DeclSecurity;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private DeclarativeSecurityAttributeHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static DeclarativeSecurityAttributeHandle FromRowId(uint rowId)
@@ -1551,7 +1551,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(DeclarativeSecurityAttributeHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator DeclarativeSecurityAttributeHandle(Handle handle)
@@ -1568,47 +1568,47 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return rowId == 0;
+                return _rowId == 0;
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(DeclarativeSecurityAttributeHandle left, DeclarativeSecurityAttributeHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is DeclarativeSecurityAttributeHandle && ((DeclarativeSecurityAttributeHandle)obj).rowId == this.rowId;
+            return obj is DeclarativeSecurityAttributeHandle && ((DeclarativeSecurityAttributeHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(DeclarativeSecurityAttributeHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(DeclarativeSecurityAttributeHandle left, DeclarativeSecurityAttributeHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct ConstantHandle : IEquatable<ConstantHandle>
     {
         private const uint tokenType = TokenTypeIds.Constant;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private ConstantHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static ConstantHandle FromRowId(uint rowId)
@@ -1618,7 +1618,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(ConstantHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator ConstantHandle(Handle handle)
@@ -1639,43 +1639,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(ConstantHandle left, ConstantHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ConstantHandle && ((ConstantHandle)obj).rowId == this.rowId;
+            return obj is ConstantHandle && ((ConstantHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(ConstantHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(ConstantHandle left, ConstantHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct ManifestResourceHandle : IEquatable<ManifestResourceHandle>
     {
         private const uint tokenType = TokenTypeIds.ManifestResource;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private ManifestResourceHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static ManifestResourceHandle FromRowId(uint rowId)
@@ -1685,7 +1685,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(ManifestResourceHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator ManifestResourceHandle(Handle handle)
@@ -1706,43 +1706,43 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(ManifestResourceHandle left, ManifestResourceHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is ManifestResourceHandle && ((ManifestResourceHandle)obj).rowId == this.rowId;
+            return obj is ManifestResourceHandle && ((ManifestResourceHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(ManifestResourceHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(ManifestResourceHandle left, ManifestResourceHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
     public struct AssemblyFileHandle : IEquatable<AssemblyFileHandle>
     {
         private const uint tokenType = TokenTypeIds.File;
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         private AssemblyFileHandle(uint rowId)
         {
             Debug.Assert(TokenTypeIds.IsValidRowId(rowId));
-            this.rowId = rowId;
+            _rowId = rowId;
         }
 
         internal static AssemblyFileHandle FromRowId(uint rowId)
@@ -1752,7 +1752,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(AssemblyFileHandle handle)
         {
-            return new Handle(handle.rowId | tokenType);
+            return new Handle(handle._rowId | tokenType);
         }
 
         public static explicit operator AssemblyFileHandle(Handle handle)
@@ -1773,31 +1773,31 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal uint RowId { get { return rowId; } }
+        internal uint RowId { get { return _rowId; } }
 
         public static bool operator ==(AssemblyFileHandle left, AssemblyFileHandle right)
         {
-            return left.rowId == right.rowId;
+            return left._rowId == right._rowId;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is AssemblyFileHandle && ((AssemblyFileHandle)obj).rowId == this.rowId;
+            return obj is AssemblyFileHandle && ((AssemblyFileHandle)obj)._rowId == _rowId;
         }
 
         public bool Equals(AssemblyFileHandle other)
         {
-            return this.rowId == other.rowId;
+            return _rowId == other._rowId;
         }
 
         public override int GetHashCode()
         {
-            return this.rowId.GetHashCode();
+            return _rowId.GetHashCode();
         }
 
         public static bool operator !=(AssemblyFileHandle left, AssemblyFileHandle right)
         {
-            return left.rowId != right.rowId;
+            return left._rowId != right._rowId;
         }
     }
 
@@ -1805,12 +1805,12 @@ namespace System.Reflection.Metadata
     public struct UserStringHandle : IEquatable<UserStringHandle>
     {
         private const uint tokenType = TokenTypeIds.UserString;
-        private readonly uint token;
+        private readonly uint _token;
 
         private UserStringHandle(uint token)
         {
             Debug.Assert((token & TokenTypeIds.TokenTypeMask) == tokenType);
-            this.token = token;
+            _token = token;
         }
 
         internal static UserStringHandle FromIndex(uint heapIndex)
@@ -1820,7 +1820,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(UserStringHandle handle)
         {
-            return new Handle(handle.token);
+            return new Handle(handle._token);
         }
 
         public static explicit operator UserStringHandle(Handle handle)
@@ -1837,7 +1837,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & TokenTypeIds.RIDMask) == 0;
+                return (_token & TokenTypeIds.RIDMask) == 0;
             }
         }
 
@@ -1845,33 +1845,33 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (int)(token & TokenTypeIds.RIDMask);
+                return (int)(_token & TokenTypeIds.RIDMask);
             }
         }
 
         public static bool operator ==(UserStringHandle left, UserStringHandle right)
         {
-            return left.token == right.token;
+            return left._token == right._token;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is UserStringHandle && ((UserStringHandle)obj).token == this.token;
+            return obj is UserStringHandle && ((UserStringHandle)obj)._token == _token;
         }
 
         public bool Equals(UserStringHandle other)
         {
-            return this.token == other.token;
+            return _token == other._token;
         }
 
         public override int GetHashCode()
         {
-            return this.token.GetHashCode();
+            return _token.GetHashCode();
         }
 
         public static bool operator !=(UserStringHandle left, UserStringHandle right)
         {
-            return left.token != right.token;
+            return left._token != right._token;
         }
     }
 
@@ -1882,7 +1882,7 @@ namespace System.Reflection.Metadata
         //  0..24: Heap index or Virtual index
         // 25..30: TokenTypeId: String, WinRTPrefixedString
         //     31: IsVirtual
-        private readonly uint token;
+        private readonly uint _token;
 
         internal enum VirtualIndex
         {
@@ -1968,7 +1968,7 @@ namespace System.Reflection.Metadata
             Debug.Assert((token & TokenTypeIds.TokenTypeMask) == TokenTypeIds.String ||
                          (token & TokenTypeIds.TokenTypeMask) == TokenTypeIds.WinRTPrefixedString ||
                          (token & TokenTypeIds.TokenTypeMask) == TokenTypeIds.DotTerminatedString);
-            this.token = token;
+            _token = token;
         }
 
         internal static StringHandle FromIndex(uint heapIndex)
@@ -2003,7 +2003,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(StringHandle handle)
         {
-            return new Handle(handle.token);
+            return new Handle(handle._token);
         }
 
         public static explicit operator StringHandle(Handle handle)
@@ -2020,20 +2020,20 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
+                return (_token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
             }
         }
 
         internal bool IsVirtual
         {
-            get { return (token & TokenTypeIds.VirtualTokenMask) != 0; }
+            get { return (_token & TokenTypeIds.VirtualTokenMask) != 0; }
         }
 
         internal int Index
         {
             get
             {
-                return (int)(token & TokenTypeIds.RIDMask);
+                return (int)(_token & TokenTypeIds.RIDMask);
             }
         }
 
@@ -2041,33 +2041,33 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (StringKind)((token & TokenTypeIds.StringOrNamespaceKindMask) >> TokenTypeIds.RowIdBitCount);
+                return (StringKind)((_token & TokenTypeIds.StringOrNamespaceKindMask) >> TokenTypeIds.RowIdBitCount);
             }
         }
 
         public static bool operator ==(StringHandle left, StringHandle right)
         {
-            return left.token == right.token;
+            return left._token == right._token;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is StringHandle && ((StringHandle)obj).token == this.token;
+            return obj is StringHandle && ((StringHandle)obj)._token == _token;
         }
 
         public bool Equals(StringHandle other)
         {
-            return this.token == other.token;
+            return _token == other._token;
         }
 
         public override int GetHashCode()
         {
-            return this.token.GetHashCode();
+            return _token.GetHashCode();
         }
 
         public static bool operator !=(StringHandle left, StringHandle right)
         {
-            return left.token != right.token;
+            return left._token != right._token;
         }
     }
 
@@ -2092,14 +2092,14 @@ namespace System.Reflection.Metadata
         // in the string heap. This is used to represent namespaces that are parents of other namespaces
         // but no type definitions or forwarders of their own.
         //
-        private readonly uint token;
+        private readonly uint _token;
 
         private NamespaceDefinitionHandle(uint token)
         {
             Debug.Assert((token & TokenTypeIds.TokenTypeMask) == TokenTypeIds.Namespace ||
                          (token & TokenTypeIds.TokenTypeMask) == TokenTypeIds.SyntheticNamespace);
 
-            this.token = token;
+            _token = token;
         }
 
         internal static NamespaceDefinitionHandle FromIndexOfFullName(uint stringHeapIndex)
@@ -2116,7 +2116,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(NamespaceDefinitionHandle handle)
         {
-            return new Handle(handle.token);
+            return new Handle(handle._token);
         }
 
         public static explicit operator NamespaceDefinitionHandle(Handle handle)
@@ -2133,7 +2133,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
+                return (_token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
             }
         }
 
@@ -2141,7 +2141,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (int)(token & TokenTypeIds.RIDMask);
+                return (int)(_token & TokenTypeIds.RIDMask);
             }
         }
 
@@ -2149,7 +2149,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & TokenTypeIds.VirtualTokenMask) != 0;
+                return (_token & TokenTypeIds.VirtualTokenMask) != 0;
             }
         }
 
@@ -2157,7 +2157,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (NamespaceKind)((token & TokenTypeIds.StringOrNamespaceKindMask) >> TokenTypeIds.RowIdBitCount);
+                return (NamespaceKind)((_token & TokenTypeIds.StringOrNamespaceKindMask) >> TokenTypeIds.RowIdBitCount);
             }
         }
 
@@ -2165,7 +2165,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & (TokenTypeIds.TokenTypeMask)) != TokenTypeIds.SyntheticNamespace;
+                return (_token & (TokenTypeIds.TokenTypeMask)) != TokenTypeIds.SyntheticNamespace;
             }
         }
 
@@ -2178,32 +2178,32 @@ namespace System.Reflection.Metadata
 
         public static bool operator ==(NamespaceDefinitionHandle left, NamespaceDefinitionHandle right)
         {
-            return left.token == right.token;
+            return left._token == right._token;
         }
 
         public int CompareTo(NamespaceDefinitionHandle other)
         {
-            return TokenTypeIds.CompareTokens(this.token, other.token);
+            return TokenTypeIds.CompareTokens(_token, other._token);
         }
 
         public override bool Equals(object obj)
         {
-            return obj is NamespaceDefinitionHandle && ((NamespaceDefinitionHandle)obj).token == this.token;
+            return obj is NamespaceDefinitionHandle && ((NamespaceDefinitionHandle)obj)._token == _token;
         }
 
         public bool Equals(NamespaceDefinitionHandle other)
         {
-            return this.token == other.token;
+            return _token == other._token;
         }
 
         public override int GetHashCode()
         {
-            return this.token.GetHashCode();
+            return _token.GetHashCode();
         }
 
         public static bool operator !=(NamespaceDefinitionHandle left, NamespaceDefinitionHandle right)
         {
-            return left.token != right.token;
+            return left._token != right._token;
         }
     }
 
@@ -2216,7 +2216,7 @@ namespace System.Reflection.Metadata
         //  0..24: Heap index or Virtual Value (16 bits) + Virtual Index (8 bits)
         // 25..30: TokenTypeId: Blob
         //     31: IsVirtual
-        private readonly uint token;
+        private readonly uint _token;
 
         internal enum VirtualIndex : byte
         {
@@ -2240,7 +2240,7 @@ namespace System.Reflection.Metadata
         private BlobHandle(uint token)
         {
             Debug.Assert((token & TokenTypeIds.TokenTypeMask) == tokenType);
-            this.token = token;
+            _token = token;
         }
 
         internal static BlobHandle FromIndex(uint heapIndex)
@@ -2269,7 +2269,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(BlobHandle handle)
         {
-            return new Handle(handle.token);
+            return new Handle(handle._token);
         }
 
         public static explicit operator BlobHandle(Handle handle)
@@ -2286,7 +2286,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
+                return (_token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
             }
         }
 
@@ -2295,7 +2295,7 @@ namespace System.Reflection.Metadata
             get
             {
                 Debug.Assert(!IsVirtual);
-                return (int)(token & TokenTypeIds.RIDMask);
+                return (int)(_token & TokenTypeIds.RIDMask);
             }
         }
 
@@ -2303,44 +2303,44 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & TokenTypeIds.VirtualTokenMask) != 0;
+                return (_token & TokenTypeIds.VirtualTokenMask) != 0;
             }
         }
 
         internal VirtualIndex GetVirtualIndex()
         {
             Debug.Assert(IsVirtual);
-            return (VirtualIndex)(token & 0xff);
+            return (VirtualIndex)(_token & 0xff);
         }
 
         private ushort VirtualValue
         {
-            get { return unchecked((ushort)(this.token >> 8)); }
+            get { return unchecked((ushort)(_token >> 8)); }
         }
 
         public static bool operator ==(BlobHandle left, BlobHandle right)
         {
-            return left.token == right.token;
+            return left._token == right._token;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is BlobHandle && ((BlobHandle)obj).token == this.token;
+            return obj is BlobHandle && ((BlobHandle)obj)._token == _token;
         }
 
         public bool Equals(BlobHandle other)
         {
-            return this.token == other.token;
+            return _token == other._token;
         }
 
         public override int GetHashCode()
         {
-            return this.token.GetHashCode();
+            return _token.GetHashCode();
         }
 
         public static bool operator !=(BlobHandle left, BlobHandle right)
         {
-            return left.token != right.token;
+            return left._token != right._token;
         }
     }
 
@@ -2348,12 +2348,12 @@ namespace System.Reflection.Metadata
     public struct GuidHandle : IEquatable<GuidHandle>
     {
         private const uint tokenType = TokenTypeIds.Guid;
-        private readonly uint token;
+        private readonly uint _token;
 
         private GuidHandle(uint token)
         {
             Debug.Assert((token & TokenTypeIds.TokenTypeMask) == tokenType);
-            this.token = token;
+            _token = token;
         }
 
         internal static GuidHandle FromIndex(uint heapIndex)
@@ -2363,7 +2363,7 @@ namespace System.Reflection.Metadata
 
         public static implicit operator Handle(GuidHandle handle)
         {
-            return new Handle(handle.token);
+            return new Handle(handle._token);
         }
 
         public static explicit operator GuidHandle(Handle handle)
@@ -2380,7 +2380,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
+                return (_token & (TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0;
             }
         }
 
@@ -2388,33 +2388,33 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return (int)(token & TokenTypeIds.RIDMask);
+                return (int)(_token & TokenTypeIds.RIDMask);
             }
         }
 
         public static bool operator ==(GuidHandle left, GuidHandle right)
         {
-            return left.token == right.token;
+            return left._token == right._token;
         }
 
         public override bool Equals(object obj)
         {
-            return obj is GuidHandle && ((GuidHandle)obj).token == this.token;
+            return obj is GuidHandle && ((GuidHandle)obj)._token == _token;
         }
 
         public bool Equals(GuidHandle other)
         {
-            return this.token == other.token;
+            return _token == other._token;
         }
 
         public override int GetHashCode()
         {
-            return this.token.GetHashCode();
+            return _token.GetHashCode();
         }
 
         public static bool operator !=(GuidHandle left, GuidHandle right)
         {
-            return left.token != right.token;
+            return left._token != right._token;
         }
     }
 }

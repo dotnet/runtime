@@ -12,7 +12,7 @@ namespace System.Reflection.Internal
     internal sealed class ByteArrayMemoryProvider : MemoryBlockProvider
     {
         internal readonly ImmutableArray<byte> array;
-        private StrongBox<GCHandle> pinned;
+        private StrongBox<GCHandle> _pinned;
 
         public ByteArrayMemoryProvider(ImmutableArray<byte> array)
         {
@@ -26,10 +26,10 @@ namespace System.Reflection.Internal
 
         protected override void Dispose(bool disposing)
         {
-            if (pinned != null)
+            if (_pinned != null)
             {
-                pinned.Value.Free();
-                pinned = null;
+                _pinned.Value.Free();
+                _pinned = null;
             }
         }
 
@@ -56,19 +56,19 @@ namespace System.Reflection.Internal
         {
             get
             {
-                if (pinned == null)
+                if (_pinned == null)
                 {
                     var newPinned = new StrongBox<GCHandle>(
                         GCHandle.Alloc(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(array), GCHandleType.Pinned));
 
-                    if (Interlocked.CompareExchange(ref pinned, newPinned, null) != null)
+                    if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {
                         // another thread has already allocated the handle:
                         newPinned.Value.Free();
                     }
                 }
 
-                return (byte*)pinned.Value.AddrOfPinnedObject();
+                return (byte*)_pinned.Value.AddrOfPinnedObject();
             }
         }
     }
