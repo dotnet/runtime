@@ -104,6 +104,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        [ActiveIssue(264)]
         public void FileStream450()
         {
             try
@@ -118,6 +119,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        [ActiveIssue(264)]
         public void FileStreamWin7()
         {
             try
@@ -132,6 +134,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        [ActiveIssue(264)]
         public void FileStreamUnix()
         {
             try
@@ -148,6 +151,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        [ActiveIssue(264)]
         public void FileStream()
         {
             string filePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
