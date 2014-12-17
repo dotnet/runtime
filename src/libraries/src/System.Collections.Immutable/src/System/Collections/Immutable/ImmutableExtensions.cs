@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -352,7 +352,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The list being exposed.
             /// </summary>
-            private readonly IList<T> _collection;
+            private readonly IList<T> collection;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ListOfTWrapper&lt;T&gt;"/> class.
@@ -361,7 +361,7 @@ namespace System.Collections.Immutable
             internal ListOfTWrapper(IList<T> collection)
             {
                 Requires.NotNull(collection, "collection");
-                _collection = collection;
+                this.collection = collection;
             }
 
             /// <summary>
@@ -369,7 +369,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public int Count
             {
-                get { return _collection.Count; }
+                get { return this.collection.Count; }
             }
 
             /// <summary>
@@ -377,7 +377,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public T this[int index]
             {
-                get { return _collection[index]; }
+                get { return this.collection[index]; }
             }
 
             /// <summary>
@@ -388,7 +388,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public IEnumerator<T> GetEnumerator()
             {
-                return _collection.GetEnumerator();
+                return this.collection.GetEnumerator();
             }
 
             /// <summary>
@@ -412,12 +412,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The original sequence.
             /// </summary>
-            private readonly IEnumerable<T> _sequence;
+            private readonly IEnumerable<T> sequence;
 
             /// <summary>
             /// The list-ified sequence.
             /// </summary>
-            private IList<T> _collection;
+            private IList<T> collection;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="FallbackWrapper&lt;T&gt;"/> class.
@@ -426,7 +426,7 @@ namespace System.Collections.Immutable
             internal FallbackWrapper(IEnumerable<T> sequence)
             {
                 Requires.NotNull(sequence, "sequence");
-                _sequence = sequence;
+                this.sequence = sequence;
             }
 
             /// <summary>
@@ -436,18 +436,18 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_collection == null)
+                    if (this.collection == null)
                     {
                         int count;
-                        if (_sequence.TryGetCount(out count))
+                        if (this.sequence.TryGetCount(out count))
                         {
                             return count;
                         }
 
-                        _collection = _sequence.ToArray();
+                        this.collection = this.sequence.ToArray();
                     }
 
-                    return _collection.Count;
+                    return this.collection.Count;
                 }
             }
 
@@ -458,12 +458,12 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_collection == null)
+                    if (this.collection == null)
                     {
-                        _collection = _sequence.ToArray();
+                        this.collection = this.sequence.ToArray();
                     }
 
-                    return _collection[index];
+                    return this.collection[index];
                 }
             }
 
@@ -475,7 +475,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public IEnumerator<T> GetEnumerator()
             {
-                return _sequence.GetEnumerator();
+                return this.sequence.GetEnumerator();
             }
 
             /// <summary>

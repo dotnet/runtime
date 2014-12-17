@@ -37,16 +37,16 @@ namespace TestUtilities
         {
             public static readonly LCS<T> Default = new LCS<T>(EqualityComparer<T>.Default);
 
-            private readonly IEqualityComparer<T> _comparer;
+            private readonly IEqualityComparer<T> comparer;
 
             public LCS(IEqualityComparer<T> comparer)
             {
-                _comparer = comparer;
+                this.comparer = comparer;
             }
 
             protected override bool ItemsEqual(IList<T> sequenceA, int indexA, IList<T> sequenceB, int indexB)
             {
-                return _comparer.Equals(sequenceA[indexA], sequenceB[indexB]);
+                return comparer.Equals(sequenceA[indexA], sequenceB[indexB]);
             }
 
             public IEnumerable<string> CalculateDiff(IList<T> sequenceA, IList<T> sequenceB, Func<T, string> toString)
@@ -82,11 +82,11 @@ namespace TestUtilities
             return string.Join(separator, lcs.CalculateDiff(expectedList, actualList, toString));
         }
 
-        private static readonly char[] s_LineSplitChars = new[] { '\r', '\n' };
+        private static readonly char[] LineSplitChars = new[] { '\r', '\n' };
 
         public static string[] Lines(string s)
         {
-            return s.Split(s_LineSplitChars, StringSplitOptions.RemoveEmptyEntries);
+            return s.Split(LineSplitChars, StringSplitOptions.RemoveEmptyEntries);
         }
 
         public static string DiffReport(string expected, string actual)

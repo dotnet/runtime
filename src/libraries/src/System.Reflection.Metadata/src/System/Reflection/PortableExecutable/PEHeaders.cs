@@ -13,15 +13,15 @@ namespace System.Reflection.PortableExecutable
     /// </summary>
     public sealed class PEHeaders
     {
-        private readonly CoffHeader _coffHeader;
-        private readonly PEHeader _peHeader;
-        private readonly ImmutableArray<SectionHeader> _sectionHeaders;
-        private readonly CorHeader _corHeader;
-        private readonly int _metadataStartOffset = -1;
-        private readonly int _metadataSize;
-        private readonly int _coffHeaderStartOffset = -1;
-        private readonly int _corHeaderStartOffset = -1;
-        private readonly int _peHeaderStartOffset = -1;
+        private readonly CoffHeader coffHeader;
+        private readonly PEHeader peHeader;
+        private readonly ImmutableArray<SectionHeader> sectionHeaders;
+        private readonly CorHeader corHeader;
+        private readonly int metadataStartOffset = -1;
+        private readonly int metadataSize;
+        private readonly int coffHeaderStartOffset = -1;
+        private readonly int corHeaderStartOffset = -1;
+        private readonly int peHeaderStartOffset = -1;
 
         /// <summary>
         /// Reads PE headers from the current location in the stream.
@@ -69,29 +69,29 @@ namespace System.Reflection.PortableExecutable
             bool isCoffOnly;
             SkipDosHeader(ref reader, out isCoffOnly);
 
-            _coffHeaderStartOffset = reader.CurrentOffset;
-            _coffHeader = new CoffHeader(ref reader);
+            this.coffHeaderStartOffset = reader.CurrentOffset;
+            this.coffHeader = new CoffHeader(ref reader);
 
             if (!isCoffOnly)
             {
-                _peHeaderStartOffset = reader.CurrentOffset;
-                _peHeader = new PEHeader(ref reader);
+                this.peHeaderStartOffset = reader.CurrentOffset;
+                this.peHeader = new PEHeader(ref reader);
             }
 
-            _sectionHeaders = this.ReadSectionHeaders(ref reader);
+            this.sectionHeaders = this.ReadSectionHeaders(ref reader);
 
             if (!isCoffOnly)
             {
                 int offset;
                 if (TryCalculateCorHeaderOffset(size, out offset))
                 {
-                    _corHeaderStartOffset = offset;
+                    this.corHeaderStartOffset = offset;
                     reader.Seek(offset);
-                    _corHeader = new CorHeader(ref reader);
+                    this.corHeader = new CorHeader(ref reader);
                 }
             }
 
-            CalculateMetadataLocation(size, out _metadataStartOffset, out _metadataSize);
+            CalculateMetadataLocation(size, out this.metadataStartOffset, out this.metadataSize);
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int MetadataStartOffset
         {
-            get { return _metadataStartOffset; }
+            get { return metadataStartOffset; }
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int MetadataSize
         {
-            get { return _metadataSize; }
+            get { return metadataSize; }
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public CoffHeader CoffHeader
         {
-            get { return _coffHeader; }
+            get { return coffHeader; }
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int CoffHeaderStartOffset
         {
-            get { return _coffHeaderStartOffset; }
+            get { return coffHeaderStartOffset; }
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public bool IsCoffOnly
         {
-            get { return _peHeader == null; }
+            get { return this.peHeader == null; }
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public PEHeader PEHeader
         {
-            get { return _peHeader; }
+            get { return peHeader; }
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int PEHeaderStartOffset
         {
-            get { return _peHeaderStartOffset; }
+            get { return peHeaderStartOffset; }
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public ImmutableArray<SectionHeader> SectionHeaders
         {
-            get { return _sectionHeaders; }
+            get { return sectionHeaders; }
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public CorHeader CorHeader
         {
-            get { return _corHeader; }
+            get { return corHeader; }
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public int CorHeaderStartOffset
         {
-            get { return _corHeaderStartOffset; }
+            get { return corHeaderStartOffset; }
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace System.Reflection.PortableExecutable
         {
             get
             {
-                return _peHeader != null && _peHeader.Subsystem == Subsystem.WindowsCui;
+                return peHeader != null && peHeader.Subsystem == Subsystem.WindowsCui;
             }
         }
 
@@ -193,7 +193,7 @@ namespace System.Reflection.PortableExecutable
         {
             get
             {
-                return (_coffHeader.Characteristics & Characteristics.Dll) != 0;
+                return (coffHeader.Characteristics & Characteristics.Dll) != 0;
             }
         }
 
@@ -204,19 +204,19 @@ namespace System.Reflection.PortableExecutable
         {
             get
             {
-                return (_coffHeader.Characteristics & Characteristics.Dll) == 0;
+                return (coffHeader.Characteristics & Characteristics.Dll) == 0;
             }
         }
 
         private bool TryCalculateCorHeaderOffset(long peStreamSize, out int startOffset)
         {
-            if (!TryGetDirectoryOffset(_peHeader.CorHeaderTableDirectory, out startOffset))
+            if (!TryGetDirectoryOffset(peHeader.CorHeaderTableDirectory, out startOffset))
             {
                 startOffset = -1;
                 return false;
             }
 
-            int length = _peHeader.CorHeaderTableDirectory.Size;
+            int length = peHeader.CorHeaderTableDirectory.Size;
             if (length < COR20Constants.SizeOfCorHeader)
             {
                 throw new BadImageFormatException(MetadataResources.InvalidCorHeaderSize);
@@ -271,7 +271,7 @@ namespace System.Reflection.PortableExecutable
 
         private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader)
         {
-            int numberOfSections = _coffHeader.NumberOfSections;
+            int numberOfSections = this.coffHeader.NumberOfSections;
             if (numberOfSections < 0)
             {
                 throw new BadImageFormatException(MetadataResources.InvalidNumberOfSections);
@@ -303,13 +303,13 @@ namespace System.Reflection.PortableExecutable
                 return false;
             }
 
-            int relativeOffset = directory.RelativeVirtualAddress - _sectionHeaders[sectionIndex].VirtualAddress;
-            if (directory.Size > _sectionHeaders[sectionIndex].VirtualSize - relativeOffset)
+            int relativeOffset = directory.RelativeVirtualAddress - sectionHeaders[sectionIndex].VirtualAddress;
+            if (directory.Size > sectionHeaders[sectionIndex].VirtualSize - relativeOffset)
             {
                 throw new BadImageFormatException(MetadataResources.SectionTooSmall);
             }
 
-            offset = _sectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
+            offset = sectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
             return true;
         }
 
@@ -323,10 +323,10 @@ namespace System.Reflection.PortableExecutable
         /// </returns>
         public int GetContainingSectionIndex(int relativeVirtualAddress)
         {
-            for (int i = 0; i < _sectionHeaders.Length; i++)
+            for (int i = 0; i < sectionHeaders.Length; i++)
             {
-                if (_sectionHeaders[i].VirtualAddress <= relativeVirtualAddress &&
-                    relativeVirtualAddress < _sectionHeaders[i].VirtualAddress + _sectionHeaders[i].VirtualSize)
+                if (sectionHeaders[i].VirtualAddress <= relativeVirtualAddress &&
+                    relativeVirtualAddress < sectionHeaders[i].VirtualAddress + sectionHeaders[i].VirtualSize)
                 {
                     return i;
                 }
@@ -363,7 +363,7 @@ namespace System.Reflection.PortableExecutable
                 start = SectionHeaders[cormeta].PointerToRawData;
                 size = SectionHeaders[cormeta].SizeOfRawData;
             }
-            else if (_corHeader == null)
+            else if (corHeader == null)
             {
                 start = 0;
                 size = 0;
@@ -371,12 +371,12 @@ namespace System.Reflection.PortableExecutable
             }
             else
             {
-                if (!TryGetDirectoryOffset(_corHeader.MetadataDirectory, out start))
+                if (!TryGetDirectoryOffset(corHeader.MetadataDirectory, out start))
                 {
                     throw new BadImageFormatException(MetadataResources.MissingDataDirectory);
                 }
 
-                size = _corHeader.MetadataDirectory.Size;
+                size = corHeader.MetadataDirectory.Size;
             }
 
             if (start < 0 ||

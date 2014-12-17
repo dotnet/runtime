@@ -7,23 +7,23 @@ namespace System.Reflection.Metadata
 {
     public struct GenericParameter
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal GenericParameter(MetadataReader reader, GenericParameterHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private GenericParameterHandle Handle
         {
-            get { return GenericParameterHandle.FromRowId(_rowId); }
+            get { return GenericParameterHandle.FromRowId(rowId); }
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.GenericParamTable.GetOwner(Handle);
+                return reader.GenericParamTable.GetOwner(Handle);
             }
         }
 
@@ -50,7 +50,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.GenericParamTable.GetFlags(Handle);
+                return reader.GenericParamTable.GetFlags(Handle);
             }
         }
 
@@ -64,7 +64,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.GenericParamTable.GetNumber(Handle);
+                return reader.GenericParamTable.GetNumber(Handle);
             }
         }
 
@@ -78,18 +78,18 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.GenericParamTable.GetName(Handle);
+                return reader.GenericParamTable.GetName(Handle);
             }
         }
 
         public GenericParameterConstraintHandleCollection GetConstraints()
         {
-            return _reader.GenericParamConstraintTable.FindConstraintsForGenericParam(Handle);
+            return reader.GenericParamConstraintTable.FindConstraintsForGenericParam(Handle);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
     }
 }

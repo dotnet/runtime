@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -17,12 +17,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The collection to be enumerated.
         /// </summary>
-        private readonly ImmutableDictionary<TKey, TValue> _map;
+        private readonly ImmutableDictionary<TKey, TValue> map;
 
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private KeyValuePair<TKey, TValue>[] _contents;
+        private KeyValuePair<TKey, TValue>[] contents;
 
         /// <summary>   
         /// Initializes a new instance of the <see cref="ImmutableDictionaryDebuggerProxy&lt;TKey, TValue&gt;"/> class.
@@ -31,7 +31,7 @@ namespace System.Collections.Immutable
         public ImmutableDictionaryDebuggerProxy(ImmutableDictionary<TKey, TValue> map)
         {
             Requires.NotNull(map, "map");
-            _map = map;
+            this.map = map;
         }
 
         /// <summary>
@@ -42,12 +42,12 @@ namespace System.Collections.Immutable
         {
             get
             {
-                if (_contents == null)
+                if (this.contents == null)
                 {
-                    _contents = _map.ToArray(_map.Count);
+                    this.contents = this.map.ToArray(this.map.Count);
                 }
 
-                return _contents;
+                return this.contents;
             }
         }
     }

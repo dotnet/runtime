@@ -9,12 +9,12 @@ namespace System.Reflection.Metadata
 {
     public struct NamespaceDefinition
     {
-        private NamespaceData _data;
+        private NamespaceData data;
 
         internal NamespaceDefinition(NamespaceData data)
         {
             Debug.Assert(data != null);
-            _data = data;
+            this.data = data;
         }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public StringHandle Name
         {
-            get { return _data.Name; }
+            get { return data.Name; }
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public NamespaceDefinitionHandle Parent
         {
-            get { return _data.Parent; }
+            get { return data.Parent; }
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public ImmutableArray<NamespaceDefinitionHandle> NamespaceDefinitions
         {
-            get { return _data.NamespaceDefinitions; }
+            get { return data.NamespaceDefinitions; }
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public ImmutableArray<TypeDefinitionHandle> TypeDefinitions
         {
-            get { return _data.TypeDefinitions; }
+            get { return data.TypeDefinitions; }
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public ImmutableArray<ExportedTypeHandle> ExportedTypes
         {
-            get { return _data.ExportedTypes; }
+            get { return data.ExportedTypes; }
         }
     }
 }

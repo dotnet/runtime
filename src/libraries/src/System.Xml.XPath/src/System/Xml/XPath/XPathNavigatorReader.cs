@@ -24,16 +24,16 @@ namespace System.Xml.XPath
             Error,
         }
 
-        private XPathNavigator _nav;
-        private XPathNavigator _navToRead;
-        private int _depth;
-        private State _state;
-        private XmlNodeType _nodeType;
-        private int _attrCount;
-        private bool _readEntireDocument;
+        private XPathNavigator nav;
+        private XPathNavigator navToRead;
+        private int depth;
+        private State state;
+        private XmlNodeType nodeType;
+        private int attrCount;
+        private bool readEntireDocument;
 
-        private ReadContentAsBinaryHelper _readBinaryHelper;
-        private State _savedState;
+        private ReadContentAsBinaryHelper readBinaryHelper;
+        private State savedState;
 
         internal const string space = "space";
 
@@ -68,11 +68,11 @@ namespace System.Xml.XPath
         protected XPathNavigatorReader(XPathNavigator navToRead)
         {
             // Need clone that can be moved independently of original navigator
-            _navToRead = navToRead;
-            _nav = XmlEmptyNavigator.Singleton;
-            _state = State.Initial;
-            _depth = 0;
-            _nodeType = XPathNavigatorReader.ToXmlNodeType(_nav.NodeType);
+            this.navToRead = navToRead;
+            this.nav = XmlEmptyNavigator.Singleton;
+            this.state = State.Initial;
+            this.depth = 0;
+            this.nodeType = XPathNavigatorReader.ToXmlNodeType(this.nav.NodeType);
         }
 
         //-----------------------------------------------
@@ -82,23 +82,23 @@ namespace System.Xml.XPath
         {
             get
             {
-                return _navToRead.NameTable;
+                return this.navToRead.NameTable;
             }
         }
 
         IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
         {
-            return _nav.GetNamespacesInScope(scope);
+            return this.nav.GetNamespacesInScope(scope);
         }
 
         string IXmlNamespaceResolver.LookupNamespace(string prefix)
         {
-            return _nav.LookupNamespace(prefix);
+            return this.nav.LookupNamespace(prefix);
         }
 
         string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
         {
-            return _nav.LookupPrefix(namespaceName);
+            return this.nav.LookupPrefix(namespaceName);
         }
 
         //-----------------------------------------------
@@ -119,12 +119,12 @@ namespace System.Xml.XPath
 
         public override System.Type ValueType
         {
-            get { return _nav.ValueType; }
+            get { return this.nav.ValueType; }
         }
 
         public override XmlNodeType NodeType
         {
-            get { return _nodeType; }
+            get { return this.nodeType; }
         }
 
         public override string NamespaceURI
@@ -132,12 +132,12 @@ namespace System.Xml.XPath
             get
             {
                 //NamespaceUri for namespace nodes is different in case of XPathNavigator and Reader
-                if (_nav.NodeType == XPathNodeType.Namespace)
+                if (this.nav.NodeType == XPathNodeType.Namespace)
                     return this.NameTable.Add(XmlConst.ReservedNsXmlNs);
                 //Special case attribute text node
                 if (this.NodeType == XmlNodeType.Text)
                     return string.Empty;
-                return _nav.NamespaceURI;
+                return this.nav.NamespaceURI;
             }
         }
 
@@ -146,12 +146,12 @@ namespace System.Xml.XPath
             get
             {
                 //Default namespace in case of reader has a local name value of 'xmlns'
-                if (_nav.NodeType == XPathNodeType.Namespace && _nav.LocalName.Length == 0)
+                if (this.nav.NodeType == XPathNodeType.Namespace && this.nav.LocalName.Length == 0)
                     return this.NameTable.Add("xmlns");
                 //Special case attribute text node
                 if (this.NodeType == XmlNodeType.Text)
                     return string.Empty;
-                return _nav.LocalName;
+                return this.nav.LocalName;
             }
         }
 
@@ -160,12 +160,12 @@ namespace System.Xml.XPath
             get
             {
                 //Prefix for namespace nodes is different in case of XPathNavigator and Reader
-                if (_nav.NodeType == XPathNodeType.Namespace && _nav.LocalName.Length != 0)
+                if (this.nav.NodeType == XPathNodeType.Namespace && this.nav.LocalName.Length != 0)
                     return this.NameTable.Add("xmlns");
                 //Special case attribute text node
                 if (this.NodeType == XmlNodeType.Text)
                     return string.Empty;
-                return _nav.Prefix;
+                return this.nav.Prefix;
             }
         }
 
@@ -174,9 +174,9 @@ namespace System.Xml.XPath
             get
             {
                 //reader returns BaseUri even before read method is called.
-                if (_state == State.Initial)
-                    return _navToRead.BaseURI;
-                return _nav.BaseURI;
+                if (this.state == State.Initial)
+                    return this.navToRead.BaseURI;
+                return this.nav.BaseURI;
             }
         }
 
@@ -184,7 +184,7 @@ namespace System.Xml.XPath
         {
             get
             {
-                return _nav.IsEmptyElement;
+                return this.nav.IsEmptyElement;
             }
         }
 
@@ -192,7 +192,7 @@ namespace System.Xml.XPath
         {
             get
             {
-                XPathNavigator tempNav = _nav.Clone();
+                XPathNavigator tempNav = this.nav.Clone();
                 do
                 {
                     if (tempNav.MoveToAttribute(XPathNavigatorReader.space, XmlConst.ReservedNsXml))
@@ -218,7 +218,7 @@ namespace System.Xml.XPath
         {
             get
             {
-                return _nav.XmlLang;
+                return this.nav.XmlLang;
             }
         }
 
@@ -226,10 +226,10 @@ namespace System.Xml.XPath
         {
             get
             {
-                if ((_nodeType != XmlNodeType.Element)
-                    && (_nodeType != XmlNodeType.Document)
-                    && (_nodeType != XmlNodeType.EndElement)
-                    && (_nodeType != XmlNodeType.None))
+                if ((this.nodeType != XmlNodeType.Element)
+                    && (this.nodeType != XmlNodeType.Document)
+                    && (this.nodeType != XmlNodeType.EndElement)
+                    && (this.nodeType != XmlNodeType.None))
                     return true;
                 return false;
             }
@@ -239,11 +239,11 @@ namespace System.Xml.XPath
         {
             get
             {
-                if ((_nodeType != XmlNodeType.Element)
-                    && (_nodeType != XmlNodeType.Document)
-                    && (_nodeType != XmlNodeType.EndElement)
-                    && (_nodeType != XmlNodeType.None))
-                    return _nav.Value;
+                if ((this.nodeType != XmlNodeType.Element)
+                    && (this.nodeType != XmlNodeType.Document)
+                    && (this.nodeType != XmlNodeType.EndElement)
+                    && (this.nodeType != XmlNodeType.None))
+                    return this.nav.Value;
                 return string.Empty;
             }
         }
@@ -251,20 +251,20 @@ namespace System.Xml.XPath
         private XPathNavigator GetElemNav()
         {
             XPathNavigator tempNav;
-            switch (_state)
+            switch (this.state)
             {
                 case State.Content:
-                    return _nav.Clone();
+                    return this.nav.Clone();
                 case State.Attribute:
                 case State.AttrVal:
-                    tempNav = _nav.Clone();
+                    tempNav = this.nav.Clone();
                     if (tempNav.MoveToParent())
                         return tempNav;
                     break;
                 case State.InReadBinary:
-                    _state = _savedState;
+                    state = savedState;
                     XPathNavigator nav = GetElemNav();
-                    _state = State.InReadBinary;
+                    state = State.InReadBinary;
                     return nav;
             }
             return null;
@@ -273,30 +273,30 @@ namespace System.Xml.XPath
         private XPathNavigator GetElemNav(out int depth)
         {
             XPathNavigator nav = null;
-            switch (_state)
+            switch (this.state)
             {
                 case State.Content:
-                    if (_nodeType == XmlNodeType.Element)
-                        nav = _nav.Clone();
-                    depth = _depth;
+                    if (this.nodeType == XmlNodeType.Element)
+                        nav = this.nav.Clone();
+                    depth = this.depth;
                     break;
                 case State.Attribute:
-                    nav = _nav.Clone();
+                    nav = this.nav.Clone();
                     nav.MoveToParent();
-                    depth = _depth - 1;
+                    depth = this.depth - 1;
                     break;
                 case State.AttrVal:
-                    nav = _nav.Clone();
+                    nav = this.nav.Clone();
                     nav.MoveToParent();
-                    depth = _depth - 2;
+                    depth = this.depth - 2;
                     break;
                 case State.InReadBinary:
-                    _state = _savedState;
+                    state = savedState;
                     nav = GetElemNav(out depth);
-                    _state = State.InReadBinary;
+                    state = State.InReadBinary;
                     break;
                 default:
-                    depth = _depth;
+                    depth = this.depth;
                     break;
             }
             return nav;
@@ -304,17 +304,17 @@ namespace System.Xml.XPath
 
         private void MoveToAttr(XPathNavigator nav, int depth)
         {
-            _nav.MoveTo(nav);
-            _depth = depth;
-            _nodeType = XmlNodeType.Attribute;
-            _state = State.Attribute;
+            this.nav.MoveTo(nav);
+            this.depth = depth;
+            this.nodeType = XmlNodeType.Attribute;
+            this.state = State.Attribute;
         }
 
         public override int AttributeCount
         {
             get
             {
-                if (_attrCount < 0)
+                if (this.attrCount < 0)
                 {
                     // attribute count works for element, regardless of where you are in start tag
                     XPathNavigator tempNav = GetElemNav();
@@ -337,16 +337,16 @@ namespace System.Xml.XPath
                             } while (tempNav.MoveToNextAttribute());
                         }
                     }
-                    _attrCount = count;
+                    this.attrCount = count;
                 }
-                return _attrCount;
+                return this.attrCount;
             }
         }
 
         public override string GetAttribute(string name)
         {
             // reader allows calling GetAttribute, even when positioned inside attributes
-            XPathNavigator nav = _nav;
+            XPathNavigator nav = this.nav;
             switch (nav.NodeType)
             {
                 case XPathNodeType.Element:
@@ -365,7 +365,7 @@ namespace System.Xml.XPath
             {
                 if (localname == "xmlns")
                     return nav.GetNamespace(string.Empty);
-                if ((object)nav == (object)_nav)
+                if ((object)nav == (object)this.nav)
                     nav = nav.Clone();
                 if (nav.MoveToAttribute(localname, string.Empty))
                     return nav.Value;
@@ -374,7 +374,7 @@ namespace System.Xml.XPath
             {
                 if (prefix == "xmlns")
                     return nav.GetNamespace(localname);
-                if ((object)nav == (object)_nav)
+                if ((object)nav == (object)this.nav)
                     nav = nav.Clone();
                 if (nav.MoveToFirstAttribute())
                 {
@@ -393,7 +393,7 @@ namespace System.Xml.XPath
             if (null == localName)
                 throw new ArgumentNullException("localName");
             // reader allows calling GetAttribute, even when positioned inside attributes
-            XPathNavigator nav = _nav;
+            XPathNavigator nav = this.nav;
             switch (nav.NodeType)
             {
                 case XPathNodeType.Element:
@@ -418,7 +418,7 @@ namespace System.Xml.XPath
             // We need to clone the navigator and move the clone to the attribute to see whether the attribute exists, 
             // because XPathNavigator.GetAttribute return string.Empty for both when the the attribute is not there or when 
             // it has an empty value. XmlReader.GetAttribute must return null if the attribute does not exist.
-            if ((object)nav == (object)_nav)
+            if ((object)nav == (object)this.nav)
                 nav = nav.Clone();
             if (nav.MoveToAttribute(localName, namespaceURI))
             {
@@ -491,7 +491,7 @@ namespace System.Xml.XPath
         {
             if (null == localName)
                 throw new ArgumentNullException("localName");
-            int depth = _depth;
+            int depth = this.depth;
             XPathNavigator nav = GetElemNav(out depth);
             if (null != nav)
             {
@@ -519,10 +519,10 @@ namespace System.Xml.XPath
             return false;
 
         FoundMatch:
-            if (_state == State.InReadBinary)
+            if (state == State.InReadBinary)
             {
-                _readBinaryHelper.Finish();
-                _state = _savedState;
+                readBinaryHelper.Finish();
+                state = savedState;
             }
             MoveToAttr(nav, depth + 1);
             return true;
@@ -548,10 +548,10 @@ namespace System.Xml.XPath
             }
             return false;
         FoundMatch:
-            if (_state == State.InReadBinary)
+            if (state == State.InReadBinary)
             {
-                _readBinaryHelper.Finish();
-                _state = _savedState;
+                readBinaryHelper.Finish();
+                state = savedState;
             }
             MoveToAttr(nav, depth + 1);
             return true;
@@ -559,31 +559,31 @@ namespace System.Xml.XPath
 
         public override bool MoveToNextAttribute()
         {
-            switch (_state)
+            switch (this.state)
             {
                 case State.Content:
                     return MoveToFirstAttribute();
 
                 case State.Attribute:
                     {
-                        if (XPathNodeType.Attribute == _nav.NodeType)
-                            return _nav.MoveToNextAttribute();
+                        if (XPathNodeType.Attribute == this.nav.NodeType)
+                            return this.nav.MoveToNextAttribute();
 
                         // otherwise it is on a namespace... namespace are in reverse order
-                        Debug.Assert(XPathNodeType.Namespace == _nav.NodeType);
-                        XPathNavigator nav = _nav.Clone();
+                        Debug.Assert(XPathNodeType.Namespace == this.nav.NodeType);
+                        XPathNavigator nav = this.nav.Clone();
                         if (!nav.MoveToParent())
                             return false; // shouldn't happen
                         if (!nav.MoveToFirstNamespace(XPathNamespaceScope.Local))
                             return false; // shouldn't happen
-                        if (nav.IsSamePosition(_nav))
+                        if (nav.IsSamePosition(this.nav))
                         {
                             // this was the last one... start walking attributes
                             nav.MoveToParent();
                             if (!nav.MoveToFirstAttribute())
                                 return false;
                             // otherwise we are there
-                            _nav.MoveTo(nav);
+                            this.nav.MoveTo(nav);
                             return true;
                         }
                         else
@@ -596,9 +596,9 @@ namespace System.Xml.XPath
                                     Debug.Assert(false, "Couldn't find Namespace Node! Should not happen!");
                                     return false;
                                 }
-                                if (nav.IsSamePosition(_nav))
+                                if (nav.IsSamePosition(this.nav))
                                 {
-                                    _nav.MoveTo(prev);
+                                    this.nav.MoveTo(prev);
                                     return true;
                                 }
                                 prev.MoveTo(nav);
@@ -607,25 +607,25 @@ namespace System.Xml.XPath
                         }
                     }
                 case State.AttrVal:
-                    _depth--;
-                    _state = State.Attribute;
+                    depth--;
+                    this.state = State.Attribute;
                     if (!MoveToNextAttribute())
                     {
-                        _depth++;
-                        _state = State.AttrVal;
+                        depth++;
+                        this.state = State.AttrVal;
                         return false;
                     }
-                    _nodeType = XmlNodeType.Attribute;
+                    this.nodeType = XmlNodeType.Attribute;
                     return true;
 
                 case State.InReadBinary:
-                    _state = _savedState;
+                    state = savedState;
                     if (!MoveToNextAttribute())
                     {
-                        _state = State.InReadBinary;
+                        state = State.InReadBinary;
                         return false;
                     }
-                    _readBinaryHelper.Finish();
+                    readBinaryHelper.Finish();
                     return true;
 
                 default:
@@ -679,10 +679,10 @@ namespace System.Xml.XPath
             return false;
 
         FoundMatch:
-            if (_state == State.InReadBinary)
+            if (state == State.InReadBinary)
             {
-                _readBinaryHelper.Finish();
-                _state = _savedState;
+                readBinaryHelper.Finish();
+                state = savedState;
             }
             MoveToAttr(nav, depth + 1);
             return true;
@@ -690,26 +690,26 @@ namespace System.Xml.XPath
 
         public override bool MoveToElement()
         {
-            switch (_state)
+            switch (this.state)
             {
                 case State.Attribute:
                 case State.AttrVal:
-                    if (!_nav.MoveToParent())
+                    if (!nav.MoveToParent())
                         return false;
-                    _depth--;
-                    if (_state == State.AttrVal)
-                        _depth--;
-                    _state = State.Content;
-                    _nodeType = XmlNodeType.Element;
+                    this.depth--;
+                    if (this.state == State.AttrVal)
+                        this.depth--;
+                    this.state = State.Content;
+                    this.nodeType = XmlNodeType.Element;
                     return true;
                 case State.InReadBinary:
-                    _state = _savedState;
+                    state = savedState;
                     if (!MoveToElement())
                     {
-                        _state = State.InReadBinary;
+                        state = State.InReadBinary;
                         return false;
                     }
-                    _readBinaryHelper.Finish();
+                    readBinaryHelper.Finish();
                     break;
             }
             return false;
@@ -719,7 +719,7 @@ namespace System.Xml.XPath
         {
             get
             {
-                return _state == State.EOF;
+                return this.state == State.EOF;
             }
         }
 
@@ -727,7 +727,7 @@ namespace System.Xml.XPath
         {
             get
             {
-                switch (_state)
+                switch (this.state)
                 {
                     case State.Initial:
                         return ReadState.Initial;
@@ -754,16 +754,16 @@ namespace System.Xml.XPath
 
         public override bool ReadAttributeValue()
         {
-            if (_state == State.InReadBinary)
+            if (state == State.InReadBinary)
             {
-                _readBinaryHelper.Finish();
-                _state = _savedState;
+                readBinaryHelper.Finish();
+                state = savedState;
             }
-            if (_state == State.Attribute)
+            if (this.state == State.Attribute)
             {
-                _state = State.AttrVal;
-                _nodeType = XmlNodeType.Text;
-                _depth++;
+                this.state = State.AttrVal;
+                this.nodeType = XmlNodeType.Text;
+                this.depth++;
                 return true;
             }
             return false;
@@ -785,21 +785,21 @@ namespace System.Xml.XPath
             }
 
             // init ReadContentAsBinaryHelper when called first time
-            if (_state != State.InReadBinary)
+            if (state != State.InReadBinary)
             {
-                _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
-                _savedState = _state;
+                readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(readBinaryHelper, this);
+                savedState = state;
             }
 
             // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
-            _state = _savedState;
+            state = savedState;
 
             // call to the helper
-            int readCount = _readBinaryHelper.ReadContentAsBase64(buffer, index, count);
+            int readCount = readBinaryHelper.ReadContentAsBase64(buffer, index, count);
 
             // turn on InReadBinary state again and return
-            _savedState = _state;
-            _state = State.InReadBinary;
+            savedState = state;
+            state = State.InReadBinary;
             return readCount;
         }
 
@@ -811,21 +811,21 @@ namespace System.Xml.XPath
             }
 
             // init ReadContentAsBinaryHelper when called first time
-            if (_state != State.InReadBinary)
+            if (state != State.InReadBinary)
             {
-                _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
-                _savedState = _state;
+                readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(readBinaryHelper, this);
+                savedState = state;
             }
 
             // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
-            _state = _savedState;
+            state = savedState;
 
             // call to the helper
-            int readCount = _readBinaryHelper.ReadContentAsBinHex(buffer, index, count);
+            int readCount = readBinaryHelper.ReadContentAsBinHex(buffer, index, count);
 
             // turn on InReadBinary state again and return
-            _savedState = _state;
-            _state = State.InReadBinary;
+            savedState = state;
+            state = State.InReadBinary;
             return readCount;
         }
 
@@ -837,21 +837,21 @@ namespace System.Xml.XPath
             }
 
             // init ReadContentAsBinaryHelper when called first time
-            if (_state != State.InReadBinary)
+            if (state != State.InReadBinary)
             {
-                _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
-                _savedState = _state;
+                readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(readBinaryHelper, this);
+                savedState = state;
             }
 
             // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
-            _state = _savedState;
+            state = savedState;
 
             // call to the helper
-            int readCount = _readBinaryHelper.ReadElementContentAsBase64(buffer, index, count);
+            int readCount = readBinaryHelper.ReadElementContentAsBase64(buffer, index, count);
 
             // turn on InReadBinary state again and return
-            _savedState = _state;
-            _state = State.InReadBinary;
+            savedState = state;
+            state = State.InReadBinary;
             return readCount;
         }
 
@@ -863,27 +863,27 @@ namespace System.Xml.XPath
             }
 
             // init ReadContentAsBinaryHelper when called first time
-            if (_state != State.InReadBinary)
+            if (state != State.InReadBinary)
             {
-                _readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(_readBinaryHelper, this);
-                _savedState = _state;
+                readBinaryHelper = ReadContentAsBinaryHelper.CreateOrReset(readBinaryHelper, this);
+                savedState = state;
             }
 
             // turn off InReadBinary state in order to have a normal Read() behavior when called from readBinaryHelper
-            _state = _savedState;
+            state = savedState;
 
             // call to the helper
-            int readCount = _readBinaryHelper.ReadElementContentAsBinHex(buffer, index, count);
+            int readCount = readBinaryHelper.ReadElementContentAsBinHex(buffer, index, count);
 
             // turn on InReadBinary state again and return
-            _savedState = _state;
-            _state = State.InReadBinary;
+            savedState = state;
+            state = State.InReadBinary;
             return readCount;
         }
 
         public override string LookupNamespace(string prefix)
         {
-            return _nav.LookupNamespace(prefix);
+            return this.nav.LookupNamespace(prefix);
         }
 
         /// <summary>
@@ -891,7 +891,7 @@ namespace System.Xml.XPath
         /// </summary>
         public override int Depth
         {
-            get { return _depth; }
+            get { return this.depth; }
         }
 
         /// <summary>
@@ -899,8 +899,8 @@ namespace System.Xml.XPath
         /// </summary>
         public override bool Read()
         {
-            _attrCount = -1;
-            switch (_state)
+            this.attrCount = -1;
+            switch (this.state)
             {
                 case State.Error:
                 case State.Closed:
@@ -909,58 +909,58 @@ namespace System.Xml.XPath
 
                 case State.Initial:
                     // Starting state depends on the navigator's item type
-                    _nav = _navToRead;
-                    _state = State.Content;
-                    if (XPathNodeType.Root == _nav.NodeType)
+                    this.nav = this.navToRead;
+                    this.state = State.Content;
+                    if (XPathNodeType.Root == this.nav.NodeType)
                     {
-                        if (!_nav.MoveToFirstChild())
+                        if (!nav.MoveToFirstChild())
                         {
                             SetEOF();
                             return false;
                         }
-                        _readEntireDocument = true;
+                        this.readEntireDocument = true;
                     }
-                    else if (XPathNodeType.Attribute == _nav.NodeType)
+                    else if (XPathNodeType.Attribute == this.nav.NodeType)
                     {
-                        _state = State.Attribute;
+                        this.state = State.Attribute;
                     }
-                    _nodeType = ToXmlNodeType(_nav.NodeType);
+                    this.nodeType = ToXmlNodeType(this.nav.NodeType);
                     break;
 
                 case State.Content:
-                    if (_nav.MoveToFirstChild())
+                    if (this.nav.MoveToFirstChild())
                     {
-                        _nodeType = ToXmlNodeType(_nav.NodeType);
-                        _depth++;
-                        _state = State.Content;
+                        this.nodeType = ToXmlNodeType(this.nav.NodeType);
+                        this.depth++;
+                        this.state = State.Content;
                     }
-                    else if (_nodeType == XmlNodeType.Element
-                        && !_nav.IsEmptyElement)
+                    else if (this.nodeType == XmlNodeType.Element
+                        && !this.nav.IsEmptyElement)
                     {
-                        _nodeType = XmlNodeType.EndElement;
-                        _state = State.EndElement;
+                        this.nodeType = XmlNodeType.EndElement;
+                        this.state = State.EndElement;
                     }
                     else
                         goto case State.EndElement;
                     break;
 
                 case State.EndElement:
-                    if (0 == _depth && !_readEntireDocument)
+                    if (0 == depth && !this.readEntireDocument)
                     {
                         SetEOF();
                         return false;
                     }
-                    else if (_nav.MoveToNext())
+                    else if (this.nav.MoveToNext())
                     {
-                        _nodeType = ToXmlNodeType(_nav.NodeType);
-                        _state = State.Content;
+                        this.nodeType = ToXmlNodeType(this.nav.NodeType);
+                        this.state = State.Content;
                     }
-                    else if (_depth > 0 && _nav.MoveToParent())
+                    else if (depth > 0 && this.nav.MoveToParent())
                     {
-                        Debug.Assert(_nav.NodeType == XPathNodeType.Element, _nav.NodeType.ToString() + " == XPathNodeType.Element");
-                        _nodeType = XmlNodeType.EndElement;
-                        _state = State.EndElement;
-                        _depth--;
+                        Debug.Assert(this.nav.NodeType == XPathNodeType.Element, this.nav.NodeType.ToString() + " == XPathNodeType.Element");
+                        this.nodeType = XmlNodeType.EndElement;
+                        this.state = State.EndElement;
+                        depth--;
                     }
                     else
                     {
@@ -971,19 +971,19 @@ namespace System.Xml.XPath
 
                 case State.Attribute:
                 case State.AttrVal:
-                    if (!_nav.MoveToParent())
+                    if (!this.nav.MoveToParent())
                     {
                         SetEOF();
                         return false;
                     }
-                    _nodeType = ToXmlNodeType(_nav.NodeType);
-                    _depth--;
-                    if (_state == State.AttrVal)
-                        _depth--;
+                    this.nodeType = ToXmlNodeType(this.nav.NodeType);
+                    this.depth--;
+                    if (state == State.AttrVal)
+                        this.depth--;
                     goto case State.Content;
                 case State.InReadBinary:
-                    _state = _savedState;
-                    _readBinaryHelper.Finish();
+                    state = savedState;
+                    readBinaryHelper.Finish();
                     return Read();
             }
             return true;
@@ -994,10 +994,10 @@ namespace System.Xml.XPath
         /// </summary>
         private void SetEOF()
         {
-            _nav = XmlEmptyNavigator.Singleton;
-            _nodeType = XmlNodeType.None;
-            _state = State.EOF;
-            _depth = 0;
+            this.nav = XmlEmptyNavigator.Singleton;
+            this.nodeType = XmlNodeType.None;
+            this.state = State.EOF;
+            this.depth = 0;
         }
     }
 
@@ -1008,7 +1008,7 @@ namespace System.Xml.XPath
     /// </summary>
     internal class XmlEmptyNavigator : XPathNavigator
     {
-        private static volatile XmlEmptyNavigator s_singleton;
+        private static volatile XmlEmptyNavigator singleton;
 
         private XmlEmptyNavigator()
         {
@@ -1018,9 +1018,9 @@ namespace System.Xml.XPath
         {
             get
             {
-                if (XmlEmptyNavigator.s_singleton == null)
-                    XmlEmptyNavigator.s_singleton = new XmlEmptyNavigator();
-                return XmlEmptyNavigator.s_singleton;
+                if (XmlEmptyNavigator.singleton == null)
+                    XmlEmptyNavigator.singleton = new XmlEmptyNavigator();
+                return XmlEmptyNavigator.singleton;
             }
         }
 

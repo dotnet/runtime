@@ -329,22 +329,22 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Plane_2x
         {
-            private Plane _a;
-            private Plane _b;
+            Plane a;
+            Plane b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct PlanePlusFloat
         {
-            private Plane _v;
-            private float _f;
+            Plane v;
+            float f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct PlanePlusFloat_2x
         {
-            private PlanePlusFloat _a;
-            private PlanePlusFloat _b;
+            PlanePlusFloat a;
+            PlanePlusFloat b;
         }
 
         // A test to make sure the fields are laid out how we expect

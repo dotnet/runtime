@@ -19,70 +19,70 @@ namespace System.Reflection.PortableExecutable
     /// </summary>
     internal struct PEBinaryReader
     {
-        private readonly long _startOffset;
-        private readonly long _maxOffset;
-        private readonly BinaryReader _reader;
+        private readonly long startOffset;
+        private readonly long maxOffset;
+        private readonly BinaryReader reader;
 
         public PEBinaryReader(Stream stream, int size)
         {
             Debug.Assert(size >= 0 && size <= (stream.Length - stream.Position));
 
-            _startOffset = stream.Position;
-            _maxOffset = _startOffset + (uint)size;
-            _reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            this.startOffset = stream.Position;
+            this.maxOffset = this.startOffset + (uint)size;
+            this.reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         }
 
         public int CurrentOffset
         {
-            get { return (int)(_reader.BaseStream.Position - _startOffset); }
+            get { return (int)(reader.BaseStream.Position - startOffset); }
         }
 
         public void Seek(int offset)
         {
-            CheckBounds(_startOffset, offset);
-            _reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+            CheckBounds(startOffset, offset);
+            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
         }
 
         public byte[] ReadBytes(int count)
         {
-            CheckBounds(_reader.BaseStream.Position, count);
-            return _reader.ReadBytes(count);
+            CheckBounds(reader.BaseStream.Position, count);
+            return reader.ReadBytes(count);
         }
 
         public Byte ReadByte()
         {
             CheckBounds(sizeof(Byte));
-            return _reader.ReadByte();
+            return reader.ReadByte();
         }
 
         public Int16 ReadInt16()
         {
             CheckBounds(sizeof(Int16));
-            return _reader.ReadInt16();
+            return reader.ReadInt16();
         }
 
         public UInt16 ReadUInt16()
         {
             CheckBounds(sizeof(UInt16));
-            return _reader.ReadUInt16();
+            return reader.ReadUInt16();
         }
 
         public Int32 ReadInt32()
         {
             CheckBounds(sizeof(Int32));
-            return _reader.ReadInt32();
+            return reader.ReadInt32();
         }
 
         public UInt32 ReadUInt32()
         {
             CheckBounds(sizeof(UInt32));
-            return _reader.ReadUInt32();
+            return reader.ReadUInt32();
         }
 
         public ulong ReadUInt64()
         {
             CheckBounds(sizeof(UInt64));
-            return _reader.ReadUInt64();
+            return reader.ReadUInt64();
         }
 
         public string ReadUTF8(int byteCount)
@@ -124,10 +124,10 @@ namespace System.Reflection.PortableExecutable
         private void CheckBounds(uint count)
         {
             Debug.Assert(count <= sizeof(Int64));  // Error message assumes we're trying to read constant small number of bytes.
-            Debug.Assert(_reader.BaseStream.Position >= 0 && _maxOffset >= 0);
+            Debug.Assert(reader.BaseStream.Position >= 0 && this.maxOffset >= 0);
 
             // Add cannot overflow because the worst case is (ulong)long.MaxValue + uint.MaxValue < ulong.MaxValue.
-            if ((ulong)_reader.BaseStream.Position + count > (ulong)_maxOffset)
+            if ((ulong)reader.BaseStream.Position + count > (ulong)this.maxOffset)
             {
                 ThrowImageTooSmall();
             }
@@ -135,11 +135,11 @@ namespace System.Reflection.PortableExecutable
 
         private void CheckBounds(long startPosition, int count)
         {
-            Debug.Assert(startPosition >= 0 && _maxOffset >= 0);
+            Debug.Assert(startPosition >= 0 && this.maxOffset >= 0);
 
             // Add cannot overflow because the worst case is (ulong)long.MaxValue + uint.MaxValue < ulong.MaxValue.
             // Negative count is handled by overflow to greater than maximum size = int.MaxValue.
-            if ((ulong)startPosition + unchecked((uint)count) > (ulong)_maxOffset)
+            if ((ulong)startPosition + unchecked((uint)count) > (ulong)this.maxOffset)
             {
                 ThrowImageTooSmallOrContainsInvalidOffsetOrCount();
             }

@@ -27,17 +27,17 @@ namespace System.Collections.Immutable
         /// <remarks>
         /// Additional instances representing the empty stack may exist on deserialized stacks.
         /// </remarks>
-        private static readonly ImmutableStack<T> s_EmptyField = new ImmutableStack<T>();
+        private static readonly ImmutableStack<T> EmptyField = new ImmutableStack<T>();
 
         /// <summary>
         /// The element on the top of the stack.
         /// </summary>
-        private readonly T _head;
+        private readonly T head;
 
         /// <summary>
         /// A stack that contains the rest of the elements (under the top element).
         /// </summary>
-        private readonly ImmutableStack<T> _tail;
+        private readonly ImmutableStack<T> tail;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableStack&lt;T&gt;"/> class
@@ -55,8 +55,8 @@ namespace System.Collections.Immutable
         private ImmutableStack(T head, ImmutableStack<T> tail)
         {
             Requires.NotNull(tail, "tail");
-            _head = head;
-            _tail = tail;
+            this.head = head;
+            this.tail = tail;
         }
 
         /// <summary>
@@ -68,8 +68,8 @@ namespace System.Collections.Immutable
             {
                 Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
                 Contract.Ensures(Contract.Result<ImmutableStack<T>>().IsEmpty);
-                Contract.Assume(s_EmptyField.IsEmpty);
-                return s_EmptyField;
+                Contract.Assume(EmptyField.IsEmpty);
+                return EmptyField;
             }
         }
 
@@ -80,7 +80,7 @@ namespace System.Collections.Immutable
         {
             Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
             Contract.Ensures(Contract.Result<ImmutableStack<T>>().IsEmpty);
-            Contract.Assume(s_EmptyField.IsEmpty);
+            Contract.Assume(EmptyField.IsEmpty);
             return Empty;
         }
 
@@ -100,7 +100,7 @@ namespace System.Collections.Immutable
         /// </value>
         public bool IsEmpty
         {
-            get { return _tail == null; }
+            get { return this.tail == null; }
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace System.Collections.Immutable
                 throw new InvalidOperationException(Strings.InvalidEmptyOperation);
             }
 
-            return _head;
+            return this.head;
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace System.Collections.Immutable
                 throw new InvalidOperationException(Strings.InvalidEmptyOperation);
             }
 
-            return _tail;
+            return this.tail;
         }
 
         /// <summary>
@@ -252,12 +252,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The original stack being enumerated.
             /// </summary>
-            private readonly ImmutableStack<T> _originalStack;
+            private readonly ImmutableStack<T> originalStack;
 
             /// <summary>
             /// The remaining stack not yet enumerated.
             /// </summary>
-            private ImmutableStack<T> _remainingStack;
+            private ImmutableStack<T> remainingStack;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Enumerator"/> struct.
@@ -266,8 +266,8 @@ namespace System.Collections.Immutable
             internal Enumerator(ImmutableStack<T> stack)
             {
                 Requires.NotNull(stack, "stack");
-                _originalStack = stack;
-                _remainingStack = null;
+                this.originalStack = stack;
+                this.remainingStack = null;
             }
 
             /// <summary>
@@ -277,13 +277,13 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_remainingStack == null || _remainingStack.IsEmpty)
+                    if (this.remainingStack == null || this.remainingStack.IsEmpty)
                     {
                         throw new InvalidOperationException();
                     }
                     else
                     {
-                        return _remainingStack.Peek();
+                        return this.remainingStack.Peek();
                     }
                 }
             }
@@ -294,17 +294,17 @@ namespace System.Collections.Immutable
             /// <returns>A value indicating whether there are any more elements.</returns>
             public bool MoveNext()
             {
-                if (_remainingStack == null)
+                if (this.remainingStack == null)
                 {
                     // initial move
-                    _remainingStack = _originalStack;
+                    this.remainingStack = this.originalStack;
                 }
-                else if (!_remainingStack.IsEmpty)
+                else if (!this.remainingStack.IsEmpty)
                 {
-                    _remainingStack = _remainingStack.Pop();
+                    this.remainingStack = this.remainingStack.Pop();
                 }
 
-                return !_remainingStack.IsEmpty;
+                return !this.remainingStack.IsEmpty;
             }
         }
 
@@ -316,17 +316,17 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The original stack being enumerated.
             /// </summary>
-            private readonly ImmutableStack<T> _originalStack;
+            private readonly ImmutableStack<T> originalStack;
 
             /// <summary>
             /// The remaining stack not yet enumerated.
             /// </summary>
-            private ImmutableStack<T> _remainingStack;
+            private ImmutableStack<T> remainingStack;
 
             /// <summary>
             /// A flag indicating whether this enumerator has been disposed.
             /// </summary>
-            private bool _disposed;
+            private bool disposed;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="EnumeratorObject"/> class.
@@ -335,7 +335,7 @@ namespace System.Collections.Immutable
             internal EnumeratorObject(ImmutableStack<T> stack)
             {
                 Requires.NotNull(stack, "stack");
-                _originalStack = stack;
+                this.originalStack = stack;
             }
 
             /// <summary>
@@ -346,13 +346,13 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_remainingStack == null || _remainingStack.IsEmpty)
+                    if (this.remainingStack == null || this.remainingStack.IsEmpty)
                     {
                         throw new InvalidOperationException();
                     }
                     else
                     {
-                        return _remainingStack.Peek();
+                        return this.remainingStack.Peek();
                     }
                 }
             }
@@ -373,17 +373,17 @@ namespace System.Collections.Immutable
             {
                 this.ThrowIfDisposed();
 
-                if (_remainingStack == null)
+                if (this.remainingStack == null)
                 {
                     // initial move
-                    _remainingStack = _originalStack;
+                    this.remainingStack = this.originalStack;
                 }
-                else if (!_remainingStack.IsEmpty)
+                else if (!this.remainingStack.IsEmpty)
                 {
-                    _remainingStack = _remainingStack.Pop();
+                    this.remainingStack = this.remainingStack.Pop();
                 }
 
-                return !_remainingStack.IsEmpty;
+                return !this.remainingStack.IsEmpty;
             }
 
             /// <summary>
@@ -392,7 +392,7 @@ namespace System.Collections.Immutable
             public void Reset()
             {
                 this.ThrowIfDisposed();
-                _remainingStack = null;
+                this.remainingStack = null;
             }
 
             /// <summary>
@@ -400,7 +400,7 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Dispose()
             {
-                _disposed = true;
+                this.disposed = true;
             }
 
             /// <summary>
@@ -409,7 +409,7 @@ namespace System.Collections.Immutable
             /// </summary>
             private void ThrowIfDisposed()
             {
-                if (_disposed)
+                if (this.disposed)
                 {
                     Validation.Requires.FailObjectDisposed(this);
                 }
@@ -426,12 +426,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The collection to be enumerated.
         /// </summary>
-        private readonly ImmutableStack<T> _stack;
+        private readonly ImmutableStack<T> stack;
 
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private T[] _contents;
+        private T[] contents;
 
         /// <summary>   
         /// Initializes a new instance of the <see cref="ImmutableStackDebuggerProxy&lt;T&gt;"/> class.
@@ -440,7 +440,7 @@ namespace System.Collections.Immutable
         public ImmutableStackDebuggerProxy(ImmutableStack<T> stack)
         {
             Requires.NotNull(stack, "stack");
-            _stack = stack;
+            this.stack = stack;
         }
 
         /// <summary>
@@ -451,13 +451,13 @@ namespace System.Collections.Immutable
         {
             get
             {
-                if (_contents == null)
+                if (this.contents == null)
                 {
-                    _contents = _stack.ToArray();
+                    this.contents = this.stack.ToArray();
                 }
 
-                return _contents;
+                return this.contents;
             }
         }
-    }
+    }    
 }

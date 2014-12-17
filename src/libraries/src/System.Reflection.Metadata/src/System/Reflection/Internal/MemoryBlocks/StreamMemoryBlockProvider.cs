@@ -22,45 +22,45 @@ namespace System.Reflection.Internal
 
         // The stream is user specified and might not be thread-safe.
         // Any read from the stream must be protected by streamGuard.
-        private Stream _stream;
-        private readonly object _streamGuard;
+        private Stream stream;
+        private readonly object streamGuard;
 
-        private readonly bool _leaveOpen;
-        private bool _useMemoryMap;
-        private readonly bool _isFileStream;
+        private readonly bool leaveOpen;
+        private bool useMemoryMap;
+        private readonly bool isFileStream;
 
-        private readonly long _imageStart;
-        private readonly int _imageSize;
+        private readonly long imageStart;
+        private readonly int imageSize;
 
         // MemoryMappedFile
-        private IDisposable _lazyMemoryMap;
+        private IDisposable lazyMemoryMap;
 
         public StreamMemoryBlockProvider(Stream stream, long imageStart, int imageSize, bool isFileStream, bool leaveOpen)
         {
             Debug.Assert(stream.CanSeek && stream.CanRead);
-            _stream = stream;
-            _streamGuard = new object();
-            _imageStart = imageStart;
-            _imageSize = imageSize;
-            _leaveOpen = leaveOpen;
-            _isFileStream = isFileStream;
-            _useMemoryMap = isFileStream && MemoryMapLightUp.IsAvailable;
+            this.stream = stream;
+            this.streamGuard = new object();
+            this.imageStart = imageStart;
+            this.imageSize = imageSize;
+            this.leaveOpen = leaveOpen;
+            this.isFileStream = isFileStream;
+            this.useMemoryMap = isFileStream && MemoryMapLightUp.IsAvailable;
         }
 
         protected override void Dispose(bool disposing)
         {
             Debug.Assert(disposing);
 
-            if (!_leaveOpen && _stream != null)
+            if (!leaveOpen && stream != null)
             {
-                _stream.Dispose();
-                _stream = null;
+                stream.Dispose();
+                stream = null;
             }
 
-            if (_lazyMemoryMap != null)
+            if (lazyMemoryMap != null)
             {
-                _lazyMemoryMap.Dispose();
-                _lazyMemoryMap = null;
+                lazyMemoryMap.Dispose();
+                lazyMemoryMap = null;
             }
         }
 
@@ -68,7 +68,7 @@ namespace System.Reflection.Internal
         {
             get
             {
-                return _imageSize;
+                return this.imageSize;
             }
         }
 
@@ -101,9 +101,9 @@ namespace System.Reflection.Internal
         /// <exception cref="IOException">Error while reading from the stream.</exception>
         protected override AbstractMemoryBlock GetMemoryBlockImpl(int start, int size)
         {
-            long absoluteStart = _imageStart + start;
+            long absoluteStart = this.imageStart + start;
 
-            if (_useMemoryMap && size > MemoryMapThreshold)
+            if (useMemoryMap && size > MemoryMapThreshold)
             {
                 IDisposable accessor;
                 if (TryCreateMemoryMapAccessor(absoluteStart, size, out accessor))
@@ -111,40 +111,47 @@ namespace System.Reflection.Internal
                     return new MemoryMappedFileBlock(accessor, size);
                 }
 
-                _useMemoryMap = false;
+                useMemoryMap = false;
             }
 
-            lock (_streamGuard)
+            lock (streamGuard)
             {
-                return ReadMemoryBlockNoLock(_stream, _isFileStream, absoluteStart, size);
+                return ReadMemoryBlockNoLock(stream, isFileStream, absoluteStart, size);
             }
         }
 
         public override Stream GetStream(out StreamConstraints constraints)
         {
-            constraints = new StreamConstraints(_streamGuard, _imageStart, _imageSize);
-            return _stream;
+            constraints = new StreamConstraints(streamGuard, imageStart, imageSize);
+            return this.stream;
         }
 
         private bool TryCreateMemoryMapAccessor(long start, int size, out IDisposable accessor)
         {
-            if (_lazyMemoryMap == null)
+            if (lazyMemoryMap == null)
             {
                 // leave the underlying stream open. It will be closed by the Dispose method.
-                var newMemoryMap = MemoryMapLightUp.CreateMemoryMap(_stream);
+                IDisposable newMemoryMap;
+
+                // CreateMemoryMap might modify the stream (calls FileStream.Flush)
+                lock (this.streamGuard)
+                {
+                    newMemoryMap = MemoryMapLightUp.CreateMemoryMap(this.stream);
+                }
+
                 if (newMemoryMap == null)
                 {
                     accessor = null;
                     return false;
                 }
 
-                if (Interlocked.CompareExchange(ref _lazyMemoryMap, newMemoryMap, null) != null)
+                if (Interlocked.CompareExchange(ref lazyMemoryMap, newMemoryMap, null) != null)
                 {
                     newMemoryMap.Dispose();
                 }
             }
 
-            accessor = MemoryMapLightUp.CreateViewAccessor(_lazyMemoryMap, start, size);
+            accessor = MemoryMapLightUp.CreateViewAccessor(lazyMemoryMap, start, size);
             return accessor != null;
         }
     }

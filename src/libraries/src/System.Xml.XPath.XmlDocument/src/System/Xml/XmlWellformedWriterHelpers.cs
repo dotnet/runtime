@@ -14,11 +14,11 @@ namespace System.Xml
         //
         class NamespaceResolverProxy : IXmlNamespaceResolver
         {
-            private XmlWellFormedWriter _wfWriter;
+            XmlWellFormedWriter wfWriter;
 
             internal NamespaceResolverProxy(XmlWellFormedWriter wfWriter)
             {
-                _wfWriter = wfWriter;
+                this.wfWriter = wfWriter;
             }
 
             IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
@@ -27,12 +27,12 @@ namespace System.Xml
             }
             string IXmlNamespaceResolver.LookupNamespace(string prefix)
             {
-                return _wfWriter.LookupNamespace(prefix);
+                return wfWriter.LookupNamespace(prefix);
             }
 
             string IXmlNamespaceResolver.LookupPrefix(string namespaceName)
             {
-                return _wfWriter.LookupPrefix(namespaceName);
+                return wfWriter.LookupPrefix(namespaceName);
             }
         }
 
@@ -186,30 +186,30 @@ namespace System.Xml
                 }
             }
 
-            private StringBuilder _stringValue = new StringBuilder();
-            private string _singleStringValue; // special-case for a single WriteString call
-            private Item[] _items;
-            private int _firstItem;
-            private int _lastItem = -1;
+            StringBuilder stringValue = new StringBuilder();
+            string singleStringValue; // special-case for a single WriteString call
+            Item[] items;
+            int firstItem;
+            int lastItem = -1;
 
             internal string StringValue
             {
                 get
                 {
-                    if (_singleStringValue != null)
+                    if (singleStringValue != null)
                     {
-                        return _singleStringValue;
+                        return singleStringValue;
                     }
                     else
                     {
-                        return _stringValue.ToString();
+                        return stringValue.ToString();
                     }
                 }
             }
 
             internal void WriteEntityRef(string name)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
@@ -217,24 +217,24 @@ namespace System.Xml
                 switch (name)
                 {
                     case "lt":
-                        _stringValue.Append('<');
+                        stringValue.Append('<');
                         break;
                     case "gt":
-                        _stringValue.Append('>');
+                        stringValue.Append('>');
                         break;
                     case "quot":
-                        _stringValue.Append('"');
+                        stringValue.Append('"');
                         break;
                     case "apos":
-                        _stringValue.Append('\'');
+                        stringValue.Append('\'');
                         break;
                     case "amp":
-                        _stringValue.Append('&');
+                        stringValue.Append('&');
                         break;
                     default:
-                        _stringValue.Append('&');
-                        _stringValue.Append(name);
-                        _stringValue.Append(';');
+                        stringValue.Append('&');
+                        stringValue.Append(name);
+                        stringValue.Append(';');
                         break;
                 }
 
@@ -243,107 +243,107 @@ namespace System.Xml
 
             internal void WriteCharEntity(char ch)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(ch);
+                stringValue.Append(ch);
                 AddItem(ItemType.CharEntity, ch);
             }
 
             internal void WriteSurrogateCharEntity(char lowChar, char highChar)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(highChar);
-                _stringValue.Append(lowChar);
+                stringValue.Append(highChar);
+                stringValue.Append(lowChar);
                 AddItem(ItemType.SurrogateCharEntity, new char[] { lowChar, highChar });
             }
 
             internal void WriteWhitespace(string ws)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(ws);
+                stringValue.Append(ws);
                 AddItem(ItemType.Whitespace, ws);
             }
 
             internal void WriteString(string text)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
                 else
                 {
                     // special-case for a single WriteString
-                    if (_lastItem == -1)
+                    if (lastItem == -1)
                     {
-                        _singleStringValue = text;
+                        singleStringValue = text;
                         return;
                     }
                 }
 
-                _stringValue.Append(text);
+                stringValue.Append(text);
                 AddItem(ItemType.String, text);
             }
 
             internal void WriteChars(char[] buffer, int index, int count)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(buffer, index, count);
+                stringValue.Append(buffer, index, count);
                 AddItem(ItemType.StringChars, new BufferChunk(buffer, index, count));
             }
 
             internal void WriteRaw(char[] buffer, int index, int count)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(buffer, index, count);
+                stringValue.Append(buffer, index, count);
                 AddItem(ItemType.RawChars, new BufferChunk(buffer, index, count));
             }
 
             internal void WriteRaw(string data)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(data);
+                stringValue.Append(data);
                 AddItem(ItemType.Raw, data);
             }
 
             internal void WriteValue(string value)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
                     StartComplexValue();
                 }
-                _stringValue.Append(value);
+                stringValue.Append(value);
                 AddItem(ItemType.ValueString, value);
             }
 
             internal void Replay(XmlWriter writer)
             {
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
-                    writer.WriteString(_singleStringValue);
+                    writer.WriteString(singleStringValue);
                     return;
                 }
 
                 BufferChunk bufChunk;
-                for (int i = _firstItem; i <= _lastItem; i++)
+                for (int i = firstItem; i <= lastItem; i++)
                 {
-                    Item item = _items[i];
+                    Item item = items[i];
                     switch (item.type)
                     {
                         case ItemType.EntityRef:
@@ -387,31 +387,31 @@ namespace System.Xml
             internal void Trim()
             {
                 // if only one string value -> trim the write spaces directly
-                if (_singleStringValue != null)
+                if (singleStringValue != null)
                 {
-                    _singleStringValue = XmlConvertEx.TrimString(_singleStringValue);
+                    singleStringValue = XmlConvertEx.TrimString(singleStringValue);
                     return;
                 }
 
                 // trim the string in StringBuilder
-                string valBefore = _stringValue.ToString();
+                string valBefore = stringValue.ToString();
                 string valAfter = XmlConvertEx.TrimString(valBefore);
                 if (valBefore != valAfter)
                 {
-                    _stringValue = new StringBuilder(valAfter);
+                    stringValue = new StringBuilder(valAfter);
                 }
 
                 // trim the beginning of the recorded writer events
                 XmlCharType xmlCharType = XmlCharType.Instance;
 
-                int i = _firstItem;
-                while (i == _firstItem && i <= _lastItem)
+                int i = firstItem;
+                while (i == firstItem && i <= lastItem)
                 {
-                    Item item = _items[i];
+                    Item item = items[i];
                     switch (item.type)
                     {
                         case ItemType.Whitespace:
-                            _firstItem++;
+                            firstItem++;
                             break;
                         case ItemType.String:
                         case ItemType.Raw:
@@ -420,7 +420,7 @@ namespace System.Xml
                             if (((string)item.data).Length == 0)
                             {
                                 // no characters left -> move the firstItem index to exclude it from the Replay
-                                _firstItem++;
+                                firstItem++;
                             }
                             break;
                         case ItemType.StringChars:
@@ -435,7 +435,7 @@ namespace System.Xml
                             if (bufChunk.index == endIndex)
                             {
                                 // no characters left -> move the firstItem index to exclude it from the Replay
-                                _firstItem++;
+                                firstItem++;
                             }
                             break;
                     }
@@ -443,14 +443,14 @@ namespace System.Xml
                 }
 
                 // trim the end of the recorded writer events
-                i = _lastItem;
-                while (i == _lastItem && i >= _firstItem)
+                i = lastItem;
+                while (i == lastItem && i >= firstItem)
                 {
-                    Item item = _items[i];
+                    Item item = items[i];
                     switch (item.type)
                     {
                         case ItemType.Whitespace:
-                            _lastItem--;
+                            lastItem--;
                             break;
                         case ItemType.String:
                         case ItemType.Raw:
@@ -459,7 +459,7 @@ namespace System.Xml
                             if (((string)item.data).Length == 0)
                             {
                                 // no characters left -> move the lastItem index to exclude it from the Replay
-                                _lastItem--;
+                                lastItem--;
                             }
                             break;
                         case ItemType.StringChars:
@@ -472,7 +472,7 @@ namespace System.Xml
                             if (bufChunk.count == 0)
                             {
                                 // no characters left -> move the lastItem index to exclude it from the Replay
-                                _lastItem--;
+                                lastItem--;
                             }
                             break;
                     }
@@ -482,42 +482,42 @@ namespace System.Xml
 
             internal void Clear()
             {
-                _singleStringValue = null;
-                _lastItem = -1;
-                _firstItem = 0;
-                _stringValue.Length = 0;
+                singleStringValue = null;
+                lastItem = -1;
+                firstItem = 0;
+                stringValue.Length = 0;
             }
 
             private void StartComplexValue()
             {
-                Debug.Assert(_singleStringValue != null);
-                Debug.Assert(_lastItem == -1);
+                Debug.Assert(singleStringValue != null);
+                Debug.Assert(lastItem == -1);
 
-                _stringValue.Append(_singleStringValue);
-                AddItem(ItemType.String, _singleStringValue);
+                stringValue.Append(singleStringValue);
+                AddItem(ItemType.String, singleStringValue);
 
-                _singleStringValue = null;
+                singleStringValue = null;
             }
 
             void AddItem(ItemType type, object data)
             {
-                int newItemIndex = _lastItem + 1;
-                if (_items == null)
+                int newItemIndex = lastItem + 1;
+                if (items == null)
                 {
-                    _items = new Item[4];
+                    items = new Item[4];
                 }
-                else if (_items.Length == newItemIndex)
+                else if (items.Length == newItemIndex)
                 {
                     Item[] newItems = new Item[newItemIndex * 2];
-                    Array.Copy(_items, newItems, newItemIndex);
-                    _items = newItems;
+                    Array.Copy(items, newItems, newItemIndex);
+                    items = newItems;
                 }
-                if (_items[newItemIndex] == null)
+                if (items[newItemIndex] == null)
                 {
-                    _items[newItemIndex] = new Item();
+                    items[newItemIndex] = new Item();
                 }
-                _items[newItemIndex].Set(type, data);
-                _lastItem = newItemIndex;
+                items[newItemIndex].Set(type, data);
+                lastItem = newItemIndex;
             }
         }
     }

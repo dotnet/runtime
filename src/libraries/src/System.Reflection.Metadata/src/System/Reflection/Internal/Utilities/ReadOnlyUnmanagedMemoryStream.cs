@@ -8,31 +8,31 @@ namespace System.Reflection.Internal
 {
     internal unsafe sealed class ReadOnlyUnmanagedMemoryStream : Stream
     {
-        private readonly byte* _data;
-        private readonly int _length;
-        private int _position;
+        private readonly byte* data;
+        private readonly int length;
+        private int position;
 
         public ReadOnlyUnmanagedMemoryStream(byte* data, int length)
         {
-            _data = data;
-            _length = length;
+            this.data = data;
+            this.length = length;
         }
 
         public unsafe override int ReadByte()
         {
-            if (_position == _length)
+            if (position == length)
             {
                 return -1;
             }
 
-            return _data[_position++];
+            return data[position++];
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            int bytesRead = Math.Min(count, _length - _position);
-            Marshal.Copy((IntPtr)(_data + _position), buffer, offset, bytesRead);
-            _position += bytesRead;
+            int bytesRead = Math.Min(count, length - position);
+            Marshal.Copy((IntPtr)(this.data + this.position), buffer, offset, bytesRead);
+            this.position += bytesRead;
             return bytesRead;
         }
 
@@ -68,7 +68,7 @@ namespace System.Reflection.Internal
         {
             get
             {
-                return _length;
+                return length;
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
         {
             get
             {
-                return _position;
+                return position;
             }
 
             set
@@ -97,11 +97,11 @@ namespace System.Reflection.Internal
                         break;
 
                     case SeekOrigin.Current:
-                        target = checked(offset + _position);
+                        target = checked(offset + position);
                         break;
 
                     case SeekOrigin.End:
-                        target = checked(offset + _length);
+                        target = checked(offset + length);
                         break;
 
                     default:
@@ -113,12 +113,12 @@ namespace System.Reflection.Internal
                 throw new ArgumentOutOfRangeException("offset");
             }
 
-            if (target < 0 || target >= _length)
+            if (target < 0 || target >= length)
             {
                 throw new ArgumentOutOfRangeException("offset");
             }
 
-            _position = (int)target;
+            position = (int)target;
             return target;
         }
 

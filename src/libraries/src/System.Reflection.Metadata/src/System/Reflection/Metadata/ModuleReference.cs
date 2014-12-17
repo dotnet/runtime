@@ -7,33 +7,33 @@ namespace System.Reflection.Metadata
 {
     public struct ModuleReference
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal ModuleReference(MetadataReader reader, ModuleReferenceHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private ModuleReferenceHandle Handle
         {
-            get { return ModuleReferenceHandle.FromRowId(_rowId); }
+            get { return ModuleReferenceHandle.FromRowId(rowId); }
         }
 
         public StringHandle Name
         {
-            get { return _reader.ModuleRefTable.GetName(Handle); }
+            get { return reader.ModuleRefTable.GetName(Handle); }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
     }
 }

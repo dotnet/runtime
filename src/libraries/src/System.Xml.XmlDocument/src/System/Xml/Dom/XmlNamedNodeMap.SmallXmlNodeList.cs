@@ -16,16 +16,16 @@ namespace System.Xml
             // object.
             // Otherwise, field is an List<object>. Once the field upgrades to an List<object>, it
             // never degrades back, even if all elements are removed.
-            private object _field;
+            private object field;
 
             public int Count
             {
                 get
                 {
-                    if (_field == null)
+                    if (field == null)
                         return 0;
 
-                    List<object> list = _field as List<object>;
+                    List<object> list = field as List<object>;
                     if (list != null)
                         return list.Count;
 
@@ -37,23 +37,23 @@ namespace System.Xml
             {
                 get
                 {
-                    if (_field == null)
+                    if (field == null)
                         throw new ArgumentOutOfRangeException("index");
 
-                    List<object> list = _field as List<object>;
+                    List<object> list = field as List<object>;
                     if (list != null)
                         return list[index];
 
                     if (index != 0)
                         throw new ArgumentOutOfRangeException("index");
 
-                    return _field;
+                    return field;
                 }
             }
 
             public void Add(object value)
             {
-                if (_field == null)
+                if (field == null)
                 {
                     if (value == null)
                     {
@@ -61,15 +61,15 @@ namespace System.Xml
                         // upgrade to an ArrayList
                         List<object> temp = new List<object>();
                         temp.Add(null);
-                        _field = temp;
+                        field = temp;
                     }
                     else
-                        _field = value;
+                        field = value;
 
                     return;
                 }
 
-                List<object> list = _field as List<object>;
+                List<object> list = field as List<object>;
                 if (list != null)
                 {
                     list.Add(value);
@@ -77,18 +77,18 @@ namespace System.Xml
                 else
                 {
                     list = new List<object>();
-                    list.Add(_field);
+                    list.Add(field);
                     list.Add(value);
-                    _field = list;
+                    field = list;
                 }
             }
 
             public void RemoveAt(int index)
             {
-                if (_field == null)
+                if (field == null)
                     throw new ArgumentOutOfRangeException("index");
 
-                List<object> list = _field as List<object>;
+                List<object> list = field as List<object>;
                 if (list != null)
                 {
                     list.RemoveAt(index);
@@ -98,12 +98,12 @@ namespace System.Xml
                 if (index != 0)
                     throw new ArgumentOutOfRangeException("index");
 
-                _field = null;
+                field = null;
             }
 
             public void Insert(int index, object value)
             {
-                if (_field == null)
+                if (field == null)
                 {
                     if (index != 0)
                         throw new ArgumentOutOfRangeException("index");
@@ -111,7 +111,7 @@ namespace System.Xml
                     return;
                 }
 
-                List<object> list = _field as List<object>;
+                List<object> list = field as List<object>;
                 if (list != null)
                 {
                     list.Insert(index, value);
@@ -122,15 +122,15 @@ namespace System.Xml
                 {
                     list = new List<object>();
                     list.Add(value);
-                    list.Add(_field);
-                    _field = list;
+                    list.Add(field);
+                    field = list;
                 }
                 else if (index == 1)
                 {
                     list = new List<object>();
-                    list.Add(_field);
+                    list.Add(field);
                     list.Add(value);
-                    _field = list;
+                    field = list;
                 }
                 else
                 {
@@ -140,57 +140,57 @@ namespace System.Xml
 
             class SingleObjectEnumerator : IEnumerator
             {
-                private object _loneValue;
-                private int _position = -1;
+                object loneValue;
+                int position = -1;
 
                 public SingleObjectEnumerator(object value)
                 {
-                    _loneValue = value;
+                    loneValue = value;
                 }
 
                 public object Current
                 {
                     get
                     {
-                        if (_position != 0)
+                        if (position != 0)
                         {
                             throw new InvalidOperationException();
                         }
-                        return _loneValue;
+                        return this.loneValue;
                     }
                 }
 
                 public bool MoveNext()
                 {
-                    if (_position < 0)
+                    if (position < 0)
                     {
-                        _position = 0;
+                        position = 0;
                         return true;
                     }
-                    _position = 1;
+                    position = 1;
                     return false;
                 }
 
                 public void Reset()
                 {
-                    _position = -1;
+                    position = -1;
                 }
             }
 
             public IEnumerator GetEnumerator()
             {
-                if (_field == null)
+                if (field == null)
                 {
                     return XmlDocument.EmptyEnumerator;
                 }
 
-                List<object> list = _field as List<object>;
+                List<object> list = field as List<object>;
                 if (list != null)
                 {
                     return list.GetEnumerator();
                 }
 
-                return new SingleObjectEnumerator(_field);
+                return new SingleObjectEnumerator(field);
             }
         }
     }

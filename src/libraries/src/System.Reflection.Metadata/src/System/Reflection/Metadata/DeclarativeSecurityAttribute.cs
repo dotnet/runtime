@@ -8,23 +8,23 @@ namespace System.Reflection.Metadata
 {
     public struct DeclarativeSecurityAttribute
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal DeclarativeSecurityAttribute(MetadataReader reader, uint rowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(rowId != 0);
 
-            _reader = reader;
-            _rowId = rowId;
+            this.reader = reader;
+            this.rowId = rowId;
         }
 
         private uint RowId
         {
-            get { return _rowId & TokenTypeIds.RIDMask; }
+            get { return rowId & TokenTypeIds.RIDMask; }
         }
 
         private DeclarativeSecurityAttributeHandle Handle
@@ -34,14 +34,14 @@ namespace System.Reflection.Metadata
 
         private MethodDefTreatment Treatment
         {
-            get { return (MethodDefTreatment)(_rowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (MethodDefTreatment)(rowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         public DeclarativeSecurityAction Action
         {
             get
             {
-                return _reader.DeclSecurityTable.GetAction(_rowId);
+                return reader.DeclSecurityTable.GetAction(rowId);
             }
         }
 
@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.DeclSecurityTable.GetParent(_rowId);
+                return reader.DeclSecurityTable.GetParent(rowId);
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.DeclSecurityTable.GetPermissionSet(_rowId);
+                return reader.DeclSecurityTable.GetPermissionSet(rowId);
             }
         }
     }

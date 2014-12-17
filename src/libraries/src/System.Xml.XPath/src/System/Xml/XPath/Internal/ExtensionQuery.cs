@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
         protected string prefix;
         protected string name;
         protected XsltContext xsltContext;
-        private ResetableIterator _queryIterator;
+        private ResetableIterator queryIterator;
 
         public ExtensionQuery(string prefix, string name) : base()
         {
@@ -24,14 +24,14 @@ namespace MS.Internal.Xml.XPath
             this.prefix = other.prefix;
             this.name = other.name;
             this.xsltContext = other.xsltContext;
-            _queryIterator = (ResetableIterator)Clone(other._queryIterator);
+            this.queryIterator = (ResetableIterator)Clone(other.queryIterator);
         }
 
         public override void Reset()
         {
-            if (_queryIterator != null)
+            if (queryIterator != null)
             {
-                _queryIterator.Reset();
+                queryIterator.Reset();
             }
         }
 
@@ -39,27 +39,27 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                if (_queryIterator == null)
+                if (queryIterator == null)
                 {
                     throw XPathException.Create(SR.Xp_NodeSetExpected);
                 }
-                if (_queryIterator.CurrentPosition == 0)
+                if (queryIterator.CurrentPosition == 0)
                 {
                     Advance();
                 }
-                return _queryIterator.Current;
+                return queryIterator.Current;
             }
         }
 
         public override XPathNavigator Advance()
         {
-            if (_queryIterator == null)
+            if (queryIterator == null)
             {
                 throw XPathException.Create(SR.Xp_NodeSetExpected);
             }
-            if (_queryIterator.MoveNext())
+            if (queryIterator.MoveNext())
             {
-                return _queryIterator.Current;
+                return queryIterator.Current;
             }
             return null;
         }
@@ -68,9 +68,9 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                if (_queryIterator != null)
+                if (queryIterator != null)
                 {
-                    return _queryIterator.CurrentPosition;
+                    return queryIterator.CurrentPosition;
                 }
                 return 0;
             }
@@ -86,7 +86,7 @@ namespace MS.Internal.Xml.XPath
 
             if (value == null)
             {
-                _queryIterator = XPathEmptyIterator.Instance;
+                queryIterator = XPathEmptyIterator.Instance;
                 return this; // We map null to NodeSet to let $null/foo work well.
             }
 
@@ -95,13 +95,13 @@ namespace MS.Internal.Xml.XPath
             {
                 // We need Clone() value because variable may be used several times 
                 // and they shouldn't 
-                _queryIterator = (ResetableIterator)resetable.Clone();
+                queryIterator = (ResetableIterator)resetable.Clone();
                 return this;
             }
             XPathNodeIterator nodeIterator = value as XPathNodeIterator;
             if (nodeIterator != null)
             {
-                _queryIterator = new XPathArrayIterator(nodeIterator);
+                queryIterator = new XPathArrayIterator(nodeIterator);
                 return this;
             }
             IXPathNavigable navigable = value as IXPathNavigable;
@@ -122,7 +122,7 @@ namespace MS.Internal.Xml.XPath
 
         protected string QName { get { return prefix.Length != 0 ? prefix + ":" + name : name; } }
 
-        public override int Count { get { return _queryIterator == null ? 1 : _queryIterator.Count; } }
+        public override int Count { get { return queryIterator == null ? 1 : queryIterator.Count; } }
         public override XPathResultType StaticType { get { return XPathResultType.Any; } }
     }
 }

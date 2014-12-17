@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
@@ -7,10 +7,10 @@ namespace System.Numerics.Tests
 {
     public static class Util
     {
-        private static Random s_random = new Random();
+        static Random random = new Random();
         public static void SetRandomSeed(int seed)
         {
-            s_random = new Random(seed);
+            random = new Random(seed);
         }
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace System.Numerics.Tests
             float[] values = new float[numValues];
             for (int g = 0; g < numValues; g++)
             {
-                values[g] = (float)(s_random.NextDouble() * 99 + 1);
+                values[g] = (float)(random.NextDouble() * 99 + 1);
             }
             return values;
         }
@@ -38,7 +38,7 @@ namespace System.Numerics.Tests
             int[] values = new int[numValues];
             for (int g = 0; g < numValues; g++)
             {
-                values[g] = s_random.Next(1, 100);
+                values[g] = random.Next(1, 100);
             }
             return values;
         }
@@ -53,7 +53,7 @@ namespace System.Numerics.Tests
             double[] values = new double[numValues];
             for (int g = 0; g < numValues; g++)
             {
-                values[g] = s_random.NextDouble() * 99 + 1;
+                values[g] = random.NextDouble() * 99 + 1;
             }
             return values;
         }
@@ -68,7 +68,7 @@ namespace System.Numerics.Tests
             long[] values = new long[numValues];
             for (int g = 0; g < numValues; g++)
             {
-                values[g] = s_random.Next(1, 100) * (long.MaxValue / int.MaxValue);
+                values[g] = random.Next(1, 100) * (long.MaxValue / int.MaxValue);
             }
             return values;
         }
@@ -86,7 +86,7 @@ namespace System.Numerics.Tests
 
         public static T GenerateSingleValue<T>(int min = 1, int max = 100) where T : struct
         {
-            var randomRange = s_random.Next(min, max);
+            var randomRange = random.Next(min, max);
             T value = (T)(dynamic)randomRange;
             return value;
         }

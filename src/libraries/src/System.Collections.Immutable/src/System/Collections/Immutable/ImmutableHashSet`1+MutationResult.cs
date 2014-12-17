@@ -34,19 +34,19 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root node of the data structure after the mutation.
             /// </summary>
-            private readonly SortedInt32KeyNode<HashBucket> _root;
+            private readonly SortedInt32KeyNode<HashBucket> root;
 
             /// <summary>
             /// Either the number of elements added or removed from the collection as a result of the operation (a negative number represents removed elements),
             /// or the total number of elements in the collection after the mutation.  The appropriate interpretation of this value is indicated by the 
-            /// <see cref="_countType"/> field.
+            /// <see cref="countType"/> field.
             /// </summary>
-            private readonly int _count;
+            private readonly int count;
 
             /// <summary>
-            /// Whether to consider the <see cref="_count"/> field to be a count adjustment or total count.
+            /// Whether to consider the <see cref="count"/> field to be a count adjustment or total count.
             /// </summary>
-            private readonly CountType _countType;
+            private readonly CountType countType;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.MutationResult"/> struct.
@@ -57,9 +57,9 @@ namespace System.Collections.Immutable
             internal MutationResult(SortedInt32KeyNode<HashBucket> root, int count, CountType countType = ImmutableHashSet<T>.CountType.Adjustment)
             {
                 Requires.NotNull(root, "root");
-                _root = root;
-                _count = count;
-                _countType = countType;
+                this.root = root;
+                this.count = count;
+                this.countType = countType;
             }
 
             /// <summary>
@@ -67,7 +67,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal SortedInt32KeyNode<HashBucket> Root
             {
-                get { return _root; }
+                get { return this.root; }
             }
 
             /// <summary>
@@ -77,7 +77,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal int Count
             {
-                get { return _count; }
+                get { return this.count; }
             }
 
             /// <summary>
@@ -85,7 +85,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal CountType CountType
             {
-                get { return _countType; }
+                get { return this.countType; }
             }
 
             /// <summary>
@@ -99,7 +99,7 @@ namespace System.Collections.Immutable
                 int count = this.Count;
                 if (this.CountType == ImmutableHashSet<T>.CountType.Adjustment)
                 {
-                    count += priorSet._count;
+                    count += priorSet.count;
                 }
 
                 return priorSet.Wrap(this.Root, count);

@@ -8,28 +8,28 @@ namespace System.Reflection.Metadata
 {
     public struct FieldDefinition
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _treatmentAndRowId;
+        private readonly uint treatmentAndRowId;
 
         internal FieldDefinition(MetadataReader reader, uint treatmentAndRowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(treatmentAndRowId != 0);
 
-            _reader = reader;
-            _treatmentAndRowId = treatmentAndRowId;
+            this.reader = reader;
+            this.treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private FieldDefTreatment Treatment
         {
-            get { return (FieldDefTreatment)(_treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (FieldDefTreatment)(treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         private FieldDefinitionHandle Handle
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return _reader.FieldTable.GetName(Handle);
+                    return reader.FieldTable.GetName(Handle);
                 }
 
                 return GetProjectedName();
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return _reader.FieldTable.GetFlags(Handle);
+                    return reader.FieldTable.GetFlags(Handle);
                 }
 
                 return GetProjectedFlags();
@@ -69,7 +69,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return _reader.FieldTable.GetSignature(Handle);
+                    return reader.FieldTable.GetSignature(Handle);
                 }
 
                 return GetProjectedSignature();
@@ -78,23 +78,23 @@ namespace System.Reflection.Metadata
 
         public TypeDefinitionHandle GetDeclaringType()
         {
-            return _reader.GetDeclaringType(Handle);
+            return reader.GetDeclaringType(Handle);
         }
 
         public ConstantHandle GetDefaultValue()
         {
-            return _reader.ConstantTable.FindConstant(Handle);
+            return reader.ConstantTable.FindConstant(Handle);
         }
 
         public int GetRelativeVirtualAddress()
         {
-            uint fieldRvaRowId = _reader.FieldRvaTable.FindFieldRVARowId(Handle.RowId);
+            uint fieldRvaRowId = reader.FieldRvaTable.FindFieldRVARowId(Handle.RowId);
             if (fieldRvaRowId == 0)
             {
                 return 0;
             }
 
-            return _reader.FieldRvaTable.GetRVA(fieldRvaRowId);
+            return reader.FieldRvaTable.GetRVA(fieldRvaRowId);
         }
 
         /// <summary>
@@ -102,13 +102,13 @@ namespace System.Reflection.Metadata
         /// </summary>
         public int GetOffset()
         {
-            uint layoutRowId = _reader.FieldLayoutTable.FindFieldLayoutRowId(Handle);
+            uint layoutRowId = reader.FieldLayoutTable.FindFieldLayoutRowId(Handle);
             if (layoutRowId == 0)
             {
                 return -1;
             }
 
-            uint offset = _reader.FieldLayoutTable.GetOffset(layoutRowId);
+            uint offset = reader.FieldLayoutTable.GetOffset(layoutRowId);
             if (offset > int.MaxValue)
             {
                 // CLI spec says:
@@ -124,18 +124,18 @@ namespace System.Reflection.Metadata
 
         public BlobHandle GetMarshallingDescriptor()
         {
-            uint marshalRowId = _reader.FieldMarshalTable.FindFieldMarshalRowId(Handle);
+            uint marshalRowId = reader.FieldMarshalTable.FindFieldMarshalRowId(Handle);
             if (marshalRowId == 0)
             {
                 return default(BlobHandle);
             }
 
-            return _reader.FieldMarshalTable.GetNativeType(marshalRowId);
+            return reader.FieldMarshalTable.GetNativeType(marshalRowId);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
 
         #region Projections
@@ -143,12 +143,12 @@ namespace System.Reflection.Metadata
         private StringHandle GetProjectedName()
         {
             // no change:
-            return _reader.FieldTable.GetName(Handle);
+            return reader.FieldTable.GetName(Handle);
         }
 
         private FieldAttributes GetProjectedFlags()
         {
-            var flags = _reader.FieldTable.GetFlags(Handle);
+            var flags = reader.FieldTable.GetFlags(Handle);
 
             if (Treatment == FieldDefTreatment.EnumValue)
             {
@@ -160,7 +160,7 @@ namespace System.Reflection.Metadata
 
         private BlobHandle GetProjectedSignature()
         {
-            return _reader.FieldTable.GetSignature(Handle);
+            return reader.FieldTable.GetSignature(Handle);
         }
         #endregion
     }

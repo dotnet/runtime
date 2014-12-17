@@ -41,13 +41,13 @@ namespace System.Xml.XPath
         /// </summary>
         private class Enumerator : IEnumerator
         {
-            private XPathNodeIterator _original;     // Keep original XPathNodeIterator in case Reset() is called
-            private XPathNodeIterator _current;
-            private bool _iterationStarted;
+            private XPathNodeIterator original;     // Keep original XPathNodeIterator in case Reset() is called
+            private XPathNodeIterator current;
+            private bool iterationStarted;
 
             public Enumerator(XPathNodeIterator original)
             {
-                _original = original.Clone();
+                this.original = original.Clone();
             }
 
             public virtual object Current
@@ -56,13 +56,13 @@ namespace System.Xml.XPath
                 {
                     // 1. Do not reuse the XPathNavigator, as we do in XPathNodeIterator
                     // 2. Throw exception if current position is before first node or after the last node
-                    if (_iterationStarted)
+                    if (this.iterationStarted)
                     {
                         // Current is null if iterator is positioned after the last node
-                        if (_current == null)
+                        if (this.current == null)
                             throw new InvalidOperationException(SR.Format(SR.Sch_EnumFinished, string.Empty));
 
-                        return _current.Current.Clone();
+                        return this.current.Current.Clone();
                     }
 
                     // User must call MoveNext before accessing Current property
@@ -73,17 +73,17 @@ namespace System.Xml.XPath
             public virtual bool MoveNext()
             {
                 // Delegate to XPathNodeIterator
-                if (!_iterationStarted)
+                if (!this.iterationStarted)
                 {
                     // Reset iteration to original position
-                    _current = _original.Clone();
-                    _iterationStarted = true;
+                    this.current = this.original.Clone();
+                    this.iterationStarted = true;
                 }
 
-                if (_current == null || !_current.MoveNext())
+                if (this.current == null || !this.current.MoveNext())
                 {
                     // Iteration complete
-                    _current = null;
+                    this.current = null;
                     return false;
                 }
                 return true;
@@ -91,17 +91,17 @@ namespace System.Xml.XPath
 
             public virtual void Reset()
             {
-                _iterationStarted = false;
+                this.iterationStarted = false;
             }
         }
 
         private struct DebuggerDisplayProxy
         {
-            private XPathNodeIterator _nodeIterator;
+            private XPathNodeIterator nodeIterator;
 
             public DebuggerDisplayProxy(XPathNodeIterator nodeIterator)
             {
-                _nodeIterator = nodeIterator;
+                this.nodeIterator = nodeIterator;
             }
 
             public override string ToString()
@@ -109,16 +109,16 @@ namespace System.Xml.XPath
                 // Position={CurrentPosition}, Current={Current == null ? null : (object) new XPathNavigator.DebuggerDisplayProxy(Current)}
                 StringBuilder sb = new StringBuilder();
                 sb.Append("Position=");
-                sb.Append(_nodeIterator.CurrentPosition);
+                sb.Append(nodeIterator.CurrentPosition);
                 sb.Append(", Current=");
-                if (_nodeIterator.Current == null)
+                if (nodeIterator.Current == null)
                 {
                     sb.Append("null");
                 }
                 else
                 {
                     sb.Append('{');
-                    sb.Append(new XPathNavigator.DebuggerDisplayProxy(_nodeIterator.Current).ToString());
+                    sb.Append(new XPathNavigator.DebuggerDisplayProxy(nodeIterator.Current).ToString());
                     sb.Append('}');
                 }
                 return sb.ToString();

@@ -40,31 +40,31 @@ namespace MS.Internal.Xml.XPath
             FuncUserDefined,
         };
 
-        private FunctionType _functionType;
-        private List<AstNode> _argumentList;
+        private FunctionType functionType;
+        private List<AstNode> argumentList;
 
-        private string _name = null;
-        private string _prefix = null;
+        private string name = null;
+        private string prefix = null;
 
         public Function(FunctionType ftype, List<AstNode> argumentList)
         {
-            _functionType = ftype;
-            _argumentList = new List<AstNode>(argumentList);
+            this.functionType = ftype;
+            this.argumentList = new List<AstNode>(argumentList);
         }
 
         public Function(string prefix, string name, List<AstNode> argumentList)
         {
-            _functionType = FunctionType.FuncUserDefined;
-            _prefix = prefix;
-            _name = name;
-            _argumentList = new List<AstNode>(argumentList);
+            this.functionType = FunctionType.FuncUserDefined;
+            this.prefix = prefix;
+            this.name = name;
+            this.argumentList = new List<AstNode>(argumentList);
         }
 
         public Function(FunctionType ftype, AstNode arg)
         {
-            _functionType = ftype;
-            _argumentList = new List<AstNode>();
-            _argumentList.Add(arg);
+            functionType = ftype;
+            argumentList = new List<AstNode>();
+            argumentList.Add(arg);
         }
 
         public override AstType Type { get { return AstType.Function; } }
@@ -73,14 +73,14 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                return ReturnTypes[(int)_functionType];
+                return ReturnTypes[(int)functionType];
             }
         }
 
-        public FunctionType TypeOfFunction { get { return _functionType; } }
-        public List<AstNode> ArgumentList { get { return _argumentList; } }
-        public string Prefix { get { return _prefix; } }
-        public string Name { get { return _name; } }
+        public FunctionType TypeOfFunction { get { return functionType; } }
+        public List<AstNode> ArgumentList { get { return argumentList; } }
+        public string Prefix { get { return prefix; } }
+        public string Name { get { return name; } }
 
         internal static XPathResultType[] ReturnTypes = {
             /* FunctionType.FuncLast            */ XPathResultType.Number ,

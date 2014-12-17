@@ -10,16 +10,16 @@ namespace System.Xml
         //
         // Fields
         //
-        private byte[] _buffer;
-        private int _startIndex;
-        private int _curIndex;
-        private int _endIndex;
+        byte[] buffer;
+        int startIndex;
+        int curIndex;
+        int endIndex;
 
-        private int _bits;
-        private int _bitsFilled;
+        int bits;
+        int bitsFilled;
 
         private const string CharsBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        private static readonly byte[] s_MapBase64 = ConstructMapBase64();
+        private static readonly byte[] MapBase64 = ConstructMapBase64();
         private const int MaxValidChar = (int)'z';
         private const byte Invalid = unchecked((byte)-1);
 
@@ -30,7 +30,7 @@ namespace System.Xml
         {
             get
             {
-                return _curIndex - _startIndex;
+                return curIndex - startIndex;
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.Xml
         {
             get
             {
-                return _curIndex == _endIndex;
+                return curIndex == endIndex;
             }
         }
 
@@ -68,12 +68,12 @@ namespace System.Xml
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = &chars[startPos])
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &buffer[curIndex])
                 {
-                    Decode(pChars, pChars + len, pBytes, pBytes + (_endIndex - _curIndex), out charsDecoded, out bytesDecoded);
+                    Decode(pChars, pChars + len, pBytes, pBytes + (endIndex - curIndex), out charsDecoded, out bytesDecoded);
                 }
             }
-            _curIndex += bytesDecoded;
+            curIndex += bytesDecoded;
             return charsDecoded;
         }
 
@@ -103,19 +103,19 @@ namespace System.Xml
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = str)
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &buffer[curIndex])
                 {
-                    Decode(pChars + startPos, pChars + startPos + len, pBytes, pBytes + (_endIndex - _curIndex), out charsDecoded, out bytesDecoded);
+                    Decode(pChars + startPos, pChars + startPos + len, pBytes, pBytes + (endIndex - curIndex), out charsDecoded, out bytesDecoded);
                 }
             }
-            _curIndex += bytesDecoded;
+            curIndex += bytesDecoded;
             return charsDecoded;
         }
 
         internal override void Reset()
         {
-            _bitsFilled = 0;
-            _bits = 0;
+            bitsFilled = 0;
+            bits = 0;
         }
 
         internal override void SetNextOutputBuffer(byte[] buffer, int index, int count)
@@ -126,10 +126,10 @@ namespace System.Xml
             Debug.Assert(buffer.Length - index >= count);
             Debug.Assert((buffer as byte[]) != null);
 
-            _buffer = (byte[])buffer;
-            _startIndex = index;
-            _curIndex = index;
-            _endIndex = index + count;
+            this.buffer = (byte[])buffer;
+            this.startIndex = index;
+            this.curIndex = index;
+            this.endIndex = index + count;
         }
 
         //
@@ -161,8 +161,8 @@ namespace System.Xml
             // walk hex digits pairing them up and shoving the value of each pair into a byte
             byte* pByte = pBytes;
             char* pChar = pChars;
-            int b = _bits;
-            int bFilled = _bitsFilled;
+            int b = bits;
+            int bFilled = bitsFilled;
             XmlCharType xmlCharType = XmlCharType.Instance;
             while (pChar < pCharsEndPos && pByte < pBytesEndPos)
             {
@@ -181,7 +181,7 @@ namespace System.Xml
                 }
 
                 int digit;
-                if (ch > 122 || (digit = s_MapBase64[ch]) == Invalid)
+                if (ch > 122 || (digit = MapBase64[ch]) == Invalid)
                 {
                     throw new XmlException(SR.Format(SR.Xml_InvalidBase64Value, new string(pChars, 0, (int)(pCharsEndPos - pChars))));
                 }
@@ -225,8 +225,8 @@ namespace System.Xml
             }
 
         Return:
-            _bits = b;
-            _bitsFilled = bFilled;
+            bits = b;
+            bitsFilled = bFilled;
 
             bytesDecoded = (int)(pByte - pBytes);
             charsDecoded = (int)(pChar - pChars);

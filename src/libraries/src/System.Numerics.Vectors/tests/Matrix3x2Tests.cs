@@ -989,22 +989,22 @@ namespace System.Numerics.Tests
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix3x2_2x
         {
-            private Matrix3x2 _a;
-            private Matrix3x2 _b;
+            Matrix3x2 a;
+            Matrix3x2 b;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix3x2PlusFloat
         {
-            private Matrix3x2 _v;
-            private float _f;
+            Matrix3x2 v;
+            float f;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Matrix3x2PlusFloat_2x
         {
-            private Matrix3x2PlusFloat _a;
-            private Matrix3x2PlusFloat _b;
+            Matrix3x2PlusFloat a;
+            Matrix3x2PlusFloat b;
         }
 
         // A test to make sure the fields are laid out how we expect

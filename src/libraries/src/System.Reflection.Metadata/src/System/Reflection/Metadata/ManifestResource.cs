@@ -7,23 +7,23 @@ namespace System.Reflection.Metadata
 {
     public struct ManifestResource
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal ManifestResource(MetadataReader reader, ManifestResourceHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private ManifestResourceHandle Handle
         {
-            get { return ManifestResourceHandle.FromRowId(_rowId); }
+            get { return ManifestResourceHandle.FromRowId(rowId); }
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public long Offset
         {
-            get { return _reader.ManifestResourceTable.GetOffset(Handle); }
+            get { return reader.ManifestResourceTable.GetOffset(Handle); }
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public ManifestResourceAttributes Attributes
         {
-            get { return _reader.ManifestResourceTable.GetFlags(Handle); }
+            get { return reader.ManifestResourceTable.GetFlags(Handle); }
         }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public StringHandle Name
         {
-            get { return _reader.ManifestResourceTable.GetName(Handle); }
+            get { return reader.ManifestResourceTable.GetName(Handle); }
         }
 
         /// <summary>
@@ -70,12 +70,12 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public Handle Implementation
         {
-            get { return _reader.ManifestResourceTable.GetImplementation(Handle); }
+            get { return reader.ManifestResourceTable.GetImplementation(Handle); }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
     }
 }

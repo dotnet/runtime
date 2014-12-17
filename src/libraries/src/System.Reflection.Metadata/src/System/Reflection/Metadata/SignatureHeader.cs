@@ -14,25 +14,25 @@ namespace System.Reflection.Metadata
     /// </remarks>
     public struct SignatureHeader : IEquatable<SignatureHeader>
     {
-        private byte _rawValue;
+        private byte rawValue;
         public const byte CallingConventionOrKindMask = 0x0F;
         private const byte maxCallingConvention = (byte)SignatureCallingConvention.VarArgs;
 
         public SignatureHeader(byte rawValue)
         {
-            _rawValue = rawValue;
+            this.rawValue = rawValue;
         }
 
         public byte RawValue
         {
-            get { return _rawValue; }
+            get { return rawValue; }
         }
 
         public SignatureCallingConvention CallingConvention
         {
             get
             {
-                int callingConventionOrKind = _rawValue & CallingConventionOrKindMask;
+                int callingConventionOrKind = rawValue & CallingConventionOrKindMask;
 
                 if (callingConventionOrKind > maxCallingConvention)
                 {
@@ -47,7 +47,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                int callingCoventionOrKind = _rawValue & CallingConventionOrKindMask;
+                int callingCoventionOrKind = rawValue & CallingConventionOrKindMask;
 
                 if (callingCoventionOrKind <= maxCallingConvention)
                 {
@@ -60,22 +60,22 @@ namespace System.Reflection.Metadata
 
         public SignatureAttributes Attributes
         {
-            get { return (SignatureAttributes)(_rawValue & ~CallingConventionOrKindMask); }
+            get { return (SignatureAttributes)(rawValue & ~CallingConventionOrKindMask); }
         }
 
         public bool HasExplicitThis
         {
-            get { return (_rawValue & (byte)SignatureAttributes.ExplicitThis) != 0; }
+            get { return (rawValue & (byte)SignatureAttributes.ExplicitThis) != 0; }
         }
 
         public bool IsInstance
         {
-            get { return (_rawValue & (byte)SignatureAttributes.Instance) != 0; }
+            get { return (rawValue & (byte)SignatureAttributes.Instance) != 0; }
         }
 
         public bool IsGeneric
         {
-            get { return (_rawValue & (byte)SignatureAttributes.Generic) != 0; }
+            get { return (rawValue & (byte)SignatureAttributes.Generic) != 0; }
         }
 
         public override bool Equals(object obj)
@@ -85,22 +85,22 @@ namespace System.Reflection.Metadata
 
         public bool Equals(SignatureHeader other)
         {
-            return _rawValue == other._rawValue;
+            return rawValue == other.rawValue;
         }
 
         public override int GetHashCode()
         {
-            return _rawValue;
+            return rawValue;
         }
 
         public static bool operator ==(SignatureHeader left, SignatureHeader right)
         {
-            return left._rawValue == right._rawValue;
+            return left.rawValue == right.rawValue;
         }
 
         public static bool operator !=(SignatureHeader left, SignatureHeader right)
         {
-            return left._rawValue != right._rawValue;
+            return left.rawValue != right.rawValue;
         }
 
         public override string ToString()

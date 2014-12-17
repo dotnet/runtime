@@ -19,7 +19,7 @@ namespace TestUtilities
         #region AssertEqualityComparer<T>
         private class AssertEqualityComparer<T> : IEqualityComparer<T>
         {
-            private readonly static IEqualityComparer<T> _instance = new AssertEqualityComparer<T>();
+            private readonly static IEqualityComparer<T> instance = new AssertEqualityComparer<T>();
 
             private static bool CanBeNull()
             {
@@ -40,7 +40,7 @@ namespace TestUtilities
 
             public static bool Equals(T left, T right)
             {
-                return _instance.Equals(left, right);
+                return instance.Equals(left, right);
             }
 
             bool IEqualityComparer<T>.Equals(T x, T y)

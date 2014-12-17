@@ -98,12 +98,12 @@ namespace System.Reflection.Metadata.Tests
 
         private class TestStream : Stream
         {
-            private readonly byte[] _buffer;
-            private int _position;
+            private readonly byte[] buffer;
+            private int position;
 
             public TestStream(byte[] buffer)
             {
-                _buffer = buffer;
+                this.buffer = buffer;
             }
 
             public override bool CanRead { get { throw new NotImplementedException(); } }
@@ -123,8 +123,8 @@ namespace System.Reflection.Metadata.Tests
                     return 0;
                 }
 
-                buffer[offset] = _buffer[_position];
-                _position++;
+                buffer[offset] = this.buffer[position];
+                position++;
                 return 1;
             }
         }

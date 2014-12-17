@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The ever-incrementing (and wrap-on-overflow) integer for owner id's.
         /// </summary>
-        private static int s_poolUserIdCounter;
+        private static int poolUserIdCounter;
 
         /// <summary>
         /// The ID reserved for unassigned objects.
@@ -30,7 +30,7 @@ namespace System.Collections.Immutable
             int result;
             do
             {
-                result = Interlocked.Increment(ref s_poolUserIdCounter);
+                result = Interlocked.Increment(ref poolUserIdCounter);
             }
             while (result == UnassignedId);
 
@@ -81,13 +81,13 @@ namespace System.Collections.Immutable
 
     internal class SecurePooledObject<T>
     {
-        private readonly T _value;
-        private int _owner;
+        private readonly T value;
+        private int owner;
 
         internal SecurePooledObject(T newValue)
         {
             Requires.NotNullAllowStructs(newValue, "newValue");
-            _value = newValue;
+            this.value = newValue;
         }
 
         /// <summary>
@@ -95,8 +95,8 @@ namespace System.Collections.Immutable
         /// </summary>
         internal int Owner
         {
-            get { return _owner; }
-            set { _owner = value; }
+            get { return this.owner; }
+            set { this.owner = value; }
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Collections.Immutable
         {
             if (!IsOwned(ref caller))
                 Requires.FailObjectDisposed(caller);
-            return _value;
+            return this.value;
         }
 
         internal bool TryUse<TCaller>(ref TCaller caller, out T value)
@@ -119,7 +119,7 @@ namespace System.Collections.Immutable
         {
             if (IsOwned(ref caller))
             {
-                value = _value;
+                value = this.value;
                 return true;
             }
             else
@@ -133,7 +133,7 @@ namespace System.Collections.Immutable
         internal bool IsOwned<TCaller>(ref TCaller caller)
             where TCaller : struct, ISecurePooledObjectUser
         {
-            return caller.PoolUserId == _owner;
+            return caller.PoolUserId == this.owner;
         }
     }
 }

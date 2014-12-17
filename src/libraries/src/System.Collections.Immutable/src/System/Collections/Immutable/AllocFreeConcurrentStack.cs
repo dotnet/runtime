@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -12,14 +12,14 @@ namespace System.Collections.Immutable
         private const int MaxSize = 35;
 
         [ThreadStatic]
-        private static Stack<RefAsValueType<T>> s_stack;
+        private static Stack<RefAsValueType<T>> stack;
 
         public static void TryAdd(T item)
         {
-            Stack<RefAsValueType<T>> localStack = s_stack; // cache in a local to avoid unnecessary TLS hits on repeated accesses
+            Stack<RefAsValueType<T>> localStack = stack; // cache in a local to avoid unnecessary TLS hits on repeated accesses
             if (localStack == null)
             {
-                s_stack = localStack = new Stack<RefAsValueType<T>>(MaxSize);
+                stack = localStack = new Stack<RefAsValueType<T>>(MaxSize);
             }
 
             // Just in case we're in a scenario where an object is continually requested on one thread
@@ -32,7 +32,7 @@ namespace System.Collections.Immutable
 
         public static bool TryTake(out T item)
         {
-            Stack<RefAsValueType<T>> localStack = s_stack; // cache in a local to avoid unnecessary TLS hits on repeated accesses
+            Stack<RefAsValueType<T>> localStack = stack; // cache in a local to avoid unnecessary TLS hits on repeated accesses
             if (localStack != null && localStack.Count > 0)
             {
                 item = localStack.Pop().Value;

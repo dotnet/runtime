@@ -7,25 +7,25 @@ namespace System.Xml.Linq
 {
     internal class XNodeReader : XmlReader, IXmlLineInfo
     {
-        private static readonly char[] s_WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
+        private static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
 
         // The reader position is encoded by the tuple (source, parent).
         // Lazy text uses (instance, parent element). Attribute value
         // uses (instance, parent attribute). End element uses (instance, 
         // instance). Common XObject uses (instance, null). 
-        private object _source;
-        private object _parent;
-        private ReadState _state;
-        private XNode _root;
-        private XmlNameTable _nameTable;
-        private bool _omitDuplicateNamespaces;
+        object source;
+        object parent;
+        ReadState state;
+        XNode root;
+        XmlNameTable nameTable;
+        bool omitDuplicateNamespaces;
 
         internal XNodeReader(XNode node, XmlNameTable nameTable, ReaderOptions options)
         {
-            _source = node;
-            _root = node;
-            _nameTable = nameTable != null ? nameTable : CreateNameTable();
-            _omitDuplicateNamespaces = (options & ReaderOptions.OmitDuplicateNamespaces) != 0 ? true : false;
+            this.source = node;
+            this.root = node;
+            this.nameTable = nameTable != null ? nameTable : CreateNameTable();
+            this.omitDuplicateNamespaces = (options & ReaderOptions.OmitDuplicateNamespaces) != 0 ? true : false;
         }
 
         internal XNodeReader(XNode node, XmlNameTable nameTable)
@@ -53,7 +53,7 @@ namespace System.Xml.Linq
                         do
                         {
                             a = a.next;
-                            if (!_omitDuplicateNamespaces || !IsDuplicateNamespaceAttribute(a))
+                            if (!omitDuplicateNamespaces || !IsDuplicateNamespaceAttribute(a))
                             {
                                 count++;
                             }
@@ -68,12 +68,12 @@ namespace System.Xml.Linq
         {
             get
             {
-                XObject o = _source as XObject;
+                XObject o = source as XObject;
                 if (o != null)
                 {
                     return o.BaseUri;
                 }
-                o = _parent as XObject;
+                o = parent as XObject;
                 if (o != null)
                 {
                     return o.BaseUri;
@@ -90,12 +90,12 @@ namespace System.Xml.Linq
                 {
                     return 0;
                 }
-                XObject o = _source as XObject;
+                XObject o = source as XObject;
                 if (o != null)
                 {
                     return GetDepth(o);
                 }
-                o = _parent as XObject;
+                o = parent as XObject;
                 if (o != null)
                 {
                     return GetDepth(o) + 1;
@@ -121,7 +121,7 @@ namespace System.Xml.Linq
 
         public override bool EOF
         {
-            get { return _state == ReadState.EndOfFile; }
+            get { return state == ReadState.EndOfFile; }
         }
 
         public override bool HasAttributes
@@ -135,7 +135,7 @@ namespace System.Xml.Linq
                 XElement e = GetElementInAttributeScope();
                 if (e != null && e.lastAttr != null)
                 {
-                    if (_omitDuplicateNamespaces)
+                    if (omitDuplicateNamespaces)
                     {
                         return GetFirstNonDuplicateNamespaceAttribute(e.lastAttr.next) != null;
                     }
@@ -159,7 +159,7 @@ namespace System.Xml.Linq
                 {
                     return false;
                 }
-                XObject o = _source as XObject;
+                XObject o = source as XObject;
                 if (o != null)
                 {
                     switch (o.NodeType)
@@ -187,14 +187,14 @@ namespace System.Xml.Linq
                 {
                     return false;
                 }
-                XElement e = _source as XElement;
+                XElement e = source as XElement;
                 return e != null && e.IsEmpty;
             }
         }
 
         public override string LocalName
         {
-            get { return _nameTable.Add(GetLocalName()); }
+            get { return nameTable.Add(GetLocalName()); }
         }
 
         string GetLocalName()
@@ -203,22 +203,22 @@ namespace System.Xml.Linq
             {
                 return string.Empty;
             }
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 return e.Name.LocalName;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 return a.Name.LocalName;
             }
-            XProcessingInstruction p = _source as XProcessingInstruction;
+            XProcessingInstruction p = source as XProcessingInstruction;
             if (p != null)
             {
                 return p.Target;
             }
-            XDocumentType n = _source as XDocumentType;
+            XDocumentType n = source as XDocumentType;
             if (n != null)
             {
                 return n.Name;
@@ -233,15 +233,15 @@ namespace System.Xml.Linq
                 string prefix = GetPrefix();
                 if (prefix.Length == 0)
                 {
-                    return _nameTable.Add(GetLocalName());
+                    return nameTable.Add(GetLocalName());
                 }
-                return _nameTable.Add(string.Concat(prefix, ":", GetLocalName()));
+                return nameTable.Add(string.Concat(prefix, ":", GetLocalName()));
             }
         }
 
         public override string NamespaceURI
         {
-            get { return _nameTable.Add(GetNamespaceURI()); }
+            get { return nameTable.Add(GetNamespaceURI()); }
         }
 
         string GetNamespaceURI()
@@ -250,12 +250,12 @@ namespace System.Xml.Linq
             {
                 return string.Empty;
             }
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 return e.Name.NamespaceName;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 string namespaceName = a.Name.NamespaceName;
@@ -270,7 +270,7 @@ namespace System.Xml.Linq
 
         public override XmlNameTable NameTable
         {
-            get { return _nameTable; }
+            get { return nameTable; }
         }
 
         public override XmlNodeType NodeType
@@ -281,7 +281,7 @@ namespace System.Xml.Linq
                 {
                     return XmlNodeType.None;
                 }
-                XObject o = _source as XObject;
+                XObject o = source as XObject;
                 if (o != null)
                 {
                     if (IsEndElement)
@@ -299,7 +299,7 @@ namespace System.Xml.Linq
                     }
                     return XmlNodeType.Text;
                 }
-                if (_parent is XDocument)
+                if (parent is XDocument)
                 {
                     return XmlNodeType.Whitespace;
                 }
@@ -309,7 +309,7 @@ namespace System.Xml.Linq
 
         public override string Prefix
         {
-            get { return _nameTable.Add(GetPrefix()); }
+            get { return nameTable.Add(GetPrefix()); }
         }
 
         string GetPrefix()
@@ -318,7 +318,7 @@ namespace System.Xml.Linq
             {
                 return string.Empty;
             }
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 string prefix = e.GetPrefixOfNamespace(e.Name.Namespace);
@@ -328,7 +328,7 @@ namespace System.Xml.Linq
                 }
                 return string.Empty;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 string prefix = a.GetPrefixOfNamespace(a.Name.Namespace);
@@ -342,7 +342,7 @@ namespace System.Xml.Linq
 
         public override ReadState ReadState
         {
-            get { return _state; }
+            get { return state; }
         }
 
         public override XmlReaderSettings Settings
@@ -363,7 +363,7 @@ namespace System.Xml.Linq
                 {
                     return string.Empty;
                 }
-                XObject o = _source as XObject;
+                XObject o = source as XObject;
                 if (o != null)
                 {
                     switch (o.NodeType)
@@ -383,7 +383,7 @@ namespace System.Xml.Linq
                             return string.Empty;
                     }
                 }
-                return (string)_source;
+                return (string)source;
             }
         }
 
@@ -430,7 +430,7 @@ namespace System.Xml.Linq
                         XAttribute a = e.Attribute(name);
                         if (a != null)
                         {
-                            switch (a.Value.Trim(s_WhitespaceChars))
+                            switch (a.Value.Trim(WhitespaceChars))
                             {
                                 case "preserve":
                                     return XmlSpace.Preserve;
@@ -457,10 +457,10 @@ namespace System.Xml.Linq
 
         private void Close()
         {
-            _source = null;
-            _parent = null;
-            _root = null;
-            _state = ReadState.Closed;
+            source = null;
+            parent = null;
+            root = null;
+            state = ReadState.Closed;
         }
 
         public override string GetAttribute(string name)
@@ -482,7 +482,7 @@ namespace System.Xml.Linq
                         a = a.next;
                         if (a.Name.LocalName == localName && a.Name.NamespaceName == namespaceName)
                         {
-                            if (_omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
+                            if (omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
                             {
                                 return null;
                             }
@@ -495,7 +495,7 @@ namespace System.Xml.Linq
                 }
                 return null;
             }
-            XDocumentType n = _source as XDocumentType;
+            XDocumentType n = source as XDocumentType;
             if (n != null)
             {
                 switch (name)
@@ -537,7 +537,7 @@ namespace System.Xml.Linq
                         a = a.next;
                         if (a.Name.LocalName == localName && a.Name.NamespaceName == namespaceName)
                         {
-                            if (_omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
+                            if (omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
                             {
                                 return null;
                             }
@@ -571,7 +571,7 @@ namespace System.Xml.Linq
                     do
                     {
                         a = a.next;
-                        if (!_omitDuplicateNamespaces || !IsDuplicateNamespaceAttribute(a))
+                        if (!omitDuplicateNamespaces || !IsDuplicateNamespaceAttribute(a))
                         {
                             if (index-- == 0)
                             {
@@ -600,7 +600,7 @@ namespace System.Xml.Linq
                 XNamespace ns = prefix.Length == 0 ? e.GetDefaultNamespace() : e.GetNamespaceOfPrefix(prefix);
                 if (ns != null)
                 {
-                    return _nameTable.Add(ns.NamespaceName);
+                    return nameTable.Add(ns.NamespaceName);
                 }
             }
             return null;
@@ -626,15 +626,15 @@ namespace System.Xml.Linq
                         if (a.Name.LocalName == localName &&
                             a.Name.NamespaceName == namespaceName)
                         {
-                            if (_omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
+                            if (omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
                             {
                                 // If it's a duplicate namespace attribute just act as if it doesn't exist
                                 return false;
                             }
                             else
                             {
-                                _source = a;
-                                _parent = null;
+                                source = a;
+                                parent = null;
                                 return true;
                             }
                         }
@@ -673,15 +673,15 @@ namespace System.Xml.Linq
                         if (a.Name.LocalName == localName &&
                             a.Name.NamespaceName == namespaceName)
                         {
-                            if (_omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
+                            if (omitDuplicateNamespaces && IsDuplicateNamespaceAttribute(a))
                             {
                                 // If it's a duplicate namespace attribute just act as if it doesn't exist
                                 return false;
                             }
                             else
                             {
-                                _source = a;
-                                _parent = null;
+                                source = a;
+                                parent = null;
                                 return true;
                             }
                         }
@@ -707,13 +707,13 @@ namespace System.Xml.Linq
                     do
                     {
                         a = a.next;
-                        if (!_omitDuplicateNamespaces || !IsDuplicateNamespaceAttribute(a))
+                        if (!omitDuplicateNamespaces || !IsDuplicateNamespaceAttribute(a))
                         {
                             // Only count those which are non-duplicates if we're asked to
                             if (index-- == 0)
                             {
-                                _source = a;
-                                _parent = null;
+                                source = a;
+                                parent = null;
                                 return;
                             }
                         }
@@ -729,17 +729,17 @@ namespace System.Xml.Linq
             {
                 return false;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a == null)
             {
-                a = _parent as XAttribute;
+                a = parent as XAttribute;
             }
             if (a != null)
             {
                 if (a.parent != null)
                 {
-                    _source = a.parent;
-                    _parent = null;
+                    source = a.parent;
+                    parent = null;
                     return true;
                 }
             }
@@ -757,18 +757,18 @@ namespace System.Xml.Linq
             {
                 if (e.lastAttr != null)
                 {
-                    if (_omitDuplicateNamespaces)
+                    if (omitDuplicateNamespaces)
                     {
                         object na = GetFirstNonDuplicateNamespaceAttribute(e.lastAttr.next);
                         if (na == null)
                         {
                             return false;
                         }
-                        _source = na;
+                        source = na;
                     }
                     else
                     {
-                        _source = e.lastAttr.next;
+                        source = e.lastAttr.next;
                     }
                     return true;
                 }
@@ -782,7 +782,7 @@ namespace System.Xml.Linq
             {
                 return false;
             }
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 if (IsEndElement)
@@ -791,7 +791,7 @@ namespace System.Xml.Linq
                 }
                 if (e.lastAttr != null)
                 {
-                    if (_omitDuplicateNamespaces)
+                    if (omitDuplicateNamespaces)
                     {
                         // Skip duplicate namespace attributes
                         // We must NOT modify the this.source until we find the one we're looking for
@@ -801,26 +801,26 @@ namespace System.Xml.Linq
                         {
                             return false;
                         }
-                        _source = na;
+                        source = na;
                     }
                     else
                     {
-                        _source = e.lastAttr.next;
+                        source = e.lastAttr.next;
                     }
                     return true;
                 }
                 return false;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a == null)
             {
-                a = _parent as XAttribute;
+                a = parent as XAttribute;
             }
             if (a != null)
             {
                 if (a.parent != null && ((XElement)a.parent).lastAttr != a)
                 {
-                    if (_omitDuplicateNamespaces)
+                    if (omitDuplicateNamespaces)
                     {
                         // Skip duplicate namespace attributes
                         // We must NOT modify the this.source until we find the one we're looking for
@@ -830,13 +830,13 @@ namespace System.Xml.Linq
                         {
                             return false;
                         }
-                        _source = na;
+                        source = na;
                     }
                     else
                     {
-                        _source = a.next;
+                        source = a.next;
                     }
-                    _parent = null;
+                    parent = null;
                     return true;
                 }
             }
@@ -845,11 +845,11 @@ namespace System.Xml.Linq
 
         public override bool Read()
         {
-            switch (_state)
+            switch (state)
             {
                 case ReadState.Initial:
-                    _state = ReadState.Interactive;
-                    XDocument d = _source as XDocument;
+                    state = ReadState.Interactive;
+                    XDocument d = source as XDocument;
                     if (d != null)
                     {
                         return ReadIntoDocument(d);
@@ -868,7 +868,7 @@ namespace System.Xml.Linq
             {
                 return false;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 return ReadIntoAttribute(a);
@@ -883,7 +883,7 @@ namespace System.Xml.Linq
                 return false;
             }
             MoveToElement();
-            XElement c = _source as XElement;
+            XElement c = source as XElement;
             if (c != null && !c.IsEmpty)
             {
                 if (IsEndElement)
@@ -895,7 +895,7 @@ namespace System.Xml.Linq
                     if (e.Name.LocalName == localName &&
                         e.Name.NamespaceName == namespaceName)
                     {
-                        _source = e;
+                        source = e;
                         return true;
                     }
                 }
@@ -908,7 +908,7 @@ namespace System.Xml.Linq
         {
             while (Read())
             {
-                XElement e = _source as XElement;
+                XElement e = source as XElement;
                 if (e != null)
                 {
                     if (IsEndElement) continue;
@@ -928,9 +928,9 @@ namespace System.Xml.Linq
                 return false;
             }
             MoveToElement();
-            if (_source != _root)
+            if (source != root)
             {
-                XNode n = _source as XNode;
+                XNode n = source as XNode;
                 if (n != null)
                 {
                     foreach (XElement e in n.ElementsAfterSelf())
@@ -938,24 +938,24 @@ namespace System.Xml.Linq
                         if (e.Name.LocalName == localName &&
                             e.Name.NamespaceName == namespaceName)
                         {
-                            _source = e;
+                            source = e;
                             IsEndElement = false;
                             return true;
                         }
                     }
                     if (n.parent is XElement)
                     {
-                        _source = n.parent;
+                        source = n.parent;
                         IsEndElement = true;
                         return false;
                     }
                 }
                 else
                 {
-                    if (_parent is XElement)
+                    if (parent is XElement)
                     {
-                        _source = _parent;
-                        _parent = null;
+                        source = parent;
+                        parent = null;
                         IsEndElement = true;
                         return false;
                     }
@@ -983,7 +983,7 @@ namespace System.Xml.Linq
             {
                 // Special case for EndElement - we store the line info differently in this case
                 //   we also know that the current node (source) is XElement
-                XElement e = _source as XElement;
+                XElement e = source as XElement;
                 if (e != null)
                 {
                     return e.Annotation<LineInfoEndElementAnnotation>() != null;
@@ -991,7 +991,7 @@ namespace System.Xml.Linq
             }
             else
             {
-                IXmlLineInfo li = _source as IXmlLineInfo;
+                IXmlLineInfo li = source as IXmlLineInfo;
                 if (li != null)
                 {
                     return li.HasLineInfo();
@@ -1008,7 +1008,7 @@ namespace System.Xml.Linq
                 {
                     // Special case for EndElement - we store the line info differently in this case
                     //   we also know that the current node (source) is XElement
-                    XElement e = _source as XElement;
+                    XElement e = source as XElement;
                     if (e != null)
                     {
                         LineInfoEndElementAnnotation a = e.Annotation<LineInfoEndElementAnnotation>();
@@ -1020,7 +1020,7 @@ namespace System.Xml.Linq
                 }
                 else
                 {
-                    IXmlLineInfo li = _source as IXmlLineInfo;
+                    IXmlLineInfo li = source as IXmlLineInfo;
                     if (li != null)
                     {
                         return li.LineNumber;
@@ -1038,7 +1038,7 @@ namespace System.Xml.Linq
                 {
                     // Special case for EndElement - we store the line info differently in this case
                     //   we also know that the current node (source) is XElement
-                    XElement e = _source as XElement;
+                    XElement e = source as XElement;
                     if (e != null)
                     {
                         LineInfoEndElementAnnotation a = e.Annotation<LineInfoEndElementAnnotation>();
@@ -1050,7 +1050,7 @@ namespace System.Xml.Linq
                 }
                 else
                 {
-                    IXmlLineInfo li = _source as IXmlLineInfo;
+                    IXmlLineInfo li = source as IXmlLineInfo;
                     if (li != null)
                     {
                         return li.LinePosition;
@@ -1062,13 +1062,13 @@ namespace System.Xml.Linq
 
         bool IsEndElement
         {
-            get { return _parent == _source; }
-            set { _parent = value ? _source : null; }
+            get { return parent == source; }
+            set { parent = value ? source : null; }
         }
 
         bool IsInteractive
         {
-            get { return _state == ReadState.Interactive; }
+            get { return state == ReadState.Interactive; }
         }
 
         static XmlNameTable CreateNameTable()
@@ -1082,7 +1082,7 @@ namespace System.Xml.Linq
 
         XElement GetElementInAttributeScope()
         {
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 if (IsEndElement)
@@ -1091,12 +1091,12 @@ namespace System.Xml.Linq
                 }
                 return e;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 return (XElement)a.parent;
             }
-            a = _parent as XAttribute;
+            a = parent as XAttribute;
             if (a != null)
             {
                 return (XElement)a.parent;
@@ -1106,27 +1106,27 @@ namespace System.Xml.Linq
 
         XElement GetElementInScope()
         {
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 return e;
             }
-            XNode n = _source as XNode;
+            XNode n = source as XNode;
             if (n != null)
             {
                 return n.parent as XElement;
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 return (XElement)a.parent;
             }
-            e = _parent as XElement;
+            e = parent as XElement;
             if (e != null)
             {
                 return e;
             }
-            a = _parent as XAttribute;
+            a = parent as XAttribute;
             if (a != null)
             {
                 return (XElement)a.parent;
@@ -1162,7 +1162,7 @@ namespace System.Xml.Linq
 
         bool Read(bool skipContent)
         {
-            XElement e = _source as XElement;
+            XElement e = source as XElement;
             if (e != null)
             {
                 if (e.IsEmpty || IsEndElement || skipContent)
@@ -1171,12 +1171,12 @@ namespace System.Xml.Linq
                 }
                 return ReadIntoElement(e);
             }
-            XNode n = _source as XNode;
+            XNode n = source as XNode;
             if (n != null)
             {
                 return ReadOverNode(n);
             }
-            XAttribute a = _source as XAttribute;
+            XAttribute a = source as XAttribute;
             if (a != null)
             {
                 return ReadOverAttribute(a, skipContent);
@@ -1189,7 +1189,7 @@ namespace System.Xml.Linq
             XNode n = d.content as XNode;
             if (n != null)
             {
-                _source = n.next;
+                source = n.next;
                 return true;
             }
             string s = d.content as string;
@@ -1197,8 +1197,8 @@ namespace System.Xml.Linq
             {
                 if (s.Length > 0)
                 {
-                    _source = s;
-                    _parent = d;
+                    source = s;
+                    parent = d;
                     return true;
                 }
             }
@@ -1210,7 +1210,7 @@ namespace System.Xml.Linq
             XNode n = e.content as XNode;
             if (n != null)
             {
-                _source = n.next;
+                source = n.next;
                 return true;
             }
             string s = e.content as string;
@@ -1218,12 +1218,12 @@ namespace System.Xml.Linq
             {
                 if (s.Length > 0)
                 {
-                    _source = s;
-                    _parent = e;
+                    source = s;
+                    parent = e;
                 }
                 else
                 {
-                    _source = e;
+                    source = e;
                     IsEndElement = true;
                 }
                 return true;
@@ -1233,8 +1233,8 @@ namespace System.Xml.Linq
 
         bool ReadIntoAttribute(XAttribute a)
         {
-            _source = a.value;
-            _parent = a;
+            source = a.value;
+            parent = a;
             return true;
         }
 
@@ -1254,7 +1254,7 @@ namespace System.Xml.Linq
 
         bool ReadOverNode(XNode n)
         {
-            if (n == _root)
+            if (n == root)
             {
                 return ReadToEnd();
             }
@@ -1265,12 +1265,12 @@ namespace System.Xml.Linq
                 {
                     return ReadToEnd();
                 }
-                _source = n.parent;
+                source = n.parent;
                 IsEndElement = true;
             }
             else
             {
-                _source = next;
+                source = next;
                 IsEndElement = false;
             }
             return true;
@@ -1278,17 +1278,17 @@ namespace System.Xml.Linq
 
         bool ReadOverText(bool skipContent)
         {
-            if (_parent is XElement)
+            if (parent is XElement)
             {
-                _source = _parent;
-                _parent = null;
+                source = parent;
+                parent = null;
                 IsEndElement = true;
                 return true;
             }
-            if (_parent is XAttribute)
+            if (parent is XAttribute)
             {
-                XAttribute a = (XAttribute)_parent;
-                _parent = null;
+                XAttribute a = (XAttribute)parent;
+                parent = null;
                 return ReadOverAttribute(a, skipContent);
             }
             return ReadToEnd();
@@ -1296,7 +1296,7 @@ namespace System.Xml.Linq
 
         bool ReadToEnd()
         {
-            _state = ReadState.EndOfFile;
+            state = ReadState.EndOfFile;
             return false;
         }
 
@@ -1304,7 +1304,7 @@ namespace System.Xml.Linq
         /// Determines if the specified attribute would be a duplicate namespace declaration
         ///  - one which we already reported on some ancestor, so it's not necessary to report it here
         /// </summary>
-        /// <param name="a">The attribute to test</param>
+        /// <param name="candidateAttribute">The attribute to test.</param>
         /// <returns>true if the attribute is a duplicate namespace declaration attribute</returns>
         bool IsDuplicateNamespaceAttribute(XAttribute candidateAttribute)
         {
@@ -1333,7 +1333,7 @@ namespace System.Xml.Linq
             //    If it declares that prefix to the exact same URI as ours does then ours is a duplicate
             //    Note that if we find a namespace declaration for the same prefix but with a different URI, then we don't have a dupe!
             XElement element = candidateAttribute.parent as XElement;
-            if (element == _root || element == null)
+            if (element == root || element == null)
             {
                 // If there's only the parent element of our attribute, there can be no duplicates
                 return false;
@@ -1369,7 +1369,7 @@ namespace System.Xml.Linq
                         a = a.next;
                     } while (a != element.lastAttr);
                 }
-                if (element == _root)
+                if (element == root)
                 {
                     return false;
                 }
@@ -1385,7 +1385,7 @@ namespace System.Xml.Linq
         /// <returns>The first attribute which is not a namespace attribute or null if the end of attributes has bean reached</returns>
         XAttribute GetFirstNonDuplicateNamespaceAttribute(XAttribute candidate)
         {
-            Debug.Assert(_omitDuplicateNamespaces, "This method should only be caled if we're omitting duplicate namespace attribute." +
+            Debug.Assert(omitDuplicateNamespaces, "This method should only be called if we're omitting duplicate namespace attribute." +
                                                   "For perf reason it's better to test this flag in the caller method.");
             if (!IsDuplicateNamespaceAttribute(candidate))
             {

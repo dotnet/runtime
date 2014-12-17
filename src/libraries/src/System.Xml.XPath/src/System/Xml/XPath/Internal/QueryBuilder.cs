@@ -13,9 +13,9 @@ namespace MS.Internal.Xml.XPath
     {
         // Note: Up->Doun, Down->Up:
         //       For operators order is normal: 1 + 2 --> Operator+(1, 2)
-        //       For pathes order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
+        //       For paths order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
         // Input flags. We pass them Up->Down. 
-        // Using them upper query set states wich controls how inner query will be built.
+        // Using them upper query set states which controls how inner query will be built.
         enum Flags
         {
             None = 0x00,
@@ -28,28 +28,28 @@ namespace MS.Internal.Xml.XPath
         // These properties are closely related to QueryProps exposed by Query node itself.
         // They have the following difference: 
         //      QueryProps describe property of node they are (belong like Reverse)
-        //      these Props describe acumulated properties of the tree (like nonFlat)
+        //      these Props describe accumulated properties of the tree (like nonFlat)
         enum Props
         {
             None = 0x00,
             PosFilter = 0x01,  // This filter or inner filter was positional: foo[1] or foo[1][true()]
             HasPosition = 0x02,  // Expression may ask position() of the context
             HasLast = 0x04,  // Expression may ask last() of the context
-            NonFlat = 0x08,  // Some nodes may be descendent of otheres
+            NonFlat = 0x08,  // Some nodes may be descendent of others
         }
 
-        // comment are aproximate. This is my best understanding:
-        private string _query;
-        private bool _allowVar;
-        private bool _allowKey;
-        private bool _allowCurrent;
-        private bool _needContext;
-        private BaseAxisQuery _firstInput; // Input of the leftmost predicate. Set by leftmost predicate, used in rightmost one
+        // comment are approximate. This is my best understanding:
+        private string query;
+        private bool allowVar;
+        private bool allowKey;
+        private bool allowCurrent;
+        private bool needContext;
+        private BaseAxisQuery firstInput; // Input of the leftmost predicate. Set by leftmost predicate, used in rightmost one
 
         private void Reset()
         {
-            _parseDepth = 0;
-            _needContext = false;
+            parseDepth = 0;
+            needContext = false;
         }
 
         private Query ProcessAxis(Axis root, Flags flags, out Props props)
@@ -57,9 +57,9 @@ namespace MS.Internal.Xml.XPath
             Query result = null;
             if (root.Prefix.Length > 0)
             {
-                _needContext = true;
+                needContext = true;
             }
-            _firstInput = null;
+            firstInput = null;
             Query qyInput;
             {
                 if (root.Input != null)
@@ -197,7 +197,7 @@ namespace MS.Internal.Xml.XPath
                     }
                     break;
                 default:
-                    throw XPathException.Create(SR.Xp_NotSupported, _query);
+                    throw XPathException.Create(SR.Xp_NotSupported, query);
             }
 
             return result;
@@ -231,9 +231,9 @@ namespace MS.Internal.Xml.XPath
             // So we clean this flag here:
             flags &= ~Flags.SmartDesc;
             // ToDo: Instead it would be nice to wrap descendent::foo[expr] into special query that will flatten it -- i.e.
-            //       remove all nodes that are descendant of other nodes. This is very easy becuase for sorted nodesets all children 
-            //       follow its parent. One step caching. This can be easyly done by rightmost DescendantQuery itsef.
-            //       Interesting note! Can we garatee that DescendantOverDescendant returns flat nodeset? This defenetely true if it's input is flat.
+            //       remove all nodes that are descendant of other nodes. This is very easy because for sorted nodesets all children 
+            //       follow its parent. One step caching. This can be easily done by rightmost DescendantQuery itself.
+            //       Interesting note! Can we guarantee that DescendantOverDescendant returns flat nodeset? This definitely true if it's input is flat.
 
             Query qyInput = ProcessNode(root.Input, flags | Flags.Filter, out props);
 
@@ -268,9 +268,9 @@ namespace MS.Internal.Xml.XPath
             {
                 qyInput = ((DocumentOrderQuery)qyInput).input;
             }
-            if (_firstInput == null)
+            if (firstInput == null)
             {
-                _firstInput = qyInput as BaseAxisQuery;
+                firstInput = qyInput as BaseAxisQuery;
             }
 
             bool merge = (qyInput.Properties & QueryProps.Merge) != 0;
@@ -287,22 +287,22 @@ namespace MS.Internal.Xml.XPath
                 }
             }
 
-            if (first && _firstInput != null)
+            if (first && firstInput != null)
             {
                 if (merge && (props & Props.PosFilter) != 0)
                 {
                     qyInput = new FilterQuery(qyInput, cond, /*noPosition:*/false);
-                    Query parent = _firstInput.qyInput;
+                    Query parent = firstInput.qyInput;
                     if (!(parent is ContextQuery))
                     { // we don't need to wrap filter with MergeFilterQuery when cardinality is parent <: ?
-                        _firstInput.qyInput = new ContextQuery();
-                        _firstInput = null;
+                        firstInput.qyInput = new ContextQuery();
+                        firstInput = null;
                         return new MergeFilterQuery(parent, qyInput);
                     }
-                    _firstInput = null;
+                    firstInput = null;
                     return qyInput;
                 }
-                _firstInput = null;
+                firstInput = null;
             }
             return new FilterQuery(qyInput, cond, /*noPosition:*/(propsCond & Props.HasPosition) == 0);
         }
@@ -340,10 +340,10 @@ namespace MS.Internal.Xml.XPath
 
         private Query ProcessVariable(Variable root)
         {
-            _needContext = true;
-            if (!_allowVar)
+            needContext = true;
+            if (!allowVar)
             {
-                throw XPathException.Create(SR.Xp_InvalidKeyPattern, _query);
+                throw XPathException.Create(SR.Xp_InvalidKeyPattern, query);
             }
             return new VariableQuery(root.Localname, root.Prefix);
         }
@@ -419,20 +419,20 @@ namespace MS.Internal.Xml.XPath
                         ProcessNode((AstNode)root.ArgumentList[0], Flags.None, out props)
                     );
                 case FT.FuncUserDefined:
-                    _needContext = true;
-                    if (!_allowCurrent && root.Name == "current" && root.Prefix.Length == 0)
+                    needContext = true;
+                    if (!allowCurrent && root.Name == "current" && root.Prefix.Length == 0)
                     {
                         throw XPathException.Create(SR.Xp_CurrentNotAllowed);
                     }
-                    if (!_allowKey && root.Name == "key" && root.Prefix.Length == 0)
+                    if (!allowKey && root.Name == "key" && root.Prefix.Length == 0)
                     {
-                        throw XPathException.Create(SR.Xp_InvalidKeyPattern, _query);
+                        throw XPathException.Create(SR.Xp_InvalidKeyPattern, query);
                     }
                     qy = new FunctionQuery(root.Prefix, root.Name, ProcessArguments(root.ArgumentList, out props));
                     props |= Props.NonFlat;
                     return qy;
                 default:
-                    throw XPathException.Create(SR.Xp_NotSupported, _query);
+                    throw XPathException.Create(SR.Xp_NotSupported, query);
             }
         }
 
@@ -450,12 +450,12 @@ namespace MS.Internal.Xml.XPath
             return argList;
         }
 
-        private int _parseDepth = 0;
+        private int parseDepth = 0;
         private const int MaxParseDepth = 1024;
 
         private Query ProcessNode(AstNode root, Flags flags, out Props props)
         {
-            if (++_parseDepth > MaxParseDepth)
+            if (++parseDepth > MaxParseDepth)
             {
                 throw XPathException.Create(SR.Xp_QueryTooComplex);
             }
@@ -493,7 +493,7 @@ namespace MS.Internal.Xml.XPath
                     Debug.Assert(false, "Unknown QueryType encountered!!");
                     break;
             }
-            --_parseDepth;
+            --parseDepth;
             return result;
         }
 
@@ -501,38 +501,38 @@ namespace MS.Internal.Xml.XPath
         {
             Reset();
             Props props;
-            _query = query;
+            this.query = query;
             Query result = ProcessNode(root, Flags.None, out props);
             return result;
         }
 
         internal Query Build(string query, bool allowVar, bool allowKey)
         {
-            _allowVar = allowVar;
-            _allowKey = allowKey;
-            _allowCurrent = true;
+            this.allowVar = allowVar;
+            this.allowKey = allowKey;
+            this.allowCurrent = true;
             return Build(XPathParser.ParseXPathExpresion(query), query);
         }
 
         internal Query Build(string query, out bool needContext)
         {
             Query result = Build(query, true, true);
-            needContext = _needContext;
+            needContext = this.needContext;
             return result;
         }
 
         internal Query BuildPatternQuery(string query, bool allowVar, bool allowKey)
         {
-            _allowVar = allowVar;
-            _allowKey = allowKey;
-            _allowCurrent = false;
+            this.allowVar = allowVar;
+            this.allowKey = allowKey;
+            this.allowCurrent = false;
             return Build(XPathParser.ParseXPathPattern(query), query);
         }
 
         internal Query BuildPatternQuery(string query, out bool needContext)
         {
             Query result = BuildPatternQuery(query, true, true);
-            needContext = _needContext;
+            needContext = this.needContext;
             return result;
         }
     }

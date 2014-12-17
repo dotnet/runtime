@@ -7,19 +7,19 @@ namespace System.Reflection.Metadata
 {
     public struct ModuleDefinition
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         internal ModuleDefinition(MetadataReader reader)
         {
             Debug.Assert(reader != null);
-            _reader = reader;
+            this.reader = reader;
         }
 
         public int Generation
         {
             get
             {
-                return (int)_reader.ModuleTable.GetGeneration();
+                return (int)reader.ModuleTable.GetGeneration();
             }
         }
 
@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ModuleTable.GetName();
+                return reader.ModuleTable.GetName();
             }
         }
 
@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ModuleTable.GetMvid();
+                return reader.ModuleTable.GetMvid();
             }
         }
 
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ModuleTable.GetEncId();
+                return reader.ModuleTable.GetEncId();
             }
         }
 
@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ModuleTable.GetEncBaseId();
+                return reader.ModuleTable.GetEncBaseId();
             }
         }
     }

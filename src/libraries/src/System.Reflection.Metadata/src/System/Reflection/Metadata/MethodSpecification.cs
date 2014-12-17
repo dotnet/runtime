@@ -7,23 +7,23 @@ namespace System.Reflection.Metadata
 {
     public struct MethodSpecification
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal MethodSpecification(MetadataReader reader, MethodSpecificationHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private MethodSpecificationHandle Handle
         {
-            get { return MethodSpecificationHandle.FromRowId(_rowId); }
+            get { return MethodSpecificationHandle.FromRowId(rowId); }
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.MethodSpecTable.GetMethod(Handle);
+                return reader.MethodSpecTable.GetMethod(Handle);
             }
         }
 
@@ -45,13 +45,13 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.MethodSpecTable.GetInstantiation(Handle);
+                return reader.MethodSpecTable.GetInstantiation(Handle);
             }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
     }
 }

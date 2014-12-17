@@ -7,30 +7,30 @@ namespace System.Reflection.Metadata
 {
     public struct Parameter
     {
-        private readonly MetadataReader _reader;
+        private readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly uint rowId;
 
         internal Parameter(MetadataReader reader, ParameterHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            _reader = reader;
-            _rowId = handle.RowId;
+            this.reader = reader;
+            this.rowId = handle.RowId;
         }
 
         private ParameterHandle Handle
         {
-            get { return ParameterHandle.FromRowId(_rowId); }
+            get { return ParameterHandle.FromRowId(rowId); }
         }
 
         public ParameterAttributes Attributes
         {
             get
             {
-                return _reader.ParamTable.GetFlags(Handle);
+                return reader.ParamTable.GetFlags(Handle);
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ParamTable.GetSequence(Handle);
+                return reader.ParamTable.GetSequence(Handle);
             }
         }
 
@@ -46,29 +46,29 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return _reader.ParamTable.GetName(Handle);
+                return reader.ParamTable.GetName(Handle);
             }
         }
 
         public ConstantHandle GetDefaultValue()
         {
-            return _reader.ConstantTable.FindConstant(Handle);
+            return reader.ConstantTable.FindConstant(Handle);
         }
 
         public BlobHandle GetMarshallingDescriptor()
         {
-            uint marshalRowId = _reader.FieldMarshalTable.FindFieldMarshalRowId(Handle);
+            uint marshalRowId = reader.FieldMarshalTable.FindFieldMarshalRowId(Handle);
             if (marshalRowId == 0)
             {
                 return default(BlobHandle);
             }
 
-            return _reader.FieldMarshalTable.GetNativeType(marshalRowId);
+            return reader.FieldMarshalTable.GetNativeType(marshalRowId);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(reader, Handle);
         }
     }
 }
