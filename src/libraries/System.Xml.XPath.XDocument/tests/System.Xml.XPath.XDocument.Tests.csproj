@@ -74,6 +74,17 @@
       <Private>False</Private>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
+    <Reference Include="System.Text.Encoding">
+      <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>..\..\packages\System.Text.Encoding.CodePages.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.CodePages.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+
     <Reference Include="xunit.abstractions">
       <HintPath>..\..\packages\xunit.abstractions.2.0.0-beta5-build2785\lib\net35\xunit.abstractions.dll</HintPath>
     </Reference>
