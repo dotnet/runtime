@@ -36,28 +36,28 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The root of the binary tree that stores the collection.  Contents are typically not entirely frozen.
             /// </summary>
-            private SortedInt32KeyNode<HashBucket> root = SortedInt32KeyNode<HashBucket>.EmptyNode;
+            private SortedInt32KeyNode<HashBucket> _root = SortedInt32KeyNode<HashBucket>.EmptyNode;
 
             /// <summary>
             /// The equality comparer.
             /// </summary>
-            private IEqualityComparer<T> equalityComparer;
+            private IEqualityComparer<T> _equalityComparer;
 
             /// <summary>
             /// The number of elements in this collection.
             /// </summary>
-            private int count;
+            private int _count;
 
             /// <summary>
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableHashSet<T> immutable;
+            private ImmutableHashSet<T> _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
             /// </summary>
-            private int version;
+            private int _version;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.Builder"/> class.
@@ -66,10 +66,10 @@ namespace System.Collections.Immutable
             internal Builder(ImmutableHashSet<T> set)
             {
                 Requires.NotNull(set, "set");
-                this.root = set.root;
-                this.count = set.count;
-                this.equalityComparer = set.equalityComparer;
-                this.immutable = set;
+                _root = set._root;
+                _count = set._count;
+                _equalityComparer = set._equalityComparer;
+                _immutable = set;
             }
 
             #region ISet<T> Properties
@@ -80,7 +80,7 @@ namespace System.Collections.Immutable
             /// <returns>The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.</returns>
             public int Count
             {
-                get { return this.count; }
+                get { return _count; }
             }
 
             /// <summary>
@@ -104,21 +104,21 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    return this.equalityComparer;
+                    return _equalityComparer;
                 }
 
                 set
                 {
                     Requires.NotNull(value, "value");
 
-                    if (value != this.equalityComparer)
+                    if (value != _equalityComparer)
                     {
                         var result = Union(this, new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, value, 0));
 
-                        this.immutable = null;
-                        this.equalityComparer = value;
+                        _immutable = null;
+                        _equalityComparer = value;
                         this.Root = result.Root;
-                        this.count = result.Count; // whether the offset or absolute, since the base is 0, it's no difference.
+                        _count = result.Count; // whether the offset or absolute, since the base is 0, it's no difference.
                     }
                 }
             }
@@ -128,7 +128,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal int Version
             {
-                get { return this.version; }
+                get { return _version; }
             }
 
             /// <summary>
@@ -136,7 +136,7 @@ namespace System.Collections.Immutable
             /// </summary>
             private MutationInput Origin
             {
-                get { return new MutationInput(this.Root, this.equalityComparer, this.count); }
+                get { return new MutationInput(this.Root, _equalityComparer, _count); }
             }
 
             /// <summary>
@@ -146,7 +146,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    return this.root;
+                    return _root;
                 }
 
                 set
@@ -154,14 +154,14 @@ namespace System.Collections.Immutable
                     // We *always* increment the version number because some mutations
                     // may not create a new value of root, although the existing root
                     // instance may have mutated.
-                    this.version++;
+                    _version++;
 
-                    if (this.root != value)
+                    if (_root != value)
                     {
-                        this.root = value;
+                        _root = value;
 
                         // Clear any cached value for the immutable view since it is now invalidated.
-                        this.immutable = null;
+                        _immutable = null;
                     }
                 }
             }
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
             /// </returns>
             public Enumerator GetEnumerator()
             {
-                return new Enumerator(this.root, this);
+                return new Enumerator(_root, this);
             }
 
             /// <summary>
@@ -192,12 +192,12 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedMap<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (this.immutable == null)
+                if (_immutable == null)
                 {
-                    this.immutable = ImmutableHashSet<T>.Wrap(this.root, this.equalityComparer, this.count);
+                    _immutable = ImmutableHashSet<T>.Wrap(_root, _equalityComparer, _count);
                 }
 
-                return this.immutable;
+                return _immutable;
             }
 
             #endregion
@@ -249,7 +249,7 @@ namespace System.Collections.Immutable
             /// <exception cref="T:System.NotSupportedException">The <see cref="T:System.Collections.Generic.ICollection`1"/> is read-only. </exception>
             public void Clear()
             {
-                this.count = 0;
+                _count = 0;
                 this.Root = SortedInt32KeyNode<HashBucket>.EmptyNode;
             }
 
@@ -259,7 +259,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection of items to remove from the set.</param>
             public void ExceptWith(IEnumerable<T> other)
             {
-                var result = ImmutableHashSet<T>.Except(other, this.equalityComparer, this.root);
+                var result = ImmutableHashSet<T>.Except(other, _equalityComparer, _root);
                 this.Apply(result);
             }
 
@@ -424,11 +424,11 @@ namespace System.Collections.Immutable
                 this.Root = result.Root;
                 if (result.CountType == CountType.Adjustment)
                 {
-                    this.count += result.Count;
+                    _count += result.Count;
                 }
                 else
                 {
-                    this.count = result.Count;
+                    _count = result.Count;
                 }
             }
         }

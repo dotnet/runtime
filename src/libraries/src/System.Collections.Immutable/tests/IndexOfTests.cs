@@ -143,17 +143,17 @@ namespace System.Collections.Immutable.Test
 
         private class CustomComparer : IEqualityComparer<int>
         {
-            private readonly int matchOnXIteration;
-            private int iteration;
+            private readonly int _matchOnXIteration;
+            private int _iteration;
 
             public CustomComparer(int matchOnXIteration)
             {
-                this.matchOnXIteration = matchOnXIteration;
+                _matchOnXIteration = matchOnXIteration;
             }
 
             public bool Equals(int x, int y)
             {
-                return ++iteration == this.matchOnXIteration;
+                return ++_iteration == _matchOnXIteration;
             }
 
             public int GetHashCode(int obj)
