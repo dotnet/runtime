@@ -11,32 +11,32 @@ namespace System.Reflection.Internal
     /// </summary>
     internal unsafe sealed class ExternalMemoryBlockProvider : MemoryBlockProvider
     {
-        private byte* memory;
-        private int size;
+        private byte* _memory;
+        private int _size;
 
         public unsafe ExternalMemoryBlockProvider(byte* memory, int size)
         {
-            this.memory = memory;
-            this.size = size;
+            _memory = memory;
+            _size = size;
         }
 
         public override int Size
         {
             get
             {
-                return size;
+                return _size;
             }
         }
 
         protected override AbstractMemoryBlock GetMemoryBlockImpl(int start, int size)
         {
-            return new ExternalMemoryBlock(this, memory + start, size);
+            return new ExternalMemoryBlock(this, _memory + start, size);
         }
 
         public override Stream GetStream(out StreamConstraints constraints)
         {
-            constraints = new StreamConstraints(null, 0, size);
-            return new ReadOnlyUnmanagedMemoryStream(memory, size);
+            constraints = new StreamConstraints(null, 0, _size);
+            return new ReadOnlyUnmanagedMemoryStream(_memory, _size);
         }
 
         protected override void Dispose(bool disposing)
@@ -44,15 +44,15 @@ namespace System.Reflection.Internal
             Debug.Assert(disposing);
 
             // we don't own the memory, just null out the pointer.
-            memory = null;
-            size = 0;
+            _memory = null;
+            _size = 0;
         }
 
         public byte* Pointer
         {
             get
             {
-                return memory;
+                return _memory;
             }
         }
     }

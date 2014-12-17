@@ -17,10 +17,10 @@ namespace System.Reflection.Metadata
     /// </summary>
     public sealed partial class MetadataReader
     {
-        private readonly MetadataReaderOptions options;
+        private readonly MetadataReaderOptions _options;
         internal readonly MetadataStringDecoder utf8Decoder;
         internal readonly NamespaceCache namespaceCache;
-        private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> lazyNestedTypesMap;
+        private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> _lazyNestedTypesMap;
         internal readonly MemoryBlock Block;
 
         // A row id of "mscorlib" AssemblyRef in a WinMD file (each WinMD file must have such a reference).
@@ -89,7 +89,7 @@ namespace System.Reflection.Metadata
 
             this.Block = new MemoryBlock(metadata, length);
 
-            this.options = options;
+            _options = options;
             this.utf8Decoder = utf8Decoder;
 
             BlobReader memReader = new BlobReader(this.Block);
@@ -122,7 +122,7 @@ namespace System.Reflection.Metadata
             //  read 
             this.namespaceCache = new NamespaceCache(this);
 
-            if (this.metadataKind != MetadataKind.Ecma335)
+            if (_metadataKind != MetadataKind.Ecma335)
             {
                 this.WinMDMscorlibRef = FindMscorlibAssemblyRefNoProjection();
             }
@@ -132,9 +132,9 @@ namespace System.Reflection.Metadata
 
         #region Metadata Headers
 
-        private MetadataHeader metadataHeader;
-        private MetadataKind metadataKind;
-        private MetadataStreamKind metadataStreamKind;
+        private MetadataHeader _metadataHeader;
+        private MetadataKind _metadataKind;
+        private MetadataStreamKind _metadataStreamKind;
 
         internal StringStreamReader StringStream;
         internal BlobStreamReader BlobStream;
@@ -164,31 +164,31 @@ namespace System.Reflection.Metadata
                 throw new BadImageFormatException(MetadataResources.MetadataHeaderTooSmall);
             }
 
-            this.metadataHeader.Signature = memReader.ReadUInt32();
-            if (this.metadataHeader.Signature != COR20Constants.COR20MetadataSignature)
+            _metadataHeader.Signature = memReader.ReadUInt32();
+            if (_metadataHeader.Signature != COR20Constants.COR20MetadataSignature)
             {
                 throw new BadImageFormatException(MetadataResources.MetadataSignature);
             }
 
-            this.metadataHeader.MajorVersion = memReader.ReadUInt16();
-            this.metadataHeader.MinorVersion = memReader.ReadUInt16();
-            this.metadataHeader.ExtraData = memReader.ReadUInt32();
-            this.metadataHeader.VersionStringSize = memReader.ReadInt32();
-            if (memReader.RemainingBytes < this.metadataHeader.VersionStringSize)
+            _metadataHeader.MajorVersion = memReader.ReadUInt16();
+            _metadataHeader.MinorVersion = memReader.ReadUInt16();
+            _metadataHeader.ExtraData = memReader.ReadUInt32();
+            _metadataHeader.VersionStringSize = memReader.ReadInt32();
+            if (memReader.RemainingBytes < _metadataHeader.VersionStringSize)
             {
                 throw new BadImageFormatException(MetadataResources.NotEnoughSpaceForVersionString);
             }
 
             int numberOfBytesRead;
-            this.metadataHeader.VersionString = memReader.GetMemoryBlockAt(0, this.metadataHeader.VersionStringSize).PeekUtf8NullTerminated(0, null, utf8Decoder, out numberOfBytesRead, '\0');
-            memReader.SkipBytes(this.metadataHeader.VersionStringSize);
-            this.metadataKind = GetMetadataKind(metadataHeader.VersionString);
+            _metadataHeader.VersionString = memReader.GetMemoryBlockAt(0, _metadataHeader.VersionStringSize).PeekUtf8NullTerminated(0, null, utf8Decoder, out numberOfBytesRead, '\0');
+            memReader.SkipBytes(_metadataHeader.VersionStringSize);
+            _metadataKind = GetMetadataKind(_metadataHeader.VersionString);
         }
 
         private MetadataKind GetMetadataKind(string versionString)
         {
             // Treat metadata as CLI raw metadata if the client doesn't want to see projections.
-            if ((options & MetadataReaderOptions.ApplyWindowsRuntimeProjections) == 0)
+            if ((_options & MetadataReaderOptions.ApplyWindowsRuntimeProjections) == 0)
             {
                 return MetadataKind.Ecma335;
             }
@@ -252,7 +252,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(MetadataResources.NotEnoughSpaceForStringStream);
                         }
 
-                        this.StringStream = new StringStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), this.metadataKind);
+                        this.StringStream = new StringStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), _metadataKind);
                         break;
 
                     case COR20Constants.BlobStreamName:
@@ -261,7 +261,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(MetadataResources.NotEnoughSpaceForBlobStream);
                         }
 
-                        this.BlobStream = new BlobStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), this.metadataKind);
+                        this.BlobStream = new BlobStreamReader(metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size), _metadataKind);
                         break;
 
                     case COR20Constants.GUIDStreamName:
@@ -288,7 +288,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(MetadataResources.NotEnoughSpaceForMetadataStream);
                         }
 
-                        this.metadataStreamKind = MetadataStreamKind.Compressed;
+                        _metadataStreamKind = MetadataStreamKind.Compressed;
                         metadataTableStream = metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size);
                         break;
 
@@ -298,7 +298,7 @@ namespace System.Reflection.Metadata
                             throw new BadImageFormatException(MetadataResources.NotEnoughSpaceForMetadataStream);
                         }
 
-                        this.metadataStreamKind = MetadataStreamKind.Uncompressed;
+                        _metadataStreamKind = MetadataStreamKind.Uncompressed;
                         metadataTableStream = metadataRoot.GetMemoryBlockAt((int)streamHeader.Offset, streamHeader.Size);
                         break;
 
@@ -318,7 +318,7 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            if (IsMinimalDelta && metadataStreamKind != MetadataStreamKind.Uncompressed)
+            if (IsMinimalDelta && _metadataStreamKind != MetadataStreamKind.Uncompressed)
             {
                 throw new BadImageFormatException(MetadataResources.InvalidMetadataStreamFormat);
             }
@@ -328,7 +328,7 @@ namespace System.Reflection.Metadata
 
         #region Tables and Heaps
 
-        private MetadataTableHeader MetadataTableHeader;
+        private MetadataTableHeader _MetadataTableHeader;
 
         /// <summary>
         /// A row count for each possible table. May be indexed by <see cref="TableIndex"/>.
@@ -388,14 +388,14 @@ namespace System.Reflection.Metadata
                 throw new BadImageFormatException(MetadataResources.MetadataTableHeaderTooSmall);
             }
 
-            this.MetadataTableHeader.Reserved = memReader.ReadUInt32();
-            this.MetadataTableHeader.MajorVersion = memReader.ReadByte();
-            this.MetadataTableHeader.MinorVersion = memReader.ReadByte();
-            this.MetadataTableHeader.HeapSizeFlags = (HeapSizeFlag)memReader.ReadByte();
-            this.MetadataTableHeader.RowId = memReader.ReadByte();
-            this.MetadataTableHeader.ValidTables = (TableMask)memReader.ReadUInt64();
-            this.MetadataTableHeader.SortedTables = (TableMask)memReader.ReadUInt64();
-            ulong presentTables = (ulong)this.MetadataTableHeader.ValidTables;
+            _MetadataTableHeader.Reserved = memReader.ReadUInt32();
+            _MetadataTableHeader.MajorVersion = memReader.ReadByte();
+            _MetadataTableHeader.MinorVersion = memReader.ReadByte();
+            _MetadataTableHeader.HeapSizeFlags = (HeapSizeFlag)memReader.ReadByte();
+            _MetadataTableHeader.RowId = memReader.ReadByte();
+            _MetadataTableHeader.ValidTables = (TableMask)memReader.ReadUInt64();
+            _MetadataTableHeader.SortedTables = (TableMask)memReader.ReadUInt64();
+            ulong presentTables = (ulong)_MetadataTableHeader.ValidTables;
 
             // According to ECMA-335, MajorVersion and MinorVersion have fixed values and, 
             // based on recommendation in 24.1 Fixed fields: When writing these fields it 
@@ -409,7 +409,7 @@ namespace System.Reflection.Metadata
                 throw new BadImageFormatException(string.Format(MetadataResources.UnknownTables, presentTables));
             }
 
-            if (this.metadataStreamKind == MetadataStreamKind.Compressed)
+            if (_metadataStreamKind == MetadataStreamKind.Compressed)
             {
                 // In general Ptr tables and EnC tables are not allowed in a compressed stream.
                 // However when asked for a snapshot of the current metadata after an EnC change has been applied 
@@ -421,7 +421,7 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            int numberOfTables = this.MetadataTableHeader.GetNumberOfTablesPresent();
+            int numberOfTables = _MetadataTableHeader.GetNumberOfTablesPresent();
             if (memReader.RemainingBytes < numberOfTables * sizeof(int))
             {
                 throw new BadImageFormatException(MetadataResources.TableRowCountSpaceTooSmall);
@@ -448,7 +448,7 @@ namespace System.Reflection.Metadata
             // Size of reference tags in each table.
             int[] referenceSizes = new int[TableIndexExtensions.Count];
 
-            ulong validTables = (ulong)this.MetadataTableHeader.ValidTables;
+            ulong validTables = (ulong)_MetadataTableHeader.ValidTables;
             int compressedRowCountIndex = 0;
             for (int i = 0; i < TableIndexExtensions.Count; i++)
             {
@@ -494,9 +494,9 @@ namespace System.Reflection.Metadata
             int typeOrMethodDefRefSize = ComputeCodedTokenSize(TypeOrMethodDefTag.LargeRowSize, rowCounts, TypeOrMethodDefTag.TablesReferenced);
 
             // Compute HeapRef Sizes
-            int stringHeapRefSize = (this.MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.StringHeapLarge) == HeapSizeFlag.StringHeapLarge ? LargeIndexSize : SmallIndexSize;
-            int guidHeapRefSize = (this.MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.GuidHeapLarge) == HeapSizeFlag.GuidHeapLarge ? LargeIndexSize : SmallIndexSize;
-            int blobHeapRefSize = (this.MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.BlobHeapLarge) == HeapSizeFlag.BlobHeapLarge ? LargeIndexSize : SmallIndexSize;
+            int stringHeapRefSize = (_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.StringHeapLarge) == HeapSizeFlag.StringHeapLarge ? LargeIndexSize : SmallIndexSize;
+            int guidHeapRefSize = (_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.GuidHeapLarge) == HeapSizeFlag.GuidHeapLarge ? LargeIndexSize : SmallIndexSize;
+            int blobHeapRefSize = (_MetadataTableHeader.HeapSizeFlags & HeapSizeFlag.BlobHeapLarge) == HeapSizeFlag.BlobHeapLarge ? LargeIndexSize : SmallIndexSize;
 
             // Populate the Table blocks
             int totalRequiredSize = 0;
@@ -596,7 +596,7 @@ namespace System.Reflection.Metadata
             this.FieldRvaTable = new FieldRVATableReader(rowCounts[(int)TableIndex.FieldRva], IsDeclaredSorted(TableMask.FieldRva), referenceSizes[(int)TableIndex.Field], metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.FieldRvaTable.Block.Length;
 
-            this.EncLogTable = new EnCLogTableReader(rowCounts[(int)TableIndex.EncLog], metadataTablesMemoryBlock, totalRequiredSize, this.metadataStreamKind);
+            this.EncLogTable = new EnCLogTableReader(rowCounts[(int)TableIndex.EncLog], metadataTablesMemoryBlock, totalRequiredSize, _metadataStreamKind);
             totalRequiredSize += this.EncLogTable.Block.Length;
 
             this.EncMapTable = new EnCMapTableReader(rowCounts[(int)TableIndex.EncMap], metadataTablesMemoryBlock, totalRequiredSize);
@@ -611,7 +611,7 @@ namespace System.Reflection.Metadata
             this.AssemblyOSTable = new AssemblyOSTableReader(rowCounts[(int)TableIndex.AssemblyOS], metadataTablesMemoryBlock, totalRequiredSize);
             totalRequiredSize += this.AssemblyOSTable.Block.Length;
 
-            this.AssemblyRefTable = new AssemblyRefTableReader((int)rowCounts[(int)TableIndex.AssemblyRef], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize, this.metadataKind);
+            this.AssemblyRefTable = new AssemblyRefTableReader((int)rowCounts[(int)TableIndex.AssemblyRef], stringHeapRefSize, blobHeapRefSize, metadataTablesMemoryBlock, totalRequiredSize, _metadataKind);
             totalRequiredSize += this.AssemblyRefTable.Block.Length;
 
             this.AssemblyRefProcessorTable = new AssemblyRefProcessorTableReader(rowCounts[(int)TableIndex.AssemblyRefProcessor], referenceSizes[(int)TableIndex.AssemblyRef], metadataTablesMemoryBlock, totalRequiredSize);
@@ -671,7 +671,7 @@ namespace System.Reflection.Metadata
 
         private bool IsDeclaredSorted(TableMask index)
         {
-            return (this.MetadataTableHeader.SortedTables & index) != 0;
+            return (_MetadataTableHeader.SortedTables & index) != 0;
         }
 
         #endregion
@@ -829,17 +829,17 @@ namespace System.Reflection.Metadata
 
         public MetadataReaderOptions Options
         {
-            get { return this.options; }
+            get { return _options; }
         }
 
         public string MetadataVersion
         {
-            get { return metadataHeader.VersionString; }
+            get { return _metadataHeader.VersionString; }
         }
 
         public MetadataKind MetadataKind
         {
-            get { return metadataKind; }
+            get { return _metadataKind; }
         }
 
         public MetadataStringComparer StringComparer
@@ -1000,7 +1000,7 @@ namespace System.Reflection.Metadata
         private uint GetTypeDefTreatmentAndRowId(TypeDefinitionHandle handle)
         {
             // PERF: This code pattern is JIT friendly and results in very efficient code.
-            if (this.metadataKind == MetadataKind.Ecma335)
+            if (_metadataKind == MetadataKind.Ecma335)
             {
                 return handle.RowId;
             }
@@ -1017,7 +1017,7 @@ namespace System.Reflection.Metadata
         private uint GetTypeRefTreatmentAndRowId(TypeReferenceHandle handle)
         {
             // PERF: This code pattern is JIT friendly and results in very efficient code.
-            if (this.metadataKind == MetadataKind.Ecma335)
+            if (_metadataKind == MetadataKind.Ecma335)
             {
                 return handle.RowId;
             }
@@ -1045,7 +1045,7 @@ namespace System.Reflection.Metadata
         private uint GetCustomAttributeTreatmentAndRowId(CustomAttributeHandle handle)
         {
             // PERF: This code pattern is JIT friendly and results in very efficient code.
-            if (this.metadataKind == MetadataKind.Ecma335)
+            if (_metadataKind == MetadataKind.Ecma335)
             {
                 return handle.RowId;
             }
@@ -1073,7 +1073,7 @@ namespace System.Reflection.Metadata
         private uint GetMethodDefTreatmentAndRowId(MethodDefinitionHandle handle)
         {
             // PERF: This code pattern is JIT friendly and results in very efficient code.
-            if (this.metadataKind == MetadataKind.Ecma335)
+            if (_metadataKind == MetadataKind.Ecma335)
             {
                 return handle.RowId;
             }
@@ -1090,7 +1090,7 @@ namespace System.Reflection.Metadata
         private uint GetFieldDefTreatmentAndRowId(FieldDefinitionHandle handle)
         {
             // PERF: This code pattern is JIT friendly and results in very efficient code.
-            if (this.metadataKind == MetadataKind.Ecma335)
+            if (_metadataKind == MetadataKind.Ecma335)
             {
                 return handle.RowId;
             }
@@ -1122,7 +1122,7 @@ namespace System.Reflection.Metadata
         private uint GetMemberRefTreatmentAndRowId(MemberReferenceHandle handle)
         {
             // PERF: This code pattern is JIT friendly and results in very efficient code.
-            if (this.metadataKind == MetadataKind.Ecma335)
+            if (_metadataKind == MetadataKind.Ecma335)
             {
                 return handle.RowId;
             }
@@ -1252,7 +1252,7 @@ namespace System.Reflection.Metadata
                 nestedTypesMap.Add(group.Key, group.Value.ToImmutable());
             }
 
-            this.lazyNestedTypesMap = nestedTypesMap;
+            _lazyNestedTypesMap = nestedTypesMap;
         }
 
         /// <summary>
@@ -1260,13 +1260,13 @@ namespace System.Reflection.Metadata
         /// </summary>
         internal ImmutableArray<TypeDefinitionHandle> GetNestedTypes(TypeDefinitionHandle typeDef)
         {
-            if (this.lazyNestedTypesMap == null)
+            if (_lazyNestedTypesMap == null)
             {
                 InitializeNestedTypesMap();
             }
 
             ImmutableArray<TypeDefinitionHandle> nestedTypes;
-            if (this.lazyNestedTypesMap.TryGetValue(typeDef, out nestedTypes))
+            if (_lazyNestedTypesMap.TryGetValue(typeDef, out nestedTypes))
             {
                 return nestedTypes;
             }

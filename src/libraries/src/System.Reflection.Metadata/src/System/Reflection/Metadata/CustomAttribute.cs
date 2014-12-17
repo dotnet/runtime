@@ -8,23 +8,23 @@ namespace System.Reflection.Metadata
 {
     public struct CustomAttribute
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint treatmentAndRowId;
+        private readonly uint _treatmentAndRowId;
 
         internal CustomAttribute(MetadataReader reader, uint treatmentAndRowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(treatmentAndRowId != 0);
 
-            this.reader = reader;
-            this.treatmentAndRowId = treatmentAndRowId;
+            _reader = reader;
+            _treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private CustomAttributeHandle Handle
@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
 
         private MethodDefTreatment Treatment
         {
-            get { return (MethodDefTreatment)(treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (MethodDefTreatment)(_treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.CustomAttributeTable.GetConstructor(Handle);
+                return _reader.CustomAttributeTable.GetConstructor(Handle);
             }
         }
 
@@ -61,7 +61,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                return reader.CustomAttributeTable.GetParent(Handle);
+                return _reader.CustomAttributeTable.GetParent(Handle);
             }
         }
 
@@ -77,7 +77,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.CustomAttributeTable.GetValue(Handle);
+                    return _reader.CustomAttributeTable.GetValue(Handle);
                 }
 
                 return GetProjectedValue();
@@ -97,10 +97,10 @@ namespace System.Reflection.Metadata
             // avoid calculating the treatment when the CustomAttributeHandle is looked up and CustomAttribute struct 
             // is initialized.
 
-            CustomAttributeValueTreatment treatment = reader.CalculateCustomAttributeValueTreatment(Handle);
+            CustomAttributeValueTreatment treatment = _reader.CalculateCustomAttributeValueTreatment(Handle);
             if (treatment == 0)
             {
-                return reader.CustomAttributeTable.GetValue(Handle);
+                return _reader.CustomAttributeTable.GetValue(Handle);
             }
 
             return GetProjectedValue(treatment);
@@ -137,8 +137,8 @@ namespace System.Reflection.Metadata
             //    01 00        - Fixed prolog for CA's
             //    xx xx xx xx  - The Windows.Foundation.Metadata.AttributeTarget value
             //    00 00        - Indicates 0 name/value pairs following.
-            var rawBlob = reader.CustomAttributeTable.GetValue(Handle);
-            var rawBlobReader = reader.GetBlobReader(rawBlob);
+            var rawBlob = _reader.CustomAttributeTable.GetValue(Handle);
+            var rawBlobReader = _reader.GetBlobReader(rawBlob);
             if (rawBlobReader.Length != 8)
             {
                 return rawBlob;

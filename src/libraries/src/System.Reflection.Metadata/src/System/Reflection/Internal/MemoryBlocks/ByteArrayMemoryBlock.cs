@@ -11,28 +11,28 @@ namespace System.Reflection.Internal
     /// </summary>
     internal sealed class ByteArrayMemoryBlock : AbstractMemoryBlock
     {
-        private ByteArrayMemoryProvider provider;
-        private readonly int start;
-        private readonly int size;
+        private ByteArrayMemoryProvider _provider;
+        private readonly int _start;
+        private readonly int _size;
 
         internal ByteArrayMemoryBlock(ByteArrayMemoryProvider provider, int start, int size)
         {
-            this.provider = provider;
-            this.size = size;
-            this.start = start;
+            _provider = provider;
+            _size = size;
+            _start = start;
         }
 
         protected override void Dispose(bool disposing)
         {
             Debug.Assert(disposing);
-            provider = null;
+            _provider = null;
         }
 
         public unsafe override byte* Pointer
         {
             get
             {
-                return provider.Pointer + start;
+                return _provider.Pointer + _start;
             }
         }
 
@@ -40,13 +40,13 @@ namespace System.Reflection.Internal
         {
             get
             {
-                return size;
+                return _size;
             }
         }
 
         public override ImmutableArray<byte> GetContent(int offset)
         {
-            return ImmutableArray.Create(provider.array, start + offset, size - offset);
+            return ImmutableArray.Create(_provider.array, _start + offset, _size - offset);
         }
     }
 }

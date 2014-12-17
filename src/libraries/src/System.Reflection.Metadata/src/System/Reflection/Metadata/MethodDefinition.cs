@@ -8,28 +8,28 @@ namespace System.Reflection.Metadata
 {
     public struct MethodDefinition
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint treatmentAndRowId;
+        private readonly uint _treatmentAndRowId;
 
         internal MethodDefinition(MetadataReader reader, uint treatmentAndRowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(treatmentAndRowId != 0);
 
-            this.reader = reader;
-            this.treatmentAndRowId = treatmentAndRowId;
+            _reader = reader;
+            _treatmentAndRowId = treatmentAndRowId;
         }
 
         private uint RowId
         {
-            get { return treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
         }
 
         private MethodDefTreatment Treatment
         {
-            get { return (MethodDefTreatment)(treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
+            get { return (MethodDefTreatment)(_treatmentAndRowId >> TokenTypeIds.RowIdBitCount); }
         }
 
         private MethodDefinitionHandle Handle
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MethodDefTable.GetName(Handle);
+                    return _reader.MethodDefTable.GetName(Handle);
                 }
 
                 return GetProjectedName();
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MethodDefTable.GetSignature(Handle);
+                    return _reader.MethodDefTable.GetSignature(Handle);
                 }
 
                 return GetProjectedSignature();
@@ -69,7 +69,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MethodDefTable.GetRva(Handle);
+                    return _reader.MethodDefTable.GetRva(Handle);
                 }
 
                 return GetProjectedRelativeVirtualAddress();
@@ -82,7 +82,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MethodDefTable.GetFlags(Handle);
+                    return _reader.MethodDefTable.GetFlags(Handle);
                 }
 
                 return GetProjectedFlags();
@@ -95,7 +95,7 @@ namespace System.Reflection.Metadata
             {
                 if (Treatment == 0)
                 {
-                    return reader.MethodDefTable.GetImplFlags(Handle);
+                    return _reader.MethodDefTable.GetImplFlags(Handle);
                 }
 
                 return GetProjectedImplFlags();
@@ -104,38 +104,38 @@ namespace System.Reflection.Metadata
 
         public TypeDefinitionHandle GetDeclaringType()
         {
-            return reader.GetDeclaringType(Handle);
+            return _reader.GetDeclaringType(Handle);
         }
 
         public ParameterHandleCollection GetParameters()
         {
-            return new ParameterHandleCollection(reader, Handle);
+            return new ParameterHandleCollection(_reader, Handle);
         }
 
         public GenericParameterHandleCollection GetGenericParameters()
         {
-            return reader.GenericParamTable.FindGenericParametersForMethod(Handle);
+            return _reader.GenericParamTable.FindGenericParametersForMethod(Handle);
         }
 
         public MethodImport GetImport()
         {
-            uint implMapRid = reader.ImplMapTable.FindImplForMethod(Handle);
+            uint implMapRid = _reader.ImplMapTable.FindImplForMethod(Handle);
             if (implMapRid == 0)
             {
                 return default(MethodImport);
             }
 
-            return reader.ImplMapTable[implMapRid];
+            return _reader.ImplMapTable[implMapRid];
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
         public DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes()
         {
-            return new DeclarativeSecurityAttributeHandleCollection(reader, Handle);
+            return new DeclarativeSecurityAttributeHandleCollection(_reader, Handle);
         }
 
         #region Projections
@@ -147,12 +147,12 @@ namespace System.Reflection.Metadata
                 return StringHandle.FromVirtualIndex(StringHandle.VirtualIndex.Dispose);
             }
 
-            return reader.MethodDefTable.GetName(Handle);
+            return _reader.MethodDefTable.GetName(Handle);
         }
 
         private MethodAttributes GetProjectedFlags()
         {
-            MethodAttributes flags = reader.MethodDefTable.GetFlags(Handle);
+            MethodAttributes flags = _reader.MethodDefTable.GetFlags(Handle);
             MethodDefTreatment treatment = Treatment;
 
             if ((treatment & MethodDefTreatment.KindMask) == MethodDefTreatment.HiddenInterfaceImplementation)
@@ -176,7 +176,7 @@ namespace System.Reflection.Metadata
 
         private MethodImplAttributes GetProjectedImplFlags()
         {
-            MethodImplAttributes flags = reader.MethodDefTable.GetImplFlags(Handle);
+            MethodImplAttributes flags = _reader.MethodDefTable.GetImplFlags(Handle);
 
             switch (Treatment & MethodDefTreatment.KindMask)
             {
@@ -198,7 +198,7 @@ namespace System.Reflection.Metadata
 
         private BlobHandle GetProjectedSignature()
         {
-            return reader.MethodDefTable.GetSignature(Handle);
+            return _reader.MethodDefTable.GetSignature(Handle);
         }
 
         private int GetProjectedRelativeVirtualAddress()

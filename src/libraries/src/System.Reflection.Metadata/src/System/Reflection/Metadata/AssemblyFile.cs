@@ -7,23 +7,23 @@ namespace System.Reflection.Metadata
 {
     public struct AssemblyFile
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal AssemblyFile(MetadataReader reader, AssemblyFileHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            this.reader = reader;
-            this.rowId = handle.RowId;
+            _reader = reader;
+            _rowId = handle.RowId;
         }
 
         private AssemblyFileHandle Handle
         {
-            get { return AssemblyFileHandle.FromRowId(rowId); }
+            get { return AssemblyFileHandle.FromRowId(_rowId); }
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public bool ContainsMetadata
         {
-            get { return reader.FileTable.GetFlags(Handle) == 0; }
+            get { return _reader.FileTable.GetFlags(Handle) == 0; }
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public StringHandle Name
         {
-            get { return reader.FileTable.GetName(Handle); }
+            get { return _reader.FileTable.GetName(Handle); }
         }
 
         /// <summary>
@@ -56,12 +56,12 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public BlobHandle HashValue
         {
-            get { return reader.FileTable.GetHashValue(Handle); }
+            get { return _reader.FileTable.GetHashValue(Handle); }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
     }
 }

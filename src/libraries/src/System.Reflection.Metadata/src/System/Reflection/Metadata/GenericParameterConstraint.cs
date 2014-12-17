@@ -7,23 +7,23 @@ namespace System.Reflection.Metadata
 {
     public struct GenericParameterConstraint
     {
-        private readonly MetadataReader reader;
+        private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint rowId;
+        private readonly uint _rowId;
 
         internal GenericParameterConstraint(MetadataReader reader, GenericParameterConstraintHandle handle)
         {
             Debug.Assert(reader != null);
             Debug.Assert(!handle.IsNil);
 
-            this.reader = reader;
-            this.rowId = handle.RowId;
+            _reader = reader;
+            _rowId = handle.RowId;
         }
 
         private GenericParameterConstraintHandle Handle
         {
-            get { return GenericParameterConstraintHandle.FromRowId(rowId); }
+            get { return GenericParameterConstraintHandle.FromRowId(_rowId); }
         }
 
         /// <summary>
@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public GenericParameterHandle Parameter
         {
-            get { return reader.GenericParamConstraintTable.GetOwner(Handle); }
+            get { return _reader.GenericParamConstraintTable.GetOwner(Handle); }
         }
 
         /// <summary>
@@ -47,12 +47,12 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public Handle Type
         {
-            get { return reader.GenericParamConstraintTable.GetConstraint(Handle); }
+            get { return _reader.GenericParamConstraintTable.GetConstraint(Handle); }
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, Handle);
         }
     }
 }
