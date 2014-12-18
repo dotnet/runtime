@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <BuildToolsVersion>1.0.16-prerelease</BuildToolsVersion>
-    <SkipTestAssemblies Condition="'$(SkipTestAssemblies)'==''">System.Threading.Tasks.Dataflow.Tests</SkipTestAssemblies>
+    <SkipTestAssemblies Condition="'$(SkipTestAssemblies)'==''">System.Threading.Tasks.Dataflow.Tests;System.Linq.Parallel.Tests</SkipTestAssemblies>
   </PropertyGroup>
 
   <PropertyGroup>
