@@ -9,8 +9,8 @@ namespace System.Xml
     // values for the attribute are defined in a DTD or schema.
     public class XmlAttribute : XmlNode
     {
-        XmlName name;
-        XmlLinkedNode lastChild;
+        private XmlName _name;
+        private XmlLinkedNode _lastChild;
 
         internal XmlAttribute(XmlName name, XmlDocument doc) : base(doc)
         {
@@ -24,12 +24,12 @@ namespace System.Xml
             }
             if (name.LocalName.Length == 0)
                 throw new ArgumentException(SR.Xdom_Attr_Name);
-            this.name = name;
+            _name = name;
         }
 
         internal int LocalNameHash
         {
-            get { return name.HashCode; }
+            get { return _name.HashCode; }
         }
 
         protected internal XmlAttribute(string prefix, string localName, string namespaceURI, XmlDocument doc)
@@ -39,7 +39,7 @@ namespace System.Xml
 
         internal XmlName XmlName
         {
-            get { return name; }
+            get { return _name; }
         }
 
         // Creates a duplicate of this node.
@@ -62,26 +62,26 @@ namespace System.Xml
         // Gets the name of the node.
         public override String Name
         {
-            get { return name.Name; }
+            get { return _name.Name; }
         }
 
         // Gets the name of the node without the namespace prefix.
         public override String LocalName
         {
-            get { return name.LocalName; }
+            get { return _name.LocalName; }
         }
 
         // Gets the namespace URI of this node.
         public override String NamespaceURI
         {
-            get { return name.NamespaceURI; }
+            get { return _name.NamespaceURI; }
         }
 
         // Gets or sets the namespace prefix of this node.
         public override String Prefix
         {
-            get { return name.Prefix; }
-            set { name = name.OwnerDocument.AddAttrXmlName(value, LocalName, NamespaceURI); }
+            get { return _name.Prefix; }
+            set { _name = _name.OwnerDocument.AddAttrXmlName(value, LocalName, NamespaceURI); }
         }
 
         // Gets the type of the current node.
@@ -95,7 +95,7 @@ namespace System.Xml
         {
             get
             {
-                return name.OwnerDocument;
+                return _name.OwnerDocument;
             }
         }
 
@@ -154,18 +154,18 @@ namespace System.Xml
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (lastChild == null)
+            if (_lastChild == null)
             { // if LastNode == null
                 newNode.next = newNode;
-                lastChild = newNode;
+                _lastChild = newNode;
                 newNode.SetParentForLoad(this);
             }
             else
             {
-                XmlLinkedNode refNode = lastChild; // refNode = LastNode;
+                XmlLinkedNode refNode = _lastChild; // refNode = LastNode;
                 newNode.next = refNode.next;
                 refNode.next = newNode;
-                lastChild = newNode; // LastNode = newNode;
+                _lastChild = newNode; // LastNode = newNode;
                 if (refNode.IsText
                     && newNode.IsText)
                 {
@@ -185,8 +185,8 @@ namespace System.Xml
 
         internal override XmlLinkedNode LastNode
         {
-            get { return lastChild; }
-            set { lastChild = value; }
+            get { return _lastChild; }
+            set { _lastChild = value; }
         }
 
         internal override bool IsValidChildType(XmlNodeType type)

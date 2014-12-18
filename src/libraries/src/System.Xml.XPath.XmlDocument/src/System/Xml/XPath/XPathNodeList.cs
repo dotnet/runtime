@@ -9,30 +9,30 @@ namespace System.Xml
 {
     internal class XPathNodeList : XmlNodeList
     {
-        List<XmlNode> list;
-        XPathNodeIterator nodeIterator;
-        bool done;
+        private List<XmlNode> _list;
+        private XPathNodeIterator _nodeIterator;
+        private bool _done;
 
         public XPathNodeList(XPathNodeIterator nodeIterator)
         {
-            this.nodeIterator = nodeIterator;
-            this.list = new List<XmlNode>();
-            this.done = false;
+            _nodeIterator = nodeIterator;
+            _list = new List<XmlNode>();
+            _done = false;
         }
 
         public override int Count
         {
             get
             {
-                if (!done)
+                if (!_done)
                 {
                     ReadUntil(Int32.MaxValue);
                 }
-                return list.Count;
+                return _list.Count;
             }
         }
 
-        private static readonly object[] nullparams = { };
+        private static readonly object[] s_nullparams = { };
 
         private XmlNode GetNode(XPathNavigator n)
         {
@@ -41,21 +41,21 @@ namespace System.Xml
 
         internal int ReadUntil(int index)
         {
-            int count = list.Count;
-            while (!done && count <= index)
+            int count = _list.Count;
+            while (!_done && count <= index)
             {
-                if (nodeIterator.MoveNext())
+                if (_nodeIterator.MoveNext())
                 {
-                    XmlNode n = GetNode(nodeIterator.Current);
+                    XmlNode n = GetNode(_nodeIterator.Current);
                     if (n != null)
                     {
-                        list.Add(n);
+                        _list.Add(n);
                         count++;
                     }
                 }
                 else
                 {
-                    done = true;
+                    _done = true;
                     break;
                 }
             }
@@ -64,15 +64,15 @@ namespace System.Xml
 
         public override XmlNode Item(int index)
         {
-            if (list.Count <= index)
+            if (_list.Count <= index)
             {
                 ReadUntil(index);
             }
-            if (index < 0 || list.Count <= index)
+            if (index < 0 || _list.Count <= index)
             {
                 return null;
             }
-            return list[index];
+            return _list[index];
         }
 
         public override IEnumerator GetEnumerator()
@@ -83,41 +83,41 @@ namespace System.Xml
 
     internal class XmlNodeListEnumerator : IEnumerator
     {
-        XPathNodeList list;
-        int index;
-        bool valid;
+        private XPathNodeList _list;
+        private int _index;
+        private bool _valid;
 
         public XmlNodeListEnumerator(XPathNodeList list)
         {
-            this.list = list;
-            this.index = -1;
-            this.valid = false;
+            _list = list;
+            _index = -1;
+            _valid = false;
         }
 
         public void Reset()
         {
-            index = -1;
+            _index = -1;
         }
 
         public bool MoveNext()
         {
-            index++;
-            int count = list.ReadUntil(index + 1);   // read past for delete-node case
-            if (count - 1 < index)
+            _index++;
+            int count = _list.ReadUntil(_index + 1);   // read past for delete-node case
+            if (count - 1 < _index)
             {
                 return false;
             }
-            valid = (list[index] != null);
-            return valid;
+            _valid = (_list[_index] != null);
+            return _valid;
         }
 
         public object Current
         {
             get
             {
-                if (valid)
+                if (_valid)
                 {
-                    return list[index];
+                    return _list[_index];
                 }
                 return null;
             }
