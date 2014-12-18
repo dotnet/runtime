@@ -1,10 +1,16 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Build Tools Version -->
+  <PropertyGroup>
+    <BuildToolsVersion>1.0.16-prerelease</BuildToolsVersion>
+  </PropertyGroup>
+
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)bin\</BinDir>
     <ToolsDir>$(BinDir)tools\</ToolsDir>
+    <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
     <PackagesDir>$(SourceDir)packages\</PackagesDir>
   </PropertyGroup>
 
@@ -18,10 +24,9 @@
 
   <!-- Common build tool properties -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.15-prerelease</BuildToolsVersion>
     <BuildToolsInstallSempahore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSempahore>
 
     <BuildToolsTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsTargetInputs>
     <BuildToolsTargetOutputs>$(BuildToolsInstallSempahore)</BuildToolsTargetOutputs>
-  </PropertyGroup>  
+  </PropertyGroup>
 </Project>
