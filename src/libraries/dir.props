@@ -19,7 +19,7 @@
     <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
     <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
     <NuGetConfigCommandLine
-      Condition="Exists($(NuGetConfigFile))">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
+      Condition="Exists('$(NuGetConfigFile)')">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
   </PropertyGroup>
 
   <!-- Common build tool properties -->
