@@ -11,6 +11,8 @@
     <OutputType>Library</OutputType>
     <AssemblyName>XunitTraitsDiscoverers</AssemblyName>
     <RootNamespace>Xunit.TraitDiscoverers</RootNamespace>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>

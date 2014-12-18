@@ -29,6 +29,13 @@
 
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
   <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
+
+  <ItemGroup>
+    <DisabledTestAssembly Include="System.Threading.Tasks.Dataflow.Tests" />
+    <DisabledTestAssembly Include="System.Linq.Parallel.Tests" />
+
+    <_SkipTestAssemblies Include="@(DisabledTestAssembly)" />
+  </ItemGroup>
   
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
