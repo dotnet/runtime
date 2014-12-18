@@ -16,6 +16,7 @@ namespace System.Reflection.Metadata.Tests
         private static readonly Handle s_winrtPrefixedStringHandle = StringHandle.FromIndex(1).WithWinRTPrefix();
         private static readonly Handle s_blobHandle = BlobHandle.FromIndex(1);
         private static readonly Handle s_guidHandle = GuidHandle.FromIndex(16);
+        private static readonly Handle s_exportedTypeHandle = ExportedTypeHandle.FromRowId(42);
 
         [Fact]
         public void GetRowNumber()
@@ -64,6 +65,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(s_assemblyRefHandle, MetadataTokens.Handle(0x23000001));
             Assert.Equal(s_userStringHandle, MetadataTokens.Handle(0x70000001));
+            Assert.Equal(s_exportedTypeHandle, MetadataTokens.ExportedTypeHandle((int)(TokenTypeIds.ExportedType | s_exportedTypeHandle.RowId)));
 
             Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(-1));
             Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x71000001));

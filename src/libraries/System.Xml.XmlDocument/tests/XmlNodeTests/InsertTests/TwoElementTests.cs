@@ -8,8 +8,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
 {
     public static class TwoElementTests
     {
-        private static readonly InsertType[] s_InsertTypes = new[] { InsertType.Prepend, InsertType.Append, InsertType.InsertBefore };
-        private static readonly XmlNodeType[] s_XmlNodeTypes = new[] { XmlNodeType.Whitespace, XmlNodeType.SignificantWhitespace, XmlNodeType.CDATA, XmlNodeType.Text, XmlNodeType.Comment };
+        private static readonly InsertType[] InsertTypes = new[] { InsertType.Prepend, InsertType.Append, InsertType.InsertBefore };
+        private static readonly XmlNodeType[] XmlNodeTypes = new[] { XmlNodeType.Whitespace, XmlNodeType.SignificantWhitespace, XmlNodeType.CDATA, XmlNodeType.Text, XmlNodeType.Comment };
 
         private static void OneTextNode_OneNonTextNodeBase(string xml, InsertType insertType, XmlNodeType nodeType, bool deleteFirst)
         {
@@ -57,8 +57,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
         {
             var xml = @"<MT><!-- comments -->text</MT>";
 
-            foreach (var insertType in s_InsertTypes)
-                foreach (var nodeType in s_XmlNodeTypes)
+            foreach (var insertType in InsertTypes)
+                foreach (var nodeType in XmlNodeTypes)
                     OneTextNode_OneNonTextNodeBase(xml, insertType, nodeType, true);
         }
 
@@ -67,8 +67,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
         {
             var xml = @"<MC><!-- comments --><![CDATA[ &lt; &amp; <tag> < ! > & </tag> 	 ]]></MC>";
 
-            foreach (var insertType in s_InsertTypes)
-                foreach (var nodeType in s_XmlNodeTypes)
+            foreach (var insertType in InsertTypes)
+                foreach (var nodeType in XmlNodeTypes)
                     OneTextNode_OneNonTextNodeBase(xml, insertType, nodeType, true);
         }
 
@@ -77,8 +77,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
         {
             var xml = @"<MS xml:space=""preserve""><!-- comments -->  	</MS>";
 
-            foreach (var insertType in s_InsertTypes)
-                foreach (var nodeType in s_XmlNodeTypes)
+            foreach (var insertType in InsertTypes)
+                foreach (var nodeType in XmlNodeTypes)
                     OneTextNode_OneNonTextNodeBase(xml, insertType, nodeType, true);
         }
 
@@ -87,8 +87,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
         {
             var xml = @"<WE> 	<E/></WE>";
 
-            foreach (var insertType in s_InsertTypes)
-                foreach (var nodeType in s_XmlNodeTypes)
+            foreach (var insertType in InsertTypes)
+                foreach (var nodeType in XmlNodeTypes)
                     OneTextNode_OneNonTextNodeBase(xml, insertType, nodeType, false);
         }
 
@@ -97,8 +97,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
         {
             var xml = @"<CE><![CDATA[ &lt; &amp; <tag> < ! > & </tag> 	 ]]><E/></CE>";
 
-            foreach (var insertType in s_InsertTypes)
-                foreach (var nodeType in s_XmlNodeTypes)
+            foreach (var insertType in InsertTypes)
+                foreach (var nodeType in XmlNodeTypes)
                     OneTextNode_OneNonTextNodeBase(xml, insertType, nodeType, false);
         }
 
@@ -107,8 +107,8 @@ namespace XmlDocumentTests.XmlNodeTests.InsertTests
         {
             var xml = "<TE>text<E/></TE>";
 
-            foreach (var insertType in s_InsertTypes)
-                foreach (var nodeType in s_XmlNodeTypes)
+            foreach (var insertType in InsertTypes)
+                foreach (var nodeType in XmlNodeTypes)
                     OneTextNode_OneNonTextNodeBase(xml, insertType, nodeType, false);
         }
     }

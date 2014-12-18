@@ -126,56 +126,56 @@ namespace System.Xml
         // Fields
         //
         // output
-        private TextWriter _textWriter;
-        private XmlTextEncoder _xmlEncoder;
-        private Encoding _encoding;
+        TextWriter textWriter;
+        XmlTextEncoder xmlEncoder;
+        Encoding encoding;
 
         // formatting
-        private Formatting _formatting;
-        private bool _indented; // perf - faster to check a boolean.
-        private int _indentation;
-        private char _indentChar;
+        Formatting formatting;
+        bool indented; // perf - faster to check a boolean.
+        int indentation;
+        char indentChar;
 
         // element stack
-        private TagInfo[] _stack;
-        private int _top;
+        TagInfo[] stack;
+        int top;
 
         // state machine for AutoComplete
-        private State[] _stateTable;
-        private State _currentState;
-        private Token _lastToken;
+        State[] stateTable;
+        State currentState;
+        Token lastToken;
 
         // Base64 content
-        private XmlTextWriterBase64Encoder _base64Encoder;
+        XmlTextWriterBase64Encoder base64Encoder;
 
         // misc
-        private char _quoteChar;
-        private char _curQuoteChar;
-        private bool _namespaces;
-        private SpecialAttr _specialAttr;
-        private string _prefixForXmlNs;
-        private bool _flush;
+        char quoteChar;
+        char curQuoteChar;
+        bool namespaces;
+        SpecialAttr specialAttr;
+        string prefixForXmlNs;
+        bool flush;
 
         // namespaces
-        private Namespace[] _nsStack;
-        private int _nsTop;
-        private Dictionary<string, int> _nsHashtable;
-        private bool _useNsHashtable;
+        Namespace[] nsStack;
+        int nsTop;
+        Dictionary<string, int> nsHashtable;
+        bool useNsHashtable;
 
         // char types
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
+        XmlCharType xmlCharType = XmlCharType.Instance;
 
         //
         // Constants and constant tables
         //
-        private const int NamespaceStackInitialSize = 8;
+        const int NamespaceStackInitialSize = 8;
 #if DEBUG
         const int MaxNamespacesWalkCount = 3;
 #else
-        private const int MaxNamespacesWalkCount = 16;
+        const int MaxNamespacesWalkCount = 16;
 #endif
 
-        private static string[] s_stateName = {
+        static string[] stateName = {
             "Start",
             "Prolog",
             "PostDTD",
@@ -188,7 +188,7 @@ namespace System.Xml
             "Closed",
         };
 
-        private static string[] s_tokenName = {
+        static string[] tokenName = {
             "PI",
             "Doctype",
             "Comment",
@@ -205,7 +205,7 @@ namespace System.Xml
             "Empty"
         };
 
-        private static readonly State[] s_stateTableDefault = {
+        static readonly State[] stateTableDefault = {
             //                          State.Start      State.Prolog     State.PostDTD    State.Element    State.Attribute  State.Content   State.AttrOnly   State.Epilog
             //
             /* Token.PI             */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Content,   State.Content,  State.Error,     State.Epilog,
@@ -223,7 +223,7 @@ namespace System.Xml
             /* Token.Whitespace     */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
         };
 
-        private static readonly State[] s_stateTableDocument = {
+        static readonly State[] stateTableDocument = {
             //                          State.Start      State.Prolog     State.PostDTD    State.Element    State.Attribute  State.Content   State.AttrOnly   State.Epilog
             //
             /* Token.PI             */ State.Error,     State.Prolog,    State.PostDTD,   State.Content,   State.Content,   State.Content,  State.Error,     State.Epilog,
@@ -246,44 +246,44 @@ namespace System.Xml
         //
         internal XmlTextWriter()
         {
-            _namespaces = true;
-            _formatting = Formatting.None;
-            _indentation = 2;
-            _indentChar = ' ';
+            namespaces = true;
+            formatting = Formatting.None;
+            indentation = 2;
+            indentChar = ' ';
             // namespaces
-            _nsStack = new Namespace[NamespaceStackInitialSize];
-            _nsTop = -1;
+            nsStack = new Namespace[NamespaceStackInitialSize];
+            nsTop = -1;
             // element stack
-            _stack = new TagInfo[10];
-            _top = 0;// 0 is an empty sentential element
-            _stack[_top].Init(-1);
-            _quoteChar = '"';
+            stack = new TagInfo[10];
+            top = 0;// 0 is an empty sentential element
+            stack[top].Init(-1);
+            quoteChar = '"';
 
-            _stateTable = s_stateTableDefault;
-            _currentState = State.Start;
-            _lastToken = Token.Empty;
+            stateTable = stateTableDefault;
+            currentState = State.Start;
+            lastToken = Token.Empty;
         }
 
         // Creates an instance of the XmlTextWriter class using the specified stream.
         public XmlTextWriter(Stream w, Encoding encoding) : this()
         {
-            _encoding = encoding;
+            this.encoding = encoding;
             if (encoding != null)
-                _textWriter = new StreamWriter(w, encoding);
+                textWriter = new StreamWriter(w, encoding);
             else
-                _textWriter = new StreamWriter(w);
-            _xmlEncoder = new XmlTextEncoder(_textWriter);
-            _xmlEncoder.QuoteChar = _quoteChar;
+                textWriter = new StreamWriter(w);
+            xmlEncoder = new XmlTextEncoder(textWriter);
+            xmlEncoder.QuoteChar = this.quoteChar;
         }
 
         // Creates an instance of the XmlTextWriter class using the specified TextWriter.
         public XmlTextWriter(TextWriter w) : this()
         {
-            _textWriter = w;
+            textWriter = w;
 
-            _encoding = w.Encoding;
-            _xmlEncoder = new XmlTextEncoder(w);
-            _xmlEncoder.QuoteChar = _quoteChar;
+            encoding = w.Encoding;
+            xmlEncoder = new XmlTextEncoder(w);
+            xmlEncoder.QuoteChar = this.quoteChar;
         }
 
         //
@@ -294,7 +294,7 @@ namespace System.Xml
         {
             get
             {
-                StreamWriter streamWriter = _textWriter as StreamWriter;
+                StreamWriter streamWriter = textWriter as StreamWriter;
                 return (streamWriter == null ? null : streamWriter.BaseStream);
             }
         }
@@ -302,54 +302,54 @@ namespace System.Xml
         // Gets or sets a value indicating whether to do namespace support.
         public bool Namespaces
         {
-            get { return _namespaces; }
+            get { return this.namespaces; }
             set
             {
-                if (_currentState != State.Start)
+                if (this.currentState != State.Start)
                     throw new InvalidOperationException(SR.Xml_NotInWriteState);
 
-                _namespaces = value;
+                this.namespaces = value;
             }
         }
 
         // Indicates how the output is formatted.
         public Formatting Formatting
         {
-            get { return _formatting; }
-            set { _formatting = value; _indented = value == Formatting.Indented; }
+            get { return this.formatting; }
+            set { this.formatting = value; this.indented = value == Formatting.Indented; }
         }
 
         // Gets or sets how many IndentChars to write for each level in the hierarchy when Formatting is set to "Indented".
         public int Indentation
         {
-            get { return _indentation; }
+            get { return this.indentation; }
             set
             {
                 if (value < 0)
                     throw new ArgumentException(SR.Xml_InvalidIndentation);
-                _indentation = value;
+                this.indentation = value;
             }
         }
 
         // Gets or sets which character to use for indenting when Formatting is set to "Indented".
         public char IndentChar
         {
-            get { return _indentChar; }
-            set { _indentChar = value; }
+            get { return this.indentChar; }
+            set { this.indentChar = value; }
         }
 
         // Gets or sets which character to use to quote attribute values.
         public char QuoteChar
         {
-            get { return _quoteChar; }
+            get { return this.quoteChar; }
             set
             {
                 if (value != '"' && value != '\'')
                 {
                     throw new ArgumentException(SR.Xml_InvalidQuote);
                 }
-                _quoteChar = value;
-                _xmlEncoder.QuoteChar = value;
+                this.quoteChar = value;
+                this.xmlEncoder.QuoteChar = value;
             }
         }
 
@@ -374,9 +374,9 @@ namespace System.Xml
             try
             {
                 AutoCompleteAll();
-                if (_currentState != State.Epilog)
+                if (this.currentState != State.Epilog)
                 {
-                    if (_currentState == State.Closed)
+                    if (this.currentState == State.Closed)
                     {
                         throw new ArgumentException(SR.Xml_ClosedOrError);
                     }
@@ -385,13 +385,13 @@ namespace System.Xml
                         throw new ArgumentException(SR.Xml_NoRoot);
                     }
                 }
-                _stateTable = s_stateTableDefault;
-                _currentState = State.Start;
-                _lastToken = Token.Empty;
+                this.stateTable = stateTableDefault;
+                this.currentState = State.Start;
+                this.lastToken = Token.Empty;
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -404,33 +404,37 @@ namespace System.Xml
                 ValidateName(name, false);
 
                 AutoComplete(Token.Doctype);
-                _textWriter.Write("<!DOCTYPE ");
-                _textWriter.Write(name);
+                textWriter.Write("<!DOCTYPE ");
+                textWriter.Write(name);
                 if (pubid != null)
                 {
-                    _textWriter.Write(" PUBLIC " + _quoteChar);
-                    _textWriter.Write(pubid);
-                    _textWriter.Write(_quoteChar + " " + _quoteChar);
-                    _textWriter.Write(sysid);
-                    _textWriter.Write(_quoteChar);
+                    textWriter.Write(" PUBLIC ");
+                    textWriter.Write(quoteChar);
+                    textWriter.Write(pubid);
+                    textWriter.Write(quoteChar);
+                    textWriter.Write(' ');
+                    textWriter.Write(quoteChar);
+                    textWriter.Write(sysid);
+                    textWriter.Write(quoteChar);
                 }
                 else if (sysid != null)
                 {
-                    _textWriter.Write(" SYSTEM " + _quoteChar);
-                    _textWriter.Write(sysid);
-                    _textWriter.Write(_quoteChar);
+                    textWriter.Write(" SYSTEM ");
+                    textWriter.Write(quoteChar);
+                    textWriter.Write(sysid);
+                    textWriter.Write(quoteChar);
                 }
                 if (subset != null)
                 {
-                    _textWriter.Write("[");
-                    _textWriter.Write(subset);
-                    _textWriter.Write("]");
+                    textWriter.Write('[');
+                    textWriter.Write(subset);
+                    textWriter.Write(']');
                 }
-                _textWriter.Write('>');
+                textWriter.Write('>');
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -442,15 +446,15 @@ namespace System.Xml
             {
                 AutoComplete(Token.StartElement);
                 PushStack();
-                _textWriter.Write('<');
+                textWriter.Write('<');
 
-                if (_namespaces)
+                if (this.namespaces)
                 {
                     // Propagate default namespace and mix model down the stack.
-                    _stack[_top].defaultNs = _stack[_top - 1].defaultNs;
-                    if (_stack[_top - 1].defaultNsState != NamespaceState.Uninitialized)
-                        _stack[_top].defaultNsState = NamespaceState.NotDeclaredButInScope;
-                    _stack[_top].mixed = _stack[_top - 1].mixed;
+                    stack[top].defaultNs = stack[top - 1].defaultNs;
+                    if (stack[top - 1].defaultNsState != NamespaceState.Uninitialized)
+                        stack[top].defaultNsState = NamespaceState.NotDeclaredButInScope;
+                    stack[top].mixed = stack[top - 1].mixed;
                     if (ns == null)
                     {
                         // use defined prefix
@@ -487,12 +491,12 @@ namespace System.Xml
                             PushNamespace(prefix, ns, false); // define
                         }
                     }
-                    _stack[_top].prefix = null;
+                    stack[top].prefix = null;
                     if (prefix != null && prefix.Length != 0)
                     {
-                        _stack[_top].prefix = prefix;
-                        _textWriter.Write(prefix);
-                        _textWriter.Write(':');
+                        stack[top].prefix = prefix;
+                        textWriter.Write(prefix);
+                        textWriter.Write(':');
                     }
                 }
                 else
@@ -502,12 +506,12 @@ namespace System.Xml
                         throw new ArgumentException(SR.Xml_NoNamespaces);
                     }
                 }
-                _stack[_top].name = localName;
-                _textWriter.Write(localName);
+                stack[top].name = localName;
+                textWriter.Write(localName);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -531,8 +535,8 @@ namespace System.Xml
             {
                 AutoComplete(Token.StartAttribute);
 
-                _specialAttr = SpecialAttr.None;
-                if (_namespaces)
+                this.specialAttr = SpecialAttr.None;
+                if (this.namespaces)
                 {
                     if (prefix != null && prefix.Length == 0)
                     {
@@ -548,11 +552,11 @@ namespace System.Xml
                     {
                         if (localName == "lang")
                         {
-                            _specialAttr = SpecialAttr.XmlLang;
+                            this.specialAttr = SpecialAttr.XmlLang;
                         }
                         else if (localName == "space")
                         {
-                            _specialAttr = SpecialAttr.XmlSpace;
+                            this.specialAttr = SpecialAttr.XmlSpace;
                         }
                     }
                     else if (prefix == "xmlns")
@@ -565,13 +569,13 @@ namespace System.Xml
                         {
                             localName = prefix;
                             prefix = null;
-                            _prefixForXmlNs = null;
+                            this.prefixForXmlNs = null;
                         }
                         else
                         {
-                            _prefixForXmlNs = localName;
+                            this.prefixForXmlNs = localName;
                         }
-                        _specialAttr = SpecialAttr.XmlNs;
+                        this.specialAttr = SpecialAttr.XmlNs;
                     }
                     else if (prefix == null && localName == "xmlns")
                     {
@@ -580,8 +584,8 @@ namespace System.Xml
                             // add the below line back in when DOM is fixed
                             throw new ArgumentException(SR.Xml_XmlnsBelongsToReservedNs);
                         }
-                        _specialAttr = SpecialAttr.XmlNs;
-                        _prefixForXmlNs = null;
+                        this.specialAttr = SpecialAttr.XmlNs;
+                        this.prefixForXmlNs = null;
                     }
                     else
                     {
@@ -623,8 +627,8 @@ namespace System.Xml
                     }
                     if (prefix != null && prefix.Length != 0)
                     {
-                        _textWriter.Write(prefix);
-                        _textWriter.Write(':');
+                        textWriter.Write(prefix);
+                        textWriter.Write(':');
                     }
                 }
                 else
@@ -635,27 +639,27 @@ namespace System.Xml
                     }
                     if (localName == "xml:lang")
                     {
-                        _specialAttr = SpecialAttr.XmlLang;
+                        this.specialAttr = SpecialAttr.XmlLang;
                     }
                     else if (localName == "xml:space")
                     {
-                        _specialAttr = SpecialAttr.XmlSpace;
+                        this.specialAttr = SpecialAttr.XmlSpace;
                     }
                 }
-                _xmlEncoder.StartAttribute(_specialAttr != SpecialAttr.None);
+                xmlEncoder.StartAttribute(this.specialAttr != SpecialAttr.None);
 
-                _textWriter.Write(localName);
-                _textWriter.Write('=');
-                if (_curQuoteChar != _quoteChar)
+                textWriter.Write(localName);
+                textWriter.Write('=');
+                if (this.curQuoteChar != this.quoteChar)
                 {
-                    _curQuoteChar = _quoteChar;
-                    _xmlEncoder.QuoteChar = _quoteChar;
+                    this.curQuoteChar = this.quoteChar;
+                    xmlEncoder.QuoteChar = this.quoteChar;
                 }
-                _textWriter.Write(_curQuoteChar);
+                textWriter.Write(this.curQuoteChar);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -669,7 +673,7 @@ namespace System.Xml
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -684,17 +688,17 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_InvalidCDataChars);
                 }
-                _textWriter.Write("<![CDATA[");
+                textWriter.Write("<![CDATA[");
 
                 if (null != text)
                 {
-                    _xmlEncoder.WriteRawWithSurrogateChecking(text);
+                    xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
-                _textWriter.Write("]]>");
+                textWriter.Write("]]>");
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -709,16 +713,16 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
                 AutoComplete(Token.Comment);
-                _textWriter.Write("<!--");
+                textWriter.Write("<!--");
                 if (null != text)
                 {
-                    _xmlEncoder.WriteRawWithSurrogateChecking(text);
+                    xmlEncoder.WriteRawWithSurrogateChecking(text);
                 }
-                _textWriter.Write("-->");
+                textWriter.Write("-->");
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -732,7 +736,7 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
-                if (0 == String.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (0 == String.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && this.stateTable == stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
@@ -741,7 +745,7 @@ namespace System.Xml
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -753,11 +757,11 @@ namespace System.Xml
             {
                 ValidateName(name, false);
                 AutoComplete(Token.Content);
-                _xmlEncoder.WriteEntityRef(name);
+                xmlEncoder.WriteEntityRef(name);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -768,11 +772,11 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.Content);
-                _xmlEncoder.WriteCharEntity(ch);
+                xmlEncoder.WriteCharEntity(ch);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -787,16 +791,16 @@ namespace System.Xml
                     ws = String.Empty;
                 }
 
-                if (!_xmlCharType.IsOnlyWhitespace(ws))
+                if (!xmlCharType.IsOnlyWhitespace(ws))
                 {
                     throw new ArgumentException(SR.Xml_NonWhitespace);
                 }
                 AutoComplete(Token.Whitespace);
-                _xmlEncoder.Write(ws);
+                xmlEncoder.Write(ws);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -809,12 +813,12 @@ namespace System.Xml
                 if (null != text && text.Length != 0)
                 {
                     AutoComplete(Token.Content);
-                    _xmlEncoder.Write(text);
+                    xmlEncoder.Write(text);
                 }
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -825,11 +829,11 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.Content);
-                _xmlEncoder.WriteSurrogateCharEntity(lowChar, highChar);
+                xmlEncoder.WriteSurrogateCharEntity(lowChar, highChar);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -841,11 +845,11 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.Content);
-                _xmlEncoder.Write(buffer, index, count);
+                xmlEncoder.Write(buffer, index, count);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -856,11 +860,11 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.RawData);
-                _xmlEncoder.WriteRaw(buffer, index, count);
+                xmlEncoder.WriteRaw(buffer, index, count);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -871,11 +875,11 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.RawData);
-                _xmlEncoder.WriteRawWithSurrogateChecking(data);
+                xmlEncoder.WriteRawWithSurrogateChecking(data);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -885,24 +889,24 @@ namespace System.Xml
         {
             try
             {
-                if (!_flush)
+                if (!this.flush)
                 {
                     AutoComplete(Token.Base64);
                 }
 
-                _flush = true;
+                this.flush = true;
                 // No need for us to explicitly validate the args. The StreamWriter will do
                 // it for us.
-                if (null == _base64Encoder)
+                if (null == this.base64Encoder)
                 {
-                    _base64Encoder = new XmlTextWriterBase64Encoder(_xmlEncoder);
+                    this.base64Encoder = new XmlTextWriterBase64Encoder(xmlEncoder);
                 }
                 // Encode will call WriteRaw to write out the encoded characters
-                _base64Encoder.Encode(buffer, index, count);
+                this.base64Encoder.Encode(buffer, index, count);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -918,7 +922,7 @@ namespace System.Xml
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -928,7 +932,7 @@ namespace System.Xml
         {
             get
             {
-                switch (_currentState)
+                switch (this.currentState)
                 {
                     case State.Start:
                         return WriteState.Start;
@@ -957,7 +961,7 @@ namespace System.Xml
         // Disposes the XmlWriter and the underlying stream/TextWriter.
         protected override void Dispose(bool disposing)
         {
-            if (disposing && _currentState != State.Closed)
+            if (disposing && this.currentState != State.Closed)
             {
                 try
                 {
@@ -968,8 +972,8 @@ namespace System.Xml
                 }
                 finally
                 {
-                    _currentState = State.Closed;
-                    _textWriter.Dispose();
+                    this.currentState = State.Closed;
+                    textWriter.Dispose();
                 }
             }
             base.Dispose(disposing);
@@ -978,7 +982,7 @@ namespace System.Xml
         // Flushes whatever is in the buffer to the underlying stream/TextWriter and flushes the underlying stream/TextWriter.
         public override void Flush()
         {
-            _textWriter.Flush();
+            textWriter.Flush();
         }
 
         // Writes out the specified name, ensuring it is a valid Name according to the XML specification 
@@ -992,7 +996,7 @@ namespace System.Xml
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -1003,14 +1007,14 @@ namespace System.Xml
             try
             {
                 AutoComplete(Token.Content);
-                if (_namespaces)
+                if (this.namespaces)
                 {
-                    if (ns != null && ns.Length != 0 && ns != _stack[_top].defaultNs)
+                    if (ns != null && ns.Length != 0 && ns != stack[top].defaultNs)
                     {
                         string prefix = FindPrefix(ns);
                         if (prefix == null)
                         {
-                            if (_currentState != State.Attribute)
+                            if (this.currentState != State.Attribute)
                             {
                                 throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                             }
@@ -1020,7 +1024,7 @@ namespace System.Xml
                         if (prefix.Length != 0)
                         {
                             InternalWriteName(prefix, true);
-                            _textWriter.Write(':');
+                            textWriter.Write(':');
                         }
                     }
                 }
@@ -1032,7 +1036,7 @@ namespace System.Xml
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -1045,7 +1049,7 @@ namespace System.Xml
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
             string s = FindPrefix(ns);
-            if (s == null && ns == _stack[_top].defaultNs)
+            if (s == null && ns == stack[top].defaultNs)
             {
                 s = string.Empty;
             }
@@ -1057,9 +1061,9 @@ namespace System.Xml
         {
             get
             {
-                for (int i = _top; i > 0; i--)
+                for (int i = top; i > 0; i--)
                 {
-                    XmlSpace xs = _stack[i].xmlSpace;
+                    XmlSpace xs = stack[i].xmlSpace;
                     if (xs != XmlSpace.None)
                         return xs;
                 }
@@ -1072,9 +1076,9 @@ namespace System.Xml
         {
             get
             {
-                for (int i = _top; i > 0; i--)
+                for (int i = top; i > 0; i--)
                 {
-                    String xlang = _stack[i].xmlLang;
+                    String xlang = stack[i].xmlLang;
                     if (xlang != null)
                         return xlang;
                 }
@@ -1098,11 +1102,11 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name));
                 }
-                _textWriter.Write(name);
+                textWriter.Write(name);
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
@@ -1114,59 +1118,62 @@ namespace System.Xml
         {
             try
             {
-                if (_currentState != State.Start)
+                if (this.currentState != State.Start)
                 {
                     throw new InvalidOperationException(SR.Xml_NotTheFirst);
                 }
-                _stateTable = s_stateTableDocument;
-                _currentState = State.Prolog;
+                this.stateTable = stateTableDocument;
+                this.currentState = State.Prolog;
 
                 StringBuilder bufBld = new StringBuilder(128);
-                bufBld.Append("version=" + _quoteChar + "1.0" + _quoteChar);
-                if (_encoding != null)
+                bufBld.Append("version=");
+                bufBld.Append(quoteChar);
+                bufBld.Append("1.0");
+                bufBld.Append(quoteChar);
+                if (this.encoding != null)
                 {
                     bufBld.Append(" encoding=");
-                    bufBld.Append(_quoteChar);
-                    bufBld.Append(_encoding.WebName);
-                    bufBld.Append(_quoteChar);
+                    bufBld.Append(quoteChar);
+                    bufBld.Append(this.encoding.WebName);
+                    bufBld.Append(quoteChar);
                 }
                 if (standalone >= 0)
                 {
                     bufBld.Append(" standalone=");
-                    bufBld.Append(_quoteChar);
+                    bufBld.Append(quoteChar);
                     bufBld.Append(standalone == 0 ? "no" : "yes");
-                    bufBld.Append(_quoteChar);
+                    bufBld.Append(quoteChar);
                 }
                 InternalWriteProcessingInstruction("xml", bufBld.ToString());
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
 
         void AutoComplete(Token token)
         {
-            if (_currentState == State.Closed)
+            if (this.currentState == State.Closed)
             {
                 throw new InvalidOperationException(SR.Xml_Closed);
             }
-            else if (_currentState == State.Error)
+            else if (this.currentState == State.Error)
             {
-                throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, s_tokenName[(int)token], s_stateName[(int)State.Error]));
+                throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, tokenName[(int)token], stateName[(int)State.Error]));
             }
 
-            State newState = _stateTable[(int)token * 8 + (int)_currentState];
+            State newState = this.stateTable[(int)token * 8 + (int)this.currentState];
             if (newState == State.Error)
             {
-                throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, s_tokenName[(int)token], s_stateName[(int)_currentState]));
+                throw new InvalidOperationException(SR.Format(SR.Xml_WrongToken, tokenName[(int)token], stateName[(int)this.currentState]));
             }
 
             switch (token)
             {
                 case Token.Doctype:
-                    if (_indented && _currentState != State.Start)
+                    if (this.indented && this.currentState != State.Start)
                     {
                         Indent(false);
                     }
@@ -1176,20 +1183,20 @@ namespace System.Xml
                 case Token.Comment:
                 case Token.PI:
                 case Token.CData:
-                    if (_currentState == State.Attribute)
+                    if (this.currentState == State.Attribute)
                     {
                         WriteEndAttributeQuote();
                         WriteEndStartTag(false);
                     }
-                    else if (_currentState == State.Element)
+                    else if (this.currentState == State.Element)
                     {
                         WriteEndStartTag(false);
                     }
                     if (token == Token.CData)
                     {
-                        _stack[_top].mixed = true;
+                        stack[top].mixed = true;
                     }
-                    else if (_indented && _currentState != State.Start)
+                    else if (this.indented && this.currentState != State.Start)
                     {
                         Indent(false);
                     }
@@ -1197,15 +1204,15 @@ namespace System.Xml
 
                 case Token.EndElement:
                 case Token.LongEndElement:
-                    if (_flush)
+                    if (this.flush)
                     {
                         FlushEncoders();
                     }
-                    if (_currentState == State.Attribute)
+                    if (this.currentState == State.Attribute)
                     {
                         WriteEndAttributeQuote();
                     }
-                    if (_currentState == State.Content)
+                    if (this.currentState == State.Content)
                     {
                         token = Token.LongEndElement;
                     }
@@ -1213,30 +1220,30 @@ namespace System.Xml
                     {
                         WriteEndStartTag(token == Token.EndElement);
                     }
-                    if (s_stateTableDocument == _stateTable && _top == 1)
+                    if (stateTableDocument == this.stateTable && top == 1)
                     {
                         newState = State.Epilog;
                     }
                     break;
 
                 case Token.StartAttribute:
-                    if (_flush)
+                    if (this.flush)
                     {
                         FlushEncoders();
                     }
-                    if (_currentState == State.Attribute)
+                    if (this.currentState == State.Attribute)
                     {
                         WriteEndAttributeQuote();
-                        _textWriter.Write(' ');
+                        textWriter.Write(' ');
                     }
-                    else if (_currentState == State.Element)
+                    else if (this.currentState == State.Element)
                     {
-                        _textWriter.Write(' ');
+                        textWriter.Write(' ');
                     }
                     break;
 
                 case Token.EndAttribute:
-                    if (_flush)
+                    if (this.flush)
                     {
                         FlushEncoders();
                     }
@@ -1248,34 +1255,34 @@ namespace System.Xml
                 case Token.RawData:
                 case Token.Base64:
 
-                    if (token != Token.Base64 && _flush)
+                    if (token != Token.Base64 && this.flush)
                     {
                         FlushEncoders();
                     }
-                    if (_currentState == State.Element && _lastToken != Token.Content)
+                    if (this.currentState == State.Element && this.lastToken != Token.Content)
                     {
                         WriteEndStartTag(false);
                     }
                     if (newState == State.Content)
                     {
-                        _stack[_top].mixed = true;
+                        stack[top].mixed = true;
                     }
                     break;
 
                 default:
                     throw new InvalidOperationException(SR.Xml_InvalidOperation);
             }
-            _currentState = newState;
-            _lastToken = token;
+            this.currentState = newState;
+            this.lastToken = token;
         }
 
         void AutoCompleteAll()
         {
-            if (_flush)
+            if (this.flush)
             {
                 FlushEncoders();
             }
-            while (_top > 0)
+            while (top > 0)
             {
                 WriteEndElement();
             }
@@ -1285,105 +1292,105 @@ namespace System.Xml
         {
             try
             {
-                if (_top <= 0)
+                if (top <= 0)
                 {
                     throw new InvalidOperationException(SR.Xml_NoStartTag);
                 }
                 // if we are in the element, we need to close it.
                 AutoComplete(longFormat ? Token.LongEndElement : Token.EndElement);
-                if (_lastToken == Token.LongEndElement)
+                if (this.lastToken == Token.LongEndElement)
                 {
-                    if (_indented)
+                    if (this.indented)
                     {
                         Indent(true);
                     }
-                    _textWriter.Write('<');
-                    _textWriter.Write('/');
-                    if (_namespaces && _stack[_top].prefix != null)
+                    textWriter.Write('<');
+                    textWriter.Write('/');
+                    if (this.namespaces && stack[top].prefix != null)
                     {
-                        _textWriter.Write(_stack[_top].prefix);
-                        _textWriter.Write(':');
+                        textWriter.Write(stack[top].prefix);
+                        textWriter.Write(':');
                     }
-                    _textWriter.Write(_stack[_top].name);
-                    _textWriter.Write('>');
+                    textWriter.Write(stack[top].name);
+                    textWriter.Write('>');
                 }
 
                 // pop namespaces
-                int prevNsTop = _stack[_top].prevNsTop;
-                if (_useNsHashtable && prevNsTop < _nsTop)
+                int prevNsTop = stack[top].prevNsTop;
+                if (useNsHashtable && prevNsTop < nsTop)
                 {
-                    PopNamespaces(prevNsTop + 1, _nsTop);
+                    PopNamespaces(prevNsTop + 1, nsTop);
                 }
-                _nsTop = prevNsTop;
-                _top--;
+                nsTop = prevNsTop;
+                top--;
             }
             catch
             {
-                _currentState = State.Error;
+                currentState = State.Error;
                 throw;
             }
         }
 
         void WriteEndStartTag(bool empty)
         {
-            _xmlEncoder.StartAttribute(false);
-            for (int i = _nsTop; i > _stack[_top].prevNsTop; i--)
+            xmlEncoder.StartAttribute(false);
+            for (int i = nsTop; i > stack[top].prevNsTop; i--)
             {
-                if (!_nsStack[i].declared)
+                if (!nsStack[i].declared)
                 {
-                    _textWriter.Write(" xmlns");
-                    _textWriter.Write(':');
-                    _textWriter.Write(_nsStack[i].prefix);
-                    _textWriter.Write('=');
-                    _textWriter.Write(_quoteChar);
-                    _xmlEncoder.Write(_nsStack[i].ns);
-                    _textWriter.Write(_quoteChar);
+                    textWriter.Write(" xmlns");
+                    textWriter.Write(':');
+                    textWriter.Write(nsStack[i].prefix);
+                    textWriter.Write('=');
+                    textWriter.Write(this.quoteChar);
+                    xmlEncoder.Write(nsStack[i].ns);
+                    textWriter.Write(this.quoteChar);
                 }
             }
             // Default
-            if ((_stack[_top].defaultNs != _stack[_top - 1].defaultNs) &&
-                (_stack[_top].defaultNsState == NamespaceState.DeclaredButNotWrittenOut))
+            if ((stack[top].defaultNs != stack[top - 1].defaultNs) &&
+                (stack[top].defaultNsState == NamespaceState.DeclaredButNotWrittenOut))
             {
-                _textWriter.Write(" xmlns");
-                _textWriter.Write('=');
-                _textWriter.Write(_quoteChar);
-                _xmlEncoder.Write(_stack[_top].defaultNs);
-                _textWriter.Write(_quoteChar);
-                _stack[_top].defaultNsState = NamespaceState.DeclaredAndWrittenOut;
+                textWriter.Write(" xmlns");
+                textWriter.Write('=');
+                textWriter.Write(this.quoteChar);
+                xmlEncoder.Write(stack[top].defaultNs);
+                textWriter.Write(this.quoteChar);
+                stack[top].defaultNsState = NamespaceState.DeclaredAndWrittenOut;
             }
-            _xmlEncoder.EndAttribute();
+            xmlEncoder.EndAttribute();
             if (empty)
             {
-                _textWriter.Write(" /");
+                textWriter.Write(" /");
             }
-            _textWriter.Write('>');
+            textWriter.Write('>');
         }
 
         void WriteEndAttributeQuote()
         {
-            if (_specialAttr != SpecialAttr.None)
+            if (this.specialAttr != SpecialAttr.None)
             {
                 // Ok, now to handle xmlspace, etc.
                 HandleSpecialAttribute();
             }
-            _xmlEncoder.EndAttribute();
-            _textWriter.Write(_curQuoteChar);
+            xmlEncoder.EndAttribute();
+            textWriter.Write(this.curQuoteChar);
         }
 
         void Indent(bool beforeEndElement)
         {
             // pretty printing.
-            if (_top == 0)
+            if (top == 0)
             {
-                _textWriter.WriteLine();
+                textWriter.WriteLine();
             }
-            else if (!_stack[_top].mixed)
+            else if (!stack[top].mixed)
             {
-                _textWriter.WriteLine();
-                int i = beforeEndElement ? _top - 1 : _top;
-                for (i *= _indentation; i > 0; i--)
+                textWriter.WriteLine();
+                int i = beforeEndElement ? top - 1 : top;
+                for (i *= this.indentation; i > 0; i--)
                 {
-                    _textWriter.Write(_indentChar);
+                    textWriter.Write(this.indentChar);
                 }
             }
         }
@@ -1399,7 +1406,7 @@ namespace System.Xml
 
             if (prefix == null)
             {
-                switch (_stack[_top].defaultNsState)
+                switch (stack[top].defaultNsState)
                 {
                     case NamespaceState.DeclaredButNotWrittenOut:
                         Debug.Assert(declared == true, "Unexpected situation!!");
@@ -1409,13 +1416,13 @@ namespace System.Xml
                     case NamespaceState.Uninitialized:
                     case NamespaceState.NotDeclaredButInScope:
                         // we now got a brand new namespace that we need to remember
-                        _stack[_top].defaultNs = ns;
+                        stack[top].defaultNs = ns;
                         break;
                     default:
                         Debug.Assert(false, "Should have never come here");
                         return;
                 }
-                _stack[_top].defaultNsState = (declared ? NamespaceState.DeclaredAndWrittenOut : NamespaceState.DeclaredButNotWrittenOut);
+                stack[top].defaultNsState = (declared ? NamespaceState.DeclaredAndWrittenOut : NamespaceState.DeclaredButNotWrittenOut);
             }
             else
             {
@@ -1425,12 +1432,12 @@ namespace System.Xml
                 }
 
                 int existingNsIndex = LookupNamespace(prefix);
-                if (existingNsIndex != -1 && _nsStack[existingNsIndex].ns == ns)
+                if (existingNsIndex != -1 && nsStack[existingNsIndex].ns == ns)
                 {
                     // it is already in scope.
                     if (declared)
                     {
-                        _nsStack[existingNsIndex].declared = true;
+                        nsStack[existingNsIndex].declared = true;
                     }
                 }
                 else
@@ -1438,9 +1445,9 @@ namespace System.Xml
                     // see if prefix conflicts for the current element
                     if (declared)
                     {
-                        if (existingNsIndex != -1 && existingNsIndex > _stack[_top].prevNsTop)
+                        if (existingNsIndex != -1 && existingNsIndex > stack[top].prevNsTop)
                         {
-                            _nsStack[existingNsIndex].declared = true; // old one is silenced now
+                            nsStack[existingNsIndex].declared = true; // old one is silenced now
                         }
                     }
                     AddNamespace(prefix, ns, declared);
@@ -1450,94 +1457,94 @@ namespace System.Xml
 
         void AddNamespace(string prefix, string ns, bool declared)
         {
-            int nsIndex = ++_nsTop;
-            if (nsIndex == _nsStack.Length)
+            int nsIndex = ++nsTop;
+            if (nsIndex == nsStack.Length)
             {
                 Namespace[] newStack = new Namespace[nsIndex * 2];
-                Array.Copy(_nsStack, newStack, nsIndex);
-                _nsStack = newStack;
+                Array.Copy(nsStack, newStack, nsIndex);
+                nsStack = newStack;
             }
-            _nsStack[nsIndex].Set(prefix, ns, declared);
+            nsStack[nsIndex].Set(prefix, ns, declared);
 
-            if (_useNsHashtable)
+            if (useNsHashtable)
             {
                 AddToNamespaceHashtable(nsIndex);
             }
             else if (nsIndex == MaxNamespacesWalkCount)
             {
                 // add all
-                _nsHashtable = new Dictionary<string, int>(new SecureStringHasher());
+                nsHashtable = new Dictionary<string, int>(new SecureStringHasher());
                 for (int i = 0; i <= nsIndex; i++)
                 {
                     AddToNamespaceHashtable(i);
                 }
-                _useNsHashtable = true;
+                useNsHashtable = true;
             }
         }
 
         void AddToNamespaceHashtable(int namespaceIndex)
         {
-            string prefix = _nsStack[namespaceIndex].prefix;
+            string prefix = nsStack[namespaceIndex].prefix;
             int existingNsIndex;
-            if (_nsHashtable.TryGetValue(prefix, out existingNsIndex))
+            if (nsHashtable.TryGetValue(prefix, out existingNsIndex))
             {
-                _nsStack[namespaceIndex].prevNsIndex = existingNsIndex;
+                nsStack[namespaceIndex].prevNsIndex = existingNsIndex;
             }
-            _nsHashtable[prefix] = namespaceIndex;
+            nsHashtable[prefix] = namespaceIndex;
         }
 
         private void PopNamespaces(int indexFrom, int indexTo)
         {
-            Debug.Assert(_useNsHashtable);
+            Debug.Assert(useNsHashtable);
             for (int i = indexTo; i >= indexFrom; i--)
             {
-                Debug.Assert(_nsHashtable.ContainsKey(_nsStack[i].prefix));
-                if (_nsStack[i].prevNsIndex == -1)
+                Debug.Assert(nsHashtable.ContainsKey(nsStack[i].prefix));
+                if (nsStack[i].prevNsIndex == -1)
                 {
-                    _nsHashtable.Remove(_nsStack[i].prefix);
+                    nsHashtable.Remove(nsStack[i].prefix);
                 }
                 else
                 {
-                    _nsHashtable[_nsStack[i].prefix] = _nsStack[i].prevNsIndex;
+                    nsHashtable[nsStack[i].prefix] = nsStack[i].prevNsIndex;
                 }
             }
         }
 
         string GeneratePrefix()
         {
-            int temp = _stack[_top].prefixCount++ + 1;
-            return "d" + _top.ToString("d", CultureInfo.InvariantCulture)
+            int temp = stack[top].prefixCount++ + 1;
+            return "d" + top.ToString("d", CultureInfo.InvariantCulture)
                 + "p" + temp.ToString("d", CultureInfo.InvariantCulture);
         }
 
         void InternalWriteProcessingInstruction(string name, string text)
         {
-            _textWriter.Write("<?");
+            textWriter.Write("<?");
             ValidateName(name, false);
-            _textWriter.Write(name);
-            _textWriter.Write(' ');
+            textWriter.Write(name);
+            textWriter.Write(' ');
             if (null != text)
             {
-                _xmlEncoder.WriteRawWithSurrogateChecking(text);
+                xmlEncoder.WriteRawWithSurrogateChecking(text);
             }
-            _textWriter.Write("?>");
+            textWriter.Write("?>");
         }
 
         int LookupNamespace(string prefix)
         {
-            if (_useNsHashtable)
+            if (useNsHashtable)
             {
                 int nsIndex;
-                if (_nsHashtable.TryGetValue(prefix, out nsIndex))
+                if (nsHashtable.TryGetValue(prefix, out nsIndex))
                 {
                     return nsIndex;
                 }
             }
             else
             {
-                for (int i = _nsTop; i >= 0; i--)
+                for (int i = nsTop; i >= 0; i--)
                 {
-                    if (_nsStack[i].prefix == prefix)
+                    if (nsStack[i].prefix == prefix)
                     {
                         return i;
                     }
@@ -1548,12 +1555,12 @@ namespace System.Xml
 
         int LookupNamespaceInCurrentScope(string prefix)
         {
-            if (_useNsHashtable)
+            if (useNsHashtable)
             {
                 int nsIndex;
-                if (_nsHashtable.TryGetValue(prefix, out nsIndex))
+                if (nsHashtable.TryGetValue(prefix, out nsIndex))
                 {
-                    if (nsIndex > _stack[_top].prevNsTop)
+                    if (nsIndex > stack[top].prevNsTop)
                     {
                         return nsIndex;
                     }
@@ -1561,9 +1568,9 @@ namespace System.Xml
             }
             else
             {
-                for (int i = _nsTop; i > _stack[_top].prevNsTop; i--)
+                for (int i = nsTop; i > stack[top].prevNsTop; i--)
                 {
-                    if (_nsStack[i].prefix == prefix)
+                    if (nsStack[i].prefix == prefix)
                     {
                         return i;
                     }
@@ -1574,13 +1581,13 @@ namespace System.Xml
 
         string FindPrefix(string ns)
         {
-            for (int i = _nsTop; i >= 0; i--)
+            for (int i = nsTop; i >= 0; i--)
             {
-                if (_nsStack[i].ns == ns)
+                if (nsStack[i].ns == ns)
                 {
-                    if (LookupNamespace(_nsStack[i].prefix) == i)
+                    if (LookupNamespace(nsStack[i].prefix) == i)
                     {
-                        return _nsStack[i].prefix;
+                        return nsStack[i].prefix;
                     }
                 }
             }
@@ -1594,7 +1601,7 @@ namespace System.Xml
         void InternalWriteName(string name, bool isNCName)
         {
             ValidateName(name, isNCName);
-            _textWriter.Write(name);
+            textWriter.Write(name);
         }
 
         // This method is used for validation of the DOCTYPE, processing instruction and entity names plus names 
@@ -1612,7 +1619,7 @@ namespace System.Xml
             int nameLength = name.Length;
 
             // Namespaces supported
-            if (_namespaces)
+            if (namespaces)
             {
                 // We can't use ValidateNames.ParseQName here because of backwards compatibility bug we need to preserve.
                 // The bug is that the character after ':' is validated only as a NCName characters instead of NCStartName.
@@ -1661,22 +1668,22 @@ namespace System.Xml
 
         void HandleSpecialAttribute()
         {
-            string value = _xmlEncoder.AttributeValue;
-            switch (_specialAttr)
+            string value = xmlEncoder.AttributeValue;
+            switch (this.specialAttr)
             {
                 case SpecialAttr.XmlLang:
-                    _stack[_top].xmlLang = value;
+                    stack[top].xmlLang = value;
                     break;
                 case SpecialAttr.XmlSpace:
                     // validate XmlSpace attribute
                     value = XmlConvertEx.TrimString(value);
                     if (value == "default")
                     {
-                        _stack[_top].xmlSpace = XmlSpace.Default;
+                        stack[top].xmlSpace = XmlSpace.Default;
                     }
                     else if (value == "preserve")
                     {
-                        _stack[_top].xmlSpace = XmlSpace.Preserve;
+                        stack[top].xmlSpace = XmlSpace.Preserve;
                     }
                     else
                     {
@@ -1684,8 +1691,8 @@ namespace System.Xml
                     }
                     break;
                 case SpecialAttr.XmlNs:
-                    VerifyPrefixXml(_prefixForXmlNs, value);
-                    PushNamespace(_prefixForXmlNs, value, true);
+                    VerifyPrefixXml(this.prefixForXmlNs, value);
+                    PushNamespace(this.prefixForXmlNs, value, true);
                     break;
             }
         }
@@ -1711,25 +1718,25 @@ namespace System.Xml
 
         void PushStack()
         {
-            if (_top == _stack.Length - 1)
+            if (top == stack.Length - 1)
             {
-                TagInfo[] na = new TagInfo[_stack.Length + 10];
-                if (_top > 0) Array.Copy(_stack, na, _top + 1);
-                _stack = na;
+                TagInfo[] na = new TagInfo[stack.Length + 10];
+                if (top > 0) Array.Copy(stack, na, top + 1);
+                stack = na;
             }
 
-            _top++; // Move up stack
-            _stack[_top].Init(_nsTop);
+            top++; // Move up stack
+            stack[top].Init(nsTop);
         }
 
         void FlushEncoders()
         {
-            if (null != _base64Encoder)
+            if (null != this.base64Encoder)
             {
                 // The Flush will call WriteRaw to write out the rest of the encoded characters
-                _base64Encoder.Flush();
+                this.base64Encoder.Flush();
             }
-            _flush = false;
+            this.flush = false;
         }
     }
 }

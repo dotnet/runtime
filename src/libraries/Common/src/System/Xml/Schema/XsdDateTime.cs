@@ -34,7 +34,7 @@ namespace System.Xml.Schema
     {
         // DateTime is being used as an internal representation only
         // Casting XsdDateTime to DateTime might return a different value
-        private DateTime _dt;
+        private DateTime dt;
 
         // Additional information that DateTime is not preserving
         // Information is stored in the following format:
@@ -43,7 +43,7 @@ namespace System.Xml.Schema
         // 23-16    XsdDateTimeKind
         // 15-8     Zone Hours
         // 7-0      Zone Minutes
-        private uint _extra;
+        private uint extra;
 
 
         // Subset of XML Schema types XsdDateTime represents
@@ -81,28 +81,28 @@ namespace System.Xml.Schema
         // Maximum number of fraction digits;
         private const short maxFractionDigits = 7;
 
-        private static readonly int s_Lzyyyy = "yyyy".Length;
-        private static readonly int s_Lzyyyy_ = "yyyy-".Length;
-        private static readonly int s_Lzyyyy_MM = "yyyy-MM".Length;
-        private static readonly int s_Lzyyyy_MM_ = "yyyy-MM-".Length;
-        private static readonly int s_Lzyyyy_MM_dd = "yyyy-MM-dd".Length;
-        private static readonly int s_Lzyyyy_MM_ddT = "yyyy-MM-ddT".Length;
-        private static readonly int s_LzHH = "HH".Length;
-        private static readonly int s_LzHH_ = "HH:".Length;
-        private static readonly int s_LzHH_mm = "HH:mm".Length;
-        private static readonly int s_LzHH_mm_ = "HH:mm:".Length;
-        private static readonly int s_LzHH_mm_ss = "HH:mm:ss".Length;
-        private static readonly int s_Lz_ = "-".Length;
-        private static readonly int s_Lz_zz = "-zz".Length;
-        private static readonly int s_Lz_zz_ = "-zz:".Length;
-        private static readonly int s_Lz_zz_zz = "-zz:zz".Length;
-        private static readonly int s_Lz__ = "--".Length;
-        private static readonly int s_Lz__mm = "--MM".Length;
-        private static readonly int s_Lz__mm_ = "--MM-".Length;
-        private static readonly int s_Lz__mm__ = "--MM--".Length;
-        private static readonly int s_Lz__mm_dd = "--MM-dd".Length;
-        private static readonly int s_Lz___ = "---".Length;
-        private static readonly int s_Lz___dd = "---dd".Length;
+        static readonly int Lzyyyy = "yyyy".Length;
+        static readonly int Lzyyyy_ = "yyyy-".Length;
+        static readonly int Lzyyyy_MM = "yyyy-MM".Length;
+        static readonly int Lzyyyy_MM_ = "yyyy-MM-".Length;
+        static readonly int Lzyyyy_MM_dd = "yyyy-MM-dd".Length;
+        static readonly int Lzyyyy_MM_ddT = "yyyy-MM-ddT".Length;
+        static readonly int LzHH = "HH".Length;
+        static readonly int LzHH_ = "HH:".Length;
+        static readonly int LzHH_mm = "HH:mm".Length;
+        static readonly int LzHH_mm_ = "HH:mm:".Length;
+        static readonly int LzHH_mm_ss = "HH:mm:ss".Length;
+        static readonly int Lz_ = "-".Length;
+        static readonly int Lz_zz = "-zz".Length;
+        static readonly int Lz_zz_ = "-zz:".Length;
+        static readonly int Lz_zz_zz = "-zz:zz".Length;
+        static readonly int Lz__ = "--".Length;
+        static readonly int Lz__mm = "--MM".Length;
+        static readonly int Lz__mm_ = "--MM-".Length;
+        static readonly int Lz__mm__ = "--MM--".Length;
+        static readonly int Lz__mm_dd = "--MM-dd".Length;
+        static readonly int Lz___ = "---".Length;
+        static readonly int Lz___dd = "---dd".Length;
 
 
         /// <summary>
@@ -120,12 +120,12 @@ namespace System.Xml.Schema
 
         private void InitiateXsdDateTime(Parser parser)
         {
-            _dt = new DateTime(parser.year, parser.month, parser.day, parser.hour, parser.minute, parser.second);
+            dt = new DateTime(parser.year, parser.month, parser.day, parser.hour, parser.minute, parser.second);
             if (parser.fraction != 0)
             {
-                _dt = _dt.AddTicks(parser.fraction);
+                dt = dt.AddTicks(parser.fraction);
             }
-            _extra = (uint)(((int)parser.typeCode << TypeShift) | ((int)parser.kind << KindShift) | (parser.zoneHour << ZoneHourShift) | parser.zoneMinute);
+            extra = (uint)(((int)parser.typeCode << TypeShift) | ((int)parser.kind << KindShift) | (parser.zoneHour << ZoneHourShift) | parser.zoneMinute);
         }
 
         /// <summary>
@@ -134,7 +134,7 @@ namespace System.Xml.Schema
         public XsdDateTime(DateTime dateTime, XsdDateTimeFlags kinds)
         {
             Debug.Assert(Bits.ExactlyOne((uint)kinds), "Only one DateTime type code can be set.");
-            _dt = dateTime;
+            dt = dateTime;
 
             DateTimeTypeCode code = (DateTimeTypeCode)(Bits.LeastPosition((uint)kinds) - 1);
             int zoneHour = 0;
@@ -167,14 +167,14 @@ namespace System.Xml.Schema
                     }
             }
 
-            _extra = (uint)(((int)code << TypeShift) | ((int)kind << KindShift) | (zoneHour << ZoneHourShift) | zoneMinute);
+            extra = (uint)(((int)code << TypeShift) | ((int)kind << KindShift) | (zoneHour << ZoneHourShift) | zoneMinute);
         }
 
         public XsdDateTime(DateTimeOffset dateTimeOffset, XsdDateTimeFlags kinds)
         {
             Debug.Assert(Bits.ExactlyOne((uint)kinds), "Only one DateTime type code can be set.");
 
-            _dt = dateTimeOffset.DateTime;
+            dt = dateTimeOffset.DateTime;
 
             TimeSpan zoneOffset = dateTimeOffset.Offset;
             DateTimeTypeCode code = (DateTimeTypeCode)(Bits.LeastPosition((uint)kinds) - 1);
@@ -193,7 +193,7 @@ namespace System.Xml.Schema
                 kind = XsdDateTimeKind.Zulu;
             }
 
-            _extra = (uint)(((int)code << TypeShift) | ((int)kind << KindShift) | (zoneOffset.Hours << ZoneHourShift) | zoneOffset.Minutes);
+            extra = (uint)(((int)code << TypeShift) | ((int)kind << KindShift) | (zoneOffset.Hours << ZoneHourShift) | zoneOffset.Minutes);
         }
 
         /// <summary>
@@ -201,7 +201,7 @@ namespace System.Xml.Schema
         /// </summary>
         private DateTimeTypeCode InternalTypeCode
         {
-            get { return (DateTimeTypeCode)((_extra & TypeMask) >> TypeShift); }
+            get { return (DateTimeTypeCode)((extra & TypeMask) >> TypeShift); }
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace System.Xml.Schema
         /// </summary>
         private XsdDateTimeKind InternalKind
         {
-            get { return (XsdDateTimeKind)((_extra & KindMask) >> KindShift); }
+            get { return (XsdDateTimeKind)((extra & KindMask) >> KindShift); }
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Year
         {
-            get { return _dt.Year; }
+            get { return dt.Year; }
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Month
         {
-            get { return _dt.Month; }
+            get { return dt.Month; }
         }
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Day
         {
-            get { return _dt.Day; }
+            get { return dt.Day; }
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Hour
         {
-            get { return _dt.Hour; }
+            get { return dt.Hour; }
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Minute
         {
-            get { return _dt.Minute; }
+            get { return dt.Minute; }
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Second
         {
-            get { return _dt.Second; }
+            get { return dt.Second; }
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Fraction
         {
-            get { return (int)(_dt.Ticks - new DateTime(_dt.Year, _dt.Month, _dt.Day, _dt.Hour, _dt.Minute, _dt.Second).Ticks); }
+            get { return (int)(dt.Ticks - new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second).Ticks); }
         }
 
         /// <summary>
@@ -283,7 +283,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                uint result = (_extra & ZoneHourMask) >> ZoneHourShift;
+                uint result = (extra & ZoneHourMask) >> ZoneHourShift;
                 return (int)result;
             }
         }
@@ -296,7 +296,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                uint result = (_extra & ZoneMinuteMask);
+                uint result = (extra & ZoneMinuteMask);
                 return (int)result;
             }
         }
@@ -333,10 +333,10 @@ namespace System.Xml.Schema
                     //back to DateTime.Now 
                     DateTime currentDateTime = DateTime.Now;
                     TimeSpan addDiff = new DateTime(currentDateTime.Year, currentDateTime.Month, currentDateTime.Day) - new DateTime(xdt.Year, xdt.Month, xdt.Day);
-                    result = xdt._dt.Add(addDiff);
+                    result = xdt.dt.Add(addDiff);
                     break;
                 default:
-                    result = xdt._dt;
+                    result = xdt.dt;
                     break;
             }
 
@@ -393,10 +393,10 @@ namespace System.Xml.Schema
                     //back to DateTime.Now 
                     DateTime currentDateTime = DateTime.Now;
                     TimeSpan addDiff = new DateTime(currentDateTime.Year, currentDateTime.Month, currentDateTime.Day) - new DateTime(xdt.Year, xdt.Month, xdt.Day);
-                    dt = xdt._dt.Add(addDiff);
+                    dt = xdt.dt.Add(addDiff);
                     break;
                 default:
-                    dt = xdt._dt;
+                    dt = xdt.dt;
                     break;
             }
 
@@ -442,41 +442,41 @@ namespace System.Xml.Schema
                     PrintDate(sb);
                     break;
                 case DateTimeTypeCode.GYearMonth:
-                    text = new char[s_Lzyyyy_MM];
+                    text = new char[Lzyyyy_MM];
                     IntToCharArray(text, 0, Year, 4);
-                    text[s_Lzyyyy] = '-';
-                    ShortToCharArray(text, s_Lzyyyy_, Month);
+                    text[Lzyyyy] = '-';
+                    ShortToCharArray(text, Lzyyyy_, Month);
                     sb.Append(text);
                     break;
                 case DateTimeTypeCode.GYear:
-                    text = new char[s_Lzyyyy];
+                    text = new char[Lzyyyy];
                     IntToCharArray(text, 0, Year, 4);
                     sb.Append(text);
                     break;
                 case DateTimeTypeCode.GMonthDay:
-                    text = new char[s_Lz__mm_dd];
+                    text = new char[Lz__mm_dd];
                     text[0] = '-';
-                    text[s_Lz_] = '-';
-                    ShortToCharArray(text, s_Lz__, Month);
-                    text[s_Lz__mm] = '-';
-                    ShortToCharArray(text, s_Lz__mm_, Day);
+                    text[Lz_] = '-';
+                    ShortToCharArray(text, Lz__, Month);
+                    text[Lz__mm] = '-';
+                    ShortToCharArray(text, Lz__mm_, Day);
                     sb.Append(text);
                     break;
                 case DateTimeTypeCode.GDay:
-                    text = new char[s_Lz___dd];
+                    text = new char[Lz___dd];
                     text[0] = '-';
-                    text[s_Lz_] = '-';
-                    text[s_Lz__] = '-';
-                    ShortToCharArray(text, s_Lz___, Day);
+                    text[Lz_] = '-';
+                    text[Lz__] = '-';
+                    ShortToCharArray(text, Lz___, Day);
                     sb.Append(text);
                     break;
                 case DateTimeTypeCode.GMonth:
-                    text = new char[s_Lz__mm__];
+                    text = new char[Lz__mm__];
                     text[0] = '-';
-                    text[s_Lz_] = '-';
-                    ShortToCharArray(text, s_Lz__, Month);
-                    text[s_Lz__mm] = '-';
-                    text[s_Lz__mm_] = '-';
+                    text[Lz_] = '-';
+                    ShortToCharArray(text, Lz__, Month);
+                    text[Lz__mm] = '-';
+                    text[Lz__mm_] = '-';
                     sb.Append(text);
                     break;
             }
@@ -487,24 +487,24 @@ namespace System.Xml.Schema
         // Serialize year, month and day
         private void PrintDate(StringBuilder sb)
         {
-            char[] text = new char[s_Lzyyyy_MM_dd];
+            char[] text = new char[Lzyyyy_MM_dd];
             IntToCharArray(text, 0, Year, 4);
-            text[s_Lzyyyy] = '-';
-            ShortToCharArray(text, s_Lzyyyy_, Month);
-            text[s_Lzyyyy_MM] = '-';
-            ShortToCharArray(text, s_Lzyyyy_MM_, Day);
+            text[Lzyyyy] = '-';
+            ShortToCharArray(text, Lzyyyy_, Month);
+            text[Lzyyyy_MM] = '-';
+            ShortToCharArray(text, Lzyyyy_MM_, Day);
             sb.Append(text);
         }
 
         // Serialize hour, minute, second and fraction
         private void PrintTime(StringBuilder sb)
         {
-            char[] text = new char[s_LzHH_mm_ss];
+            char[] text = new char[LzHH_mm_ss];
             ShortToCharArray(text, 0, Hour);
-            text[s_LzHH] = ':';
-            ShortToCharArray(text, s_LzHH_, Minute);
-            text[s_LzHH_mm] = ':';
-            ShortToCharArray(text, s_LzHH_mm_, Second);
+            text[LzHH] = ':';
+            ShortToCharArray(text, LzHH_, Minute);
+            text[LzHH_mm] = ':';
+            ShortToCharArray(text, LzHH_mm_, Second);
             sb.Append(text);
             int fraction = Fraction;
             if (fraction != 0)
@@ -532,19 +532,19 @@ namespace System.Xml.Schema
                     sb.Append('Z');
                     break;
                 case XsdDateTimeKind.LocalWestOfZulu:
-                    text = new char[s_Lz_zz_zz];
+                    text = new char[Lz_zz_zz];
                     text[0] = '-';
-                    ShortToCharArray(text, s_Lz_, ZoneHour);
-                    text[s_Lz_zz] = ':';
-                    ShortToCharArray(text, s_Lz_zz_, ZoneMinute);
+                    ShortToCharArray(text, Lz_, ZoneHour);
+                    text[Lz_zz] = ':';
+                    ShortToCharArray(text, Lz_zz_, ZoneMinute);
                     sb.Append(text);
                     break;
                 case XsdDateTimeKind.LocalEastOfZulu:
-                    text = new char[s_Lz_zz_zz];
+                    text = new char[Lz_zz_zz];
                     text[0] = '+';
-                    ShortToCharArray(text, s_Lz_, ZoneHour);
-                    text[s_Lz_zz] = ':';
-                    ShortToCharArray(text, s_Lz_zz_, ZoneMinute);
+                    ShortToCharArray(text, Lz_, ZoneHour);
+                    text[Lz_zz] = ':';
+                    ShortToCharArray(text, Lz_zz_, ZoneMinute);
                     sb.Append(text);
                     break;
                 default:
@@ -590,17 +590,17 @@ namespace System.Xml.Schema
             public int zoneHour;
             public int zoneMinute;
 
-            private string _text;
-            private int _length;
+            private string text;
+            private int length;
 
             public bool Parse(string text, XsdDateTimeFlags kinds)
             {
-                _text = text;
-                _length = text.Length;
+                this.text = text;
+                this.length = text.Length;
 
                 // Skip leading whitespace
                 int start = 0;
-                while (start < _length && char.IsWhiteSpace(text[start]))
+                while (start < length && char.IsWhiteSpace(text[start]))
                 {
                     start++;
                 }
@@ -612,7 +612,7 @@ namespace System.Xml.Schema
                     {
                         if (Test(kinds, XsdDateTimeFlags.DateTime))
                         {
-                            if (ParseChar(start + s_Lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + s_Lzyyyy_MM_ddT))
+                            if (ParseChar(start + Lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + Lzyyyy_MM_ddT))
                             {
                                 typeCode = DateTimeTypeCode.DateTime;
                                 return true;
@@ -621,7 +621,7 @@ namespace System.Xml.Schema
 
                         if (Test(kinds, XsdDateTimeFlags.Date))
                         {
-                            if (ParseZoneAndWhitespace(start + s_Lzyyyy_MM_dd))
+                            if (ParseZoneAndWhitespace(start + Lzyyyy_MM_dd))
                             {
                                 typeCode = DateTimeTypeCode.Date;
                                 return true;
@@ -629,7 +629,7 @@ namespace System.Xml.Schema
                         }
                         if (Test(kinds, XsdDateTimeFlags.XdrDateTime))
                         {
-                            if (ParseZoneAndWhitespace(start + s_Lzyyyy_MM_dd) || (ParseChar(start + s_Lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + s_Lzyyyy_MM_ddT)))
+                            if (ParseZoneAndWhitespace(start + Lzyyyy_MM_dd) || (ParseChar(start + Lzyyyy_MM_dd, 'T') && ParseTimeAndZoneAndWhitespace(start + Lzyyyy_MM_ddT)))
                             {
                                 typeCode = DateTimeTypeCode.XdrDateTime;
                                 return true;
@@ -637,9 +637,9 @@ namespace System.Xml.Schema
                         }
                         if (Test(kinds, XsdDateTimeFlags.XdrDateTimeNoTz))
                         {
-                            if (ParseChar(start + s_Lzyyyy_MM_dd, 'T'))
+                            if (ParseChar(start + Lzyyyy_MM_dd, 'T'))
                             {
-                                if (ParseTimeAndWhitespace(start + s_Lzyyyy_MM_ddT))
+                                if (ParseTimeAndWhitespace(start + Lzyyyy_MM_ddT))
                                 {
                                     typeCode = DateTimeTypeCode.XdrDateTime;
                                     return true;
@@ -685,9 +685,9 @@ namespace System.Xml.Schema
                         if (Test(kinds, XsdDateTimeFlags.GYearMonth))
                         {
                             if (
-                                ParseChar(start + s_Lzyyyy, '-') &&
-                                Parse2Dig(start + s_Lzyyyy_, ref month) && 1 <= month && month <= 12 &&
-                                ParseZoneAndWhitespace(start + s_Lzyyyy_MM)
+                                ParseChar(start + Lzyyyy, '-') &&
+                                Parse2Dig(start + Lzyyyy_, ref month) && 1 <= month && month <= 12 &&
+                                ParseZoneAndWhitespace(start + Lzyyyy_MM)
                             )
                             {
                                 day = firstDay;
@@ -697,7 +697,7 @@ namespace System.Xml.Schema
                         }
                         if (Test(kinds, XsdDateTimeFlags.GYear))
                         {
-                            if (ParseZoneAndWhitespace(start + s_Lzyyyy))
+                            if (ParseZoneAndWhitespace(start + Lzyyyy))
                             {
                                 month = firstMonth;
                                 day = firstDay;
@@ -711,15 +711,15 @@ namespace System.Xml.Schema
                 {
                     if (
                         ParseChar(start, '-') &&
-                        ParseChar(start + s_Lz_, '-') &&
-                        Parse2Dig(start + s_Lz__, ref month) && 1 <= month && month <= 12
+                        ParseChar(start + Lz_, '-') &&
+                        Parse2Dig(start + Lz__, ref month) && 1 <= month && month <= 12
                     )
                     {
-                        if (Test(kinds, XsdDateTimeFlags.GMonthDay) && ParseChar(start + s_Lz__mm, '-'))
+                        if (Test(kinds, XsdDateTimeFlags.GMonthDay) && ParseChar(start + Lz__mm, '-'))
                         {
                             if (
-                                Parse2Dig(start + s_Lz__mm_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, month) &&
-                                ParseZoneAndWhitespace(start + s_Lz__mm_dd)
+                                Parse2Dig(start + Lz__mm_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, month) &&
+                                ParseZoneAndWhitespace(start + Lz__mm_dd)
                             )
                             {
                                 year = leapYear;
@@ -729,7 +729,7 @@ namespace System.Xml.Schema
                         }
                         if (Test(kinds, XsdDateTimeFlags.GMonth))
                         {
-                            if (ParseZoneAndWhitespace(start + s_Lz__mm) || (ParseChar(start + s_Lz__mm, '-') && ParseChar(start + s_Lz__mm_, '-') && ParseZoneAndWhitespace(start + s_Lz__mm__)))
+                            if (ParseZoneAndWhitespace(start + Lz__mm) || (ParseChar(start + Lz__mm, '-') && ParseChar(start + Lz__mm_, '-') && ParseZoneAndWhitespace(start + Lz__mm__)))
                             {
                                 year = leapYear;
                                 day = firstDay;
@@ -744,10 +744,10 @@ namespace System.Xml.Schema
                 {
                     if (
                         ParseChar(start, '-') &&
-                        ParseChar(start + s_Lz_, '-') &&
-                        ParseChar(start + s_Lz__, '-') &&
-                        Parse2Dig(start + s_Lz___, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, firstMonth) &&
-                        ParseZoneAndWhitespace(start + s_Lz___dd))
+                        ParseChar(start + Lz_, '-') &&
+                        ParseChar(start + Lz__, '-') &&
+                        Parse2Dig(start + Lz___, ref day) && 1 <= day && day <= DateTime.DaysInMonth(leapYear, firstMonth) &&
+                        ParseZoneAndWhitespace(start + Lz___dd))
                     {
                         year = leapYear;
                         month = firstMonth;
@@ -763,10 +763,10 @@ namespace System.Xml.Schema
             {
                 return
                     Parse4Dig(start, ref year) && 1 <= year &&
-                    ParseChar(start + s_Lzyyyy, '-') &&
-                    Parse2Dig(start + s_Lzyyyy_, ref month) && 1 <= month && month <= 12 &&
-                    ParseChar(start + s_Lzyyyy_MM, '-') &&
-                    Parse2Dig(start + s_Lzyyyy_MM_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(year, month);
+                    ParseChar(start + Lzyyyy, '-') &&
+                    Parse2Dig(start + Lzyyyy_, ref month) && 1 <= month && month <= 12 &&
+                    ParseChar(start + Lzyyyy_MM, '-') &&
+                    Parse2Dig(start + Lzyyyy_MM_, ref day) && 1 <= day && day <= DateTime.DaysInMonth(year, month);
             }
 
             private bool ParseTimeAndZoneAndWhitespace(int start)
@@ -785,27 +785,27 @@ namespace System.Xml.Schema
             {
                 if (ParseTime(ref start))
                 {
-                    while (start < _length)
+                    while (start < length)
                     {
                         start++;
                     }
-                    return start == _length;
+                    return start == length;
                 }
                 return false;
             }
 
-            private static int[] s_Power10 = new int[maxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
+            static int[] Power10 = new int[maxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
             private bool ParseTime(ref int start)
             {
                 if (
                     Parse2Dig(start, ref hour) && hour < 24 &&
-                    ParseChar(start + s_LzHH, ':') &&
-                    Parse2Dig(start + s_LzHH_, ref minute) && minute < 60 &&
-                    ParseChar(start + s_LzHH_mm, ':') &&
-                    Parse2Dig(start + s_LzHH_mm_, ref second) && second < 60
+                    ParseChar(start + LzHH, ':') &&
+                    Parse2Dig(start + LzHH_, ref minute) && minute < 60 &&
+                    ParseChar(start + LzHH_mm, ':') &&
+                    Parse2Dig(start + LzHH_mm_, ref second) && second < 60
                 )
                 {
-                    start += s_LzHH_mm_ss;
+                    start += LzHH_mm_ss;
                     if (ParseChar(start, '.'))
                     {
                         // Parse factional part of seconds
@@ -813,9 +813,9 @@ namespace System.Xml.Schema
                         this.fraction = 0;
                         int fractionDigits = 0;
                         int round = 0;
-                        while (++start < _length)
+                        while (++start < length)
                         {
-                            int d = _text[start] - '0';
+                            int d = text[start] - '0';
                             if (9u < (uint)d)
                             { // d < 0 || 9 < d
                                 break;
@@ -847,7 +847,7 @@ namespace System.Xml.Schema
                             {
                                 return false; // cannot end with .
                             }
-                            fraction *= s_Power10[maxFractionDigits - fractionDigits];
+                            fraction *= Power10[maxFractionDigits - fractionDigits];
                         }
                         else
                         {
@@ -867,51 +867,51 @@ namespace System.Xml.Schema
 
             private bool ParseZoneAndWhitespace(int start)
             {
-                if (start < _length)
+                if (start < length)
                 {
-                    char ch = _text[start];
+                    char ch = text[start];
                     if (ch == 'Z' || ch == 'z')
                     {
                         kind = XsdDateTimeKind.Zulu;
                         start++;
                     }
-                    else if (start + 5 < _length)
+                    else if (start + 5 < length)
                     {
                         if (
-                            Parse2Dig(start + s_Lz_, ref zoneHour) && zoneHour <= 99 &&
-                            ParseChar(start + s_Lz_zz, ':') &&
-                            Parse2Dig(start + s_Lz_zz_, ref zoneMinute) && zoneMinute <= 99
+                            Parse2Dig(start + Lz_, ref zoneHour) && zoneHour <= 99 &&
+                            ParseChar(start + Lz_zz, ':') &&
+                            Parse2Dig(start + Lz_zz_, ref zoneMinute) && zoneMinute <= 99
                         )
                         {
                             if (ch == '-')
                             {
                                 kind = XsdDateTimeKind.LocalWestOfZulu;
-                                start += s_Lz_zz_zz;
+                                start += Lz_zz_zz;
                             }
                             else if (ch == '+')
                             {
                                 kind = XsdDateTimeKind.LocalEastOfZulu;
-                                start += s_Lz_zz_zz;
+                                start += Lz_zz_zz;
                             }
                         }
                     }
                 }
-                while (start < _length && char.IsWhiteSpace(_text[start]))
+                while (start < length && char.IsWhiteSpace(text[start]))
                 {
                     start++;
                 }
-                return start == _length;
+                return start == length;
             }
 
 
             private bool Parse4Dig(int start, ref int num)
             {
-                if (start + 3 < _length)
+                if (start + 3 < length)
                 {
-                    int d4 = _text[start] - '0';
-                    int d3 = _text[start + 1] - '0';
-                    int d2 = _text[start + 2] - '0';
-                    int d1 = _text[start + 3] - '0';
+                    int d4 = text[start] - '0';
+                    int d3 = text[start + 1] - '0';
+                    int d2 = text[start + 2] - '0';
+                    int d1 = text[start + 3] - '0';
                     if (0 <= d4 && d4 < 10 &&
                         0 <= d3 && d3 < 10 &&
                         0 <= d2 && d2 < 10 &&
@@ -927,10 +927,10 @@ namespace System.Xml.Schema
 
             private bool Parse2Dig(int start, ref int num)
             {
-                if (start + 1 < _length)
+                if (start + 1 < length)
                 {
-                    int d2 = _text[start] - '0';
-                    int d1 = _text[start + 1] - '0';
+                    int d2 = text[start] - '0';
+                    int d1 = text[start + 1] - '0';
                     if (0 <= d2 && d2 < 10 &&
                         0 <= d1 && d1 < 10
                         )
@@ -944,7 +944,7 @@ namespace System.Xml.Schema
 
             private bool ParseChar(int start, char ch)
             {
-                return start < _length && _text[start] == ch;
+                return start < length && text[start] == ch;
             }
 
             private static bool Test(XsdDateTimeFlags left, XsdDateTimeFlags right)

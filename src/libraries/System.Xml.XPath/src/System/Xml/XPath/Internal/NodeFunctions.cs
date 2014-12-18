@@ -10,40 +10,40 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NodeFunctions : ValueQuery
     {
-        private Query _arg = null;
-        private FT _funcType;
-        private XsltContext _xsltContext;
+        Query arg = null;
+        FT funcType;
+        XsltContext xsltContext;
 
         public NodeFunctions(FT funcType, Query arg)
         {
-            _funcType = funcType;
-            _arg = arg;
+            this.funcType = funcType;
+            this.arg = arg;
         }
 
         public override void SetXsltContext(XsltContext context)
         {
-            _xsltContext = context.Whitespace ? context : null;
-            if (_arg != null)
+            this.xsltContext = context.Whitespace ? context : null;
+            if (arg != null)
             {
-                _arg.SetXsltContext(context);
+                arg.SetXsltContext(context);
             }
         }
 
         private XPathNavigator EvaluateArg(XPathNodeIterator context)
         {
-            if (_arg == null)
+            if (arg == null)
             {
                 return context.Current;
             }
-            _arg.Evaluate(context);
-            return _arg.Advance();
+            arg.Evaluate(context);
+            return arg.Advance();
         }
 
         public override object Evaluate(XPathNodeIterator context)
         {
             XPathNavigator argVal;
 
-            switch (_funcType)
+            switch (funcType)
             {
                 case FT.FuncPosition:
                     return (double)context.CurrentPosition;
@@ -71,14 +71,14 @@ namespace MS.Internal.Xml.XPath
                     }
                     break;
                 case FT.FuncCount:
-                    _arg.Evaluate(context);
+                    arg.Evaluate(context);
                     int count = 0;
-                    if (_xsltContext != null)
+                    if (xsltContext != null)
                     {
                         XPathNavigator nav;
-                        while ((nav = _arg.Advance()) != null)
+                        while ((nav = arg.Advance()) != null)
                         {
-                            if (nav.NodeType != XPathNodeType.Whitespace || _xsltContext.PreserveWhitespace(nav))
+                            if (nav.NodeType != XPathNodeType.Whitespace || xsltContext.PreserveWhitespace(nav))
                             {
                                 count++;
                             }
@@ -86,7 +86,7 @@ namespace MS.Internal.Xml.XPath
                     }
                     else
                     {
-                        while (_arg.Advance() != null)
+                        while (arg.Advance() != null)
                         {
                             count++;
                         }
@@ -96,22 +96,22 @@ namespace MS.Internal.Xml.XPath
             return string.Empty;
         }
 
-        public override XPathResultType StaticType { get { return Function.ReturnTypes[(int)_funcType]; } }
+        public override XPathResultType StaticType { get { return Function.ReturnTypes[(int)funcType]; } }
 
         public override XPathNodeIterator Clone()
         {
-            NodeFunctions method = new NodeFunctions(_funcType, Clone(_arg));
-            method._xsltContext = _xsltContext;
+            NodeFunctions method = new NodeFunctions(funcType, Clone(arg));
+            method.xsltContext = this.xsltContext;
             return method;
         }
 
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", _funcType.ToString());
-            if (_arg != null)
+            w.WriteAttributeString("name", funcType.ToString());
+            if (arg != null)
             {
-                _arg.PrintQuery(w);
+                arg.PrintQuery(w);
             }
             w.WriteEndElement();
         }

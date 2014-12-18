@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <!-- Work around known Dev14 bug - see
+         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    -->
+    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
+    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
+    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
+    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
+    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
+    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
+    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.IO.Pipes</AssemblyName>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitlyExpandTargetFramework>False</ImplicitlyExpandTargetFramework>
+    <DefineConstants>$(DefineConstants);WIN32MARSHAL_PATH_BASED_API</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <!-- Contract references used -->
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.IO">
+      <HintPath>..\..\packages\System.IO.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.IO.FileSystem.Primitives">
+      <HintPath>..\..\packages\System.IO.FileSystem.Primitives.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.FileSystem.Primitives.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Reflection.Primitives">
+      <HintPath>..\..\packages\System.Reflection.Primitives.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.Primitives.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime">
+      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Linq">
+      <HintPath>..\..\packages\System.Linq.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Linq.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime.Handles">
+      <HintPath>..\..\packages\System.Runtime.Handles.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Handles.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Runtime.InteropServices">
+      <HintPath>..\..\packages\System.Runtime.InteropServices.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.InteropServices.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Security.Principal">
+      <HintPath>..\..\packages\System.Security.Principal.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Security.Principal.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Text.Encoding">
+      <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading">
+      <HintPath>..\..\packages\System.Threading.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Tracing">
+      <HintPath>..\..\packages\System.Diagnostics.Tracing.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Tracing.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Collections">
+      <HintPath>..\..\packages\System.Collections.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Resources.ResourceManager">
+      <HintPath>..\..\packages\System.Resources.ResourceManager.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Resources.ResourceManager.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Globalization">
+      <HintPath>..\..\packages\System.Globalization.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Globalization.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading.Overlapped">
+      <HintPath>..\..\packages\System.Threading.Overlapped.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Overlapped.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading.Tasks">
+      <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Collections.Concurrent">
+      <HintPath>..\..\packages\System.Collections.Concurrent.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.Concurrent.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Tools">
+      <HintPath>..\..\packages\System.Diagnostics.Tools.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Tools.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Debug">
+      <HintPath>..\..\packages\System.Diagnostics.Debug.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Debug.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Reflection">
+      <HintPath>..\..\packages\System.Reflection.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime.Extensions">
+      <HintPath>..\..\packages\System.Runtime.Extensions.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Extensions.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Contracts">
+      <HintPath>..\..\packages\System.Diagnostics.Contracts.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Contracts.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading.ThreadPool">
+      <HintPath>..\..\packages\System.Threading.ThreadPool.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.ThreadPool.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+  <!-- Compiled Source Files -->
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="System\IO\Pipes\IOCancellationHelper.cs" />
+    <Compile Include="System\IO\Pipes\Enums.cs" />
+    <Compile Include="System\IO\Pipes\Pipe.cs" />
+    <Compile Include="System\IO\Pipes\PipeStream.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
+    <Compile Include="System\IO\__Error.cs" />
+  </ItemGroup>
+  <!-- Common files -->
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\IO\StreamAsyncHelper.cs">
+      <Link>System\IO\StreamAsyncHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\IO\TaskHelpers.cs">
+      <Link>System\IO\TaskHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\IO\Win32Marshal.cs">
+      <Link>System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\SR.cs">
+      <Link>System\SR.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\ArrayT.cs">
+      <Link>System\ArrayT.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Resource files -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+</Project>

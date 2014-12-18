@@ -5,7 +5,7 @@ namespace System.Xml
 {
     internal class XmlUnspecifiedAttribute : XmlAttribute
     {
-        private bool _fSpecified = false;
+        bool fSpecified = false;
 
 
         protected internal XmlUnspecifiedAttribute(string prefix, string localName, string namespaceURI, XmlDocument doc)
@@ -15,7 +15,7 @@ namespace System.Xml
 
         public override bool Specified
         {
-            get { return _fSpecified; }
+            get { return fSpecified; }
         }
 
 
@@ -25,7 +25,7 @@ namespace System.Xml
             XmlDocument doc = OwnerDocument;
             XmlUnspecifiedAttribute attr = (XmlUnspecifiedAttribute)doc.CreateDefaultAttribute(Prefix, LocalName, NamespaceURI);
             attr.CopyChildren(doc, this, true);
-            attr._fSpecified = true; //When clone, should return the specifed attribute as default
+            attr.fSpecified = true; //When clone, should return the specified attribute as default
             return attr;
         }
 
@@ -34,54 +34,54 @@ namespace System.Xml
             set
             {
                 base.InnerText = value;
-                _fSpecified = true;
+                fSpecified = true;
             }
         }
 
         public override XmlNode InsertBefore(XmlNode newChild, XmlNode refChild)
         {
             XmlNode node = base.InsertBefore(newChild, refChild);
-            _fSpecified = true;
+            fSpecified = true;
             return node;
         }
 
         public override XmlNode InsertAfter(XmlNode newChild, XmlNode refChild)
         {
             XmlNode node = base.InsertAfter(newChild, refChild);
-            _fSpecified = true;
+            fSpecified = true;
             return node;
         }
 
         public override XmlNode ReplaceChild(XmlNode newChild, XmlNode oldChild)
         {
             XmlNode node = base.ReplaceChild(newChild, oldChild);
-            _fSpecified = true;
+            fSpecified = true;
             return node;
         }
 
         public override XmlNode RemoveChild(XmlNode oldChild)
         {
             XmlNode node = base.RemoveChild(oldChild);
-            _fSpecified = true;
+            fSpecified = true;
             return node;
         }
 
         public override XmlNode AppendChild(XmlNode newChild)
         {
             XmlNode node = base.AppendChild(newChild);
-            _fSpecified = true;
+            fSpecified = true;
             return node;
         }
 
         public override void WriteTo(XmlWriter w)
         {
-            if (_fSpecified)
+            if (fSpecified)
                 base.WriteTo(w);
         }
 
         internal void SetSpecified(bool f)
         {
-            _fSpecified = f;
+            fSpecified = f;
         }
     }
 }

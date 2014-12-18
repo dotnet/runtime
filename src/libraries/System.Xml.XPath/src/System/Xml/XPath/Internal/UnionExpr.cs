@@ -11,34 +11,34 @@ namespace MS.Internal.Xml.XPath
     internal sealed class UnionExpr : Query
     {
         internal Query qy1, qy2;
-        private bool _advance1, _advance2;
-        private XPathNavigator _currentNode;
-        private XPathNavigator _nextNode;
+        private bool advance1, advance2;
+        private XPathNavigator currentNode;
+        private XPathNavigator nextNode;
 
         public UnionExpr(Query query1, Query query2)
         {
             this.qy1 = query1;
             this.qy2 = query2;
-            _advance1 = true;
-            _advance2 = true;
+            this.advance1 = true;
+            this.advance2 = true;
         }
         private UnionExpr(UnionExpr other) : base(other)
         {
             this.qy1 = Clone(other.qy1);
             this.qy2 = Clone(other.qy2);
-            _advance1 = other._advance1;
-            _advance2 = other._advance2;
-            _currentNode = Clone(other._currentNode);
-            _nextNode = Clone(other._nextNode);
+            this.advance1 = other.advance1;
+            this.advance2 = other.advance2;
+            this.currentNode = Clone(other.currentNode);
+            this.nextNode = Clone(other.nextNode);
         }
 
         public override void Reset()
         {
             qy1.Reset();
             qy2.Reset();
-            _advance1 = true;
-            _advance2 = true;
-            _nextNode = null;
+            advance1 = true;
+            advance2 = true;
+            nextNode = null;
         }
 
         public override void SetXsltContext(XsltContext xsltContext)
@@ -51,35 +51,35 @@ namespace MS.Internal.Xml.XPath
         {
             qy1.Evaluate(context);
             qy2.Evaluate(context);
-            _advance1 = true;
-            _advance2 = true;
-            _nextNode = null;
+            advance1 = true;
+            advance2 = true;
+            nextNode = null;
             base.ResetCount();
             return this;
         }
 
         private XPathNavigator ProcessSamePosition(XPathNavigator result)
         {
-            _currentNode = result;
-            _advance1 = _advance2 = true;
+            currentNode = result;
+            advance1 = advance2 = true;
             return result;
         }
 
         private XPathNavigator ProcessBeforePosition(XPathNavigator res1, XPathNavigator res2)
         {
-            _nextNode = res2;
-            _advance2 = false;
-            _advance1 = true;
-            _currentNode = res1;
+            nextNode = res2;
+            advance2 = false;
+            advance1 = true;
+            currentNode = res1;
             return res1;
         }
 
         private XPathNavigator ProcessAfterPosition(XPathNavigator res1, XPathNavigator res2)
         {
-            _nextNode = res1;
-            _advance1 = false;
-            _advance2 = true;
-            _currentNode = res2;
+            nextNode = res1;
+            advance1 = false;
+            advance2 = true;
+            currentNode = res2;
             return res2;
         }
 
@@ -87,21 +87,21 @@ namespace MS.Internal.Xml.XPath
         {
             XPathNavigator res1, res2;
             XmlNodeOrder order = 0;
-            if (_advance1)
+            if (advance1)
             {
                 res1 = qy1.Advance();
             }
             else
             {
-                res1 = _nextNode;
+                res1 = nextNode;
             }
-            if (_advance2)
+            if (advance2)
             {
                 res2 = qy2.Advance();
             }
             else
             {
-                res2 = _nextNode;
+                res2 = nextNode;
             }
             if (res1 != null && res2 != null)
             {
@@ -109,18 +109,18 @@ namespace MS.Internal.Xml.XPath
             }
             else if (res2 == null)
             {
-                _advance1 = true;
-                _advance2 = false;
-                _currentNode = res1;
-                _nextNode = null;
+                advance1 = true;
+                advance2 = false;
+                currentNode = res1;
+                nextNode = null;
                 return res1;
             }
             else
             {
-                _advance1 = false;
-                _advance2 = true;
-                _currentNode = res2;
-                _nextNode = null;
+                advance1 = false;
+                advance2 = true;
+                currentNode = res2;
+                nextNode = null;
                 return res2;
             }
 
@@ -157,7 +157,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNodeIterator Clone() { return new UnionExpr(this); }
 
-        public override XPathNavigator Current { get { return _currentNode; } }
+        public override XPathNavigator Current { get { return currentNode; } }
         public override int CurrentPosition { get { throw new InvalidOperationException(); } }
 
         public override void PrintQuery(XmlWriter w)

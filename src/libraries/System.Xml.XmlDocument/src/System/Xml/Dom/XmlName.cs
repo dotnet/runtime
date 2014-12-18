@@ -7,11 +7,11 @@ namespace System.Xml
 {
     internal class XmlName
     {
-        private string _prefix;
-        private string _localName;
-        private string _ns;
-        private string _name;
-        private int _hashCode;
+        string prefix;
+        string localName;
+        string ns;
+        string name;
+        int hashCode;
         internal XmlDocument ownerDoc;
         internal XmlName next;
 
@@ -22,11 +22,11 @@ namespace System.Xml
 
         internal XmlName(string prefix, string localName, string ns, int hashCode, XmlDocument ownerDoc, XmlName next)
         {
-            _prefix = prefix;
-            _localName = localName;
-            _ns = ns;
-            _name = null;
-            _hashCode = hashCode;
+            this.prefix = prefix;
+            this.localName = localName;
+            this.ns = ns;
+            this.name = null;
+            this.hashCode = hashCode;
             this.ownerDoc = ownerDoc;
             this.next = next;
         }
@@ -35,7 +35,7 @@ namespace System.Xml
         {
             get
             {
-                return _localName;
+                return localName;
             }
         }
 
@@ -43,7 +43,7 @@ namespace System.Xml
         {
             get
             {
-                return _ns;
+                return ns;
             }
         }
 
@@ -51,7 +51,7 @@ namespace System.Xml
         {
             get
             {
-                return _prefix;
+                return prefix;
             }
         }
 
@@ -59,7 +59,7 @@ namespace System.Xml
         {
             get
             {
-                return _hashCode;
+                return hashCode;
             }
         }
 
@@ -75,34 +75,34 @@ namespace System.Xml
         {
             get
             {
-                if (_name == null)
+                if (name == null)
                 {
-                    Debug.Assert(_prefix != null);
-                    if (_prefix.Length > 0)
+                    Debug.Assert(prefix != null);
+                    if (prefix.Length > 0)
                     {
-                        if (_localName.Length > 0)
+                        if (localName.Length > 0)
                         {
-                            string n = string.Concat(_prefix, ":", _localName);
+                            string n = string.Concat(prefix, ":", localName);
                             lock (ownerDoc.NameTable)
                             {
-                                if (_name == null)
+                                if (name == null)
                                 {
-                                    _name = ownerDoc.NameTable.Add(n);
+                                    name = ownerDoc.NameTable.Add(n);
                                 }
                             }
                         }
                         else
                         {
-                            _name = _prefix;
+                            name = prefix;
                         }
                     }
                     else
                     {
-                        _name = _localName;
+                        name = localName;
                     }
-                    Debug.Assert(Ref.Equal(_name, ownerDoc.NameTable.Get(_name)));
+                    Debug.Assert(Ref.Equal(name, ownerDoc.NameTable.Get(name)));
                 }
-                return _name;
+                return name;
             }
         }
 

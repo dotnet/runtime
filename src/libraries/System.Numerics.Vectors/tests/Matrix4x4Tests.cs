@@ -223,6 +223,7 @@ namespace System.Numerics.Tests
             Quaternion expectedRotation = Quaternion.CreateFromYawPitchRoll(MathHelper.ToRadians(yaw),
                                                                             MathHelper.ToRadians(pitch),
                                                                             MathHelper.ToRadians(roll));
+
             Matrix4x4 m = Matrix4x4.CreateScale(expectedScales) *
                           Matrix4x4.CreateFromQuaternion(expectedRotation) *
                           Matrix4x4.CreateTranslation(expectedTranslation);
@@ -249,6 +250,7 @@ namespace System.Numerics.Tests
                 Assert.True(MathHelper.Equal(expectedScales, scales), String.Format("Matrix4x4.Decompose did not return expected value Expected:{0} actual:{1}.", expectedScales, scales));
                 Assert.True(MathHelper.EqualRotation(expectedRotation, rotation), String.Format("Matrix4x4.Decompose did not return expected value. Expected:{0} actual:{1}.", expectedRotation, rotation));
             }
+
             Assert.True(MathHelper.Equal(expectedTranslation, translation), String.Format("Matrix4x4.Decompose did not return expected value. Expected:{0} actual:{1}.", expectedTranslation, translation));
         }
 

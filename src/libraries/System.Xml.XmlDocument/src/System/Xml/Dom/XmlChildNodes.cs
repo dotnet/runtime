@@ -7,11 +7,11 @@ namespace System.Xml
 {
     internal class XmlChildNodes : XmlNodeList
     {
-        private XmlNode _container;
+        private XmlNode container;
 
         public XmlChildNodes(XmlNode container)
         {
-            _container = container;
+            this.container = container;
         }
 
         public override XmlNode Item(int i)
@@ -19,7 +19,7 @@ namespace System.Xml
             // Out of range indexes return a null XmlNode
             if (i < 0)
                 return null;
-            for (XmlNode n = _container.FirstChild; n != null; n = n.NextSibling, i--)
+            for (XmlNode n = container.FirstChild; n != null; n = n.NextSibling, i--)
             {
                 if (i == 0)
                     return n;
@@ -32,7 +32,7 @@ namespace System.Xml
             get
             {
                 int c = 0;
-                for (XmlNode n = _container.FirstChild; n != null; n = n.NextSibling)
+                for (XmlNode n = container.FirstChild; n != null; n = n.NextSibling)
                 {
                     c++;
                 }
@@ -42,13 +42,13 @@ namespace System.Xml
 
         public override IEnumerator GetEnumerator()
         {
-            if (_container.FirstChild == null)
+            if (container.FirstChild == null)
             {
                 return XmlDocument.EmptyEnumerator;
             }
             else
             {
-                return new XmlChildEnumerator(_container);
+                return new XmlChildEnumerator(container);
             }
         }
     }

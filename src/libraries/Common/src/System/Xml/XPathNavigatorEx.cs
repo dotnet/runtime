@@ -9,7 +9,7 @@ namespace System.Xml.XPath
         private const int AllMask = 0x7FFFFFFF;
         private const int NoAttrNmspMask = AllMask & ~(1 << (int)XPathNodeType.Attribute) & ~(1 << (int)XPathNodeType.Namespace);
         private const int TextMask = (1 << (int)XPathNodeType.Text) | (1 << (int)XPathNodeType.SignificantWhitespace) | (1 << (int)XPathNodeType.Whitespace);
-        private static readonly int[] _ContentKindMasks = {
+        private static readonly int[] ContentKindMasks = {
             (1 << (int) XPathNodeType.Root),                        // Root
             (1 << (int) XPathNodeType.Element),                     // Element
             0,                                                      // Attribute (not content)
@@ -24,7 +24,7 @@ namespace System.Xml.XPath
 
         public static int GetContentKindMask(XPathNodeType type)
         {
-            return _ContentKindMasks[(int)type];
+            return ContentKindMasks[(int)type];
         }
 
         public static int GetKindMask(XPathNodeType type)

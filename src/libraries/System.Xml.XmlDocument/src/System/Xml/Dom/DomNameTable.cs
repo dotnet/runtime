@@ -7,21 +7,21 @@ namespace System.Xml
 {
     internal class DomNameTable
     {
-        private XmlName[] _entries;
-        private int _count;
-        private int _mask;
-        private XmlDocument _ownerDocument;
-        private XmlNameTable _nameTable;
+        XmlName[] entries;
+        int count;
+        int mask;
+        XmlDocument ownerDocument;
+        XmlNameTable nameTable;
 
-        private const int InitialSize = 64; // must be a power of two
+        const int InitialSize = 64; // must be a power of two
 
         public DomNameTable(XmlDocument document)
         {
-            _ownerDocument = document;
-            _nameTable = document.NameTable;
-            _entries = new XmlName[InitialSize];
-            _mask = InitialSize - 1;
-            Debug.Assert((_entries.Length & _mask) == 0);  // entries.Length must be a power of two
+            ownerDocument = document;
+            nameTable = document.NameTable;
+            entries = new XmlName[InitialSize];
+            mask = InitialSize - 1;
+            Debug.Assert((entries.Length & mask) == 0);  // entries.Length must be a power of two
         }
 
         public XmlName GetName(string prefix, string localName, string ns)
@@ -37,7 +37,7 @@ namespace System.Xml
 
             int hashCode = XmlNameHelper.GetHashCode(localName);
 
-            for (XmlName e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (XmlName e = entries[hashCode & mask]; e != null; e = e.next)
             {
                 if (e.HashCode == hashCode
                     && ((object)e.LocalName == (object)localName
@@ -66,7 +66,7 @@ namespace System.Xml
 
             int hashCode = XmlNameHelper.GetHashCode(localName);
 
-            for (XmlName e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (XmlName e = entries[hashCode & mask]; e != null; e = e.next)
             {
                 if (e.HashCode == hashCode
                     && ((object)e.LocalName == (object)localName
@@ -80,14 +80,14 @@ namespace System.Xml
                 }
             }
 
-            prefix = _nameTable.Add(prefix);
-            localName = _nameTable.Add(localName);
-            ns = _nameTable.Add(ns);
-            int index = hashCode & _mask;
-            XmlName name = XmlName.Create(prefix, localName, ns, hashCode, _ownerDocument, _entries[index]);
-            _entries[index] = name;
+            prefix = nameTable.Add(prefix);
+            localName = nameTable.Add(localName);
+            ns = nameTable.Add(ns);
+            int index = hashCode & mask;
+            XmlName name = XmlName.Create(prefix, localName, ns, hashCode, ownerDocument, entries[index]);
+            entries[index] = name;
 
-            if (_count++ == _mask)
+            if (count++ == mask)
             {
                 Grow();
             }
@@ -97,8 +97,8 @@ namespace System.Xml
 
         private void Grow()
         {
-            int newMask = _mask * 2 + 1;
-            XmlName[] oldEntries = _entries;
+            int newMask = mask * 2 + 1;
+            XmlName[] oldEntries = entries;
             XmlName[] newEntries = new XmlName[newMask + 1];
 
             // use oldEntries.Length to eliminate the rangecheck            
@@ -114,8 +114,8 @@ namespace System.Xml
                     name = tmp;
                 }
             }
-            _entries = newEntries;
-            _mask = newMask;
+            entries = newEntries;
+            mask = newMask;
         }
     }
 }

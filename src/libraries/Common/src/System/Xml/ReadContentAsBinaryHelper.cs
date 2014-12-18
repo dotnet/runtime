@@ -16,31 +16,31 @@ namespace System.Xml
         }
 
         // Fields 
-        private XmlReader _reader;
-        private State _state;
-        private int _valueOffset;
-        private bool _isEnd;
+        XmlReader reader;
+        State state;
+        int valueOffset;
+        bool isEnd;
 
-        private bool _canReadValueChunk;
-        private char[] _valueChunk;
-        private int _valueChunkLength;
+        bool canReadValueChunk;
+        char[] valueChunk;
+        int valueChunkLength;
 
-        private IncrementalReadDecoder _decoder;
-        private Base64Decoder _base64Decoder;
-        private BinHexDecoder _binHexDecoder;
+        IncrementalReadDecoder decoder;
+        Base64Decoder base64Decoder;
+        BinHexDecoder binHexDecoder;
 
         // Constants
-        private const int ChunkSize = 256;
+        const int ChunkSize = 256;
 
         // Constructor
         internal ReadContentAsBinaryHelper(XmlReader reader)
         {
-            _reader = reader;
-            _canReadValueChunk = reader.CanReadValueChunk;
+            this.reader = reader;
+            this.canReadValueChunk = reader.CanReadValueChunk;
 
-            if (_canReadValueChunk)
+            if (canReadValueChunk)
             {
-                _valueChunk = new char[ChunkSize];
+                valueChunk = new char[ChunkSize];
             }
         }
 
@@ -80,12 +80,12 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            switch (_state)
+            switch (state)
             {
                 case State.None:
-                    if (!_reader.CanReadContentAs())
+                    if (!reader.CanReadContentAs())
                     {
-                        throw _reader.CreateReadContentAsException("ReadContentAsBase64");
+                        throw reader.CreateReadContentAsException("ReadContentAsBase64");
                     }
                     if (!Init())
                     {
@@ -94,7 +94,7 @@ namespace System.Xml
                     break;
                 case State.InReadContent:
                     // if we have a correct decoder, go read
-                    if (_decoder == _base64Decoder)
+                    if (decoder == base64Decoder)
                     {
                         // read more binary data
                         return ReadContentAsBinary(buffer, index, count);
@@ -107,7 +107,7 @@ namespace System.Xml
                     return 0;
             }
 
-            Debug.Assert(_state == State.InReadContent);
+            Debug.Assert(state == State.InReadContent);
 
             // setup base64 decoder
             InitBase64Decoder();
@@ -136,12 +136,12 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            switch (_state)
+            switch (state)
             {
                 case State.None:
-                    if (!_reader.CanReadContentAs())
+                    if (!reader.CanReadContentAs())
                     {
-                        throw _reader.CreateReadContentAsException("ReadContentAsBinHex");
+                        throw reader.CreateReadContentAsException("ReadContentAsBinHex");
                     }
                     if (!Init())
                     {
@@ -150,7 +150,7 @@ namespace System.Xml
                     break;
                 case State.InReadContent:
                     // if we have a correct decoder, go read
-                    if (_decoder == _binHexDecoder)
+                    if (decoder == binHexDecoder)
                     {
                         // read more binary data
                         return ReadContentAsBinary(buffer, index, count);
@@ -163,7 +163,7 @@ namespace System.Xml
                     return 0;
             }
 
-            Debug.Assert(_state == State.InReadContent);
+            Debug.Assert(state == State.InReadContent);
 
             // setup binhex decoder
             InitBinHexDecoder();
@@ -192,12 +192,12 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            switch (_state)
+            switch (state)
             {
                 case State.None:
-                    if (_reader.NodeType != XmlNodeType.Element)
+                    if (reader.NodeType != XmlNodeType.Element)
                     {
-                        throw _reader.CreateReadElementContentAsException("ReadElementContentAsBase64");
+                        throw reader.CreateReadElementContentAsException("ReadElementContentAsBase64");
                     }
                     if (!InitOnElement())
                     {
@@ -208,7 +208,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 case State.InReadElementContent:
                     // if we have a correct decoder, go read
-                    if (_decoder == _base64Decoder)
+                    if (decoder == base64Decoder)
                     {
                         // read more binary data
                         return ReadElementContentAsBinary(buffer, index, count);
@@ -219,7 +219,7 @@ namespace System.Xml
                     return 0;
             }
 
-            Debug.Assert(_state == State.InReadElementContent);
+            Debug.Assert(state == State.InReadElementContent);
 
             // setup base64 decoder
             InitBase64Decoder();
@@ -248,12 +248,12 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            switch (_state)
+            switch (state)
             {
                 case State.None:
-                    if (_reader.NodeType != XmlNodeType.Element)
+                    if (reader.NodeType != XmlNodeType.Element)
                     {
-                        throw _reader.CreateReadElementContentAsException("ReadElementContentAsBinHex");
+                        throw reader.CreateReadElementContentAsException("ReadElementContentAsBinHex");
                     }
                     if (!InitOnElement())
                     {
@@ -264,7 +264,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 case State.InReadElementContent:
                     // if we have a correct decoder, go read
-                    if (_decoder == _binHexDecoder)
+                    if (decoder == binHexDecoder)
                     {
                         // read more binary data
                         return ReadElementContentAsBinary(buffer, index, count);
@@ -275,7 +275,7 @@ namespace System.Xml
                     return 0;
             }
 
-            Debug.Assert(_state == State.InReadElementContent);
+            Debug.Assert(state == State.InReadElementContent);
 
             // setup binhex decoder
             InitBinHexDecoder();
@@ -286,18 +286,18 @@ namespace System.Xml
 
         internal void Finish()
         {
-            if (_state != State.None)
+            if (state != State.None)
             {
                 while (MoveToNextContentNode(true))
                     ;
-                if (_state == State.InReadElementContent)
+                if (state == State.InReadElementContent)
                 {
-                    if (_reader.NodeType != XmlNodeType.EndElement)
+                    if (reader.NodeType != XmlNodeType.EndElement)
                     {
-                        throw new XPath.XPathException(SR.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
+                        throw new XPath.XPathException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
                     }
                     // move off the EndElement
-                    _reader.Read();
+                    reader.Read();
                 }
             }
             Reset();
@@ -305,9 +305,9 @@ namespace System.Xml
 
         internal void Reset()
         {
-            _state = State.None;
-            _isEnd = false;
-            _valueOffset = 0;
+            state = State.None;
+            isEnd = false;
+            valueOffset = 0;
         }
 
         // Private methods
@@ -319,18 +319,18 @@ namespace System.Xml
                 return false;
             }
 
-            _state = State.InReadContent;
-            _isEnd = false;
+            state = State.InReadContent;
+            isEnd = false;
             return true;
         }
 
         private bool InitOnElement()
         {
-            Debug.Assert(_reader.NodeType == XmlNodeType.Element);
-            bool isEmpty = _reader.IsEmptyElement;
+            Debug.Assert(reader.NodeType == XmlNodeType.Element);
+            bool isEmpty = reader.IsEmptyElement;
 
             // move to content or off the empty element
-            _reader.Read();
+            reader.Read();
             if (isEmpty)
             {
                 return false;
@@ -339,100 +339,100 @@ namespace System.Xml
             // make sure we are on a content node
             if (!MoveToNextContentNode(false))
             {
-                if (_reader.NodeType != XmlNodeType.EndElement)
+                if (reader.NodeType != XmlNodeType.EndElement)
                 {
-                    throw new XPath.XPathException(SR.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
+                    throw new XPath.XPathException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
                 }
                 // move off end element
-                _reader.Read();
+                reader.Read();
                 return false;
             }
-            _state = State.InReadElementContent;
-            _isEnd = false;
+            state = State.InReadElementContent;
+            isEnd = false;
             return true;
         }
 
         private void InitBase64Decoder()
         {
-            if (_base64Decoder == null)
+            if (base64Decoder == null)
             {
-                _base64Decoder = new Base64Decoder();
+                base64Decoder = new Base64Decoder();
             }
             else
             {
-                _base64Decoder.Reset();
+                base64Decoder.Reset();
             }
-            _decoder = _base64Decoder;
+            decoder = base64Decoder;
         }
 
         private void InitBinHexDecoder()
         {
-            if (_binHexDecoder == null)
+            if (binHexDecoder == null)
             {
-                _binHexDecoder = new BinHexDecoder();
+                binHexDecoder = new BinHexDecoder();
             }
             else
             {
-                _binHexDecoder.Reset();
+                binHexDecoder.Reset();
             }
-            _decoder = _binHexDecoder;
+            decoder = binHexDecoder;
         }
 
         private int ReadContentAsBinary(byte[] buffer, int index, int count)
         {
-            Debug.Assert(_decoder != null);
+            Debug.Assert(decoder != null);
 
-            if (_isEnd)
+            if (isEnd)
             {
                 Reset();
                 return 0;
             }
-            _decoder.SetNextOutputBuffer(buffer, index, count);
+            decoder.SetNextOutputBuffer(buffer, index, count);
 
             for (; ;)
             {
                 // use streaming ReadValueChunk if the reader supports it
-                if (_canReadValueChunk)
+                if (canReadValueChunk)
                 {
                     for (; ;)
                     {
-                        if (_valueOffset < _valueChunkLength)
+                        if (valueOffset < valueChunkLength)
                         {
-                            int decodedCharsCount = _decoder.Decode(_valueChunk, _valueOffset, _valueChunkLength - _valueOffset);
-                            _valueOffset += decodedCharsCount;
+                            int decodedCharsCount = decoder.Decode(valueChunk, valueOffset, valueChunkLength - valueOffset);
+                            valueOffset += decodedCharsCount;
                         }
-                        if (_decoder.IsFull)
+                        if (decoder.IsFull)
                         {
-                            return _decoder.DecodedCount;
+                            return decoder.DecodedCount;
                         }
-                        Debug.Assert(_valueOffset == _valueChunkLength);
-                        if ((_valueChunkLength = _reader.ReadValueChunk(_valueChunk, 0, ChunkSize)) == 0)
+                        Debug.Assert(valueOffset == valueChunkLength);
+                        if ((valueChunkLength = reader.ReadValueChunk(valueChunk, 0, ChunkSize)) == 0)
                         {
                             break;
                         }
-                        _valueOffset = 0;
+                        valueOffset = 0;
                     }
                 }
                 else
                 {
                     // read what is reader.Value
-                    string value = _reader.Value;
-                    int decodedCharsCount = _decoder.Decode(value, _valueOffset, value.Length - _valueOffset);
-                    _valueOffset += decodedCharsCount;
+                    string value = reader.Value;
+                    int decodedCharsCount = decoder.Decode(value, valueOffset, value.Length - valueOffset);
+                    valueOffset += decodedCharsCount;
 
-                    if (_decoder.IsFull)
+                    if (decoder.IsFull)
                     {
-                        return _decoder.DecodedCount;
+                        return decoder.DecodedCount;
                     }
                 }
 
-                _valueOffset = 0;
+                valueOffset = 0;
 
                 // move to next textual node in the element content; throw on sub elements
                 if (!MoveToNextContentNode(true))
                 {
-                    _isEnd = true;
-                    return _decoder.DecodedCount;
+                    isEnd = true;
+                    return decoder.DecodedCount;
                 }
             }
         }
@@ -451,14 +451,14 @@ namespace System.Xml
             }
 
             // if 0 bytes returned check if we are on a closing EndElement, throw exception if not
-            if (_reader.NodeType != XmlNodeType.EndElement)
+            if (reader.NodeType != XmlNodeType.EndElement)
             {
-                throw new XPath.XPathException(SR.Xml_InvalidNodeType, _reader.NodeType.ToString(), _reader as IXmlLineInfo);
+                throw new XPath.XPathException(SR.Xml_InvalidNodeType, reader.NodeType.ToString(), reader as IXmlLineInfo);
             }
 
             // move off the EndElement
-            _reader.Read();
-            _state = State.None;
+            reader.Read();
+            state = State.None;
             return 0;
         }
 
@@ -466,7 +466,7 @@ namespace System.Xml
         {
             do
             {
-                switch (_reader.NodeType)
+                switch (reader.NodeType)
                 {
                     case XmlNodeType.Attribute:
                         return !moveIfOnContentNode;
@@ -485,9 +485,9 @@ namespace System.Xml
                         // skip comments, pis and end entity nodes
                         break;
                     case XmlNodeType.EntityReference:
-                        if (_reader.CanResolveEntity)
+                        if (reader.CanResolveEntity)
                         {
-                            _reader.ResolveEntity();
+                            reader.ResolveEntity();
                             break;
                         }
                         goto default;
@@ -495,7 +495,7 @@ namespace System.Xml
                         return false;
                 }
                 moveIfOnContentNode = false;
-            } while (_reader.Read());
+            } while (reader.Read());
             return false;
         }
     }

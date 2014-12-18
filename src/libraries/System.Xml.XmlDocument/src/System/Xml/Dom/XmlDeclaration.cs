@@ -9,12 +9,12 @@ namespace System.Xml
     // Represents the xml declaration nodes: <?xml version='1.0' ...?>
     public class XmlDeclaration : XmlLinkedNode
     {
-        private const string YES = "yes";
-        private const string NO = "no";
+        const string YES = "yes";
+        const string NO = "no";
 
-        private string _version;
-        private string _encoding;
-        private string _standalone;
+        private string version;
+        private string encoding;
+        private string standalone;
 
         protected internal XmlDeclaration(string version, string encoding, string standalone, XmlDocument doc) : base(doc)
         {
@@ -32,28 +32,28 @@ namespace System.Xml
         // The version attribute for <?xml version= '1.0' ... ?>
         public string Version
         {
-            get { return _version; }
-            internal set { _version = value; }
+            get { return this.version; }
+            internal set { this.version = value; }
         }
 
         // Specifies the value of the encoding attribute, as for
         // <?xml version= '1.0' encoding= 'UTF-8' ?>
         public string Encoding
         {
-            get { return _encoding; }
-            set { _encoding = ((value == null) ? String.Empty : value); }
+            get { return this.encoding; }
+            set { this.encoding = ((value == null) ? String.Empty : value); }
         }
 
         // Specifies the value of the standalone attribute.
         public string Standalone
         {
-            get { return _standalone; }
+            get { return this.standalone; }
             set
             {
                 if (value == null)
-                    _standalone = String.Empty;
+                    this.standalone = String.Empty;
                 else if (value.Length == 0 || value == YES || value == NO)
-                    _standalone = value;
+                    this.standalone = value;
                 else
                     throw new ArgumentException(SR.Format(SR.Xdom_standalone, value));
             }

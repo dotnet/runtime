@@ -11,16 +11,16 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class XPathScanner
     {
-        private string _xpathExpr;
-        private int _xpathExprIndex;
-        private LexKind _kind;
-        private char _currentChar;
-        private string _name;
-        private string _prefix;
-        private string _stringValue;
-        private double _numberValue = double.NaN;
-        private bool _canBeFunction;
-        private XmlCharType _xmlCharType = XmlCharType.Instance;
+        private string xpathExpr;
+        private int xpathExprIndex;
+        private LexKind kind;
+        private char currentChar;
+        private string name;
+        private string prefix;
+        private string stringValue;
+        private double numberValue = double.NaN;
+        private bool canBeFunction;
+        private XmlCharType xmlCharType = XmlCharType.Instance;
 
         public XPathScanner(string xpathExpr)
         {
@@ -28,26 +28,26 @@ namespace MS.Internal.Xml.XPath
             {
                 throw XPathException.Create(SR.Xp_ExprExpected, string.Empty);
             }
-            _xpathExpr = xpathExpr;
+            this.xpathExpr = xpathExpr;
             NextChar();
             NextLex();
         }
 
-        public string SourceText { get { return _xpathExpr; } }
+        public string SourceText { get { return this.xpathExpr; } }
 
-        private char CurrentChar { get { return _currentChar; } }
+        private char CurrentChar { get { return currentChar; } }
 
         private bool NextChar()
         {
-            Debug.Assert(0 <= _xpathExprIndex && _xpathExprIndex <= _xpathExpr.Length);
-            if (_xpathExprIndex < _xpathExpr.Length)
+            Debug.Assert(0 <= xpathExprIndex && xpathExprIndex <= xpathExpr.Length);
+            if (xpathExprIndex < xpathExpr.Length)
             {
-                _currentChar = _xpathExpr[_xpathExprIndex++];
+                currentChar = xpathExpr[xpathExprIndex++];
                 return true;
             }
             else
             {
-                _currentChar = '\0';
+                currentChar = '\0';
                 return false;
             }
         }
@@ -68,15 +68,15 @@ namespace MS.Internal.Xml.XPath
         }
 #endif
 
-        public LexKind Kind { get { return _kind; } }
+        public LexKind Kind { get { return this.kind; } }
 
         public string Name
         {
             get
             {
-                Debug.Assert(_kind == LexKind.Name || _kind == LexKind.Axe);
-                Debug.Assert(_name != null);
-                return _name;
+                Debug.Assert(this.kind == LexKind.Name || this.kind == LexKind.Axe);
+                Debug.Assert(this.name != null);
+                return this.name;
             }
         }
 
@@ -84,9 +84,9 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                Debug.Assert(_kind == LexKind.Name);
-                Debug.Assert(_prefix != null);
-                return _prefix;
+                Debug.Assert(this.kind == LexKind.Name);
+                Debug.Assert(this.prefix != null);
+                return this.prefix;
             }
         }
 
@@ -94,9 +94,9 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                Debug.Assert(_kind == LexKind.String);
-                Debug.Assert(_stringValue != null);
-                return _stringValue;
+                Debug.Assert(this.kind == LexKind.String);
+                Debug.Assert(this.stringValue != null);
+                return this.stringValue;
             }
         }
 
@@ -104,9 +104,9 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                Debug.Assert(_kind == LexKind.Number);
-                Debug.Assert(!double.IsNaN(_numberValue));
-                return _numberValue;
+                Debug.Assert(this.kind == LexKind.Number);
+                Debug.Assert(!double.IsNaN(this.numberValue));
+                return this.numberValue;
             }
         }
 
@@ -116,14 +116,14 @@ namespace MS.Internal.Xml.XPath
         {
             get
             {
-                Debug.Assert(_kind == LexKind.Name);
-                return _canBeFunction;
+                Debug.Assert(this.kind == LexKind.Name);
+                return this.canBeFunction;
             }
         }
 
         void SkipSpace()
         {
-            while (_xmlCharType.IsWhiteSpace(this.CurrentChar) && NextChar()) ;
+            while (xmlCharType.IsWhiteSpace(this.CurrentChar) && NextChar()) ;
         }
 
         public bool NextLex()
@@ -132,7 +132,7 @@ namespace MS.Internal.Xml.XPath
             switch (this.CurrentChar)
             {
                 case '\0':
-                    _kind = LexKind.Eof;
+                    kind = LexKind.Eof;
                     return false;
                 case ',':
                 case '@':
@@ -147,79 +147,79 @@ namespace MS.Internal.Xml.XPath
                 case '=':
                 case '#':
                 case '$':
-                    _kind = (LexKind)Convert.ToInt32(this.CurrentChar, CultureInfo.InvariantCulture);
+                    kind = (LexKind)Convert.ToInt32(this.CurrentChar, CultureInfo.InvariantCulture);
                     NextChar();
                     break;
                 case '<':
-                    _kind = LexKind.Lt;
+                    kind = LexKind.Lt;
                     NextChar();
                     if (this.CurrentChar == '=')
                     {
-                        _kind = LexKind.Le;
+                        kind = LexKind.Le;
                         NextChar();
                     }
                     break;
                 case '>':
-                    _kind = LexKind.Gt;
+                    kind = LexKind.Gt;
                     NextChar();
                     if (this.CurrentChar == '=')
                     {
-                        _kind = LexKind.Ge;
+                        kind = LexKind.Ge;
                         NextChar();
                     }
                     break;
                 case '!':
-                    _kind = LexKind.Bang;
+                    kind = LexKind.Bang;
                     NextChar();
                     if (this.CurrentChar == '=')
                     {
-                        _kind = LexKind.Ne;
+                        kind = LexKind.Ne;
                         NextChar();
                     }
                     break;
                 case '.':
-                    _kind = LexKind.Dot;
+                    kind = LexKind.Dot;
                     NextChar();
                     if (this.CurrentChar == '.')
                     {
-                        _kind = LexKind.DotDot;
+                        kind = LexKind.DotDot;
                         NextChar();
                     }
                     else if (XmlCharType.IsDigit(this.CurrentChar))
                     {
-                        _kind = LexKind.Number;
-                        _numberValue = ScanFraction();
+                        kind = LexKind.Number;
+                        numberValue = ScanFraction();
                     }
                     break;
                 case '/':
-                    _kind = LexKind.Slash;
+                    kind = LexKind.Slash;
                     NextChar();
                     if (this.CurrentChar == '/')
                     {
-                        _kind = LexKind.SlashSlash;
+                        kind = LexKind.SlashSlash;
                         NextChar();
                     }
                     break;
                 case '"':
                 case '\'':
-                    _kind = LexKind.String;
-                    _stringValue = ScanString();
+                    this.kind = LexKind.String;
+                    this.stringValue = ScanString();
                     break;
                 default:
                     if (XmlCharType.IsDigit(this.CurrentChar))
                     {
-                        _kind = LexKind.Number;
-                        _numberValue = ScanNumber();
+                        kind = LexKind.Number;
+                        numberValue = ScanNumber();
                     }
-                    else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
+                    else if (xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
 #if XML10_FIFTH_EDITION
                     || xmlCharType.IsNCNameHighSurrogateChar(this.CurerntChar)
 #endif
                     )
                     {
-                        _kind = LexKind.Name;
-                        _name = ScanName();
-                        _prefix = string.Empty;
+                        kind = LexKind.Name;
+                        this.name = ScanName();
+                        this.prefix = string.Empty;
                         // "foo:bar" is one lexem not three because it doesn't allow spaces in between
                         // We should distinct it from "foo::" and need process "foo ::" as well
                         if (this.CurrentChar == ':')
@@ -229,23 +229,23 @@ namespace MS.Internal.Xml.XPath
                             if (this.CurrentChar == ':')
                             {   // "foo::"
                                 NextChar();
-                                _kind = LexKind.Axe;
+                                kind = LexKind.Axe;
                             }
                             else
                             {                          // "foo:*", "foo:bar" or "foo: "
-                                _prefix = _name;
+                                this.prefix = this.name;
                                 if (this.CurrentChar == '*')
                                 {
                                     NextChar();
-                                    _name = "*";
+                                    this.name = "*";
                                 }
-                                else if (_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
+                                else if (xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
 #if XML10_FIFTH_EDITION
                                 || xmlCharType.IsNCNameHighSurrogateChar(this.CurerntChar)
 #endif
                                 )
                                 {
-                                    _name = ScanName();
+                                    this.name = ScanName();
                                 }
                                 else
                                 {
@@ -263,7 +263,7 @@ namespace MS.Internal.Xml.XPath
                                 if (this.CurrentChar == ':')
                                 {
                                     NextChar();
-                                    _kind = LexKind.Axe;
+                                    kind = LexKind.Axe;
                                 }
                                 else
                                 {
@@ -272,7 +272,7 @@ namespace MS.Internal.Xml.XPath
                             }
                         }
                         SkipSpace();
-                        _canBeFunction = (this.CurrentChar == '(');
+                        this.canBeFunction = (this.CurrentChar == '(');
                     }
                     else
                     {
@@ -286,7 +286,7 @@ namespace MS.Internal.Xml.XPath
         private double ScanNumber()
         {
             Debug.Assert(this.CurrentChar == '.' || XmlCharType.IsDigit(this.CurrentChar));
-            int start = _xpathExprIndex - 1;
+            int start = xpathExprIndex - 1;
             int len = 0;
             while (XmlCharType.IsDigit(this.CurrentChar))
             {
@@ -300,27 +300,27 @@ namespace MS.Internal.Xml.XPath
                     NextChar(); len++;
                 }
             }
-            return XmlConvertEx.ToXPathDouble(_xpathExpr.Substring(start, len));
+            return XmlConvertEx.ToXPathDouble(this.xpathExpr.Substring(start, len));
         }
 
         private double ScanFraction()
         {
             Debug.Assert(XmlCharType.IsDigit(this.CurrentChar));
-            int start = _xpathExprIndex - 2;
-            Debug.Assert(0 <= start && _xpathExpr[start] == '.');
+            int start = xpathExprIndex - 2;
+            Debug.Assert(0 <= start && this.xpathExpr[start] == '.');
             int len = 1; // '.'
             while (XmlCharType.IsDigit(this.CurrentChar))
             {
                 NextChar(); len++;
             }
-            return XmlConvertEx.ToXPathDouble(_xpathExpr.Substring(start, len));
+            return XmlConvertEx.ToXPathDouble(this.xpathExpr.Substring(start, len));
         }
 
         private string ScanString()
         {
             char endChar = this.CurrentChar;
             NextChar();
-            int start = _xpathExprIndex - 1;
+            int start = xpathExprIndex - 1;
             int len = 0;
             while (this.CurrentChar != endChar)
             {
@@ -332,22 +332,22 @@ namespace MS.Internal.Xml.XPath
             }
             Debug.Assert(this.CurrentChar == endChar);
             NextChar();
-            return _xpathExpr.Substring(start, len);
+            return this.xpathExpr.Substring(start, len);
         }
 
         private string ScanName()
         {
-            Debug.Assert(_xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
+            Debug.Assert(xmlCharType.IsStartNCNameSingleChar(this.CurrentChar)
 #if XML10_FIFTH_EDITION
                 || xmlCharType.IsNCNameHighSurrogateChar(this.CurerntChar)
 #endif
                 );
-            int start = _xpathExprIndex - 1;
+            int start = xpathExprIndex - 1;
             int len = 0;
 
             for (; ;)
             {
-                if (_xmlCharType.IsNCNameSingleChar(this.CurrentChar))
+                if (xmlCharType.IsNCNameSingleChar(this.CurrentChar))
                 {
                     NextChar();
                     len++;
@@ -365,7 +365,7 @@ namespace MS.Internal.Xml.XPath
                     break;
                 }
             }
-            return _xpathExpr.Substring(start, len);
+            return this.xpathExpr.Substring(start, len);
         }
 
         public enum LexKind

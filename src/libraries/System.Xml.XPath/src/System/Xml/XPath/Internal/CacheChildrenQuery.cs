@@ -15,26 +15,26 @@ namespace MS.Internal.Xml.XPath
     // So we don't need to call DecideNextNode() when needInput == true && stack is empty.
     internal sealed class CacheChildrenQuery : ChildrenQuery
     {
-        private XPathNavigator _nextInput = null;
-        private StackNav _elementStk;
-        private StackInt _positionStk;
-        private bool _needInput;
+        XPathNavigator nextInput = null;
+        StackNav elementStk;
+        StackInt positionStk;
+        bool needInput;
 #if DEBUG
         XPathNavigator lastNode = null;
 #endif
 
         public CacheChildrenQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)
         {
-            _elementStk = new StackNav();
-            _positionStk = new StackInt();
-            _needInput = true;
+            this.elementStk = new StackNav();
+            this.positionStk = new StackInt();
+            this.needInput = true;
         }
         private CacheChildrenQuery(CacheChildrenQuery other) : base(other)
         {
-            _nextInput = Clone(other._nextInput);
-            _elementStk = other._elementStk.Clone();
-            _positionStk = other._positionStk.Clone();
-            _needInput = other._needInput;
+            this.nextInput = Clone(other.nextInput);
+            this.elementStk = other.elementStk.Clone();
+            this.positionStk = other.positionStk.Clone();
+            this.needInput = other.needInput;
 #if DEBUG
             this.lastNode = Clone(other.lastNode);
 #endif
@@ -42,10 +42,10 @@ namespace MS.Internal.Xml.XPath
 
         public override void Reset()
         {
-            _nextInput = null;
-            _elementStk.Clear();
-            _positionStk.Clear();
-            _needInput = true;
+            nextInput = null;
+            elementStk.Clear();
+            positionStk.Clear();
+            needInput = true;
             base.Reset();
 #if DEBUG
             lastNode = null;
@@ -56,9 +56,9 @@ namespace MS.Internal.Xml.XPath
         {
             do
             {
-                if (_needInput)
+                if (needInput)
                 {
-                    if (_elementStk.Count == 0)
+                    if (elementStk.Count == 0)
                     {
                         currentNode = GetNextInput();
                         if (currentNode == null)
@@ -73,20 +73,20 @@ namespace MS.Internal.Xml.XPath
                     }
                     else
                     {
-                        currentNode = _elementStk.Pop();
-                        position = _positionStk.Pop();
+                        currentNode = elementStk.Pop();
+                        position = positionStk.Pop();
                         if (!DecideNextNode())
                         {
                             continue;
                         }
                     }
-                    _needInput = false;
+                    needInput = false;
                 }
                 else
                 {
                     if (!currentNode.MoveToNext() || !DecideNextNode())
                     {
-                        _needInput = true;
+                        needInput = true;
                         continue;
                     }
                 }
@@ -111,15 +111,15 @@ namespace MS.Internal.Xml.XPath
 
         private bool DecideNextNode()
         {
-            _nextInput = GetNextInput();
-            if (_nextInput != null)
+            nextInput = GetNextInput();
+            if (nextInput != null)
             {
-                if (CompareNodes(currentNode, _nextInput) == XmlNodeOrder.After)
+                if (CompareNodes(currentNode, nextInput) == XmlNodeOrder.After)
                 {
-                    _elementStk.Push(currentNode);
-                    _positionStk.Push(position);
-                    currentNode = _nextInput;
-                    _nextInput = null;
+                    elementStk.Push(currentNode);
+                    positionStk.Push(position);
+                    currentNode = nextInput;
+                    nextInput = null;
                     if (!currentNode.MoveToFirstChild())
                     {
                         return false;
@@ -133,10 +133,10 @@ namespace MS.Internal.Xml.XPath
         private XPathNavigator GetNextInput()
         {
             XPathNavigator result;
-            if (_nextInput != null)
+            if (nextInput != null)
             {
-                result = _nextInput;
-                _nextInput = null;
+                result = nextInput;
+                nextInput = null;
             }
             else
             {

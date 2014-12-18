@@ -18,29 +18,29 @@ namespace System.Xml
         // Fields
         //
         // output text writer
-        private TextWriter _textWriter;
+        TextWriter textWriter;
 
         // true when writing out the content of attribute value
-        private bool _inAttribute;
+        bool inAttribute;
 
         // quote char of the attribute (when inAttribute) 
-        private char _quoteChar;
+        char quoteChar;
 
         // caching of attribute value
-        private StringBuilder _attrValue;
-        private bool _cacheAttrValue;
+        StringBuilder attrValue;
+        bool cacheAttrValue;
 
         // XmlCharType
-        private XmlCharType _xmlCharType;
+        XmlCharType xmlCharType;
 
         //
         // Constructor
         //
         internal XmlTextEncoder(TextWriter textWriter)
         {
-            _textWriter = textWriter;
-            _quoteChar = '"';
-            _xmlCharType = XmlCharType.Instance;
+            this.textWriter = textWriter;
+            this.quoteChar = '"';
+            this.xmlCharType = XmlCharType.Instance;
         }
 
         //
@@ -50,44 +50,44 @@ namespace System.Xml
         {
             set
             {
-                _quoteChar = value;
+                this.quoteChar = value;
             }
         }
 
         internal void StartAttribute(bool cacheAttrValue)
         {
-            _inAttribute = true;
-            _cacheAttrValue = cacheAttrValue;
+            this.inAttribute = true;
+            this.cacheAttrValue = cacheAttrValue;
             if (cacheAttrValue)
             {
-                if (_attrValue == null)
+                if (attrValue == null)
                 {
-                    _attrValue = new StringBuilder();
+                    attrValue = new StringBuilder();
                 }
                 else
                 {
-                    _attrValue.Length = 0;
+                    attrValue.Length = 0;
                 }
             }
         }
 
         internal void EndAttribute()
         {
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Length = 0;
+                attrValue.Length = 0;
             }
-            _inAttribute = false;
-            _cacheAttrValue = false;
+            this.inAttribute = false;
+            this.cacheAttrValue = false;
         }
 
         internal string AttributeValue
         {
             get
             {
-                if (_cacheAttrValue)
+                if (cacheAttrValue)
                 {
-                    return _attrValue.ToString();
+                    return attrValue.ToString();
                 }
                 else
                 {
@@ -104,8 +104,8 @@ namespace System.Xml
                 throw XmlConvertEx.CreateInvalidSurrogatePairException(lowChar, highChar);
             }
 
-            _textWriter.Write(highChar);
-            _textWriter.Write(lowChar);
+            textWriter.Write(highChar);
+            textWriter.Write(lowChar);
         }
 
 #if FEATURE_NETCORE
@@ -133,9 +133,9 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append(array, offset, count);
+                attrValue.Append(array, offset, count);
             }
 
             int endPos = offset + count;
@@ -146,7 +146,7 @@ namespace System.Xml
                 int startPos = i;
                 unsafe
                 {
-                    while (i < endPos && (_xmlCharType.charProperties[ch = array[i]] & XmlCharType.fAttrValue) != 0)
+                    while (i < endPos && (xmlCharType.charProperties[ch = array[i]] & XmlCharType.fAttrValue) != 0)
                     {
                         i++;
                     }
@@ -154,7 +154,7 @@ namespace System.Xml
 
                 if (startPos < i)
                 {
-                    _textWriter.Write(array, startPos, i - startPos);
+                    textWriter.Write(array, startPos, i - startPos);
                 }
                 if (i == endPos)
                 {
@@ -164,17 +164,17 @@ namespace System.Xml
                 switch (ch)
                 {
                     case (char)0x9:
-                        _textWriter.Write(ch);
+                        textWriter.Write(ch);
                         break;
                     case (char)0xA:
                     case (char)0xD:
-                        if (_inAttribute)
+                        if (inAttribute)
                         {
                             WriteCharEntityImpl(ch);
                         }
                         else
                         {
-                            _textWriter.Write(ch);
+                            textWriter.Write(ch);
                         }
                         break;
 
@@ -188,23 +188,23 @@ namespace System.Xml
                         WriteEntityRefImpl("amp");
                         break;
                     case '\'':
-                        if (_inAttribute && _quoteChar == ch)
+                        if (inAttribute && quoteChar == ch)
                         {
                             WriteEntityRefImpl("apos");
                         }
                         else
                         {
-                            _textWriter.Write('\'');
+                            textWriter.Write('\'');
                         }
                         break;
                     case '"':
-                        if (_inAttribute && _quoteChar == ch)
+                        if (inAttribute && quoteChar == ch)
                         {
                             WriteEntityRefImpl("quot");
                         }
                         else
                         {
-                            _textWriter.Write('"');
+                            textWriter.Write('"');
                         }
                         break;
                     default:
@@ -225,7 +225,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            Debug.Assert((ch < 0x20 && !_xmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
+                            Debug.Assert((ch < 0x20 && !xmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
                             WriteCharEntityImpl(ch);
                         }
                         break;
@@ -243,15 +243,15 @@ namespace System.Xml
             }
             int surrogateChar = XmlCharType.CombineSurrogateChar(lowChar, highChar);
 
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append(highChar);
-                _attrValue.Append(lowChar);
+                attrValue.Append(highChar);
+                attrValue.Append(lowChar);
             }
 
-            _textWriter.Write("&#x");
-            _textWriter.Write(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo));
-            _textWriter.Write(';');
+            textWriter.Write("&#x");
+            textWriter.Write(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo));
+            textWriter.Write(';');
         }
 
 #if FEATURE_NETCORE
@@ -264,9 +264,9 @@ namespace System.Xml
                 return;
             }
 
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append(text);
+                attrValue.Append(text);
             }
 
             // scan through the string to see if there are any characters to be escaped
@@ -278,7 +278,7 @@ namespace System.Xml
             {
                 unsafe
                 {
-                    while (i < len && (_xmlCharType.charProperties[ch = text[i]] & XmlCharType.fAttrValue) != 0)
+                    while (i < len && (xmlCharType.charProperties[ch = text[i]] & XmlCharType.fAttrValue) != 0)
                     {
                         i++;
                     }
@@ -286,10 +286,10 @@ namespace System.Xml
                 if (i == len)
                 {
                     // reached the end of the string -> write it whole out
-                    _textWriter.Write(text);
+                    textWriter.Write(text);
                     return;
                 }
-                if (_inAttribute)
+                if (inAttribute)
                 {
                     if (ch == 0x9)
                     {
@@ -324,17 +324,17 @@ namespace System.Xml
                 switch (ch)
                 {
                     case (char)0x9:
-                        _textWriter.Write(ch);
+                        textWriter.Write(ch);
                         break;
                     case (char)0xA:
                     case (char)0xD:
-                        if (_inAttribute)
+                        if (inAttribute)
                         {
                             WriteCharEntityImpl(ch);
                         }
                         else
                         {
-                            _textWriter.Write(ch);
+                            textWriter.Write(ch);
                         }
                         break;
                     case '<':
@@ -347,23 +347,23 @@ namespace System.Xml
                         WriteEntityRefImpl("amp");
                         break;
                     case '\'':
-                        if (_inAttribute && _quoteChar == ch)
+                        if (inAttribute && quoteChar == ch)
                         {
                             WriteEntityRefImpl("apos");
                         }
                         else
                         {
-                            _textWriter.Write('\'');
+                            textWriter.Write('\'');
                         }
                         break;
                     case '"':
-                        if (_inAttribute && _quoteChar == ch)
+                        if (inAttribute && quoteChar == ch)
                         {
                             WriteEntityRefImpl("quot");
                         }
                         else
                         {
-                            _textWriter.Write('"');
+                            textWriter.Write('"');
                         }
                         break;
                     default:
@@ -384,7 +384,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            Debug.Assert((ch < 0x20 && !_xmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
+                            Debug.Assert((ch < 0x20 && !xmlCharType.IsWhiteSpace(ch)) || (ch > 0xFFFD));
                             WriteCharEntityImpl(ch);
                         }
                         break;
@@ -393,7 +393,7 @@ namespace System.Xml
                 startPos = i;
                 unsafe
                 {
-                    while (i < len && (_xmlCharType.charProperties[ch = text[i]] & XmlCharType.fAttrValue) != 0)
+                    while (i < len && (xmlCharType.charProperties[ch = text[i]] & XmlCharType.fAttrValue) != 0)
                     {
                         i++;
                     }
@@ -410,9 +410,9 @@ namespace System.Xml
             {
                 return;
             }
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append(text);
+                attrValue.Append(text);
             }
 
             int len = text.Length;
@@ -424,7 +424,7 @@ namespace System.Xml
                 unsafe
                 {
                     while (i < len &&
-                        ((_xmlCharType.charProperties[ch = text[i]] & XmlCharType.fCharData) != 0
+                        ((xmlCharType.charProperties[ch = text[i]] & XmlCharType.fCharData) != 0
                         || ch < 0x20))
                     {
                         i++;
@@ -461,17 +461,17 @@ namespace System.Xml
                 }
             }
 
-            _textWriter.Write(text);
+            textWriter.Write(text);
             return;
         }
 
         internal void WriteRaw(string value)
         {
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append(value);
+                attrValue.Append(value);
             }
-            _textWriter.Write(value);
+            textWriter.Write(value);
         }
 
         internal void WriteRaw(char[] array, int offset, int count)
@@ -496,11 +496,11 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException("count");
             }
 
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append(array, offset, count);
+                attrValue.Append(array, offset, count);
             }
-            _textWriter.Write(array, offset, count);
+            textWriter.Write(array, offset, count);
         }
 
 
@@ -513,22 +513,22 @@ namespace System.Xml
             }
 
             string strVal = ((int)ch).ToString("X", NumberFormatInfo.InvariantInfo);
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append("&#x");
-                _attrValue.Append(strVal);
-                _attrValue.Append(';');
+                attrValue.Append("&#x");
+                attrValue.Append(strVal);
+                attrValue.Append(';');
             }
             WriteCharEntityImpl(strVal);
         }
 
         internal void WriteEntityRef(string name)
         {
-            if (_cacheAttrValue)
+            if (cacheAttrValue)
             {
-                _attrValue.Append('&');
-                _attrValue.Append(name);
-                _attrValue.Append(';');
+                attrValue.Append('&');
+                attrValue.Append(name);
+                attrValue.Append(';');
             }
             WriteEntityRefImpl(name);
         }
@@ -556,7 +556,7 @@ namespace System.Xml
                 }
 
                 str.CopyTo(offset, helperBuffer, 0, copyCount);
-                _textWriter.Write(helperBuffer, 0, copyCount);
+                textWriter.Write(helperBuffer, 0, copyCount);
                 offset += copyCount;
                 count -= copyCount;
             }
@@ -569,16 +569,16 @@ namespace System.Xml
 
         private void WriteCharEntityImpl(string strVal)
         {
-            _textWriter.Write("&#x");
-            _textWriter.Write(strVal);
-            _textWriter.Write(';');
+            textWriter.Write("&#x");
+            textWriter.Write(strVal);
+            textWriter.Write(';');
         }
 
         private void WriteEntityRefImpl(string name)
         {
-            _textWriter.Write('&');
-            _textWriter.Write(name);
-            _textWriter.Write(';');
+            textWriter.Write('&');
+            textWriter.Write(name);
+            textWriter.Write(';');
         }
     }
 }
