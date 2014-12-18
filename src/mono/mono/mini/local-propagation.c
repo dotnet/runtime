@@ -168,7 +168,7 @@ restart:
 					!vreg_is_volatile (cfg, def->sreg1) &&
 					/* This avoids propagating local vregs across calls */
 					((get_vreg_to_inst (cfg, def->sreg1) || !defs [def->sreg1] || (def_index [def->sreg1] >= last_call_index) || (def->opcode == OP_VMOVE))) &&
-					!(defs [def->sreg1] && defs [def->sreg1]->next == def) &&
+					!(defs [def->sreg1] && mono_inst_next (defs [def->sreg1], FILTER_IL_SEQ_POINT) == def) &&
 					(!MONO_ARCH_USE_FPSTACK || (def->opcode != OP_FMOVE)) &&
 					(def->opcode != OP_FMOVE)) {
 					int vreg = def->sreg1;
