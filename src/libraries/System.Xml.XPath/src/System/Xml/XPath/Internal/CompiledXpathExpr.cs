@@ -13,37 +13,37 @@ namespace MS.Internal.Xml.XPath
 {
     internal class CompiledXpathExpr : XPathExpression
     {
-        Query query;
-        string expr;
-        bool needContext;
+        private Query _query;
+        private string _expr;
+        private bool _needContext;
 
         internal CompiledXpathExpr(Query query, string expression, bool needContext)
         {
-            this.query = query;
-            this.expr = expression;
-            this.needContext = needContext;
+            _query = query;
+            _expr = expression;
+            _needContext = needContext;
         }
 
         internal Query QueryTree
         {
             get
             {
-                if (needContext)
+                if (_needContext)
                 {
                     throw XPathException.Create(SR.Xp_NoContext);
                 }
-                return query;
+                return _query;
             }
         }
 
         public override string Expression
         {
-            get { return expr; }
+            get { return _expr; }
         }
 
         public virtual void CheckErrors()
         {
-            Debug.Assert(query != null, "In case of error in XPath we create ErrorXPathExpression");
+            Debug.Assert(_query != null, "In case of error in XPath we create ErrorXPathExpression");
         }
 
         public override void AddSort(object expr, IComparer comparer)
@@ -53,7 +53,7 @@ namespace MS.Internal.Xml.XPath
             Query evalExpr;
             if (expr is string)
             {
-                evalExpr = new QueryBuilder().Build((string)expr, out needContext); // this will throw if expr is invalid
+                evalExpr = new QueryBuilder().Build((string)expr, out _needContext); // this will throw if expr is invalid
             }
             else if (expr is CompiledXpathExpr)
             {
@@ -63,10 +63,10 @@ namespace MS.Internal.Xml.XPath
             {
                 throw XPathException.Create(SR.Xp_BadQueryObject);
             }
-            SortQuery sortQuery = query as SortQuery;
+            SortQuery sortQuery = _query as SortQuery;
             if (sortQuery == null)
             {
-                query = sortQuery = new SortQuery(query);
+                _query = sortQuery = new SortQuery(_query);
             }
             sortQuery.AddSort(evalExpr, comparer);
         }
@@ -78,7 +78,7 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathExpression Clone()
         {
-            return new CompiledXpathExpr(Query.Clone(query), expr, needContext);
+            return new CompiledXpathExpr(Query.Clone(_query), _expr, _needContext);
         }
 
         public override void SetContext(XmlNamespaceManager nsManager)
@@ -97,20 +97,20 @@ namespace MS.Internal.Xml.XPath
                 }
                 xsltContext = new UndefinedXsltContext(nsResolver);
             }
-            query.SetXsltContext(xsltContext);
+            _query.SetXsltContext(xsltContext);
 
-            needContext = false;
+            _needContext = false;
         }
 
-        public override XPathResultType ReturnType { get { return query.StaticType; } }
+        public override XPathResultType ReturnType { get { return _query.StaticType; } }
 
         private class UndefinedXsltContext : XsltContext
         {
-            private IXmlNamespaceResolver nsResolver;
+            private IXmlNamespaceResolver _nsResolver;
 
             public UndefinedXsltContext(IXmlNamespaceResolver nsResolver)
             {
-                this.nsResolver = nsResolver;
+                _nsResolver = nsResolver;
             }
             //----- Namespace support -----
             public override string DefaultNamespace
@@ -124,7 +124,7 @@ namespace MS.Internal.Xml.XPath
                 {
                     return string.Empty;
                 }
-                string ns = this.nsResolver.LookupNamespace(prefix);
+                string ns = _nsResolver.LookupNamespace(prefix);
                 if (ns == null)
                 {
                     throw XPathException.Create(SR.XmlUndefinedAlias, prefix);
@@ -151,22 +151,22 @@ namespace MS.Internal.Xml.XPath
 
     internal sealed class XPathComparerHelper : IComparer
     {
-        private XmlSortOrder order;
-        private XmlCaseOrder caseOrder;
-        private CultureInfo cinfo;
-        private XmlDataType dataType;
+        private XmlSortOrder _order;
+        private XmlCaseOrder _caseOrder;
+        private CultureInfo _cinfo;
+        private XmlDataType _dataType;
 
         public XPathComparerHelper(XmlSortOrder order, XmlCaseOrder caseOrder, string lang, XmlDataType dataType)
         {
             if (lang == null)
             {
-                this.cinfo = CultureInfo.CurrentCulture;
+                _cinfo = CultureInfo.CurrentCulture;
             }
             else
             {
                 try
                 {
-                    this.cinfo = new CultureInfo(lang);
+                    _cinfo = new CultureInfo(lang);
                 }
                 catch (System.ArgumentException)
                 {
@@ -186,35 +186,35 @@ namespace MS.Internal.Xml.XPath
                 }
             }
 
-            this.order = order;
-            this.caseOrder = caseOrder;
-            this.dataType = dataType;
+            _order = order;
+            _caseOrder = caseOrder;
+            _dataType = dataType;
         }
 
         public int Compare(object x, object y)
         {
-            switch (this.dataType)
+            switch (_dataType)
             {
                 case XmlDataType.Text:
-                    string s1 = Convert.ToString(x, this.cinfo);
-                    string s2 = Convert.ToString(y, this.cinfo);
-                    int result = this.cinfo.CompareInfo.Compare(s1, s2, this.caseOrder != XmlCaseOrder.None ? CompareOptions.IgnoreCase : CompareOptions.None);
+                    string s1 = Convert.ToString(x, _cinfo);
+                    string s2 = Convert.ToString(y, _cinfo);
+                    int result = _cinfo.CompareInfo.Compare(s1, s2, _caseOrder != XmlCaseOrder.None ? CompareOptions.IgnoreCase : CompareOptions.None);
 
-                    if (result != 0 || this.caseOrder == XmlCaseOrder.None)
-                        return (this.order == XmlSortOrder.Ascending) ? result : -result;
+                    if (result != 0 || _caseOrder == XmlCaseOrder.None)
+                        return (_order == XmlSortOrder.Ascending) ? result : -result;
 
                     // If we came this far, it means that strings s1 and s2 are
                     // equal to each other when case is ignored. Now it's time to check
                     // and see if they differ in case only and take into account the user
                     // requested case order for sorting purposes.
-                    result = this.cinfo.CompareInfo.Compare(s1, s2);
-                    return (this.caseOrder == XmlCaseOrder.LowerFirst) ? result : -result;
+                    result = _cinfo.CompareInfo.Compare(s1, s2);
+                    return (_caseOrder == XmlCaseOrder.LowerFirst) ? result : -result;
 
                 case XmlDataType.Number:
                     double r1 = XmlConvertEx.ToXPathDouble(x);
                     double r2 = XmlConvertEx.ToXPathDouble(y);
                     result = r1.CompareTo(r2);
-                    return (this.order == XmlSortOrder.Ascending) ? result : -result;
+                    return (_order == XmlSortOrder.Ascending) ? result : -result;
 
                 default:
                     // dataType doesn't support any other value

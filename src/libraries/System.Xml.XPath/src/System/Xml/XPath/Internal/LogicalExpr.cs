@@ -10,9 +10,9 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class LogicalExpr : ValueQuery
     {
-        Operator.Op op;
-        Query opnd1;
-        Query opnd2;
+        private Operator.Op _op;
+        private Query _opnd1;
+        private Query _opnd2;
 
         public LogicalExpr(Operator.Op op, Query opnd1, Query opnd2)
         {
@@ -21,28 +21,28 @@ namespace MS.Internal.Xml.XPath
                 Operator.Op.LE == op || Operator.Op.GE == op ||
                 Operator.Op.EQ == op || Operator.Op.NE == op
             );
-            this.op = op;
-            this.opnd1 = opnd1;
-            this.opnd2 = opnd2;
+            _op = op;
+            _opnd1 = opnd1;
+            _opnd2 = opnd2;
         }
         private LogicalExpr(LogicalExpr other) : base(other)
         {
-            this.op = other.op;
-            this.opnd1 = Clone(other.opnd1);
-            this.opnd2 = Clone(other.opnd2);
+            _op = other._op;
+            _opnd1 = Clone(other._opnd1);
+            _opnd2 = Clone(other._opnd2);
         }
 
         public override void SetXsltContext(XsltContext context)
         {
-            opnd1.SetXsltContext(context);
-            opnd2.SetXsltContext(context);
+            _opnd1.SetXsltContext(context);
+            _opnd2.SetXsltContext(context);
         }
 
         public override object Evaluate(XPathNodeIterator nodeIterator)
         {
-            Operator.Op op = this.op;
-            object val1 = this.opnd1.Evaluate(nodeIterator);
-            object val2 = this.opnd2.Evaluate(nodeIterator);
+            Operator.Op op = _op;
+            object val1 = _opnd1.Evaluate(nodeIterator);
+            object val2 = _opnd2.Evaluate(nodeIterator);
             int type1 = (int)GetXPathType(val1);
             int type2 = (int)GetXPathType(val2);
             if (type1 < type2)
@@ -58,25 +58,25 @@ namespace MS.Internal.Xml.XPath
 
             if (op == Operator.Op.EQ || op == Operator.Op.NE)
             {
-                return CompXsltE[type1][type2](op, val1, val2);
+                return s_CompXsltE[type1][type2](op, val1, val2);
             }
             else
             {
-                return CompXsltO[type1][type2](op, val1, val2);
+                return s_CompXsltO[type1][type2](op, val1, val2);
             }
         }
 
         delegate bool cmpXslt(Operator.Op op, object val1, object val2);
 
         //                              Number,                       String,                        Boolean,                     NodeSet,                      Navigator
-        private static readonly cmpXslt[][] CompXsltE = {
+        private static readonly cmpXslt[][] s_CompXsltE = {
             new cmpXslt[] { new cmpXslt(cmpNumberNumber), null                         , null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringE), null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpBoolNumberE ), new cmpXslt(cmpBoolStringE  ), new cmpXslt(cmpBoolBoolE  ), null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpQueryNumber ), new cmpXslt(cmpQueryStringE ), new cmpXslt(cmpQueryBoolE ), new cmpXslt(cmpQueryQueryE ), null                    },
             new cmpXslt[] { new cmpXslt(cmpRtfNumber   ), new cmpXslt(cmpRtfStringE   ), new cmpXslt(cmpRtfBoolE   ), new cmpXslt(cmpRtfQueryE   ), new cmpXslt(cmpRtfRtfE) },
         };
-        private static readonly cmpXslt[][] CompXsltO = {
+        private static readonly cmpXslt[][] s_CompXsltO = {
             new cmpXslt[] { new cmpXslt(cmpNumberNumber), null                         , null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpStringNumber), new cmpXslt(cmpStringStringO), null                       , null                        , null                    },
             new cmpXslt[] { new cmpXslt(cmpBoolNumberO ), new cmpXslt(cmpBoolStringO  ), new cmpXslt(cmpBoolBoolO  ), null                        , null                    },
@@ -405,26 +405,26 @@ namespace MS.Internal.Xml.XPath
 
         private struct NodeSet
         {
-            private Query opnd;
-            private XPathNavigator current;
+            private Query _opnd;
+            private XPathNavigator _current;
 
             public NodeSet(object opnd)
             {
-                this.opnd = (Query)opnd;
-                current = null;
+                _opnd = (Query)opnd;
+                _current = null;
             }
             public bool MoveNext()
             {
-                current = opnd.Advance();
-                return current != null;
+                _current = _opnd.Advance();
+                return _current != null;
             }
 
             public void Reset()
             {
-                opnd.Reset();
+                _opnd.Reset();
             }
 
-            public string Value { get { return this.current.Value; } }
+            public string Value { get { return _current.Value; } }
         }
 
         private static string Rtf(object o) { return ((XPathNavigator)o).Value; }
@@ -434,9 +434,9 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("op", op.ToString());
-            opnd1.PrintQuery(w);
-            opnd2.PrintQuery(w);
+            w.WriteAttributeString("op", _op.ToString());
+            _opnd1.PrintQuery(w);
+            _opnd2.PrintQuery(w);
             w.WriteEndElement();
         }
     }
