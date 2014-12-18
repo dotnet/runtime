@@ -796,7 +796,7 @@ static void ids_cleanup (void);
 static void suspend_init (void);
 
 static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch);
-static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req);
+static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
 static void ss_destroy (SingleStepReq *req);
 
 static void start_debugger_thread (void);
@@ -5266,7 +5266,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
  * Start single stepping of thread THREAD
  */
 static ErrorCode
-ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequest *req)
+ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req)
 {
 	DebuggerTlsData *tls;
 	MonoSeqPointInfo *info = NULL;
@@ -5295,6 +5295,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 	ss_req->thread = thread;
 	ss_req->size = size;
 	ss_req->depth = depth;
+	ss_req->filter = filter;
 	req->info = ss_req;
 
 	mono_loader_lock ();
@@ -7354,7 +7355,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				return err;
 			}
 
-			err = ss_create (THREAD_TO_INTERNAL (step_thread), size, depth, req);
+			err = ss_create (THREAD_TO_INTERNAL (step_thread), size, depth, filter, req);
 			if (err) {
 				g_free (req);
 				return err;
