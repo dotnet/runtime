@@ -1243,6 +1243,8 @@ mono_optimize_branches (MonoCompile *cfg)
 	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
 	guint32 niterations;
+	MonoInst *bbn_first_inst;
+	int filter = FILTER_IL_SEQ_POINT;
 
 	/*
 	 * Some crazy loops could cause the code below to go into an infinite
@@ -1339,17 +1341,18 @@ mono_optimize_branches (MonoCompile *cfg)
 
 				if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
 					bbn = bb->last_ins->inst_target_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-						bbn->code->inst_target_bb != bbn &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn_first_inst = mono_bb_first_inst (bbn, filter);
+					if (bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
+						bbn_first_inst->inst_target_bb != bbn &&
+						bbn_first_inst->inst_target_bb->region == bb->region) {
 						
 						if (cfg->verbose_level > 2)
-							g_print ("branch to branch triggered %d -> %d -> %d\n", bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num);
+							g_print ("branch to branch triggered %d -> %d -> %d\n", bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num);
 
 						replace_in_block (bbn, bb, NULL);
-						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
-						mono_link_bblock (cfg, bb, bbn->code->inst_target_bb);
-						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
+						replace_out_block (bb, bbn, bbn_first_inst->inst_target_bb);
+						mono_link_bblock (cfg, bb, bbn_first_inst->inst_target_bb);
+						bb->last_ins->inst_target_bb = bbn_first_inst->inst_target_bb;
 						changed = TRUE;
 						continue;
 					}
@@ -1385,12 +1388,13 @@ mono_optimize_branches (MonoCompile *cfg)
 						continue;
 					}
 					bbn = bb->last_ins->inst_true_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn_first_inst = mono_bb_first_inst (bbn, filter);
+					if (bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
+					    bbn_first_inst->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)		
 							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
-								 bbn->code->opcode);
+								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num, 
+								 bbn_first_inst->opcode);
 
 						/* 
 						 * Unlink, then relink bblocks to avoid various
@@ -1400,7 +1404,7 @@ mono_optimize_branches (MonoCompile *cfg)
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
-						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
+						bb->last_ins->inst_true_bb = bbn_first_inst->inst_target_bb;
 
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
@@ -1410,17 +1414,18 @@ mono_optimize_branches (MonoCompile *cfg)
 					}
 
 					bbn = bb->last_ins->inst_false_bb;
-					if (bbn && bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn_first_inst = mono_bb_first_inst (bbn, filter);
+					if (bbn && bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
+						bbn_first_inst->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
-								 bbn->code->opcode);
+								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num, 
+								 bbn_first_inst->opcode);
 
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
-						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
+						bb->last_ins->inst_false_bb = bbn_first_inst->inst_target_bb;
 
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
