@@ -1,24 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props" Condition="Exists('..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" />
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <!-- Work around known Dev14 bug - see
-         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
-    -->
-    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
-    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
-    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
-    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
-    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
-    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
-    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
-  </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <AssemblyName>System.Collections.Immutable.Tests</AssemblyName>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)bin\$(Configuration)\$(AssemblyName)\</OutputPath>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -29,30 +16,14 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
   </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -119,18 +90,11 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props'))" />
   </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
