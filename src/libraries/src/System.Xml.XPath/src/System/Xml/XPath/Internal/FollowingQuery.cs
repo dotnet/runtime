@@ -7,28 +7,28 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FollowingQuery : BaseAxisQuery
     {
-        private XPathNavigator input;
-        private XPathNodeIterator iterator;
+        private XPathNavigator _input;
+        private XPathNodeIterator _iterator;
 
         public FollowingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest) { }
         private FollowingQuery(FollowingQuery other) : base(other)
         {
-            this.input = Clone(other.input);
-            this.iterator = Clone(other.iterator);
+            _input = Clone(other._input);
+            _iterator = Clone(other._iterator);
         }
 
         public override void Reset()
         {
-            iterator = null;
+            _iterator = null;
             base.Reset();
         }
 
         public override XPathNavigator Advance()
         {
-            if (iterator == null)
+            if (_iterator == null)
             {
-                input = qyInput.Advance();
-                if (input == null)
+                _input = qyInput.Advance();
+                if (_input == null)
                 {
                     return null;
                 }
@@ -36,27 +36,27 @@ namespace MS.Internal.Xml.XPath
                 XPathNavigator prev;
                 do
                 {
-                    prev = input.Clone();
-                    input = qyInput.Advance();
-                } while (prev.IsDescendant(input));
-                input = prev;
+                    prev = _input.Clone();
+                    _input = qyInput.Advance();
+                } while (prev.IsDescendant(_input));
+                _input = prev;
 
-                iterator = XPathEmptyIterator.Instance;
+                _iterator = XPathEmptyIterator.Instance;
             }
 
-            while (!iterator.MoveNext())
+            while (!_iterator.MoveNext())
             {
                 bool matchSelf;
-                if (input.NodeType == XPathNodeType.Attribute || input.NodeType == XPathNodeType.Namespace)
+                if (_input.NodeType == XPathNodeType.Attribute || _input.NodeType == XPathNodeType.Namespace)
                 {
-                    input.MoveToParent();
+                    _input.MoveToParent();
                     matchSelf = false;
                 }
                 else
                 {
-                    while (!input.MoveToNext())
+                    while (!_input.MoveToNext())
                     {
-                        if (!input.MoveToParent())
+                        if (!_input.MoveToParent())
                         {
                             return null;
                         }
@@ -65,15 +65,15 @@ namespace MS.Internal.Xml.XPath
                 }
                 if (NameTest)
                 {
-                    iterator = input.SelectDescendants(Name, Namespace, matchSelf);
+                    _iterator = _input.SelectDescendants(Name, Namespace, matchSelf);
                 }
                 else
                 {
-                    iterator = input.SelectDescendants(TypeTest, matchSelf);
+                    _iterator = _input.SelectDescendants(TypeTest, matchSelf);
                 }
             }
             position++;
-            currentNode = iterator.Current;
+            currentNode = _iterator.Current;
             return currentNode;
         }
 

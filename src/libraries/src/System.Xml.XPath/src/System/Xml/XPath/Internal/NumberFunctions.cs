@@ -11,25 +11,25 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumberFunctions : ValueQuery
     {
-        private Query arg = null;
-        private FT ftype;
+        private Query _arg = null;
+        private FT _ftype;
 
         public NumberFunctions(FT ftype, Query arg)
         {
-            this.arg = arg;
-            this.ftype = ftype;
+            _arg = arg;
+            _ftype = ftype;
         }
         private NumberFunctions(NumberFunctions other) : base(other)
         {
-            this.arg = Clone(other.arg);
-            this.ftype = other.ftype;
+            _arg = Clone(other._arg);
+            _ftype = other._ftype;
         }
 
         public override void SetXsltContext(XsltContext context)
         {
-            if (arg != null)
+            if (_arg != null)
             {
-                arg.SetXsltContext(context);
+                _arg.SetXsltContext(context);
             }
         }
 
@@ -44,7 +44,7 @@ namespace MS.Internal.Xml.XPath
 
         public override object Evaluate(XPathNodeIterator nodeIterator)
         {
-            switch (ftype)
+            switch (_ftype)
             {
                 case FT.FuncNumber: return Number(nodeIterator);
                 case FT.FuncSum: return Sum(nodeIterator);
@@ -57,15 +57,15 @@ namespace MS.Internal.Xml.XPath
 
         private double Number(XPathNodeIterator nodeIterator)
         {
-            if (arg == null)
+            if (_arg == null)
             {
                 return XmlConvertEx.ToXPathDouble(nodeIterator.Current.Value);
             }
-            object argVal = arg.Evaluate(nodeIterator);
+            object argVal = _arg.Evaluate(nodeIterator);
             switch (GetXPathType(argVal))
             {
                 case XPathResultType.NodeSet:
-                    XPathNavigator value = arg.Advance();
+                    XPathNavigator value = _arg.Advance();
                     if (value != null)
                     {
                         return Number(value.Value);
@@ -86,9 +86,9 @@ namespace MS.Internal.Xml.XPath
         private double Sum(XPathNodeIterator nodeIterator)
         {
             double sum = 0;
-            arg.Evaluate(nodeIterator);
+            _arg.Evaluate(nodeIterator);
             XPathNavigator nav;
-            while ((nav = arg.Advance()) != null)
+            while ((nav = _arg.Advance()) != null)
             {
                 sum += Number(nav.Value);
             }
@@ -97,17 +97,17 @@ namespace MS.Internal.Xml.XPath
 
         private double Floor(XPathNodeIterator nodeIterator)
         {
-            return Math.Floor((double)arg.Evaluate(nodeIterator));
+            return Math.Floor((double)_arg.Evaluate(nodeIterator));
         }
 
         private double Ceiling(XPathNodeIterator nodeIterator)
         {
-            return Math.Ceiling((double)arg.Evaluate(nodeIterator));
+            return Math.Ceiling((double)_arg.Evaluate(nodeIterator));
         }
 
         private double Round(XPathNodeIterator nodeIterator)
         {
-            double n = XmlConvertEx.ToXPathDouble(arg.Evaluate(nodeIterator));
+            double n = XmlConvertEx.ToXPathDouble(_arg.Evaluate(nodeIterator));
             return XmlConvertEx.XPathRound(n);
         }
 
@@ -118,10 +118,10 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("name", ftype.ToString());
-            if (arg != null)
+            w.WriteAttributeString("name", _ftype.ToString());
+            if (_arg != null)
             {
-                arg.PrintQuery(w);
+                _arg.PrintQuery(w);
             }
             w.WriteEndElement();
         }

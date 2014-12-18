@@ -9,27 +9,27 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FollSiblingQuery : BaseAxisQuery
     {
-        StackNav elementStk;
-        List<XPathNavigator> parentStk;
-        XPathNavigator nextInput;
+        private StackNav _elementStk;
+        private List<XPathNavigator> _parentStk;
+        private XPathNavigator _nextInput;
 
         public FollSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType type) : base(qyInput, name, prefix, type)
         {
-            this.elementStk = new StackNav();
-            this.parentStk = new List<XPathNavigator>();
+            _elementStk = new StackNav();
+            _parentStk = new List<XPathNavigator>();
         }
         private FollSiblingQuery(FollSiblingQuery other) : base(other)
         {
-            this.elementStk = other.elementStk.Clone();
-            this.parentStk = new List<XPathNavigator>(other.parentStk);
-            this.nextInput = Clone(other.nextInput);
+            _elementStk = other._elementStk.Clone();
+            _parentStk = new List<XPathNavigator>(other._parentStk);
+            _nextInput = Clone(other._nextInput);
         }
 
         public override void Reset()
         {
-            elementStk.Clear();
-            parentStk.Clear();
-            nextInput = null;
+            _elementStk.Clear();
+            _parentStk.Clear();
+            _nextInput = null;
             base.Reset();
         }
 
@@ -37,14 +37,14 @@ namespace MS.Internal.Xml.XPath
         {
             XPathNavigator parent = nav.Clone();
             parent.MoveToParent();
-            for (int i = 0; i < parentStk.Count; i++)
+            for (int i = 0; i < _parentStk.Count; i++)
             {
-                if (parent.IsSamePosition(parentStk[i]))
+                if (parent.IsSamePosition(_parentStk[i]))
                 {
                     return true;
                 }
             }
-            parentStk.Add(parent);
+            _parentStk.Add(parent);
             return false;
         }
 
@@ -68,33 +68,33 @@ namespace MS.Internal.Xml.XPath
             {
                 if (currentNode == null)
                 {
-                    if (nextInput == null)
+                    if (_nextInput == null)
                     {
-                        nextInput = FetchInput(); // This can happen at the beginning and at the end 
+                        _nextInput = FetchInput(); // This can happen at the beginning and at the end 
                     }
-                    if (elementStk.Count == 0)
+                    if (_elementStk.Count == 0)
                     {
-                        if (nextInput == null)
+                        if (_nextInput == null)
                         {
                             return null;
                         }
-                        currentNode = nextInput;
-                        nextInput = FetchInput();
+                        currentNode = _nextInput;
+                        _nextInput = FetchInput();
                     }
                     else
                     {
-                        currentNode = elementStk.Pop();
+                        currentNode = _elementStk.Pop();
                     }
                 }
 
-                while (currentNode.IsDescendant(nextInput))
+                while (currentNode.IsDescendant(_nextInput))
                 {
-                    elementStk.Push(currentNode);
-                    currentNode = nextInput;
-                    nextInput = qyInput.Advance();
-                    if (nextInput != null)
+                    _elementStk.Push(currentNode);
+                    currentNode = _nextInput;
+                    _nextInput = qyInput.Advance();
+                    if (_nextInput != null)
                     {
-                        nextInput = nextInput.Clone();
+                        _nextInput = _nextInput.Clone();
                     }
                 }
 

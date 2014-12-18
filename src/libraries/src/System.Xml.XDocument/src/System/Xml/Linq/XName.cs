@@ -11,18 +11,18 @@ namespace System.Xml.Linq
     [SuppressMessage("Microsoft.Usage", "CA2229:ImplementSerializationConstructors", Justification = "Deserialization handled by NameSerializer.")]
     public sealed class XName : IEquatable<XName>
     {
-        XNamespace ns;
-        string localName;
-        int hashCode;
+        private XNamespace _ns;
+        private string _localName;
+        private int _hashCode;
 
         /// <summary>
         /// Constructor, internal so that external users must go through the Get() method to create an XName.
         /// </summary>
         internal XName(XNamespace ns, string localName)
         {
-            this.ns = ns;
-            this.localName = XmlConvert.VerifyNCName(localName);
-            this.hashCode = ns.GetHashCode() ^ localName.GetHashCode();
+            _ns = ns;
+            _localName = XmlConvert.VerifyNCName(localName);
+            _hashCode = ns.GetHashCode() ^ localName.GetHashCode();
         }
 
         /// <summary>
@@ -31,7 +31,7 @@ namespace System.Xml.Linq
         /// <seealso cref="XName.Namespace"/>
         public string LocalName
         {
-            get { return localName; }
+            get { return _localName; }
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XNamespace Namespace
         {
-            get { return ns; }
+            get { return _ns; }
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace System.Xml.Linq
         /// </summary>
         public string NamespaceName
         {
-            get { return ns.NamespaceName; }
+            get { return _ns.NamespaceName; }
         }
 
         /// <summary>
@@ -55,8 +55,8 @@ namespace System.Xml.Linq
         /// </summary>
         public override string ToString()
         {
-            if (ns.NamespaceName.Length == 0) return localName;
-            return "{" + ns.NamespaceName + "}" + localName;
+            if (_ns.NamespaceName.Length == 0) return _localName;
+            return "{" + _ns.NamespaceName + "}" + _localName;
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace System.Xml.Linq
         /// </summary>
         public override int GetHashCode()
         {
-            return hashCode;
+            return _hashCode;
         }
 
         // The overloads of == and != are included to enable comparisons between
