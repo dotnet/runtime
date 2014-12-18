@@ -90,7 +90,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	}
 #endif
 
-	sgen_get_remset ()->wbarrier_value_copy (dest, src, count, klass);
+	sgen_get_remset ()->wbarrier_value_copy (dest, src, count, mono_class_value_size (klass, NULL));
 }
 
 /**

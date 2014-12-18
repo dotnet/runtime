@@ -729,7 +729,7 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
 	void (*wbarrier_set_arrayref) (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
 	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
-	void (*wbarrier_value_copy) (gpointer dest, gpointer src, int count, MonoClass *klass);
+	void (*wbarrier_value_copy) (gpointer dest, gpointer src, int count, size_t element_size);
 	void (*wbarrier_object_copy) (MonoObject* obj, MonoObject *src);
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);

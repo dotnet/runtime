@@ -131,9 +131,8 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int
 }
 
 static void
-sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
+sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, size_t element_size)
 {
-	size_t element_size = mono_class_value_size (klass, NULL);
 	size_t size = count * element_size;
 
 #ifdef DISABLE_CRITICAL_REGION
