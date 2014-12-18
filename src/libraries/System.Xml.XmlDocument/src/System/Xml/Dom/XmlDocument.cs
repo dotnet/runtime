@@ -178,28 +178,28 @@ namespace System.Xml
 
         internal void AddElementWithId(string id, XmlElement elem)
         {
-            if (_htElementIdMap == null || !_htElementIdMap.ContainsKey(id))
+            List<WeakReference<XmlElement>> elementList;
+            if (_htElementIdMap != null && _htElementIdMap.TryGetValue(id, out elementList))
             {
-                if (_htElementIdMap == null)
-                    _htElementIdMap = new Dictionary<string, List<WeakReference<XmlElement>>>();
-                List<WeakReference<XmlElement>> elementList = new List<WeakReference<XmlElement>>();
-                elementList.Add(new WeakReference<XmlElement>(elem));
-                _htElementIdMap.Add(id, elementList);
+                // there are other elements that have the same id
+                if (GetElement(elementList, elem) == null)
+                    elementList.Add(new WeakReference<XmlElement>(elem));
             }
             else
             {
-                // there are other element(s) that has the same id
-                List<WeakReference<XmlElement>> elementList = _htElementIdMap[id];
-                if (GetElement(elementList, elem) == null)
-                    elementList.Add(new WeakReference<XmlElement>(elem));
+                if (_htElementIdMap == null)
+                    _htElementIdMap = new Dictionary<string, List<WeakReference<XmlElement>>>();
+                elementList = new List<WeakReference<XmlElement>>();
+                elementList.Add(new WeakReference<XmlElement>(elem));
+                _htElementIdMap.Add(id, elementList);
             }
         }
 
         internal void RemoveElementWithId(string id, XmlElement elem)
         {
-            if (_htElementIdMap != null && _htElementIdMap.ContainsKey(id))
+            List<WeakReference<XmlElement>> elementList;
+            if (_htElementIdMap != null && _htElementIdMap.TryGetValue(id, out elementList))
             {
-                List<WeakReference<XmlElement>> elementList = _htElementIdMap[id];
                 WeakReference<XmlElement> elemRef = GetElement(elementList, elem);
                 if (elemRef != null)
                 {
@@ -209,7 +209,6 @@ namespace System.Xml
                 }
             }
         }
-
 
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
