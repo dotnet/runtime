@@ -35,8 +35,7 @@ namespace XmlDocumentTests.XmlNamedNodeMapTests
 
             // providing a null parameter does not throw an exception; returns null
             var oldNode = namedNodeMap.SetNamedItem(null);
-            Assert.Null(oldNode);           
+            Assert.Null(oldNode);
         }
-
     }
 }

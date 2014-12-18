@@ -7,15 +7,15 @@ namespace System.Xml.Linq
 {
     internal class XNodeBuilder : XmlWriter
     {
-        List<object> content;
-        XContainer parent;
-        XName attrName;
-        string attrValue;
-        XContainer root;
+        private List<object> _content;
+        private XContainer _parent;
+        private XName _attrName;
+        private string _attrValue;
+        private XContainer _root;
 
         public XNodeBuilder(XContainer container)
         {
-            root = container;
+            _root = container;
         }
 
         public override XmlWriterSettings Settings
@@ -43,7 +43,7 @@ namespace System.Xml.Linq
 
         private void Close()
         {
-            root.Add(content);
+            _root.Add(_content);
         }
 
         public override void Flush()
@@ -87,12 +87,12 @@ namespace System.Xml.Linq
 
         public override void WriteEndAttribute()
         {
-            XAttribute a = new XAttribute(attrName, attrValue);
-            attrName = null;
-            attrValue = null;
-            if (parent != null)
+            XAttribute a = new XAttribute(_attrName, _attrValue);
+            _attrName = null;
+            _attrValue = null;
+            if (_parent != null)
             {
-                parent.Add(a);
+                _parent.Add(a);
             }
             else
             {
@@ -106,7 +106,7 @@ namespace System.Xml.Linq
 
         public override void WriteEndElement()
         {
-            parent = ((XElement)parent).parent;
+            _parent = ((XElement)_parent).parent;
         }
 
         public override void WriteEntityRef(string name)
@@ -135,12 +135,12 @@ namespace System.Xml.Linq
 
         public override void WriteFullEndElement()
         {
-            XElement e = (XElement)parent;
+            XElement e = (XElement)_parent;
             if (e.IsEmpty)
             {
                 e.Add(string.Empty);
             }
-            parent = e.parent;
+            _parent = e.parent;
         }
 
         public override void WriteProcessingInstruction(string name, string text)
@@ -165,8 +165,8 @@ namespace System.Xml.Linq
         public override void WriteStartAttribute(string prefix, string localName, string namespaceName)
         {
             if (prefix == null) throw new ArgumentNullException("prefix");
-            attrName = XNamespace.Get(prefix.Length == 0 ? string.Empty : namespaceName).GetName(localName);
-            attrValue = string.Empty;
+            _attrName = XNamespace.Get(prefix.Length == 0 ? string.Empty : namespaceName).GetName(localName);
+            _attrValue = string.Empty;
         }
 
         public override void WriteStartDocument()
@@ -206,18 +206,18 @@ namespace System.Xml.Linq
 
         void Add(object o)
         {
-            if (content == null)
+            if (_content == null)
             {
-                content = new List<object>();
+                _content = new List<object>();
             }
-            content.Add(o);
+            _content.Add(o);
         }
 
         void AddNode(XNode n)
         {
-            if (parent != null)
+            if (_parent != null)
             {
-                parent.Add(n);
+                _parent.Add(n);
             }
             else
             {
@@ -226,7 +226,7 @@ namespace System.Xml.Linq
             XContainer c = n as XContainer;
             if (c != null)
             {
-                parent = c;
+                _parent = c;
             }
         }
 
@@ -236,13 +236,13 @@ namespace System.Xml.Linq
             {
                 return;
             }
-            if (attrValue != null)
+            if (_attrValue != null)
             {
-                attrValue += s;
+                _attrValue += s;
             }
-            else if (parent != null)
+            else if (_parent != null)
             {
-                parent.Add(s);
+                _parent.Add(s);
             }
             else
             {

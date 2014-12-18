@@ -39,17 +39,17 @@ namespace MS.Internal.Xml.XPath
         }
 
         // comment are approximate. This is my best understanding:
-        private string query;
-        private bool allowVar;
-        private bool allowKey;
-        private bool allowCurrent;
-        private bool needContext;
-        private BaseAxisQuery firstInput; // Input of the leftmost predicate. Set by leftmost predicate, used in rightmost one
+        private string _query;
+        private bool _allowVar;
+        private bool _allowKey;
+        private bool _allowCurrent;
+        private bool _needContext;
+        private BaseAxisQuery _firstInput; // Input of the leftmost predicate. Set by leftmost predicate, used in rightmost one
 
         private void Reset()
         {
-            parseDepth = 0;
-            needContext = false;
+            _parseDepth = 0;
+            _needContext = false;
         }
 
         private Query ProcessAxis(Axis root, Flags flags, out Props props)
@@ -57,9 +57,9 @@ namespace MS.Internal.Xml.XPath
             Query result = null;
             if (root.Prefix.Length > 0)
             {
-                needContext = true;
+                _needContext = true;
             }
-            firstInput = null;
+            _firstInput = null;
             Query qyInput;
             {
                 if (root.Input != null)
@@ -197,7 +197,7 @@ namespace MS.Internal.Xml.XPath
                     }
                     break;
                 default:
-                    throw XPathException.Create(SR.Xp_NotSupported, query);
+                    throw XPathException.Create(SR.Xp_NotSupported, _query);
             }
 
             return result;
@@ -268,9 +268,9 @@ namespace MS.Internal.Xml.XPath
             {
                 qyInput = ((DocumentOrderQuery)qyInput).input;
             }
-            if (firstInput == null)
+            if (_firstInput == null)
             {
-                firstInput = qyInput as BaseAxisQuery;
+                _firstInput = qyInput as BaseAxisQuery;
             }
 
             bool merge = (qyInput.Properties & QueryProps.Merge) != 0;
@@ -287,22 +287,22 @@ namespace MS.Internal.Xml.XPath
                 }
             }
 
-            if (first && firstInput != null)
+            if (first && _firstInput != null)
             {
                 if (merge && (props & Props.PosFilter) != 0)
                 {
                     qyInput = new FilterQuery(qyInput, cond, /*noPosition:*/false);
-                    Query parent = firstInput.qyInput;
+                    Query parent = _firstInput.qyInput;
                     if (!(parent is ContextQuery))
                     { // we don't need to wrap filter with MergeFilterQuery when cardinality is parent <: ?
-                        firstInput.qyInput = new ContextQuery();
-                        firstInput = null;
+                        _firstInput.qyInput = new ContextQuery();
+                        _firstInput = null;
                         return new MergeFilterQuery(parent, qyInput);
                     }
-                    firstInput = null;
+                    _firstInput = null;
                     return qyInput;
                 }
-                firstInput = null;
+                _firstInput = null;
             }
             return new FilterQuery(qyInput, cond, /*noPosition:*/(propsCond & Props.HasPosition) == 0);
         }
@@ -340,10 +340,10 @@ namespace MS.Internal.Xml.XPath
 
         private Query ProcessVariable(Variable root)
         {
-            needContext = true;
-            if (!allowVar)
+            _needContext = true;
+            if (!_allowVar)
             {
-                throw XPathException.Create(SR.Xp_InvalidKeyPattern, query);
+                throw XPathException.Create(SR.Xp_InvalidKeyPattern, _query);
             }
             return new VariableQuery(root.Localname, root.Prefix);
         }
@@ -419,20 +419,20 @@ namespace MS.Internal.Xml.XPath
                         ProcessNode((AstNode)root.ArgumentList[0], Flags.None, out props)
                     );
                 case FT.FuncUserDefined:
-                    needContext = true;
-                    if (!allowCurrent && root.Name == "current" && root.Prefix.Length == 0)
+                    _needContext = true;
+                    if (!_allowCurrent && root.Name == "current" && root.Prefix.Length == 0)
                     {
                         throw XPathException.Create(SR.Xp_CurrentNotAllowed);
                     }
-                    if (!allowKey && root.Name == "key" && root.Prefix.Length == 0)
+                    if (!_allowKey && root.Name == "key" && root.Prefix.Length == 0)
                     {
-                        throw XPathException.Create(SR.Xp_InvalidKeyPattern, query);
+                        throw XPathException.Create(SR.Xp_InvalidKeyPattern, _query);
                     }
                     qy = new FunctionQuery(root.Prefix, root.Name, ProcessArguments(root.ArgumentList, out props));
                     props |= Props.NonFlat;
                     return qy;
                 default:
-                    throw XPathException.Create(SR.Xp_NotSupported, query);
+                    throw XPathException.Create(SR.Xp_NotSupported, _query);
             }
         }
 
@@ -450,12 +450,12 @@ namespace MS.Internal.Xml.XPath
             return argList;
         }
 
-        private int parseDepth = 0;
+        private int _parseDepth = 0;
         private const int MaxParseDepth = 1024;
 
         private Query ProcessNode(AstNode root, Flags flags, out Props props)
         {
-            if (++parseDepth > MaxParseDepth)
+            if (++_parseDepth > MaxParseDepth)
             {
                 throw XPathException.Create(SR.Xp_QueryTooComplex);
             }
@@ -493,7 +493,7 @@ namespace MS.Internal.Xml.XPath
                     Debug.Assert(false, "Unknown QueryType encountered!!");
                     break;
             }
-            --parseDepth;
+            --_parseDepth;
             return result;
         }
 
@@ -501,38 +501,38 @@ namespace MS.Internal.Xml.XPath
         {
             Reset();
             Props props;
-            this.query = query;
+            _query = query;
             Query result = ProcessNode(root, Flags.None, out props);
             return result;
         }
 
         internal Query Build(string query, bool allowVar, bool allowKey)
         {
-            this.allowVar = allowVar;
-            this.allowKey = allowKey;
-            this.allowCurrent = true;
+            _allowVar = allowVar;
+            _allowKey = allowKey;
+            _allowCurrent = true;
             return Build(XPathParser.ParseXPathExpresion(query), query);
         }
 
         internal Query Build(string query, out bool needContext)
         {
             Query result = Build(query, true, true);
-            needContext = this.needContext;
+            needContext = _needContext;
             return result;
         }
 
         internal Query BuildPatternQuery(string query, bool allowVar, bool allowKey)
         {
-            this.allowVar = allowVar;
-            this.allowKey = allowKey;
-            this.allowCurrent = false;
+            _allowVar = allowVar;
+            _allowKey = allowKey;
+            _allowCurrent = false;
             return Build(XPathParser.ParseXPathPattern(query), query);
         }
 
         internal Query BuildPatternQuery(string query, out bool needContext)
         {
             Query result = BuildPatternQuery(query, true, true);
-            needContext = this.needContext;
+            needContext = _needContext;
             return result;
         }
     }

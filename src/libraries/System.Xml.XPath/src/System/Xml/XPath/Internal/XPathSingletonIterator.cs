@@ -8,27 +8,27 @@ namespace MS.Internal.Xml.XPath
 {
     internal class XPathSingletonIterator : ResetableIterator
     {
-        private XPathNavigator nav;
-        private int position;
+        private XPathNavigator _nav;
+        private int _position;
 
         public XPathSingletonIterator(XPathNavigator nav)
         {
             Debug.Assert(nav != null);
-            this.nav = nav;
+            _nav = nav;
         }
 
         public XPathSingletonIterator(XPathNavigator nav, bool moved) : this(nav)
         {
             if (moved)
             {
-                position = 1;
+                _position = 1;
             }
         }
 
         public XPathSingletonIterator(XPathSingletonIterator it)
         {
-            this.nav = it.nav.Clone();
-            this.position = it.position;
+            _nav = it._nav.Clone();
+            _position = it._position;
         }
 
         public override XPathNodeIterator Clone()
@@ -38,12 +38,12 @@ namespace MS.Internal.Xml.XPath
 
         public override XPathNavigator Current
         {
-            get { return nav; }
+            get { return _nav; }
         }
 
         public override int CurrentPosition
         {
-            get { return position; }
+            get { return _position; }
         }
 
         public override int Count
@@ -53,9 +53,9 @@ namespace MS.Internal.Xml.XPath
 
         public override bool MoveNext()
         {
-            if (position == 0)
+            if (_position == 0)
             {
-                position = 1;
+                _position = 1;
                 return true;
             }
             return false;
@@ -63,7 +63,7 @@ namespace MS.Internal.Xml.XPath
 
         public override void Reset()
         {
-            position = 0;
+            _position = 0;
         }
     }
 }
