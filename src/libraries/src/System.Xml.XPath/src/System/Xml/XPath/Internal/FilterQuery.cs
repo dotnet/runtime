@@ -10,33 +10,33 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class FilterQuery : BaseAxisQuery
     {
-        private Query _cond;
-        private bool _noPosition;
+        private Query cond;
+        private bool noPosition;
 
         public FilterQuery(Query qyParent, Query cond, bool noPosition) : base(qyParent)
         {
-            _cond = cond;
-            _noPosition = noPosition;
+            this.cond = cond;
+            this.noPosition = noPosition;
         }
         private FilterQuery(FilterQuery other) : base(other)
         {
-            _cond = Clone(other._cond);
-            _noPosition = other._noPosition;
+            this.cond = Clone(other.cond);
+            this.noPosition = other.noPosition;
         }
 
         public override void Reset()
         {
-            _cond.Reset();
+            cond.Reset();
             base.Reset();
         }
 
-        public Query Condition { get { return _cond; } }
+        public Query Condition { get { return cond; } }
 
         public override void SetXsltContext(XsltContext input)
         {
             base.SetXsltContext(input);
-            _cond.SetXsltContext(input);
-            if (_cond.StaticType != XPathResultType.Number && _cond.StaticType != XPathResultType.Any && _noPosition)
+            cond.SetXsltContext(input);
+            if (cond.StaticType != XPathResultType.Number && cond.StaticType != XPathResultType.Any && noPosition)
             {
                 // BugBug: We can do such trick at Evaluate time only.
                 // But to do this FilterQuery should stop inherit from BaseAxisQuery
@@ -63,8 +63,8 @@ namespace MS.Internal.Xml.XPath
 
         internal bool EvaluatePredicate()
         {
-            object value = _cond.Evaluate(qyInput);
-            if (value is XPathNodeIterator) return _cond.Advance() != null;
+            object value = cond.Evaluate(qyInput);
+            if (value is XPathNodeIterator) return cond.Advance() != null;
             if (value is string) return ((string)value).Length != 0;
             if (value is double) return (((double)value) == qyInput.CurrentPosition);
             if (value is bool) return (bool)value;
@@ -83,11 +83,11 @@ namespace MS.Internal.Xml.XPath
 
             if (context != null)
             {
-                // In this switch we process some special case in wich we can calculate predicate faster then in generic case
-                switch (_cond.StaticType)
+                // In this switch we process some special case in which we can calculate predicate faster then in generic case
+                switch (cond.StaticType)
                 {
                     case XPathResultType.Number:
-                        OperandQuery operand = _cond as OperandQuery;
+                        OperandQuery operand = cond as OperandQuery;
                         if (operand != null)
                         {
                             double val = (double)operand.val;
@@ -134,18 +134,18 @@ namespace MS.Internal.Xml.XPath
                         }
                         break;
                     case XPathResultType.NodeSet:
-                        _cond.Evaluate(new XPathSingletonIterator(current, /*moved:*/true));
-                        return (_cond.Advance() != null) ? context : null;
+                        cond.Evaluate(new XPathSingletonIterator(current, /*moved:*/true));
+                        return (cond.Advance() != null) ? context : null;
                     case XPathResultType.Boolean:
-                        if (_noPosition)
+                        if (noPosition)
                         {
-                            return ((bool)_cond.Evaluate(new XPathSingletonIterator(current, /*moved:*/true))) ? context : null;
+                            return ((bool)cond.Evaluate(new XPathSingletonIterator(current, /*moved:*/true))) ? context : null;
                         }
                         break;
                     case XPathResultType.String:
-                        if (_noPosition)
+                        if (noPosition)
                         {
-                            return (((string)_cond.Evaluate(new XPathSingletonIterator(current, /*moved:*/true))).Length != 0) ? context : null;
+                            return (((string)cond.Evaluate(new XPathSingletonIterator(current, /*moved:*/true))).Length != 0) ? context : null;
                         }
                         break;
                     case XPathResultType_Navigator:
@@ -182,13 +182,13 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            if (!_noPosition
+            if (!noPosition
                 )
             {
                 w.WriteAttributeString("position", "yes");
             }
             qyInput.PrintQuery(w);
-            _cond.PrintQuery(w);
+            cond.PrintQuery(w);
             w.WriteEndElement();
         }
     }

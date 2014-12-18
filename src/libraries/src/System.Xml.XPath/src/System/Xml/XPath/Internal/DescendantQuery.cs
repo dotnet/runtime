@@ -7,7 +7,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal class DescendantQuery : DescendantBaseQuery
     {
-        private XPathNodeIterator _nodeIterator;
+        XPathNodeIterator nodeIterator;
 
         internal DescendantQuery(Query qyParent, string Name, string Prefix, XPathNodeType Type, bool matchSelf, bool abbrAxis)
             : base(qyParent, Name, Prefix, Type, matchSelf, abbrAxis)
@@ -15,12 +15,12 @@ namespace MS.Internal.Xml.XPath
 
         public DescendantQuery(DescendantQuery other) : base(other)
         {
-            _nodeIterator = Clone(other._nodeIterator);
+            this.nodeIterator = Clone(other.nodeIterator);
         }
 
         public override void Reset()
         {
-            _nodeIterator = null;
+            nodeIterator = null;
             base.Reset();
         }
 
@@ -28,7 +28,7 @@ namespace MS.Internal.Xml.XPath
         {
             while (true)
             {
-                if (_nodeIterator == null)
+                if (nodeIterator == null)
                 {
                     position = 0;
                     XPathNavigator nav = qyInput.Advance();
@@ -40,28 +40,28 @@ namespace MS.Internal.Xml.XPath
                     {
                         if (TypeTest == XPathNodeType.ProcessingInstruction)
                         {
-                            _nodeIterator = new IteratorFilter(nav.SelectDescendants(TypeTest, matchSelf), Name);
+                            nodeIterator = new IteratorFilter(nav.SelectDescendants(TypeTest, matchSelf), Name);
                         }
                         else
                         {
-                            _nodeIterator = nav.SelectDescendants(Name, Namespace, matchSelf);
+                            nodeIterator = nav.SelectDescendants(Name, Namespace, matchSelf);
                         }
                     }
                     else
                     {
-                        _nodeIterator = nav.SelectDescendants(TypeTest, matchSelf);
+                        nodeIterator = nav.SelectDescendants(TypeTest, matchSelf);
                     }
                 }
 
-                if (_nodeIterator.MoveNext())
+                if (nodeIterator.MoveNext())
                 {
                     position++;
-                    currentNode = _nodeIterator.Current;
+                    currentNode = nodeIterator.Current;
                     return currentNode;
                 }
                 else
                 {
-                    _nodeIterator = null;
+                    nodeIterator = null;
                 }
             }
         }

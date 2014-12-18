@@ -7,14 +7,14 @@ namespace MS.Internal.Xml.XPath
 {
     internal class XPathDescendantIterator : XPathAxisIterator
     {
-        private int _level = 0;
+        private int level = 0;
 
         public XPathDescendantIterator(XPathNavigator nav, XPathNodeType type, bool matchSelf) : base(nav, type, matchSelf) { }
         public XPathDescendantIterator(XPathNavigator nav, string name, string namespaceURI, bool matchSelf) : base(nav, name, namespaceURI, matchSelf) { }
 
         public XPathDescendantIterator(XPathDescendantIterator it) : base(it)
         {
-            _level = it._level;
+            this.level = it.level;
         }
 
         public override XPathNodeIterator Clone()
@@ -38,13 +38,13 @@ namespace MS.Internal.Xml.XPath
             {
                 if (nav.MoveToFirstChild())
                 {
-                    _level++;
+                    level++;
                 }
                 else
                 {
                     while (true)
                     {
-                        if (_level == 0)
+                        if (level == 0)
                         {
                             return false;
                         }
@@ -53,7 +53,7 @@ namespace MS.Internal.Xml.XPath
                             break;
                         }
                         nav.MoveToParent();
-                        _level--;
+                        level--;
                     }
                 }
 

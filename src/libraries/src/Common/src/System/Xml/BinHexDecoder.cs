@@ -10,12 +10,12 @@ namespace System.Xml
         //
         // Fields
         //
-        private byte[] _buffer;
-        private int _startIndex;
-        private int _curIndex;
-        private int _endIndex;
-        private bool _hasHalfByteCached;
-        private byte _cachedHalfByte;
+        byte[] buffer;
+        int startIndex;
+        int curIndex;
+        int endIndex;
+        bool hasHalfByteCached;
+        byte cachedHalfByte;
 
         //
         // IncrementalReadDecoder interface
@@ -24,7 +24,7 @@ namespace System.Xml
         {
             get
             {
-                return _curIndex - _startIndex;
+                return curIndex - startIndex;
             }
         }
 
@@ -32,7 +32,7 @@ namespace System.Xml
         {
             get
             {
-                return _curIndex == _endIndex;
+                return curIndex == endIndex;
             }
         }
 
@@ -62,13 +62,13 @@ namespace System.Xml
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = &chars[startPos])
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &buffer[curIndex])
                 {
-                    Decode(pChars, pChars + len, pBytes, pBytes + (_endIndex - _curIndex),
-                            ref _hasHalfByteCached, ref _cachedHalfByte, out charsDecoded, out bytesDecoded);
+                    Decode(pChars, pChars + len, pBytes, pBytes + (endIndex - curIndex),
+                            ref this.hasHalfByteCached, ref this.cachedHalfByte, out charsDecoded, out bytesDecoded);
                 }
             }
-            _curIndex += bytesDecoded;
+            curIndex += bytesDecoded;
             return charsDecoded;
         }
 
@@ -98,20 +98,20 @@ namespace System.Xml
             int bytesDecoded, charsDecoded;
             fixed (char* pChars = str)
             {
-                fixed (byte* pBytes = &_buffer[_curIndex])
+                fixed (byte* pBytes = &buffer[curIndex])
                 {
-                    Decode(pChars + startPos, pChars + startPos + len, pBytes, pBytes + (_endIndex - _curIndex),
-                            ref _hasHalfByteCached, ref _cachedHalfByte, out charsDecoded, out bytesDecoded);
+                    Decode(pChars + startPos, pChars + startPos + len, pBytes, pBytes + (endIndex - curIndex),
+                            ref this.hasHalfByteCached, ref this.cachedHalfByte, out charsDecoded, out bytesDecoded);
                 }
             }
-            _curIndex += bytesDecoded;
+            curIndex += bytesDecoded;
             return charsDecoded;
         }
 
         internal override void Reset()
         {
-            _hasHalfByteCached = false;
-            _cachedHalfByte = 0;
+            this.hasHalfByteCached = false;
+            this.cachedHalfByte = 0;
         }
 
         internal override void SetNextOutputBuffer(byte[] buffer, int index, int count)
@@ -122,10 +122,10 @@ namespace System.Xml
             Debug.Assert(buffer.Length - index >= count);
             Debug.Assert((buffer as byte[]) != null);
 
-            _buffer = (byte[])buffer;
-            _startIndex = index;
-            _curIndex = index;
-            _endIndex = index + count;
+            this.buffer = (byte[])buffer;
+            this.startIndex = index;
+            this.curIndex = index;
+            this.endIndex = index + count;
         }
 
         //

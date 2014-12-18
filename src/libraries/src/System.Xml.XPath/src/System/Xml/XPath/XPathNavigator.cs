@@ -1684,30 +1684,30 @@ namespace System.Xml.XPath
         [DebuggerDisplay("{ToString()}")]
         internal struct DebuggerDisplayProxy
         {
-            private XPathNavigator _nav;
+            XPathNavigator nav;
             public DebuggerDisplayProxy(XPathNavigator nav)
             {
-                _nav = nav;
+                this.nav = nav;
             }
             public override string ToString()
             {
-                string result = _nav.NodeType.ToString();
-                switch (_nav.NodeType)
+                string result = nav.NodeType.ToString();
+                switch (nav.NodeType)
                 {
                     case XPathNodeType.Element:
-                        result += ", Name=\"" + _nav.Name + '"';
+                        result += ", Name=\"" + nav.Name + '"';
                         break;
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Namespace:
                     case XPathNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _nav.Name + '"';
-                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += ", Name=\"" + nav.Name + '"';
+                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(nav.Value) + '"';
                         break;
                     case XPathNodeType.Text:
                     case XPathNodeType.Whitespace:
                     case XPathNodeType.SignificantWhitespace:
                     case XPathNodeType.Comment:
-                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(nav.Value) + '"';
                         break;
                 }
                 return result;

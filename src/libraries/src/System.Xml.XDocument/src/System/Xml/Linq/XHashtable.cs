@@ -59,7 +59,7 @@ namespace System.Xml.Linq
     /// </remarks>
     internal sealed class XHashtable<TValue>
     {
-        private XHashtableState _state;                          // SHARED STATE: Contains all XHashtable state, so it can be atomically swapped when resizes occur
+        private XHashtableState state;                          // SHARED STATE: Contains all XHashtable state, so it can be atomically swapped when resizes occur
 
         private const int StartingHash = (5381 << 16) + 5381;   // Starting hash code value for string keys to be hashed
 
@@ -74,7 +74,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XHashtable(ExtractKeyDelegate extractKey, int capacity)
         {
-            _state = new XHashtableState(extractKey, capacity);
+            state = new XHashtableState(extractKey, capacity);
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace System.Xml.Linq
         /// </summary>
         public bool TryGetValue(string key, int index, int count, out TValue value)
         {
-            return _state.TryGetValue(key, index, count, out value);
+            return state.TryGetValue(key, index, count, out value);
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace System.Xml.Linq
             {
                 // Add new value
                 // XHashtableState.TryAdd returns false if hash table is not big enough
-                if (_state.TryAdd(value, out newValue))
+                if (state.TryAdd(value, out newValue))
                     return newValue;
 
                 // PUBLISH (state)
@@ -107,7 +107,7 @@ namespace System.Xml.Linq
                 // return since there will almost always be space in the hash table resized by the first thread.
                 lock (this)
                 {
-                    XHashtableState newState = _state.Resize();
+                    XHashtableState newState = state.Resize();
 
                     // Use memory barrier to ensure that the resized XHashtableState object is fully constructed before it is assigned
 #if !SILVERLIGHT 
@@ -118,9 +118,9 @@ namespace System.Xml.Linq
 
                     // Replacing with Interlocked.CompareExchange for now (with no effect)
                     //   which will do a very similar thing to MemoryBarrier (it's just slower)
-                    System.Threading.Interlocked.CompareExchange<XHashtableState>(ref _state, null, null);
+                    System.Threading.Interlocked.CompareExchange<XHashtableState>(ref state, null, null);
 #endif // SILVERLIGHT
-                    _state = newState;
+                    state = newState;
                 }
             }
         }
@@ -140,10 +140,10 @@ namespace System.Xml.Linq
         /// </remarks>
         private sealed class XHashtableState
         {
-            private int[] _buckets;                  // Buckets contain indexes into entries array (bucket values are SHARED STATE)
-            private Entry[] _entries;                // Entries contain linked lists of buckets (next pointers are SHARED STATE)
-            private int _numEntries;                 // SHARED STATE: Current number of entries (including orphaned entries)
-            private ExtractKeyDelegate _extractKey;  // Delegate called in order to extract string key embedded in hashed TValue
+            private int[] buckets;                  // Buckets contain indexes into entries array (bucket values are SHARED STATE)
+            private Entry[] entries;                // Entries contain linked lists of buckets (next pointers are SHARED STATE)
+            private int numEntries;                 // SHARED STATE: Current number of entries (including orphaned entries)
+            private ExtractKeyDelegate extractKey;  // Delegate called in order to extract string key embedded in hashed TValue
 
             private const int EndOfList = 0;        // End of linked list marker
             private const int FullList = -1;        // Indicates entries should not be added to end of linked list
@@ -157,11 +157,11 @@ namespace System.Xml.Linq
                 Debug.Assert(extractKey != null, "extractKey may not be null");
 
                 // Initialize hash table data structures, with specified maximum capacity
-                _buckets = new int[capacity];
-                _entries = new Entry[capacity];
+                buckets = new int[capacity];
+                entries = new Entry[capacity];
 
                 // Save delegate
-                _extractKey = extractKey;
+                this.extractKey = extractKey;
             }
 
             /// <summary>
@@ -171,73 +171,73 @@ namespace System.Xml.Linq
             public XHashtableState Resize()
             {
                 // No need to resize if there are open entries
-                if (_numEntries < _buckets.Length)
+                if (numEntries < buckets.Length)
                     return this;
 
                 int newSize = 0;
 
                 // Determine capacity of resized hash table by first counting number of valid, non-orphaned entries
                 // As this count proceeds, close all linked lists so that no additional entries can be added to them
-                for (int bucketIdx = 0; bucketIdx < _buckets.Length; bucketIdx++)
+                for (int bucketIdx = 0; bucketIdx < buckets.Length; bucketIdx++)
                 {
-                    int entryIdx = _buckets[bucketIdx];
+                    int entryIdx = buckets[bucketIdx];
 
                     if (entryIdx == EndOfList)
                     {
                         // Replace EndOfList with FullList, so that any threads still attempting to add will be forced to resize
-                        entryIdx = Interlocked.CompareExchange(ref _buckets[bucketIdx], FullList, EndOfList);
+                        entryIdx = Interlocked.CompareExchange(ref buckets[bucketIdx], FullList, EndOfList);
                     }
 
                     // Loop until we've guaranteed that the list has been counted and closed to further adds
                     while (entryIdx > EndOfList)
                     {
                         // Count each valid entry
-                        if (_extractKey(_entries[entryIdx].Value) != null)
+                        if (extractKey(entries[entryIdx].Value) != null)
                             newSize++;
 
-                        if (_entries[entryIdx].Next == EndOfList)
+                        if (entries[entryIdx].Next == EndOfList)
                         {
                             // Replace EndOfList with FullList, so that any threads still attempting to add will be forced to resize
-                            entryIdx = Interlocked.CompareExchange(ref _entries[entryIdx].Next, FullList, EndOfList);
+                            entryIdx = Interlocked.CompareExchange(ref entries[entryIdx].Next, FullList, EndOfList);
                         }
                         else
                         {
                             // Move to next entry in the list
-                            entryIdx = _entries[entryIdx].Next;
+                            entryIdx = entries[entryIdx].Next;
                         }
                     }
                     Debug.Assert(entryIdx == EndOfList, "Resize() should only be called by one thread");
                 }
 
                 // Double number of valid entries; if result is less than current capacity, then use current capacity
-                if (newSize < _buckets.Length / 2)
+                if (newSize < buckets.Length / 2)
                 {
-                    newSize = _buckets.Length;
+                    newSize = buckets.Length;
                 }
                 else
                 {
-                    newSize = _buckets.Length * 2;
+                    newSize = buckets.Length * 2;
 
                     if (newSize < 0)
                         throw new OverflowException();
                 }
 
                 // Create new hash table with additional capacity
-                XHashtableState newHashtable = new XHashtableState(_extractKey, newSize);
+                XHashtableState newHashtable = new XHashtableState(extractKey, newSize);
 
                 // Rehash names (TryAdd will always succeed, since we won't fill the new table)
                 // Do not simply walk over entries and add them to table, as that would add orphaned
                 // entries.  Instead, walk the linked lists and add each name.
-                for (int bucketIdx = 0; bucketIdx < _buckets.Length; bucketIdx++)
+                for (int bucketIdx = 0; bucketIdx < buckets.Length; bucketIdx++)
                 {
-                    int entryIdx = _buckets[bucketIdx];
+                    int entryIdx = buckets[bucketIdx];
                     TValue newValue;
 
                     while (entryIdx > EndOfList)
                     {
-                        newHashtable.TryAdd(_entries[entryIdx].Value, out newValue);
+                        newHashtable.TryAdd(entries[entryIdx].Value, out newValue);
 
-                        entryIdx = _entries[entryIdx].Next;
+                        entryIdx = entries[entryIdx].Next;
                     }
                     Debug.Assert(entryIdx == FullList, "Linked list should have been closed when it was counted");
                 }
@@ -257,7 +257,7 @@ namespace System.Xml.Linq
                 // If a matching entry is found, return its value
                 if (FindEntry(hashCode, key, index, count, ref entryIndex))
                 {
-                    value = _entries[entryIndex].Value;
+                    value = entries[entryIndex].Value;
                     return true;
                 }
 
@@ -282,7 +282,7 @@ namespace System.Xml.Linq
                 newValue = value;
 
                 // Extract the key from the value.  If it's null, then value is invalid and does not need to be added to table.
-                key = _extractKey(value);
+                key = extractKey(value);
                 if (key == null)
                     return true;
 
@@ -293,12 +293,12 @@ namespace System.Xml.Linq
                 // Use the entry index returned from Increment, which will never be zero, as zero conflicts with EndOfList.
                 // Although this means that the first entry will never be used, it avoids the need to initialize all
                 // starting buckets to the EndOfList value.
-                newEntry = Interlocked.Increment(ref _numEntries);
-                if (newEntry < 0 || newEntry >= _buckets.Length)
+                newEntry = Interlocked.Increment(ref numEntries);
+                if (newEntry < 0 || newEntry >= buckets.Length)
                     return false;
 
-                _entries[newEntry].Value = value;
-                _entries[newEntry].HashCode = hashCode;
+                entries[newEntry].Value = value;
+                entries[newEntry].HashCode = hashCode;
 
                 // Ensure that all writes to the entry can't be reordered past this barrier (or other threads might see new entry
                 // in list before entry has been initialized!).
@@ -310,7 +310,7 @@ namespace System.Xml.Linq
 
                 // Replacing with Interlocked.CompareExchange for now (with no effect)
                 //   which will do a very similar thing to MemoryBarrier (it's just slower)
-                System.Threading.Interlocked.CompareExchange<Entry[]>(ref _entries, null, null);
+                System.Threading.Interlocked.CompareExchange<Entry[]>(ref entries, null, null);
 #endif // SILVERLIGHT
 
                 // Loop until a matching entry is found, a new entry is added, or linked list is found to be full
@@ -320,9 +320,9 @@ namespace System.Xml.Linq
                     // PUBLISH (buckets slot)
                     // No matching entry found, so add the new entry to the end of the list ("entryIndex" is index of last entry)
                     if (entryIndex == 0)
-                        entryIndex = Interlocked.CompareExchange(ref _buckets[hashCode & (_buckets.Length - 1)], newEntry, EndOfList);
+                        entryIndex = Interlocked.CompareExchange(ref buckets[hashCode & (buckets.Length - 1)], newEntry, EndOfList);
                     else
-                        entryIndex = Interlocked.CompareExchange(ref _entries[entryIndex].Next, newEntry, EndOfList);
+                        entryIndex = Interlocked.CompareExchange(ref entries[entryIndex].Next, newEntry, EndOfList);
 
                     // Return true only if the CompareExchange succeeded (happens when replaced value is EndOfList).
                     // Return false if the linked list turned out to be full because another thread is currently resizing
@@ -334,7 +334,7 @@ namespace System.Xml.Linq
 
                 // Another thread already added the value while this thread was trying to add, so return that instance instead.
                 // Note that entries[newEntry] will be orphaned (not part of any linked list) in this case
-                newValue = _entries[entryIndex].Value;
+                newValue = entries[entryIndex].Value;
 
                 return true;
             }
@@ -355,7 +355,7 @@ namespace System.Xml.Linq
 
                 // Set initial value of currentIndex to index of the next entry following entryIndex
                 if (previousIndex == 0)
-                    currentIndex = _buckets[hashCode & (_buckets.Length - 1)];
+                    currentIndex = buckets[hashCode & (buckets.Length - 1)];
                 else
                     currentIndex = previousIndex;
 
@@ -363,26 +363,26 @@ namespace System.Xml.Linq
                 while (currentIndex > EndOfList)
                 {
                     // Check for matching hash code, then matching key
-                    if (_entries[currentIndex].HashCode == hashCode)
+                    if (entries[currentIndex].HashCode == hashCode)
                     {
-                        string keyCompare = _extractKey(_entries[currentIndex].Value);
+                        string keyCompare = extractKey(entries[currentIndex].Value);
 
                         // If the key is invalid, then attempt to remove the current entry from the linked list.
                         // This is thread-safe in the case where the Next field points to another entry, since once a Next field points
                         // to another entry, it will never be modified to be EndOfList or FullList.
                         if (keyCompare == null)
                         {
-                            if (_entries[currentIndex].Next > EndOfList)
+                            if (entries[currentIndex].Next > EndOfList)
                             {
                                 // PUBLISH (buckets slot or entries slot)
                                 // Entry is invalid, so modify previous entry to point to its next entry
-                                _entries[currentIndex].Value = default(TValue);
-                                currentIndex = _entries[currentIndex].Next;
+                                entries[currentIndex].Value = default(TValue);
+                                currentIndex = entries[currentIndex].Next;
 
                                 if (previousIndex == 0)
-                                    _buckets[hashCode & (_buckets.Length - 1)] = currentIndex;
+                                    buckets[hashCode & (buckets.Length - 1)] = currentIndex;
                                 else
-                                    _entries[previousIndex].Next = currentIndex;
+                                    entries[previousIndex].Next = currentIndex;
 
                                 continue;
                             }
@@ -401,7 +401,7 @@ namespace System.Xml.Linq
 
                     // Move to next entry
                     previousIndex = currentIndex;
-                    currentIndex = _entries[currentIndex].Next;
+                    currentIndex = entries[currentIndex].Next;
                 }
 
                 // Return false and last entry in list

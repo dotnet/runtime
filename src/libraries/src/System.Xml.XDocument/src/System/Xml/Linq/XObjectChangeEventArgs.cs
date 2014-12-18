@@ -10,7 +10,7 @@ namespace System.Xml.Linq
     /// </summary>
     public class XObjectChangeEventArgs : EventArgs
     {
-        private XObjectChange _objectChange;
+        XObjectChange objectChange;
 
         /// <summary>
         /// Event argument for a <see cref="XObjectChange.Add"/> change event.
@@ -41,7 +41,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XObjectChangeEventArgs(XObjectChange objectChange)
         {
-            _objectChange = objectChange;
+            this.objectChange = objectChange;
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace System.Xml.Linq
         /// </summary>
         public XObjectChange ObjectChange
         {
-            get { return _objectChange; }
+            get { return objectChange; }
         }
     }
 }

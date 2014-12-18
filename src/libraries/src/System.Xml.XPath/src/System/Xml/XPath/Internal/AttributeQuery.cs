@@ -9,16 +9,16 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class AttributeQuery : BaseAxisQuery
     {
-        private bool _onAttribute = false;
+        private bool onAttribute = false;
 
         public AttributeQuery(Query qyParent, string Name, string Prefix, XPathNodeType Type) : base(qyParent, Name, Prefix, Type) { }
         private AttributeQuery(AttributeQuery other) : base(other)
         {
-            _onAttribute = other._onAttribute;
+            this.onAttribute = other.onAttribute;
         }
         public override void Reset()
         {
-            _onAttribute = false;
+            onAttribute = false;
             base.Reset();
         }
 
@@ -26,7 +26,7 @@ namespace MS.Internal.Xml.XPath
         {
             while (true)
             {
-                if (!_onAttribute)
+                if (!onAttribute)
                 {
                     currentNode = qyInput.Advance();
                     if (currentNode == null)
@@ -35,14 +35,14 @@ namespace MS.Internal.Xml.XPath
                     }
                     position = 0;
                     currentNode = currentNode.Clone();
-                    _onAttribute = currentNode.MoveToFirstAttribute();
+                    onAttribute = currentNode.MoveToFirstAttribute();
                 }
                 else
                 {
-                    _onAttribute = currentNode.MoveToNextAttribute();
+                    onAttribute = currentNode.MoveToNextAttribute();
                 }
 
-                if (_onAttribute)
+                if (onAttribute)
                 {
                     Debug.Assert(!currentNode.NamespaceURI.Equals(XmlConst.ReservedNsXmlNs));
                     if (matches(currentNode))

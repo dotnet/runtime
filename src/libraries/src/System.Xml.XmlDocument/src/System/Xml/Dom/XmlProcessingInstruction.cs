@@ -9,13 +9,13 @@ namespace System.Xml
     // processor-specific information in the text of the document.
     public class XmlProcessingInstruction : XmlLinkedNode
     {
-        private string _target;
-        private string _data;
+        string target;
+        string data;
 
         protected internal XmlProcessingInstruction(string target, string data, XmlDocument doc) : base(doc)
         {
-            _target = target;
-            _data = data;
+            this.target = target;
+            this.data = data;
         }
 
         // Gets the name of the node.
@@ -23,8 +23,8 @@ namespace System.Xml
         {
             get
             {
-                if (_target != null)
-                    return _target;
+                if (target != null)
+                    return target;
                 return String.Empty;
             }
         }
@@ -38,28 +38,28 @@ namespace System.Xml
         // Gets or sets the value of the node.
         public override String Value
         {
-            get { return _data; }
+            get { return data; }
             set { Data = value; } //use Data instead of data so that event will be fired
         }
 
         // Gets the target of the processing instruction.
         public String Target
         {
-            get { return _target; }
+            get { return target; }
         }
 
         // Gets or sets the content of processing instruction,
         // excluding the target.
         public String Data
         {
-            get { return _data; }
+            get { return data; }
             set
             {
                 XmlNode parent = ParentNode;
-                XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
+                XmlNodeChangedEventArgs args = GetEventArgs(this, parent, parent, data, value, XmlNodeChangedAction.Change);
                 if (args != null)
                     BeforeEvent(args);
-                _data = value;
+                data = value;
                 if (args != null)
                     AfterEvent(args);
             }
@@ -69,7 +69,7 @@ namespace System.Xml
         // all its children.
         public override string InnerText
         {
-            get { return _data; }
+            get { return data; }
             set { Data = value; } //use Data instead of data so that change event will be fired
         }
 
@@ -83,13 +83,13 @@ namespace System.Xml
         public override XmlNode CloneNode(bool deep)
         {
             Debug.Assert(OwnerDocument != null);
-            return OwnerDocument.CreateProcessingInstruction(_target, _data);
+            return OwnerDocument.CreateProcessingInstruction(target, data);
         }
 
         // Saves the node to the specified XmlWriter.
         public override void WriteTo(XmlWriter w)
         {
-            w.WriteProcessingInstruction(_target, _data);
+            w.WriteProcessingInstruction(target, data);
         }
 
         // Saves all the children of the node to the specified XmlWriter.

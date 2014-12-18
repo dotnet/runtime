@@ -18,7 +18,7 @@ namespace System.Xml.Linq
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Reviewed.")]
     public class XAttribute : XObject
     {
-        private static IEnumerable<XAttribute> s_emptySequence;
+        static IEnumerable<XAttribute> emptySequence;
 
         /// <summary>
         /// Gets an empty collection of attributes.
@@ -27,8 +27,8 @@ namespace System.Xml.Linq
         {
             get
             {
-                if (s_emptySequence == null) s_emptySequence = new XAttribute[0];
-                return s_emptySequence;
+                if (emptySequence == null) emptySequence = new XAttribute[0];
+                return emptySequence;
             }
         }
 

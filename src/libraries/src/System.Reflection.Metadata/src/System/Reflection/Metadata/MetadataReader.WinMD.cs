@@ -25,7 +25,7 @@ namespace System.Reflection.Metadata
 
         // Maps names of projected types to projection information for each type.
         // Both arrays are of the same length and sorted by the type name.
-        private static string[] _projectedTypeNames;
+        private static string[] s_projectedTypeNames;
         private static ProjectionInfo[] s_projectionInfos;
 
         private struct ProjectionInfo
@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata
 
             StringHandle name = TypeDefTable.GetName(typeDef);
 
-            int index = StringStream.BinarySearchRaw(_projectedTypeNames, name);
+            int index = StringStream.BinarySearchRaw(s_projectedTypeNames, name);
             if (index < 0)
             {
                 return TypeDefTreatment.None;
@@ -85,7 +85,7 @@ namespace System.Reflection.Metadata
         {
             InitializeProjectedTypes();
 
-            int index = StringStream.BinarySearchRaw(_projectedTypeNames, TypeRefTable.GetName(typeRef));
+            int index = StringStream.BinarySearchRaw(s_projectedTypeNames, TypeRefTable.GetName(typeRef));
             if (index >= 0 && StringStream.EqualsRaw(TypeRefTable.GetNamespace(typeRef), s_projectionInfos[index].WinRTNamespace))
             {
                 isIDisposable = s_projectionInfos[index].IsIDisposable;
@@ -116,7 +116,7 @@ namespace System.Reflection.Metadata
 
         private static void InitializeProjectedTypes()
         {
-            if (_projectedTypeNames == null || s_projectionInfos == null)
+            if (s_projectedTypeNames == null || s_projectionInfos == null)
             {
                 var systemRuntimeWindowsRuntime = AssemblyReferenceHandle.VirtualIndex.System_Runtime_WindowsRuntime;
                 var systemRuntime = AssemblyReferenceHandle.VirtualIndex.System_Runtime;
@@ -186,7 +186,7 @@ namespace System.Reflection.Metadata
                 Debug.Assert(k == keys.Length && v == keys.Length && k == v);
                 AssertSorted(keys);
 
-                _projectedTypeNames = keys;
+                s_projectedTypeNames = keys;
                 s_projectionInfos = values;
             }
         }
@@ -204,7 +204,7 @@ namespace System.Reflection.Metadata
         internal static string[] GetProjectedTypeNames()
         {
             InitializeProjectedTypes();
-            return _projectedTypeNames;
+            return s_projectedTypeNames;
         }
 
         #endregion

@@ -10,9 +10,9 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class NumericExpr : ValueQuery
     {
-        private Operator.Op _op;
-        private Query _opnd1;
-        private Query _opnd2;
+        private Operator.Op op;
+        private Query opnd1;
+        private Query opnd2;
 
         public NumericExpr(Operator.Op op, Query opnd1, Query opnd2)
         {
@@ -30,28 +30,28 @@ namespace MS.Internal.Xml.XPath
             {
                 opnd2 = new NumberFunctions(Function.FunctionType.FuncNumber, opnd2);
             }
-            _op = op;
-            _opnd1 = opnd1;
-            _opnd2 = opnd2;
+            this.op = op;
+            this.opnd1 = opnd1;
+            this.opnd2 = opnd2;
         }
         private NumericExpr(NumericExpr other) : base(other)
         {
-            _op = other._op;
-            _opnd1 = Clone(other._opnd1);
-            _opnd2 = Clone(other._opnd2);
+            this.op = other.op;
+            this.opnd1 = Clone(other.opnd1);
+            this.opnd2 = Clone(other.opnd2);
         }
 
         public override void SetXsltContext(XsltContext context)
         {
-            _opnd1.SetXsltContext(context);
-            _opnd2.SetXsltContext(context);
+            opnd1.SetXsltContext(context);
+            opnd2.SetXsltContext(context);
         }
 
         public override object Evaluate(XPathNodeIterator nodeIterator)
         {
-            return GetValue(_op,
-                XmlConvertEx.ToXPathDouble(_opnd1.Evaluate(nodeIterator)),
-                XmlConvertEx.ToXPathDouble(_opnd2.Evaluate(nodeIterator))
+            return GetValue(this.op,
+                XmlConvertEx.ToXPathDouble(opnd1.Evaluate(nodeIterator)),
+                XmlConvertEx.ToXPathDouble(opnd2.Evaluate(nodeIterator))
             );
         }
         private static double GetValue(Operator.Op op, double n1, double n2)
@@ -75,9 +75,9 @@ namespace MS.Internal.Xml.XPath
         public override void PrintQuery(XmlWriter w)
         {
             w.WriteStartElement(this.GetType().Name);
-            w.WriteAttributeString("op", _op.ToString());
-            _opnd1.PrintQuery(w);
-            _opnd2.PrintQuery(w);
+            w.WriteAttributeString("op", op.ToString());
+            opnd1.PrintQuery(w);
+            opnd2.PrintQuery(w);
             w.WriteEndElement();
         }
     }

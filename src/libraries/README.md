@@ -58,6 +58,13 @@ Today, it contains the following components:
 
 * **Microsoft.Win32 Registry**. Provides support for accessing and modifying the Windows Registry.
 
+* **System.IO.Pipes**. The System.IO.Pipes namespace contains types that provide a
+  means for interprocess communication through anonymous and/or named pipes.
+
+* **System.Diagnostics.FileVersionInfo**. This library provides useful functionality for querying
+  and examining the version information of physical files on disk.
+
+
 More is coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx

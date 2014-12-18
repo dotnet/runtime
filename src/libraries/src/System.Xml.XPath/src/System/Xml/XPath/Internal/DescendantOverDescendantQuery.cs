@@ -12,19 +12,19 @@ namespace MS.Internal.Xml.XPath
     // It doesn't generate DOD of the output even when input is DOD. 
     internal sealed class DescendantOverDescendantQuery : DescendantBaseQuery
     {
-        private int _level = 0;
+        private int level = 0;
 
         public DescendantOverDescendantQuery(Query qyParent, bool matchSelf, string name, string prefix, XPathNodeType typeTest, bool abbrAxis) :
             base(qyParent, name, prefix, typeTest, matchSelf, abbrAxis)
         { }
         private DescendantOverDescendantQuery(DescendantOverDescendantQuery other) : base(other)
         {
-            _level = other._level;
+            this.level = other.level;
         }
 
         public override void Reset()
         {
-            _level = 0;
+            level = 0;
             base.Reset();
         }
 
@@ -32,7 +32,7 @@ namespace MS.Internal.Xml.XPath
         {
             while (true)
             {
-                if (_level == 0)
+                if (level == 0)
                 {
                     currentNode = qyInput.Advance();
                     position = 0;
@@ -73,7 +73,7 @@ namespace MS.Internal.Xml.XPath
         {
             if (currentNode.MoveToFirstChild())
             {
-                _level++;
+                level++;
                 return true;
             }
             return false;
@@ -83,8 +83,8 @@ namespace MS.Internal.Xml.XPath
         { // move up until we can move next
             while (!currentNode.MoveToNext())
             {
-                --_level;
-                if (_level == 0)
+                --level;
+                if (level == 0)
                 {
                     return false;
                 }

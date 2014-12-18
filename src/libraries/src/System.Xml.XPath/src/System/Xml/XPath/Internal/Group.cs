@@ -7,16 +7,16 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Group : AstNode
     {
-        private AstNode _groupNode;
+        private AstNode groupNode;
 
         public Group(AstNode groupNode)
         {
-            _groupNode = groupNode;
+            this.groupNode = groupNode;
         }
         public override AstType Type { get { return AstType.Group; } }
         public override XPathResultType ReturnType { get { return XPathResultType.NodeSet; } }
 
-        public AstNode GroupNode { get { return _groupNode; } }
+        public AstNode GroupNode { get { return groupNode; } }
     }
 }
 

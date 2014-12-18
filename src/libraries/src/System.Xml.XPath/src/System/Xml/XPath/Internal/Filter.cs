@@ -7,19 +7,19 @@ namespace MS.Internal.Xml.XPath
 {
     internal class Filter : AstNode
     {
-        private AstNode _input;
-        private AstNode _condition;
+        private AstNode input;
+        private AstNode condition;
 
         public Filter(AstNode input, AstNode condition)
         {
-            _input = input;
-            _condition = condition;
+            this.input = input;
+            this.condition = condition;
         }
 
         public override AstType Type { get { return AstType.Filter; } }
         public override XPathResultType ReturnType { get { return XPathResultType.NodeSet; } }
 
-        public AstNode Input { get { return _input; } }
-        public AstNode Condition { get { return _condition; } }
+        public AstNode Input { get { return input; } }
+        public AstNode Condition { get { return condition; } }
     }
 }

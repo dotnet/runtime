@@ -55,7 +55,7 @@ namespace System.Reflection.Internal
 
         // The pooled buffers for (2) and (3) above. Use AcquireBuffer(int) and ReleaseBuffer(byte[])
         // instead of the pool directly to implement the size check.
-        private static readonly ObjectPool<byte[]> _pool = new ObjectPool<byte[]>(() => new byte[PooledBufferSize]);
+        private static readonly ObjectPool<byte[]> s_pool = new ObjectPool<byte[]>(() => new byte[PooledBufferSize]);
 
         public static string DecodeUtf8(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
         {
@@ -107,14 +107,14 @@ namespace System.Reflection.Internal
                 return new byte[byteCount];
             }
 
-            return _pool.Allocate();
+            return s_pool.Allocate();
         }
 
         private static void ReleaseBuffer(byte[] buffer)
         {
             if (buffer.Length == PooledBufferSize)
             {
-                _pool.Free(buffer);
+                s_pool.Free(buffer);
             }
         }
 

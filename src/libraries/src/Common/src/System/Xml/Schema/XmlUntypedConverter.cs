@@ -176,25 +176,25 @@ namespace System.Xml.Schema
             return XmlConvert.ToInt64((string)value);
         }
 
-        private static readonly Type s_DecimalType = typeof(decimal);
-        private static readonly Type s_Int32Type = typeof(int);
-        private static readonly Type s_Int64Type = typeof(long);
-        private static readonly Type s_StringType = typeof(string);
-        private static readonly Type s_ByteType = typeof(byte);
-        private static readonly Type s_Int16Type = typeof(short);
-        private static readonly Type s_SByteType = typeof(sbyte);
-        private static readonly Type s_UInt16Type = typeof(ushort);
-        private static readonly Type s_UInt32Type = typeof(uint);
-        private static readonly Type s_UInt64Type = typeof(ulong);
-        private static readonly Type s_DoubleType = typeof(double);
-        private static readonly Type s_SingleType = typeof(float);
-        private static readonly Type s_DateTimeType = typeof(DateTime);
-        private static readonly Type s_DateTimeOffsetType = typeof(DateTimeOffset);
-        private static readonly Type s_BooleanType = typeof(bool);
-        private static readonly Type s_ByteArrayType = typeof(Byte[]);
-        private static readonly Type s_XmlQualifiedNameType = typeof(XmlQualifiedName);
-        private static readonly Type s_UriType = typeof(Uri);
-        private static readonly Type s_TimeSpanType = typeof(TimeSpan);
+        private static readonly Type DecimalType = typeof(decimal);
+        private static readonly Type Int32Type = typeof(int);
+        private static readonly Type Int64Type = typeof(long);
+        private static readonly Type StringType = typeof(string);
+        private static readonly Type ByteType = typeof(byte);
+        private static readonly Type Int16Type = typeof(short);
+        private static readonly Type SByteType = typeof(sbyte);
+        private static readonly Type UInt16Type = typeof(ushort);
+        private static readonly Type UInt32Type = typeof(uint);
+        private static readonly Type UInt64Type = typeof(ulong);
+        private static readonly Type DoubleType = typeof(double);
+        private static readonly Type SingleType = typeof(float);
+        private static readonly Type DateTimeType = typeof(DateTime);
+        private static readonly Type DateTimeOffsetType = typeof(DateTimeOffset);
+        private static readonly Type BooleanType = typeof(bool);
+        private static readonly Type ByteArrayType = typeof(Byte[]);
+        private static readonly Type XmlQualifiedNameType = typeof(XmlQualifiedName);
+        private static readonly Type UriType = typeof(Uri);
+        private static readonly Type TimeSpanType = typeof(TimeSpan);
 
         private static string Base64BinaryToString(byte[] value)
         {
@@ -236,23 +236,23 @@ namespace System.Xml.Schema
 
             Type sourceType = value.GetType();
 
-            if (sourceType == s_BooleanType) return XmlConvert.ToString((bool)value);
-            if (sourceType == s_ByteType) return XmlConvert.ToString((byte)value);
-            if (sourceType == s_ByteArrayType) return Base64BinaryToString((byte[])value);
-            if (sourceType == s_DateTimeType) return DateTimeToString((DateTime)value);
-            if (sourceType == s_DateTimeOffsetType) return DateTimeOffsetToString((DateTimeOffset)value);
-            if (sourceType == s_DecimalType) return XmlConvert.ToString((decimal)value);
-            if (sourceType == s_DoubleType) return XmlConvert.ToString((double)value);
-            if (sourceType == s_Int16Type) return XmlConvert.ToString((short)value);
-            if (sourceType == s_Int32Type) return XmlConvert.ToString((int)value);
-            if (sourceType == s_Int64Type) return XmlConvert.ToString((long)value);
-            if (sourceType == s_SByteType) return XmlConvert.ToString((sbyte)value);
-            if (sourceType == s_SingleType) return XmlConvert.ToString((float)value);
-            if (sourceType == s_StringType) return ((string)value);
-            if (sourceType == s_TimeSpanType) return XmlConvert.ToString((TimeSpan)value);
-            if (sourceType == s_UInt16Type) return XmlConvert.ToString((ushort)value);
-            if (sourceType == s_UInt32Type) return XmlConvert.ToString((uint)value);
-            if (sourceType == s_UInt64Type) return XmlConvert.ToString((ulong)value);
+            if (sourceType == BooleanType) return XmlConvert.ToString((bool)value);
+            if (sourceType == ByteType) return XmlConvert.ToString((byte)value);
+            if (sourceType == ByteArrayType) return Base64BinaryToString((byte[])value);
+            if (sourceType == DateTimeType) return DateTimeToString((DateTime)value);
+            if (sourceType == DateTimeOffsetType) return DateTimeOffsetToString((DateTimeOffset)value);
+            if (sourceType == DecimalType) return XmlConvert.ToString((decimal)value);
+            if (sourceType == DoubleType) return XmlConvert.ToString((double)value);
+            if (sourceType == Int16Type) return XmlConvert.ToString((short)value);
+            if (sourceType == Int32Type) return XmlConvert.ToString((int)value);
+            if (sourceType == Int64Type) return XmlConvert.ToString((long)value);
+            if (sourceType == SByteType) return XmlConvert.ToString((sbyte)value);
+            if (sourceType == SingleType) return XmlConvert.ToString((float)value);
+            if (sourceType == StringType) return ((string)value);
+            if (sourceType == TimeSpanType) return XmlConvert.ToString((TimeSpan)value);
+            if (sourceType == UInt16Type) return XmlConvert.ToString((ushort)value);
+            if (sourceType == UInt32Type) return XmlConvert.ToString((uint)value);
+            if (sourceType == UInt64Type) return XmlConvert.ToString((ulong)value);
             Uri valueAsUri = value as Uri;
             if (valueAsUri != null) return AnyUriToString(valueAsUri);
             XmlQualifiedName valueAsXmlQualifiedName = value as XmlQualifiedName;
@@ -353,25 +353,25 @@ namespace System.Xml.Schema
             if (value == null) throw new ArgumentNullException("value");
             if (destinationType == null) throw new ArgumentNullException("destinationType");
 
-            if (destinationType == s_BooleanType) return XmlConvert.ToBoolean((string)value);
-            if (destinationType == s_ByteType) return Int32ToByte(XmlConvert.ToInt32((string)value));
-            if (destinationType == s_ByteArrayType) return StringToBase64Binary((string)value);
-            if (destinationType == s_DateTimeType) return UntypedAtomicToDateTime((string)value);
-            if (destinationType == s_DateTimeOffsetType) return XmlConvert.ToDateTimeOffset((string)value);
-            if (destinationType == s_DecimalType) return XmlConvert.ToDecimal((string)value);
-            if (destinationType == s_DoubleType) return XmlConvert.ToDouble((string)value);
-            if (destinationType == s_Int16Type) return Int32ToInt16(XmlConvert.ToInt32((string)value));
-            if (destinationType == s_Int32Type) return XmlConvert.ToInt32((string)value);
-            if (destinationType == s_Int64Type) return XmlConvert.ToInt64((string)value);
-            if (destinationType == s_SByteType) return Int32ToSByte(XmlConvert.ToInt32((string)value));
-            if (destinationType == s_SingleType) return XmlConvert.ToSingle((string)value);
-            if (destinationType == s_TimeSpanType) return XmlConvert.ToTimeSpan((string)value);
-            if (destinationType == s_UInt16Type) return Int32ToUInt16(XmlConvert.ToInt32((string)value));
-            if (destinationType == s_UInt32Type) return Int64ToUInt32(XmlConvert.ToInt64((string)value));
-            if (destinationType == s_UInt64Type) return DecimalToUInt64(XmlConvert.ToDecimal((string)value));
-            if (destinationType == s_UriType) return XmlConvertEx.ToUri((string)value);
-            if (destinationType == s_XmlQualifiedNameType) return StringToQName((string)value, nsResolver);
-            if (destinationType == s_StringType) return ((string)value);
+            if (destinationType == BooleanType) return XmlConvert.ToBoolean((string)value);
+            if (destinationType == ByteType) return Int32ToByte(XmlConvert.ToInt32((string)value));
+            if (destinationType == ByteArrayType) return StringToBase64Binary((string)value);
+            if (destinationType == DateTimeType) return UntypedAtomicToDateTime((string)value);
+            if (destinationType == DateTimeOffsetType) return XmlConvert.ToDateTimeOffset((string)value);
+            if (destinationType == DecimalType) return XmlConvert.ToDecimal((string)value);
+            if (destinationType == DoubleType) return XmlConvert.ToDouble((string)value);
+            if (destinationType == Int16Type) return Int32ToInt16(XmlConvert.ToInt32((string)value));
+            if (destinationType == Int32Type) return XmlConvert.ToInt32((string)value);
+            if (destinationType == Int64Type) return XmlConvert.ToInt64((string)value);
+            if (destinationType == SByteType) return Int32ToSByte(XmlConvert.ToInt32((string)value));
+            if (destinationType == SingleType) return XmlConvert.ToSingle((string)value);
+            if (destinationType == TimeSpanType) return XmlConvert.ToTimeSpan((string)value);
+            if (destinationType == UInt16Type) return Int32ToUInt16(XmlConvert.ToInt32((string)value));
+            if (destinationType == UInt32Type) return Int64ToUInt32(XmlConvert.ToInt64((string)value));
+            if (destinationType == UInt64Type) return DecimalToUInt64(XmlConvert.ToDecimal((string)value));
+            if (destinationType == UriType) return XmlConvertEx.ToUri((string)value);
+            if (destinationType == XmlQualifiedNameType) return StringToQName((string)value, nsResolver);
+            if (destinationType == StringType) return ((string)value);
 
             throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeFromString, destinationType.Name));
         }
