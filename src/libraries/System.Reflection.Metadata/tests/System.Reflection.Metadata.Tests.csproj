@@ -114,6 +114,10 @@
       <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="System.Threading">
+      <HintPath>..\..\packages\System.Threading.4.0.0-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="System.Threading.Tasks">
       <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
       <Private>False</Private>
