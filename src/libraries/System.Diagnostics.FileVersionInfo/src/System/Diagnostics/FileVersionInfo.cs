@@ -346,22 +346,7 @@ namespace System.Diagnostics
 
         private static string ConvertTo8DigitHex(uint value)
         {
-            string s = Convert.ToString(value, 16);
-            s = s.ToUpperInvariant();
-            if (s.Length == 8)
-            {
-                return s;
-            }
-            else
-            {
-                StringBuilder b = new StringBuilder(8);
-                for (int l = s.Length; l < 8; l++)
-                {
-                    b.Append("0");
-                }
-                b.Append(s);
-                return b.ToString();
-            }
+            return value.ToString("X8", CultureInfo.InvariantCulture);
         }
 
         private static Interop.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
