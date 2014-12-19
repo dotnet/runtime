@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{63634289-90D7-4947-8BF3-DBBE98D76C85}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Diagnostics.Process</RootNamespace>
+    <AssemblyName>System.Diagnostics.Process</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+ 
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Contracts">
+      <HintPath>..\..\packages\System.Diagnostics.Contracts.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Contracts.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Debug">
+      <HintPath>..\..\packages\System.Diagnostics.Debug.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Debug.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Diagnostics.Tools">
+      <HintPath>..\..\packages\System.Diagnostics.Tools.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Tools.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Microsoft.Win32.Registry">
+      <HintPath>..\..\packages\Microsoft.Win32.Registry.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\Microsoft.Win32.Registry.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Collections">
+      <HintPath>..\..\packages\System.Collections.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Globalization">
+      <HintPath>..\..\packages\System.Globalization.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Globalization.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.IO">
+      <HintPath>..\..\packages\System.IO.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.IO.FileSystem">
+      <HintPath>..\..\packages\System.IO.FileSystem.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.FileSystem.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.IO.FileSystem.Primitives">
+      <HintPath>..\..\packages\System.IO.FileSystem.Primitives.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.FileSystem.Primitives.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Reflection">
+      <HintPath>..\..\packages\System.Reflection.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Resources.ResourceManager">
+      <HintPath>..\..\packages\System.Resources.ResourceManager.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Resources.ResourceManager.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime">
+      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime.Extensions">
+      <HintPath>..\..\packages\System.Runtime.Extensions.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Extensions.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime.Handles">
+      <HintPath>..\..\packages\System.Runtime.Handles.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Handles.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Runtime.InteropServices">
+      <HintPath>..\..\packages\System.Runtime.InteropServices.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.InteropServices.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Text.Encoding">
+      <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Text.Encoding.Extensions">
+      <HintPath>..\..\packages\System.Text.Encoding.Extensions.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.Extensions.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading">
+      <HintPath>..\..\packages\System.Threading.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading.Thread">
+      <HintPath>..\..\packages\System.Threading.Thread.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Thread.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading.Tasks">
+      <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="Microsoft.Win32.Primitives">
+      <HintPath>..\..\packages\Microsoft.Win32.Primitives.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\Microsoft.Win32.Primitives.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Threading.ThreadPool">
+      <HintPath>..\..\packages\System.Threading.ThreadPool.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.ThreadPool.dll</HintPath>
+      <Private>False</Private>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
+    <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
+    <Compile Include="System\Diagnostics\Process.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.cs" />
+    <Compile Include="System\Diagnostics\ProcessModule.cs" />
+    <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
+    <Compile Include="System\Diagnostics\ProcessStartInfo.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.cs" />
+    <Compile Include="System\Diagnostics\ProcessThreadCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessWaitHandle.cs" />
+    <Compile Include="System\Diagnostics\ProcessWindowStyle.cs" />
+    <Compile Include="System\Diagnostics\ThreadPriorityLevel.cs" />
+    <Compile Include="System\Diagnostics\ThreadState.cs" />
+    <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\SR.cs" >
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
