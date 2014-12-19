@@ -476,7 +476,7 @@ namespace System.IO.Pipes
             string normalizedPipePath = Path.GetFullPath(@"\\.\pipe\" + pipeName);
 
             // Make sure the pipe name isn't one of our reserved names for anonymous pipes.
-            if (String.Compare(normalizedPipePath, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(normalizedPipePath, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentOutOfRangeException("pipeName", SR.ArgumentOutOfRange_AnonymousReserved);
             }
@@ -1069,7 +1069,7 @@ namespace System.IO.Pipes
 
             _normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
 
-            if (String.Compare(_normalizedPipePath, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals(_normalizedPipePath, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentOutOfRangeException("pipeName", SR.ArgumentOutOfRange_AnonymousReserved);
             }

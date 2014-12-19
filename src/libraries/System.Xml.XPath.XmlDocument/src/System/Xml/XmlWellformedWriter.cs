@@ -919,7 +919,7 @@ namespace System.Xml
                 }
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
-                if (name.Length == 3 && string.Compare(name, XmlConst.XmlDeclarationTag, StringComparison.OrdinalIgnoreCase) == 0)
+                if (name.Length == 3 && string.Equals(name, XmlConst.XmlDeclarationTag, StringComparison.OrdinalIgnoreCase))
                 {
                     if (_currentState != State.Start)
                     {
