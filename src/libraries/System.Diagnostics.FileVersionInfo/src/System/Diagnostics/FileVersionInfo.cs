@@ -419,7 +419,7 @@ namespace System.Diagnostics
         }
 
         // 
-        // This function tries to find version informaiton for a specific codepage.
+        // This function tries to find version information for a specific codepage.
         // Returns true when version information is found.
         //
         private bool GetVersionInfoForCodePage(IntPtr memIntPtr, string codepage)
