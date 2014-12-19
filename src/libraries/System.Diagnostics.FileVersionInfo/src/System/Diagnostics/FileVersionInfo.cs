@@ -527,6 +527,9 @@ namespace System.Diagnostics
         /// </summary>
         public override string ToString()
         {
+            // An initial capacity of 512 was chosen because it is large enough to cover
+            // the size of the static strings with enough capacity left over to cover
+            // average length property values.
             var sb = new StringBuilder(512);
             sb.Append("File:             ").AppendLine(FileName);
             sb.Append("InternalName:     ").AppendLine(InternalName);
