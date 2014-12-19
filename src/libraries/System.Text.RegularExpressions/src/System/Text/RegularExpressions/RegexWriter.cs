@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
         {
             RegexWriter w = new RegexWriter();
             RegexCode retval = w.RegexCodeFromRegexTree(t);
-#if DBG
+#if DEBUG
             if (t.Debug)
             {
                 t.Dump();

@@ -99,7 +99,8 @@ namespace System.Text.RegularExpressions
         {
             return _text.Substring(_index + _length, _text.Length - _index - _length);
         }
-#if DBG
+
+#if DEBUG
         internal virtual String Description()
         {
             StringBuilder Sb = new StringBuilder();

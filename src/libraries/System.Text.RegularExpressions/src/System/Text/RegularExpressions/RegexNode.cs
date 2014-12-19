@@ -616,7 +616,8 @@ namespace System.Text.RegularExpressions
         {
             return _type;
         }
-#if DBG
+
+#if DEBUG
         internal static String[] TypeStr = new String[] {
             "Onerep", "Notonerep", "Setrep",
             "Oneloop", "Notoneloop", "Setloop",
