@@ -474,14 +474,14 @@ namespace System.Diagnostics
                         uint langid = GetVarEntry(memIntPtr);
                         if (!versionInfo.GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(langid)))
                         {
-                            // Some dlls might not contain correct codepage information. In this case we will fail during lookup. 
-                            // Explorer will take a few shots in dark by trying following ID:
+                            // Some dlls might not contain correct codepage information. In this case we will fail during lookup.
+                            // Explorer will take a few shots in dark by trying following lang-codepages:
                             //
                             // 040904B0 // US English + CP_UNICODE
                             // 040904E4 // US English + CP_USASCII
                             // 04090000 // US English + unknown codepage
-                            // Explorer also randomly guess 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE) sometimes.
-                            // We will try to simulate similiar behavior here.            
+                            // Explorer also randomly guesses 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE sometimes.
+                            // We will try to simulate similar behavior here.
                             uint[] ids = new uint[] { 0x040904B0, 0x040904E4, 0x04090000 };
                             foreach (uint id in ids)
                             {
