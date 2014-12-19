@@ -137,7 +137,7 @@ namespace System.Xml.Linq
         static void ValidateName(string name)
         {
             XmlConvert.VerifyNCName(name);
-            if (string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) == 0) throw new ArgumentException(SR.Format(SR.Argument_InvalidPIName, name));
+            if (string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException(SR.Format(SR.Argument_InvalidPIName, name));
         }
     }
 }
