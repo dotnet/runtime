@@ -414,7 +414,7 @@ namespace System.Diagnostics
             return 0x040904E4;
         }
 
-        // 
+        //
         // This function tries to find version information for a specific codepage.
         // Returns true when version information is found.
         //
@@ -448,7 +448,7 @@ namespace System.Diagnostics
             _productPrivate = LOWORD(ffi.dwProductVersionLS);
             _fileFlags = ffi.dwFileFlags;
 
-            // fileVersion is chosen based on best guess. Other fields can be used if appropriate. 
+            // fileVersion is chosen based on best guess. Other fields can be used if appropriate.
             return (_fileVersion != string.Empty);
         }
 
