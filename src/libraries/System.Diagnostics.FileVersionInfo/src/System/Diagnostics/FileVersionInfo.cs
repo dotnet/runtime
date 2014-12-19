@@ -527,21 +527,20 @@ namespace System.Diagnostics
         /// </summary>
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(128);
-            String nl = "\r\n";
-            sb.Append("File:             "); sb.Append(FileName); sb.Append(nl);
-            sb.Append("InternalName:     "); sb.Append(InternalName); sb.Append(nl);
-            sb.Append("OriginalFilename: "); sb.Append(OriginalFilename); sb.Append(nl);
-            sb.Append("FileVersion:      "); sb.Append(FileVersion); sb.Append(nl);
-            sb.Append("FileDescription:  "); sb.Append(FileDescription); sb.Append(nl);
-            sb.Append("Product:          "); sb.Append(ProductName); sb.Append(nl);
-            sb.Append("ProductVersion:   "); sb.Append(ProductVersion); sb.Append(nl);
-            sb.Append("Debug:            "); sb.Append(IsDebug.ToString()); sb.Append(nl);
-            sb.Append("Patched:          "); sb.Append(IsPatched.ToString()); sb.Append(nl);
-            sb.Append("PreRelease:       "); sb.Append(IsPreRelease.ToString()); sb.Append(nl);
-            sb.Append("PrivateBuild:     "); sb.Append(IsPrivateBuild.ToString()); sb.Append(nl);
-            sb.Append("SpecialBuild:     "); sb.Append(IsSpecialBuild.ToString()); sb.Append(nl);
-            sb.Append("Language:         "); sb.Append(Language); sb.Append(nl);
+            var sb = new StringBuilder(512);
+            sb.Append("File:             ").AppendLine(FileName);
+            sb.Append("InternalName:     ").AppendLine(InternalName);
+            sb.Append("OriginalFilename: ").AppendLine(OriginalFilename);
+            sb.Append("FileVersion:      ").AppendLine(FileVersion);
+            sb.Append("FileDescription:  ").AppendLine(FileDescription);
+            sb.Append("Product:          ").AppendLine(ProductName);
+            sb.Append("ProductVersion:   ").AppendLine(ProductVersion);
+            sb.Append("Debug:            ").AppendLine(IsDebug.ToString());
+            sb.Append("Patched:          ").AppendLine(IsPatched.ToString());
+            sb.Append("PreRelease:       ").AppendLine(IsPreRelease.ToString());
+            sb.Append("PrivateBuild:     ").AppendLine(IsPrivateBuild.ToString());
+            sb.Append("SpecialBuild:     ").AppendLine(IsSpecialBuild.ToString());
+            sb.Append("Language:         ").AppendLine(Language);
             return sb.ToString();
         }
     }
