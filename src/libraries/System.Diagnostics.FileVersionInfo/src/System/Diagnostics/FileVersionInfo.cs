@@ -15,7 +15,7 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class FileVersionInfo
     {
-        private string _fileName;
+        private readonly string _fileName;
         private string _companyName;
         private string _fileDescription;
         private string _fileVersion;
