@@ -196,7 +196,7 @@ namespace System.Diagnostics
                     SafeProcessHandle handle = null;
                     try
                     {
-                        handle = GetProcessHandle(Interop.PROCESS_QUERY_INFORMATION | Interop.SYNCHRONIZE, false);
+                        handle = GetProcessHandle(Interop.PROCESS_QUERY_LIMITED_INFORMATION | Interop.SYNCHRONIZE, false);
                         if (handle.IsInvalid)
                         {
                             _exited = true;
