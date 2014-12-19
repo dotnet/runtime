@@ -737,7 +737,7 @@ namespace System.Xml
         // Test if the DOM implementation implements a specific feature.
         public virtual bool Supports(string feature, string version)
         {
-            if (String.Compare("XML", feature, StringComparison.OrdinalIgnoreCase) == 0)
+            if (String.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
             {
                 if (version == null || version == "1.0" || version == "2.0")
                     return true;
