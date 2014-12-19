@@ -16,7 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\FileVersionInfo.cs" />
-    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="Interop\Interop.manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections">
