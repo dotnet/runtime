@@ -15,6 +15,17 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class FileVersionInfo
     {
+        // Some dlls might not contain correct codepage information,
+        // in which case the lookup will fail. Explorer will take
+        // a few shots in dark. We'll simulate similar behavior by
+        // falling back to the following lang-codepages:
+        private static readonly uint[] s_fallbackLanguageCodePages = new uint[]
+        {
+            0x040904B0, // US English + CP_UNICODE
+            0x040904E4, // US English + CP_USASCII
+            0x04090000  // US English + unknown codepage
+        };
+
         private readonly string _fileName;
         private string _companyName;
         private string _fileDescription;
@@ -482,8 +493,7 @@ namespace System.Diagnostics
                             // 04090000 // US English + unknown codepage
                             // Explorer also randomly guesses 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE sometimes.
                             // We will try to simulate similar behavior here.
-                            uint[] ids = new uint[] { 0x040904B0, 0x040904E4, 0x04090000 };
-                            foreach (uint id in ids)
+                            foreach (uint id in s_fallbackLanguageCodePages)
                             {
                                 if (id != langid)
                                 {
