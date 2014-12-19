@@ -13,6 +13,9 @@
     <RootNamespace>Xunit.TraitDiscoverers</RootNamespace>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    
+    <!-- Using this project to work around an issue where the xunit libraries aren't copied when resolve by the nuget resolver -->
+    <ResolveNugetPackages>false</ResolveNugetPackages>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
