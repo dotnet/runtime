@@ -64,6 +64,8 @@ Today, it contains the following components:
 * **System.Diagnostics.FileVersionInfo**. This library provides useful functionality for querying
   and examining the version information of physical files on disk.
 
+* **System.Diagnostics.Process**. This library provides access to local and remote processes and enables you to start and stop local system processes.
+
 
 More is coming soon. Stay tuned!
 
