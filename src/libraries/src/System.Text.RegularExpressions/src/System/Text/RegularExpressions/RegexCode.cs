@@ -231,9 +231,8 @@ namespace System.Text.RegularExpressions
         {
             return new ArgumentException(message);
         }
-        // Debug only code below
 
-#if DBG
+#if DEBUG
         internal static String[] CodeStr = new String[]
         {
             "Onerep", "Notonerep", "Setrep",

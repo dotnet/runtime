@@ -982,7 +982,6 @@ namespace System.Text.RegularExpressions
             return (_roptions & RegexOptions.CultureInvariant) != 0;
         }
 
-
 #if DEBUG
         /*
          * True if the regex has debugging enabled

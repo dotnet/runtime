@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions
         private void Backtrack()
         {
             int newpos = _runtrack[_runtrackpos++];
-#if DBG
+#if DEBUG
             if (_runmatch.Debug)
             {
                 if (newpos < 0)
@@ -466,7 +466,7 @@ namespace System.Text.RegularExpressions
 
             for (; ;)
             {
-#if DBG
+#if DEBUG
                 if (_runmatch.Debug)
                 {
                     DumpState();
@@ -1181,7 +1181,8 @@ namespace System.Text.RegularExpressions
                 Backtrack();
             }
         }
-#if DBG
+
+#if DEBUG
         internal override void DumpState()
         {
             base.DumpState();

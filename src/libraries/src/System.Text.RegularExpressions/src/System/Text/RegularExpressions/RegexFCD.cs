@@ -201,7 +201,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-#if DBG
+#if DEBUG
         internal static String AnchorDescription(int anchors)
         {
             StringBuilder sb = new StringBuilder();
