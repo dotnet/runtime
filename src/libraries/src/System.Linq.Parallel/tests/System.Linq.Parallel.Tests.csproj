@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <Import Project="..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props" Condition="Exists('..\..\packages\xunit.core.2.0.0-beta5-build2785\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" />
   <PropertyGroup>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -58,61 +57,7 @@
   <ItemGroup>
       <Compile Include="$(CommonTestPath)\System\Console.cs" />
   </ItemGroup>
-  <!-- References used -->
-  <ItemGroup>
-    <Reference Include="System.Runtime">
-      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Collections.Concurrent">
-      <HintPath>..\..\packages\System.Collections.Concurrent.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.Concurrent.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Threading.Tasks">
-      <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Diagnostics.Debug">
-      <HintPath>..\..\packages\System.Diagnostics.Debug.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Debug.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions">
-      <HintPath>..\..\packages\System.Runtime.Extensions.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Extensions.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Linq">
-      <HintPath>..\..\packages\System.Linq.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Linq.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Collections">
-      <HintPath>..\..\packages\System.Collections.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Threading">
-      <HintPath>..\..\packages\System.Threading.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="xunit.abstractions">
-      <HintPath>..\..\packages\xunit.abstractions.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.abstractions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="xunit.assert">
-      <HintPath>..\..\packages\xunit.assert.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10\xunit.assert.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="xunit.core">
-      <HintPath>..\..\packages\xunit.core.2.0.0-beta5-build2785\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-  </ItemGroup>
+ <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>

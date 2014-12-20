@@ -9,8 +9,6 @@
     <RootNamespace>Microsoft.Win32.Primitives</RootNamespace>
     <AssemblyName>Microsoft.Win32.Primitives</AssemblyName>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
@@ -18,6 +16,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
+  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="Interop\Interop.cs" />
     <Compile Include="System\ComponentModel\Win32Exception.cs" />
@@ -30,6 +29,9 @@
     <Compile Include="$(CommonPath)\Interop\Interop.strerror.Unix.cs" />
     <Compile Include="Interop\Interop.Unix.cs" />
     <Compile Include="System\ComponentModel\Win32Exception.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
