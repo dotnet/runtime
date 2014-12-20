@@ -17,7 +17,7 @@
   <!-- Common nuget properties -->
   <PropertyGroup>
     <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
-    <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
+    <NuGetConfigFile>$(SourceDir)NuGet.Config</NuGetConfigFile>
     <NuGetConfigCommandLine
       Condition="Exists('$(NuGetConfigFile)')">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
   </PropertyGroup>
