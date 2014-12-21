@@ -86,16 +86,6 @@
 
 #include "mono/io-layer/socket-wrappers.h"
 
-#if defined(HOST_WIN32)
-/* This is a kludge to make this file build under cygwin:
- * w32api/ws2tcpip.h has definitions for some AF_INET6 values and
- * prototypes for some but not all required functions (notably
- * inet_ntop() is missing), but the libws2_32 library is missing the
- * actual implementations of these functions.
- */
-#undef AF_INET6
-#endif
-
 #define LOGDEBUG(...)  
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
@@ -170,10 +160,9 @@ static gint32 convert_family(MonoAddressFamily mono_family)
 		break;
 		
 	case AddressFamily_InterNetworkV6:
-#ifdef AF_INET6
 		family=AF_INET6;
-#endif
 		break;
+
 	case AddressFamily_Irda:
 #ifdef AF_IRDA	
 		family=AF_IRDA;
@@ -225,11 +214,9 @@ static MonoAddressFamily convert_to_mono_family(guint16 af_family)
 		family=AddressFamily_AppleTalk;
 		break;
 		
-#ifdef AF_INET6
 	case AF_INET6:
 		family=AddressFamily_InterNetworkV6;
 		break;
-#endif
 		
 #ifdef AF_IRDA	
 	case AF_IRDA:
@@ -524,7 +511,6 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		}
 		break;
 
-#ifdef AF_INET6
 	case SocketOptionLevel_IPv6:
 		*system_level = mono_networking_get_ipv6_protocol ();
 
@@ -570,7 +556,6 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		}
 
 		break;	/* SocketOptionLevel_IPv6 */
-#endif
 		
 	case SocketOptionLevel_Tcp:
 	*system_level = mono_networking_get_tcp_protocol ();
@@ -639,7 +624,6 @@ static MonoImage *get_socket_assembly (void)
 	return domain->socket_assembly;
 }
 
-#ifdef AF_INET6
 static gint32 get_family_hint(void)
 {
 	MonoDomain *domain = mono_domain_get ();
@@ -678,7 +662,6 @@ static gint32 get_family_hint(void)
 		return PF_UNSPEC;
 	}
 }
-#endif
 
 gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, gint32 family, gint32 type, gint32 proto, gint32 *error)
 {
@@ -832,7 +815,6 @@ void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 	}
 }
 
-#ifdef AF_INET6
 // Check whether it's ::ffff::0:0.
 static gboolean
 is_ipv4_mapped_any (const struct in6_addr *addr)
@@ -851,7 +833,6 @@ is_ipv4_mapped_any (const struct in6_addr *addr)
 	}
 	return TRUE;
 }
-#endif
 
 static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 					       int sa_size, gint32 *error)
@@ -914,7 +895,6 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return(sockaddr_obj);
-#ifdef AF_INET6
 	} else if (saddr->sa_family == AF_INET6) {
 		struct sockaddr_in6 *sa_in=(struct sockaddr_in6 *)saddr;
 		int i;
@@ -951,7 +931,6 @@ static MonoObject *create_object_from_sockaddr(struct sockaddr *saddr,
 		mono_field_set_value (sockaddr_obj, domain->sockaddr_data_field, data);
 
 		return(sockaddr_obj);
-#endif
 #ifdef HAVE_SYS_UN_H
 	} else if (saddr->sa_family == AF_UNIX) {
 		int i;
@@ -978,10 +957,8 @@ get_sockaddr_size (int family)
 	size = 0;
 	if (family == AF_INET) {
 		size = sizeof (struct sockaddr_in);
-#ifdef AF_INET6
 	} else if (family == AF_INET6) {
 		size = sizeof (struct sockaddr_in6);
-#endif
 #ifdef HAVE_SYS_UN_H
 	} else if (family == AF_UNIX) {
 		size = sizeof (struct sockaddr_un);
@@ -1109,8 +1086,6 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 
 		*sa_size = sizeof(struct sockaddr_in);
 		return((struct sockaddr *)sa);
-
-#ifdef AF_INET6
 	} else if (family == AF_INET6) {
 		struct sockaddr_in6 *sa;
 		int i;
@@ -1139,7 +1114,6 @@ static struct sockaddr *create_sockaddr_from_object(MonoObject *saddr_obj,
 
 		*sa_size = sizeof(struct sockaddr_in6);
 		return((struct sockaddr *)sa);
-#endif
 #ifdef HAVE_SYS_UN_H
 	} else if (family == AF_UNIX) {
 		struct sockaddr_un *sock_un;
@@ -1956,7 +1930,6 @@ static struct in_addr ipaddress_to_struct_in_addr(MonoObject *ipaddr)
 	return(inaddr);
 }
 
-#ifdef AF_INET6
 static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 {
 	struct in6_addr in6addr;
@@ -1980,7 +1953,6 @@ static struct in6_addr ipaddress_to_struct_in6_addr(MonoObject *ipaddr)
 #endif
 	return(in6addr);
 }
-#endif /* AF_INET6 */
 #endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
@@ -2029,7 +2001,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	int system_level = 0;
 	int system_name = 0;
 	int ret;
-#ifdef AF_INET6
 	int sol_ip;
 	int sol_ipv6;
 
@@ -2037,8 +2008,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 
 	sol_ipv6 = mono_networking_get_ipv6_protocol ();
 	sol_ip = mono_networking_get_ip_protocol ();
-
-#endif /* AF_INET6 */
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2086,7 +2055,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 		{
 			MonoObject *address = NULL;
 
-#ifdef AF_INET6
 			if(system_level == sol_ipv6) {
 				struct ipv6_mreq mreq6;
 
@@ -2121,9 +2089,7 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 				ret = _wapi_setsockopt (sock, system_level,
 							system_name, &mreq6,
 							sizeof (mreq6));
-			} else if(system_level == sol_ip)
-#endif /* AF_INET6 */
-			{
+			} else if(system_level == sol_ip) {
 #ifdef HAVE_STRUCT_IP_MREQN
 				struct ip_mreqn mreq = {{0}};
 #else
@@ -2306,12 +2272,9 @@ is_loopback (int family, void *ad)
 
 	if (family == AF_INET) {
 		return (ptr [0] == 127);
-	}
-#ifdef AF_INET6
-	else {
+	} else {
 		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
 	}
-#endif
 	return FALSE;
 }
 
@@ -2330,11 +2293,9 @@ get_local_ips (int family, int *nips)
 	if (family == AF_INET) {
 		addr_size = sizeof (struct in_addr);
 		offset = G_STRUCT_OFFSET (struct sockaddr_in, sin_addr);
-#ifdef AF_INET6
 	} else if (family == AF_INET6) {
 		addr_size = sizeof (struct in6_addr);
 		offset = G_STRUCT_OFFSET (struct sockaddr_in6, sin6_addr);
-#endif
 	} else {
 		return NULL;
 	}
@@ -2402,12 +2363,9 @@ is_loopback (int family, void *ad)
 
 	if (family == AF_INET) {
 		return (ptr [0] == 127);
-	}
-#ifdef AF_INET6
-	else {
+	} else {
 		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
 	}
-#endif
 	return FALSE;
 }
 
@@ -2422,11 +2380,9 @@ get_local_ips (int family, int *nips)
 	if (family == AF_INET) {
 		addr_size = sizeof (struct in_addr);
 		offset = G_STRUCT_OFFSET (struct sockaddr_in, sin_addr);
-#ifdef AF_INET6
 	} else if (family == AF_INET6) {
 		addr_size = sizeof (struct in6_addr);
 		offset = G_STRUCT_OFFSET (struct sockaddr_in6, sin6_addr);
-#endif
 	} else {
 		return NULL;
 	}
