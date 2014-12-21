@@ -12,6 +12,48 @@ namespace System.Collections.Immutable
     /// </summary>
     public static class ImmutableInterlocked
     {
+        /// <summary>
+        /// Mutates a value in-place with optimistic locking transaction semantics
+        /// via a specified transformation function.
+        /// The transformation is retried as many times as necessary to win the optimistic locking race.
+        /// </summary>
+        /// <typeparam name="T">The type of data.</typeparam>
+        /// <param name="hotLocation">
+        /// The variable or field to be changed, which may be accessed by multiple threads.
+        /// </param>
+        /// <param name="transformation">
+        /// A function that mutates the value. This function should be side-effect free, 
+        /// as it may run multiple times when races occur with other threads.</param>
+        /// <returns>
+        /// <c>true</c> if the location's value is changed by applying the result of the 
+        /// <paramref name="transformation"/> function;
+        /// <c>false</c> if the location's value remained the same because the last 
+        /// invocation of <paramref name="transformation"/> returned the existing value.
+        /// </returns>
+        public static bool ApplyChange<T>(ref T hotLocation, Func<T, T> transformation) where T : class
+        {
+            Requires.NotNull(transformation, "applyChange");
+
+            bool successful;
+            T oldValue = Volatile.Read(ref hotLocation);
+            do
+            {
+                T newValue = transformation(oldValue);
+                if (ReferenceEquals(oldValue, newValue))
+                {
+                    // No change was actually required.
+                    return false;
+                }
+
+                T interlockedResult = Interlocked.CompareExchange(ref hotLocation, newValue, oldValue);
+                successful = ReferenceEquals(oldValue, interlockedResult);
+                oldValue = interlockedResult; // we already have a volatile read that we can reuse for the next loop
+            }
+            while (!successful);
+
+            return true;
+        }
+
         #region ImmutableArray<T> members
 
         /// <summary>

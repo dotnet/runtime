@@ -2,12 +2,136 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Collections.Immutable.Test
 {
     public class ImmutableInterlockedTests
     {
+        [Fact]
+        public void ApplyChange_StartWithNull()
+        {
+            ImmutableList<int> list = null;
+            Assert.True(ImmutableInterlocked.ApplyChange(ref list, l => { Assert.Null(l); return ImmutableList.Create(1); }));
+            Assert.Equal(1, list.Count);
+            Assert.Equal(1, list[0]);
+        }
+
+        [Fact]
+        public void ApplyChange_IncrementalUpdate()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1);
+            Assert.True(ImmutableInterlocked.ApplyChange(ref list, l => l.Add(2)));
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0]);
+            Assert.Equal(2, list[1]);
+        }
+
+        [Fact]
+        public void ApplyChange_FuncThrowsThrough()
+        {
+            ImmutableList<int> list = ImmutableList.Create(1);
+            Assert.Throws<InvalidOperationException>(() => ImmutableInterlocked.ApplyChange(ref list, l => { throw new InvalidOperationException(); }));
+        }
+
+        [Fact]
+        public void ApplyChange_NoEffectualChange()
+        {
+            ImmutableList<int> list = ImmutableList.Create<int>(1);
+            Assert.False(ImmutableInterlocked.ApplyChange(ref list, l => l));
+        }
+
+        [Fact]
+        public void ApplyChange_HighConcurrency()
+        {
+            ImmutableList<int> list = ImmutableList.Create<int>();
+            int concurrencyLevel = Environment.ProcessorCount;
+            int iterations = 500;
+            Task[] tasks = new Task[concurrencyLevel];
+            var countdown = new CountdownEvent(tasks.Length);
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                tasks[i] = Task.Run(delegate
+                {
+                    // Maximize concurrency by blocking this thread until all the other threads are ready to go as well.
+                    countdown.Signal();
+                    countdown.Wait();
+
+                    for (int j = 0; j < iterations; j++)
+                    {
+                        Assert.True(ImmutableInterlocked.ApplyChange(ref list, l => l.Add(l.Count)));
+                    }
+                });
+            }
+
+            Task.WaitAll(tasks);
+            Assert.Equal(concurrencyLevel * iterations, list.Count);
+            for (int i = 0; i < list.Count; i++)
+            {
+                Assert.Equal(i, list[i]);
+            }
+        }
+
+        [Fact]
+        public void ApplyChange_CarefullyScheduled()
+        {
+            var set = ImmutableHashSet.Create<int>();
+            var task1TransformEntered = new AutoResetEvent(false);
+            var task2TransformEntered = new AutoResetEvent(false);
+            var task1TransformExited = new AutoResetEvent(false);
+
+            var task1 = Task.Run(delegate
+            {
+                int transform1ExecutionCounter = 0;
+                ImmutableInterlocked.ApplyChange(
+                    ref set,
+                    s =>
+                    {
+                        Assert.Equal(1, ++transform1ExecutionCounter);
+                        task1TransformEntered.Set();
+                        task2TransformEntered.WaitOne();
+                        return s.Add(1);
+                    });
+                task1TransformExited.Set();
+                Assert.Equal(1, transform1ExecutionCounter);
+            });
+
+            var task2 = Task.Run(delegate
+            {
+                int transform2ExecutionCounter = 0;
+                ImmutableInterlocked.ApplyChange(
+                    ref set,
+                    s =>
+                    {
+                        switch (++transform2ExecutionCounter)
+                        {
+                            case 1:
+                                task2TransformEntered.Set();
+                                task1TransformExited.WaitOne();
+                                Assert.True(s.IsEmpty);
+                                break;
+                            case 2:
+                                Assert.True(s.Contains(1));
+                                Assert.Equal(1, s.Count);
+                                break;
+                        }
+
+                        return s.Add(2);
+                    });
+
+                // Verify that this transform had to execute twice.
+                Assert.Equal(2, transform2ExecutionCounter);
+            });
+
+            // Wait for all tasks and rethrow any exceptions.
+            Task.WaitAll(task1, task2);
+            Assert.Equal(2, set.Count);
+            Assert.True(set.Contains(1));
+            Assert.True(set.Contains(2));
+        }
+
         [Fact]
         public void InterlockedExchangeArrayDefault()
         {
