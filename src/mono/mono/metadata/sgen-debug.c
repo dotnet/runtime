@@ -51,13 +51,13 @@ void check_object (char *start);
 
 const char*descriptor_types [] = {
 	"INVALID",
-	"run_length",
-	"small_bitmap",
+	"run length",
+	"bitmap",
+	"small pointer-free",
 	"complex",
 	"vector",
-	"large_bitmap",
-	"complex_arr",
-	"complex_ptrfree"
+	"complex arrray",
+	"complex pointer-free"
 };
 
 static char* describe_nursery_ptr (char *ptr, gboolean need_setup);

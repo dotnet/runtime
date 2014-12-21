@@ -87,6 +87,7 @@
  * to be able to identify a non-inited descriptor for debugging.
  */
 enum {
+	/* Keep in sync with `descriptor_types` in sgen-debug.c! */
 	DESC_TYPE_RUN_LENGTH = 1,   /* 16 bits aligned byte size | 1-3 (offset, numptr) bytes tuples */
 	DESC_TYPE_BITMAP = 2,	    /* | 29-61 bitmap bits */
 	DESC_TYPE_SMALL_PTRFREE = 3,
