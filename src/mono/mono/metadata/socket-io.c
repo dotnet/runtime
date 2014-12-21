@@ -89,15 +89,6 @@
 #define LOGDEBUG(...)  
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
-/*
- * We remove this until we have a Darwin implementation
- * that can walk the result of struct ifconf.  The current
- * implementation only works for Linux
- */
-#undef HAVE_SIOCGIFCONF
-#endif
-
 static gint32 convert_family(MonoAddressFamily mono_family)
 {
 	gint32 family=-1;
@@ -2264,172 +2255,6 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 	return (gint) output_bytes;
 }
 
-#ifdef HAVE_SIOCGIFCONF
-static gboolean
-is_loopback (int family, void *ad)
-{
-	char *ptr = (char *) ad;
-
-	if (family == AF_INET) {
-		return (ptr [0] == 127);
-	} else {
-		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
-	}
-	return FALSE;
-}
-
-static void *
-get_local_ips (int family, int *nips)
-{
-	int addr_size, offset, fd, i, count;
-	int max_ifaces = 50; /* 50 interfaces should be enough... */
-	struct ifconf ifc;
-	struct ifreq *ifr;
-	struct ifreq iflags;
-	char *result, *tmp_ptr;
-	gboolean ignore_loopback = FALSE;
-
-	*nips = 0;
-	if (family == AF_INET) {
-		addr_size = sizeof (struct in_addr);
-		offset = G_STRUCT_OFFSET (struct sockaddr_in, sin_addr);
-	} else if (family == AF_INET6) {
-		addr_size = sizeof (struct in6_addr);
-		offset = G_STRUCT_OFFSET (struct sockaddr_in6, sin6_addr);
-	} else {
-		return NULL;
-	}
-
-	fd = socket (family, SOCK_STREAM, 0);
-
-	ifc.ifc_len = max_ifaces * sizeof (struct ifreq);
-	ifc.ifc_buf = g_malloc (ifc.ifc_len);
-	if (ioctl (fd, SIOCGIFCONF, &ifc) < 0) {
-		close (fd);
-		g_free (ifc.ifc_buf);
-		return NULL;
-	}
-
-	count = ifc.ifc_len / sizeof (struct ifreq);
-	*nips = count;
-	if (count == 0) {
-		g_free (ifc.ifc_buf);
-		close (fd);
-		return NULL;
-	}
-
-	for (i = 0, ifr = ifc.ifc_req; i < *nips; i++, ifr++) {
-		strcpy (iflags.ifr_name, ifr->ifr_name);
-		if (ioctl (fd, SIOCGIFFLAGS, &iflags) < 0) {
-			continue;
-		}
-
-		if ((iflags.ifr_flags & IFF_UP) == 0) {
-			ifr->ifr_name [0] = '\0';
-			continue;
-		}
-
-		if ((iflags.ifr_flags & IFF_LOOPBACK) == 0) {
-			ignore_loopback = TRUE;
-		}
-	}
-
-	close (fd);
-	result = g_malloc (addr_size * count);
-	tmp_ptr = result;
-	for (i = 0, ifr = ifc.ifc_req; i < count; i++, ifr++) {
-		if (ifr->ifr_name [0] == '\0') {
-			(*nips)--;
-			continue;
-		}
-
-		if (ignore_loopback && is_loopback (family, ((char *) &ifr->ifr_addr) + offset)) {
-			(*nips)--;
-			continue;
-		}
-
-		memcpy (tmp_ptr, ((char *) &ifr->ifr_addr) + offset, addr_size);
-		tmp_ptr += addr_size;
-	}
-
-	g_free (ifc.ifc_buf);
-	return result;
-}
-#elif defined(HAVE_GETIFADDRS)
-static gboolean
-is_loopback (int family, void *ad)
-{
-	char *ptr = (char *) ad;
-
-	if (family == AF_INET) {
-		return (ptr [0] == 127);
-	} else {
-		return (IN6_IS_ADDR_LOOPBACK ((struct in6_addr *) ptr));
-	}
-	return FALSE;
-}
-
-static void *
-get_local_ips (int family, int *nips)
-{
-	struct ifaddrs *ifap = NULL, *ptr;
-	int addr_size, offset, count, i;
-	char *result, *tmp_ptr;
-
-	*nips = 0;
-	if (family == AF_INET) {
-		addr_size = sizeof (struct in_addr);
-		offset = G_STRUCT_OFFSET (struct sockaddr_in, sin_addr);
-	} else if (family == AF_INET6) {
-		addr_size = sizeof (struct in6_addr);
-		offset = G_STRUCT_OFFSET (struct sockaddr_in6, sin6_addr);
-	} else {
-		return NULL;
-	}
-	
-	if (getifaddrs (&ifap)) {
-		return NULL;
-	}
-	
-	count = 0;
-	for (ptr = ifap; ptr; ptr = ptr->ifa_next) {
-		if (!ptr->ifa_addr)
-			continue;
-		if (ptr->ifa_addr->sa_family != family)
-			continue;
-		if (is_loopback (family, ((char *) ptr->ifa_addr) + offset))
-			continue;
-		count++;
-	}
-		
-	result = g_malloc (addr_size * count);
-	tmp_ptr = result;
-	for (i = 0, ptr = ifap; ptr; ptr = ptr->ifa_next) {
-		if (!ptr->ifa_addr)
-			continue;
-		if (ptr->ifa_addr->sa_family != family)
-			continue;
-		if (is_loopback (family, ((char *) ptr->ifa_addr) + offset))
-			continue;
-			
-		memcpy (tmp_ptr, ((char *) ptr->ifa_addr) + offset, addr_size);
-		tmp_ptr += addr_size;
-	}
-	
-	freeifaddrs (ifap);
-	*nips = count;
-	return result;
-}
-#else
-static void *
-get_local_ips (int family, int *nips)
-{
-	*nips = 0;
-	return NULL;
-}
-
-#endif /* HAVE_SIOCGIFCONF */
-
 static gboolean 
 addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 						MonoArray **h_aliases,
@@ -2449,8 +2274,8 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 	addr_index = 0;
 	*h_aliases=mono_array_new(domain, mono_get_string_class (), 0);
 	if (add_local_ips) {
-		local_in = (struct in_addr *) get_local_ips (AF_INET, &nlocal_in);
-		local_in6 = (struct in6_addr *) get_local_ips (AF_INET6, &nlocal_in6);
+		local_in = (struct in_addr *) mono_get_local_interfaces (AF_INET, &nlocal_in);
+		local_in6 = (struct in6_addr *) mono_get_local_interfaces (AF_INET6, &nlocal_in6);
 		if (nlocal_in || nlocal_in6) {
 			*h_addr_list=mono_array_new(domain, mono_get_string_class (), nlocal_in + nlocal_in6);
 			if (nlocal_in) {
@@ -2559,9 +2384,7 @@ get_addrinfo_family_hint (void)
 MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	gboolean add_local_ips = FALSE;
-#ifdef HAVE_SIOCGIFCONF
 	gchar this_hostname [256];
-#endif
 	MonoAddressInfo *info = NULL;
 	char *hostname;
 	
@@ -2572,14 +2395,12 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 		add_local_ips = TRUE;
 		*h_name = host;
 	}
-#ifdef HAVE_SIOCGIFCONF
 	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
 		if (!strcmp (hostname, this_hostname)) {
 			add_local_ips = TRUE;
 			*h_name = host;
 		}
 	}
-#endif
 
 	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | get_addrinfo_family_hint (), &info)) {
 		g_free (hostname);
