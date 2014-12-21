@@ -57,6 +57,8 @@ void mono_free_address_info (MonoAddressInfo *ai) MONO_INTERNAL;
 
 void mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, const void *address, int port) MONO_INTERNAL;
 
+void *mono_get_local_interfaces (int family, int *interface_count) MONO_INTERNAL;
+
 #ifndef HAVE_INET_PTON
 int inet_pton (int family, const char *address, void *inaddrp) MONO_INTERNAL;
 #endif
