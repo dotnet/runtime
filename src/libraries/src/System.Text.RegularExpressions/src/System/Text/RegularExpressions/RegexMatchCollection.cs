@@ -134,22 +134,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            if ((array != null) && (array.Rank != 1))
-            {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
-            }
-
             // property access to force computation of whole array
             int count = Count;
-            try
-            {
-                // Array.Copy will check for null.
-                Array.Copy(_matches.ToArray(), 0, array, arrayIndex, count);
-            }
-            catch (ArrayTypeMismatchException ex)
-            {
-                throw new ArgumentException(SR.Arg_InvalidArrayType, ex);
-            }
+
+            ((ICollection)_matches).CopyTo(array, arrayIndex);
         }
 
         /// <summary>
