@@ -80,24 +80,6 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Target array type is not compatible with the type of items in the collection..
-        /// </summary>
-        internal static string Arg_InvalidArrayType {
-            get {
-                return ResourceManager.GetString("Arg_InvalidArrayType", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Only single dimensional arrays are supported for the requested action..
-        /// </summary>
-        internal static string Arg_RankMultiDimNotSupported {
-            get {
-                return ResourceManager.GetString("Arg_RankMultiDimNotSupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Cannot include class \{0} in character range..
         /// </summary>
         internal static string BadClassInCharRange {
