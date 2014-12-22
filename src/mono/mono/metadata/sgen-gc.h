@@ -745,32 +745,6 @@ typedef struct _SgenRememberedSet {
 
 SgenRememberedSet *sgen_get_remset (void);
 
-static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
-slow_object_get_size (MonoVTable *vtable, MonoObject* o)
-{
-	MonoClass *klass = vtable->klass;
-
-	/*
-	 * We depend on mono_string_length_fast and
-	 * mono_array_length_fast not using the object's vtable.
-	 */
-	if (klass == mono_defaults.string_class) {
-		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	} else if (klass->rank) {
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
-		if (G_UNLIKELY (array->bounds)) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * klass->rank;
-		}
-		return size;
-	} else {
-		/* from a created object: the class must be inited already */
-		return klass->instance_size;
-	}
-}
-
 static inline mword
 sgen_vtable_get_descriptor (MonoVTable *vtable)
 {
@@ -792,42 +766,7 @@ sgen_obj_get_descriptor_safe (char *obj)
 	return sgen_vtable_get_descriptor (vtable);
 }
 
-/*
- * This function can be called on an object whose first word, the
- * vtable field, is not intact.  This is necessary for the parallel
- * collector.
- */
-static MONO_NEVER_INLINE mword
-sgen_par_object_get_size (MonoVTable *vtable, MonoObject* o)
-{
-	mword descr = (mword)vtable->gc_descr;
-	mword type = descr & DESC_TYPE_MASK;
-
-	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
-		mword size = descr & 0xfff8;
-		SGEN_ASSERT (9, size >= sizeof (MonoObject), "Run length object size to small");
-		return size;
-	} else if (descr == SGEN_DESC_STRING) {
-		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	} else if (type == DESC_TYPE_VECTOR) {
-		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + element_size * mono_array_length_fast (array);
-
-		/*
-		 * Non-vector arrays with a single dimension whose lower bound is zero are
-		 * allocated without bounds.
-		 */
-		if ((descr & VECTOR_KIND_ARRAY) && array->bounds) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * vtable->klass->rank;
-		}
-		return size;
-	}
-
-	return slow_object_get_size (vtable, o);
-}
+#include "metadata/sgen-client-mono.h"
 
 static inline mword
 sgen_safe_object_get_size (MonoObject *obj)
@@ -837,7 +776,7 @@ sgen_safe_object_get_size (MonoObject *obj)
        if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
                obj = (MonoObject*)forwarded;
 
-       return sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
 
 static inline gboolean
@@ -861,7 +800,7 @@ sgen_safe_object_get_size_unaligned (MonoObject *obj)
                obj = (MonoObject*)forwarded;
        }
 
-       return slow_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_slow_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
 
 const char* sgen_safe_name (void* obj);
@@ -1226,8 +1165,6 @@ gboolean nursery_canaries_enabled (void);
 					canary_copy[CANARY_SIZE] = 0;	\
 					g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, ((MonoObject*)addr)->vtable->klass->name, CANARY_STRING, canary_copy);	\
 				} }
-
-#include "metadata/sgen-client-mono.h"
 
 #endif /* HAVE_SGEN_GC */
 
