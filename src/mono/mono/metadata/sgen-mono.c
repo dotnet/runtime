@@ -182,6 +182,18 @@ sgen_client_array_fill_range (char *start, size_t size)
 	return TRUE;
 }
 
+void
+sgen_client_zero_array_fill_header (void *p, size_t size)
+{
+	if (size >= sizeof (MonoArray)) {
+		memset (p, 0, sizeof (MonoArray));
+	} else {
+		static guint8 zeros [sizeof (MonoArray)];
+
+		SGEN_ASSERT (0, !memcmp (p, zeros, size), "TLAB segment must be zeroed out.");
+	}
+}
+
 /*
  * Finalization
  */

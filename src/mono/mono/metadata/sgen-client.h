@@ -34,6 +34,13 @@ MonoVTable* sgen_client_get_array_fill_vtable (void);
  */
 gboolean sgen_client_array_fill_range (char *start, size_t size);
 
+/*
+ * This is called if the nursery clearing policy at `clear-at-gc`, which is usually only
+ * used for debugging.  If `size` is large enough for the memory to have been filled with a
+ * dummy, object, zero its header.  Note that there might not actually be a header there.
+ */
+void sgen_client_zero_array_fill_header (void *p, size_t size);
+
 gboolean sgen_client_object_has_critical_finalizer (MonoObject *obj);
 
 /*

@@ -42,6 +42,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-client.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-counters.h"
 
@@ -145,14 +146,7 @@ zero_tlab_if_necessary (void *p, size_t size)
 		 * for somewhere in between, we zero in any case, just
 		 * to make sure.
 		 */
-
-		if (size >= sizeof (MonoArray))
-			memset (p, 0, sizeof (MonoArray));
-		else {
-			static guint8 zeros [sizeof (MonoArray)];
-
-			SGEN_ASSERT (0, !memcmp (p, zeros, size), "TLAB segment must be zeroed out.");
-		}
+		sgen_client_zero_array_fill_header (p, size);
 	}
 }
 
