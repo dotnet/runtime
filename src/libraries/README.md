@@ -15,57 +15,56 @@ Beta Jenkins-CI
 [issues-closed-image]: http://www.issuestats.com/github/dotnet/corefx/badge/issue
 [issues-closed]: http://www.issuestats.com/github/dotnet/corefx
 
-This repository contains the class libraries for .NET Core. This is currently a
+This repository contains the class libraries for .NET Core. This is a
 work in progress, and does not currently contain the entire set of libraries
 that we plan on open sourcing. Make sure to watch this repository in order to be
 notified as we make changes to and expand it. Check out this [blog post] that
 explains our OSS strategy and road map in more detail.
 
-Today, it contains the following components:
+Today, the repository contains the following components:
 
-* **Immutable Collections**. A set of collection types that make it easy to keep
+* **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
+
+* **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
+
+* **System.Collections.Immutable**. Provides a set of immutable collection types that make it easy to keep
   mutable state under control without sacrificing performance or memory
   footprint. You can read more about them on [MSDN][immutable-msdn].
 
-* **ECMA-335 Metadata Reader**. This is a highly tuned low-level metadata reader
-  that allows [Roslyn] to parse assemblies.
+* **System.Console**. Provides the Console class, which enables access to the standard input, 
+  output, and error streams for console-based applications.
 
-* **SIMD enabled vector types**. We've recently added a set of basic vector
-  types that leverage single instruction, multiple data (SIMD) CPU instructions.
-  See our [recent][simd-post-1] [announcements][simd-post-2] for more details.
-
-* **XML**. This includes the DOM APIs such as the `XDocument` and `XmlDocument`
-  types, XLinq as well the corresponding XPath extension methods.
-
-* **Parallel LINQ**.  Parallel LINQ (PLINQ) is a parallel implementation of LINQ
-  to Objects. PLINQ implements the full set of LINQ standard query operators as 
-  extension methods for the System.Linq namespace and has additional operators
-  for parallel operations.
-
-* **TPL Dataflow**.  TPL Dataflow promotes actor/agent-oriented designs through 
-  primitives for in-process message passing, dataflow, and pipelining. TDF builds 
-  upon the APIs and scheduling infrastructure provided by the Task Parallel Library
-  (TPL), and integrates with the language support for asynchrony provided by 
-  C#, Visual Basic, and F#.
-
-* **Console**. This represents the standard input, output, and error streams for console applications.
-
-* **Regular Expressions**. System.Text.RegularExpressions is the library that drives 
-  our regular expression engine. The types in this namespace provide useful 
-  functionality for running common operations using regular expressions.
-
-* **Microsoft.Win32 Primitives**. Provides common types for Win32-based libraries.
-
-* **Microsoft.Win32 Registry**. Provides support for accessing and modifying the Windows Registry.
-
-* **System.IO.Pipes**. The System.IO.Pipes namespace contains types that provide a
-  means for interprocess communication through anonymous and/or named pipes.
-
-* **System.Diagnostics.FileVersionInfo**. This library provides useful functionality for querying
+* **System.Diagnostics.FileVersionInfo**. Provides useful functionality for querying
   and examining the version information of physical files on disk.
 
+* **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
+  stopping of local system processes.
 
-More is coming soon. Stay tuned!
+* **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
+  and/or named pipes.
+
+* **System.Linq.Parallel**.  Provides a parallelized implementation of LINQ to Objects. "Parallel LINQ" (PLINQ) 
+  implements the full set of LINQ standard query operators as well as additional operators specific to parallel operations.
+
+* **System.Numerics.Vectors**. Provides a set of basic vector types that leverage single instruction, 
+  multiple data (SIMD) CPU instructions. See our [recent][simd-post-1] [announcements][simd-post-2] for more details.
+
+* **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
+  reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
+
+* **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
+  functionality for running common operations using regular expressions.
+
+* **System.Threading.Tasks.Dataflow**.  Provides a set of types that support actor/agent-oriented designs through 
+  primitives for in-process message passing, dataflow, and pipelining. "TPL Dataflow" builds 
+  upon the APIs and scheduling infrastructure provided by the Task Parallel Library
+  (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
+
+* **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
+  types, XLinq, and the corresponding XPath extension methods.
+
+
+More libraries are coming soon. Stay tuned!
 
 [blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
 [roslyn]: https://roslyn.codeplex.com/

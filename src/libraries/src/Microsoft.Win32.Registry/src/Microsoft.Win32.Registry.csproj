@@ -19,69 +19,7 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\SR.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Collections">
-      <HintPath>..\..\packages\System.Collections.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Collections.dll</HintPath>
-      <Private>False</Private>
-   </Reference>
-    <Reference Include="System.Diagnostics.Contracts">
-      <HintPath>..\..\packages\System.Diagnostics.Contracts.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Contracts.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Diagnostics.Debug">
-      <HintPath>..\..\packages\System.Diagnostics.Debug.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Debug.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Diagnostics.Tools">
-      <HintPath>..\..\packages\System.Diagnostics.Tools.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Diagnostics.Tools.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Globalization">
-      <HintPath>..\..\packages\System.Globalization.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Globalization.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.IO">
-      <HintPath>..\..\packages\System.IO.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.IO.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection">
-      <HintPath>..\..\packages\System.Reflection.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Reflection.Primitives">
-      <HintPath>..\..\packages\System.Reflection.Primitives.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Reflection.Primitives.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Resources.ResourceManager">
-      <HintPath>..\..\packages\System.Resources.ResourceManager.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Resources.ResourceManager.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime">
-      <HintPath>..\..\packages\System.Runtime.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions">
-      <HintPath>..\..\packages\System.Runtime.Extensions.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Extensions.dll</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="System.Runtime.Handles">
-      <HintPath>..\..\packages\System.Runtime.Handles.4.0.0-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.Handles.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Runtime.InteropServices">
-      <HintPath>..\..\packages\System.Runtime.InteropServices.4.0.20-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.InteropServices.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Text.Encoding">
-      <HintPath>..\..\packages\System.Text.Encoding.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Text.Encoding.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System.Threading.Tasks">
-      <HintPath>..\..\packages\System.Threading.Tasks.4.0.10-beta-22405\lib\portable-wpa80+win80+net45+aspnetcore50\System.Threading.Tasks.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
+  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="Interop\Interop.Manual.cs" />
     <Compile Include="Microsoft\Win32\Registry.cs" />

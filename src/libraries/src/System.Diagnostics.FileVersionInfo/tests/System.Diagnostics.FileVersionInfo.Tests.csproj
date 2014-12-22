@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <SignAssembly>false</SignAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectGuid>{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}</ProjectGuid>
+    <NuGetPackageImportStamp>2fda0f27</NuGetPackageImportStamp>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Checked in test binaries for FileVersionInfoTest -->
+    <Content Include="NativeConsoleApp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SecondNativeLibrary.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assembly1.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="FileVersionInfoTest.cs" />
+  </ItemGroup>
+  <!-- References used -->
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Diagnostics.FileVersionInfo.csproj">
+      <Project>{00eda5fd-e802-40d3-92d5-56c27612d36d}</Project>
+      <Name>System.Diagnostics.FileVersionInfo</Name>
+    </ProjectReference>
+    <ProjectReference Include="Assembly1.csproj">
+      <Project>{28eb14be-3bc9-4543-aba6-a932424dfbd0}</Project>
+      <Name>Assembly1</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <!-- Automatically added by VS -->
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

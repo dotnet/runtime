@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{63634289-90D7-4947-8BF3-DBBE98D76C85}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Diagnostics.Process</RootNamespace>
+    <AssemblyName>System.Diagnostics.Process</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
+    <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
+    <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
+    <Compile Include="System\Diagnostics\Process.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.cs" />
+    <Compile Include="System\Diagnostics\ProcessModule.cs" />
+    <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
+    <Compile Include="System\Diagnostics\ProcessStartInfo.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.cs" />
+    <Compile Include="System\Diagnostics\ProcessThreadCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessWaitHandle.cs" />
+    <Compile Include="System\Diagnostics\ProcessWindowStyle.cs" />
+    <Compile Include="System\Diagnostics\ThreadPriorityLevel.cs" />
+    <Compile Include="System\Diagnostics\ThreadState.cs" />
+    <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\SR.cs" >
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
