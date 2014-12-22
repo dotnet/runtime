@@ -3389,21 +3389,6 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 }
 
 void
-mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
-{
-	HEAVY_STAT (++stat_wbarrier_set_arrayref);
-	if (ptr_in_nursery (slot_ptr)) {
-		*(void**)slot_ptr = value;
-		return;
-	}
-	SGEN_LOG (8, "Adding remset at %p", slot_ptr);
-	if (value)
-		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
-
-	remset.wbarrier_set_arrayref (arr, slot_ptr, value);
-}
-
-void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	HEAVY_STAT (++stat_wbarrier_arrayref_copy);

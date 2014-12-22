@@ -88,15 +88,6 @@ sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObj
 }
 
 static void
-sgen_card_table_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
-{
-	*(void**)slot_ptr = value;
-	if (need_mod_union || sgen_ptr_in_nursery (value))
-		sgen_card_table_mark_address ((mword)slot_ptr);
-	sgen_dummy_use (value);	
-}
-
-static void
 sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	gpointer *dest = dest_ptr;
@@ -610,7 +601,6 @@ sgen_card_table_init (SgenRememberedSet *remset)
 
 
 	remset->wbarrier_set_field = sgen_card_table_wbarrier_set_field;
-	remset->wbarrier_set_arrayref = sgen_card_table_wbarrier_set_arrayref;
 	remset->wbarrier_arrayref_copy = sgen_card_table_wbarrier_arrayref_copy;
 	remset->wbarrier_value_copy = sgen_card_table_wbarrier_value_copy;
 	remset->wbarrier_object_copy = sgen_card_table_wbarrier_object_copy;

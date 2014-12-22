@@ -127,6 +127,21 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	sgen_get_remset ()->wbarrier_object_copy (obj, src);
 }
 
+void
+mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
+{
+	HEAVY_STAT (++stat_wbarrier_set_arrayref);
+	if (sgen_ptr_in_nursery (slot_ptr)) {
+		*(void**)slot_ptr = value;
+		return;
+	}
+	SGEN_LOG (8, "Adding remset at %p", slot_ptr);
+	if (value)
+		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
+
+	sgen_get_remset ()->wbarrier_set_field ((MonoObject*)arr, slot_ptr, value);
+}
+
 /*
  * Dummy filler objects
  */
