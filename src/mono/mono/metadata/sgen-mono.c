@@ -25,6 +25,7 @@
 #include "metadata/monitor.h"
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/sgen-client.h"
+#include "metadata/sgen-cardtable.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
@@ -1118,6 +1119,181 @@ sgen_has_managed_allocator (void)
 	for (i = 0; i < ATYPE_NUM; ++i)
 		if (alloc_method_cache [i])
 			return TRUE;
+	return FALSE;
+}
+
+/*
+ * Cardtable scanning
+ */
+
+#define MWORD_MASK (sizeof (mword) - 1)
+
+static inline int
+find_card_offset (mword card)
+{
+/*XXX Use assembly as this generates some pretty bad code */
+#if defined(__i386__) && defined(__GNUC__)
+	return  (__builtin_ffs (card) - 1) / 8;
+#elif defined(__x86_64__) && defined(__GNUC__)
+	return (__builtin_ffsll (card) - 1) / 8;
+#elif defined(__s390x__)
+	return (__builtin_ffsll (GUINT64_TO_LE(card)) - 1) / 8;
+#else
+	int i;
+	guint8 *ptr = (guint8 *) &card;
+	for (i = 0; i < sizeof (mword); ++i) {
+		if (ptr[i])
+			return i;
+	}
+	return 0;
+#endif
+}
+
+static guint8*
+find_next_card (guint8 *card_data, guint8 *end)
+{
+	mword *cards, *cards_end;
+	mword card;
+
+	while ((((mword)card_data) & MWORD_MASK) && card_data < end) {
+		if (*card_data)
+			return card_data;
+		++card_data;
+	}
+
+	if (card_data == end)
+		return end;
+
+	cards = (mword*)card_data;
+	cards_end = (mword*)((mword)end & ~MWORD_MASK);
+	while (cards < cards_end) {
+		card = *cards;
+		if (card)
+			return (guint8*)cards + find_card_offset (card);
+		++cards;
+	}
+
+	card_data = (guint8*)cards_end;
+	while (card_data < end) {
+		if (*card_data)
+			return card_data;
+		++card_data;
+	}
+
+	return end;
+}
+
+#define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
+
+gboolean
+sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
+{
+	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+	MonoClass *klass = vt->klass;
+
+	SGEN_ASSERT (0, SGEN_VTABLE_HAS_REFERENCES (vt), "Why would we ever call this on reference-free objects?");
+
+	if (vt->rank) {
+		guint8 *card_data, *card_base;
+		guint8 *card_data_end;
+		char *obj_start = sgen_card_table_align_pointer (obj);
+		mword obj_size = sgen_par_object_get_size (vt, (MonoObject*)obj);
+		char *obj_end = obj + obj_size;
+		size_t card_count;
+		size_t extra_idx = 0;
+
+		MonoArray *arr = (MonoArray*)obj;
+		mword desc = (mword)klass->element_class->gc_descr;
+		int elem_size = mono_array_element_size (klass);
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		guint8 *overflow_scan_end = NULL;
+#endif
+
+#ifdef SGEN_OBJECT_LAYOUT_STATISTICS
+		if (klass->element_class->valuetype)
+			sgen_object_layout_scanned_vtype_array ();
+		else
+			sgen_object_layout_scanned_ref_array ();
+#endif
+
+		if (cards)
+			card_data = cards;
+		else
+			card_data = sgen_card_table_get_card_scan_address ((mword)obj);
+
+		card_base = card_data;
+		card_count = sgen_card_table_number_of_cards_in_range ((mword)obj, obj_size);
+		card_data_end = card_data + card_count;
+
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		/*Check for overflow and if so, setup to scan in two steps*/
+		if (!cards && card_data_end >= SGEN_SHADOW_CARDTABLE_END) {
+			overflow_scan_end = sgen_shadow_cardtable + (card_data_end - SGEN_SHADOW_CARDTABLE_END);
+			card_data_end = SGEN_SHADOW_CARDTABLE_END;
+		}
+
+LOOP_HEAD:
+#endif
+
+		card_data = find_next_card (card_data, card_data_end);
+		for (; card_data < card_data_end; card_data = find_next_card (card_data + 1, card_data_end)) {
+			size_t index;
+			size_t idx = (card_data - card_base) + extra_idx;
+			char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
+			char *card_end = start + CARD_SIZE_IN_BYTES;
+			char *first_elem, *elem;
+
+			HEAVY_STAT (++los_marked_cards);
+
+			if (!cards)
+				sgen_card_table_prepare_card_for_scanning (card_data);
+
+			card_end = MIN (card_end, obj_end);
+
+			if (start <= (char*)arr->vector)
+				index = 0;
+			else
+				index = ARRAY_OBJ_INDEX (start, obj, elem_size);
+
+			elem = first_elem = (char*)mono_array_addr_with_size_fast ((MonoArray*)obj, elem_size, index);
+			if (klass->element_class->valuetype) {
+				ScanVTypeFunc scan_vtype_func = ctx.ops->scan_vtype;
+
+				for (; elem < card_end; elem += elem_size)
+					scan_vtype_func (obj, elem, desc, ctx.queue BINARY_PROTOCOL_ARG (elem_size));
+			} else {
+				CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
+
+				HEAVY_STAT (++los_array_cards);
+				for (; elem < card_end; elem += SIZEOF_VOID_P) {
+					gpointer new, old = *(gpointer*)elem;
+					if ((mod_union && old) || G_UNLIKELY (sgen_ptr_in_nursery (old))) {
+						HEAVY_STAT (++los_array_remsets);
+						copy_func ((void**)elem, ctx.queue);
+						new = *(gpointer*)elem;
+						if (G_UNLIKELY (sgen_ptr_in_nursery (new)))
+							sgen_add_to_global_remset (elem, new);
+					}
+				}
+			}
+
+			binary_protocol_card_scan (first_elem, elem - first_elem);
+		}
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		if (overflow_scan_end) {
+			extra_idx = card_data - card_base;
+			card_base = card_data = sgen_shadow_cardtable;
+			card_data_end = overflow_scan_end;
+			overflow_scan_end = NULL;
+			goto LOOP_HEAD;
+		}
+#endif
+		return TRUE;
+	}
+
 	return FALSE;
 }
 

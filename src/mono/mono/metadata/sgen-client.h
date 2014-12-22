@@ -53,6 +53,14 @@ gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
 
 /*
+ * This is called for objects that are larger than one card.  If it's possible to scan only
+ * parts of the object based on which cards are marked, do so and return TRUE.  Otherwise,
+ * return FALSE.
+ */
+gboolean sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx);
+
+
+/*
  * If the client has registered any internal memory types, this must return a string
  * describing the given type.  Only used for debugging.
  */

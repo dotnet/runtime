@@ -24,6 +24,9 @@
 #ifndef __MONO_SGEN_CARD_TABLE_INLINES_H__
 #define __MONO_SGEN_CARD_TABLE_INLINES_H__
 
+/*WARNING: This function returns the number of cards regardless of overflow in case of overlapping cards.*/
+mword sgen_card_table_number_of_cards_in_range (mword address, mword size);
+
 void sgen_card_table_reset_region (mword start, mword end);
 void* sgen_card_table_align_pointer (void *ptr);
 void sgen_card_table_mark_range (mword address, mword size);
@@ -69,6 +72,9 @@ sgen_card_table_get_card_address (mword address)
 }
 
 extern guint8 *sgen_shadow_cardtable;
+
+#define SGEN_SHADOW_CARDTABLE_END (sgen_shadow_cardtable + CARD_COUNT_IN_BYTES)
+#define SGEN_CARDTABLE_END (sgen_cardtable + CARD_COUNT_IN_BYTES)
 
 static inline guint8*
 sgen_card_table_get_shadow_card_address (mword address)
