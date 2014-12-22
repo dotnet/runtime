@@ -1029,6 +1029,9 @@ void sgen_nursery_alloc_prepare_for_major (void);
 
 char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references);
 
+void* sgen_alloc_obj_nolock (MonoVTable *vtable, size_t size);
+void* sgen_try_alloc_obj_nolock (MonoVTable *vtable, size_t size);
+
 /* Finalization/ephemeron support */
 
 static inline gboolean
