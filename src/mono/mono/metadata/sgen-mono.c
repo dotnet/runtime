@@ -1433,6 +1433,29 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 }
 
 /*
+ * Strings
+ */
+
+void
+mono_gc_set_string_length (MonoString *str, gint32 new_length)
+{
+	mono_unichar2 *new_end = str->chars + new_length;
+
+	/* zero the discarded string. This null-delimits the string and allows
+	 * the space to be reclaimed by SGen. */
+
+	if (nursery_canaries_enabled () && sgen_ptr_in_nursery (str)) {
+		CHECK_CANARY_FOR_OBJECT (str);
+		memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2) + CANARY_SIZE);
+		memcpy (new_end + 1 , CANARY_STRING, CANARY_SIZE);
+	} else {
+		memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2));
+	}
+
+	str->length = new_length;
+}
+
+/*
  * Debugging
  */
 
