@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <AssemblyName>System.Text.RegularExpressions.Tests</AssemblyName>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <SignAssembly>false</SignAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <!-- Compiled Source Files -->
+  <ItemGroup>
+    <Compile Include="CaptureCollectionTests.cs" />
+    <Compile Include="CaptureTests.cs" />
+    <Compile Include="EscapeUnescapeTests.cs" />
+    <Compile Include="GroupNamesAndNumbers.cs" />
+    <Compile Include="IsMatchMatchSplitTests.cs" />
+    <Compile Include="R2LGetGroupNamesMatchTests.cs" />
+    <Compile Include="RegexComponentsSplitTests.cs" />
+    <Compile Include="RegexConstructorTests.cs" />
+    <Compile Include="RegexMatchTests0.cs" />
+    <Compile Include="RegexMatchTests1.cs" />
+    <Compile Include="RegexMatchTests2.cs" />
+    <Compile Include="RegexMatchTests3.cs" />
+    <Compile Include="RegexMatchTests4.cs" />
+    <Compile Include="RegexMatchTests5.cs" />
+    <Compile Include="RegexMatchTests6.cs" />
+    <Compile Include="RegexMatchTests7.cs" />
+    <Compile Include="RegexMatchTests8.cs" />
+    <Compile Include="RegexMatchTests9.cs" />
+    <Compile Include="RegexMatchTests10.cs" />
+    <Compile Include="RegexMatchTests11.cs" />
+    <Compile Include="RegexMatchValueTests.cs" />
+    <Compile Include="RegexReplaceStringTests0.cs" />
+    <Compile Include="RegexReplaceStringTests1.cs" />
+    <Compile Include="RegexSplitTests.cs" />
+    <Compile Include="ReturnValueChecks.cs" />
+    <Compile Include="RightToLeft.cs" />
+    <Compile Include="RightToLeftMatchStartAtTests.cs" />
+    <Compile Include="SplitMatchIsMatchTests.cs" />
+    <Compile Include="RegexUnicodeCharTests.cs" />
+    <Compile Include="RegexLangElementsCoverageTests.cs" />
+    <Compile Include="CharacterClassSubtractionSimple.cs" />
+    <Compile Include="Support.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Text.RegularExpressions.csproj">
+      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
+      <Name>System.Text.RegularExpressions</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <!-- Automatically added by VS -->
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

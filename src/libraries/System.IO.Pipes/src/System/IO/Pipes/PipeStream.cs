@@ -60,8 +60,6 @@ namespace System.IO.Pipes
             public IOCancellationHelper CancellationHelper { get; private set; }
         }
 
-        // TODO: (B#925672) this was previously (Environment.OSVersion.Platform == PlatformID.Win32NT), remove all dead code based on that
-        private static readonly bool _canUseAsync = true;
         [SecurityCritical]
         private unsafe static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(PipeStream.AsyncPSCallback);
 
@@ -152,9 +150,6 @@ namespace System.IO.Pipes
         internal void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
         {
             Debug.Assert(handle != null, "handle is null");
-
-            // Use Stream's async code for platforms that don't support it.
-            isAsync &= _canUseAsync;
 
             // If the handle is of async type, bind the handle to the ThreadPool so that we can use 
             // the async operations (it's needed so that our native callbacks get called).
