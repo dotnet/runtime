@@ -8331,8 +8331,13 @@ mono_class_get_cctor (MonoClass *klass)
 	if (!klass->has_cctor)
 		return NULL;
 
-	if (mono_class_get_cached_class_info (klass, &cached_info))
-		return mono_get_method (klass->image, cached_info.cctor_token, klass);
+	if (mono_class_get_cached_class_info (klass, &cached_info)) {
+		MonoError error;
+		MonoMethod *result = mono_get_method_checked (klass->image, cached_info.cctor_token, klass, NULL, &error);
+		if (!mono_error_ok (&error))
+			g_error ("Could not lookup class cctor from cached metadata due to %s", mono_error_get_message (&error));
+		return result;
+	}
 
 	if (klass->generic_class && !klass->methods)
 		return mono_class_get_inflated_method (klass, mono_class_get_cctor (klass->generic_class->container_class));
@@ -8356,9 +8361,13 @@ mono_class_get_finalizer (MonoClass *klass)
 	if (!mono_class_has_finalizer (klass))
 		return NULL;
 
-	if (mono_class_get_cached_class_info (klass, &cached_info))
-		return mono_get_method (cached_info.finalize_image, cached_info.finalize_token, NULL);
-	else {
+	if (mono_class_get_cached_class_info (klass, &cached_info)) {
+		MonoError error;
+		MonoMethod *result = mono_get_method_checked (cached_info.finalize_image, cached_info.finalize_token, NULL, NULL, &error);
+		if (!mono_error_ok (&error))
+			g_error ("Could not lookup finalizer from cached metadata due to %s", mono_error_get_message (&error));
+		return result;
+	}else {
 		mono_class_setup_vtable (klass);
 		return klass->vtable [finalize_slot];
 	}
