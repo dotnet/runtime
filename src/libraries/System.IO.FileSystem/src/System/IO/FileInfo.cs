@@ -98,6 +98,21 @@ namespace System.IO
             }
         }
 
+        public bool IsReadOnly
+        {
+            get
+            {
+                return (Attributes & FileAttributes.ReadOnly) != 0;
+            }
+            set
+            {
+                if (value)
+                    Attributes |= FileAttributes.ReadOnly;
+                else
+                    Attributes &= ~FileAttributes.ReadOnly;
+            }
+        }
+
         [System.Security.SecuritySafeCritical]  // auto-generated
         public StreamReader OpenText()
         {

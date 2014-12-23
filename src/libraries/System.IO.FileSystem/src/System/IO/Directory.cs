@@ -19,6 +19,23 @@ namespace System.IO
     [ComVisible(true)]
     public static class Directory
     {
+        public static DirectoryInfo GetParent(String path)
+        {
+            if (path == null)
+                throw new ArgumentNullException("path");
+
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_PathEmpty, "path");
+            Contract.EndContractBlock();
+
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+
+            String s = Path.GetDirectoryName(fullPath);
+            if (s == null)
+                return null;
+            return new DirectoryInfo(s);
+        }
+
         [System.Security.SecuritySafeCritical]
         public static DirectoryInfo CreateDirectory(String path)
         {
@@ -81,7 +98,13 @@ namespace System.IO
         public static void SetCreationTime(String path, DateTime creationTime)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetCreationTime(fullPath, new DateTimeOffset(creationTime), asDirectory: true);
+            FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: true);
+        }
+
+        public static void SetCreationTimeUtc(String path, DateTime creationTime)
+        {
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+            FileSystem.Current.SetCreationTime(fullPath, File.GetUtcDateTimeOffset(creationTime), asDirectory: true);
         }
 
         public static DateTime GetCreationTime(String path)
@@ -89,10 +112,21 @@ namespace System.IO
             return File.GetCreationTime(path);
         }
 
+        public static DateTime GetCreationTimeUtc(String path)
+        {
+            return File.GetCreationTimeUtc(path);
+        }
+ 
         public static void SetLastWriteTime(String path, DateTime lastWriteTime)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetLastWriteTime(fullPath, new DateTimeOffset(lastWriteTime), asDirectory: true);
+            FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: true);
+        }
+
+        public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTime)
+        {
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+            FileSystem.Current.SetLastWriteTime(fullPath, File.GetUtcDateTimeOffset(lastWriteTime), asDirectory: true);
         }
 
         public static DateTime GetLastWriteTime(String path)
@@ -100,16 +134,31 @@ namespace System.IO
             return File.GetLastWriteTime(path);
         }
 
+        public static DateTime GetLastWriteTimeUtc(String path)
+        {
+            return File.GetLastWriteTimeUtc(path);
+        }
+
         public static void SetLastAccessTime(String path, DateTime lastAccessTime)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetLastAccessTime(fullPath, new DateTimeOffset(lastAccessTime), asDirectory: true);
+            FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: true);
         }
 
+        public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTime)
+        {
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+            FileSystem.Current.SetLastAccessTime(fullPath, File.GetUtcDateTimeOffset(lastAccessTime), asDirectory: true);
+        }
 
         public static DateTime GetLastAccessTime(String path)
         {
             return File.GetLastAccessTime(path);
+        }
+
+        public static DateTime GetLastAccessTimeUtc(String path)
+        {
+            return File.GetLastAccessTimeUtc(path);
         }
 
         // Returns an array of filenames in the DirectoryInfo specified by path

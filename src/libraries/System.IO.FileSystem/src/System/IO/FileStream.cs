@@ -105,8 +105,10 @@ namespace System.IO
             if (HasAdditionalInvalidCharacters(fullPath))
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
+#if !PLATFORM_UNIX
             if (fullPath.IndexOf(':', 2) != -1)
                 throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
+#endif
 
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
                 throw new ArgumentException(SR.Argument_InvalidAppendMode);

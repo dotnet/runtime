@@ -144,6 +144,12 @@ namespace System.IO
             return new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize);
         }
 
+        public static FileStream Create(String path, int bufferSize, FileOptions options)
+        {
+            return new FileStream(path, FileMode.Create, FileAccess.ReadWrite,
+                                  FileShare.None, bufferSize, options);
+        }
+ 
         // Deletes a file. The file specified by the designated path is deleted.
         // If the file does not exist, Delete succeeds without throwing
         // an exception.
@@ -225,10 +231,28 @@ namespace System.IO
             return new FileStream(path, mode, access, share);
         }
 
+        internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
+        {
+            // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas 
+            // ToUniversalTime treats this as local.
+            if (dateTime.Kind == DateTimeKind.Unspecified)
+            {
+                return DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+            }
+
+            return dateTime.ToUniversalTime();
+        }
+
         public static void SetCreationTime(String path, DateTime creationTime)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetCreationTime(fullPath, new DateTimeOffset(creationTime), asDirectory: false);
+            FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: false);
+        }
+
+        public static void SetCreationTimeUtc(String path, DateTime creationTime)
+        {
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+            FileSystem.Current.SetCreationTime(fullPath, GetUtcDateTimeOffset(creationTime), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -239,7 +263,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static DateTime GetCreationTimeUtc(String path)
+        public static DateTime GetCreationTimeUtc(String path)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
             return FileSystem.Current.GetCreationTime(fullPath).UtcDateTime;
@@ -248,7 +272,13 @@ namespace System.IO
         public static void SetLastAccessTime(String path, DateTime lastAccessTime)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetLastAccessTime(fullPath, new DateTimeOffset(lastAccessTime), asDirectory: false);
+            FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: false);
+        }
+
+        public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTime)
+        {
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+            FileSystem.Current.SetLastAccessTime(fullPath, GetUtcDateTimeOffset(lastAccessTime), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -259,7 +289,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static DateTime GetLastAccessTimeUtc(String path)
+        public static DateTime GetLastAccessTimeUtc(String path)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
             return FileSystem.Current.GetLastAccessTime(fullPath).UtcDateTime;
@@ -268,7 +298,13 @@ namespace System.IO
         public static void SetLastWriteTime(String path, DateTime lastWriteTime)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetLastWriteTime(fullPath, new DateTimeOffset(lastWriteTime), asDirectory: false);
+            FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: false);
+        }
+
+        public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTime)
+        {
+            String fullPath = PathHelpers.GetFullPathInternal(path);
+            FileSystem.Current.SetLastWriteTime(fullPath, GetUtcDateTimeOffset(lastWriteTime), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -279,7 +315,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static DateTime GetLastWriteTimeUtc(String path)
+        public static DateTime GetLastWriteTimeUtc(String path)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
             return FileSystem.Current.GetLastWriteTime(fullPath).UtcDateTime;
@@ -446,6 +482,29 @@ namespace System.IO
             {
                 fs.Write(bytes, 0, bytes.Length);
             }
+        }
+        public static String[] ReadAllLines(String path)
+        {
+            if (path == null)
+                throw new ArgumentNullException("path");
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath);
+            Contract.EndContractBlock();
+
+            return InternalReadAllLines(path, Encoding.UTF8);
+        }
+
+        public static String[] ReadAllLines(String path, Encoding encoding)
+        {
+            if (path == null)
+                throw new ArgumentNullException("path");
+            if (encoding == null)
+                throw new ArgumentNullException("encoding");
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath);
+            Contract.EndContractBlock();
+
+            return InternalReadAllLines(path, encoding);
         }
 
         private static String[] InternalReadAllLines(String path, Encoding encoding)

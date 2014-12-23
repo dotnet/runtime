@@ -102,7 +102,7 @@ namespace System.IO
         }
 
         [ComVisible(false)]
-        private DateTime CreationTimeUtc
+        public DateTime CreationTimeUtc
         {
             [System.Security.SecuritySafeCritical]
             get
@@ -112,7 +112,7 @@ namespace System.IO
 
             set
             {
-                FileSystemObject.CreationTime = value;
+                FileSystemObject.CreationTime = File.GetUtcDateTimeOffset(value);
             }
         }
 
@@ -131,7 +131,7 @@ namespace System.IO
         }
 
         [ComVisible(false)]
-        private DateTime LastAccessTimeUtc
+        public DateTime LastAccessTimeUtc
         {
             [System.Security.SecuritySafeCritical]
             get
@@ -141,7 +141,7 @@ namespace System.IO
 
             set
             {
-                FileSystemObject.LastAccessTime = value;
+                FileSystemObject.LastAccessTime = File.GetUtcDateTimeOffset(value);
             }
         }
 
@@ -160,7 +160,7 @@ namespace System.IO
         }
 
         [ComVisible(false)]
-        private DateTime LastWriteTimeUtc
+        public DateTime LastWriteTimeUtc
         {
             [System.Security.SecuritySafeCritical]
             get
@@ -170,7 +170,7 @@ namespace System.IO
 
             set
             {
-                FileSystemObject.LastWriteTime = value;
+                FileSystemObject.LastWriteTime = File.GetUtcDateTimeOffset(value);
             }
         }
 
