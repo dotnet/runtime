@@ -47,6 +47,7 @@
 #include "sgen-bridge.h"
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
+#include "sgen-client.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
 #include "utils/mono-compiler.h"
@@ -888,7 +889,7 @@ processing_after_callback (int generation)
 			for (j = 0; j < api_sccs [i]->num_objs; ++j)
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC,
 					"OBJECT %s (%p) SCC [%d] %s",
-						sgen_safe_name (api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
+						sgen_client_object_safe_name (api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
 						i,
 						api_sccs [i]->is_alive  ? "ALIVE" : "DEAD");
 		}

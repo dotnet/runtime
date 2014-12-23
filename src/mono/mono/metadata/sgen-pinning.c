@@ -26,6 +26,7 @@
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-pointer-queue.h"
+#include "metadata/sgen-client.h"
 
 static SgenPointerQueue pin_queue;
 static size_t last_num_pinned = 0;
@@ -171,7 +172,7 @@ sgen_dump_pin_queue (void)
 
 	for (i = 0; i < last_num_pinned; ++i) {
 		void *ptr = pin_queue.data [i];
-		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", ptr, sgen_safe_name (ptr), sgen_safe_object_get_size (ptr));
+		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", ptr, sgen_client_object_safe_name (ptr), sgen_safe_object_get_size (ptr));
 	}
 }
 

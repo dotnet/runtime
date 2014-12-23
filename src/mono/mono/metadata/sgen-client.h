@@ -73,6 +73,8 @@ gboolean sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, gui
  */
 const char* sgen_client_description_for_internal_mem_type (int type);
 
+const char* sgen_client_object_safe_name (MonoObject *obj);
+
 void sgen_client_pre_collection_checks (void);
 
 gboolean sgen_client_handle_gc_debug (const char *opt);

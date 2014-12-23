@@ -31,6 +31,7 @@
 #include "metadata/sgen-gray.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-pointer-queue.h"
+#include "metadata/sgen-client.h"
 #include "utils/dtrace.h"
 #include "utils/mono-counters.h"
 
@@ -155,7 +156,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 			/* insert it into the major hash */
 			sgen_hash_table_replace (&major_finalizable_hash, tagged_object_apply (copy, tag), NULL, NULL);
 
-			SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_safe_name (copy), object);
+			SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_object_safe_name ((MonoObject*)copy), object);
 
 			continue;
 		} else if (copy != (char*)object) {
@@ -165,7 +166,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 			/* register for reinsertion */
 			sgen_pointer_queue_add (&moved_fin_objects, tagged_object_apply (copy, tag));
 
-			SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_safe_name (copy), object);
+			SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_client_object_safe_name ((MonoObject*)copy), object);
 
 			continue;
 		}
@@ -207,7 +208,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 				num_ready_finalizers++;
 				sgen_queue_finalization_entry (copy);
 				/* Make it survive */
-				SGEN_LOG (5, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)", copy, sgen_safe_name (copy), object, num_ready_finalizers, sgen_hash_table_num_entries (hash_table));
+				SGEN_LOG (5, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)", copy, sgen_client_object_safe_name (copy), object, num_ready_finalizers, sgen_hash_table_num_entries (hash_table));
 				continue;
 			} else {
 				if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
@@ -217,7 +218,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 					/* insert it into the major hash */
 					sgen_hash_table_replace (&major_finalizable_hash, tagged_object_apply (copy, tag), NULL, NULL);
 
-					SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_safe_name (copy), object);
+					SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_object_safe_name (copy), object);
 
 					continue;
 				} else if (copy != object) {
@@ -227,7 +228,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 					/* register for reinsertion */
 					sgen_pointer_queue_add (&moved_fin_objects, tagged_object_apply (copy, tag));
 
-					SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_safe_name (copy), object);
+					SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_client_object_safe_name (copy), object);
 
 					continue;
 				}
@@ -588,7 +589,7 @@ finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
 			/* remove and put in out_array */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			out_array [count ++] = object;
-			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d/%d)", object, sgen_safe_name (object), num_ready_finalizers, sgen_hash_table_num_entries (hash_table));
+			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d/%d)", object, sgen_client_object_safe_name (object), num_ready_finalizers, sgen_hash_table_num_entries (hash_table));
 			if (count == out_size)
 				return count;
 			continue;
@@ -815,7 +816,7 @@ sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation)
 		object = tagged_object_get_object (object);
 
 		if (mono_object_domain (object) == domain) {
-			SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", object, sgen_safe_name (object));
+			SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", object, sgen_client_object_safe_name (object));
 
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;

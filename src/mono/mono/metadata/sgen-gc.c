@@ -372,13 +372,6 @@ NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
-static const char*
-safe_name (void* obj)
-{
-	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
-	return vt->klass->name;
-}
-
 gboolean
 nursery_canaries_enabled (void)
 {
@@ -386,12 +379,6 @@ nursery_canaries_enabled (void)
 }
 
 #define safe_object_get_size	sgen_safe_object_get_size
-
-const char*
-sgen_safe_name (void* obj)
-{
-	return safe_name (obj);
-}
 
 /*
  * ######################################################################
@@ -678,7 +665,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
 				return TRUE;
-			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, safe_name (obj));
+			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_object_safe_name ((MonoObject*)obj));
 			scan_func (obj, desc, queue);
 		}
 	} while (max_objs < 0);
@@ -825,7 +812,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 			scan_func (obj_to_pin, desc, queue);
 		} else {
 			SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
-					obj_to_pin, *(void**)obj_to_pin, safe_name (obj_to_pin), count);
+					obj_to_pin, *(void**)obj_to_pin, sgen_client_object_safe_name (obj_to_pin), count);
 			binary_protocol_pin (obj_to_pin,
 					(gpointer)LOAD_VTABLE (obj_to_pin),
 					safe_object_get_size (obj_to_pin));
@@ -1328,7 +1315,7 @@ scan_finalizer_entries (FinalizeReadyEntry *list, ScanCopyContext ctx)
 	for (fin = list; fin; fin = fin->next) {
 		if (!fin->object)
 			continue;
-		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", fin->object, safe_name (fin->object));
+		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", fin->object, sgen_client_object_safe_name (fin->object));
 		copy_func (&fin->object, queue);
 	}
 }
@@ -1771,7 +1758,7 @@ verify_nursery (void)
 		if (do_dump_nursery_content) {
 			if (cur > hole_start)
 				SGEN_LOG (1, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
-			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
+			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_client_object_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
 		}
 		if (nursery_canaries_enabled () && (MonoVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
 			CHECK_CANARY_FOR_OBJECT (cur);
@@ -2220,7 +2207,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
 				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
 			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
-			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, safe_name (bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
+			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, sgen_client_object_safe_name ((MonoObject*)bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
 
 			if (profile_roots)
 				add_profile_gc_root (&root_report, bigobj->data, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
@@ -3013,7 +3000,7 @@ mono_gc_invoke_finalizers (void)
 			num_ready_finalizers--;
 			obj = entry->object;
 			entry->object = NULL;
-			SGEN_LOG (7, "Finalizing object %p (%s)", obj, safe_name (obj));
+			SGEN_LOG (7, "Finalizing object %p (%s)", obj, sgen_client_object_safe_name (obj));
 		}
 
 		UNLOCK_GC;
@@ -3024,7 +3011,7 @@ mono_gc_invoke_finalizers (void)
 		g_assert (entry->object == NULL);
 		count++;
 		/* the object is on the stack so it is pinned */
-		/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, safe_name (entry->object));*/
+		/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, sgen_client_object_safe_name (entry->object));*/
 		mono_gc_run_finalize (obj, NULL);
 	}
 	g_assert (!entry);
@@ -3443,7 +3430,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
-	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? safe_name (value) : "null");
+	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
@@ -3458,7 +3445,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
-	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? safe_name (value) : "null");
+	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
 
 	InterlockedWritePointer (ptr, value);
 

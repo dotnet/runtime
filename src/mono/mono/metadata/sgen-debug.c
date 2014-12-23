@@ -32,6 +32,7 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-pinning.h"
+#include "metadata/sgen-client.h"
 #include "metadata/threadpool-internals.h"
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
@@ -287,7 +288,7 @@ sgen_check_major_refs (void)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr)) {	\
-			g_assert (sgen_safe_name (*(ptr)) != NULL);	\
+			g_assert (sgen_client_object_safe_name (*(ptr)) != NULL);	\
 		}	\
 	} while (0)
 
@@ -620,7 +621,7 @@ static gboolean scan_object_for_specific_ref_precise = TRUE;
 #define HANDLE_PTR(ptr,obj) do {		\
 	if ((MonoObject*)*(ptr) == key) {	\
 	g_print ("found ref to %p in object %p (%s) at offset %td\n",	\
-			key, (obj), sgen_safe_name ((obj)), ((char*)(ptr) - (char*)(obj))); \
+			key, (obj), sgen_client_object_safe_name ((MonoObject*)(obj)), ((char*)(ptr) - (char*)(obj))); \
 	}								\
 	} while (0)
 
@@ -642,7 +643,7 @@ scan_object_for_specific_ref (char *start, MonoObject *key)
 		for (i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
 				g_print ("found possible ref to %p in object %p (%s) at offset %td\n",
-						key, start, sgen_safe_name (start), i * sizeof (mword));
+						key, start, sgen_client_object_safe_name ((MonoObject*)start), i * sizeof (mword));
 			}
 		}
 	}

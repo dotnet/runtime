@@ -823,7 +823,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 		SGEN_LOG (1, "Nursery fully pinned");
 		for (pin_entry = pin_start; pin_entry < pin_end; ++pin_entry) {
 			void *p = *pin_entry;
-			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", p, sgen_safe_name (p), sgen_safe_object_get_size (p));
+			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", p, sgen_client_object_safe_name (p), sgen_safe_object_get_size (p));
 		}
 	}
 	return fragment_total;
