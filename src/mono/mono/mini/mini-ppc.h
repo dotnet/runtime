@@ -4,6 +4,7 @@
 #include <mono/arch/ppc/ppc-codegen.h>
 #include <mono/utils/mono-sigcontext.h>
 #include <mono/utils/mono-context.h>
+#include <mono/metadata/object.h>
 #include <glib.h>
 
 #ifdef __mono_ppc64__

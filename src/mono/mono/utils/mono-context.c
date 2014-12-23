@@ -424,6 +424,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #elif (((defined(__ppc__) || defined(__powerpc__) || defined(__ppc64__)) && !defined(MONO_CROSS_COMPILE))) || (defined(TARGET_POWERPC))
 
 #include <mono/utils/mono-context.h>
+#include <mono/mini/mini-ppc.h>
 
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
