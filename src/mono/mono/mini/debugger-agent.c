@@ -573,7 +573,6 @@ typedef struct {
 	MonoMethod *start_method;
 	MonoMethod *last_method;
 	int last_line;
-	MonoMethod *start_method;
 	/* Whenever single stepping is performed using start/stop_single_stepping () */
 	gboolean global;
 	/* The list of breakpoints used to implement step-over */
@@ -8341,7 +8340,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 				MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, source_files [i]);
 				srcfile = sinfo->source_file;
 			}
-			DEBUG (10, fprintf (log_file, "IL%x -> %s:%d %d\n", il_offsets [i], srcfile, line_numbers [i], column_numbers ? column_numbers [i] : -1));
+			DEBUG (10, fprintf (log_file, "IL%x -> %s:%d %d %d %d\n", il_offsets [i], srcfile, line_numbers [i], column_numbers ? column_numbers [i] : -1, end_line_numbers ? end_line_numbers [i] : -1, end_column_numbers ? end_column_numbers [i] : -1));
 			buffer_add_int (buf, il_offsets [i]);
 			buffer_add_int (buf, line_numbers [i]);
 			if (CHECK_PROTOCOL_VERSION (2, 13))
