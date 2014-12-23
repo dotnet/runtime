@@ -625,11 +625,12 @@ mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSigna
 
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname, const char *fqname,
-		      MonoMethodSignature *sig, MonoClass *from_class)
+		      MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
 {
  	int i;
 
 	/* Search directly in the metadata to avoid calling setup_methods () */
+	mono_error_init (error);
 
 	/* FIXME: !from_class->generic_class condition causes test failures. */
 	if (klass->type_token && !image_is_dynamic (klass->image) && !klass->methods && !klass->rank && klass == from_class && !from_class->generic_class) {
@@ -648,23 +649,30 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				  (name && !strcmp (m_name, name))))
 				continue;
 
-			method = mono_get_method (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass);
+			method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (klass->method.first + i + 1), klass, NULL, error);
+			if (!mono_error_ok (error)) //bail out if we hit a loader error
+				return NULL;
 			if (method) {
-				other_sig = mono_method_signature (method);
+				other_sig = mono_method_signature_checked (method, error);
+				if (!mono_error_ok (error)) //bail out if we hit a loader error
+					return NULL;				
 				if (other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
 					return method;
 			}
 		}
 	}
 
-	mono_class_setup_methods (klass);
+	mono_class_setup_methods (klass); /* FIXME don't swallow the error here. */
 	/*
 	We can't fail lookup of methods otherwise the runtime will fail with MissingMethodException instead of TypeLoadException.
 	See mono/tests/generic-type-load-exception.2.il
 	FIXME we should better report this error to the caller
 	 */
-	if (!klass->methods)
+	if (!klass->methods || klass->exception_type) {
+		mono_error_set_type_load_class (error, klass, "Could not find method due to a type load error"); //FIXME get the error from the class 
+
 		return NULL;
+	}
 	for (i = 0; i < klass->method.count; ++i) {
 		MonoMethod *m = klass->methods [i];
 		MonoMethodSignature *msig;
@@ -677,7 +685,10 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		      (qname && !strcmp (m->name, qname)) ||
 		      (name && !strcmp (m->name, name))))
 			continue;
-		msig = mono_method_signature (m);
+		msig = mono_method_signature_checked (m, error);
+		if (!mono_error_ok (error)) //bail out if we hit a loader error
+			return NULL;
+
 		if (!msig)
 			continue;
 
@@ -696,13 +707,15 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 }
 
 static MonoMethod *
-find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSignature *sig, MonoClass *from_class)
+find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
 {
 	int i;
 	char *qname, *fqname, *class_name;
 	gboolean is_interface;
 	MonoMethod *result = NULL;
+	MonoClass *initial_class = in_class;
 
+	mono_error_init (error);
 	is_interface = MONO_CLASS_IS_INTERFACE (in_class);
 
 	if (ic) {
@@ -718,8 +731,8 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 
 	while (in_class) {
 		g_assert (from_class);
-		result = find_method_in_class (in_class, name, qname, fqname, sig, from_class);
-		if (result)
+		result = find_method_in_class (in_class, name, qname, fqname, sig, from_class, error);
+		if (result || !mono_error_ok (error))
 			goto out;
 
 		if (name [0] == '.' && (!strcmp (name, ".ctor") || !strcmp (name, ".cctor")))
@@ -747,11 +760,11 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 			else
 				ic_fqname = NULL;
 
-			result = find_method_in_class (in_ic, ic ? name : NULL, ic_qname, ic_fqname, sig, from_ic);
+			result = find_method_in_class (in_ic, ic ? name : NULL, ic_qname, ic_fqname, sig, from_ic, error);
 			g_free (ic_class_name);
 			g_free (ic_fqname);
 			g_free (ic_qname);
-			if (result)
+			if (result || !mono_error_ok (error))
 				goto out;
 		}
 
@@ -761,8 +774,15 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	g_assert (!in_class == !from_class);
 
 	if (is_interface)
-		result = find_method_in_class (mono_defaults.object_class, name, qname, fqname, sig, mono_defaults.object_class);
+		result = find_method_in_class (mono_defaults.object_class, name, qname, fqname, sig, mono_defaults.object_class, error);
 
+	//we did not find the method
+	if (!result && mono_error_ok (error)) {
+		char *desc = mono_signature_get_desc (sig, FALSE);
+		mono_error_set_method_load (error, initial_class, name, "Could not find method with signature %s", desc);
+		g_free (desc);
+	}
+		
  out:
 	g_free (class_name);
 	g_free (fqname);
@@ -1056,14 +1076,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 			goto fail;
 		break;
 	case MONO_MEMBERREF_PARENT_METHODDEF: {
-		method = mono_get_method (image, MONO_TOKEN_METHOD_DEF | nindex, NULL);
-		if (!method) {
-			if (mono_loader_get_last_error ())
-				mono_error_set_from_loader_error (error);
-			else
-				mono_error_set_bad_image (error, image, "Could not resolve memberref 0x%08x parent method token 0x%08x", idx, MONO_TOKEN_METHOD_DEF | nindex);
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | nindex, NULL, NULL, error);
+		if (!method)
 			goto fail;
-		}
 		return method;
 	}
 	default:
@@ -1102,7 +1117,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		method = find_method (klass, NULL, mname, sig, klass);
+		method = find_method (klass, NULL, mname, sig, klass, error);
 		break;
 
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
@@ -1112,7 +1127,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
 			MonoClass *in_class = klass->generic_class ? klass->generic_class->container_class : klass;
-			method = find_method (in_class, NULL, mname, sig, klass);
+			method = find_method (in_class, NULL, mname, sig, klass, error);
 			break;
 		}
 
@@ -1125,7 +1140,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		goto fail;
 	}
 
-	if (!method) {
+	if (!method && mono_error_ok (error)) {
 		char *msig = mono_signature_get_desc (sig, FALSE);
 		GString *s = g_string_new (mname);
 		if (sig->generic_param_count)
@@ -1134,10 +1149,10 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 		g_free (msig);
 		msig = g_string_free (s, FALSE);
 
-	if (mono_loader_get_last_error ()) /* FIXME find_method and mono_method_search_in_array_class can leak a loader error */
-		mono_error_set_from_loader_error (error);
-	else
-		mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
+		if (mono_loader_get_last_error ()) /* FIXME find_method and mono_method_search_in_array_class can leak a loader error */
+			mono_error_set_from_loader_error (error);
+		else
+			mono_error_set_method_load (error, klass, mname, "Could not find method %s", msig);
 
 		g_free (msig);
 	}
@@ -2012,16 +2027,12 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	if ((constrained_class != method->klass) && (MONO_CLASS_IS_INTERFACE (method->klass)))
 		ic = method->klass;
 
-	result = find_method (constrained_class, ic, method->name, sig, constrained_class);
+	result = find_method (constrained_class, ic, method->name, sig, constrained_class, error);
 	if (sig != original_sig)
 		mono_metadata_free_inflated_signature (sig);
-	g_assert (!mono_loader_get_last_error ()); /* in the hopes that find_method don't leak */
 
-	if (!result) {
-		char *m = mono_method_full_name (method, 1);
-		mono_error_set_method_load (error, constrained_class, method->name, "Could not find contrained method %s", m);
+	if (!result)
 		return NULL;
-	}
 
 	if (method_context) {
 		result = mono_class_inflate_generic_method_checked (result, method_context, error);
@@ -2029,7 +2040,6 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 			return NULL;
 	}
 
-	g_assert (!mono_loader_get_last_error ());
 	return result;
 }
 
