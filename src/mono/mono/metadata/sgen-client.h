@@ -26,7 +26,7 @@ void sgen_client_init (void);
  * walking.  Must be a valid vtable that is not used by any actual objects.  Must be
  * idempotent.
  */
-MonoVTable* sgen_client_get_array_fill_vtable (void);
+GCVTable* sgen_client_get_array_fill_vtable (void);
 
 /*
  * Fill the given range with a dummy object.  Its vtable must be the one returned by
@@ -43,7 +43,7 @@ gboolean sgen_client_array_fill_range (char *start, size_t size);
  */
 void sgen_client_zero_array_fill_header (void *p, size_t size);
 
-gboolean sgen_client_object_has_critical_finalizer (MonoObject *obj);
+gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
  * Called after an object is enqueued for finalization.  This is a very low-level callback.
@@ -51,7 +51,7 @@ gboolean sgen_client_object_has_critical_finalizer (MonoObject *obj);
  *
  * FIXME: Can we merge this with `sgen_client_object_has_critical_finalizer()`?
  */
-void sgen_client_object_queued_for_finalization (MonoObject *obj);
+void sgen_client_object_queued_for_finalization (GCObject *obj);
 
 gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 
@@ -82,7 +82,11 @@ void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPoin
  */
 const char* sgen_client_description_for_internal_mem_type (int type);
 
-const char* sgen_client_object_safe_name (MonoObject *obj);
+/* FIXME: Use `sgen_client_vtable_get_name()` instead of this. */
+const char* sgen_client_object_safe_name (GCObject *obj);
+
+const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
+const char* sgen_client_vtable_get_name (GCVTable *vtable);
 
 void sgen_client_pre_collection_checks (void);
 

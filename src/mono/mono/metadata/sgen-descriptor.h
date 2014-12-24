@@ -55,7 +55,7 @@
 /*
  * Objects are aligned to 8 bytes boundaries.
  *
- * A descriptor is a pointer in MonoVTable, so 32 or 64 bits of size.
+ * A descriptor is a pointer in GCVTable, so 32 or 64 bits of size.
  * The low 3 bits define the type of the descriptor. The other bits
  * depend on the type.
  *
@@ -157,8 +157,7 @@ sgen_gc_descr_has_references (mword desc)
 	return TRUE;
 }
 
-#define SGEN_VTABLE_HAS_REFERENCES(vt)	(sgen_gc_descr_has_references ((mword)((MonoVTable*)(vt))->gc_descr))
-#define SGEN_CLASS_HAS_REFERENCES(c)	(sgen_gc_descr_has_references ((mword)(c)->gc_descr))
+#define SGEN_VTABLE_HAS_REFERENCES(vt)	(sgen_gc_descr_has_references (sgen_vtable_get_descriptor ((vt))))
 #define SGEN_OBJECT_HAS_REFERENCES(o)	(SGEN_VTABLE_HAS_REFERENCES (SGEN_LOAD_VTABLE ((o))))
 
 /* helper macros to scan and traverse objects, macros because we resue them in many functions */
@@ -231,10 +230,6 @@ sgen_gc_descr_has_references (mword desc)
 		gsize bwords = (*bitmap_data) - 1;	\
 		void **start_run = _objptr;	\
 		bitmap_data++;	\
-		if (0) {	\
-			MonoObject *myobj = (MonoObject*)obj;	\
-			g_print ("found %d at %p (0x%zx): %s.%s\n", bwords, (obj), (desc), myobj->vtable->klass->name_space, myobj->vtable->klass->name); \
-		}	\
 		while (bwords-- > 0) {	\
 			gsize _bmap = *bitmap_data++;	\
 			_objptr = start_run;	\
@@ -256,11 +251,9 @@ sgen_gc_descr_has_references (mword desc)
 		GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj); \
 		gsize *mbitmap_data = sgen_get_complex_descriptor ((desc)); \
 		gsize mbwords = (*mbitmap_data++) - 1;	\
-		gsize el_size = mono_array_element_size (vt->klass);	\
-		char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
-		char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
-		if (0)							\
-                        g_print ("found %d at %p (0x%zx): %s.%s\n", mbwords, (obj), (desc), (vt)->klass->name_space, (vt)->klass->name); \
+		gsize el_size = sgen_client_array_element_size (vt);	\
+		char *e_start = sgen_client_array_data_start ((GCObject*)(obj));	\
+		char *e_end = e_start + el_size * sgen_client_array_length ((GCObject*)(obj));	\
 		while (e_start < e_end) {	\
 			void **_objptr = (void**)e_start;	\
 			gsize *bitmap_data = mbitmap_data;	\
@@ -289,8 +282,8 @@ sgen_gc_descr_has_references (mword desc)
 			/* there are pointers */	\
 			int etype = (desc) & 0xc000;			\
 			if (etype == (DESC_TYPE_V_REFS << 14)) {	\
-				void **p = (void**)((char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector));	\
-				void **end_refs = (void**)((char*)p + el_size * mono_array_length_fast ((MonoArray*)(obj)));	\
+				void **p = (void**)sgen_client_array_data_start ((GCObject*)(obj));	\
+				void **end_refs = (void**)((char*)p + el_size * sgen_client_array_length ((GCObject*)(obj)));	\
 				/* Note: this code can handle also arrays of struct with only references in them */	\
 				while (p < end_refs) {	\
 					HANDLE_PTR (p, (obj));	\
@@ -299,8 +292,8 @@ sgen_gc_descr_has_references (mword desc)
 			} else if (etype == DESC_TYPE_V_RUN_LEN << 14) {	\
 				int offset = ((desc) >> 16) & 0xff;	\
 				int num_refs = ((desc) >> 24) & 0xff;	\
-				char *e_start = (char*)(obj) + G_STRUCT_OFFSET (MonoArray, vector);	\
-				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
+				char *e_start = sgen_client_array_data_start ((GCObject*)(obj));	\
+				char *e_end = e_start + el_size * sgen_client_array_length ((GCObject*)(obj));	\
 				while (e_start < e_end) {	\
 					void **p = (void**)e_start;	\
 					int i;	\
@@ -311,8 +304,8 @@ sgen_gc_descr_has_references (mword desc)
 					e_start += el_size;	\
 				}	\
 			} else if (etype == DESC_TYPE_V_BITMAP << 14) {	\
-				char *e_start = (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);	\
-				char *e_end = e_start + el_size * mono_array_length_fast ((MonoArray*)(obj));	\
+				char *e_start = sgen_client_array_data_start ((GCObject*)(obj));	\
+				char *e_end = e_start + el_size * sgen_client_array_length ((GCObject*)(obj));	\
 				while (e_start < e_end) {	\
 					void **p = (void**)e_start;	\
 					gsize _bmap = (desc) >> 16;	\

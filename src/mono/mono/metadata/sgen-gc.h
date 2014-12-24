@@ -284,13 +284,17 @@ sgen_get_nursery_end (void)
 	return sgen_nursery_end;
 }
 
-/* Structure that corresponds to a MonoVTable: desc is a mword so requires
+/* Structure that corresponds to a GCVTable: desc is a mword so requires
  * no cast from a pointer to an integer
  */
 typedef struct {
 	MonoClass *klass;
 	mword desc;
 } GCVTable;
+
+typedef struct {
+	GCVTable *vtable;
+} GCObject;
 
 /*
  * We use the lowest three bits in the vtable pointer of objects to tag whether they're
@@ -352,7 +356,9 @@ typedef struct {
  * Since we set bits in the vtable, use the macro to load it from the pointer to
  * an object that is potentially pinned.
  */
-#define SGEN_LOAD_VTABLE(addr)	SGEN_POINTER_UNTAG_ALL (*(void**)(addr))
+/* FIXME: This should return a GCVTable* */
+#define SGEN_LOAD_VTABLE_UNCHECKED(obj)	((void*)(((GCObject*)(obj))->vtable))
+#define SGEN_LOAD_VTABLE(obj)		SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((obj)))
 
 /*
 List of what each bit on of the vtable gc bits means. 
@@ -449,9 +455,10 @@ enum {
 
 void sgen_init_internal_allocator (void);
 
+/* FIXME: get rid of this in favor of pointer queues! */
 typedef struct _ObjectList ObjectList;
 struct _ObjectList {
-	MonoObject *obj;
+	GCObject *obj;
 	ObjectList *next;
 };
 
@@ -584,7 +591,7 @@ sgen_nursery_is_object_alive (char *obj)
 typedef struct {
 	gboolean is_split;
 
-	char* (*alloc_for_promotion) (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references);
+	char* (*alloc_for_promotion) (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 
@@ -662,15 +669,15 @@ struct _SgenMajorCollector {
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
-	void* (*alloc_small_pinned_obj) (MonoVTable *vtable, size_t size, gboolean has_references);
-	void* (*alloc_degraded) (MonoVTable *vtable, size_t size);
+	void* (*alloc_small_pinned_obj) (GCVTable *vtable, size_t size, gboolean has_references);
+	void* (*alloc_degraded) (GCVTable *vtable, size_t size);
 
 	SgenObjectOperations major_ops_serial;
 	SgenObjectOperations major_ops_concurrent_start;
 	SgenObjectOperations major_ops_concurrent;
 	SgenObjectOperations major_ops_concurrent_finish;
 
-	void* (*alloc_object) (MonoVTable *vtable, size_t size, gboolean has_references);
+	void* (*alloc_object) (GCVTable *vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 
 	/*
@@ -707,7 +714,7 @@ struct _SgenMajorCollector {
 	void (*print_gc_param_usage) (void);
 	void (*post_param_init) (SgenMajorCollector *collector);
 	gboolean (*is_valid_object) (char *object);
-	MonoVTable* (*describe_pointer) (char *pointer);
+	GCVTable* (*describe_pointer) (char *pointer);
 	guint8* (*get_cardtable_mod_union_for_object) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
 	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
@@ -727,7 +734,7 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
 	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
 	void (*wbarrier_value_copy) (gpointer dest, gpointer src, int count, size_t element_size);
-	void (*wbarrier_object_copy) (MonoObject* obj, MonoObject *src);
+	void (*wbarrier_object_copy) (GCObject* obj, GCObject *src);
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
@@ -743,15 +750,15 @@ typedef struct _SgenRememberedSet {
 SgenRememberedSet *sgen_get_remset (void);
 
 static inline mword
-sgen_vtable_get_descriptor (MonoVTable *vtable)
+sgen_vtable_get_descriptor (GCVTable *vtable)
 {
-	return (mword)vtable->gc_descr;
+	return vtable->desc;
 }
 
 static inline mword
 sgen_obj_get_descriptor (char *obj)
 {
-	MonoVTable *vtable = ((MonoObject*)obj)->vtable;
+	GCVTable *vtable = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 	SGEN_ASSERT (9, !SGEN_POINTER_IS_TAGGED_ANY (vtable), "Object can't be tagged");
 	return sgen_vtable_get_descriptor (vtable);
 }
@@ -759,21 +766,21 @@ sgen_obj_get_descriptor (char *obj)
 static inline mword
 sgen_obj_get_descriptor_safe (char *obj)
 {
-	MonoVTable *vtable = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+	GCVTable *vtable = (GCVTable*)SGEN_LOAD_VTABLE (obj);
 	return sgen_vtable_get_descriptor (vtable);
 }
 
 #include "metadata/sgen-client-mono.h"
 
 static inline mword
-sgen_safe_object_get_size (MonoObject *obj)
+sgen_safe_object_get_size (GCObject *obj)
 {
        char *forwarded;
 
        if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
-               obj = (MonoObject*)forwarded;
+               obj = (GCObject*)forwarded;
 
-       return sgen_client_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_par_object_get_size ((GCVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
 
 static inline gboolean
@@ -789,15 +796,15 @@ sgen_safe_object_is_small (MonoObject *obj, int type)
  * before alignment. Needed for canary support.
  */
 static inline guint
-sgen_safe_object_get_size_unaligned (MonoObject *obj)
+sgen_safe_object_get_size_unaligned (GCObject *obj)
 {
        char *forwarded;
 
        if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-               obj = (MonoObject*)forwarded;
+               obj = (GCObject*)forwarded;
        }
 
-       return sgen_client_slow_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_slow_object_get_size ((GCVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
 
 gboolean sgen_object_is_live (void *obj);
@@ -809,11 +816,11 @@ void sgen_bridge_reset_data (void);
 void sgen_bridge_processing_stw_step (void);
 void sgen_bridge_processing_finish (int generation);
 void sgen_register_test_bridge_callbacks (const char *bridge_class_name);
-gboolean sgen_is_bridge_object (MonoObject *obj);
+gboolean sgen_is_bridge_object (GCObject *obj);
 MonoGCBridgeObjectKind sgen_bridge_class_kind (MonoClass *klass);
-void sgen_mark_bridge_object (MonoObject *obj);
-void sgen_bridge_register_finalized_object (MonoObject *object);
-void sgen_bridge_describe_pointer (MonoObject *object);
+void sgen_mark_bridge_object (GCObject *obj);
+void sgen_bridge_register_finalized_object (GCObject *object);
+void sgen_bridge_describe_pointer (GCObject *object);
 
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
@@ -821,8 +828,8 @@ void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_process_togglerefs (void);
 void sgen_register_test_toggleref_callback (void);
 
-gboolean sgen_is_bridge_object (MonoObject *obj);
-void sgen_mark_bridge_object (MonoObject *obj);
+gboolean sgen_is_bridge_object (GCObject *obj);
+void sgen_mark_bridge_object (GCObject *obj);
 
 gboolean sgen_bridge_handle_gc_debug (const char *opt);
 void sgen_bridge_print_gc_debug_usage (void);
@@ -833,8 +840,8 @@ typedef struct {
 	void (*processing_build_callback_data) (int generation);
 	void (*processing_after_callback) (int generation);
 	MonoGCBridgeObjectKind (*class_kind) (MonoClass *class);
-	void (*register_finalized_object) (MonoObject *object);
-	void (*describe_pointer) (MonoObject *object);
+	void (*register_finalized_object) (GCObject *object);
+	void (*describe_pointer) (GCObject *object);
 	void (*enable_accounting) (void);
 	void (*set_dump_prefix) (const char *prefix);
 
@@ -856,7 +863,7 @@ void sgen_bridge_set_dump_prefix (const char *prefix);
 
 gboolean sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b);
 
-typedef mono_bool (*WeakLinkAlivePredicateFunc) (MonoObject*, void*);
+typedef mono_bool (*WeakLinkAlivePredicateFunc) (GCObject*, void*);
 
 void sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predicate, void *data);
 
@@ -865,7 +872,7 @@ void sgen_gc_lock (void);
 void sgen_gc_unlock (void);
 void sgen_gc_event_moves (void);
 
-void sgen_queue_finalization_entry (MonoObject *obj);
+void sgen_queue_finalization_entry (GCObject *obj);
 const char* sgen_generation_name (int generation);
 
 void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx);
@@ -875,7 +882,7 @@ void sgen_null_links_for_domain (MonoDomain *domain, int generation);
 void sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation);
 void sgen_process_fin_stage_entries (void);
 void sgen_process_dislink_stage_entries (void);
-void sgen_register_disappearing_link (MonoObject *obj, void **link, gboolean track, gboolean in_gc);
+void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track, gboolean in_gc);
 
 gboolean sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx);
 
@@ -926,7 +933,7 @@ extern LOSObject *los_object_list;
 extern mword los_memory_usage;
 
 void sgen_los_free_object (LOSObject *obj);
-void* sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size);
+void* sgen_los_alloc_large_inner (GCVTable *vtable, size_t size);
 void sgen_los_sweep (void);
 gboolean sgen_ptr_is_in_los (char *ptr, char **start);
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data);
@@ -963,8 +970,8 @@ void sgen_nursery_alloc_prepare_for_major (void);
 
 char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references);
 
-void* sgen_alloc_obj_nolock (MonoVTable *vtable, size_t size);
-void* sgen_try_alloc_obj_nolock (MonoVTable *vtable, size_t size);
+void* sgen_alloc_obj_nolock (GCVTable *vtable, size_t size);
+void* sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size);
 
 /* Finalization/ephemeron support */
 
@@ -981,7 +988,7 @@ sgen_major_is_object_alive (void *object)
 	 * FIXME: major_collector.is_object_live() also calculates the
 	 * size.  Avoid the double calculation.
 	 */
-	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)object));
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)object));
 	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
 		return sgen_los_object_is_pinned (object);
 
@@ -1095,7 +1102,7 @@ void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type
 void sgen_check_for_xdomain_refs (void);
 char* sgen_find_object_for_ptr (char *ptr);
 
-void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
+void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);
 
 void sgen_debug_enable_heap_dump (const char *filename);
 void sgen_debug_dump_heap (const char *type, int num, const char *reason);
@@ -1153,12 +1160,12 @@ gboolean nursery_canaries_enabled (void);
 #define CANARY_VALID(addr) (strncmp ((char*) (addr), CANARY_STRING, CANARY_SIZE) == 0)
 
 #define CHECK_CANARY_FOR_OBJECT(addr) if (nursery_canaries_enabled ()) {	\
-				char* canary_ptr = (char*) (addr) + sgen_safe_object_get_size_unaligned ((MonoObject *) (addr));	\
+				char* canary_ptr = (char*) (addr) + sgen_safe_object_get_size_unaligned ((GCObject *) (addr));	\
 				if (!CANARY_VALID(canary_ptr)) {	\
 					char canary_copy[CANARY_SIZE +1];	\
 					strncpy (canary_copy, canary_ptr, CANARY_SIZE);	\
 					canary_copy[CANARY_SIZE] = 0;	\
-					g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, ((MonoObject*)addr)->vtable->klass->name, CANARY_STRING, canary_copy);	\
+					g_error ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy);	\
 				} }
 
 #endif /* HAVE_SGEN_GC */

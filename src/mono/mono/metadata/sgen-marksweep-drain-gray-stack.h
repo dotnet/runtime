@@ -125,7 +125,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		MS_CALC_MARK_BIT (word, bit, obj);
 		SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p already marked", obj);
 		MS_SET_MARK_BIT (block, word, bit);
-		binary_protocol_mark (obj, (gpointer)LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+		binary_protocol_mark (obj, (gpointer)LOAD_VTABLE (obj), sgen_safe_object_get_size ((GCObject*)obj));
 
 		return FALSE;
 	} else {
@@ -149,10 +149,10 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 
 		SGEN_ASSERT (9, !SGEN_VTABLE_IS_PINNED (vtable_word), "Pinned object in non-pinned block?");
 
-		desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
+		desc = sgen_vtable_get_descriptor ((GCVTable*)vtable_word);
 		type = desc & DESC_TYPE_MASK;
 
-		if (sgen_safe_object_is_small ((MonoObject*)obj, type)) {
+		if (sgen_safe_object_is_small ((GCObject*)obj, type)) {
 #ifdef HEAVY_STATISTICS
 			if (type <= DESC_TYPE_MAX_SMALL_OBJ)
 				++stat_optimized_copy_major_small_fast;
@@ -181,7 +181,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 
 			if (sgen_los_object_is_pinned (obj))
 				return FALSE;
-			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((MonoObject*)obj));
+			binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size ((GCObject*)obj));
 
 			sgen_los_pin_object (obj);
 			if (SGEN_OBJECT_HAS_REFERENCES (obj))

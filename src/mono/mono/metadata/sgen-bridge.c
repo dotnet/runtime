@@ -108,8 +108,9 @@ sgen_set_bridge_implementation (const char *name)
 }
 
 gboolean
-sgen_is_bridge_object (MonoObject *obj)
+sgen_is_bridge_object (GCObject *gc_obj)
 {
+	MonoObject *obj = (MonoObject*)gc_obj;
 	if ((obj->vtable->gc_bits & SGEN_GC_BIT_BRIDGE_OBJECT) != SGEN_GC_BIT_BRIDGE_OBJECT)
 		return FALSE;
 	return bridge_callbacks.is_bridge_object (obj);
@@ -151,7 +152,7 @@ sgen_bridge_processing_stw_step (void)
 }
 
 static mono_bool
-is_bridge_object_alive (MonoObject *obj, void *data)
+is_bridge_object_alive (GCObject *obj, void *data)
 {
 	SgenHashTable *table = data;
 	unsigned char *value = sgen_hash_table_lookup (table, obj);
@@ -176,7 +177,7 @@ null_weak_links_to_dead_objects (SgenBridgeProcessor *processor, int generation)
 
 			/* Release for finalization those objects we no longer care. */
 			if (!api_sccs [i]->is_alive)
-				sgen_mark_bridge_object (api_sccs [i]->objs [j]);
+				sgen_mark_bridge_object ((GCObject*)api_sccs [i]->objs [j]);
 		}
 	}
 
@@ -199,7 +200,7 @@ free_callback_data (SgenBridgeProcessor *processor)
 
 	for (i = 0; i < num_sccs; ++i) {
 		sgen_free_internal_dynamic (api_sccs [i],
-				sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * api_sccs [i]->num_objs,
+				sizeof (MonoGCBridgeSCC) + sizeof (GCObject*) * api_sccs [i]->num_objs,
 				INTERNAL_MEM_BRIDGE_DATA);
 	}
 	sgen_free_internal_dynamic (api_sccs, sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA);
@@ -251,7 +252,7 @@ sgen_bridge_class_kind (MonoClass *class)
 }
 
 void
-sgen_bridge_register_finalized_object (MonoObject *obj)
+sgen_bridge_register_finalized_object (GCObject *obj)
 {
 	bridge_processor.register_finalized_object (obj);
 	if (compare_bridge_processors ())
@@ -259,7 +260,7 @@ sgen_bridge_register_finalized_object (MonoObject *obj)
 }
 
 void
-sgen_bridge_describe_pointer (MonoObject *obj)
+sgen_bridge_describe_pointer (GCObject *obj)
 {
 	if (bridge_processor.describe_pointer)
 		bridge_processor.describe_pointer (obj);

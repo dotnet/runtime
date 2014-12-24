@@ -179,7 +179,7 @@ sgen_pin_stats_register_object (char *obj, size_t size)
 
 	list = sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS, TRUE);
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
-	list->obj = (MonoObject*)obj;
+	list->obj = (GCObject*)obj;
 	list->next = pinned_objects;
 	pinned_objects = list;
 

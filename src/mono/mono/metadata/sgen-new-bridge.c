@@ -975,7 +975,7 @@ static int fist_pass_links, second_pass_links, sccs_links;
 static int max_sccs_links = 0;
 
 static void
-register_finalized_object (MonoObject *obj)
+register_finalized_object (GCObject *obj)
 {
 	g_assert (sgen_need_bridge_processing ());
 	dyn_array_ptr_push (&registered_bridges, obj);
@@ -1329,7 +1329,7 @@ processing_after_callback (int generation)
 			for (j = 0; j < api_sccs [i]->num_objs; ++j)
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC,
 					"OBJECT %s (%p) SCC [%d] %s",
-						sgen_client_object_safe_name (api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
+						sgen_client_object_safe_name ((GCObject*)api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
 						i,
 						api_sccs [i]->is_alive  ? "ALIVE" : "DEAD");
 		}
@@ -1352,7 +1352,7 @@ processing_after_callback (int generation)
 }
 
 static void
-describe_pointer (MonoObject *obj)
+describe_pointer (GCObject *obj)
 {
 	HashEntry *entry;
 	int i;

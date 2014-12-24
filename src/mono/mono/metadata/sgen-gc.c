@@ -470,7 +470,7 @@ static void scan_from_registered_roots (char *addr_start, char *addr_end, int ro
 static void pin_from_roots (void *start_nursery, void *end_nursery, ScanCopyContext ctx);
 static void finish_gray_stack (int generation, ScanCopyContext ctx);
 
-void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
+void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);
 
 
 static void init_stats (void);
@@ -527,7 +527,7 @@ gray_queue_enable_redirect (SgenGrayQueue *queue)
 void
 sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
-	MonoVTable *array_fill_vtable = sgen_client_get_array_fill_vtable ();
+	GCVTable *array_fill_vtable = sgen_client_get_array_fill_vtable ();
 
 	while (start < end) {
 		size_t size;
@@ -545,13 +545,13 @@ sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc 
 			obj = start;
 		}
 
-		if ((MonoVTable*)SGEN_LOAD_VTABLE (obj) != array_fill_vtable) {
+		if ((GCVTable*)SGEN_LOAD_VTABLE (obj) != array_fill_vtable) {
 			CHECK_CANARY_FOR_OBJECT (obj);
-			size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+			size = ALIGN_UP (safe_object_get_size ((GCObject*)obj));
 			callback (obj, size, data);
 			CANARIFY_SIZE (size);
 		} else {
-			size = ALIGN_UP (safe_object_get_size ((MonoObject*)obj));
+			size = ALIGN_UP (safe_object_get_size ((GCObject*)obj));
 		}
 
 		start += size;
@@ -596,9 +596,9 @@ sgen_add_to_global_remset (gpointer ptr, gpointer obj)
 
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
-		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
+		GCVTable *vt = (GCVTable*)LOAD_VTABLE (obj);
 		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)obj, sgen_safe_object_get_size (obj),
-				vt->klass->name_space, vt->klass->name);
+				sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt));
 	}
 #endif
 }
@@ -630,7 +630,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
 				return TRUE;
-			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_object_safe_name ((MonoObject*)obj));
+			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_object_safe_name ((GCObject*)obj));
 			scan_func (obj, desc, queue);
 		}
 	} while (max_objs < 0);
@@ -727,7 +727,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 				continue;
 			}
 
-			canarified_obj_size = obj_size = ALIGN_UP (safe_object_get_size ((MonoObject*)search_start));
+			canarified_obj_size = obj_size = ALIGN_UP (safe_object_get_size ((GCObject*)search_start));
 
 			/*
 			 * Filler arrays are marked by an invalid sync word.  We don't
@@ -785,10 +785,10 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 #ifdef ENABLE_DTRACE
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 				int gen = sgen_ptr_in_nursery (obj_to_pin) ? GENERATION_NURSERY : GENERATION_OLD;
-				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj_to_pin);
+				GCVTable *vt = (GCVTable*)LOAD_VTABLE (obj_to_pin);
 				MONO_GC_OBJ_PINNED ((mword)obj_to_pin,
 						sgen_safe_object_get_size (obj_to_pin),
-						vt->klass->name_space, vt->klass->name, gen);
+						sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), gen);
 			}
 #endif
 
@@ -844,8 +844,9 @@ sgen_pin_object (void *object, GrayQueue *queue)
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (object) ? GENERATION_NURSERY : GENERATION_OLD;
-		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (object);
-		MONO_GC_OBJ_PINNED ((mword)object, sgen_safe_object_get_size (object), vt->klass->name_space, vt->klass->name, gen);
+		GCVTable *vt = (GCVTable*)LOAD_VTABLE (object);
+		MONO_GC_OBJ_PINNED ((mword)object, sgen_safe_object_get_size (object),
+				sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), gen);
 	}
 #endif
 }
@@ -1348,8 +1349,8 @@ sgen_check_section_scan_starts (GCMemSection *section)
 	size_t i;
 	for (i = 0; i < section->num_scan_start; ++i) {
 		if (section->scan_starts [i]) {
-			mword size = safe_object_get_size ((MonoObject*) section->scan_starts [i]);
-			g_assert (size >= sizeof (MonoObject) && size <= MAX_SMALL_OBJ_SIZE);
+			mword size = safe_object_get_size ((GCObject*) section->scan_starts [i]);
+			SGEN_ASSERT (0, size >= sizeof (GCObject) && size <= MAX_SMALL_OBJ_SIZE, "Weird object size at scan starts.");
 		}
 	}
 }
@@ -1613,15 +1614,17 @@ verify_nursery (void)
 		else if (object_is_pinned (cur))
 			SGEN_LOG (1, "PINNED OBJ %p", cur);
 
-		ss = safe_object_get_size ((MonoObject*)cur);
-		size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
+		ss = safe_object_get_size ((GCObject*)cur);
+		size = ALIGN_UP (ss);
 		verify_scan_starts (cur, cur + size);
 		if (do_dump_nursery_content) {
 			if (cur > hole_start)
 				SGEN_LOG (1, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
-			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss, sgen_client_object_safe_name ((MonoObject*)cur), (gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
+			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss,
+					sgen_client_object_safe_name ((GCObject*)cur),
+					(gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
 		}
-		if (nursery_canaries_enabled () && (MonoVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
+		if (nursery_canaries_enabled () && (GCVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
 			CHECK_CANARY_FOR_OBJECT (cur);
 			CANARIFY_SIZE (size);
 		}
@@ -1655,7 +1658,7 @@ check_nursery_is_clean (void)
 		g_assert (!object_is_forwarded (cur));
 		g_assert (!object_is_pinned (cur));
 
-		size = ALIGN_UP (safe_object_get_size ((MonoObject*)cur));
+		size = ALIGN_UP (safe_object_get_size ((GCObject*)cur));
 		verify_scan_starts (cur, cur + size);
 
 		cur += size;
@@ -2050,12 +2053,13 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		size_t dummy;
 		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy, &dummy)) {
-			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((MonoObject*)(bigobj->data))));
+			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((GCObject*)(bigobj->data))));
 
 #ifdef ENABLE_DTRACE
 			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
-				MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (bigobj->data);
-				MONO_GC_OBJ_PINNED ((mword)bigobj->data, sgen_safe_object_get_size ((MonoObject*)bigobj->data), vt->klass->name_space, vt->klass->name, GENERATION_OLD);
+				GCVTable *vt = (GCVTable*)LOAD_VTABLE (bigobj->data);
+				MONO_GC_OBJ_PINNED ((mword)bigobj->data, sgen_safe_object_get_size ((GCObject*)bigobj->data),
+						sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), GENERATION_OLD);
 			}
 #endif
 
@@ -2066,8 +2070,10 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
 				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
-			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
-			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, sgen_client_object_safe_name ((MonoObject*)bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
+			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((GCObject*) bigobj->data));
+			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data,
+					sgen_client_object_safe_name ((GCObject*)bigobj->data),
+					(unsigned long)sgen_los_object_size (bigobj));
 
 			sgen_client_pinned_los_object (bigobj->data);
 		}
@@ -2780,7 +2786,7 @@ sgen_gc_is_object_ready_for_finalization (void *object)
 }
 
 void
-sgen_queue_finalization_entry (MonoObject *obj)
+sgen_queue_finalization_entry (GCObject *obj)
 {
 	gboolean critical = sgen_client_object_has_critical_finalizer (obj);
 
@@ -2791,9 +2797,9 @@ sgen_queue_finalization_entry (MonoObject *obj)
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_FINALIZE_ENQUEUE_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
-		MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (obj);
+		GCVTable *vt = (GCVTable*)LOAD_VTABLE (obj);
 		MONO_GC_FINALIZE_ENQUEUE ((mword)obj, sgen_safe_object_get_size (obj),
-				vt->klass->name_space, vt->klass->name, gen, critical);
+				sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), gen, critical);
 	}
 #endif
 }
@@ -3222,7 +3228,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	if (value)
 		binary_protocol_wbarrier (field_ptr, value, value->vtable);
 
-	remset.wbarrier_set_field (obj, field_ptr, value);
+	remset.wbarrier_set_field ((GCObject*)obj, field_ptr, (GCObject*)value);
 }
 
 void
@@ -3280,7 +3286,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
-	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
+	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name ((GCObject*)value) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
@@ -3295,7 +3301,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
-	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
+	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name ((GCObject*)value) : "null");
 
 	InterlockedWritePointer (ptr, value);
 
@@ -3451,18 +3457,21 @@ mono_gc_get_los_limit (void)
 	return MAX_SMALL_OBJ_SIZE;
 }
 
+/* FIXME: move to sgen-mono.c */
 gboolean
 mono_gc_user_markers_supported (void)
 {
 	return TRUE;
 }
 
+/* FIXME: move to sgen-mono.c */
 gboolean
 mono_object_is_alive (MonoObject* o)
 {
 	return TRUE;
 }
 
+/* FIXME: move to sgen-mono.c */
 int
 mono_gc_get_generation (MonoObject *obj)
 {
@@ -3471,6 +3480,7 @@ mono_gc_get_generation (MonoObject *obj)
 	return 1;
 }
 
+/* FIXME: move to sgen-mono.c */
 void
 mono_gc_enable_events (void)
 {
@@ -3479,7 +3489,7 @@ mono_gc_enable_events (void)
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
-	sgen_register_disappearing_link (obj, link_addr, track, FALSE);
+	sgen_register_disappearing_link ((GCObject*)obj, link_addr, track, FALSE);
 }
 
 void

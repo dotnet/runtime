@@ -258,7 +258,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 }
 
 static inline char*
-alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;
 	int age;
@@ -279,13 +279,14 @@ alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has
 			return major_collector.alloc_object (vtable, objsize, has_references);
 	}
 
-	*(MonoVTable**)p = vtable;
+	/* FIXME: assumes object layout */
+	*(GCVTable**)p = vtable;
 
 	return p;
 }
 
 static char*
-minor_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+minor_alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	/*
 	We only need to check for a non-nursery object if we're doing a major collection.

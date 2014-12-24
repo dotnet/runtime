@@ -675,7 +675,7 @@ sgen_clear_range (char *start, char *end)
 
 	if (sgen_client_array_fill_range (start, size)) {
 		sgen_set_nursery_scan_start (start);
-		SGEN_ASSERT (0, start + sgen_safe_object_get_size ((MonoObject*)start) == end, "Array fill produced wrong size");
+		SGEN_ASSERT (0, start + sgen_safe_object_get_size ((GCObject*)start) == end, "Array fill produced wrong size");
 	}
 }
 
@@ -776,7 +776,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 				GRAY_OBJECT_ENQUEUE (unpin_queue, addr0, sgen_obj_get_descriptor_safe (addr0));
 			else
 				SGEN_UNPIN_OBJECT (addr0);
-			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)addr0));
+			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)addr0));
 			CANARIFY_SIZE (size);
 			sgen_set_nursery_scan_start (addr0);
 			frag_end = addr0;

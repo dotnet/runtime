@@ -234,7 +234,7 @@ typedef struct {
 
 
 typedef struct {
-	MonoObject *obj; //XXX this can be eliminated.
+	GCObject *obj; //XXX this can be eliminated.
 	mword lock_word;
 
 	ColorData *color;
@@ -394,7 +394,7 @@ free_color_buckets (void)
 
 
 static ScanData*
-create_data (MonoObject *obj)
+create_data (GCObject *obj)
 {
 	mword *o = (mword*)obj;
 	ScanData *res = alloc_object_data ();
@@ -410,7 +410,7 @@ create_data (MonoObject *obj)
 }
 
 static ScanData*
-find_data (MonoObject *obj)
+find_data (GCObject *obj)
 {
 	ScanData *a = NULL;
 	mword *o = (mword*)obj;
@@ -435,10 +435,10 @@ clear_after_processing (void)
 	}
 }
 
-static MonoObject*
-bridge_object_forward (MonoObject *obj)
+static GCObject*
+bridge_object_forward (GCObject *obj)
 {
-	MonoObject *fwd;
+	GCObject *fwd;
 	mword *o = (mword*)obj;
 	if ((o [0] & SGEN_VTABLE_BITS_MASK) == SGEN_VTABLE_BITS_MASK)
 		return obj;
@@ -449,14 +449,14 @@ bridge_object_forward (MonoObject *obj)
 
 #ifdef DUMP_GRAPH
 static const char*
-safe_name_bridge (MonoObject *obj)
+safe_name_bridge (GCObject *obj)
 {
-	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+	GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj);
 	return vt->klass->name;
 }
 
 static ScanData*
-find_or_create_data (MonoObject *obj)
+find_or_create_data (GCObject *obj)
 {
 	ScanData *entry = find_data (obj);
 	if (!entry)
@@ -586,13 +586,13 @@ new_color (gboolean force_new)
 
 
 static void
-register_bridge_object (MonoObject *obj)
+register_bridge_object (GCObject *obj)
 {
 	create_data (obj)->is_bridge = TRUE;
 }
 
 static gboolean
-is_opaque_object (MonoObject *obj)
+is_opaque_object (GCObject *obj)
 {
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 	if ((vt->gc_bits & SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) == SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) {
@@ -604,7 +604,7 @@ is_opaque_object (MonoObject *obj)
 }
 
 static void
-push_object (MonoObject *obj)
+push_object (GCObject *obj)
 {
 	ScanData *data;
 	obj = bridge_object_forward (obj);
@@ -652,14 +652,14 @@ push_object (MonoObject *obj)
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
-		MonoObject *dst = (MonoObject*)*(ptr);			\
+		GCObject *dst = (GCObject*)*(ptr);			\
 		if (dst) push_object (dst); 			\
 	} while (0)
 
 static void
 push_all (ScanData *data)
 {
-	MonoObject *obj = data->obj;
+	GCObject *obj = data->obj;
 	char *start = (char*)obj;
 	mword desc = sgen_obj_get_descriptor_safe (start);
 
@@ -672,7 +672,7 @@ push_all (ScanData *data)
 
 
 static void
-compute_low_index (ScanData *data, MonoObject *obj)
+compute_low_index (ScanData *data, GCObject *obj)
 {
 	ScanData *other;
 	ColorData *cd;
@@ -704,14 +704,14 @@ compute_low_index (ScanData *data, MonoObject *obj)
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
-		MonoObject *dst = (MonoObject*)*(ptr);			\
+		GCObject *dst = (GCObject*)*(ptr);			\
 		if (dst) compute_low_index (data, dst); 			\
 	} while (0)
 
 static void
 compute_low (ScanData *data)
 {
-	MonoObject *obj = data->obj;
+	GCObject *obj = data->obj;
 	char *start = (char*)obj;
 	mword desc = sgen_obj_get_descriptor_safe (start);
 
@@ -872,7 +872,7 @@ dfs (void)
 }
 
 static void
-register_finalized_object (MonoObject *obj)
+register_finalized_object (GCObject *obj)
 {
 	g_assert (sgen_need_bridge_processing ());
 	dyn_array_ptr_push (&registered_bridges, obj);
@@ -918,7 +918,7 @@ dump_color_table (const char *why, gboolean do_index)
 			if (dyn_array_ptr_size (&cd->bridges)) {
 				printf (" bridges: ");
 				for (j = 0; j < dyn_array_ptr_size (&cd->bridges); ++j) {
-					MonoObject *obj = dyn_array_ptr_get (&cd->bridges, j);
+					GCObject *obj = dyn_array_ptr_get (&cd->bridges, j);
 					ScanData *data = find_or_create_data (obj);
 					printf ("%d ", data->index);
 				}
@@ -1062,7 +1062,7 @@ processing_build_callback_data (int generation)
 			if (!bridges)
 				continue;
 
-			api_sccs [api_index] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+			api_sccs [api_index] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (GCObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 			api_sccs [api_index]->is_alive = FALSE;
 			api_sccs [api_index]->num_objs = bridges;
 
@@ -1167,7 +1167,7 @@ processing_after_callback (int generation)
 }
 
 static void
-describe_pointer (MonoObject *obj)
+describe_pointer (GCObject *obj)
 {
 	// HashEntry *entry;
 	int i;

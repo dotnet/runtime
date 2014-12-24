@@ -79,7 +79,7 @@ sgen_card_table_number_of_cards_in_range (mword address, mword size)
 }
 
 static void
-sgen_card_table_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+sgen_card_table_wbarrier_set_field (GCObject *obj, gpointer field_ptr, GCObject* value)
 {
 	*(void**)field_ptr = value;
 	if (need_mod_union || sgen_ptr_in_nursery (value))
@@ -139,7 +139,7 @@ sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, siz
 }
 
 static void
-sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
+sgen_card_table_wbarrier_object_copy (GCObject* obj, GCObject *src)
 {
 	int size = mono_object_class (obj)->instance_size;
 
@@ -509,7 +509,7 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboo
 		ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 	}
 
-	binary_protocol_card_scan (obj, sgen_safe_object_get_size ((MonoObject*)obj));
+	binary_protocol_card_scan (obj, sgen_safe_object_get_size ((GCObject*)obj));
 }
 
 #ifdef CARDTABLE_STATS

@@ -37,30 +37,26 @@ extern guint64 stat_slots_allocated_in_vain;
  * anymore, which is the case in the parallel collector.
  */
 static MONO_ALWAYS_INLINE void
-par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue)
+par_copy_object_no_checks (char *destination, GCVTable *vt, void *obj, mword objsize, SgenGrayQueue *queue)
 {
-	SGEN_ASSERT (9, vt->klass->inited, "vtable %p for class %s:%s was not initialized", vt, vt->klass->name_space, vt->klass->name);
-	SGEN_LOG (9, " (to %p, %s size: %lu)", destination, ((MonoObject*)obj)->vtable->klass->name, (unsigned long)objsize);
+	sgen_client_pre_copy_checks (destination, vt, obj, objsize);
 	binary_protocol_copy (obj, destination, vt, objsize);
 
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_OBJ_MOVED_ENABLED ())) {
 		int dest_gen = sgen_ptr_in_nursery (destination) ? GENERATION_NURSERY : GENERATION_OLD;
 		int src_gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
-		MONO_GC_OBJ_MOVED ((mword)destination, (mword)obj, dest_gen, src_gen, objsize, vt->klass->name_space, vt->klass->name);
+		MONO_GC_OBJ_MOVED ((mword)destination, (mword)obj, dest_gen, src_gen, objsize, sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt));
 	}
 #endif
 
+	/* FIXME: assumes object layout */
 	memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 
 	/* adjust array->bounds */
-	SGEN_ASSERT (9, vt->gc_descr, "vtable %p for class %s:%s has no gc descriptor", vt, vt->klass->name_space, vt->klass->name);
+	SGEN_ASSERT (9, sgen_vtable_get_descriptor (vt), "vtable %p has no gc descriptor", vt);
 
-	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
-		MonoArray *array = (MonoArray*)destination;
-		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
-		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array));
-	}
+	sgen_client_update_copied_object (destination, vt, obj, objsize);
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
 		sgen_register_moved_object (obj, destination);
 	obj = destination;
@@ -76,9 +72,9 @@ par_copy_object_no_checks (char *destination, MonoVTable *vt, void *obj, mword o
 static MONO_NEVER_INLINE void*
 copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 {
-	MonoVTable *vt = ((MonoObject*)obj)->vtable;
+	GCVTable *vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
-	mword objsize = SGEN_ALIGN_UP (sgen_client_par_object_get_size (vt, (MonoObject*)obj));
+	mword objsize = SGEN_ALIGN_UP (sgen_client_par_object_get_size (vt, obj));
 	/* FIXME: Does this not mark the newly allocated object? */
 	char *destination = COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION (vt, obj, objsize, has_references);
 

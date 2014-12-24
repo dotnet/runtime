@@ -22,10 +22,13 @@ enum {
 	INTERNAL_MEM_MAX
 };
 
+#define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
+#define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
+
 static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
-sgen_client_slow_object_get_size (MonoVTable *vtable, MonoObject* o)
+sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o)
 {
-	MonoClass *klass = vtable->klass;
+	MonoClass *klass = ((MonoVTable*)vtable)->klass;
 
 	/*
 	 * We depend on mono_string_length_fast and
@@ -48,15 +51,41 @@ sgen_client_slow_object_get_size (MonoVTable *vtable, MonoObject* o)
 	}
 }
 
+static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
+sgen_client_array_element_size (GCVTable *gc_vtable)
+{
+	MonoVTable *vt = (MonoVTable*)gc_vtable;
+	return mono_array_element_size (vt->klass);
+}
+
+static MONO_ALWAYS_INLINE G_GNUC_UNUSED char*
+sgen_client_array_data_start (GCObject *obj)
+{
+	return (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);
+}
+
+static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
+sgen_client_array_length (GCObject *obj)
+{
+	return mono_array_length_fast ((MonoArray*)obj);
+}
+
+/* FIXME: Why do we even need this?  Can't we get it from the descriptor? */
+static gboolean G_GNUC_UNUSED
+sgen_client_vtable_has_references (GCVTable *vt)
+{
+	return ((MonoVTable*)vt)->klass->has_references;
+}
+
 /*
  * This function can be called on an object whose first word, the
  * vtable field, is not intact.  This is necessary for the parallel
  * collector.
  */
 static MONO_NEVER_INLINE mword
-sgen_client_par_object_get_size (MonoVTable *vtable, MonoObject* o)
+sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
 {
-	mword descr = (mword)vtable->gc_descr;
+	mword descr = sgen_vtable_get_descriptor (vtable);
 	mword type = descr & DESC_TYPE_MASK;
 
 	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
@@ -77,12 +106,30 @@ sgen_client_par_object_get_size (MonoVTable *vtable, MonoObject* o)
 		if ((descr & VECTOR_KIND_ARRAY) && array->bounds) {
 			size += sizeof (mono_array_size_t) - 1;
 			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * vtable->klass->rank;
+			size += sizeof (MonoArrayBounds) * ((MonoVTable*)vtable)->klass->rank;
 		}
 		return size;
 	}
 
 	return sgen_client_slow_object_get_size (vtable, o);
+}
+
+static MONO_ALWAYS_INLINE void G_GNUC_UNUSED
+sgen_client_pre_copy_checks (char *destination, GCVTable *gc_vtable, void *obj, mword objsize)
+{
+	MonoVTable *vt = (MonoVTable*)gc_vtable;
+	SGEN_ASSERT (9, vt->klass->inited, "vtable %p for class %s:%s was not initialized", vt, vt->klass->name_space, vt->klass->name);
+}
+
+static MONO_ALWAYS_INLINE void G_GNUC_UNUSED
+sgen_client_update_copied_object (char *destination, GCVTable *gc_vtable, void *obj, mword objsize)
+{
+	MonoVTable *vt = (MonoVTable*)gc_vtable;
+	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
+		MonoArray *array = (MonoArray*)destination;
+		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
+		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array));
+	}
 }
 
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
@@ -108,7 +155,7 @@ extern gboolean sgen_mono_xdomain_checks;
 #endif
 
 static gboolean G_GNUC_UNUSED
-sgen_client_object_has_critical_finalizer (MonoObject *obj)
+sgen_client_object_has_critical_finalizer (GCObject *obj)
 {
 	MonoClass *class;
 

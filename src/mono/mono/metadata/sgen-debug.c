@@ -98,7 +98,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer inside oldspace.\n");
 			if (start)
 				ptr = start;
-			vtable = major_collector.describe_pointer (ptr);
+			vtable = (MonoVTable*)major_collector.describe_pointer (ptr);
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			// FIXME: Handle pointers to the inside of objects
 			printf ("Pointer is inside a pinned chunk.\n");
@@ -129,17 +129,17 @@ describe_pointer (char *ptr, gboolean need_setup)
 	}
 	printf ("Class: %s.%s\n", vtable->klass->name_space, vtable->klass->name);
 
-	desc = ((GCVTable*)vtable)->desc;
+	desc = sgen_vtable_get_descriptor ((GCVTable*)vtable);
 	printf ("Descriptor: %lx\n", (long)desc);
 
 	type = desc & DESC_TYPE_MASK;
 	printf ("Descriptor type: %d (%s)\n", type, descriptor_types [type]);
 
-	size = sgen_safe_object_get_size ((MonoObject*)ptr);
+	size = sgen_safe_object_get_size ((GCObject*)ptr);
 	printf ("Size: %d\n", (int)size);
 
  bridge:
-	sgen_bridge_describe_pointer ((MonoObject*)ptr);
+	sgen_bridge_describe_pointer ((GCObject*)ptr);
 }
 
 void
@@ -160,8 +160,9 @@ static gboolean missing_remsets;
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && sgen_ptr_in_nursery ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup (*(ptr))) { \
-			SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+			GCVTable *__vt = SGEN_LOAD_VTABLE ((obj));	\
+			SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
+			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			if (!object_is_pinned (*(ptr)))								\
 				missing_remsets = TRUE;									\
 		}																\
@@ -176,8 +177,8 @@ static void
 check_consistency_callback (char *start, size_t size, void *dummy)
 {
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (start);
-	mword desc = sgen_vtable_get_descriptor (vt);
-	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
+	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
 
 #include "sgen-scan-object.h"
 }
@@ -210,7 +211,7 @@ sgen_check_consistency (void)
 static gboolean
 is_major_or_los_object_marked (char *obj)
 {
-	if (sgen_safe_object_get_size ((MonoObject*)obj) > SGEN_MAX_SMALL_OBJ_SIZE) {
+	if (sgen_safe_object_get_size ((GCObject*)obj) > SGEN_MAX_SMALL_OBJ_SIZE) {
 		return sgen_los_object_is_pinned (obj);
 	} else {
 		return sgen_get_major_collector ()->is_object_live (obj);
@@ -221,8 +222,9 @@ is_major_or_los_object_marked (char *obj)
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && !sgen_ptr_in_nursery ((char*)*(ptr)) && !is_major_or_los_object_marked ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
-			SGEN_LOG (0, "major->major reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), ((MonoObject*)(obj))->vtable->klass->name_space, ((MonoObject*)(obj))->vtable->klass->name); \
-			binary_protocol_missing_remset ((obj), (gpointer)LOAD_VTABLE ((obj)), (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+			GCVTable *__vt = SGEN_LOAD_VTABLE ((obj));	\
+			SGEN_LOG (0, "major->major reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
+			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			missing_remsets = TRUE;				\
 		}																\
 	}																	\
@@ -233,9 +235,9 @@ check_mod_union_callback (char *start, size_t size, void *dummy)
 {
 	gboolean in_los = (gboolean) (size_t) dummy;
 	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (start);
-	mword desc = sgen_vtable_get_descriptor (vt);
+	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
 	guint8 *cards;
-	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, vt->klass->name);
+	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
 
 	if (!is_major_or_los_object_marked (start))
 		return;
@@ -266,7 +268,7 @@ sgen_check_mod_union_consistency (void)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		if (*(ptr) && !LOAD_VTABLE (*(ptr)))						\
-			g_error ("Could not load vtable for obj %p slot %d (size %d)", obj, (char*)ptr - (char*)obj, safe_object_get_size ((MonoObject*)obj));		\
+			g_error ("Could not load vtable for obj %p slot %d (size %d)", obj, (char*)ptr - (char*)obj, safe_object_get_size ((GCObject*)obj));		\
 	} while (0)
 
 static void
@@ -355,7 +357,7 @@ iterate_valid_nursery_objects (IterateObjectCallbackFunc callback, void *data)
 	int i;
 	for (i = 0; i < valid_nursery_object_count; ++i) {
 		char *obj = valid_nursery_objects [i];
-		callback (obj, safe_object_get_size ((MonoObject*)obj), data);
+		callback (obj, safe_object_get_size ((GCObject*)obj), data);
 	}
 }
 
@@ -372,7 +374,7 @@ describe_nursery_ptr (char *ptr, gboolean need_setup)
 			break;
 	}
 
-	if (i >= valid_nursery_object_count || valid_nursery_objects [i] + safe_object_get_size ((MonoObject *)valid_nursery_objects [i]) < ptr) {
+	if (i >= valid_nursery_object_count || valid_nursery_objects [i] + safe_object_get_size ((GCObject *)valid_nursery_objects [i]) < ptr) {
 		SGEN_LOG (0, "nursery-ptr (unalloc'd-memory)");
 		return NULL;
 	} else {
@@ -554,7 +556,7 @@ find_pinning_reference (char *obj, size_t size)
 			if (sgen_ptr_in_nursery (__target)) {		\
 				g_assert (!SGEN_OBJECT_IS_FORWARDED (__target)); \
 			} else {					\
-				mword __size = sgen_safe_object_get_size ((MonoObject*)__target); \
+				mword __size = sgen_safe_object_get_size ((GCObject*)__target); \
 				if (__size <= SGEN_MAX_SMALL_OBJ_SIZE)	\
 					g_assert (major_collector.is_object_live (__target)); \
 				else					\
@@ -619,14 +621,14 @@ static gboolean scan_object_for_specific_ref_precise = TRUE;
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {		\
-	if ((MonoObject*)*(ptr) == key) {	\
+	if ((GCObject*)*(ptr) == key) {	\
 	g_print ("found ref to %p in object %p (%s) at offset %td\n",	\
-			key, (obj), sgen_client_object_safe_name ((MonoObject*)(obj)), ((char*)(ptr) - (char*)(obj))); \
+			key, (obj), sgen_client_object_safe_name ((GCObject*)(obj)), ((char*)(ptr) - (char*)(obj))); \
 	}								\
 	} while (0)
 
 static void
-scan_object_for_specific_ref (char *start, MonoObject *key)
+scan_object_for_specific_ref (char *start, GCObject *key)
 {
 	char *forwarded;
 
@@ -638,32 +640,32 @@ scan_object_for_specific_ref (char *start, MonoObject *key)
 		#include "sgen-scan-object.h"
 	} else {
 		mword *words = (mword*)start;
-		size_t size = safe_object_get_size ((MonoObject*)start);
+		size_t size = safe_object_get_size ((GCObject*)start);
 		int i;
 		for (i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
 				g_print ("found possible ref to %p in object %p (%s) at offset %td\n",
-						key, start, sgen_client_object_safe_name ((MonoObject*)start), i * sizeof (mword));
+						key, start, sgen_client_object_safe_name ((GCObject*)start), i * sizeof (mword));
 			}
 		}
 	}
 }
 
 static void
-scan_object_for_specific_ref_callback (char *obj, size_t size, MonoObject *key)
+scan_object_for_specific_ref_callback (char *obj, size_t size, GCObject *key)
 {
 	scan_object_for_specific_ref (obj, key);
 }
 
 static void
-check_root_obj_specific_ref (RootRecord *root, MonoObject *key, MonoObject *obj)
+check_root_obj_specific_ref (RootRecord *root, GCObject *key, GCObject *obj)
 {
 	if (key != obj)
 		return;
 	g_print ("found ref to %p in root record %p\n", key, root);
 }
 
-static MonoObject *check_key = NULL;
+static GCObject *check_key = NULL;
 static RootRecord *check_root = NULL;
 
 static void
@@ -673,7 +675,7 @@ check_root_obj_specific_ref_from_marker (void **obj, void *gc_data)
 }
 
 static void
-scan_roots_for_specific_ref (MonoObject *key, int root_type)
+scan_roots_for_specific_ref (GCObject *key, int root_type)
 {
 	void **start_root;
 	RootRecord *root;
@@ -729,7 +731,7 @@ scan_roots_for_specific_ref (MonoObject *key, int root_type)
 }
 
 void
-mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise)
+mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 {
 	void **ptr;
 	RootRecord *root;
@@ -912,7 +914,7 @@ check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
 			o, o->vtable->klass->name_space, o->vtable->klass->name,
 			offset, field ? field->name : "",
 			ref, ref->vtable->klass->name_space, ref->vtable->klass->name, str ? str : "");
-	mono_gc_scan_for_specific_ref (o, TRUE);
+	mono_gc_scan_for_specific_ref ((GCObject*)o, TRUE);
 	if (str)
 		g_free (str);
 }
@@ -925,7 +927,7 @@ scan_object_for_xdomain_refs (char *start, mword size, void *data)
 {
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (start);
 	MonoDomain *domain = vt->domain;
-	mword desc = sgen_vtable_get_descriptor (vt);
+	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
 
 	#include "sgen-scan-object.h"
 }
@@ -959,7 +961,7 @@ sgen_dump_section (GCMemSection *section, const char *type)
 	char *start = section->data;
 	char *end = section->data + section->size;
 	char *occ_start = NULL;
-	GCVTable *vt;
+	MonoVTable *vt;
 	char *old_start G_GNUC_UNUSED = NULL; /* just for debugging */
 
 	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
@@ -981,10 +983,10 @@ sgen_dump_section (GCMemSection *section, const char *type)
 		if (!occ_start)
 			occ_start = start;
 
-		vt = (GCVTable*)LOAD_VTABLE (start);
+		vt = (MonoVTable*)SGEN_LOAD_VTABLE (start);
 		class = vt->klass;
 
-		size = SGEN_ALIGN_UP (safe_object_get_size ((MonoObject*) start));
+		size = SGEN_ALIGN_UP (safe_object_get_size ((GCObject*) start));
 
 		/*
 		fprintf (heap_dump_file, "<object offset=\"%d\" class=\"%s.%s\" size=\"%d\"/>\n",
@@ -1003,7 +1005,7 @@ sgen_dump_section (GCMemSection *section, const char *type)
 }
 
 static void
-dump_object (MonoObject *obj, gboolean dump_location)
+dump_object (GCObject *obj, gboolean dump_location)
 {
 	static char class_name [1024];
 
@@ -1079,7 +1081,7 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 
 	fprintf (heap_dump_file, "<los>\n");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		dump_object ((MonoObject*)bigobj->data, FALSE);
+		dump_object ((GCObject*)bigobj->data, FALSE);
 	fprintf (heap_dump_file, "</los>\n");
 
 	fprintf (heap_dump_file, "</collection>\n");
