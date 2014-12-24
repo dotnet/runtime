@@ -28,6 +28,14 @@
 
 #include "mini-llvm-cpp.h"
 
+#ifdef __MINGW32__
+
+#include <stddef.h>
+extern void *memset(void *, int, size_t);
+void bzero (void *to, size_t count) { memset (to, 0, count); }
+
+#endif
+
  /*
   * Information associated by mono with LLVM modules.
   */
