@@ -17,6 +17,8 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <metadata/sgen-pointer-queue.h>
+
 void sgen_client_init (void);
 
 /*
@@ -66,6 +68,13 @@ void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
  */
 gboolean sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx);
 
+void sgen_client_nursery_objects_pinned (void **definitely_pinned, int count);
+
+void sgen_client_collecting_minor (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
+void sgen_client_collecting_major_1 (void);
+void sgen_client_pinned_los_object (char *obj);
+void sgen_client_collecting_major_2 (void);
+void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
 
 /*
  * If the client has registered any internal memory types, this must return a string

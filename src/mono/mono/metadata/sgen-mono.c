@@ -1471,6 +1471,192 @@ mono_gc_set_string_length (MonoString *str, gint32 new_length)
 }
 
 /*
+ * Profiling
+ */
+
+#define GC_ROOT_NUM 32
+typedef struct {
+	int count;		/* must be the first field */
+	void *objects [GC_ROOT_NUM];
+	int root_types [GC_ROOT_NUM];
+	uintptr_t extra_info [GC_ROOT_NUM];
+} GCRootReport;
+
+static void
+notify_gc_roots (GCRootReport *report)
+{
+	if (!report->count)
+		return;
+	mono_profiler_gc_roots (report->count, report->objects, report->root_types, report->extra_info);
+	report->count = 0;
+}
+
+static void
+add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t extra_info)
+{
+	if (report->count == GC_ROOT_NUM)
+		notify_gc_roots (report);
+	report->objects [report->count] = object;
+	report->root_types [report->count] = rtype;
+	report->extra_info [report->count++] = (uintptr_t)((MonoVTable*)SGEN_LOAD_VTABLE (object))->klass;
+}
+
+void
+sgen_client_nursery_objects_pinned (void **definitely_pinned, int count)
+{
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS) {
+		GCRootReport report;
+		int idx;
+		report.count = 0;
+		for (idx = 0; idx < count; ++idx)
+			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
+		notify_gc_roots (&report);
+	}
+}
+
+static void
+report_finalizer_roots_from_queue (SgenPointerQueue *queue)
+{
+	GCRootReport report;
+	size_t i;
+
+	report.count = 0;
+	for (i = 0; i < queue->next_slot; ++i) {
+		void *obj = queue->data [i];
+		if (!obj)
+			continue;
+		add_profile_gc_root (&report, obj, MONO_PROFILE_GC_ROOT_FINALIZER, 0);
+	}
+	notify_gc_roots (&report);
+}
+
+static void
+report_finalizer_roots (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue)
+{
+	report_finalizer_roots_from_queue (fin_ready_queue);
+	report_finalizer_roots_from_queue (critical_fin_queue);
+}
+
+static GCRootReport *root_report;
+
+static void
+single_arg_report_root (void **obj, void *gc_data)
+{
+	if (*obj)
+		add_profile_gc_root (root_report, *obj, MONO_PROFILE_GC_ROOT_OTHER, 0);
+}
+
+static void
+precisely_report_roots_from (GCRootReport *report, void** start_root, void** end_root, mword desc)
+{
+	switch (desc & ROOT_DESC_TYPE_MASK) {
+	case ROOT_DESC_BITMAP:
+		desc >>= ROOT_DESC_TYPE_SHIFT;
+		while (desc) {
+			if ((desc & 1) && *start_root) {
+				add_profile_gc_root (report, *start_root, MONO_PROFILE_GC_ROOT_OTHER, 0);
+			}
+			desc >>= 1;
+			start_root++;
+		}
+		return;
+	case ROOT_DESC_COMPLEX: {
+		gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
+		gsize bwords = (*bitmap_data) - 1;
+		void **start_run = start_root;
+		bitmap_data++;
+		while (bwords-- > 0) {
+			gsize bmap = *bitmap_data++;
+			void **objptr = start_run;
+			while (bmap) {
+				if ((bmap & 1) && *objptr) {
+					add_profile_gc_root (report, *objptr, MONO_PROFILE_GC_ROOT_OTHER, 0);
+				}
+				bmap >>= 1;
+				++objptr;
+			}
+			start_run += GC_BITS_PER_WORD;
+		}
+		break;
+	}
+	case ROOT_DESC_USER: {
+		MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
+		root_report = report;
+		marker (start_root, single_arg_report_root, NULL);
+		break;
+	}
+	case ROOT_DESC_RUN_LEN:
+		g_assert_not_reached ();
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static void
+report_registered_roots_by_type (int root_type)
+{
+	GCRootReport report;
+	void **start_root;
+	RootRecord *root;
+	report.count = 0;
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
+		precisely_report_roots_from (&report, start_root, (void**)root->end_root, root->root_desc);
+	} SGEN_HASH_TABLE_FOREACH_END;
+	notify_gc_roots (&report);
+}
+
+static void
+report_registered_roots (void)
+{
+	report_registered_roots_by_type (ROOT_TYPE_NORMAL);
+	report_registered_roots_by_type (ROOT_TYPE_WBARRIER);
+}
+
+void
+sgen_client_collecting_minor (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue)
+{
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_registered_roots ();
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_finalizer_roots (fin_ready_queue, critical_fin_queue);
+}
+
+static GCRootReport major_root_report;
+static gboolean profile_roots;
+
+void
+sgen_client_collecting_major_1 (void)
+{
+	profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
+	memset (&major_root_report, 0, sizeof (GCRootReport));
+}
+
+void
+sgen_client_pinned_los_object (char *obj)
+{
+	if (profile_roots)
+		add_profile_gc_root (&major_root_report, obj, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
+}
+
+void
+sgen_client_collecting_major_2 (void)
+{
+	if (profile_roots)
+		notify_gc_roots (&major_root_report);
+
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_registered_roots ();
+}
+
+void
+sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue)
+{
+	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
+		report_finalizer_roots (fin_ready_queue, critical_fin_queue);
+}
+
+/*
  * Debugging
  */
 

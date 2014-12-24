@@ -420,33 +420,6 @@ SgenHashTable roots_hash [ROOT_TYPE_NUM] = {
 };
 static mword roots_size = 0; /* amount of memory in the root set */
 
-#define GC_ROOT_NUM 32
-typedef struct {
-	int count;		/* must be the first field */
-	void *objects [GC_ROOT_NUM];
-	int root_types [GC_ROOT_NUM];
-	uintptr_t extra_info [GC_ROOT_NUM];
-} GCRootReport;
-
-static void
-notify_gc_roots (GCRootReport *report)
-{
-	if (!report->count)
-		return;
-	mono_profiler_gc_roots (report->count, report->objects, report->root_types, report->extra_info);
-	report->count = 0;
-}
-
-static void
-add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t extra_info)
-{
-	if (report->count == GC_ROOT_NUM)
-		notify_gc_roots (report);
-	report->objects [report->count] = object;
-	report->root_types [report->count] = rtype;
-	report->extra_info [report->count++] = (uintptr_t)((MonoVTable*)LOAD_VTABLE (object))->klass;
-}
-
 MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
@@ -830,14 +803,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 		last = addr;
 		++start;
 	}
-	//printf ("effective pinned: %d (at the end: %d)\n", count, (char*)end_nursery - (char*)last);
-	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS) {
-		GCRootReport report;
-		report.count = 0;
-		for (idx = 0; idx < count; ++idx)
-			add_profile_gc_root (&report, definitely_pinned [idx], MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
-		notify_gc_roots (&report);
-	}
+	sgen_client_nursery_objects_pinned (definitely_pinned, count);
 	stat_pinned_objects += count;
 	return count;
 }
@@ -1197,105 +1163,6 @@ FILE *
 mono_gc_get_logfile (void)
 {
 	return gc_debug_file;
-}
-
-static void
-report_finalizer_roots_from_queue (SgenPointerQueue *queue)
-{
-	GCRootReport report;
-	size_t i;
-
-	report.count = 0;
-	for (i = 0; i < queue->next_slot; ++i) {
-		void *obj = queue->data [i];
-		if (!obj)
-			continue;
-		add_profile_gc_root (&report, obj, MONO_PROFILE_GC_ROOT_FINALIZER, 0);
-	}
-	notify_gc_roots (&report);
-}
-
-static void
-report_finalizer_roots (void)
-{
-	report_finalizer_roots_from_queue (&fin_ready_queue);
-	report_finalizer_roots_from_queue (&critical_fin_queue);
-}
-
-static GCRootReport *root_report;
-
-static void
-single_arg_report_root (void **obj, void *gc_data)
-{
-	if (*obj)
-		add_profile_gc_root (root_report, *obj, MONO_PROFILE_GC_ROOT_OTHER, 0);
-}
-
-static void
-precisely_report_roots_from (GCRootReport *report, void** start_root, void** end_root, mword desc)
-{
-	switch (desc & ROOT_DESC_TYPE_MASK) {
-	case ROOT_DESC_BITMAP:
-		desc >>= ROOT_DESC_TYPE_SHIFT;
-		while (desc) {
-			if ((desc & 1) && *start_root) {
-				add_profile_gc_root (report, *start_root, MONO_PROFILE_GC_ROOT_OTHER, 0);
-			}
-			desc >>= 1;
-			start_root++;
-		}
-		return;
-	case ROOT_DESC_COMPLEX: {
-		gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
-		gsize bwords = (*bitmap_data) - 1;
-		void **start_run = start_root;
-		bitmap_data++;
-		while (bwords-- > 0) {
-			gsize bmap = *bitmap_data++;
-			void **objptr = start_run;
-			while (bmap) {
-				if ((bmap & 1) && *objptr) {
-					add_profile_gc_root (report, *objptr, MONO_PROFILE_GC_ROOT_OTHER, 0);
-				}
-				bmap >>= 1;
-				++objptr;
-			}
-			start_run += GC_BITS_PER_WORD;
-		}
-		break;
-	}
-	case ROOT_DESC_USER: {
-		MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-		root_report = report;
-		marker (start_root, single_arg_report_root, NULL);
-		break;
-	}
-	case ROOT_DESC_RUN_LEN:
-		g_assert_not_reached ();
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-static void
-report_registered_roots_by_type (int root_type)
-{
-	GCRootReport report;
-	void **start_root;
-	RootRecord *root;
-	report.count = 0;
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
-		precisely_report_roots_from (&report, start_root, (void**)root->end_root, root->root_desc);
-	} SGEN_HASH_TABLE_FOREACH_END;
-	notify_gc_roots (&report);
-}
-
-static void
-report_registered_roots (void)
-{
-	report_registered_roots_by_type (ROOT_TYPE_NORMAL);
-	report_registered_roots_by_type (ROOT_TYPE_WBARRIER);
 }
 
 static void
@@ -1967,10 +1834,9 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	sgen_drain_gray_stack (-1, ctx);
 
-	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
-		report_registered_roots ();
-	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
-		report_finalizer_roots ();
+	/* FIXME: Why do we do this at this specific, seemingly random, point? */
+	sgen_client_collecting_minor (&fin_ready_queue, &critical_fin_queue);
+
 	TV_GETTIME (atv);
 	time_minor_scan_pinned += TV_ELAPSED (btv, atv);
 
@@ -2092,8 +1958,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 */
 	char *heap_start = NULL;
 	char *heap_end = (char*)-1;
-	gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
-	GCRootReport root_report = { 0 };
 	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (object_ops, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	gboolean concurrent = mode != COPY_OR_MARK_FROM_ROOTS_SERIAL;
 
@@ -2164,6 +2028,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 
 	sgen_optimize_pin_queue ();
 
+	sgen_client_collecting_major_1 ();
+
 	/*
 	 * pin_queue now contains all candidate pointers, sorted and
 	 * uniqued.  We must do two passes now to figure out which
@@ -2203,12 +2069,9 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((MonoObject*) bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data, sgen_client_object_safe_name ((MonoObject*)bigobj->data), (unsigned long)sgen_los_object_size (bigobj));
 
-			if (profile_roots)
-				add_profile_gc_root (&root_report, bigobj->data, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
+			sgen_client_pinned_los_object (bigobj->data);
 		}
 	}
-	if (profile_roots)
-		notify_gc_roots (&root_report);
 	/* second pass for the sections */
 
 	/*
@@ -2272,13 +2135,12 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	main_gc_thread = mono_native_thread_self ();
 #endif
 
-	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
-		report_registered_roots ();
+	sgen_client_collecting_major_2 ();
+
 	TV_GETTIME (atv);
 	time_major_scan_pinned += TV_ELAPSED (btv, atv);
 
-	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
-		report_finalizer_roots ();
+	sgen_client_collecting_major_3 (&fin_ready_queue, &critical_fin_queue);
 
 	/*
 	 * FIXME: is this the right context?  It doesn't seem to contain a copy function
