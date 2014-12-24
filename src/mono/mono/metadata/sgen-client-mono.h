@@ -22,17 +22,8 @@ enum {
 	INTERNAL_MEM_MAX
 };
 
-/* Structure that corresponds to a GCVTable: desc is a mword so requires
- * no cast from a pointer to an integer
- */
-typedef struct {
-	MonoClass *klass;
-	mword desc;
-} GCVTable;
-
-typedef struct {
-	GCVTable *vtable;
-} GCObject;
+typedef MonoObject GCObject;
+typedef MonoVTable GCVTable;
 
 /* FIXME: This should return a GCVTable* and be a function. */
 #define SGEN_LOAD_VTABLE_UNCHECKED(obj)	((void*)(((GCObject*)(obj))->vtable))
@@ -40,7 +31,7 @@ typedef struct {
 static inline mword
 sgen_vtable_get_descriptor (GCVTable *vtable)
 {
-	return vtable->desc;
+	return (mword)vtable->gc_descr;
 }
 
 #define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
