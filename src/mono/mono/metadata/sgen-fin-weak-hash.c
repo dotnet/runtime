@@ -39,7 +39,6 @@
 
 typedef SgenGrayQueue GrayQueue;
 
-int num_ready_finalizers = 0;
 static int no_finalize = 0;
 
 #define DISLINK_OBJECT(l)	(REVEAL_POINTER (*(void**)(l)))
@@ -205,10 +204,9 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 			if (is_fin_ready) {
 				/* remove and put in fin_ready_list */
 				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
-				num_ready_finalizers++;
 				sgen_queue_finalization_entry (copy);
 				/* Make it survive */
-				SGEN_LOG (5, "Queueing object for finalization: %p (%s) (was at %p) (%d/%d)", copy, sgen_client_object_safe_name (copy), object, num_ready_finalizers, sgen_hash_table_num_entries (hash_table));
+				SGEN_LOG (5, "Queueing object for finalization: %p (%s) (was at %p) (%d)", copy, sgen_client_object_safe_name (copy), object, sgen_hash_table_num_entries (hash_table));
 				continue;
 			} else {
 				if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
@@ -589,7 +587,7 @@ finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
 			/* remove and put in out_array */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			out_array [count ++] = object;
-			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d/%d)", object, sgen_client_object_safe_name (object), num_ready_finalizers, sgen_hash_table_num_entries (hash_table));
+			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d)", object, sgen_client_object_safe_name (object), sgen_hash_table_num_entries (hash_table));
 			if (count == out_size)
 				return count;
 			continue;

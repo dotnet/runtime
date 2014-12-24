@@ -224,8 +224,6 @@ extern unsigned int sgen_global_stop_count;
 extern gboolean bridge_processing_in_progress;
 extern MonoGCBridgeCallbacks bridge_callbacks;
 
-extern int num_ready_finalizers;
-
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
 
@@ -405,7 +403,7 @@ enum {
 	INTERNAL_MEM_SCAN_STARTS,
 	INTERNAL_MEM_FIN_TABLE,
 	INTERNAL_MEM_FINALIZE_ENTRY,
-	INTERNAL_MEM_FINALIZE_READY_ENTRY,
+	INTERNAL_MEM_FINALIZE_READY,
 	INTERNAL_MEM_DISLINK_TABLE,
 	INTERNAL_MEM_DISLINK,
 	INTERNAL_MEM_ROOTS_TABLE,

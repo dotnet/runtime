@@ -212,6 +212,7 @@
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-client.h"
+#include "metadata/sgen-pointer-queue.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
@@ -401,18 +402,12 @@ static volatile mword highest_heap_address = 0;
 
 LOCK_DECLARE (sgen_interruption_mutex);
 
-typedef struct _FinalizeReadyEntry FinalizeReadyEntry;
-struct _FinalizeReadyEntry {
-	FinalizeReadyEntry *next;
-	void *object;
-};
-
 int current_collection_generation = -1;
 volatile gboolean concurrent_collection_in_progress = FALSE;
 
 /* objects that are ready to be finalized */
-static FinalizeReadyEntry *fin_ready_list = NULL;
-static FinalizeReadyEntry *critical_fin_list = NULL;
+static SgenPointerQueue fin_ready_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
+static SgenPointerQueue critical_fin_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
 
 /* registered roots: the key to the hash is the root start address */
 /* 
@@ -498,9 +493,6 @@ typedef SgenGrayQueue GrayQueue;
 /* forward declarations */
 static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx);
 static void scan_from_registered_roots (char *addr_start, char *addr_end, int root_type, ScanCopyContext ctx);
-static void scan_finalizer_entries (FinalizeReadyEntry *list, ScanCopyContext ctx);
-static void report_finalizer_roots (void);
-static void report_registered_roots (void);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, ScanCopyContext ctx);
 static void finish_gray_stack (int generation, ScanCopyContext ctx);
@@ -1208,16 +1200,17 @@ mono_gc_get_logfile (void)
 }
 
 static void
-report_finalizer_roots_list (FinalizeReadyEntry *list)
+report_finalizer_roots_from_queue (SgenPointerQueue *queue)
 {
 	GCRootReport report;
-	FinalizeReadyEntry *fin;
+	size_t i;
 
 	report.count = 0;
-	for (fin = list; fin; fin = fin->next) {
-		if (!fin->object)
+	for (i = 0; i < queue->next_slot; ++i) {
+		void *obj = queue->data [i];
+		if (!obj)
 			continue;
-		add_profile_gc_root (&report, fin->object, MONO_PROFILE_GC_ROOT_FINALIZER, 0);
+		add_profile_gc_root (&report, obj, MONO_PROFILE_GC_ROOT_FINALIZER, 0);
 	}
 	notify_gc_roots (&report);
 }
@@ -1225,8 +1218,8 @@ report_finalizer_roots_list (FinalizeReadyEntry *list)
 static void
 report_finalizer_roots (void)
 {
-	report_finalizer_roots_list (fin_ready_list);
-	report_finalizer_roots_list (critical_fin_list);
+	report_finalizer_roots_from_queue (&fin_ready_queue);
+	report_finalizer_roots_from_queue (&critical_fin_queue);
 }
 
 static GCRootReport *root_report;
@@ -1306,17 +1299,18 @@ report_registered_roots (void)
 }
 
 static void
-scan_finalizer_entries (FinalizeReadyEntry *list, ScanCopyContext ctx)
+scan_finalizer_entries (SgenPointerQueue *fin_queue, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
-	FinalizeReadyEntry *fin;
+	size_t i;
 
-	for (fin = list; fin; fin = fin->next) {
-		if (!fin->object)
+	for (i = 0; i < fin_queue->next_slot; ++i) {
+		void *obj = fin_queue->data [i];
+		if (!obj)
 			continue;
-		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", fin->object, sgen_client_object_safe_name (fin->object));
-		copy_func (&fin->object, queue);
+		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", obj, sgen_client_object_safe_name (obj));
+		copy_func (&fin_queue->data [i], queue);
 	}
 }
 
@@ -1675,7 +1669,7 @@ job_scan_thread_data (void *worker_data_untyped, SgenThreadPoolJob *job)
 typedef struct {
 	SgenThreadPoolJob job;
 	SgenObjectOperations *ops;
-	FinalizeReadyEntry *list;
+	SgenPointerQueue *queue;
 } ScanFinalizerEntriesJob;
 
 static void
@@ -1685,7 +1679,7 @@ job_scan_finalizer_entries (void *worker_data_untyped, SgenThreadPoolJob *job)
 	ScanFinalizerEntriesJob *job_data = (ScanFinalizerEntriesJob*)job;
 	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
 
-	scan_finalizer_entries (job_data->list, ctx);
+	scan_finalizer_entries (job_data->queue, ctx);
 }
 
 static void
@@ -1842,12 +1836,12 @@ enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end, SgenObjectOperat
 	/* Scan the list of objects ready for finalization. */
 
 	sfej = (ScanFinalizerEntriesJob*)sgen_thread_pool_job_alloc ("scan finalizer entries", job_scan_finalizer_entries, sizeof (ScanFinalizerEntriesJob));
-	sfej->list = fin_ready_list;
+	sfej->queue = &fin_ready_queue;
 	sfej->ops = ops;
 	sgen_workers_enqueue_job (&sfej->job);
 
 	sfej = (ScanFinalizerEntriesJob*)sgen_thread_pool_job_alloc ("scan critical finalizer entries", job_scan_finalizer_entries, sizeof (ScanFinalizerEntriesJob));
-	sfej->list = critical_fin_list;
+	sfej->queue = &critical_fin_queue;
 	sfej->ops = ops;
 	sgen_workers_enqueue_job (&sfej->job);
 }
@@ -2032,8 +2026,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
-	if (fin_ready_list || critical_fin_list) {
-		SGEN_LOG (4, "Finalizer-thread wakeup: ready %d", num_ready_finalizers);
+	if (mono_gc_pending_finalizers ()) {
+		SGEN_LOG (4, "Finalizer-thread wakeup");
 		mono_gc_finalize_notify ();
 	}
 	sgen_pin_stats_reset ();
@@ -2493,8 +2487,8 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 	sgen_debug_dump_heap ("major", gc_stats.major_gc_count - 1, reason);
 
-	if (fin_ready_list || critical_fin_list) {
-		SGEN_LOG (4, "Finalizer-thread wakeup: ready %d", num_ready_finalizers);
+	if (mono_gc_pending_finalizers ()) {
+		SGEN_LOG (4, "Finalizer-thread wakeup");
 		mono_gc_finalize_notify ();
 	}
 
@@ -2926,16 +2920,9 @@ sgen_gc_is_object_ready_for_finalization (void *object)
 void
 sgen_queue_finalization_entry (MonoObject *obj)
 {
-	FinalizeReadyEntry *entry = sgen_alloc_internal (INTERNAL_MEM_FINALIZE_READY_ENTRY);
 	gboolean critical = sgen_client_object_has_critical_finalizer (obj);
-	entry->object = obj;
-	if (critical) {
-		entry->next = critical_fin_list;
-		critical_fin_list = entry;
-	} else {
-		entry->next = fin_ready_list;
-		fin_ready_list = entry;
-	}
+
+	sgen_pointer_queue_add (critical ? &critical_fin_queue : &fin_ready_queue, obj);
 
 	sgen_client_object_queued_for_finalization (obj);
 
@@ -2955,73 +2942,74 @@ sgen_object_is_live (void *obj)
 	return sgen_is_object_alive_and_on_current_collection (obj);
 }
 
+/*
+ * `System.GC.WaitForPendingFinalizers` first checks `sgen_have_pending_finalizers()` to
+ * determine whether it can exit quickly.  The latter must therefore only return FALSE if
+ * all finalizers have really finished running.
+ *
+ * `sgen_gc_invoke_finalizers()` first dequeues a finalizable object, and then finalizes it.
+ * This means that just checking whether the queues are empty leaves the possibility that an
+ * object might have been dequeued but not yet finalized.  That's why we need the additional
+ * flag `pending_unqueued_finalizer`.
+ */
+
+static volatile gboolean pending_unqueued_finalizer = FALSE;
+
 int
 mono_gc_invoke_finalizers (void)
 {
-	FinalizeReadyEntry *entry = NULL;
-	gboolean entry_is_critical = FALSE;
 	int count = 0;
-	void *obj;
+
+	g_assert (!pending_unqueued_finalizer);
+
 	/* FIXME: batch to reduce lock contention */
-	while (fin_ready_list || critical_fin_list) {
+	while (mono_gc_pending_finalizers ()) {
+		void *obj;
+
 		LOCK_GC;
 
-		if (entry) {
-			FinalizeReadyEntry **list = entry_is_critical ? &critical_fin_list : &fin_ready_list;
-
-			/* We have finalized entry in the last
-			   interation, now we need to remove it from
-			   the list. */
-			if (*list == entry)
-				*list = entry->next;
-			else {
-				FinalizeReadyEntry *e = *list;
-				while (e->next != entry)
-					e = e->next;
-				e->next = entry->next;
-			}
-			sgen_free_internal (entry, INTERNAL_MEM_FINALIZE_READY_ENTRY);
-			entry = NULL;
-		}
-
-		/* Now look for the first non-null entry. */
-		for (entry = fin_ready_list; entry && !entry->object; entry = entry->next)
-			;
-		if (entry) {
-			entry_is_critical = FALSE;
+		/*
+		 * We need to set `pending_unqueued_finalizer` before dequeing the
+		 * finalizable object.
+		 */
+		if (!sgen_pointer_queue_is_empty (&fin_ready_queue)) {
+			pending_unqueued_finalizer = TRUE;
+			mono_memory_write_barrier ();
+			obj = sgen_pointer_queue_pop (&fin_ready_queue);
+		} else if (!sgen_pointer_queue_is_empty (&critical_fin_queue)) {
+			pending_unqueued_finalizer = TRUE;
+			mono_memory_write_barrier ();
+			obj = sgen_pointer_queue_pop (&critical_fin_queue);
 		} else {
-			entry_is_critical = TRUE;
-			for (entry = critical_fin_list; entry && !entry->object; entry = entry->next)
-				;
+			obj = NULL;
 		}
 
-		if (entry) {
-			g_assert (entry->object);
-			num_ready_finalizers--;
-			obj = entry->object;
-			entry->object = NULL;
+		if (obj)
 			SGEN_LOG (7, "Finalizing object %p (%s)", obj, sgen_client_object_safe_name (obj));
-		}
 
 		UNLOCK_GC;
 
-		if (!entry)
+		if (!obj)
 			break;
 
-		g_assert (entry->object == NULL);
 		count++;
 		/* the object is on the stack so it is pinned */
-		/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, sgen_client_object_safe_name (entry->object));*/
+		/*g_print ("Calling finalizer for object: %p (%s)\n", obj, sgen_client_object_safe_name (obj));*/
 		mono_gc_run_finalize (obj, NULL);
 	}
-	g_assert (!entry);
+
+	if (pending_unqueued_finalizer) {
+		mono_memory_write_barrier ();
+		pending_unqueued_finalizer = FALSE;
+	}
+
 	return count;
 }
 
 gboolean
 mono_gc_pending_finalizers (void)
 {
-	return fin_ready_list || critical_fin_list;
+	return pending_unqueued_finalizer || !sgen_pointer_queue_is_empty (&fin_ready_queue) || !sgen_pointer_queue_is_empty (&critical_fin_queue);
 }
 
 /*
@@ -3841,7 +3829,6 @@ mono_gc_base_init (void)
 	sgen_init_allocator ();
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
-	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_FINALIZE_READY_ENTRY, sizeof (FinalizeReadyEntry));
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));
 
 	sgen_client_init ();

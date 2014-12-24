@@ -29,6 +29,8 @@ typedef struct {
 	int mem_type;
 } SgenPointerQueue;
 
+#define SGEN_POINTER_QUEUE_INIT(mem_type)	{ NULL, 0, 0, (mem_type) }
+
 void sgen_pointer_queue_add (SgenPointerQueue *queue, void *ptr);
 void sgen_pointer_queue_clear (SgenPointerQueue *queue);
 void sgen_pointer_queue_remove_nulls (SgenPointerQueue *queue);

@@ -121,7 +121,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_SCAN_STARTS: return "scan-starts";
 	case INTERNAL_MEM_FIN_TABLE: return "fin-table";
 	case INTERNAL_MEM_FINALIZE_ENTRY: return "finalize-entry";
-	case INTERNAL_MEM_FINALIZE_READY_ENTRY: return "finalize-ready-entry";
+	case INTERNAL_MEM_FINALIZE_READY: return "finalize-ready";
 	case INTERNAL_MEM_DISLINK_TABLE: return "dislink-table";
 	case INTERNAL_MEM_DISLINK: return "dislink";
 	case INTERNAL_MEM_ROOTS_TABLE: return "roots-table";
