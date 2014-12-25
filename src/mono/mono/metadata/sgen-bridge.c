@@ -49,7 +49,6 @@
 #include "sgen-qsort.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
-#include "utils/mono-compiler.h"
 
 MonoGCBridgeCallbacks bridge_callbacks;
 static SgenBridgeProcessor bridge_processor;

@@ -31,7 +31,6 @@
 #include "utils/mono-counters.h"
 #include "utils/mono-semaphore.h"
 #include "utils/mono-time.h"
-#include "metadata/object-internals.h"
 #include "metadata/profiler-private.h"
 
 #include "metadata/sgen-gc.h"
@@ -39,7 +38,6 @@
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-layout-stats.h"
-#include "metadata/gc-internal.h"
 #include "metadata/sgen-pointer-queue.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"

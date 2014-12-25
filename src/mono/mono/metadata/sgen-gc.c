@@ -191,11 +191,6 @@
 #include <assert.h>
 
 #include "metadata/sgen-gc.h"
-#include "metadata/metadata-internals.h"
-#include "metadata/class-internals.h"
-#include "metadata/gc-internal.h"
-#include "metadata/object-internals.h"
-#include "metadata/threads.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
@@ -203,11 +198,7 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-hash-table.h"
 #include "metadata/mono-gc.h"
-#include "metadata/method-builder.h"
 #include "metadata/profiler-private.h"
-#include "metadata/mempool-internals.h"
-#include "metadata/marshal.h"
-#include "metadata/runtime.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"
@@ -219,10 +210,8 @@
 #include "utils/mono-counters.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"
-#include "utils/mono-logger-internal.h"
 #include "utils/dtrace.h"
 
-#include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/memcheck.h>
 
 #if defined(__MACH__)
@@ -472,8 +461,6 @@ static void finish_gray_stack (int generation, ScanCopyContext ctx);
 
 void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);
 
-
-static void init_stats (void);
 
 SgenMajorCollector major_collector;
 SgenMinorCollector sgen_minor_collector;

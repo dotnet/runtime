@@ -24,8 +24,6 @@
 
 extern guint64 stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
 
-#include "mono/utils/mono-compiler.h"
-
 #include "sgen-copy-object.h"
 
 /*

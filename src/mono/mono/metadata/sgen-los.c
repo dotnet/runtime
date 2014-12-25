@@ -39,7 +39,6 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-client.h"
 #include "utils/mono-mmap.h"
-#include "utils/mono-compiler.h"
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
 

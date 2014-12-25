@@ -38,11 +38,10 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
+/* FIXME: remove logging and don't include this */
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-mutex.h>
-#include <mono/metadata/class-internals.h>
-#include <mono/metadata/object-internals.h>
 #include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/sgen-archdep.h>
 #include <mono/metadata/sgen-descriptor.h>

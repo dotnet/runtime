@@ -60,11 +60,6 @@
 #endif
 
 #include "metadata/sgen-gc.h"
-#include "metadata/metadata-internals.h"
-#include "metadata/class-internals.h"
-#include "metadata/gc-internal.h"
-#include "metadata/object-internals.h"
-#include "metadata/threads.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-archdep.h"
@@ -72,19 +67,6 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-client.h"
-#include "metadata/mono-gc.h"
-#include "metadata/method-builder.h"
-#include "metadata/profiler-private.h"
-#include "metadata/monitor.h"
-#include "metadata/threadpool-internals.h"
-#include "metadata/mempool-internals.h"
-#include "metadata/marshal.h"
-#include "utils/mono-mmap.h"
-#include "utils/mono-time.h"
-#include "utils/mono-semaphore.h"
-#include "utils/mono-counters.h"
-#include "utils/mono-proclib.h"
-#include "utils/mono-threads.h"
 
 /* Enable it so nursery allocation diagnostic data is collected */
 //#define NALLOC_DEBUG 1

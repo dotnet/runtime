@@ -50,8 +50,6 @@
 #include "tabledefs.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
-#include "utils/mono-compiler.h"
-
 
 typedef struct {
 	int size;
