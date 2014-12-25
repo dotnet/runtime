@@ -759,9 +759,9 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 static MonoDomain *check_domain = NULL;
 
 static void
-check_obj_not_in_domain (void **o)
+check_obj_not_in_domain (MonoObject **o)
 {
-	g_assert (((MonoObject*)(*o))->vtable->domain != check_domain);
+	g_assert (((*o))->vtable->domain != check_domain);
 }
 
 
@@ -914,7 +914,7 @@ check_reference_for_xdomain (gpointer *ptr, char *obj, MonoDomain *domain)
 			o, o->vtable->klass->name_space, o->vtable->klass->name,
 			offset, field ? field->name : "",
 			ref, ref->vtable->klass->name_space, ref->vtable->klass->name, str ? str : "");
-	mono_gc_scan_for_specific_ref ((GCObject*)o, TRUE);
+	mono_gc_scan_for_specific_ref (o, TRUE);
 	if (str)
 		g_free (str);
 }

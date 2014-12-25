@@ -108,9 +108,8 @@ sgen_set_bridge_implementation (const char *name)
 }
 
 gboolean
-sgen_is_bridge_object (GCObject *gc_obj)
+sgen_is_bridge_object (GCObject *obj)
 {
-	MonoObject *obj = (MonoObject*)gc_obj;
 	if ((obj->vtable->gc_bits & SGEN_GC_BIT_BRIDGE_OBJECT) != SGEN_GC_BIT_BRIDGE_OBJECT)
 		return FALSE;
 	return bridge_callbacks.is_bridge_object (obj);
@@ -177,7 +176,7 @@ null_weak_links_to_dead_objects (SgenBridgeProcessor *processor, int generation)
 
 			/* Release for finalization those objects we no longer care. */
 			if (!api_sccs [i]->is_alive)
-				sgen_mark_bridge_object ((GCObject*)api_sccs [i]->objs [j]);
+				sgen_mark_bridge_object (api_sccs [i]->objs [j]);
 		}
 	}
 
@@ -200,7 +199,7 @@ free_callback_data (SgenBridgeProcessor *processor)
 
 	for (i = 0; i < num_sccs; ++i) {
 		sgen_free_internal_dynamic (api_sccs [i],
-				sizeof (MonoGCBridgeSCC) + sizeof (GCObject*) * api_sccs [i]->num_objs,
+				sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * api_sccs [i]->num_objs,
 				INTERNAL_MEM_BRIDGE_DATA);
 	}
 	sgen_free_internal_dynamic (api_sccs, sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA);

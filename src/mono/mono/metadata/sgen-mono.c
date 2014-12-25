@@ -124,7 +124,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 		scan_object_for_binary_protocol_copy_wbarrier (obj, (char*)src, (mword) src->vtable->gc_descr);
 #endif
 
-	sgen_get_remset ()->wbarrier_object_copy ((GCObject*)obj, (GCObject*)src);
+	sgen_get_remset ()->wbarrier_object_copy (obj, src);
 }
 
 void
@@ -139,7 +139,7 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	if (value)
 		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
 
-	sgen_get_remset ()->wbarrier_set_field ((GCObject*)arr, slot_ptr, (GCObject*)value);
+	sgen_get_remset ()->wbarrier_set_field ((GCObject*)arr, slot_ptr, value);
 }
 
 /*
@@ -248,9 +248,8 @@ is_finalization_aware (MonoObject *obj)
 }
 
 void
-sgen_client_object_queued_for_finalization (GCObject *gc_obj)
+sgen_client_object_queued_for_finalization (GCObject *obj)
 {
-	MonoObject *obj = (MonoObject*)gc_obj;
 	if (fin_callbacks.object_queued_for_finalization && is_finalization_aware (obj))
 		fin_callbacks.object_queued_for_finalization (obj);
 }
@@ -1225,7 +1224,7 @@ sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *card
 		guint8 *card_data, *card_base;
 		guint8 *card_data_end;
 		char *obj_start = sgen_card_table_align_pointer (obj);
-		mword obj_size = sgen_client_par_object_get_size ((GCVTable*)vt, (GCObject*)obj);
+		mword obj_size = sgen_client_par_object_get_size (vt, (GCObject*)obj);
 		char *obj_end = obj + obj_size;
 		size_t card_count;
 		size_t extra_idx = 0;

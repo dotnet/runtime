@@ -3228,7 +3228,7 @@ mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* val
 	if (value)
 		binary_protocol_wbarrier (field_ptr, value, value->vtable);
 
-	remset.wbarrier_set_field ((GCObject*)obj, field_ptr, (GCObject*)value);
+	remset.wbarrier_set_field (obj, field_ptr, value);
 }
 
 void
@@ -3286,7 +3286,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
-	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name ((GCObject*)value) : "null");
+	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
@@ -3301,7 +3301,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
-	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name ((GCObject*)value) : "null");
+	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
 
 	InterlockedWritePointer (ptr, value);
 
@@ -3313,12 +3313,12 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
 
 void mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
 {
-	mword *dest = _dest;
-	mword *src = _src;
+	GCObject **dest = _dest;
+	GCObject **src = _src;
 
 	while (size) {
 		if (bitmap & 0x1)
-			mono_gc_wbarrier_generic_store (dest, (MonoObject*)*src);
+			mono_gc_wbarrier_generic_store (dest, *src);
 		else
 			SGEN_UPDATE_REFERENCE_ALLOW_NULL (dest, *src);
 		++src;
@@ -3489,7 +3489,7 @@ mono_gc_enable_events (void)
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
-	sgen_register_disappearing_link ((GCObject*)obj, link_addr, track, FALSE);
+	sgen_register_disappearing_link (obj, link_addr, track, FALSE);
 }
 
 void

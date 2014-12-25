@@ -1062,7 +1062,7 @@ processing_build_callback_data (int generation)
 			if (!bridges)
 				continue;
 
-			api_sccs [api_index] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (GCObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
+			api_sccs [api_index] = sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 			api_sccs [api_index]->is_alive = FALSE;
 			api_sccs [api_index]->num_objs = bridges;
 

@@ -523,7 +523,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 void*
 mono_gc_alloc_mature (MonoVTable *vtable)
 {
-	void **res;
+	void *res;
 	size_t size = vtable->klass->instance_size;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
@@ -534,7 +534,7 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 	res = alloc_degraded ((GCVTable*)vtable, size, TRUE);
 	UNLOCK_GC;
 	if (G_UNLIKELY (vtable->klass->has_finalize))
-		mono_object_register_finalizer ((MonoObject*)res);
+		mono_object_register_finalizer (res);
 
 	return res;
 }
