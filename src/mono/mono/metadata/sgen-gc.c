@@ -1142,18 +1142,6 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	return sgen_get_nursery_start ();
 }
 
-void
-mono_gc_set_current_thread_appdomain (MonoDomain *domain)
-{
-	SgenThreadInfo *info = mono_thread_info_current ();
-
-	/* Could be called from sgen_thread_unregister () with a NULL info */
-	if (domain) {
-		g_assert (info);
-		info->stopped_domain = domain;
-	}
-}
-
 gboolean
 mono_gc_precise_stack_mark_enabled (void)
 {
@@ -3345,12 +3333,6 @@ mono_gc_collect (int generation)
 }
 
 int
-mono_gc_max_generation (void)
-{
-	return 1;
-}
-
-int
 mono_gc_collection_count (int generation)
 {
 	if (generation == 0)
@@ -3996,42 +3978,6 @@ mono_gc_base_init (void)
 
 	gc_initialized = 1;
 }
-
-const char *
-mono_gc_get_gc_name (void)
-{
-	return "sgen";
-}
-
-char*
-mono_gc_get_description (void)
-{
-	return g_strdup ("sgen");
-}
-
-void
-mono_gc_set_desktop_mode (void)
-{
-}
-
-gboolean
-mono_gc_is_moving (void)
-{
-	return TRUE;
-}
-
-gboolean
-mono_gc_is_disabled (void)
-{
-	return FALSE;
-}
-
-#ifdef HOST_WIN32
-BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
-{
-	return TRUE;
-}
-#endif
 
 NurseryClearPolicy
 sgen_get_nursery_clear_policy (void)

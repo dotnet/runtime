@@ -634,6 +634,18 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
  * Appdomain handling
  */
 
+void
+mono_gc_set_current_thread_appdomain (MonoDomain *domain)
+{
+	SgenThreadInfo *info = mono_thread_info_current ();
+
+	/* Could be called from sgen_thread_unregister () with a NULL info */
+	if (domain) {
+		g_assert (info);
+		info->stopped_domain = domain;
+	}
+}
+
 static gboolean
 need_remove_object_for_domain (char *start, MonoDomain *domain)
 {
@@ -1935,6 +1947,48 @@ mono_gc_get_generation (MonoObject *obj)
 void
 mono_gc_enable_events (void)
 {
+}
+
+const char *
+mono_gc_get_gc_name (void)
+{
+	return "sgen";
+}
+
+char*
+mono_gc_get_description (void)
+{
+	return g_strdup ("sgen");
+}
+
+void
+mono_gc_set_desktop_mode (void)
+{
+}
+
+gboolean
+mono_gc_is_moving (void)
+{
+	return TRUE;
+}
+
+gboolean
+mono_gc_is_disabled (void)
+{
+	return FALSE;
+}
+
+#ifdef HOST_WIN32
+BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
+{
+	return TRUE;
+}
+#endif
+
+int
+mono_gc_max_generation (void)
+{
+	return 1;
 }
 
 /*
