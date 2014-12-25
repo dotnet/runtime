@@ -31,6 +31,7 @@
 #include "metadata/abi-details.h"
 #include "metadata/profiler-private.h"
 #include "metadata/mono-gc.h"
+#include "metadata/runtime.h"
 #include "utils/mono-memory-model.h"
 
 /* If set, check that there are no references to the domain left at domain unload */
@@ -1921,6 +1922,35 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 }
 
 /*
+ * Threads
+ */
+
+static gboolean
+is_critical_method (MonoMethod *method)
+{
+	return mono_runtime_is_critical_method (method) || sgen_is_critical_method (method);
+}
+
+static gboolean
+thread_in_critical_region (SgenThreadInfo *info)
+{
+	return info->in_critical_region;
+}
+
+static void
+sgen_thread_detach (SgenThreadInfo *p)
+{
+	/* If a delegate is passed to native code and invoked on a thread we dont
+	 * know about, the jit will register it with mono_jit_thread_attach, but
+	 * we have no way of knowing when that thread goes away.  SGen has a TSD
+	 * so we assume that if the domain is still registered, we can detach
+	 * the thread
+	 */
+	if (mono_domain_get ())
+		mono_thread_detach_internal (mono_thread_internal_current ());
+}
+
+/*
  * Miscellaneous
  */
 
@@ -2042,6 +2072,21 @@ sgen_client_vtable_get_name (GCVTable *gc_vtable)
 void
 sgen_client_init (void)
 {
+	MonoThreadInfoCallbacks cb;
+
+	cb.thread_register = sgen_thread_register;
+	cb.thread_detach = sgen_thread_detach;
+	cb.thread_unregister = sgen_thread_unregister;
+	cb.thread_attach = sgen_thread_attach;
+	cb.mono_method_is_critical = (gpointer)is_critical_method;
+	cb.mono_thread_in_critical_region = thread_in_critical_region;
+#ifndef HOST_WIN32
+	cb.thread_exit = mono_gc_pthread_exit;
+	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
+#endif
+
+	mono_threads_init (&cb, sizeof (SgenThreadInfo));
+
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 }
 

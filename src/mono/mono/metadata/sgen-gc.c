@@ -3028,7 +3028,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Scan
 	} END_FOREACH_THREAD
 }
 
-static void*
+void*
 sgen_thread_register (SgenThreadInfo* info, void *addr)
 {
 	size_t stsize = 0;
@@ -3086,20 +3086,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	return info;
 }
 
-static void
-sgen_thread_detach (SgenThreadInfo *p)
-{
-	/* If a delegate is passed to native code and invoked on a thread we dont
-	 * know about, the jit will register it with mono_jit_thread_attach, but
-	 * we have no way of knowing when that thread goes away.  SGen has a TSD
-	 * so we assume that if the domain is still registered, we can detach
-	 * the thread
-	 */
-	if (mono_domain_get ())
-		mono_thread_detach_internal (mono_thread_internal_current ());
-}
-
-static void
+void
 sgen_thread_unregister (SgenThreadInfo *p)
 {
 	MonoNativeThreadId tid;
@@ -3124,7 +3111,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 }
 
 
-static void
+void
 sgen_thread_attach (SgenThreadInfo *info)
 {
 	LOCK_GC;
@@ -3444,12 +3431,6 @@ mono_gc_is_gc_thread (void)
 	return result;
 }
 
-static gboolean
-is_critical_method (MonoMethod *method)
-{
-	return mono_runtime_is_critical_method (method) || sgen_is_critical_method (method);
-}
-
 void
 sgen_env_var_error (const char *env_var, const char *fallback, const char *description_format, ...)
 {
@@ -3483,16 +3464,9 @@ parse_double_in_interval (const char *env_var, const char *opt_name, const char 
 	return TRUE;
 }
 
-static gboolean
-thread_in_critical_region (SgenThreadInfo *info)
-{
-	return info->in_critical_region;
-}
-
 void
 mono_gc_base_init (void)
 {
-	MonoThreadInfoCallbacks cb;
 	const char *env;
 	char **opts, **ptr;
 	char *major_collector_opt = NULL;
@@ -3531,19 +3505,6 @@ mono_gc_base_init (void)
 
 	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
-
-	cb.thread_register = sgen_thread_register;
-	cb.thread_detach = sgen_thread_detach;
-	cb.thread_unregister = sgen_thread_unregister;
-	cb.thread_attach = sgen_thread_attach;
-	cb.mono_method_is_critical = (gpointer)is_critical_method;
-	cb.mono_thread_in_critical_region = thread_in_critical_region;
-#ifndef HOST_WIN32
-	cb.thread_exit = mono_gc_pthread_exit;
-	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
-#endif
-
-	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
 	LOCK_INIT (sgen_interruption_mutex);
 
