@@ -30,6 +30,7 @@
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
 #include "metadata/profiler-private.h"
+#include "metadata/mono-gc.h"
 #include "utils/mono-memory-model.h"
 
 /* If set, check that there are no references to the domain left at domain unload */
@@ -1654,6 +1655,90 @@ sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQu
 {
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_finalizer_roots (fin_ready_queue, critical_fin_queue);
+}
+
+/*
+ * Heap walking
+ */
+
+#define REFS_SIZE 128
+typedef struct {
+	void *data;
+	MonoGCReferences callback;
+	int flags;
+	int count;
+	int called;
+	MonoObject *refs [REFS_SIZE];
+	uintptr_t offsets [REFS_SIZE];
+} HeapWalkInfo;
+
+#undef HANDLE_PTR
+#define HANDLE_PTR(ptr,obj)	do {	\
+		if (*(ptr)) {	\
+			if (hwi->count == REFS_SIZE) {	\
+				hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->offsets, hwi->data);	\
+				hwi->count = 0;	\
+				hwi->called = 1;	\
+			}	\
+			hwi->offsets [hwi->count] = (char*)(ptr)-(char*)start;	\
+			hwi->refs [hwi->count++] = *(ptr);	\
+		}	\
+	} while (0)
+
+static void
+collect_references (HeapWalkInfo *hwi, char *start, size_t size)
+{
+	mword desc = sgen_obj_get_descriptor (start);
+
+#include "sgen-scan-object.h"
+}
+
+static void
+walk_references (char *start, size_t size, void *data)
+{
+	HeapWalkInfo *hwi = data;
+	hwi->called = 0;
+	hwi->count = 0;
+	collect_references (hwi, start, size);
+	if (hwi->count || !hwi->called)
+		hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->offsets, hwi->data);
+}
+
+/**
+ * mono_gc_walk_heap:
+ * @flags: flags for future use
+ * @callback: a function pointer called for each object in the heap
+ * @data: a user data pointer that is passed to callback
+ *
+ * This function can be used to iterate over all the live objects in the heap:
+ * for each object, @callback is invoked, providing info about the object's
+ * location in memory, its class, its size and the objects it references.
+ * For each referenced object it's offset from the object address is
+ * reported in the offsets array.
+ * The object references may be buffered, so the callback may be invoked
+ * multiple times for the same object: in all but the first call, the size
+ * argument will be zero.
+ * Note that this function can be only called in the #MONO_GC_EVENT_PRE_START_WORLD
+ * profiler event handler.
+ *
+ * Returns: a non-zero value if the GC doesn't support heap walking
+ */
+int
+mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
+{
+	HeapWalkInfo hwi;
+
+	hwi.flags = flags;
+	hwi.callback = callback;
+	hwi.data = data;
+
+	sgen_clear_nursery_fragments ();
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, walk_references, &hwi, FALSE);
+
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, walk_references, &hwi);
+	sgen_los_iterate_objects (walk_references, &hwi);
+
+	return 0;
 }
 
 /*
