@@ -361,7 +361,7 @@ sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size)
 	CANARIFY_SIZE(size);
 
 	size = ALIGN_UP (size);
-	SGEN_ASSERT (9, real_size >= sizeof (GCObject), "Object too small");
+	SGEN_ASSERT (9, real_size >= SGEN_CLIENT_MINIMUM_OBJECT_SIZE, "Object too small");
 
 	SGEN_ASSERT (6, sgen_vtable_get_descriptor (vtable), "VTable without descriptor");
 

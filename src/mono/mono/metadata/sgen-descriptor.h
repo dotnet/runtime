@@ -34,7 +34,7 @@
  * Used to quickly get the info the GC needs about an object: size and
  * where the references are held.
  */
-#define OBJECT_HEADER_WORDS (sizeof(MonoObject)/sizeof(gpointer))
+#define OBJECT_HEADER_WORDS (SGEN_CLIENT_OBJECT_HEADER_SIZE / sizeof(gpointer))
 #define LOW_TYPE_BITS 3
 #define DESC_TYPE_MASK	((1 << LOW_TYPE_BITS) - 1)
 #define MAX_RUNLEN_OBJECT_SIZE 0xFFFF

@@ -149,8 +149,8 @@ sgen_card_table_wbarrier_object_copy (GCObject* obj, GCObject *src)
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
 #endif
-	mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-			size - sizeof (MonoObject));
+	mono_gc_memmove_aligned ((char*)obj + SGEN_CLIENT_OBJECT_HEADER_SIZE, (char*)src + SGEN_CLIENT_OBJECT_HEADER_SIZE,
+			size - SGEN_CLIENT_OBJECT_HEADER_SIZE);
 	sgen_card_table_mark_range ((mword)obj, size);
 #ifdef DISABLE_CRITICAL_REGION
 	UNLOCK_GC;

@@ -1350,7 +1350,7 @@ sgen_check_section_scan_starts (GCMemSection *section)
 	for (i = 0; i < section->num_scan_start; ++i) {
 		if (section->scan_starts [i]) {
 			mword size = safe_object_get_size ((GCObject*) section->scan_starts [i]);
-			SGEN_ASSERT (0, size >= sizeof (GCObject) && size <= MAX_SMALL_OBJ_SIZE, "Weird object size at scan starts.");
+			SGEN_ASSERT (0, size >= SGEN_CLIENT_MINIMUM_OBJECT_SIZE && size <= MAX_SMALL_OBJ_SIZE, "Weird object size at scan starts.");
 		}
 	}
 }

@@ -36,7 +36,7 @@ void sgen_object_layout_dump (FILE *out);
 
 #define SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP	unsigned int __object_layout_bitmap = 0
 #define SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP(o,p)	do {		\
-		int __index = ((void**)(p)) - ((void**)(((char*)(o)) + sizeof (MonoObject))); \
+		int __index = ((void**)(p)) - ((void**)(((char*)(o)) + SGEN_CLIENT_OBJECT_HEADER_SIZE)); \
 		if (__index >= SGEN_OBJECT_LAYOUT_BITMAP_BITS)		\
 			__object_layout_bitmap = (unsigned int)-1;	\
 		else if (__object_layout_bitmap != (unsigned int)-1)	\
