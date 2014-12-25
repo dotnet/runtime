@@ -734,7 +734,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 			 * consider them for pinning.  They are not delimited by canaries,
 			 * either.
 			 */
-			if (((MonoObject*)search_start)->synchronisation != GINT_TO_POINTER (-1)) {
+			if (!sgen_client_object_is_array_fill ((GCObject*)search_start)) {
 				CHECK_CANARY_FOR_OBJECT (search_start);
 				CANARIFY_SIZE (canarified_obj_size);
 
@@ -766,7 +766,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 		 * If this is a dummy array marking the beginning of a nursery
 		 * fragment, we don't pin it.
 		 */
-		if (((MonoObject*)obj_to_pin)->synchronisation == GINT_TO_POINTER (-1))
+		if (sgen_client_object_is_array_fill ((GCObject*)obj_to_pin))
 			goto next_pin_queue_entry;
 
 		/*

@@ -43,6 +43,8 @@ gboolean sgen_client_array_fill_range (char *start, size_t size);
  */
 void sgen_client_zero_array_fill_header (void *p, size_t size);
 
+gboolean sgen_client_object_is_array_fill (GCObject *o);
+
 gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
