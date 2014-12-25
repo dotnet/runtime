@@ -1742,6 +1742,35 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 }
 
 /*
+ * Miscellaneous
+ */
+
+gboolean
+mono_gc_user_markers_supported (void)
+{
+	return TRUE;
+}
+
+gboolean
+mono_object_is_alive (MonoObject* o)
+{
+	return TRUE;
+}
+
+int
+mono_gc_get_generation (MonoObject *obj)
+{
+	if (sgen_ptr_in_nursery (obj))
+		return 0;
+	return 1;
+}
+
+void
+mono_gc_enable_events (void)
+{
+}
+
+/*
  * Debugging
  */
 

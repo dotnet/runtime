@@ -3377,35 +3377,6 @@ mono_gc_get_los_limit (void)
 	return MAX_SMALL_OBJ_SIZE;
 }
 
-/* FIXME: move to sgen-mono.c */
-gboolean
-mono_gc_user_markers_supported (void)
-{
-	return TRUE;
-}
-
-/* FIXME: move to sgen-mono.c */
-gboolean
-mono_object_is_alive (MonoObject* o)
-{
-	return TRUE;
-}
-
-/* FIXME: move to sgen-mono.c */
-int
-mono_gc_get_generation (MonoObject *obj)
-{
-	if (ptr_in_nursery (obj))
-		return 0;
-	return 1;
-}
-
-/* FIXME: move to sgen-mono.c */
-void
-mono_gc_enable_events (void)
-{
-}
-
 void
 mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
 {
