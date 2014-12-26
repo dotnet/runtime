@@ -617,6 +617,96 @@ sgen_check_nursery_objects_pinned (gboolean pinned)
 			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE);
 }
 
+static void
+verify_scan_starts (char *start, char *end)
+{
+	size_t i;
+
+	for (i = 0; i < nursery_section->num_scan_start; ++i) {
+		char *addr = nursery_section->scan_starts [i];
+		if (addr > start && addr < end)
+			SGEN_LOG (0, "NFC-BAD SCAN START [%zu] %p for obj [%p %p]", i, addr, start, end);
+	}
+}
+
+void
+sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
+{
+	char *start, *end, *cur, *hole_start;
+
+	if (nursery_canaries_enabled ())
+		SGEN_LOG (0, "Checking nursery canaries...");
+
+	/*This cleans up unused fragments */
+	sgen_nursery_allocator_prepare_for_pinning ();
+
+	hole_start = start = cur = sgen_get_nursery_start ();
+	end = sgen_get_nursery_end ();
+
+	while (cur < end) {
+		size_t ss, size;
+
+		if (!*(void**)cur) {
+			cur += sizeof (void*);
+			continue;
+		}
+
+		if (object_is_forwarded (cur))
+			SGEN_LOG (0, "FORWARDED OBJ %p", cur);
+		else if (object_is_pinned (cur))
+			SGEN_LOG (0, "PINNED OBJ %p", cur);
+
+		ss = safe_object_get_size ((GCObject*)cur);
+		size = SGEN_ALIGN_UP (ss);
+		verify_scan_starts (cur, cur + size);
+		if (do_dump_nursery_content) {
+			if (cur > hole_start)
+				SGEN_LOG (0, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
+			SGEN_LOG (0, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss,
+					sgen_client_object_safe_name ((GCObject*)cur),
+					(gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
+		}
+		if (nursery_canaries_enabled () && (GCVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
+			CHECK_CANARY_FOR_OBJECT (cur);
+			CANARIFY_SIZE (size);
+		}
+		cur += size;
+		hole_start = cur;
+	}
+}
+
+/*
+ * Checks that no objects in the nursery are fowarded or pinned.  This
+ * is a precondition to restarting the mutator while doing a
+ * concurrent collection.  Note that we don't clear fragments because
+ * we depend on that having happened earlier.
+ */
+void
+sgen_debug_check_nursery_is_clean (void)
+{
+	char *end, *cur;
+
+	cur = sgen_get_nursery_start ();
+	end = sgen_get_nursery_end ();
+
+	while (cur < end) {
+		size_t size;
+
+		if (!*(void**)cur) {
+			cur += sizeof (void*);
+			continue;
+		}
+
+		g_assert (!object_is_forwarded (cur));
+		g_assert (!object_is_pinned (cur));
+
+		size = SGEN_ALIGN_UP (safe_object_get_size ((GCObject*)cur));
+		verify_scan_starts (cur, cur + size);
+
+		cur += size;
+	}
+}
+
 static gboolean scan_object_for_specific_ref_precise = TRUE;
 
 #undef HANDLE_PTR

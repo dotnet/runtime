@@ -1548,99 +1548,6 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 }
 
 static void
-verify_scan_starts (char *start, char *end)
-{
-	size_t i;
-
-	for (i = 0; i < nursery_section->num_scan_start; ++i) {
-		char *addr = nursery_section->scan_starts [i];
-		if (addr > start && addr < end)
-			SGEN_LOG (1, "NFC-BAD SCAN START [%zu] %p for obj [%p %p]", i, addr, start, end);
-	}
-}
-
-static void
-verify_nursery (void)
-{
-	char *start, *end, *cur, *hole_start;
-
-	if (!do_verify_nursery)
-		return;
-		
-	if (nursery_canaries_enabled ())
-		SGEN_LOG (1, "Checking nursery canaries...");
-
-	/*This cleans up unused fragments */
-	sgen_nursery_allocator_prepare_for_pinning ();
-
-	hole_start = start = cur = sgen_get_nursery_start ();
-	end = sgen_get_nursery_end ();
-
-	while (cur < end) {
-		size_t ss, size;
-
-		if (!*(void**)cur) {
-			cur += sizeof (void*);
-			continue;
-		}
-
-		if (object_is_forwarded (cur))
-			SGEN_LOG (1, "FORWARDED OBJ %p", cur);
-		else if (object_is_pinned (cur))
-			SGEN_LOG (1, "PINNED OBJ %p", cur);
-
-		ss = safe_object_get_size ((GCObject*)cur);
-		size = ALIGN_UP (ss);
-		verify_scan_starts (cur, cur + size);
-		if (do_dump_nursery_content) {
-			if (cur > hole_start)
-				SGEN_LOG (1, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
-			SGEN_LOG (1, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss,
-					sgen_client_object_safe_name ((GCObject*)cur),
-					(gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
-		}
-		if (nursery_canaries_enabled () && (GCVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
-			CHECK_CANARY_FOR_OBJECT (cur);
-			CANARIFY_SIZE (size);
-		}
-		cur += size;
-		hole_start = cur;
-	}
-}
-
-/*
- * Checks that no objects in the nursery are fowarded or pinned.  This
- * is a precondition to restarting the mutator while doing a
- * concurrent collection.  Note that we don't clear fragments because
- * we depend on that having happened earlier.
- */
-static void
-check_nursery_is_clean (void)
-{
-	char *end, *cur;
-
-	cur = sgen_get_nursery_start ();
-	end = sgen_get_nursery_end ();
-
-	while (cur < end) {
-		size_t size;
-
-		if (!*(void**)cur) {
-			cur += sizeof (void*);
-			continue;
-		}
-
-		g_assert (!object_is_forwarded (cur));
-		g_assert (!object_is_pinned (cur));
-
-		size = ALIGN_UP (safe_object_get_size ((GCObject*)cur));
-		verify_scan_starts (cur, cur + size);
-
-		cur += size;
-	}
-}
-
-static void
 init_gray_queue (void)
 {
 	if (sgen_collection_is_concurrent ())
@@ -1718,7 +1625,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	MONO_GC_BEGIN (GENERATION_NURSERY);
 	binary_protocol_collection_begin (gc_stats.minor_gc_count, GENERATION_NURSERY);
 
-	verify_nursery ();
+	if (do_verify_nursery || do_dump_nursery_content)
+		sgen_debug_verify_nursery (do_dump_nursery_content);
 
 #ifndef DISABLE_PERFCOUNTERS
 	mono_perfcounters->gc_collections0++;
@@ -1949,7 +1857,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		sgen_nursery_allocator_prepare_for_pinning ();
 
 		if (do_concurrent_checks)
-			check_nursery_is_clean ();
+			sgen_debug_check_nursery_is_clean ();
 	} else {
 		/* The concurrent collector doesn't touch the nursery. */
 		sgen_nursery_alloc_prepare_for_major ();
@@ -2165,7 +2073,7 @@ major_finish_copy_or_mark (void)
 	sgen_pin_stats_reset ();
 
 	if (do_concurrent_checks)
-		check_nursery_is_clean ();
+		sgen_debug_check_nursery_is_clean ();
 }
 
 static void
@@ -2240,7 +2148,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 #endif
 
 		if (do_concurrent_checks)
-			check_nursery_is_clean ();
+			sgen_debug_check_nursery_is_clean ();
 	} else {
 		SGEN_ASSERT (0, !scan_whole_nursery, "scan_whole_nursery only applies to concurrent collections");
 		object_ops = &major_collector.major_ops_serial;
