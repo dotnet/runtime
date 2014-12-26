@@ -459,8 +459,6 @@ static void scan_from_registered_roots (char *addr_start, char *addr_end, int ro
 static void pin_from_roots (void *start_nursery, void *end_nursery, ScanCopyContext ctx);
 static void finish_gray_stack (int generation, ScanCopyContext ctx);
 
-void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);
-
 
 SgenMajorCollector major_collector;
 SgenMinorCollector sgen_minor_collector;
