@@ -26,9 +26,9 @@ By default, the core tests are run as part of the build. Running the tests from
 the command line is as simple as invoking `build.cmd`. A test report for the
 build will be output on the console at the end of a successful build.
 
-You can also run the tests from within Visual Studio. See [this page][xunit-runner] 
-for more details on how to install the **xUnit.net runner for Visual
-Studio** test runner and how you can invoke the tests using Test Explorer.
+**NOTE: Running tests from within VS does not currently work after we switched to running on CoreCLR.**
+
+We will be working on enabling VS test integration but we don't have an ETA yet. 
 
 [xunit]: http://xunit.github.io/
 [xunit-runner]: http://xunit.github.io/docs/running-v1-tests-in-vs.html
