@@ -1325,7 +1325,7 @@ namespace System.Text.RegularExpressions
                         else if (group.Equals(s_notWord))
                             desc.Append("\\W");
                         else
-                            Debug.Assert(false, "Couldn't find a goup to match '" + group + "'");
+                            Debug.Assert(false, "Couldn't find a group to match '" + group + "'");
                     }
 
                     index = lastindex;
