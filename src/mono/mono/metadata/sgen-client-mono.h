@@ -331,3 +331,5 @@ static void G_GNUC_UNUSED
 sgen_client_binary_protocol_domain_unload_end (gpointer domain)
 {
 }
+
+extern void mono_sgen_init_stw (void);

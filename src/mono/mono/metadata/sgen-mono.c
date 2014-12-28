@@ -2286,6 +2286,8 @@ sgen_client_init (void)
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
+
+	mono_sgen_init_stw ();
 }
 
 gboolean

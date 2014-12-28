@@ -3346,7 +3346,6 @@ mono_gc_base_init (void)
 	sgen_init_internal_allocator ();
 	sgen_init_nursery_allocator ();
 	sgen_init_fin_weak_hash ();
-	sgen_init_stw ();
 	sgen_init_hash_table ();
 	sgen_init_descriptors ();
 	sgen_init_gray_queues ();
@@ -3813,6 +3812,87 @@ mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack,
 	// FIXME:
 }
 
+static void
+count_cards (long long *major_total, long long *major_marked, long long *los_total, long long *los_marked)
+{
+	sgen_get_major_collector ()->count_cards (major_total, major_marked);
+	sgen_los_count_cards (los_total, los_marked);
+}
+
+static gboolean world_is_stopped = FALSE;
+
+/* LOCKING: assumes the GC lock is held */
+int
+sgen_stop_world (int generation)
+{
+	int count;
+	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
+
+	SGEN_ASSERT (0, !world_is_stopped, "Why are we stopping a stopped world?");
+
+	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
+	binary_protocol_world_stopping (sgen_timestamp ());
+
+	count = sgen_client_stop_world (generation);
+
+	world_is_stopped = TRUE;
+
+	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
+	if (binary_protocol_is_heavy_enabled ())
+		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+	binary_protocol_world_stopped (sgen_timestamp (), major_total, major_marked, los_total, los_marked);
+
+	return count;
+}
+
+/* LOCKING: assumes the GC lock is held */
+int
+sgen_restart_world (int generation, GGTimingInfo *timing)
+{
+	int count;
+	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
+
+	SGEN_ASSERT (0, world_is_stopped, "Why are we restarting a running world?");
+
+	if (binary_protocol_is_enabled ()) {
+		long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
+		if (binary_protocol_is_heavy_enabled ())
+			count_cards (&major_total, &major_marked, &los_total, &los_marked);
+		binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
+	}
+
+	/* notify the profiler of the leftovers */
+	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
+		sgen_gc_event_moves ();
+	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
+
+	if (binary_protocol_is_heavy_enabled ())
+		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+	binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
+
+	count = sgen_client_restart_world (generation, timing);
+
+	world_is_stopped = FALSE;
+
+	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
+	binary_protocol_world_restarted (generation, sgen_timestamp ());
+
+	sgen_try_free_some_memory = TRUE;
+
+	if (sgen_need_bridge_processing ())
+		sgen_bridge_processing_finish (generation);
+
+	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
+
+	return count;
+}
+
+gboolean
+sgen_is_world_stopped (void)
+{
+	return world_is_stopped;
+}
 
 void
 sgen_check_whole_heap_stw (void)
