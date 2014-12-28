@@ -47,8 +47,6 @@ par_copy_object_no_checks (char *destination, GCVTable *vt, void *obj, mword obj
 	SGEN_ASSERT (9, sgen_vtable_get_descriptor (vt), "vtable %p has no gc descriptor", vt);
 
 	sgen_client_update_copied_object (destination, vt, obj, objsize);
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
-		sgen_register_moved_object (obj, destination);
 	obj = destination;
 	if (queue) {
 		SGEN_LOG (9, "Enqueuing gray object %p (%s)", obj, sgen_client_object_safe_name (obj));

@@ -432,10 +432,6 @@ static MonoGCCallbacks gc_callbacks;
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 
-#define MOVED_OBJECTS_NUM 64
-static void *moved_objects [MOVED_OBJECTS_NUM];
-static int moved_objects_idx = 0;
-
 #ifdef SGEN_DEBUG_INTERNAL_ALLOC
 MonoNativeThreadId main_gc_thread = NULL;
 #endif
@@ -1317,19 +1313,6 @@ scan_from_registered_roots (char *addr_start, char *addr_end, int root_type, Sca
 		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
 		precisely_scan_objects_from (start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, ctx);
 	} SGEN_HASH_TABLE_FOREACH_END;
-}
-
-void
-sgen_register_moved_object (void *obj, void *destination)
-{
-	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
-
-	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
-		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
-		moved_objects_idx = 0;
-	}
-	moved_objects [moved_objects_idx++] = obj;
-	moved_objects [moved_objects_idx++] = destination;
 }
 
 static void
@@ -3830,17 +3813,15 @@ sgen_stop_world (int generation)
 
 	SGEN_ASSERT (0, !world_is_stopped, "Why are we stopping a stopped world?");
 
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
-	binary_protocol_world_stopping (sgen_timestamp ());
+	binary_protocol_world_stopping (generation, sgen_timestamp ());
 
 	count = sgen_client_stop_world (generation);
 
 	world_is_stopped = TRUE;
 
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 	if (binary_protocol_is_heavy_enabled ())
 		count_cards (&major_total, &major_marked, &los_total, &los_marked);
-	binary_protocol_world_stopped (sgen_timestamp (), major_total, major_marked, los_total, los_marked);
+	binary_protocol_world_stopped (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 
 	return count;
 }
@@ -3863,9 +3844,9 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 
 	/* notify the profiler of the leftovers */
 	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
+	/* FIXME: This belongs in client code. */
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
-		sgen_gc_event_moves ();
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
+		mono_sgen_gc_event_moves ();
 
 	if (binary_protocol_is_heavy_enabled ())
 		count_cards (&major_total, &major_marked, &los_total, &los_marked);
@@ -3875,7 +3856,6 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 
 	world_is_stopped = FALSE;
 
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 	binary_protocol_world_restarted (generation, sgen_timestamp ());
 
 	sgen_try_free_some_memory = TRUE;
@@ -3901,15 +3881,6 @@ sgen_check_whole_heap_stw (void)
 	sgen_clear_nursery_fragments ();
 	sgen_check_whole_heap (FALSE);
 	sgen_restart_world (0, NULL);
-}
-
-void
-sgen_gc_event_moves (void)
-{
-	if (moved_objects_idx) {
-		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
-		moved_objects_idx = 0;
-	}
 }
 
 gint64

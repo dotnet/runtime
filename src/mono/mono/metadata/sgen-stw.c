@@ -210,6 +210,11 @@ sgen_client_stop_world (int generation)
 	TV_DECLARE (end_handshake);
 	int count, dead;
 
+	/* notify the profiler of the leftovers */
+	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
+		mono_sgen_gc_event_moves ();
+
 	acquire_gc_locks ();
 
 	/* We start to scan after locks are taking, this ensures we won't be interrupted. */

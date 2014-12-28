@@ -57,15 +57,15 @@ MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
-BEGIN_PROTOCOL_ENTRY1 (binary_protocol_world_stopping, TYPE_LONGLONG, timestamp)
+BEGIN_PROTOCOL_ENTRY2 (binary_protocol_world_stopping, TYPE_INT, generation, TYPE_LONGLONG, timestamp)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
-BEGIN_PROTOCOL_ENTRY5 (binary_protocol_world_stopped, TYPE_LONGLONG, timestamp, TYPE_LONGLONG, total_major_cards, TYPE_LONGLONG, marked_major_cards, TYPE_LONGLONG, total_los_cards, TYPE_LONGLONG, marked_los_cards)
-CUSTOM_PRINT (printf ("timestamp %lld total %lld marked %lld %0.2f%%", entry->timestamp, entry->total_major_cards + entry->total_los_cards, entry->marked_major_cards + entry->marked_los_cards, 100.0 * (double) (entry->marked_major_cards + entry->marked_los_cards) / (double) (entry->total_major_cards + entry->total_los_cards)))
+BEGIN_PROTOCOL_ENTRY6 (binary_protocol_world_stopped, TYPE_INT, generation, TYPE_LONGLONG, timestamp, TYPE_LONGLONG, total_major_cards, TYPE_LONGLONG, marked_major_cards, TYPE_LONGLONG, total_los_cards, TYPE_LONGLONG, marked_los_cards)
+CUSTOM_PRINT (printf ("generation %d timestamp %lld total %lld marked %lld %0.2f%%", entry->generation, entry->timestamp, entry->total_major_cards + entry->total_los_cards, entry->marked_major_cards + entry->marked_los_cards, 100.0 * (double) (entry->marked_major_cards + entry->marked_los_cards) / (double) (entry->total_major_cards + entry->total_los_cards)))
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)

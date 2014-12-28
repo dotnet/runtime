@@ -1848,6 +1848,32 @@ sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQu
 		report_finalizer_roots (fin_ready_queue, critical_fin_queue);
 }
 
+#define MOVED_OBJECTS_NUM 64
+static void *moved_objects [MOVED_OBJECTS_NUM];
+static int moved_objects_idx = 0;
+
+void
+mono_sgen_register_moved_object (void *obj, void *destination)
+{
+	g_assert (mono_profiler_events & MONO_PROFILE_GC_MOVES);
+
+	if (moved_objects_idx == MOVED_OBJECTS_NUM) {
+		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+		moved_objects_idx = 0;
+	}
+	moved_objects [moved_objects_idx++] = obj;
+	moved_objects [moved_objects_idx++] = destination;
+}
+
+void
+mono_sgen_gc_event_moves (void)
+{
+	if (moved_objects_idx) {
+		mono_profiler_gc_moves (moved_objects, moved_objects_idx);
+		moved_objects_idx = 0;
+	}
+}
+
 /*
  * Heap walking
  */
@@ -2130,13 +2156,13 @@ sgen_client_binary_protocol_sweep_end (int generation, int full_sweep)
 }
 
 void
-sgen_client_binary_protocol_world_stopping (long long timestamp)
+sgen_client_binary_protocol_world_stopping (int generation, long long timestamp)
 {
 	MONO_GC_WORLD_STOP_BEGIN ();
 }
 
 void
-sgen_client_binary_protocol_world_stopped (long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
+sgen_client_binary_protocol_world_stopped (int generation, long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
 {
 	MONO_GC_WORLD_STOP_END ();
 }

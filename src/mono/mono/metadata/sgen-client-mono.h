@@ -17,6 +17,13 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include "metadata/profiler-private.h"
+
+extern void mono_sgen_register_moved_object (void *obj, void *destination);
+extern void mono_sgen_gc_event_moves (void);
+
+extern void mono_sgen_init_stw (void);
+
 enum {
 	INTERNAL_MEM_EPHEMERON_LINK = INTERNAL_MEM_FIRST_CLIENT,
 	INTERNAL_MEM_MAX
@@ -148,6 +155,9 @@ sgen_client_update_copied_object (char *destination, GCVTable *gc_vtable, void *
 		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
 		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array));
 	}
+
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
+		mono_sgen_register_moved_object (obj, destination);
 }
 
 #ifdef XDOMAIN_CHECKS_IN_WBARRIER
@@ -331,5 +341,3 @@ static void G_GNUC_UNUSED
 sgen_client_binary_protocol_domain_unload_end (gpointer domain)
 {
 }
-
-extern void mono_sgen_init_stw (void);
