@@ -20,6 +20,8 @@
 #ifndef __MONO_SGEN_PINNING_H__
 #define __MONO_SGEN_PINNING_H__
 
+#include "metadata/sgen-pointer-queue.h"
+
 enum {
 	PIN_TYPE_STACK,
 	PIN_TYPE_STATIC_DATA,
@@ -47,7 +49,7 @@ void sgen_pin_objects_in_section (GCMemSection *section, ScanCopyContext ctx);
 
 void sgen_pin_stats_register_address (char *addr, int pin_type);
 size_t sgen_pin_stats_get_pinned_byte_count (int pin_type);
-ObjectList *sgen_pin_stats_get_object_list (void);
+SgenPointerQueue *sgen_pin_stats_get_object_list (void);
 void sgen_pin_stats_reset (void);
 
 /* Perpetual pinning, aka cementing */

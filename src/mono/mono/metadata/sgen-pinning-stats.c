@@ -52,7 +52,7 @@ static gboolean do_pin_stats = FALSE;
 static PinStatAddress *pin_stat_addresses = NULL;
 static size_t pinned_byte_counts [PIN_TYPE_MAX];
 
-static ObjectList *pinned_objects = NULL;
+static SgenPointerQueue pinned_objects = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_STATISTICS);
 
 static SgenHashTable pinned_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_PINNED_CLASS, sizeof (PinnedClassEntry), g_str_hash, g_str_equal);
 static SgenHashTable global_remset_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_REMSET_CLASS, sizeof (GlobalRemsetClassEntry), g_str_hash, g_str_equal);
@@ -81,11 +81,7 @@ sgen_pin_stats_reset (void)
 	pin_stat_addresses = NULL;
 	for (i = 0; i < PIN_TYPE_MAX; ++i)
 		pinned_byte_counts [i] = 0;
-	while (pinned_objects) {
-		ObjectList *next = pinned_objects->next;
-		sgen_free_internal_dynamic (pinned_objects, sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
-		pinned_objects = next;
-	}
+	sgen_pointer_queue_clear (&pinned_objects);
 }
 
 void
@@ -172,16 +168,12 @@ void
 sgen_pin_stats_register_object (char *obj, size_t size)
 {
 	int pin_types = 0;
-	ObjectList *list;
 
 	if (!do_pin_stats)
 		return;
 
-	list = sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS, TRUE);
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
-	list->obj = (GCObject*)obj;
-	list->next = pinned_objects;
-	pinned_objects = list;
+	sgen_pointer_queue_add (&pinned_objects, obj);
 
 	if (pin_types)
 		register_class (((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass, pin_types);
@@ -233,10 +225,10 @@ sgen_pin_stats_get_pinned_byte_count (int pin_type)
 	return pinned_byte_counts [pin_type];
 }
 
-ObjectList*
+SgenPointerQueue*
 sgen_pin_stats_get_object_list (void)
 {
-	return pinned_objects;
+	return &pinned_objects;
 }
 
 #endif /* HAVE_SGEN_GC */

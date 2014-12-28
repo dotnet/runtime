@@ -1144,8 +1144,9 @@ sgen_debug_enable_heap_dump (const char *filename)
 void
 sgen_debug_dump_heap (const char *type, int num, const char *reason)
 {
-	ObjectList *list;
+	SgenPointerQueue *pinned_objects;
 	LOSObject *bigobj;
+	int i;
 
 	if (!heap_dump_file)
 		return;
@@ -1161,8 +1162,9 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 	fprintf (heap_dump_file, "<pinned type=\"other\" bytes=\"%zu\"/>\n", sgen_pin_stats_get_pinned_byte_count (PIN_TYPE_OTHER));
 
 	fprintf (heap_dump_file, "<pinned-objects>\n");
-	for (list = sgen_pin_stats_get_object_list (); list; list = list->next)
-		dump_object (list->obj, TRUE);
+	pinned_objects = sgen_pin_stats_get_object_list ();
+	for (i = 0; i < pinned_objects->next_slot; ++i)
+		dump_object (pinned_objects->data [i], TRUE);
 	fprintf (heap_dump_file, "</pinned-objects>\n");
 
 	sgen_dump_section (nursery_section, "nursery");
