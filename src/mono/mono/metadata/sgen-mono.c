@@ -32,6 +32,7 @@
 #include "metadata/mono-gc.h"
 #include "metadata/runtime.h"
 #include "utils/mono-memory-model.h"
+#include "utils/mono-logger-internal.h"
 
 /* If set, check that there are no references to the domain left at domain unload */
 gboolean sgen_mono_xdomain_checks = FALSE;
@@ -2060,6 +2061,57 @@ int
 mono_gc_max_generation (void)
 {
 	return 1;
+}
+
+/*
+ * Logging
+ */
+
+void
+sgen_client_degraded_allocation (size_t size)
+{
+	static int last_major_gc_warned = -1;
+	static int num_degraded = 0;
+
+	if (last_major_gc_warned < gc_stats.major_gc_count) {
+		++num_degraded;
+		if (num_degraded == 1 || num_degraded == 3)
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
+		else if (num_degraded == 10)
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
+		last_major_gc_warned = gc_stats.major_gc_count;
+	}
+}
+
+void
+sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage)
+{
+	SgenMajorCollector *major_collector = sgen_get_major_collector ();
+	mword num_major_sections = major_collector->get_num_major_sections ();
+	char full_timing_buff [1024];
+	full_timing_buff [0] = '\0';
+
+	if (!info->is_overflow)
+	        sprintf (full_timing_buff, "total %.2fms, bridge %.2fms", info->stw_time / 10000.0f, (int)info->bridge_time / 10000.0f);
+	if (info->generation == GENERATION_OLD)
+	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) pause %.2fms, %s major %dK/%dK los %dK/%dK",
+	                info->is_overflow ? "_OVERFLOW" : "",
+	                info->reason ? info->reason : "",
+	                (int)info->total_time / 10000.0f,
+	                full_timing_buff,
+	                major_collector->section_size * num_major_sections / 1024,
+	                major_collector->section_size * last_major_num_sections / 1024,
+	                los_memory_usage / 1024,
+	                last_los_memory_usage / 1024);
+	else
+	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) pause %.2fms, %s promoted %dK major %dK los %dK",
+	        		info->is_overflow ? "_OVERFLOW" : "",
+	                info->reason ? info->reason : "",
+	                (int)info->total_time / 10000.0f,
+	                full_timing_buff,
+	                (num_major_sections - last_major_num_sections) * major_collector->section_size / 1024,
+	                major_collector->section_size * num_major_sections / 1024,
+	                los_memory_usage / 1024);
 }
 
 /*

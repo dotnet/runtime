@@ -99,6 +99,7 @@ sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
 #include "metadata/profiler-private.h"
 #include "utils/dtrace.h"
 #include "utils/mono-counters.h"
+#include "utils/mono-logger-internal.h"
 
 extern void mono_sgen_register_moved_object (void *obj, void *destination);
 extern void mono_sgen_gc_event_moves (void);

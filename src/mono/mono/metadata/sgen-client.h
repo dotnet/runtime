@@ -81,6 +81,8 @@ void sgen_client_pinned_los_object (char *obj);
 void sgen_client_collecting_major_2 (void);
 void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
 
+void sgen_client_degraded_allocation (size_t size);
+
 void sgen_client_total_allocated_heap (mword allocated_heap);
 
 /*
@@ -99,6 +101,8 @@ void sgen_client_pre_collection_checks (void);
 
 int sgen_client_stop_world (int generation);
 int sgen_client_restart_world (int generation, GGTimingInfo *timing);
+
+void sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage);
 
 gboolean sgen_client_handle_gc_debug (const char *opt);
 void sgen_client_print_gc_debug_usage (void);

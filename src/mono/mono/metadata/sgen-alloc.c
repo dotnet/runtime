@@ -94,20 +94,10 @@ static __thread char **tlab_next_addr MONO_ATTR_USED;
 static void*
 alloc_degraded (GCVTable *vtable, size_t size, gboolean for_mature)
 {
-	static int last_major_gc_warned = -1;
-	static int num_degraded = 0;
-
 	void *p;
 
 	if (!for_mature) {
-		if (last_major_gc_warned < gc_stats.major_gc_count) {
-			++num_degraded;
-			if (num_degraded == 1 || num_degraded == 3)
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
-			else if (num_degraded == 10)
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
-			last_major_gc_warned = gc_stats.major_gc_count;
-		}
+		sgen_client_degraded_allocation (size);
 		SGEN_ATOMIC_ADD_P (degraded_mode, size);
 		sgen_ensure_free_space (size);
 	} else {

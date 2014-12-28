@@ -34,7 +34,6 @@
 #include "metadata/sgen-client.h"
 
 #include "utils/mono-mmap.h"
-#include "utils/mono-logger-internal.h"
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
@@ -168,38 +167,6 @@ sgen_memgov_major_collection_end (gboolean forced)
 	}
 }
 
-static void
-log_timming (GGTimingInfo *info)
-{
-	//unsigned long stw_time, unsigned long bridge_time, gboolean is_overflow
-	mword num_major_sections = major_collector.get_num_major_sections ();
-	char full_timing_buff [1024];
-	full_timing_buff [0] = '\0';
-
-	if (!info->is_overflow)
-	        sprintf (full_timing_buff, "total %.2fms, bridge %.2fms", info->stw_time / 10000.0f, (int)info->bridge_time / 10000.0f);
-	if (info->generation == GENERATION_OLD)
-	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MAJOR%s: (%s) pause %.2fms, %s major %dK/%dK los %dK/%dK",
-	                info->is_overflow ? "_OVERFLOW" : "",
-	                info->reason ? info->reason : "",
-	                (int)info->total_time / 10000.0f,
-	                full_timing_buff,
-	                major_collector.section_size * num_major_sections / 1024,
-	                major_collector.section_size * last_major_num_sections / 1024,
-	                los_memory_usage / 1024,
-	                last_los_memory_usage / 1024);
-	else
-	        mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "GC_MINOR%s: (%s) pause %.2fms, %s promoted %dK major %dK los %dK",
-	        		info->is_overflow ? "_OVERFLOW" : "",
-	                info->reason ? info->reason : "",
-	                (int)info->total_time / 10000.0f,
-	                full_timing_buff,
-	                (num_major_sections - last_major_num_sections) * major_collector.section_size / 1024,
-	                major_collector.section_size * num_major_sections / 1024,
-	                los_memory_usage / 1024);       
-}
-
-/* FIXME: Remove either these or the specialized ones above. */
 void
 sgen_memgov_collection_start (int generation)
 {
@@ -211,7 +178,7 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 	int i;
 	for (i = 0; i < info_count; ++i) {
 		if (info[i].generation != -1)
-			log_timming (&info [i]);
+			sgen_client_log_timing (&info [i], last_major_num_sections, last_los_memory_usage);
 	}
 }
 
