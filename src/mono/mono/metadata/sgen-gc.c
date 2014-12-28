@@ -198,7 +198,6 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-hash-table.h"
 #include "metadata/mono-gc.h"
-#include "metadata/profiler-private.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"
@@ -1631,7 +1630,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	/* pin from pinned handles */
 	sgen_init_pinning ();
-	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, 0);
+	sgen_client_binary_protocol_mark_start (GENERATION_NURSERY);
 	pin_from_roots (sgen_get_nursery_start (), nursery_next, ctx);
 	/* pin cemented objects */
 	sgen_pin_cemented_objects ();
@@ -1678,7 +1677,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	TV_GETTIME (atv);
 	time_minor_finish_gray_stack += TV_ELAPSED (btv, atv);
-	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, 0);
+	sgen_client_binary_protocol_mark_end (GENERATION_NURSERY);
 
 	if (objects_pinned) {
 		sgen_optimize_pin_queue ();
@@ -1689,7 +1688,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	 * pinned objects as we go, memzero() the empty fragments so they are ready for the
 	 * next allocations.
 	 */
-	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, 0);
+	sgen_client_binary_protocol_reclaim_start (GENERATION_NURSERY);
 	fragment_total = sgen_build_nursery_fragments (nursery_section, unpin_queue);
 	if (!fragment_total)
 		degraded_mode = 1;
@@ -1697,7 +1696,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	/* Clear TLABs for all threads */
 	sgen_clear_tlabs ();
 
-	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_END, 0);
+	sgen_client_binary_protocol_reclaim_end (GENERATION_NURSERY);
 	TV_GETTIME (btv);
 	time_minor_fragment_creation += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Fragment creation: %d usecs, %lu bytes available", TV_ELAPSED (atv, btv), (unsigned long)fragment_total);
@@ -2390,8 +2389,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 	SGEN_ASSERT (0, generation_to_collect == GENERATION_NURSERY || generation_to_collect == GENERATION_OLD, "What generation is this?");
 
-	mono_profiler_gc_event (MONO_GC_EVENT_START, generation_to_collect);
-
 	TV_GETTIME (gc_start);
 
 	sgen_stop_world (generation_to_collect);
@@ -2476,7 +2473,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 		 * or the nursery is fully pinned.
 		 */
 
-		mono_profiler_gc_event (MONO_GC_EVENT_START, overflow_generation_to_collect);
 		infos [1].generation = overflow_generation_to_collect;
 		infos [1].reason = overflow_reason;
 		infos [1].is_overflow = TRUE;
@@ -2489,9 +2485,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 
 		TV_GETTIME (gc_end);
 		infos [1].total_time = SGEN_TV_ELAPSED (infos [1].total_time, gc_end);
-
-		/* keep events symmetric */
-		mono_profiler_gc_event (MONO_GC_EVENT_END, overflow_generation_to_collect);
 
 		oldest_generation_collected = MAX (oldest_generation_collected, overflow_generation_to_collect);
 	}
@@ -2513,8 +2506,6 @@ sgen_perform_collection (size_t requested_size, int generation_to_collect, const
 	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
 
 	sgen_restart_world (oldest_generation_collected, infos);
-
-	mono_profiler_gc_event (MONO_GC_EVENT_END, generation_to_collect);
 }
 
 /*
@@ -3831,7 +3822,6 @@ int
 sgen_restart_world (int generation, GGTimingInfo *timing)
 {
 	int count;
-	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
 
 	SGEN_ASSERT (0, world_is_stopped, "Why are we restarting a running world?");
 
@@ -3841,16 +3831,6 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 			count_cards (&major_total, &major_marked, &los_total, &los_marked);
 		binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 	}
-
-	/* notify the profiler of the leftovers */
-	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
-	/* FIXME: This belongs in client code. */
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
-		mono_sgen_gc_event_moves ();
-
-	if (binary_protocol_is_heavy_enabled ())
-		count_cards (&major_total, &major_marked, &los_total, &los_marked);
-	binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 
 	count = sgen_client_restart_world (generation, timing);
 

@@ -26,8 +26,6 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/profiler-private.h"
-
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-layout-stats.h"

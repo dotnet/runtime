@@ -259,6 +259,11 @@ sgen_client_restart_world (int generation, GGTimingInfo *timing)
 	TV_DECLARE (end_bridge);
 	unsigned long usec, bridge_usec;
 
+	/* notify the profiler of the leftovers */
+	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
+	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
+		mono_sgen_gc_event_moves ();
+
 	FOREACH_THREAD (info) {
 		info->stack_start = NULL;
 #ifdef USE_MONO_CTX

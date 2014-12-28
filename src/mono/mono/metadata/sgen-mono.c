@@ -29,7 +29,6 @@
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
-#include "metadata/profiler-private.h"
 #include "metadata/mono-gc.h"
 #include "metadata/runtime.h"
 #include "utils/mono-memory-model.h"
