@@ -32,7 +32,6 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-pointer-queue.h"
 #include "metadata/sgen-client.h"
-#include "utils/dtrace.h"
 #include "utils/mono-counters.h"
 
 #define ptr_in_nursery sgen_ptr_in_nursery
@@ -862,20 +861,6 @@ sgen_process_dislink_stage_entries (void)
 void
 sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track, gboolean in_gc)
 {
-
-#ifdef ENABLE_DTRACE
-	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {
-		GCVTable *vt = obj ? (GCVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
-		MONO_GC_WEAK_UPDATE ((mword)link,
-				*link ? (mword)DISLINK_OBJECT (link) : (mword)0,
-				(mword)obj,
-				obj ? (mword)sgen_safe_object_get_size (obj) : (mword)0,
-				obj ? sgen_client_vtable_get_namespace (vt) : NULL,
-				obj ? sgen_client_vtable_get_name (vt) : NULL,
-				track ? 1 : 0);
-	}
-#endif
-
 	if (obj)
 		*link = HIDE_POINTER (obj, track);
 	else

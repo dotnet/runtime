@@ -184,3 +184,150 @@ sgen_client_object_has_critical_finalizer (GCObject *obj)
 
 	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
+
+#ifndef ENABLE_DTRACE
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_collection_requested (int generation, size_t requested_size, gboolean force)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, long long num_objects_scanned, long long num_unique_objects_scanned)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_concurrent_start (void)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_concurrent_update (void)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_concurrent_finish (void)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_sweep_begin (int generation, int full_sweep)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_sweep_end (int generation, int full_sweep)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_world_stopping (long long timestamp)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_world_stopped (long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_world_restarting (int generation, long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_world_restarted (int generation, long long timestamp)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_alloc (gpointer obj, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_pin (gpointer obj, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_cement (gpointer ptr, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value_vtable)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolean track, gboolean staged)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_empty (gpointer start, size_t size)
+{
+}
+#endif
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_thread_restart (gpointer thread)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_thread_register (gpointer thread)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_thread_unregister (gpointer thread)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, gpointer value, gpointer value_vtable, gboolean value_pinned)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_cement_reset (void)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_domain_unload_begin (gpointer domain)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_domain_unload_end (gpointer domain)
+{
+}

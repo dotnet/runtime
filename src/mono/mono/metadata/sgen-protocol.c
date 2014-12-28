@@ -28,6 +28,7 @@
 #include "sgen-protocol.h"
 #include "sgen-memory-governor.h"
 #include "sgen-thread-pool.h"
+#include "sgen-client.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-threads.h"
 
@@ -326,48 +327,56 @@ protocol_entry (unsigned char type, gpointer data, int size)
 #define TYPE_LONGLONG long long
 #define TYPE_SIZE size_t
 #define TYPE_POINTER gpointer
+#define TYPE_BOOL gboolean
 
 #define BEGIN_PROTOCOL_ENTRY0(method) \
 	void method (void) { \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = NULL; \
-		int __size = 0;
+		int __size = 0; \
+		CLIENT_PROTOCOL_NAME (method) ();
 #define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
 	void method (t1 f1) { \
 		PROTOCOL_STRUCT(method) __entry = { f1 }; \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = &__entry; \
-		int __size = sizeof (PROTOCOL_STRUCT(method));
+		int __size = sizeof (PROTOCOL_STRUCT(method)); \
+		CLIENT_PROTOCOL_NAME (method) (f1);
 #define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
 	void method (t1 f1, t2 f2) { \
 		PROTOCOL_STRUCT(method) __entry = { f1, f2 }; \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = &__entry; \
-		int __size = sizeof (PROTOCOL_STRUCT(method));
+		int __size = sizeof (PROTOCOL_STRUCT(method)); \
+		CLIENT_PROTOCOL_NAME (method) (f1, f2);
 #define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
 	void method (t1 f1, t2 f2, t3 f3) { \
 		PROTOCOL_STRUCT(method) __entry = { f1, f2, f3 }; \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = &__entry; \
-		int __size = sizeof (PROTOCOL_STRUCT(method));
+		int __size = sizeof (PROTOCOL_STRUCT(method)); \
+		CLIENT_PROTOCOL_NAME (method) (f1, f2, f3);
 #define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
 	void method (t1 f1, t2 f2, t3 f3, t4 f4) { \
 		PROTOCOL_STRUCT(method) __entry = { f1, f2, f3, f4 }; \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = &__entry; \
-		int __size = sizeof (PROTOCOL_STRUCT(method));
+		int __size = sizeof (PROTOCOL_STRUCT(method)); \
+		CLIENT_PROTOCOL_NAME (method) (f1, f2, f3, f4);
 #define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
 	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) { \
 		PROTOCOL_STRUCT(method) __entry = { f1, f2, f3, f4, f5 }; \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = &__entry; \
-		int __size = sizeof (PROTOCOL_STRUCT(method));
+		int __size = sizeof (PROTOCOL_STRUCT(method)); \
+		CLIENT_PROTOCOL_NAME (method) (f1, f2, f3, f4, f5);
 #define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
 	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) { \
 		PROTOCOL_STRUCT(method) __entry = { f1, f2, f3, f4, f5, f6 }; \
 		int __type = PROTOCOL_ID(method); \
 		gpointer __data = &__entry; \
-		int __size = sizeof (PROTOCOL_STRUCT(method));
+		int __size = sizeof (PROTOCOL_STRUCT(method)); \
+		CLIENT_PROTOCOL_NAME (method) (f1, f2, f3, f4, f5, f6);
 
 #define FLUSH() \
 		binary_protocol_flush_buffers (FALSE);
@@ -419,5 +428,6 @@ protocol_entry (unsigned char type, gpointer data, int size)
 #undef TYPE_LONGLONG
 #undef TYPE_SIZE
 #undef TYPE_POINTER
+#undef TYPE_BOOL
 
 #endif /* HAVE_SGEN_GC */

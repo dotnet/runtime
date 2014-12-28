@@ -1136,13 +1136,7 @@ major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queu
 			if (sgen_los_object_is_pinned (obj))
 				return;
 
-#ifdef ENABLE_DTRACE
-			if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
-				GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj);
-				MONO_GC_OBJ_PINNED ((mword)obj, sgen_safe_object_get_size (obj),
-						sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), GENERATION_OLD);
-			}
-#endif
+			binary_protocol_mark (obj, SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
 
 			sgen_los_pin_object (obj);
 			if (SGEN_OBJECT_HAS_REFERENCES (obj))
@@ -1297,7 +1291,6 @@ sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 				 * will also benefit?
 				 */
 				binary_protocol_empty (obj, obj_size);
-				MONO_GC_MAJOR_SWEPT ((mword)obj, obj_size);
 				memset (obj, 0, obj_size);
 			}
 			*(void**)obj = block->free_list;
@@ -1818,7 +1811,7 @@ major_start_major_collection (void)
 	}
 
 	if (lazy_sweep)
-		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
+		binary_protocol_sweep_begin (GENERATION_OLD, TRUE);
 
 	/* Sweep all unswept blocks and set them to MARKING */
 	FOREACH_BLOCK_NO_LOCK (block) {
@@ -1829,7 +1822,7 @@ major_start_major_collection (void)
 	} END_FOREACH_BLOCK_NO_LOCK;
 
 	if (lazy_sweep)
-		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
+		binary_protocol_sweep_end (GENERATION_OLD, TRUE);
 
 	set_sweep_state (SWEEP_STATE_NEED_SWEEPING, SWEEP_STATE_SWEPT);
 }

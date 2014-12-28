@@ -40,14 +40,6 @@ par_copy_object_no_checks (char *destination, GCVTable *vt, void *obj, mword obj
 	sgen_client_pre_copy_checks (destination, vt, obj, objsize);
 	binary_protocol_copy (obj, destination, vt, objsize);
 
-#ifdef ENABLE_DTRACE
-	if (G_UNLIKELY (MONO_GC_OBJ_MOVED_ENABLED ())) {
-		int dest_gen = sgen_ptr_in_nursery (destination) ? GENERATION_NURSERY : GENERATION_OLD;
-		int src_gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
-		MONO_GC_OBJ_MOVED ((mword)destination, (mword)obj, dest_gen, src_gen, objsize, sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt));
-	}
-#endif
-
 	/* FIXME: assumes object layout */
 	memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 

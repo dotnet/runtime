@@ -94,3 +94,58 @@ void sgen_client_pre_collection_checks (void);
 
 gboolean sgen_client_handle_gc_debug (const char *opt);
 void sgen_client_print_gc_debug_usage (void);
+
+#define TYPE_INT int
+#define TYPE_LONGLONG long long
+#define TYPE_SIZE size_t
+#define TYPE_POINTER gpointer
+#define TYPE_BOOL gboolean
+
+#define BEGIN_PROTOCOL_ENTRY0(method) \
+	void sgen_client_ ## method (void);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
+	void sgen_client_ ## method (void);
+#define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
+	void sgen_client_ ## method (t1 f1);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) \
+	void sgen_client_ ## method (t1 f1);
+#define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
+	void sgen_client_ ## method (t1 f1, t2 f2);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) \
+	void sgen_client_ ## method (t1 f1, t2 f2);
+#define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3);
+#define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4);
+#define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5);
+#define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
+#define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
+
+#define FLUSH()
+
+#define DEFAULT_PRINT()
+#define CUSTOM_PRINT(_)
+
+#define IS_ALWAYS_MATCH(_)
+#define MATCH_INDEX(_)
+#define IS_VTABLE_MATCH(_)
+
+#define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_HEAVY
+
+#include "sgen-protocol-def.h"
+
+#undef TYPE_INT
+#undef TYPE_LONGLONG
+#undef TYPE_SIZE
+#undef TYPE_POINTER
+#undef TYPE_BOOL

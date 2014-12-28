@@ -249,11 +249,6 @@ sgen_cement_lookup_or_register (char *obj)
 		SGEN_ASSERT (9, SGEN_OBJECT_IS_PINNED (obj), "Can only cement pinned objects");
 		SGEN_CEMENT_OBJECT (obj);
 
-		if (G_UNLIKELY (MONO_GC_OBJ_CEMENTED_ENABLED())) {
-			GCVTable *vt G_GNUC_UNUSED = (GCVTable*)SGEN_LOAD_VTABLE (obj);
-			MONO_GC_OBJ_CEMENTED ((mword)obj, sgen_safe_object_get_size ((GCObject*)obj),
-					sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt));
-		}
 		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
 				(int)sgen_safe_object_get_size ((GCObject*)obj));
 	}
