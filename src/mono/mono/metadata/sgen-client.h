@@ -21,6 +21,8 @@
 
 void sgen_client_init (void);
 
+mword sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o);
+
 /*
  * Returns the vtable used for dummy objects to fill the nursery for ease and speed of
  * walking.  Must be a valid vtable that is not used by any actual objects.  Must be

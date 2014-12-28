@@ -17,17 +17,7 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "metadata/profiler-private.h"
-
-extern void mono_sgen_register_moved_object (void *obj, void *destination);
-extern void mono_sgen_gc_event_moves (void);
-
-extern void mono_sgen_init_stw (void);
-
-enum {
-	INTERNAL_MEM_EPHEMERON_LINK = INTERNAL_MEM_FIRST_CLIENT,
-	INTERNAL_MEM_MAX
-};
+#ifdef SGEN_DEFINE_OBJECT_VTABLE
 
 typedef MonoObject GCObject;
 typedef MonoVTable GCVTable;
@@ -40,9 +30,6 @@ sgen_vtable_get_descriptor (GCVTable *vtable)
 {
 	return (mword)vtable->gc_descr;
 }
-
-#define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
-#define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
 
 static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
 sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o)
@@ -68,38 +55,6 @@ sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o)
 		/* from a created object: the class must be inited already */
 		return klass->instance_size;
 	}
-}
-
-static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
-sgen_client_array_element_size (GCVTable *gc_vtable)
-{
-	MonoVTable *vt = (MonoVTable*)gc_vtable;
-	return mono_array_element_size (vt->klass);
-}
-
-static MONO_ALWAYS_INLINE G_GNUC_UNUSED char*
-sgen_client_array_data_start (GCObject *obj)
-{
-	return (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);
-}
-
-static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
-sgen_client_array_length (GCObject *obj)
-{
-	return mono_array_length_fast ((MonoArray*)obj);
-}
-
-static MONO_ALWAYS_INLINE gboolean G_GNUC_UNUSED
-sgen_client_object_is_array_fill (GCObject *o)
-{
-	return ((MonoObject*)o)->synchronisation == GINT_TO_POINTER (-1);
-}
-
-/* FIXME: Why do we even need this?  Can't we get it from the descriptor? */
-static gboolean G_GNUC_UNUSED
-sgen_client_vtable_has_references (GCVTable *vt)
-{
-	return ((MonoVTable*)vt)->klass->has_references;
 }
 
 /*
@@ -137,6 +92,56 @@ sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
 	}
 
 	return sgen_client_slow_object_get_size (vtable, o);
+}
+
+#else
+
+#include "metadata/profiler-private.h"
+#include "utils/dtrace.h"
+
+extern void mono_sgen_register_moved_object (void *obj, void *destination);
+extern void mono_sgen_gc_event_moves (void);
+
+extern void mono_sgen_init_stw (void);
+
+enum {
+	INTERNAL_MEM_EPHEMERON_LINK = INTERNAL_MEM_FIRST_CLIENT,
+	INTERNAL_MEM_MAX
+};
+
+#define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
+#define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
+
+static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
+sgen_client_array_element_size (GCVTable *gc_vtable)
+{
+	MonoVTable *vt = (MonoVTable*)gc_vtable;
+	return mono_array_element_size (vt->klass);
+}
+
+static MONO_ALWAYS_INLINE G_GNUC_UNUSED char*
+sgen_client_array_data_start (GCObject *obj)
+{
+	return (char*)(obj) +  G_STRUCT_OFFSET (MonoArray, vector);
+}
+
+static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
+sgen_client_array_length (GCObject *obj)
+{
+	return mono_array_length_fast ((MonoArray*)obj);
+}
+
+static MONO_ALWAYS_INLINE gboolean G_GNUC_UNUSED
+sgen_client_object_is_array_fill (GCObject *o)
+{
+	return ((MonoObject*)o)->synchronisation == GINT_TO_POINTER (-1);
+}
+
+/* FIXME: Why do we even need this?  Can't we get it from the descriptor? */
+static gboolean G_GNUC_UNUSED
+sgen_client_vtable_has_references (GCVTable *vt)
+{
+	return ((MonoVTable*)vt)->klass->has_references;
 }
 
 static MONO_ALWAYS_INLINE void G_GNUC_UNUSED
@@ -195,112 +200,191 @@ sgen_client_object_has_critical_finalizer (GCObject *obj)
 	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
 
-#ifndef ENABLE_DTRACE
+const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
+const char* sgen_client_vtable_get_name (GCVTable *vtable);
+
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_collection_requested (int generation, size_t requested_size, gboolean force)
 {
+	MONO_GC_REQUESTED (generation, requested_size, force);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation)
 {
+	MONO_GC_BEGIN (generation);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, long long num_objects_scanned, long long num_unique_objects_scanned)
 {
+	MONO_GC_END (generation);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_concurrent_start (void)
 {
+	MONO_GC_CONCURRENT_START_BEGIN (GENERATION_OLD);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_concurrent_update (void)
 {
+	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, sgen_get_major_collector ()->get_and_reset_num_major_objects_marked ());
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_concurrent_finish (void)
 {
+	MONO_GC_CONCURRENT_UPDATE_FINISH_BEGIN (GENERATION_OLD, sgen_get_major_collector ()->get_and_reset_num_major_objects_marked ());
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_sweep_begin (int generation, int full_sweep)
 {
+	MONO_GC_SWEEP_BEGIN (generation, full_sweep);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_sweep_end (int generation, int full_sweep)
 {
+	MONO_GC_SWEEP_END (generation, full_sweep);
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_world_stopping (long long timestamp)
+sgen_client_binary_protocol_world_stopping (int generation, long long timestamp)
 {
+	MONO_GC_WORLD_STOP_BEGIN ();
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_world_stopped (long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
+sgen_client_binary_protocol_world_stopped (int generation, long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
 {
+	MONO_GC_WORLD_STOP_END ();
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_world_restarting (int generation, long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
 {
+	MONO_GC_WORLD_RESTART_BEGIN (generation);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_world_restarted (int generation, long long timestamp)
 {
+	MONO_GC_WORLD_RESTART_END (generation);
+}
+
+static void
+mono_binary_protocol_alloc_generic (gpointer obj, gpointer vtable, size_t size, gboolean pinned)
+{
+#ifdef ENABLE_DTRACE
+	const char *namespace = sgen_client_vtable_get_namespace (vtable);
+	const char *name = sgen_client_vtable_get_name (vtable);
+
+	if (sgen_ptr_in_nursery (obj)) {
+		if (G_UNLIKELY (MONO_GC_NURSERY_OBJ_ALLOC_ENABLED ()))
+			MONO_GC_NURSERY_OBJ_ALLOC ((mword)obj, size, namespace, name);
+	} else {
+		if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
+			if (G_UNLIKELY (MONO_GC_MAJOR_OBJ_ALLOC_LARGE_ENABLED ()))
+				MONO_GC_MAJOR_OBJ_ALLOC_LARGE ((mword)obj, size, namespace, name);
+		} else if (pinned) {
+			MONO_GC_MAJOR_OBJ_ALLOC_PINNED ((mword)obj, size, namespace, name);
+		}
+	}
+#endif
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_alloc (gpointer obj, gpointer vtable, size_t size)
 {
+	mono_binary_protocol_alloc_generic (obj, vtable, size, FALSE);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, size_t size)
 {
+	mono_binary_protocol_alloc_generic (obj, vtable, size, TRUE);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, size_t size)
 {
+	MONO_GC_MAJOR_OBJ_ALLOC_DEGRADED ((mword)obj, size, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_pin (gpointer obj, gpointer vtable, size_t size)
 {
+#ifdef ENABLE_DTRACE
+	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
+		int gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
+		MONO_GC_OBJ_PINNED ((mword)obj,
+				sgen_safe_object_get_size (obj),
+				sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), gen);
+	}
+#endif
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_cement (gpointer ptr, gpointer vtable, size_t size)
 {
+#ifdef ENABLE_DTRACE
+	if (G_UNLIKELY (MONO_GC_OBJ_CEMENTED_ENABLED())) {
+		MONO_GC_OBJ_CEMENTED ((mword)ptr, sgen_safe_object_get_size ((GCObject*)ptr),
+				sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
+	}
+#endif
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, size_t size)
 {
+#ifdef ENABLE_DTRACE
+	if (G_UNLIKELY (MONO_GC_OBJ_MOVED_ENABLED ())) {
+		int dest_gen = sgen_ptr_in_nursery (to) ? GENERATION_NURSERY : GENERATION_OLD;
+		int src_gen = sgen_ptr_in_nursery (from) ? GENERATION_NURSERY : GENERATION_OLD;
+		MONO_GC_OBJ_MOVED ((mword)to, (mword)from, dest_gen, src_gen, size, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
+	}
+#endif
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value_vtable)
 {
+#ifdef ENABLE_DTRACE
+	if (G_UNLIKELY (MONO_GC_GLOBAL_REMSET_ADD_ENABLED ())) {
+		MONO_GC_GLOBAL_REMSET_ADD ((mword)ptr, (mword)value, sgen_safe_object_get_size (value),
+				sgen_client_vtable_get_namespace (value_vtable), sgen_client_vtable_get_name (value_vtable));
+	}
+#endif
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolean track, gboolean staged)
 {
+#ifdef ENABLE_DTRACE
+	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {
+		GCVTable *vt = obj ? (GCVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
+		MONO_GC_WEAK_UPDATE ((mword)link,
+				(mword)obj,
+				obj ? (mword)sgen_safe_object_get_size (obj) : (mword)0,
+				obj ? sgen_client_vtable_get_namespace (vt) : NULL,
+				obj ? sgen_client_vtable_get_name (vt) : NULL,
+				track ? 1 : 0);
+	}
+#endif
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_empty (gpointer start, size_t size)
 {
+	if (sgen_ptr_in_nursery (start))
+		MONO_GC_NURSERY_SWEPT ((mword)start, size);
+	else
+		MONO_GC_MAJOR_SWEPT ((mword)start, size);
 }
-#endif
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip)
@@ -341,3 +425,5 @@ static void G_GNUC_UNUSED
 sgen_client_binary_protocol_domain_unload_end (gpointer domain)
 {
 }
+
+#endif

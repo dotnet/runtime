@@ -438,7 +438,9 @@ enum {
 
 void sgen_init_internal_allocator (void);
 
-#include "metadata/sgen-client-mono.h"
+#define SGEN_DEFINE_OBJECT_VTABLE
+#include "sgen-client-mono.h"
+#undef SGEN_DEFINE_OBJECT_VTABLE
 
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char *obj, mword desc, SgenGrayQueue*);
@@ -774,6 +776,8 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 
        return sgen_client_slow_object_get_size ((GCVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
+
+#include "metadata/sgen-client-mono.h"
 
 gboolean sgen_object_is_live (void *obj);
 
