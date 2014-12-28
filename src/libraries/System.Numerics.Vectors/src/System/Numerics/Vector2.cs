@@ -86,11 +86,11 @@ namespace System.Numerics
         {
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator + " ";
-            sb.Append("<");
+            sb.Append('<');
             sb.Append(this.X.ToString(format, formatProvider));
             sb.Append(separator);
             sb.Append(this.Y.ToString(format, formatProvider));
-            sb.Append(">");
+            sb.Append('>');
             return sb.ToString();
         }
 
