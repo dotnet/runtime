@@ -44,7 +44,6 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-client.h"
 #include "utils/mono-memory-model.h"
-#include "utils/mono-counters.h"
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 #define ALLOC_ALIGN		SGEN_ALLOC_ALIGN
@@ -593,7 +592,7 @@ sgen_init_allocator (void)
 #endif
 
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_objects_alloced);	
+	mono_counters_register ("# objects allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_objects_alloced);
 	mono_counters_register ("bytes allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced);
 	mono_counters_register ("bytes allocated in LOS", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced_los);
 #endif

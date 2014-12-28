@@ -206,7 +206,6 @@
 #include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
-#include "utils/mono-counters.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"
 
@@ -293,15 +292,15 @@ guint64 stat_nursery_copy_object_failed_forwarded = 0;
 guint64 stat_nursery_copy_object_failed_pinned = 0;
 guint64 stat_nursery_copy_object_failed_to_space = 0;
 
-static int stat_wbarrier_add_to_global_remset = 0;
-static int stat_wbarrier_set_field = 0;
-static int stat_wbarrier_set_arrayref = 0;
-static int stat_wbarrier_arrayref_copy = 0;
-static int stat_wbarrier_generic_store = 0;
-static int stat_wbarrier_generic_store_atomic = 0;
-static int stat_wbarrier_set_root = 0;
-static int stat_wbarrier_value_copy = 0;
-static int stat_wbarrier_object_copy = 0;
+static guint64 stat_wbarrier_add_to_global_remset = 0;
+static guint64 stat_wbarrier_set_field = 0;
+static guint64 stat_wbarrier_set_arrayref = 0;
+static guint64 stat_wbarrier_arrayref_copy = 0;
+static guint64 stat_wbarrier_generic_store = 0;
+static guint64 stat_wbarrier_generic_store_atomic = 0;
+static guint64 stat_wbarrier_set_root = 0;
+static guint64 stat_wbarrier_value_copy = 0;
+static guint64 stat_wbarrier_object_copy = 0;
 #endif
 
 static guint64 stat_pinned_objects = 0;
@@ -1345,15 +1344,15 @@ init_stats (void)
 	mono_counters_register ("Number of pinned objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_pinned_objects);
 
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("WBarrier remember pointer", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_add_to_global_remset);
-	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_field);
-	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_arrayref);
-	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_arrayref_copy);
-	mono_counters_register ("WBarrier generic store called", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store);
-	mono_counters_register ("WBarrier generic atomic store called", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_generic_store_atomic);
-	mono_counters_register ("WBarrier set root", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_set_root);
-	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_value_copy);
-	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wbarrier_object_copy);
+	mono_counters_register ("WBarrier remember pointer", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_add_to_global_remset);
+	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_field);
+	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
+	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_arrayref_copy);
+	mono_counters_register ("WBarrier generic store called", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_generic_store);
+	mono_counters_register ("WBarrier generic atomic store called", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_generic_store_atomic);
+	mono_counters_register ("WBarrier set root", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_root);
+	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_value_copy);
+	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_object_copy);
 
 	mono_counters_register ("# objects allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_objects_alloced_degraded);
 	mono_counters_register ("bytes allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced_degraded);
@@ -3271,7 +3270,7 @@ mono_gc_base_init (void)
 	double allowance_ratio = 0, save_target = 0;
 	gboolean cement_enabled = TRUE;
 
-	mono_counters_init ();
+	sgen_client_init_early ();
 
 	do {
 		result = InterlockedCompareExchange (&gc_initialized, -1, 0);

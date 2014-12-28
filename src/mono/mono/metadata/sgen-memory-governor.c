@@ -31,8 +31,8 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-thread-pool.h"
 #include "metadata/mono-gc.h"
+#include "metadata/sgen-client.h"
 
-#include "utils/mono-counters.h"
 #include "utils/mono-mmap.h"
 #include "utils/mono-logger-internal.h"
 
@@ -334,7 +334,7 @@ sgen_memgov_try_alloc_space (mword size, int space)
 	}
 
 	SGEN_ATOMIC_ADD_P (allocated_heap, size);
-	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
+	sgen_client_total_allocated_heap (allocated_heap);
 	return TRUE;
 }
 

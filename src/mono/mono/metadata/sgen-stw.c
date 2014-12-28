@@ -34,8 +34,6 @@
 #include "metadata/profiler-private.h"
 #include "metadata/sgen-client.h"
 #include "utils/mono-time.h"
-#include "utils/mono-counters.h"
-#include "utils/mono-threads.h"
 
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME

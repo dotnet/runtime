@@ -93,16 +93,16 @@ size_t sgen_space_bitmap_size;
 
 #ifdef HEAVY_STATISTICS
 
-static gint32 stat_wasted_bytes_trailer = 0;
-static gint32 stat_wasted_bytes_small_areas = 0;
-static gint32 stat_wasted_bytes_discarded_fragments = 0;
-static gint32 stat_nursery_alloc_requests = 0;
-static gint32 stat_alloc_iterations = 0;
-static gint32 stat_alloc_retries = 0;
+static mword stat_wasted_bytes_trailer = 0;
+static mword stat_wasted_bytes_small_areas = 0;
+static mword stat_wasted_bytes_discarded_fragments = 0;
+static guint64 stat_nursery_alloc_requests = 0;
+static guint64 stat_alloc_iterations = 0;
+static guint64 stat_alloc_retries = 0;
 
-static gint32 stat_nursery_alloc_range_requests = 0;
-static gint32 stat_alloc_range_iterations = 0;
-static gint32 stat_alloc_range_retries = 0;
+static guint64 stat_nursery_alloc_range_requests = 0;
+static guint64 stat_alloc_range_iterations = 0;
+static guint64 stat_alloc_range_retries = 0;
 
 #endif
 
@@ -871,17 +871,17 @@ sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, size_t *out_
 void
 sgen_nursery_allocator_init_heavy_stats (void)
 {
-	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_trailer);
-	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_small_areas);
-	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_discarded_fragments);
+	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_trailer);
+	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_small_areas);
+	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_discarded_fragments);
 
-	mono_counters_register ("# nursery alloc requests", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_nursery_alloc_requests);
-	mono_counters_register ("# nursery alloc iterations", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_iterations);
-	mono_counters_register ("# nursery alloc retries", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_retries);
+	mono_counters_register ("# nursery alloc requests", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_alloc_requests);
+	mono_counters_register ("# nursery alloc iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_iterations);
+	mono_counters_register ("# nursery alloc retries", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_retries);
 
-	mono_counters_register ("# nursery alloc range requests", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_nursery_alloc_range_requests);
-	mono_counters_register ("# nursery alloc range iterations", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_range_iterations);
-	mono_counters_register ("# nursery alloc range restries", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_range_retries);
+	mono_counters_register ("# nursery alloc range requests", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_alloc_range_requests);
+	mono_counters_register ("# nursery alloc range iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_range_iterations);
+	mono_counters_register ("# nursery alloc range restries", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_range_retries);
 }
 
 #endif

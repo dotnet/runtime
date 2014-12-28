@@ -32,7 +32,6 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-pointer-queue.h"
 #include "metadata/sgen-client.h"
-#include "utils/mono-counters.h"
 
 #define ptr_in_nursery sgen_ptr_in_nursery
 

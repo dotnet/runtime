@@ -1989,6 +1989,12 @@ sgen_thread_detach (SgenThreadInfo *p)
  * Miscellaneous
  */
 
+void
+sgen_client_total_allocated_heap (mword allocated_heap)
+{
+	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
+}
+
 gboolean
 mono_gc_user_markers_supported (void)
 {
@@ -2103,6 +2109,12 @@ sgen_client_vtable_get_name (GCVTable *gc_vtable)
 /*
  * Initialization
  */
+
+void
+sgen_client_init_early (void)
+{
+	mono_counters_init ();
+}
 
 void
 sgen_client_init (void)

@@ -22,7 +22,6 @@
 #ifdef HAVE_SGEN_GC
 
 #include "metadata/sgen-gc.h"
-#include "utils/mono-counters.h"
 #include "sgen-protocol.h"
 
 #ifdef HEAVY_STATISTICS

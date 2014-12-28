@@ -42,7 +42,6 @@
 #define _XOPEN_SOURCE
 #endif
 
-#include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
 
 #define MAX_USER_DESCRIPTORS 16

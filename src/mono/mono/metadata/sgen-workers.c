@@ -26,6 +26,7 @@
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-thread-pool.h"
 #include "utils/mono-counters.h"
+#include "metadata/sgen-client.h"
 
 static int workers_num;
 static WorkerData *workers_data;

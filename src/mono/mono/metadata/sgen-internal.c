@@ -21,7 +21,6 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "utils/mono-counters.h"
 #include "metadata/sgen-gc.h"
 #include "utils/mono-mmap.h"
 #include "utils/lock-free-alloc.h"

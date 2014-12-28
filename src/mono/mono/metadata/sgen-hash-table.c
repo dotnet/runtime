@@ -27,7 +27,6 @@
 
 #include <mono/metadata/sgen-gc.h>
 #include <mono/metadata/sgen-hash-table.h>
-#include <mono/utils/mono-counters.h>
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_lookups;

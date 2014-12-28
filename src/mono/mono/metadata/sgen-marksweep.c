@@ -28,7 +28,6 @@
 #include <math.h>
 #include <errno.h>
 
-#include "utils/mono-counters.h"
 #include "utils/mono-semaphore.h"
 #include "utils/mono-time.h"
 
