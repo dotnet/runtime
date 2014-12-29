@@ -578,7 +578,7 @@ namespace System.Text.RegularExpressions
             if (Sb.Length < 8)
                 Sb.Append(' ', 8 - Sb.Length);
 
-            Sb.Append("(");
+            Sb.Append('(');
 
             for (int i = Index; i < A.Length; i++)
             {
