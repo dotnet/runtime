@@ -9,9 +9,9 @@
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)bin\</BinDir>
-    <ToolsDir>$(BinDir)tools\</ToolsDir>
     <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
     <PackagesDir>$(SourceDir)packages\</PackagesDir>
+    <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
   </PropertyGroup>
 
   <!-- Common nuget properties -->
