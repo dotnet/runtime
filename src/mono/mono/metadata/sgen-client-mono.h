@@ -19,6 +19,8 @@
 
 #ifdef SGEN_DEFINE_OBJECT_VTABLE
 
+#include "utils/mono-threads.h"
+
 typedef MonoObject GCObject;
 typedef MonoVTable GCVTable;
 
@@ -93,6 +95,11 @@ sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
 
 	return sgen_client_slow_object_get_size (vtable, o);
 }
+
+typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
+struct _SgenClientThreadInfo {
+	MonoThreadInfo info;
+};
 
 #else
 
@@ -463,5 +470,10 @@ static void G_GNUC_UNUSED
 sgen_client_binary_protocol_domain_unload_end (gpointer domain)
 {
 }
+
+int sgen_thread_handshake (BOOL suspend);
+gboolean sgen_suspend_thread (SgenThreadInfo *info);
+gboolean sgen_resume_thread (SgenThreadInfo *info);
+void sgen_wait_for_suspend_ack (int count);
 
 #endif

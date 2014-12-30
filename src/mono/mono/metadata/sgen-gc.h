@@ -36,7 +36,6 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <pthread.h>
 #endif
 #include <mono/utils/mono-compiler.h>
-#include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-mutex.h>
 #include <mono/metadata/sgen-conf.h>
@@ -67,61 +66,6 @@ NurseryClearPolicy sgen_get_nursery_clear_policy (void);
 #if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
 #define SGEN_POSIX_STW 1
 #endif
-
-/* eventually share with MonoThread? */
-/*
- * This structure extends the MonoThreadInfo structure.
- */
-struct _SgenThreadInfo {
-	MonoThreadInfo info;
-	/*
-	This is set to TRUE when STW fails to suspend a thread, most probably because the
-	underlying thread is dead.
-	*/
-	gboolean skip, suspend_done;
-	volatile int in_critical_region;
-
-	/*
-	This is set the argument of mono_gc_set_skip_thread.
-
-	A thread that knowingly holds no managed state can call this
-	function around blocking loops to reduce the GC burden by not
-	been scanned.
-	*/
-	gboolean gc_disabled;
-	void *stack_end;
-	void *stack_start;
-	void *stack_start_limit;
-	char **tlab_next_addr;
-	char **tlab_start_addr;
-	char **tlab_temp_end_addr;
-	char **tlab_real_end_addr;
-	gpointer runtime_data;
-
-#ifdef SGEN_POSIX_STW
-	/* This is -1 until the first suspend. */
-	int signal;
-	/* FIXME: kill this, we only use signals on systems that have rt-posix, which doesn't have issues with duplicates. */
-	unsigned int stop_count; /* to catch duplicate signals. */
-#endif
-
-	gpointer stopped_ip;	/* only valid if the thread is stopped */
-	MonoDomain *stopped_domain; /* dsto */
-
-	/*FIXME pretty please finish killing ARCH_NUM_REGS */
-#ifdef USE_MONO_CTX
-	MonoContext ctx;		/* ditto */
-#else
-	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
-#endif
-
-#ifndef HAVE_KW_THREAD
-	char *tlab_start;
-	char *tlab_next;
-	char *tlab_temp_end;
-	char *tlab_real_end;
-#endif
-};
 
 /*
  * The nursery section uses this struct.
@@ -371,10 +315,6 @@ extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
 
 typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
 
-int sgen_thread_handshake (BOOL suspend);
-gboolean sgen_suspend_thread (SgenThreadInfo *info);
-gboolean sgen_resume_thread (SgenThreadInfo *info);
-void sgen_wait_for_suspend_ack (int count);
 void sgen_os_init (void);
 
 void sgen_update_heap_boundaries (mword low, mword high);
@@ -439,6 +379,64 @@ void sgen_init_internal_allocator (void);
 #define SGEN_DEFINE_OBJECT_VTABLE
 #include "sgen-client-mono.h"
 #undef SGEN_DEFINE_OBJECT_VTABLE
+
+/* eventually share with MonoThread? */
+/*
+ * This structure extends the MonoThreadInfo structure.
+ */
+struct _SgenThreadInfo {
+	SgenClientThreadInfo client_info;
+
+	/*
+	This is set to TRUE when STW fails to suspend a thread, most probably because the
+	underlying thread is dead.
+	*/
+	gboolean skip, suspend_done;
+	volatile int in_critical_region;
+
+	/*
+	This is set the argument of mono_gc_set_skip_thread.
+
+	A thread that knowingly holds no managed state can call this
+	function around blocking loops to reduce the GC burden by not
+	been scanned.
+	*/
+	gboolean gc_disabled;
+	void *stack_end;
+	void *stack_start;
+	void *stack_start_limit;
+	char **tlab_next_addr;
+	char **tlab_start_addr;
+	char **tlab_temp_end_addr;
+	char **tlab_real_end_addr;
+	gpointer runtime_data;
+
+#ifdef SGEN_POSIX_STW
+	/* This is -1 until the first suspend. */
+	int signal;
+	/* FIXME: kill this, we only use signals on systems that have rt-posix, which doesn't have issues with duplicates. */
+	unsigned int stop_count; /* to catch duplicate signals. */
+#endif
+
+	gpointer stopped_ip;	/* only valid if the thread is stopped */
+	MonoDomain *stopped_domain; /* dsto */
+
+	/*FIXME pretty please finish killing ARCH_NUM_REGS */
+#ifdef USE_MONO_CTX
+	MonoContext ctx;		/* ditto */
+#else
+	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
+#endif
+
+#ifndef HAVE_KW_THREAD
+	char *tlab_start;
+	char *tlab_next;
+	char *tlab_temp_end;
+	char *tlab_real_end;
+#endif
+};
+
+gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
 
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char *obj, mword desc, SgenGrayQueue*);

@@ -122,10 +122,10 @@ restart_threads_until_none_in_managed_allocator (void)
 			gboolean result;
 			if (info->skip || info->gc_disabled || info->suspend_done)
 				continue;
-			if (mono_thread_info_is_live (info) && (!info->stack_start || info->in_critical_region || info->info.inside_critical_region ||
+			if (mono_thread_info_is_live (info) && (!info->stack_start || info->in_critical_region || info->client_info.info.inside_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
 				binary_protocol_thread_restart ((gpointer)mono_thread_info_get_tid (info));
-				SGEN_LOG (3, "thread %p resumed.", (void*) (size_t) info->info.native_handle);
+				SGEN_LOG (3, "thread %p resumed.", (void*) (size_t) info->client_info.info.native_handle);
 				result = sgen_resume_thread (info);
 				if (result) {
 					++restart_count;

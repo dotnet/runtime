@@ -2792,7 +2792,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Scan
 			continue;
 		}
 		if (!mono_thread_info_is_live (info)) {
-			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->info.thread_state);
+			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
 		g_assert (info->suspend_done);
@@ -2892,7 +2892,7 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	sgen_thread_info = NULL;
 #endif
 
-	if (p->info.runtime_thread)
+	if (p->client_info.info.runtime_thread)
 		mono_threads_add_joinable_thread ((gpointer)tid);
 
 	if (gc_callbacks.thread_detach_func) {

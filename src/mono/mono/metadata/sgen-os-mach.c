@@ -43,7 +43,7 @@
 gboolean
 sgen_resume_thread (SgenThreadInfo *info)
 {
-	return thread_resume (info->info.native_handle) == KERN_SUCCESS;
+	return thread_resume (info->client_info.info.native_handle) == KERN_SUCCESS;
 }
 
 gboolean
@@ -60,11 +60,11 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
-	ret = thread_suspend (info->info.native_handle);
+	ret = thread_suspend (info->client_info.info.native_handle);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
-	ret = mono_mach_arch_get_thread_state (info->info.native_handle, state, &num_state);
+	ret = mono_mach_arch_get_thread_state (info->client_info.info.native_handle, state, &num_state);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
@@ -92,7 +92,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx, NULL);
 
-	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->info.native_handle, info->stopped_ip, info->stack_start);
+	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->client_info.info.native_handle, info->stopped_ip, info->stack_start);
 
 	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->stopped_ip);
 
@@ -128,7 +128,7 @@ sgen_thread_handshake (BOOL suspend)
 			if (!sgen_suspend_thread (info))
 				continue;
 		} else {
-			ret = thread_resume (info->info.native_handle);
+			ret = thread_resume (info->client_info.info.native_handle);
 			if (ret != KERN_SUCCESS)
 				continue;
 		}
