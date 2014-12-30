@@ -20,7 +20,11 @@ namespace System.IO.FileSystem.Tests
             {
                 Directory.CreateDirectory(TestDirectory);
             }
-            catch { }  // Don't want this to crash the test, we'll fail appropriately in other test cases if Directory.Create is broken.
+            catch 
+            {
+                // Don't want this to crash the test, we'll fail appropriately in other test 
+                // cases if Directory.Create is broken.
+            }
         }
 
         // Generates a test file path to use that is unique name per test case / call
@@ -44,7 +48,10 @@ namespace System.IO.FileSystem.Tests
             {
                 Directory.Delete(TestDirectory, true);
             }
-            catch { }
+            catch
+            {
+                // Don't throw during dispose
+            }
         }
     }
 }
