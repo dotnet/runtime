@@ -59,7 +59,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	MonoContext ctx;
 	gpointer stack_start;
 
-	info->stopped_domain = mono_domain_get ();
+	info->client_info.stopped_domain = mono_domain_get ();
 	info->signal = 0;
 	stop_count = sgen_global_stop_count;
 	/* duplicate signal */
@@ -69,10 +69,10 @@ suspend_thread (SgenThreadInfo *info, void *context)
 #ifdef USE_MONO_CTX
 	if (context) {
 		mono_sigctx_to_monoctx (context, &ctx);
-		info->stopped_ip = MONO_CONTEXT_GET_IP (&ctx);
+		info->client_info.stopped_ip = MONO_CONTEXT_GET_IP (&ctx);
 		stack_start = (((guint8 *) MONO_CONTEXT_GET_SP (&ctx)) - REDZONE_SIZE);
 	} else {
-		info->stopped_ip = NULL;
+		info->client_info.stopped_ip = NULL;
 		stack_start = NULL;
 	}
 #else

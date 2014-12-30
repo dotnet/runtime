@@ -99,6 +99,9 @@ sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
 struct _SgenClientThreadInfo {
 	MonoThreadInfo info;
+
+	gpointer stopped_ip;	/* only valid if the thread is stopped */
+	MonoDomain *stopped_domain; /* dsto */
 };
 
 #else

@@ -653,7 +653,7 @@ mono_gc_set_current_thread_appdomain (MonoDomain *domain)
 	/* Could be called from sgen_thread_unregister () with a NULL info */
 	if (domain) {
 		g_assert (info);
-		info->stopped_domain = domain;
+		info->client_info.stopped_domain = domain;
 	}
 }
 
@@ -1960,6 +1960,13 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 /*
  * Threads
  */
+
+void
+sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
+{
+	info->client_info.stopped_ip = NULL;
+	info->client_info.stopped_domain = NULL;
+}
 
 static gboolean
 is_critical_method (MonoMethod *method)

@@ -418,9 +418,6 @@ struct _SgenThreadInfo {
 	unsigned int stop_count; /* to catch duplicate signals. */
 #endif
 
-	gpointer stopped_ip;	/* only valid if the thread is stopped */
-	MonoDomain *stopped_domain; /* dsto */
-
 	/*FIXME pretty please finish killing ARCH_NUM_REGS */
 #ifdef USE_MONO_CTX
 	MonoContext ctx;		/* ditto */

@@ -71,8 +71,8 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	mono_mach_arch_thread_state_to_mcontext (state, mctx);
 	ctx.uc_mcontext = mctx;
 
-	info->stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
-	info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
+	info->client_info.stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
+	info->client_info.stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
 	info->stack_start = NULL;
 	stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
 	/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
@@ -92,9 +92,8 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
 		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx, NULL);
 
-	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->client_info.info.native_handle, info->stopped_ip, info->stack_start);
-
-	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->stopped_ip);
+	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->client_info.info.native_handle, info->client_info.stopped_ip, info->stack_start);
+	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->client_info.stopped_ip);
 
 	return TRUE;
 }

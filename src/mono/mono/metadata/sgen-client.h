@@ -99,6 +99,8 @@ const char* sgen_client_vtable_get_name (GCVTable *vtable);
 
 void sgen_client_pre_collection_checks (void);
 
+void sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback);
+
 int sgen_client_stop_world (int generation);
 int sgen_client_restart_world (int generation, GGTimingInfo *timing);
 

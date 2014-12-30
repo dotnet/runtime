@@ -2820,7 +2820,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Scan
 }
 
 void*
-sgen_thread_register (SgenThreadInfo* info, void *addr)
+sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
 	size_t stsize = 0;
 	guint8 *staddr = NULL;
@@ -2839,9 +2839,8 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 	info->signal = 0;
 #endif
 	info->skip = 0;
+	sgen_client_thread_register (info, stack_bottom_fallback);
 	info->stack_start = NULL;
-	info->stopped_ip = NULL;
-	info->stopped_domain = NULL;
 #ifdef USE_MONO_CTX
 	memset (&info->ctx, 0, sizeof (MonoContext));
 #else
@@ -2860,7 +2859,7 @@ sgen_thread_register (SgenThreadInfo* info, void *addr)
 #endif
 		info->stack_end = staddr + stsize;
 	} else {
-		gsize stack_bottom = (gsize)addr;
+		gsize stack_bottom = (gsize)stack_bottom_fallback;
 		stack_bottom += 4095;
 		stack_bottom &= ~4095;
 		info->stack_end = (char*)stack_bottom;
