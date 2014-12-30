@@ -6,29 +6,29 @@ using System;
 namespace System.IO
 {
     /// <devdoc>
-    ///   <para>Defines constants for read, write, or read/write
-    ///   access to a file.</para>
+    ///   Defines constants for read, write, or read/write
+    ///   access to a file.
     /// <devdoc>
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileAccess
     {
         /// <devdoc>
-        ///   <paraSpecifies read access to the file.  Data can be read from the file and
-        ///   the file pointer can be moved.  Combine with WRITE for read-write access.<para>
+        ///   Specifies read access to the file.  Data can be read from the file and
+        ///   the file pointer can be moved.  Combine with WRITE for read-write access.
         /// </devdoc>
         Read = 1,
 
         /// <devdoc>
-        ///   <para>Specifies write access to the file.  Data can be written to the file and
-        ///   the file pointer can be moved.  Combine with READ for read-write access.<para>
+        ///   Specifies write access to the file.  Data can be written to the file and
+        ///   the file pointer can be moved.  Combine with READ for read-write access.
         /// </devdoc>
         Write = 2,
 
         /// <devdoc>
-        ///   <para>Specifies read and write access to the file.  Data can be written to the
+        ///   Specifies read and write access to the file.  Data can be written to the
         ///   file and the file pointer can be moved.  Data can also be read from the
-        ///   file.<para>
+        ///   file.
         /// </devdoc>
         ReadWrite = 3
     }
