@@ -390,13 +390,6 @@ struct _SgenThreadInfo {
 	SgenClientThreadInfo client_info;
 
 	/*
-	This is set to TRUE when STW fails to suspend a thread, most probably because the
-	underlying thread is dead.
-	*/
-	gboolean skip, suspend_done;
-	volatile int in_critical_region;
-
-	/*
 	This is set the argument of mono_gc_set_skip_thread.
 
 	A thread that knowingly holds no managed state can call this
@@ -989,32 +982,6 @@ extern MonoNativeTlsKey thread_info_key;
 #ifdef HAVE_KW_THREAD
 extern __thread SgenThreadInfo *sgen_thread_info;
 extern __thread char *stack_end;
-#endif
-
-#ifdef HAVE_KW_THREAD
-#define TLAB_ACCESS_INIT
-#define IN_CRITICAL_REGION sgen_thread_info->in_critical_region
-#else
-#define TLAB_ACCESS_INIT	SgenThreadInfo *__thread_info__ = mono_native_tls_get_value (thread_info_key)
-#define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
-#endif
-
-#ifndef DISABLE_CRITICAL_REGION
-
-#ifdef HAVE_KW_THREAD
-#define IN_CRITICAL_REGION sgen_thread_info->in_critical_region
-#else
-#define IN_CRITICAL_REGION (__thread_info__->in_critical_region)
-#endif
-
-/* Enter must be visible before anything is done in the critical region. */
-#define ENTER_CRITICAL_REGION do { mono_atomic_store_acquire (&IN_CRITICAL_REGION, 1); } while (0)
-
-/* Exit must make sure all critical regions stores are visible before it signal the end of the region. 
- * We don't need to emit a full barrier since we
- */
-#define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)
-
 #endif
 
 /* Other globals */

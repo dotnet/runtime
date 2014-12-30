@@ -502,7 +502,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 
 	FOREACH_THREAD (info) {
 		char **start = (char**)info->stack_start;
-		if (info->skip)
+		if (info->client_info.skip)
 			continue;
 		while (start < (char**)info->stack_end) {
 			if (*start >= obj && *start < endobj) {

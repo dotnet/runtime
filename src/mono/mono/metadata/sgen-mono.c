@@ -1967,6 +1967,7 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 void
 sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
+	info->client_info.skip = 0;
 	info->client_info.stopped_ip = NULL;
 	info->client_info.stopped_domain = NULL;
 }
@@ -1980,7 +1981,7 @@ is_critical_method (MonoMethod *method)
 static gboolean
 thread_in_critical_region (SgenThreadInfo *info)
 {
-	return info->in_critical_region;
+	return info->client_info.in_critical_region;
 }
 
 static void
@@ -2025,7 +2026,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 	scan_area_arg_end = end_nursery;
 
 	FOREACH_THREAD (info) {
-		if (info->skip) {
+		if (info->client_info.skip) {
 			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
@@ -2037,7 +2038,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->client_info.info.thread_state);
 			continue;
 		}
-		g_assert (info->suspend_done);
+		g_assert (info->client_info.suspend_done);
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
 		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {
 			mono_gc_get_gc_callbacks ()->thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise, &ctx);

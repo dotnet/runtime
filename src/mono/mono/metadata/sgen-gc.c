@@ -2764,7 +2764,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	info->stop_count = -1;
 	info->signal = 0;
 #endif
-	info->skip = 0;
 	sgen_client_thread_register (info, stack_bottom_fallback);
 	info->stack_start = NULL;
 #ifdef USE_MONO_CTX

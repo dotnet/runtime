@@ -114,12 +114,12 @@ sgen_thread_handshake (BOOL suspend)
 
 	int count = 0;
 
-	cur_thread->suspend_done = TRUE;
+	cur_thread->client_info.suspend_done = TRUE;
 	FOREACH_THREAD_SAFE (info) {
 		if (info == cur_thread || sgen_thread_pool_is_thread_pool_thread (mono_thread_info_get_tid (info)))
 			continue;
 
-		info->suspend_done = FALSE;
+		info->client_info.suspend_done = FALSE;
 		if (info->gc_disabled)
 			continue;
 
