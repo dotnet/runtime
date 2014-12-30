@@ -13,8 +13,7 @@ namespace System.IO
     [Flags]
     [ComVisible(true)]
     /// <devdoc>
-    ///   <para>Additional options to how to create a FileStream.
-    ///   Additional options to how to create a FileStream.</para>
+    ///   Additional options to how to create a FileStream.
     /// </devdoc>
     public enum FileOptions
     {
