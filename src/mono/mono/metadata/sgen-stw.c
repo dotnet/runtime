@@ -120,7 +120,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		   allocator */
 		FOREACH_THREAD_SAFE (info) {
 			gboolean result;
-			if (info->client_info.skip || info->gc_disabled || info->client_info.suspend_done)
+			if (info->client_info.skip || info->client_info.gc_disabled || info->client_info.suspend_done)
 				continue;
 			if (mono_thread_info_is_live (info) &&
 					(!info->stack_start || info->client_info.in_critical_region || info->client_info.info.inside_critical_region ||
@@ -327,7 +327,7 @@ sgen_is_thread_in_current_stw (SgenThreadInfo *info)
 	This is used by TP and finalizer threads.
 	FIXME Use an atomic variable for this to avoid everyone taking the GC LOCK.
 	*/
-	if (info->gc_disabled) {
+	if (info->client_info.gc_disabled) {
 		return FALSE;
 	}
 

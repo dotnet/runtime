@@ -389,14 +389,6 @@ void sgen_init_internal_allocator (void);
 struct _SgenThreadInfo {
 	SgenClientThreadInfo client_info;
 
-	/*
-	This is set the argument of mono_gc_set_skip_thread.
-
-	A thread that knowingly holds no managed state can call this
-	function around blocking loops to reduce the GC burden by not
-	been scanned.
-	*/
-	gboolean gc_disabled;
 	void *stack_end;
 	void *stack_start;
 	void *stack_start_limit;

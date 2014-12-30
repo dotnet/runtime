@@ -209,7 +209,7 @@ sgen_thread_handshake (BOOL suspend)
 			continue;
 		}
 		info->client_info.suspend_done = FALSE;
-		if (info->gc_disabled)
+		if (info->client_info.gc_disabled)
 			continue;
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/

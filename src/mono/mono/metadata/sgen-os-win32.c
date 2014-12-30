@@ -132,7 +132,7 @@ sgen_thread_handshake (BOOL suspend)
 		if (info == current)
 			continue;
 		info->client_info.suspend_done = FALSE;
-		if (info->gc_disabled)
+		if (info->client_info.gc_disabled)
 			continue;
 		if (suspend) {
 			if (!sgen_suspend_thread (info))

@@ -3675,15 +3675,6 @@ sgen_get_major_collector (void)
 	return &major_collector;
 }
 
-void mono_gc_set_skip_thread (gboolean skip)
-{
-	SgenThreadInfo *info = mono_thread_info_current ();
-
-	LOCK_GC;
-	info->gc_disabled = skip;
-	UNLOCK_GC;
-}
-
 SgenRememberedSet*
 sgen_get_remset (void)
 {

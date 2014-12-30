@@ -109,6 +109,15 @@ struct _SgenClientThreadInfo {
 
 	gpointer stopped_ip;	/* only valid if the thread is stopped */
 	MonoDomain *stopped_domain; /* dsto */
+
+	/*
+	This is set the argument of mono_gc_set_skip_thread.
+
+	A thread that knowingly holds no managed state can call this
+	function around blocking loops to reduce the GC burden by not
+	been scanned.
+	*/
+	gboolean gc_disabled;
 };
 
 #else
