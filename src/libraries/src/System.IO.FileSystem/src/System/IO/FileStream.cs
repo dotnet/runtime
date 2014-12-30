@@ -61,7 +61,7 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException("path", SR.ArgumentNull_Path);
             if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
+                throw new ArgumentException(SR.Argument_EmptyPath, "path");
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;

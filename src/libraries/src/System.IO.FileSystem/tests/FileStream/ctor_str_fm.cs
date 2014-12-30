@@ -12,13 +12,15 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void NullPathThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new FileStream(null, FileMode.Open));
+            ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => new FileStream(null, FileMode.Open));
+            Assert.Equal("path", ane.ParamName);
         }
 
         [Fact]
         public void EmptyPathThrows()
         {
-            Assert.Throws<ArgumentException>(() => new FileStream(String.Empty, FileMode.Open));
+            ArgumentException ae = Assert.Throws<ArgumentException>(() => new FileStream(String.Empty, FileMode.Open));
+            Assert.Equal("path", ae.ParamName);
         }
 
         [Fact]
@@ -30,7 +32,8 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void InvalidModeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new FileStream(GetTestFilePath(), ~FileMode.Open));
+            ArgumentOutOfRangeException aoore = Assert.Throws<ArgumentOutOfRangeException>(() => new FileStream(GetTestFilePath(), ~FileMode.Open));
+            Assert.Equal("mode", aoore.ParamName);
         }
 
         [Fact]
@@ -83,7 +86,9 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void FileModeOpenThrows()
         {
-            Assert.Throws<FileNotFoundException>(() => new FileStream(GetTestFilePath(), FileMode.Open));
+            string fileName = GetTestFilePath();
+            FileNotFoundException fnfe = Assert.Throws<FileNotFoundException>(() => new FileStream(fileName, FileMode.Open));
+            Assert.Equal(fileName, fnfe.FileName);
         }
 
         [Fact]
@@ -134,7 +139,9 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void FileModeTruncateThrows()
         {
-            Assert.Throws<FileNotFoundException>(() => new FileStream(GetTestFilePath(), FileMode.Truncate));
+            string fileName = GetTestFilePath();
+            FileNotFoundException fnfe = Assert.Throws<FileNotFoundException>(() => new FileStream(fileName, FileMode.Truncate));
+            Assert.Equal(fileName, fnfe.FileName);
         }
 
         [Fact]
