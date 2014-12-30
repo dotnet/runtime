@@ -101,10 +101,15 @@ void sgen_client_pre_collection_checks (void);
 
 void sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback);
 
+void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx);
+
 int sgen_client_stop_world (int generation);
 int sgen_client_restart_world (int generation, GGTimingInfo *timing);
 
 void sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage);
+
+gboolean sgen_client_handle_gc_param (const char *opt);
+void sgen_client_print_gc_params_usage (void);
 
 gboolean sgen_client_handle_gc_debug (const char *opt);
 void sgen_client_print_gc_debug_usage (void);

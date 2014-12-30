@@ -255,8 +255,6 @@ static gboolean check_mark_bits_after_major_collection = FALSE;
 static gboolean check_nursery_objects_pinned = FALSE;
 /* If set, do a few checks when the concurrent collector is used */
 static gboolean do_concurrent_checks = FALSE;
-/* If set, mark stacks conservatively, even if precise marking is possible */
-static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
@@ -446,7 +444,6 @@ static mword objects_pinned;
 typedef SgenGrayQueue GrayQueue;
 
 /* forward declarations */
-static void scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx);
 static void scan_from_registered_roots (char *addr_start, char *addr_end, int root_type, ScanCopyContext ctx);
 
 static void pin_from_roots (void *start_nursery, void *end_nursery, ScanCopyContext ctx);
@@ -857,8 +854,8 @@ sgen_sort_addresses (void **array, size_t size)
  * to the area between start_nursery and end_nursery for later consideration.
  * Typically used for thread stacks.
  */
-static void
-conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type)
+void
+sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type)
 {
 	int count = 0;
 
@@ -926,7 +923,7 @@ pin_from_roots (void *start_nursery, void *end_nursery, ScanCopyContext ctx)
 	/* objects pinned from the API are inside these roots */
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], start_root, root) {
 		SGEN_LOG (6, "Pinned roots %p-%p", start_root, root->end_root);
-		conservatively_pin_objects_from (start_root, (void**)root->end_root, start_nursery, end_nursery, PIN_TYPE_OTHER);
+		sgen_conservatively_pin_objects_from (start_root, (void**)root->end_root, start_nursery, end_nursery, PIN_TYPE_OTHER);
 	} SGEN_HASH_TABLE_FOREACH_END;
 	/* now deal with the thread stacks
 	 * in the future we should be able to conservatively scan only:
@@ -935,7 +932,7 @@ pin_from_roots (void *start_nursery, void *end_nursery, ScanCopyContext ctx)
 	 * *) the _last_ managed stack frame
 	 * *) pointers slots in managed frames
 	 */
-	scan_thread_data (start_nursery, end_nursery, FALSE, ctx);
+	sgen_client_scan_thread_data (start_nursery, end_nursery, FALSE, ctx);
 }
 
 static void
@@ -1090,12 +1087,6 @@ mono_gc_get_nursery (int *shift_bits, size_t *size)
 	*size = sgen_nursery_size;
 	*shift_bits = DEFAULT_NURSERY_BITS;
 	return sgen_get_nursery_start ();
-}
-
-gboolean
-mono_gc_precise_stack_mark_enabled (void)
-{
-	return !conservative_stack_mark;
 }
 
 FILE *
@@ -1456,7 +1447,7 @@ job_scan_thread_data (void *worker_data_untyped, SgenThreadPoolJob *job)
 	ScanThreadDataJob *job_data = (ScanThreadDataJob*)job;
 	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (job_data->ops, sgen_workers_get_job_gray_queue (worker_data));
 
-	scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE, ctx);
+	sgen_client_scan_thread_data (job_data->heap_start, job_data->heap_end, TRUE, ctx);
 }
 
 typedef struct {
@@ -2754,71 +2745,6 @@ mono_gc_get_gc_callbacks ()
 	return &gc_callbacks;
 }
 
-/* Variables holding start/end nursery so it won't have to be passed at every call */
-static void *scan_area_arg_start, *scan_area_arg_end;
-
-void
-mono_gc_conservatively_scan_area (void *start, void *end)
-{
-	conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end, PIN_TYPE_STACK);
-}
-
-void*
-mono_gc_scan_object (void *obj, void *gc_data)
-{
-	ScanCopyContext *ctx = gc_data;
-	ctx->ops->copy_or_mark_object (&obj, ctx->queue);
-	return obj;
-}
-
-/*
- * Mark from thread stacks and registers.
- */
-static void
-scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx)
-{
-	SgenThreadInfo *info;
-
-	scan_area_arg_start = start_nursery;
-	scan_area_arg_end = end_nursery;
-
-	FOREACH_THREAD (info) {
-		if (info->skip) {
-			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
-			continue;
-		}
-		if (info->gc_disabled) {
-			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
-			continue;
-		}
-		if (!mono_thread_info_is_live (info)) {
-			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
-			continue;
-		}
-		g_assert (info->suspend_done);
-		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
-		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
-			gc_callbacks.thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise, &ctx);
-		} else if (!precise) {
-			if (!conservative_stack_mark) {
-				fprintf (stderr, "Precise stack mark not supported - disabling.\n");
-				conservative_stack_mark = TRUE;
-			}
-			conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
-		}
-
-		if (!precise) {
-#ifdef USE_MONO_CTX
-			conservatively_pin_objects_from ((void**)&info->ctx, (void**)&info->ctx + ARCH_NUM_REGS,
-				start_nursery, end_nursery, PIN_TYPE_STACK);
-#else
-			conservatively_pin_objects_from ((void**)&info->regs, (void**)&info->regs + ARCH_NUM_REGS,
-					start_nursery, end_nursery, PIN_TYPE_STACK);
-#endif
-		}
-	} END_FOREACH_THREAD
-}
-
 void*
 sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
@@ -3378,10 +3304,6 @@ mono_gc_base_init (void)
 		goto use_marksweep_major;
 	}
 
-	///* Keep this the default for now */
-	/* Precise marking is broken on all supported targets. Disable until fixed. */
-	conservative_stack_mark = TRUE;
-
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
 
 	if (major_collector.is_concurrent)
@@ -3419,18 +3341,6 @@ mono_gc_base_init (void)
 					}
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`soft-heap-limit` must be an integer.");
-				}
-				continue;
-			}
-			if (g_str_has_prefix (opt, "stack-mark=")) {
-				opt = strchr (opt, '=') + 1;
-				if (!strcmp (opt, "precise")) {
-					conservative_stack_mark = FALSE;
-				} else if (!strcmp (opt, "conservative")) {
-					conservative_stack_mark = TRUE;
-				} else {
-					sgen_env_var_error (MONO_GC_PARAMS_NAME, conservative_stack_mark ? "Using `conservative`." : "Using `precise`.",
-							"Invalid value `%s` for `stack-mark` option, possible values are: `precise`, `conservative`.", opt);
 				}
 				continue;
 			}
@@ -3522,6 +3432,9 @@ mono_gc_base_init (void)
 			if (sgen_minor_collector.handle_gc_param && sgen_minor_collector.handle_gc_param (opt))
 				continue;
 
+			if (sgen_client_handle_gc_param (opt))
+				continue;
+
 			sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
 			if (usage_printed)
@@ -3534,7 +3447,6 @@ mono_gc_base_init (void)
 			fprintf (stderr, "  major=COLLECTOR (where COLLECTOR is `marksweep', `marksweep-conc', `marksweep-par')\n");
 			fprintf (stderr, "  minor=COLLECTOR (where COLLECTOR is `simple' or `split')\n");
 			fprintf (stderr, "  wbarrier=WBARRIER (where WBARRIER is `remset' or `cardtable')\n");
-			fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
 			fprintf (stderr, "  [no-]cementing\n");
 			if (major_collector.is_concurrent)
 				fprintf (stderr, "  allow-synchronous-major=FLAG (where FLAG is `yes' or `no')\n");
@@ -3542,6 +3454,7 @@ mono_gc_base_init (void)
 				major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
 				sgen_minor_collector.print_gc_param_usage ();
+			sgen_client_print_gc_params_usage ();
 			fprintf (stderr, " Experimental options:\n");
 			fprintf (stderr, "  save-target-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO);
 			fprintf (stderr, "  default-allowance-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO);

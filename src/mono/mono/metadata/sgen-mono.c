@@ -26,6 +26,7 @@
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/sgen-client.h"
 #include "metadata/sgen-cardtable.h"
+#include "metadata/sgen-pinning.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
@@ -34,6 +35,8 @@
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internal.h"
 
+/* If set, mark stacks conservatively, even if precise marking is possible */
+static gboolean conservative_stack_mark = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
 gboolean sgen_mono_xdomain_checks = FALSE;
 
@@ -1993,6 +1996,71 @@ sgen_thread_detach (SgenThreadInfo *p)
 		mono_thread_detach_internal (mono_thread_internal_current ());
 }
 
+/* Variables holding start/end nursery so it won't have to be passed at every call */
+static void *scan_area_arg_start, *scan_area_arg_end;
+
+void
+mono_gc_conservatively_scan_area (void *start, void *end)
+{
+	sgen_conservatively_pin_objects_from (start, end, scan_area_arg_start, scan_area_arg_end, PIN_TYPE_STACK);
+}
+
+void*
+mono_gc_scan_object (void *obj, void *gc_data)
+{
+	ScanCopyContext *ctx = gc_data;
+	ctx->ops->copy_or_mark_object (&obj, ctx->queue);
+	return obj;
+}
+
+/*
+ * Mark from thread stacks and registers.
+ */
+void
+sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx)
+{
+	SgenThreadInfo *info;
+
+	scan_area_arg_start = start_nursery;
+	scan_area_arg_end = end_nursery;
+
+	FOREACH_THREAD (info) {
+		if (info->skip) {
+			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
+			continue;
+		}
+		if (info->gc_disabled) {
+			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
+			continue;
+		}
+		if (!mono_thread_info_is_live (info)) {
+			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->client_info.info.thread_state);
+			continue;
+		}
+		g_assert (info->suspend_done);
+		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
+		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {
+			mono_gc_get_gc_callbacks ()->thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise, &ctx);
+		} else if (!precise) {
+			if (!conservative_stack_mark) {
+				fprintf (stderr, "Precise stack mark not supported - disabling.\n");
+				conservative_stack_mark = TRUE;
+			}
+			sgen_conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
+		}
+
+		if (!precise) {
+#ifdef USE_MONO_CTX
+			sgen_conservatively_pin_objects_from ((void**)&info->ctx, (void**)&info->ctx + ARCH_NUM_REGS,
+				start_nursery, end_nursery, PIN_TYPE_STACK);
+#else
+			sgen_conservatively_pin_objects_from ((void**)&info->regs, (void**)&info->regs + ARCH_NUM_REGS,
+					start_nursery, end_nursery, PIN_TYPE_STACK);
+#endif
+		}
+	} END_FOREACH_THREAD
+}
+
 /*
  * Miscellaneous
  */
@@ -2068,6 +2136,12 @@ int
 mono_gc_max_generation (void)
 {
 	return 1;
+}
+
+gboolean
+mono_gc_precise_stack_mark_enabled (void)
+{
+	return !conservative_stack_mark;
 }
 
 /*
@@ -2193,9 +2267,38 @@ sgen_client_init (void)
 
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 
+	///* Keep this the default for now */
+	/* Precise marking is broken on all supported targets. Disable until fixed. */
+	conservative_stack_mark = TRUE;
+
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
 	mono_sgen_init_stw ();
+}
+
+gboolean
+sgen_client_handle_gc_param (const char *opt)
+{
+	if (g_str_has_prefix (opt, "stack-mark=")) {
+		opt = strchr (opt, '=') + 1;
+		if (!strcmp (opt, "precise")) {
+			conservative_stack_mark = FALSE;
+		} else if (!strcmp (opt, "conservative")) {
+			conservative_stack_mark = TRUE;
+		} else {
+			sgen_env_var_error (MONO_GC_PARAMS_NAME, conservative_stack_mark ? "Using `conservative`." : "Using `precise`.",
+					"Invalid value `%s` for `stack-mark` option, possible values are: `precise`, `conservative`.", opt);
+		}
+	} else {
+		return FALSE;
+	}
+	return TRUE;
+}
+
+void
+sgen_client_print_gc_params_usage (void)
+{
+	fprintf (stderr, "  stack-mark=MARK-METHOD (where MARK-METHOD is 'precise' or 'conservative')\n");
 }
 
 gboolean

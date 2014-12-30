@@ -322,6 +322,8 @@ void sgen_update_heap_boundaries (mword low, mword high);
 void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags);
 void sgen_check_section_scan_starts (GCMemSection *section);
 
+void sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type);
+
 /* Keep in sync with description_for_type() in sgen-internal.c! */
 enum {
 	INTERNAL_MEM_PIN_QUEUE,
