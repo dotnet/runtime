@@ -134,8 +134,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            // property access to force computation of whole array
-            int count = Count;
+            if (!_done)
+                GetMatch(s_infinite);
 
             ((ICollection)_matches).CopyTo(array, arrayIndex);
         }
