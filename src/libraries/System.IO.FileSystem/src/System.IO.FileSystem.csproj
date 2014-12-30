@@ -63,9 +63,6 @@
     <Compile Include="$(CommonPath)\System\IO\TaskHelpers.cs">
       <Link>Common\System\IO\TaskHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
-      <Link>Common\System\IO\PathInternal.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -80,6 +77,9 @@
     <Compile Include="System\IO\Win32FileSystemObject.cs" />
     <Compile Include="$(CommonPath)\System\__HResults.cs">
       <Link>Common\System\__HResults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
+      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
@@ -118,6 +118,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
