@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Text;
 using System.Diagnostics.Contracts;
 
 namespace System.IO
@@ -25,11 +23,11 @@ namespace System.IO
 
             foreach (char c in path)
             {
-                // Note: This list is duplicated in static char[] InvalidPathChars
+                // Note: Same as Path.InvalidPathChars, unrolled here for performance
                 if (c == '\"' || c == '<' || c == '>' || c == '|' || c < 32)
                     return true;
 
-                // used only by FileIOPermission, FileStream.Init, and AppDomainSet.ManifestFilePath
+                // used when path cannot contain search strings.
                 if (checkAdditional &&
                     (c == '?' || c == '*'))
                     return true;
