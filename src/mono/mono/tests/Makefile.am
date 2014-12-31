@@ -403,7 +403,8 @@ BASE_TEST_CS_SRC=		\
 	unload-appdomain-on-shutdown.cs	\
 	block_guard_restore_aligment_on_exit.cs	\
 	thread_static_gc_layout.cs \
-	sleep.cs
+	sleep.cs \
+	bug-17537.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -1189,6 +1190,14 @@ bug-382986-lib.dll: bug-382986-lib.cs
 	$(MCS) -target:library -out:$@ $(srcdir)/bug-382986-lib.cs
 bug-382986.exe: bug-382986.cs bug-382986-lib.dll
 	$(MCS) -out:$@ -r:bug-382986-lib.dll $(srcdir)/bug-382986.cs
+
+EXTRA_DIST += bug-17537-helper.cs
+bug-17537-helper.exe: bug-17537-helper.cs
+	$(MCS) -out:$@ $(srcdir)/bug-17537-helper.cs
+	chmod -x $@
+
+bug-17537.exe: bug-17537.cs bug-17537-helper.exe
+	$(MCS) -out:$@ $(srcdir)/bug-17537.cs
 
 EXTRA_DIST += coreclr-security.cs
 
