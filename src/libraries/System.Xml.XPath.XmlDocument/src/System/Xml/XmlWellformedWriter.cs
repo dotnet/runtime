@@ -2179,7 +2179,7 @@ namespace System.Xml
                 case State.Start:
                     if (_conformanceLevel == ConformanceLevel.Document)
                     {
-                        throw new InvalidOperationException(wrongTokenMessage + ' ' + SR.Xml_ConformanceLevelFragment);
+                        throw new InvalidOperationException(wrongTokenMessage + " " + SR.Xml_ConformanceLevelFragment);
                     }
                     break;
             }
