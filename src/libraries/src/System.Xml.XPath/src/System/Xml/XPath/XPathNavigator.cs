@@ -1695,19 +1695,19 @@ namespace System.Xml.XPath
                 switch (_nav.NodeType)
                 {
                     case XPathNodeType.Element:
-                        result += ", Name=\"" + _nav.Name + '"';
+                        result += ", Name=\"" + _nav.Name + "\"";
                         break;
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Namespace:
                     case XPathNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _nav.Name + '"';
-                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += ", Name=\"" + _nav.Name + "\"";
+                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_nav.Value) + "\"";
                         break;
                     case XPathNodeType.Text:
                     case XPathNodeType.Whitespace:
                     case XPathNodeType.SignificantWhitespace:
                     case XPathNodeType.Comment:
-                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_nav.Value) + '"';
+                        result += ", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(_nav.Value) + "\"";
                         break;
                 }
                 return result;

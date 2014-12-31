@@ -138,7 +138,7 @@ namespace MS.Internal.Xml.XPath
             w.WriteStartElement(this.GetType().Name);
             if (NameTest)
             {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ':' + Name : Name);
+                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
             }
             if (TypeTest != XPathNodeType.Element)
             {
