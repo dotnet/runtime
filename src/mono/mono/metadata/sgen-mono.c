@@ -450,6 +450,18 @@ mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
 	fin_callbacks = *callbacks;
 }
 
+void
+sgen_client_run_finalize (MonoObject *obj)
+{
+	mono_gc_run_finalize (obj, NULL);
+}
+
+int
+mono_gc_invoke_finalizers (void)
+{
+	return sgen_gc_invoke_finalizers ();
+}
+
 /*
  * Ephemerons
  */
@@ -2239,6 +2251,30 @@ gboolean
 mono_gc_precise_stack_mark_enabled (void)
 {
 	return !conservative_stack_mark;
+}
+
+void
+mono_gc_collect (int generation)
+{
+	sgen_gc_collect (generation);
+}
+
+int
+mono_gc_collection_count (int generation)
+{
+	return sgen_gc_collection_count (generation);
+}
+
+int64_t
+mono_gc_get_used_size (void)
+{
+	return (int64_t)sgen_gc_get_used_size ();
+}
+
+int64_t
+mono_gc_get_heap_size (void)
+{
+	return (int64_t)sgen_gc_get_total_heap_allocation ();
 }
 
 /*

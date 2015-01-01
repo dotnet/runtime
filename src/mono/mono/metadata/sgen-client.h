@@ -58,6 +58,8 @@ gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
  */
 void sgen_client_object_queued_for_finalization (GCObject *obj);
 
+void sgen_client_run_finalize (MonoObject *obj);
+
 gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 
 /*
