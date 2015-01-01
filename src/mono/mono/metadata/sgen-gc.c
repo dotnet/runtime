@@ -182,9 +182,6 @@
 #ifdef HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
-#ifdef HAVE_SEMAPHORE_H
-#include <semaphore.h>
-#endif
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -201,7 +198,6 @@
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-client.h"
 #include "metadata/sgen-pointer-queue.h"
-#include "utils/mono-semaphore.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"
 

@@ -28,8 +28,6 @@
 #include <math.h>
 #include <errno.h>
 
-#include "utils/mono-semaphore.h"
-
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-cardtable.h"

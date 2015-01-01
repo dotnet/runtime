@@ -43,8 +43,8 @@ const static int suspend_signal_num = SIGPWR;
 #endif
 const static int restart_signal_num = SIGXCPU;
 
-static MonoSemType suspend_ack_semaphore;
-static MonoSemType *suspend_ack_semaphore_ptr;
+static SgenSemaphore suspend_ack_semaphore;
+static SgenSemaphore *suspend_ack_semaphore_ptr;
 
 static sigset_t suspend_signal_mask;
 static sigset_t suspend_ack_signal_mask;
@@ -117,7 +117,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	pthread_sigmask (SIG_BLOCK, &suspend_ack_signal_mask, NULL);
 
 	/* notify the waiting thread */
-	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+	SGEN_SEMAPHORE_POST (suspend_ack_semaphore_ptr);
 	info->stop_count = stop_count;
 
 	/* wait until we receive the restart signal */
@@ -131,7 +131,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 	SGEN_LOG (4, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)mono_native_thread_id_get ());
 	/* notify the waiting thread */
-	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+	SGEN_SEMAPHORE_POST (suspend_ack_semaphore_ptr);
 }
 
 /* LOCKING: assumes the GC lock is held (by the stopping thread) */
@@ -185,9 +185,9 @@ sgen_wait_for_suspend_ack (int count)
 	int i, result;
 
 	for (i = 0; i < count; ++i) {
-		while ((result = MONO_SEM_WAIT (suspend_ack_semaphore_ptr)) != 0) {
+		while ((result = SGEN_SEMAPHORE_WAIT (suspend_ack_semaphore_ptr)) != 0) {
 			if (errno != EINTR) {
-				g_error ("MONO_SEM_WAIT FAILED with %d errno %d (%s)", result, errno, strerror (errno));
+				g_error ("SGEN_SEMAPHORE_WAIT FAILED with %d errno %d (%s)", result, errno, strerror (errno));
 			}
 		}
 	}
@@ -237,7 +237,7 @@ sgen_os_init (void)
 		return;
 
 	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
-	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
+	SGEN_SEMAPHORE_INIT (&suspend_ack_semaphore, 0);
 
 	sigfillset (&sinfo.sa_mask);
 	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;

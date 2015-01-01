@@ -142,6 +142,7 @@ struct _SgenClientThreadInfo {
 #include "utils/mono-counters.h"
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
+#include "utils/mono-semaphore.h"
 
 extern void mono_sgen_register_moved_object (void *obj, void *destination);
 extern void mono_sgen_gc_event_moves (void);
@@ -540,5 +541,11 @@ void sgen_wait_for_suspend_ack (int count);
 #define SGEN_TV_DECLARE(name) gint64 name
 #define SGEN_TV_GETTIME(tv) tv = mono_100ns_ticks ()
 #define SGEN_TV_ELAPSED(start,end) (int)((end-start))
+
+typedef MonoSemType SgenSemaphore;
+
+#define SGEN_SEMAPHORE_INIT(sem,initial)	MONO_SEM_INIT ((sem), (initial))
+#define SGEN_SEMAPHORE_POST(sem)		MONO_SEM_POST ((sem))
+#define SGEN_SEMAPHORE_WAIT(sem)		MONO_SEM_WAIT ((sem))
 
 #endif
