@@ -39,7 +39,6 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-mutex.h>
 #include <mono/metadata/sgen-conf.h>
-#include <mono/metadata/sgen-archdep.h>
 #include <mono/metadata/sgen-descriptor.h>
 #include <mono/metadata/sgen-gray.h>
 #include <mono/metadata/sgen-hash-table.h>

@@ -193,7 +193,6 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-protocol.h"
-#include "metadata/sgen-archdep.h"
 #include "metadata/sgen-bridge.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-hash-table.h"
