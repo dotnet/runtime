@@ -42,6 +42,8 @@ namespace System.Text.RegularExpressions
         private const int CATEGORYLENGTH = 2;
         private const int SETSTART = 3;
 
+        private const String NullCharString = "\0";
+
         private const char Nullchar = '\0';
         private const char Lastchar = '\uFFFF';
 
@@ -1239,7 +1241,7 @@ namespace System.Text.RegularExpressions
                         {
                             return set.Substring(1);
                         }
-                        return Nullchar + set;
+                        return NullCharString + set;
                     }
                     else
                     {
