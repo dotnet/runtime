@@ -118,6 +118,10 @@ struct _SgenClientThreadInfo {
 	been scanned.
 	*/
 	gboolean gc_disabled;
+
+	void *stack_end;
+	void *stack_start;
+	void *stack_start_limit;
 };
 
 #else

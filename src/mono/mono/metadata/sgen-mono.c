@@ -62,7 +62,7 @@ ptr_on_stack (void *ptr)
 	gpointer stack_start = &stack_start;
 	SgenThreadInfo *info = mono_thread_info_current ();
 
-	if (ptr >= stack_start && ptr < (gpointer)info->stack_end)
+	if (ptr >= stack_start && ptr < (gpointer)info->client_info.stack_end)
 		return TRUE;
 	return FALSE;
 }
@@ -218,13 +218,6 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 	MonoMethod **write_barrier_method_addr;
 #ifdef MANAGED_WBARRIER
 	int i, nursery_check_labels [2];
-
-#ifdef HAVE_KW_THREAD
-	int stack_end_offset = -1;
-
-	MONO_THREAD_VAR_OFFSET (stack_end, stack_end_offset);
-	g_assert (stack_end_offset != -1);
-#endif
 #endif
 
 	// FIXME: Maybe create a separate version for ctors (the branch would be
@@ -1967,9 +1960,30 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 void
 sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
+	size_t stsize = 0;
+	guint8 *staddr = NULL;
+
 	info->client_info.skip = 0;
 	info->client_info.stopped_ip = NULL;
 	info->client_info.stopped_domain = NULL;
+
+	info->client_info.stack_start = NULL;
+
+	/* On win32, stack_start_limit should be 0, since the stack can grow dynamically */
+	mono_thread_info_get_stack_bounds (&staddr, &stsize);
+	if (staddr) {
+#ifndef HOST_WIN32
+		info->client_info.stack_start_limit = staddr;
+#endif
+		info->client_info.stack_end = staddr + stsize;
+	} else {
+		gsize stack_bottom = (gsize)stack_bottom_fallback;
+		stack_bottom += 4095;
+		stack_bottom &= ~4095;
+		info->client_info.stack_end = (char*)stack_bottom;
+	}
+
+	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.stack_end);
 }
 
 void
@@ -2037,27 +2051,27 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 	FOREACH_THREAD (info) {
 		if (info->client_info.skip) {
-			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
+			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start);
 			continue;
 		}
 		if (info->client_info.gc_disabled) {
-			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
+			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start);
 			continue;
 		}
 		if (!mono_thread_info_is_live (info)) {
-			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->client_info.info.thread_state);
+			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, info->client_info.info.thread_state);
 			continue;
 		}
 		g_assert (info->client_info.suspend_done);
-		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
+		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
 		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {
-			mono_gc_get_gc_callbacks ()->thread_mark_func (info->runtime_data, info->stack_start, info->stack_end, precise, &ctx);
+			mono_gc_get_gc_callbacks ()->thread_mark_func (info->runtime_data, info->client_info.stack_start, info->client_info.stack_end, precise, &ctx);
 		} else if (!precise) {
 			if (!conservative_stack_mark) {
 				fprintf (stderr, "Precise stack mark not supported - disabling.\n");
 				conservative_stack_mark = TRUE;
 			}
-			sgen_conservatively_pin_objects_from (info->stack_start, info->stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
+			sgen_conservatively_pin_objects_from (info->client_info.stack_start, info->client_info.stack_end, start_nursery, end_nursery, PIN_TYPE_STACK);
 		}
 
 		if (!precise) {
@@ -2070,6 +2084,26 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 #endif
 		}
 	} END_FOREACH_THREAD
+}
+
+/*
+ * mono_gc_set_stack_end:
+ *
+ *   Set the end of the current threads stack to STACK_END. The stack space between 
+ * STACK_END and the real end of the threads stack will not be scanned during collections.
+ */
+void
+mono_gc_set_stack_end (void *stack_end)
+{
+	SgenThreadInfo *info;
+
+	LOCK_GC;
+	info = mono_thread_info_current ();
+	if (info) {
+		SGEN_ASSERT (0, stack_end < info->client_info.stack_end, "Can only lower stack end");
+		info->client_info.stack_end = stack_end;
+	}
+	UNLOCK_GC;
 }
 
 /*

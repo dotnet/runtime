@@ -408,7 +408,6 @@ MonoNativeTlsKey thread_info_key;
 
 #ifdef HAVE_KW_THREAD
 __thread SgenThreadInfo *sgen_thread_info;
-__thread char *stack_end;
 #endif
 
 /* The size of a TLAB */
@@ -2748,9 +2747,6 @@ mono_gc_get_gc_callbacks ()
 void*
 sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
-	size_t stsize = 0;
-	guint8 *staddr = NULL;
-
 #ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
 
@@ -2765,7 +2761,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	info->signal = 0;
 #endif
 	sgen_client_thread_register (info, stack_bottom_fallback);
-	info->stack_start = NULL;
 #ifdef USE_MONO_CTX
 	memset (&info->ctx, 0, sizeof (MonoContext));
 #else
@@ -2775,26 +2770,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	sgen_init_tlab_info (info);
 
 	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
-
-	/* On win32, stack_start_limit should be 0, since the stack can grow dynamically */
-	mono_thread_info_get_stack_bounds (&staddr, &stsize);
-	if (staddr) {
-#ifndef HOST_WIN32
-		info->stack_start_limit = staddr;
-#endif
-		info->stack_end = staddr + stsize;
-	} else {
-		gsize stack_bottom = (gsize)stack_bottom_fallback;
-		stack_bottom += 4095;
-		stack_bottom &= ~4095;
-		info->stack_end = (char*)stack_bottom;
-	}
-
-#ifdef HAVE_KW_THREAD
-	stack_end = info->stack_end;
-#endif
-
-	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->stack_end);
 
 	if (gc_callbacks.thread_attach_func)
 		info->runtime_data = gc_callbacks.thread_attach_func ();
@@ -2841,26 +2816,6 @@ gboolean
 mono_gc_register_thread (void *baseptr)
 {
 	return mono_thread_info_attach (baseptr) != NULL;
-}
-
-/*
- * mono_gc_set_stack_end:
- *
- *   Set the end of the current threads stack to STACK_END. The stack space between 
- * STACK_END and the real end of the threads stack will not be scanned during collections.
- */
-void
-mono_gc_set_stack_end (void *stack_end)
-{
-	SgenThreadInfo *info;
-
-	LOCK_GC;
-	info = mono_thread_info_current ();
-	if (info) {
-		g_assert (stack_end < info->stack_end);
-		info->stack_end = stack_end;
-	}
-	UNLOCK_GC;
 }
 
 #if USE_PTHREAD_INTERCEPT

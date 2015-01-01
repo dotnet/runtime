@@ -82,8 +82,8 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
-	if (stack_start >= info->stack_start_limit && stack_start <= info->stack_end) {
-		info->stack_start = stack_start;
+	if (stack_start >= info->client_info.stack_start_limit && stack_start <= info->client_info.stack_end) {
+		info->client_info.stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
 		if (context) {
@@ -100,7 +100,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 		}
 #endif
 	} else {
-		g_assert (!info->stack_start);
+		g_assert (!info->client_info.stack_start);
 	}
 
 	/* Notify the JIT */
