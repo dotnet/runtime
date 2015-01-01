@@ -613,23 +613,20 @@ namespace System.Text.RegularExpressions
 
         internal void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
         {
-            String cat;
-            _definedCategories.TryGetValue(categoryName, out cat);
-            if (cat != null && !categoryName.Equals(s_internalRegexIgnoreCase))
+            string category;
+            if (_definedCategories.TryGetValue(categoryName, out category) && !categoryName.Equals(s_internalRegexIgnoreCase))
             {
-                string catstr = cat;
-
                 if (caseInsensitive)
                 {
                     if (categoryName.Equals("Ll") || categoryName.Equals("Lu") || categoryName.Equals("Lt"))
                         // when RegexOptions.IgnoreCase is specified then {Ll}, {Lu}, and {Lt} cases should all match
-                        catstr = (string)_definedCategories[s_internalRegexIgnoreCase];
+                        category = _definedCategories[s_internalRegexIgnoreCase];
                 }
 
                 if (invert)
-                    catstr = NegateCategory(catstr); // negate the category
+                    category = NegateCategory(category); // negate the category
 
-                _categories.Append((string)catstr);
+                _categories.Append(category);
             }
             else
                 AddSet(SetFromProperty(categoryName, invert, pattern));
