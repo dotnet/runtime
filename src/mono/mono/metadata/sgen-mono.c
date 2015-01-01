@@ -40,6 +40,9 @@ static gboolean conservative_stack_mark = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
 gboolean sgen_mono_xdomain_checks = FALSE;
 
+/* Functions supplied by the runtime to be called by the GC */
+static MonoGCCallbacks gc_callbacks;
+
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -1956,6 +1959,18 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 /*
  * Threads
  */
+
+void
+mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
+{
+	gc_callbacks = *callbacks;
+}
+
+MonoGCCallbacks *
+mono_gc_get_gc_callbacks ()
+{
+	return &gc_callbacks;
+}
 
 void
 sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
