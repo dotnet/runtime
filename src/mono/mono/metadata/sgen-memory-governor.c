@@ -33,8 +33,6 @@
 #include "metadata/mono-gc.h"
 #include "metadata/sgen-client.h"
 
-#include "utils/mono-mmap.h"
-
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
 /*Heap limits and allocation knobs*/

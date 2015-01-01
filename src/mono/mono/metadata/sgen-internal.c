@@ -22,7 +22,6 @@
 #ifdef HAVE_SGEN_GC
 
 #include "metadata/sgen-gc.h"
-#include "utils/mono-mmap.h"
 #include "utils/lock-free-alloc.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-client.h"

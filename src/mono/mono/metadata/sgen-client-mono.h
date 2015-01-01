@@ -20,6 +20,7 @@
 #ifdef SGEN_DEFINE_OBJECT_VTABLE
 
 #include "utils/mono-threads.h"
+#include "utils/mono-mmap.h"
 
 typedef MonoObject GCObject;
 typedef MonoVTable GCVTable;

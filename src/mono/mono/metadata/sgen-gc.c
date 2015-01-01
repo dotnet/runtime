@@ -203,7 +203,6 @@
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-client.h"
 #include "metadata/sgen-pointer-queue.h"
-#include "utils/mono-mmap.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
 #include "utils/mono-proclib.h"
@@ -375,7 +374,6 @@ gboolean sgen_try_free_some_memory;
 
 #define SCAN_START_SIZE	SGEN_SCAN_START_SIZE
 
-static mword pagesize = 4096;
 size_t degraded_mode = 0;
 
 static mword bytes_pinned_from_failed_allocation = 0;
@@ -3137,7 +3135,6 @@ mono_gc_base_init (void)
 
 	LOCK_INIT (gc_mutex);
 
-	pagesize = mono_pagesize ();
 	gc_debug_file = stderr;
 
 	LOCK_INIT (sgen_interruption_mutex);
@@ -3239,12 +3236,13 @@ mono_gc_base_init (void)
 			if (g_str_has_prefix (opt, "minor="))
 				continue;
 			if (g_str_has_prefix (opt, "max-heap-size=")) {
+				size_t page_size = mono_pagesize ();
 				size_t max_heap_candidate = 0;
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap_candidate)) {
-					max_heap = (max_heap_candidate + mono_pagesize () - 1) & ~(size_t)(mono_pagesize () - 1);
+					max_heap = (max_heap_candidate + page_size - 1) & ~(size_t)(page_size - 1);
 					if (max_heap != max_heap_candidate)
-						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %d.", mono_pagesize ());
+						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %d.", page_size);
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`max-heap-size` must be an integer.");
 				}
