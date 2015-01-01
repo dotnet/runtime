@@ -1983,6 +1983,12 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 		info->client_info.stack_end = (char*)stack_bottom;
 	}
 
+#ifdef USE_MONO_CTX
+	memset (&info->client_info.ctx, 0, sizeof (MonoContext));
+#else
+	memset (&info->client_info.regs, 0, sizeof (info->regs));
+#endif
+
 	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.stack_end);
 }
 
@@ -2076,10 +2082,10 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 
 		if (!precise) {
 #ifdef USE_MONO_CTX
-			sgen_conservatively_pin_objects_from ((void**)&info->ctx, (void**)&info->ctx + ARCH_NUM_REGS,
+			sgen_conservatively_pin_objects_from ((void**)&info->client_info.ctx, (void**)&info->client_info.ctx + ARCH_NUM_REGS,
 				start_nursery, end_nursery, PIN_TYPE_STACK);
 #else
-			sgen_conservatively_pin_objects_from ((void**)&info->regs, (void**)&info->regs + ARCH_NUM_REGS,
+			sgen_conservatively_pin_objects_from ((void**)&info->client_info.regs, (void**)&info->client_info.regs + ARCH_NUM_REGS,
 					start_nursery, end_nursery, PIN_TYPE_STACK);
 #endif
 		}

@@ -87,16 +87,16 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 #ifdef USE_MONO_CTX
 		if (context) {
-			memcpy (&info->ctx, &ctx, sizeof (MonoContext));
+			memcpy (&info->client_info.ctx, &ctx, sizeof (MonoContext));
 		} else {
-			memset (&info->ctx, 0, sizeof (MonoContext));
+			memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 		}
 #else
 		if (context) {
 			ARCH_COPY_SIGCTX_REGS (regs, context);
-			memcpy (&info->regs, regs, sizeof (info->regs));
+			memcpy (&info->client_info.regs, regs, sizeof (info->client_info.regs));
 		} else {
-			memset (&info->regs, 0, sizeof (info->regs));
+			memset (&info->client_info.regs, 0, sizeof (info->client_info.regs));
 		}
 #endif
 	} else {

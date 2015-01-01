@@ -402,13 +402,6 @@ struct _SgenThreadInfo {
 	unsigned int stop_count; /* to catch duplicate signals. */
 #endif
 
-	/*FIXME pretty please finish killing ARCH_NUM_REGS */
-#ifdef USE_MONO_CTX
-	MonoContext ctx;		/* ditto */
-#else
-	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
-#endif
-
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;

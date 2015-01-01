@@ -2761,11 +2761,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	info->signal = 0;
 #endif
 	sgen_client_thread_register (info, stack_bottom_fallback);
-#ifdef USE_MONO_CTX
-	memset (&info->ctx, 0, sizeof (MonoContext));
-#else
-	memset (&info->regs, 0, sizeof (info->regs));
-#endif
 
 	sgen_init_tlab_info (info);
 

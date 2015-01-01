@@ -80,9 +80,9 @@ sgen_suspend_thread (SgenThreadInfo *info)
 		info->client_info.stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
-		mono_sigctx_to_monoctx (&ctx, &info->ctx);
+		mono_sigctx_to_monoctx (&ctx, &info->client_info.ctx);
 #else
-		ARCH_COPY_SIGCTX_REGS (&info->regs, &ctx);
+		ARCH_COPY_SIGCTX_REGS (&info->client_info.regs, &ctx);
 #endif
 	} else {
 		g_assert (!info->client_info.stack_start);

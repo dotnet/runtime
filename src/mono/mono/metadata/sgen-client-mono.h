@@ -122,6 +122,13 @@ struct _SgenClientThreadInfo {
 	void *stack_end;
 	void *stack_start;
 	void *stack_start_limit;
+
+	/*FIXME pretty please finish killing ARCH_NUM_REGS */
+#ifdef USE_MONO_CTX
+	MonoContext ctx;		/* ditto */
+#else
+	gpointer regs[ARCH_NUM_REGS];	    /* ditto */
+#endif
 };
 
 #else
