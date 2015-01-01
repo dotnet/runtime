@@ -48,7 +48,6 @@
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
 #include "utils/mono-logger-internal.h"
-#include "utils/mono-time.h"
 
 MonoGCBridgeCallbacks bridge_callbacks;
 static SgenBridgeProcessor bridge_processor;

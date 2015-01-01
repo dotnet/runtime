@@ -32,7 +32,6 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/sgen-client.h"
-#include "utils/mono-time.h"
 #include "utils/mono-memory-model.h"
 
 //#define CARDTABLE_STATS

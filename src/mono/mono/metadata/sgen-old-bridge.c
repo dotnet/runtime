@@ -49,7 +49,6 @@
 #include "sgen-qsort.h"
 #include "sgen-client.h"
 #include "utils/mono-logger-internal.h"
-#include "utils/mono-time.h"
 
 typedef struct {
 	int size;

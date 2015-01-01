@@ -29,7 +29,6 @@
 #include <errno.h>
 
 #include "utils/mono-semaphore.h"
-#include "utils/mono-time.h"
 
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"

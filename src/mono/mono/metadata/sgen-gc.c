@@ -203,7 +203,6 @@
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-client.h"
 #include "metadata/sgen-pointer-queue.h"
-#include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-memory-model.h"

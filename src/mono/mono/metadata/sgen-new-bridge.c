@@ -51,7 +51,6 @@
 #include "sgen-client.h"
 #include "tabledefs.h"
 #include "utils/mono-logger-internal.h"
-#include "utils/mono-time.h"
 
 //#define NEW_XREFS
 #ifdef NEW_XREFS
