@@ -1266,7 +1266,9 @@ namespace System.Text.RegularExpressions
             int myCategoryLength = set[CATEGORYLENGTH];
             int myEndPosition = SETSTART + mySetLength + myCategoryLength;
 
-            StringBuilder desc = new StringBuilder("[");
+            StringBuilder desc = new StringBuilder();
+
+            desc.Append('[');
 
             int index = SETSTART;
             char ch1;
@@ -1304,15 +1306,17 @@ namespace System.Text.RegularExpressions
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     string group = set.Substring(index, lastindex - index + 1);
 
-                    IDictionaryEnumerator en = _definedCategories.GetEnumerator();
-                    while (en.MoveNext())
+                    foreach (var kvp in _definedCategories)
                     {
-                        if (group.Equals(en.Value))
+                        if (group.Equals(kvp.Value))
                         {
                             if ((short)set[index + 1] > 0)
-                                desc.Append("\\p{" + en.Key + "}");
+                                desc.Append("\\p{");
                             else
-                                desc.Append("\\P{" + en.Key + "}");
+                                desc.Append("\\P{");
+
+                            desc.Append(kvp.Key);
+                            desc.Append('}');
 
                             found = true;
                             break;
