@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
             "aaaMaTcH ThIsbbb"
 
@@ -39,7 +39,7 @@ public partial class RegexMatchTests
             /////////////////////////  START TESTS ////////////////////////////
             ///////////////////////////////////////////////////////////////////
             // [] public static Match Match(string input);     Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
-            //"aaaMaTcH ThIsbbb" 
+            //"aaaMaTcH ThIsbbb"
             //-----------------------------------------------------------------
             strLoc = "Loc_498yg";
             iCountTestcases++;
@@ -81,7 +81,7 @@ public partial class RegexMatchTests
             }
 
             // [] public static Match Match(string input);     Comments : Actual - "aaa(?#ignore this completely)bbb"
-            //"aaabbb"    
+            //"aaabbb"
             //-----------------------------------------------------------------
             strLoc = "Loc_563rfg";
             iCountTestcases++;

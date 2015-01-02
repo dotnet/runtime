@@ -9,12 +9,12 @@ public class R2LGetGroupNamesMatchTests
 {
     /*
     Tested Methods:
-    
-        public static Boolean RightToLeft;     
+
+        public static Boolean RightToLeft;
 
         public static String[] GetGroupNames();     "(?<first_name>\\S+)\\s(?<last_name>\\S+)"
 
-        public static Match Match(string input);     
+        public static Match Match(string input);
             "David Bau"
 
         public static Boolean IsMatch(string input);     //D+
@@ -63,7 +63,7 @@ public class R2LGetGroupNamesMatchTests
                 Console.WriteLine("Err_234fsadg! unexpected result");
             }
 
-            // [] public static Match Match(string input); 
+            // [] public static Match Match(string input);
             //"David Bau"
             //-----------------------------------------------------------------
             strLoc = "Loc_563sdfg";
@@ -75,7 +75,7 @@ public class R2LGetGroupNamesMatchTests
                 Console.WriteLine("Err_87543! doesnot match");
             }
 
-            // [] public static Match Match(string input); 
+            // [] public static Match Match(string input);
             //"David Bau"
             //-----------------------------------------------------------------
             strLoc = "Loc_298vy";

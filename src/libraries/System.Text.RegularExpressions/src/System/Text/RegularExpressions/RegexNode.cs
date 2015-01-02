@@ -5,7 +5,7 @@
 // It is built into a parsed tree for a regular expression.
 
 // Implementation notes:
-// 
+//
 // Since the node tree is a temporary data structure only used
 // during compilation of the regexp to integer codes, it's
 // designed for clarity and convenience rather than
@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions
 
         /*
          * RegexNode data members
-         * 
+         *
          */
 
         internal int _type;
@@ -231,7 +231,7 @@ namespace System.Text.RegularExpressions
          * Simple optimization. If a concatenation or alternation has only
          * one child strip out the intermediate node. If it has zero children,
          * turn it into an empty.
-         * 
+         *
          */
 
         internal RegexNode StripEnation(int emptyType)

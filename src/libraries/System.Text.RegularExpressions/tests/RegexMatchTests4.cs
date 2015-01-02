@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Noncapturing group : Actual - "(a+)(?:b*)(ccc)"
             "aaabbbccc"
 

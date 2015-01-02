@@ -11,13 +11,13 @@ public class SplitMatchIsMatchTests
         Class: Regex
         Tested Methods:
 
-            public static string[] Split(string input, string pattern); 
+            public static string[] Split(string input, string pattern);
                 very simple
-    
-            public static bool IsMatch(string input, string pattern, string options); 
+
+            public static bool IsMatch(string input, string pattern, string options);
                 "m" option with 5 patterns
 
-            public static bool IsMatch(string input, string pattern); 
+            public static bool IsMatch(string input, string pattern);
                 "abc", "^b"
 
             public static Match Match(string input, string pattern);     ???
@@ -111,7 +111,7 @@ public class SplitMatchIsMatchTests
             ///////////////////////////////////////////////////////////////////
             try
             {
-                // []     public static string[] Split(string input, string pattern); 
+                // []     public static string[] Split(string input, string pattern);
                 //    very simple
                 //-----------------------------------------------------------------
                 strLoc = "Loc_498yg";
@@ -134,7 +134,7 @@ public class SplitMatchIsMatchTests
 
             try
             {
-                // [] public static bool IsMatch(string input, string pattern, string options); 
+                // [] public static bool IsMatch(string input, string pattern, string options);
                 //"m" option with 5 patterns
                 //-----------------------------------------------------------------
                 strLoc = "Loc_298vy";
@@ -197,7 +197,7 @@ public class SplitMatchIsMatchTests
 
             try
             {
-                // [] public static bool IsMatch(string input, string pattern); 
+                // [] public static bool IsMatch(string input, string pattern);
                 //"abc", "^b"
                 //-----------------------------------------------------------------
                 strLoc = "Loc_75rfds";
