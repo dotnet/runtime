@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Using "n" Regex option. Only explicitly named groups should be captured : Actual - "([0-9]*)\\s(?<s>[a-z_A-Z]+)", "n"
             "200 dollars"
 
@@ -220,7 +220,7 @@ public partial class RegexMatchTests
             }
 
             // [] public static Match Match(string input);     Single line mode "s". Includes new line character. : Actual - "([^/]+)","s"
-            //"abc\n" 
+            //"abc\n"
             //-----------------------------------------------------------------
             strLoc = "Loc_298vy";
             iCountTestcases++;

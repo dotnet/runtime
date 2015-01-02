@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Using greedy quantifiers : Actual - "(a+)(b*)(c?)"
             "aaabbbccc"
 

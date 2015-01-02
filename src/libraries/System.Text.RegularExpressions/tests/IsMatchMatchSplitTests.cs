@@ -9,7 +9,7 @@ public class IsMatchMatchSplitTests
 {
     /*
     Tested Methods:
-    
+
 
         public static Boolean IsMatch() variants
 

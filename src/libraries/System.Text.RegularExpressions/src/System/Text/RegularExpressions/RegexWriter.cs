@@ -6,7 +6,7 @@
 // from a RegexTree parse tree.
 
 // Implementation notes:
-// 
+//
 // This step is as simple as walking the tree and emitting
 // sequences of codes.
 //

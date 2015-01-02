@@ -274,7 +274,7 @@ public class RegexLangElementsCoverageTests
        new RegexTestCase(@"cat(?(?afdcat)dog)", typeof(ArgumentException)),
 
         /*********************************************************
-        Use IgnorePatternWhitespace 
+        Use IgnorePatternWhitespace
         *********************************************************/
        new RegexTestCase(@"(cat) #cat
                             \s+ #followed by 1 or more whitespace
@@ -289,7 +289,7 @@ public class RegexLangElementsCoverageTests
            RegexOptions.IgnorePatternWhitespace, typeof(ArgumentException)),
 
         /*********************************************************
-        Without IgnorePatternWhitespace 
+        Without IgnorePatternWhitespace
         *********************************************************/
        new RegexTestCase(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace", typeof(ArgumentException)),
 
@@ -510,18 +510,18 @@ public class RegexLangElementsCoverageTests
 
 
         /*********************************************************
-Use special unicode characters        
+Use special unicode characters
         *********************************************************/
         /*        new RegexTest(@"AE", "\u00C4", new string[] {"Hello World", "Hello", "World"}, GERMAN_PHONEBOOK),
                 new RegexTest(@"oe", "\u00F6", new string[] {"Hello World", "Hello", "World"}, GERMAN_PHONEBOOK),
 
                 new RegexTest("\u00D1", "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
-                new RegexTest("\u00D1", "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),        
+                new RegexTest("\u00D1", "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),
                 new RegexTest("\u00D1", RegexOptions.IgnoreCase, "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
-                new RegexTest("\u00D1", RegexOptions.IgnoreCase, "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),    
+                new RegexTest("\u00D1", RegexOptions.IgnoreCase, "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),
 
                 new RegexTest("\u00F1", RegexOptions.IgnoreCase, "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
-                new RegexTest("\u00F1", RegexOptions.IgnoreCase, "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),        
+                new RegexTest("\u00F1", RegexOptions.IgnoreCase, "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),
                 new RegexTest("\u00F1", "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
                 new RegexTest("\u00F1", "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
         */
