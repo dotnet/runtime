@@ -419,11 +419,9 @@ namespace System.Text.RegularExpressions
         }
 #endif
 
-        /*
-         * RegexCharClass()
-         *
-         * Creates an empty character class.
-         */
+        /// <summary>
+        /// Creates an empty character class.
+        /// </summary>
         internal RegexCharClass()
         {
             _rangelist = new List<SingleRange>(6);
@@ -458,11 +456,9 @@ namespace System.Text.RegularExpressions
             AddRange(c, c);
         }
 
-        /*
-         * AddCharClass()
-         *
-         * Adds a regex char class
-         */
+        /// <summary>
+        /// Adds a regex char class
+        /// </summary>
         internal void AddCharClass(RegexCharClass cc)
         {
             int i;
@@ -485,11 +481,9 @@ namespace System.Text.RegularExpressions
             _categories.Append(cc._categories.ToString());
         }
 
-        /*
-         * AddSet()
-         *
-         * Adds a set (specified by its string represenation) to the class.
-         */
+        /// <summary>
+        /// Adds a set (specified by its string represenation) to the class.
+        /// </summary>
         private void AddSet(String set)
         {
             int i;
@@ -515,11 +509,9 @@ namespace System.Text.RegularExpressions
             _subtractor = sub;
         }
 
-        /*
-         * AddRange()
-         *
-         * Adds a single range of characters to the class.
-         */
+        /// <summary>
+        /// Adds a single range of characters to the class.
+        /// </summary>
         internal void AddRange(char first, char last)
         {
             _rangelist.Add(new SingleRange(first, last));
@@ -556,12 +548,10 @@ namespace System.Text.RegularExpressions
             _categories.Append(category);
         }
 
-        /*
-         * AddLowerCase()
-         *
-         * Adds to the class any lowercase versions of characters already
-         * in the class. Used for case-insensitivity.
-         */
+        /// <summary>
+        /// Adds to the class any lowercase versions of characters already
+        /// in the class. Used for case-insensitivity.
+        /// </summary>
         internal void AddLowercase(CultureInfo culture)
         {
             int i;
@@ -585,12 +575,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*
-         * AddLowercaseRange()
-         *
-         * For a single range that's in the set, adds any additional ranges
-         * necessary to ensure that lowercase equivalents are also included.
-         */
+        /// <summary>
+        /// For a single range that's in the set, adds any additional ranges
+        /// necessary to ensure that lowercase equivalents are also included.
+        /// </summary>
         private void AddLowercaseRange(char chMin, char chMax, CultureInfo culture)
         {
             int i, iMax, iMid;
@@ -714,11 +702,9 @@ namespace System.Text.RegularExpressions
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        /*
-         * SingletonChar()
-         *
-         * Returns the char
-         */
+        /// <summary>
+        /// Returns the char
+        /// </summary>
         internal static char SingletonChar(String set)
         {
             Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
@@ -738,11 +724,9 @@ namespace System.Text.RegularExpressions
                 return false;
         }
 
-        /*
-         * IsSingleton()
-         *
-         * True if the set contains a single character only
-         */
+        /// <summary>
+        /// <c>true</c> if the set contains a single character only
+        /// </summary>
         internal static bool IsSingleton(String set)
         {
             if (set[FLAGS] == 0 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
@@ -819,12 +803,10 @@ namespace System.Text.RegularExpressions
             return b && !subtracted;
         }
 
-        /*
-         * CharInClass()
-         *
-         * Determines a character's membership in a character class (via the
-         * string representation of the class).
-         */
+        /// <summary>
+        /// Determines a character's membership in a character class (via the
+        /// string representation of the class).
+        /// </summary>
         private static bool CharInClassInternal(char ch, string set, int start, int mySetLength, int myCategoryLength)
         {
             int min;
@@ -921,11 +903,10 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
-        /*
-        *  CharInCategoryGroup
-        *  This is used for categories which are composed of other categories - L, N, Z, W...
-        *  These groups need special treatment when they are negated
-        */
+        /// <summary>
+        /// This is used for categories which are composed of other categories - L, N, Z, W...
+        /// These groups need special treatment when they are negated
+        /// </summary>
         private static bool CharInCategoryGroup(char ch, UnicodeCategory chcategory, string category, ref int i)
         {
             i++;
@@ -1021,21 +1002,17 @@ namespace System.Text.RegularExpressions
             return new RegexCharClass(charClass[start + FLAGS] == 1, ranges, new StringBuilder(charClass.Substring(end, myCategoryLength)), sub);
         }
 
-        /*
-         * RangeCount()
-         *
-         * The number of single ranges that have been accumulated so far.
-         */
+        /// <summary>
+        /// The number of single ranges that have been accumulated so far.
+        /// </summary>
         private int RangeCount()
         {
             return _rangelist.Count;
         }
 
-        /*
-         * ToString()
-         *
-         * Constructs the string representation of the class.
-         */
+        /// <summary>
+        /// Constructs the string representation of the class.
+        /// </summary>
         internal String ToStringClass()
         {
             if (!_canonical)
@@ -1076,21 +1053,17 @@ namespace System.Text.RegularExpressions
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        /*
-         * GetRangeAt(int i)
-         *
-         * The ith range.
-         */
+        /// <summary>
+        /// The ith range.
+        /// </summary>
         private SingleRange GetRangeAt(int i)
         {
             return _rangelist[i];
         }
 
-        /*
-         * Canonicalize()
-         *
-         * Logic to reduce a character class to a unique, sorted form.
-         */
+        /// <summary>
+        /// Logic to reduce a character class to a unique, sorted form.
+        /// </summary>
         private void Canonicalize()
         {
             SingleRange CurrentRange;
@@ -1176,11 +1149,9 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
 
-        /*
-         * SetDescription()
-         *
-         * Produces a human-readable description for a set string.
-         */
+        /// <summary>
+        /// Produces a human-readable description for a set string.
+        /// </summary>
         internal static String SetDescription(String set)
         {
             int mySetLength = set[SETLENGTH];
@@ -1285,11 +1256,9 @@ namespace System.Text.RegularExpressions
                                                                      "Sm", "Sc", "Sk", "So",
                                                                      "Cn" };
 
-        /*
-        * CharDescription()
-        *
-        * Produces a human-readable description for a single character.
-        */
+        /// <summary>
+        /// Produces a human-readable description for a single character.
+        /// </summary>
         internal static String CharDescription(char ch)
         {
             if (ch == '\\')
@@ -1341,7 +1310,9 @@ namespace System.Text.RegularExpressions
 
 #endif
 
-        // Lower case mapping descriptor.
+        /// <summary>
+        /// Lower case mapping descriptor.
+        /// </summary>
         private struct LowerCaseMapping
         {
             internal LowerCaseMapping(char chMin, char chMax, int lcOp, int data)
@@ -1358,11 +1329,9 @@ namespace System.Text.RegularExpressions
             internal int _data;
         }
 
-        /*
-         * SingleRange
-         *
-         * A first/last pair representing a single range of characters.
-         */
+        /// <summary>
+        /// A first/last pair representing a single range of characters.
+        /// </summary>
         private struct SingleRange : IComparable<SingleRange>
         {
             internal SingleRange(char first, char last)
