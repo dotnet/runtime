@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions
 
         private const String NullCharString = "\0";
 
-        private const char Nullchar = '\0';
+        private const char NullChar = '\0';
         private const char Lastchar = '\uFFFF';
 
         private const char GroupChar = (char)0;
@@ -1129,7 +1129,7 @@ namespace System.Text.RegularExpressions
                     Debug.Assert(!String.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
                     if (invert)
                     {
-                        if (set[0] == Nullchar)
+                        if (set[0] == NullChar)
                         {
                             return set.Substring(1);
                         }
