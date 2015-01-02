@@ -3255,7 +3255,7 @@ mono_field_get_value_object (MonoDomain *domain, MonoClassField *field, MonoObje
 		}
 
 		/* MONO_TYPE_PTR is passed by value to runtime_invoke () */
-		args [0] = *ptr;
+		args [0] = ptr ? *ptr : NULL;
 		args [1] = mono_type_get_object (mono_domain_get (), type);
 
 		return mono_runtime_invoke (m, NULL, args, NULL);
