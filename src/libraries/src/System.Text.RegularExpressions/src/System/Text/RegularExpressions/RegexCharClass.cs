@@ -1292,17 +1292,16 @@ namespace System.Text.RegularExpressions
         */
         internal static String CharDescription(char ch)
         {
-            StringBuilder sb = new StringBuilder();
-            int shift;
-
             if (ch == '\\')
                 return "\\\\";
 
             if (ch >= ' ' && ch <= '~')
             {
-                sb.Append(ch);
-                return sb.ToString();
+                return ch.ToString();
             }
+
+            var sb = new StringBuilder();
+            int shift;
 
             if (ch < 256)
             {
