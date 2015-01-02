@@ -311,7 +311,7 @@ namespace System.Text.RegularExpressions
         private const int LowercaseBor = 2;    // Bitwise or with 1.
         private const int LowercaseBad = 3;    // Bitwise and with 1 and add original.
 
-        private static readonly LowerCaseMapping[] _lcTable = new LowerCaseMapping[]
+        private static readonly LowerCaseMapping[] s_lcTable = new LowerCaseMapping[]
         {
             new LowerCaseMapping('\u0041', '\u005A', LowercaseAdd, 32),
             new LowerCaseMapping('\u00C0', '\u00DE', LowercaseAdd, 32),
@@ -582,19 +582,19 @@ namespace System.Text.RegularExpressions
             char chMinT, chMaxT;
             LowerCaseMapping lc;
 
-            for (i = 0, iMax = _lcTable.Length; i < iMax;)
+            for (i = 0, iMax = s_lcTable.Length; i < iMax;)
             {
                 iMid = (i + iMax) / 2;
-                if (_lcTable[iMid]._chMax < chMin)
+                if (s_lcTable[iMid]._chMax < chMin)
                     i = iMid + 1;
                 else
                     iMax = iMid;
             }
 
-            if (i >= _lcTable.Length)
+            if (i >= s_lcTable.Length)
                 return;
 
-            for (; i < _lcTable.Length && (lc = _lcTable[i])._chMin <= chMax; i++)
+            for (; i < s_lcTable.Length && (lc = s_lcTable[i])._chMin <= chMax; i++)
             {
                 if ((chMinT = lc._chMin) < chMin)
                     chMinT = chMin;
