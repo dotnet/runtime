@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions
         internal const String EmptyClass = "\x00\x00\x00";
 
         // UnicodeCategory is zero based, so we add one to each value and subtract it off later
-        private static readonly Dictionary<String, String> _definedCategories = new Dictionary<String, String>
+        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>
         {
             // Others
             { "Cc", "\u000F" }, // UnicodeCategory.Control + 1
@@ -534,13 +534,13 @@ namespace System.Text.RegularExpressions
         internal void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
         {
             string category;
-            if (_definedCategories.TryGetValue(categoryName, out category) && !categoryName.Equals(s_internalRegexIgnoreCase))
+            if (s_definedCategories.TryGetValue(categoryName, out category) && !categoryName.Equals(s_internalRegexIgnoreCase))
             {
                 if (caseInsensitive)
                 {
                     if (categoryName.Equals("Ll") || categoryName.Equals("Lu") || categoryName.Equals("Lt"))
                         // when RegexOptions.IgnoreCase is specified then {Ll}, {Lu}, and {Lt} cases should all match
-                        category = _definedCategories[s_internalRegexIgnoreCase];
+                        category = s_definedCategories[s_internalRegexIgnoreCase];
                 }
 
                 if (invert)
@@ -1223,7 +1223,7 @@ namespace System.Text.RegularExpressions
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     string group = set.Substring(index, lastindex - index + 1);
 
-                    foreach (var kvp in _definedCategories)
+                    foreach (var kvp in s_definedCategories)
                     {
                         if (group.Equals(kvp.Value))
                         {
