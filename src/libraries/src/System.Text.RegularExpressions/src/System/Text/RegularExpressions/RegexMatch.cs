@@ -6,23 +6,23 @@
 // the entire match as well as every captured group.
 
 // Match is also used during the search to keep track of each capture for each group.  This is
-// done using the "_matches" array.  _matches[x] represents an array of the captures for group x.  
-// This array consists of start and length pairs, and may have empty entries at the end.  _matchcount[x] 
+// done using the "_matches" array.  _matches[x] represents an array of the captures for group x.
+// This array consists of start and length pairs, and may have empty entries at the end.  _matchcount[x]
 // stores how many captures a group has.  Note that _matchcount[x]*2 is the length of all the valid
 // values in _matches.  _matchcount[x]*2-2 is the Start of the last capture, and _matchcount[x]*2-1 is the
 // Length of the last capture
 //
-// For example, if group 2 has one capture starting at position 4 with length 6, 
+// For example, if group 2 has one capture starting at position 4 with length 6,
 // _matchcount[2] == 1
 // _matches[2][0] == 4
 // _matches[2][1] == 6
 //
-// Values in the _matches array can also be negative.  This happens when using the balanced match 
-// construct, "(?<start-end>...)".  When the "end" group matches, a capture is added for both the "start" 
-// and "end" groups.  The capture added for "start" receives the negative values, and these values point to 
-// the next capture to be balanced.  They do NOT point to the capture that "end" just balanced out.  The negative 
-// values are indices into the _matches array transformed by the formula -3-x.  This formula also untransforms. 
-// 
+// Values in the _matches array can also be negative.  This happens when using the balanced match
+// construct, "(?<start-end>...)".  When the "end" group matches, a capture is added for both the "start"
+// and "end" groups.  The capture added for "start" receives the negative values, and these values point to
+// the next capture to be balanced.  They do NOT point to the capture that "end" just balanced out.  The negative
+// values are indices into the _matches array transformed by the formula -3-x.  This formula also untransforms.
+//
 
 using System.Collections;
 using System.Collections.Generic;
@@ -229,11 +229,11 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Nonpublic builder: Add a capture to balance the specified group.  This is used by the 
+         * Nonpublic builder: Add a capture to balance the specified group.  This is used by the
                               balanced match construct. (?<foo-foo2>...)
 
            If there were no such thing as backtracking, this would be as simple as calling RemoveMatch(cap).
-           However, since we have backtracking, we need to keep track of everything. 
+           However, since we have backtracking, we need to keep track of everything.
          */
         internal virtual void BalanceMatch(int cap)
         {
@@ -254,7 +254,7 @@ namespace System.Text.RegularExpressions
             // move back to the previous capture
             target -= 2;
 
-            // if the previous capture is a reference, just copy that reference to the end.  Otherwise, point to it. 
+            // if the previous capture is a reference, just copy that reference to the end.  Otherwise, point to it.
             if (target >= 0 && _matches[cap][target] < 0)
                 AddMatch(cap, _matches[cap][target], _matches[cap][target + 1]);
             else
@@ -317,11 +317,11 @@ namespace System.Text.RegularExpressions
             if (_balancing)
             {
                 // The idea here is that we want to compact all of our unbalanced captures.  To do that we
-                // use j basically as a count of how many unbalanced captures we have at any given time 
+                // use j basically as a count of how many unbalanced captures we have at any given time
                 // (really j is an index, but j/2 is the count).  First we skip past all of the real captures
                 // until we find a balance captures.  Then we check each subsequent entry.  If it's a balance
-                // capture (it's negative), we decrement j.  If it's a real capture, we increment j and copy 
-                // it down to the last free position. 
+                // capture (it's negative), we decrement j.  If it's a real capture, we increment j and copy
+                // it down to the last free position.
                 for (int cap = 0; cap < _matchcount.Length; cap++)
                 {
                     int limit;
@@ -348,8 +348,8 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            // but if we find something positive (an actual capture), copy it back to the last 
-                            // unbalanced position. 
+                            // but if we find something positive (an actual capture), copy it back to the last
+                            // unbalanced position.
                             if (i != j)
                                 matcharray[j] = matcharray[i];
                             j++;

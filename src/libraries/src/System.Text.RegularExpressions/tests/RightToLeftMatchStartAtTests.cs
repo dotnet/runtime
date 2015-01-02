@@ -9,8 +9,8 @@ public class RightToLeftMatchStartAtTests
 {
     /*
     Tested Methods:
-    
-        public static Boolean RightToLeft;     
+
+        public static Boolean RightToLeft;
 
         public static Match Match(string input, Int32 startat);     "aaa"
             "aaabbb", 3
@@ -79,7 +79,7 @@ public class RightToLeftMatchStartAtTests
         {
             /////////////////////////  START TESTS ////////////////////////////
             ///////////////////////////////////////////////////////////////////
-            // [] public static Boolean RightToLeft;     
+            // [] public static Boolean RightToLeft;
             //-----------------------------------------------------------------
             strLoc = "Loc_498yg";
             iCountTestcases++;

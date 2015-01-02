@@ -86,7 +86,7 @@ namespace System.Text.RegularExpressions
         internal const int LastGroup = -3;
         internal const int WholeString = -4;
 
-        /*       
+        /*
          * Given a Match, emits into the StringBuilder the evaluated
          * substitution pattern.
          */
@@ -120,7 +120,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*       
+        /*
          * Given a Match, emits into the List<String> the evaluated
          * Right-to-Left substitution pattern.
          */

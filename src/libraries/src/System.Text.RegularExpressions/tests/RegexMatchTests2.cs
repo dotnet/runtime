@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Using [a-z], \s, \w : Actual - "([a-zA-Z]+)\\s(\\w+)"
             "David Bau"
 

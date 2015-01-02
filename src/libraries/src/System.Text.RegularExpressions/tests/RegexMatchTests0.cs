@@ -9,12 +9,12 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input, string pattern);     Testing \B special character escape
             "adfadsfSUCCESSadsfadsf", ".*\\B(SUCCESS)\\B.*"
 
         public static Match Match(string input, string pattern);     Testing octal sequence matches
-            "011", "\\060(\\061)?\\061" 
+            "011", "\\060(\\061)?\\061"
 
         public static Match Match(string input, string pattern);     Testing hexadecimal sequence matches
             "012", "(\\x30\\x31\\x32)"

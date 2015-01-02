@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Alternation constructs : Actual - "(111|aaa)"
             "aaa"
 
@@ -158,7 +158,7 @@ public partial class RegexMatchTests
             }
 
             // [] public static Match Match(string input);      : Actual - "abc(?(1)111|222)"
-            //"abc222"    
+            //"abc222"
             //-----------------------------------------------------------------
             strLoc = "Loc_298vy";
             iCountTestcases++;

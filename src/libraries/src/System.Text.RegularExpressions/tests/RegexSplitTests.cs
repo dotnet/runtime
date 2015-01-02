@@ -9,7 +9,7 @@ public class RegexSplitTests
 {
     /*
     Tested Methods:
-    
+
         public static String[] Split(string input);     ":"
             "kkk:lll:mmm:nnn:ooo"
 
