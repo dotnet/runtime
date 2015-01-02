@@ -153,7 +153,7 @@ namespace System.Text.RegularExpressions
          *
         **/
         // Has to be sorted by the first column
-        private static readonly String[][] _propTable = {
+        private static readonly String[][] s_propTable = {
             new [] {"IsAlphabeticPresentationForms",       "\uFB00\uFB50"},
             new [] {"IsArabic",                            "\u0600\u0700"},
             new [] {"IsArabicPresentationForms-A",         "\uFB50\uFE00"},
@@ -413,9 +413,9 @@ namespace System.Text.RegularExpressions
         static RegexCharClass()
         {
             // Make sure the _propTable is correctly ordered
-            int len = _propTable.Length;
+            int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
-                Debug.Assert(String.Compare(_propTable[i][0], _propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass _propTable is out of order at (" + _propTable[i][0] + ", " + _propTable[i + 1][0] + ")");
+                Debug.Assert(String.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass _propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
         }
 #endif
 
@@ -1114,18 +1114,18 @@ namespace System.Text.RegularExpressions
         private static String SetFromProperty(String capname, bool invert, string pattern)
         {
             int min = 0;
-            int max = _propTable.Length;
+            int max = s_propTable.Length;
             while (min != max)
             {
                 int mid = (min + max) / 2;
-                int res = String.Compare(capname, _propTable[mid][0], StringComparison.Ordinal);
+                int res = String.Compare(capname, s_propTable[mid][0], StringComparison.Ordinal);
                 if (res < 0)
                     max = mid;
                 else if (res > 0)
                     min = mid + 1;
                 else
                 {
-                    String set = _propTable[mid][1];
+                    String set = s_propTable[mid][1];
                     Debug.Assert(!String.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
                     if (invert)
                     {
