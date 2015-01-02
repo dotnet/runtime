@@ -1320,10 +1320,10 @@ namespace System.Text.RegularExpressions
                 _data = data;
             }
 
-            internal char _chMin;
-            internal char _chMax;
-            internal int _lcOp;
-            internal int _data;
+            internal readonly char _chMin;
+            internal readonly char _chMax;
+            internal readonly int _lcOp;
+            internal readonly int _data;
         }
 
         /// <summary>
