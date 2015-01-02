@@ -59,16 +59,16 @@ namespace System.Text.RegularExpressions
 
         private static readonly String s_internalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
         private static readonly String s_space = "\x64";
-        private static readonly String s_notSpace = NegateCategory(s_space);
-        private static readonly String s_word;
-        private static readonly String s_notWord;
+        private static readonly String s_notSpace = "\uFF9C";
+        private static readonly String s_word = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        private static readonly String s_notWord = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
 
-        internal static readonly String SpaceClass;
-        internal static readonly String NotSpaceClass;
-        internal static readonly String WordClass;
-        internal static readonly String NotWordClass;
-        internal static readonly String DigitClass;
-        internal static readonly String NotDigitClass;
+        internal static readonly String SpaceClass = "\u0000\u0000\u0001\u0064";
+        internal static readonly String NotSpaceClass = "\u0001\u0000\u0001\u0064";
+        internal static readonly String WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        internal static readonly String NotWordClass = "\u0001\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        internal static readonly String DigitClass = "\u0000\u0000\u0001\u0009";
+        internal static readonly String NotDigitClass = "\u0000\u0000\u0001\uFFF7";
 
         private const String ECMASpaceSet = "\u0009\u000E\u0020\u0021";
         private const String NotECMASpaceSet = "\0\u0009\u000E\u0020\u0021";
@@ -87,7 +87,64 @@ namespace System.Text.RegularExpressions
         internal const String AnyClass = "\x00\x01\x00\x00";
         internal const String EmptyClass = "\x00\x00\x00";
 
-        private static Dictionary<String, String> _definedCategories;
+        // UnicodeCategory is zero based, so we add one to each value and subtract it off later
+        private static readonly Dictionary<String, String> _definedCategories = new Dictionary<String, String>
+        {
+            // Others
+            { "Cc", "\u000F" }, // UnicodeCategory.Control + 1
+            { "Cf", "\u0010" }, // UnicodeCategory.Format + 1
+            { "Cn", "\u001E" }, // UnicodeCategory.OtherNotAssigned + 1
+            { "Co", "\u0012" }, // UnicodeCategory.PrivateUse + 1
+            { "Cs", "\u0011" }, // UnicodeCategory.Surrogate + 1
+            { "C", "\u0000\u000F\u0010\u001E\u0012\u0011\u0000" },
+
+            // Letters
+            { "Ll", "\u0002" }, // UnicodeCategory.LowercaseLetter + 1
+            { "Lm", "\u0004" }, // UnicodeCategory.ModifierLetter + 1
+            { "Lo", "\u0005" }, // UnicodeCategory.OtherLetter + 1
+            { "Lt", "\u0003" }, // UnicodeCategory.TitlecaseLetter + 1
+            { "Lu", "\u0001" }, // UnicodeCategory.UppercaseLetter + 1
+            { "L", "\u0000\u0002\u0004\u0005\u0003\u0001\u0000" },
+
+            // InternalRegexIgnoreCase = {LowercaseLetter} OR {TitlecaseLetter} OR {UppercaseLetter}
+            // !!!This category should only ever be used in conjunction with RegexOptions.IgnoreCase code paths!!!
+            { "__InternalRegexIgnoreCase__", "\u0000\u0002\u0003\u0001\u0000" },
+
+            // Marks
+            { "Mc", "\u0007" }, // UnicodeCategory.SpacingCombiningMark + 1
+            { "Me", "\u0008" }, // UnicodeCategory.EnclosingMark + 1
+            { "Mn", "\u0006" }, // UnicodeCategory.NonSpacingMark + 1
+            { "M", "\u0000\u0007\u0008\u0006\u0000" },
+
+            // Numbers
+            { "Nd", "\u0009" }, // UnicodeCategory.DecimalDigitNumber + 1
+            { "Nl", "\u000A" }, // UnicodeCategory.LetterNumber + 1
+            { "No", "\u000B" }, // UnicodeCategory.OtherNumber + 1
+            { "N", "\u0000\u0009\u000A\u000B\u0000" },
+
+            // Punctuation
+            { "Pc", "\u0013" }, // UnicodeCategory.ConnectorPunctuation + 1
+            { "Pd", "\u0014" }, // UnicodeCategory.DashPunctuation + 1
+            { "Pe", "\u0016" }, // UnicodeCategory.ClosePunctuation + 1
+            { "Po", "\u0019" }, // UnicodeCategory.OtherPunctuation + 1
+            { "Ps", "\u0015" }, // UnicodeCategory.OpenPunctuation + 1
+            { "Pf", "\u0018" }, // UnicodeCategory.FinalQuotePunctuation + 1
+            { "Pi", "\u0017" }, // UnicodeCategory.InitialQuotePunctuation + 1
+            { "P", "\u0000\u0013\u0014\u0016\u0019\u0015\u0018\u0017\u0000" },
+
+            // Symbols
+            { "Sc", "\u001B" }, // UnicodeCategory.CurrencySymbol + 1
+            { "Sk", "\u001C" }, // UnicodeCategory.ModifierSymbol + 1
+            { "Sm", "\u001A" }, // UnicodeCategory.MathSymbol + 1
+            { "So", "\u001D" }, // UnicodeCategory.OtherSymbol + 1
+            { "S", "\u0000\u001B\u001C\u001A\u001D\u0000" },
+
+            // Separators
+            { "Zl", "\u000D" }, // UnicodeCategory.LineSeparator + 1
+            { "Zp", "\u000E" }, // UnicodeCategory.ParagraphSeparator + 1
+            { "Zs", "\u000C" }, // UnicodeCategory.SpaceSeparator + 1
+            { "Z", "\u0000\u000D\u000E\u000C\u0000" },
+        };
 
         /*
          *   The property table contains all the block definitions defined in the 
@@ -353,154 +410,15 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\uFF21', '\uFF3A', LowercaseAdd, 32),
         };
 
+#if DEBUG
         static RegexCharClass()
         {
-            // addressing Dictionary versus Hashtable thread safety difference by using
-            // a temp Dictionary. Note that this is just a theoretical concern since this
-            // is a static ctor and getter methods aren't called until after this is 
-            // done; this is just to avoid the long-term possibility of thread safety 
-            // problems.
-            Dictionary<String, String> tempCategories = new Dictionary<String, String>(32);
-
-            char[] groups = new char[9];
-            StringBuilder word = new StringBuilder(11);
-
-            word.Append(GroupChar);
-            groups[0] = GroupChar;
-
-            // We need the UnicodeCategory enum values as a char so we can put them in a string
-            // in the hashtable.  In order to get there, we first must cast to an int, 
-            // then cast to a char
-            // Also need to distinguish between positive and negative values.  UnicodeCategory is zero 
-            // based, so we add one to each value and subtract it off later
-
-            // Others
-            groups[1] = (char)((int)UnicodeCategory.Control + 1);
-            tempCategories["Cc"] = groups[1].ToString();     // Control 
-            groups[2] = (char)((int)UnicodeCategory.Format + 1);
-            tempCategories["Cf"] = groups[2].ToString();     // Format
-            groups[3] = (char)((int)UnicodeCategory.OtherNotAssigned + 1);
-            tempCategories["Cn"] = groups[3].ToString();     // Not assigned
-            groups[4] = (char)((int)UnicodeCategory.PrivateUse + 1);
-            tempCategories["Co"] = groups[4].ToString();     // Private use
-            groups[5] = (char)((int)UnicodeCategory.Surrogate + 1);
-            tempCategories["Cs"] = groups[5].ToString();     // Surrogate
-
-            groups[6] = GroupChar;
-            tempCategories["C"] = new String(groups, 0, 7);
-
-            // Letters
-            groups[1] = (char)((int)UnicodeCategory.LowercaseLetter + 1);
-            tempCategories["Ll"] = groups[1].ToString();     // Lowercase
-            groups[2] = (char)((int)UnicodeCategory.ModifierLetter + 1);
-            tempCategories["Lm"] = groups[2].ToString();     // Modifier
-            groups[3] = (char)((int)UnicodeCategory.OtherLetter + 1);
-            tempCategories["Lo"] = groups[3].ToString();     // Other 
-            groups[4] = (char)((int)UnicodeCategory.TitlecaseLetter + 1);
-            tempCategories["Lt"] = groups[4].ToString();     // Titlecase
-            groups[5] = (char)((int)UnicodeCategory.UppercaseLetter + 1);
-            tempCategories["Lu"] = groups[5].ToString();     // Uppercase
-
-            //groups[6] = GroupChar;
-            tempCategories["L"] = new String(groups, 0, 7);
-            word.Append(new String(groups, 1, 5));
-
-            // InternalRegexIgnoreCase = {LowercaseLetter} OR {TitlecaseLetter} OR {UppercaseLetter}
-            // !!!This category should only ever be used in conjunction with RegexOptions.IgnoreCase code paths!!!
-            tempCategories[s_internalRegexIgnoreCase] = String.Format(CultureInfo.InvariantCulture, "{0}{1}{2}{3}{4}", GroupChar, groups[1], groups[4], groups[5], groups[6]);
-
-            // Marks        
-            groups[1] = (char)((int)UnicodeCategory.SpacingCombiningMark + 1);
-            tempCategories["Mc"] = groups[1].ToString();     // Spacing combining
-            groups[2] = (char)((int)UnicodeCategory.EnclosingMark + 1);
-            tempCategories["Me"] = groups[2].ToString();     // Enclosing
-            groups[3] = (char)((int)UnicodeCategory.NonSpacingMark + 1);
-            tempCategories["Mn"] = groups[3].ToString();     // Non-spacing
-
-            groups[4] = GroupChar;
-            tempCategories["M"] = new String(groups, 0, 5);
-            //word.Append(groups[1]);
-            word.Append(groups[3]);
-
-            // Numbers
-            groups[1] = (char)((int)UnicodeCategory.DecimalDigitNumber + 1);
-            tempCategories["Nd"] = groups[1].ToString();     // Decimal digit
-            groups[2] = (char)((int)UnicodeCategory.LetterNumber + 1);
-            tempCategories["Nl"] = groups[2].ToString();     // Letter
-            groups[3] = (char)((int)UnicodeCategory.OtherNumber + 1);
-            tempCategories["No"] = groups[3].ToString();     // Other 
-
-            //groups[4] = GroupChar;
-            tempCategories["N"] = new String(groups, 0, 5);
-            word.Append(groups[1]);
-            //word.Append(new String(groups, 1, 3));
-
-            // Punctuation
-            groups[1] = (char)((int)UnicodeCategory.ConnectorPunctuation + 1);
-            tempCategories["Pc"] = groups[1].ToString();     // Connector
-            groups[2] = (char)((int)UnicodeCategory.DashPunctuation + 1);
-            tempCategories["Pd"] = groups[2].ToString();     // Dash
-            groups[3] = (char)((int)UnicodeCategory.ClosePunctuation + 1);
-            tempCategories["Pe"] = groups[3].ToString();     // Close
-            groups[4] = (char)((int)UnicodeCategory.OtherPunctuation + 1);
-            tempCategories["Po"] = groups[4].ToString();     // Other
-            groups[5] = (char)((int)UnicodeCategory.OpenPunctuation + 1);
-            tempCategories["Ps"] = groups[5].ToString();     // Open
-            groups[6] = (char)((int)UnicodeCategory.FinalQuotePunctuation + 1);
-            tempCategories["Pf"] = groups[6].ToString();     // Inital quote
-            groups[7] = (char)((int)UnicodeCategory.InitialQuotePunctuation + 1);
-            tempCategories["Pi"] = groups[7].ToString();     // Final quote
-
-            groups[8] = GroupChar;
-            tempCategories["P"] = new String(groups, 0, 9);
-            word.Append(groups[1]);
-
-            // Symbols
-            groups[1] = (char)((int)UnicodeCategory.CurrencySymbol + 1);
-            tempCategories["Sc"] = groups[1].ToString();     // Currency
-            groups[2] = (char)((int)UnicodeCategory.ModifierSymbol + 1);
-            tempCategories["Sk"] = groups[2].ToString();     // Modifier
-            groups[3] = (char)((int)UnicodeCategory.MathSymbol + 1);
-            tempCategories["Sm"] = groups[3].ToString();     // Math
-            groups[4] = (char)((int)UnicodeCategory.OtherSymbol + 1);
-            tempCategories["So"] = groups[4].ToString();     // Other
-
-            groups[5] = GroupChar;
-            tempCategories["S"] = new String(groups, 0, 6);
-
-            // Separators
-            groups[1] = (char)((int)UnicodeCategory.LineSeparator + 1);
-            tempCategories["Zl"] = groups[1].ToString();     // Line
-            groups[2] = (char)((int)UnicodeCategory.ParagraphSeparator + 1);
-            tempCategories["Zp"] = groups[2].ToString();     // Paragraph
-            groups[3] = (char)((int)UnicodeCategory.SpaceSeparator + 1);
-            tempCategories["Zs"] = groups[3].ToString();     // Space
-
-            groups[4] = GroupChar;
-            tempCategories["Z"] = new String(groups, 0, 5);
-
-
-            word.Append(GroupChar);
-            s_word = word.ToString();
-            s_notWord = NegateCategory(s_word);
-
-
-            SpaceClass = "\x00\x00\x01" + s_space;
-            NotSpaceClass = "\x01\x00\x01" + s_space;
-            WordClass = "\x00\x00" + (char)s_word.Length + s_word;
-            NotWordClass = "\x01\x00" + (char)s_word.Length + s_word; ;
-            DigitClass = "\x00\x00\x01" + (char)((int)UnicodeCategory.DecimalDigitNumber + 1);
-            NotDigitClass = "\x00\x00\x01" + unchecked((char)(-((int)UnicodeCategory.DecimalDigitNumber + 1)));
-
-#if DEBUG
-            // make sure the _propTable is correctly ordered
+            // Make sure the _propTable is correctly ordered
             int len = _propTable.Length;
             for (int i = 0; i < len - 1; i++)
                 Debug.Assert(String.Compare(_propTable[i][0], _propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass _propTable is out of order at (" + _propTable[i][0] + ", " + _propTable[i + 1][0] + ")");
-#endif
-
-            _definedCategories = tempCategories;
         }
+#endif
 
         /*
          * RegexCharClass()
