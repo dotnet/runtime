@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions
         internal const String EmptyClass = "\x00\x00\x00";
 
         // UnicodeCategory is zero based, so we add one to each value and subtract it off later
-        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>
+        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>(38)
         {
             // Others
             { "Cc", "\u000F" }, // UnicodeCategory.Control + 1
