@@ -561,7 +561,11 @@ struct _MonoDynamicGenericClass {
  * A type parameter.
  */
 struct _MonoGenericParam {
-	MonoGenericContainer *owner;	/* Type or method this parameter was defined in. */
+	/*
+	 * Type or method this parameter was defined in.
+	 * If this is non-null, this is a MonoGenericParamFull structure.
+	 */
+	MonoGenericContainer *owner;
 	guint16 num;
 	/* For internal runtime use, used to make different versions of the same param */
 	guint16 serial;

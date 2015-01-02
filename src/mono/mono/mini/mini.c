@@ -4537,7 +4537,7 @@ get_gsharedvt_type (MonoType *t)
 		copy = mono_image_alloc0 (image, sizeof (MonoGenericParamFull));
 		memcpy (copy, par, sizeof (MonoGenericParamFull));
 	} else {
-		copy = g_memdup (par, sizeof (MonoGenericParamFull));
+		copy = g_memdup (par, sizeof (MonoGenericParam));
 	}
 	copy->owner = NULL;
 	// FIXME:
