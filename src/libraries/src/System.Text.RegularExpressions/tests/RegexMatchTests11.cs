@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Numbering pattern slots: "(?< 1>\\d{3})(?< 2>\\d{3})(?< 3>\\d{4})"
             "8885551111"
 

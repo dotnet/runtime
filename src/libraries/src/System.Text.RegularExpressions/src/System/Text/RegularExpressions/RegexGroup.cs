@@ -10,7 +10,7 @@ namespace System.Text.RegularExpressions
     /// <summary>
     /// Represents the results from a single capturing group. A capturing group can
     /// capture zero, one, or more strings in a single match because of quantifiers, so
-    /// Group supplies a collection of Capture objects. 
+    /// Group supplies a collection of Capture objects.
     /// </summary>
     public class Group : Capture
     {
