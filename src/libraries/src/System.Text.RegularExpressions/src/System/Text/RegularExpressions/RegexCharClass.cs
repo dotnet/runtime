@@ -1070,7 +1070,7 @@ namespace System.Text.RegularExpressions
             bool done;
 
             _canonical = true;
-            _rangelist.Sort();
+            _rangelist.Sort(SingleRangeComparer.Instance);
 
             //
             // Find and eliminate overlapping or abutting ranges
@@ -1327,9 +1327,26 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// For sorting ranges; compare based on the first char in the range.
+        /// </summary>
+        private sealed class SingleRangeComparer : IComparer<SingleRange>
+        {
+            public static readonly SingleRangeComparer Instance = new SingleRangeComparer();
+
+            private SingleRangeComparer()
+            {
+            }
+
+            public int Compare(SingleRange x, SingleRange y)
+            {
+                return x._first.CompareTo(y._first);
+            }
+        }
+
+        /// <summary>
         /// A first/last pair representing a single range of characters.
         /// </summary>
-        private struct SingleRange : IComparable<SingleRange>
+        private struct SingleRange
         {
             internal SingleRange(char first, char last)
             {
@@ -1339,12 +1356,6 @@ namespace System.Text.RegularExpressions
 
             internal readonly char _first;
             internal readonly char _last;
-
-            public int CompareTo(SingleRange other)
-            {
-                // For sorting ranges; compare based on the first char in the range
-                return _first.CompareTo(other._first);
-            }
         }
     }
 }
