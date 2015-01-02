@@ -554,15 +554,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal void AddLowercase(CultureInfo culture)
         {
-            int i;
-            int origSize;
-            SingleRange range;
-
             _canonical = false;
 
-            for (i = 0, origSize = _rangelist.Count; i < origSize; i++)
+            int count = _rangelist.Count;
+            for (int i = 0; i < count; i++)
             {
-                range = _rangelist[i];
+                SingleRange range = _rangelist[i];
                 if (range._first == range._last)
                 {
                     char lower = culture.TextInfo.ToLower(range._first);
