@@ -4,20 +4,20 @@
 // This RegexCharClass class provides the "set of Unicode chars" functionality
 // used by the regexp engine.
 
-// The main function of RegexCharClass is as a builder to turn ranges, characters and 
-// Unicode categories into a single string.  This string is used as a black box 
+// The main function of RegexCharClass is as a builder to turn ranges, characters and
+// Unicode categories into a single string.  This string is used as a black box
 // representation of a character class by the rest of Regex.  The format is as follows.
 //
 // Char index   Use
 //      0       Flags - currently this only holds the "negate" flag
 //      1       length of the string representing the "set" portion, eg [a-z0-9] only has a "set"
 //      2       length of the string representing the "category" portion, eg [\p{Lu}] only has a "category"
-//      3...m   The set.  These are a series of ranges which define the characters included in the set. 
+//      3...m   The set.  These are a series of ranges which define the characters included in the set.
 //              To determine if a given character is in the set, we binary search over this set of ranges
 //              and see where the character should go.  Based on whether the ending index is odd or even,
-//              we know if the character is in the set. 
+//              we know if the character is in the set.
 //      m+1...n The categories.  This is a list of UnicodeCategory enum values which describe categories
-//              included in this class.  
+//              included in this class.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -147,11 +147,11 @@ namespace System.Text.RegularExpressions
         };
 
         /*
-         *   The property table contains all the block definitions defined in the 
-         *   XML schema spec (http://www.w3.org/TR/2001/PR-xmlschema-2-20010316/#charcter-classes), Unicode 4.0 spec (www.unicode.org), 
-         *   and Perl 5.6 (see Programming Perl, 3rd edition page 167).   Three blocks defined by Perl (and here) may 
-         *   not be in the Unicode: IsHighPrivateUseSurrogates, IsHighSurrogates, and IsLowSurrogates.   
-         *   
+         *   The property table contains all the block definitions defined in the
+         *   XML schema spec (http://www.w3.org/TR/2001/PR-xmlschema-2-20010316/#charcter-classes), Unicode 4.0 spec (www.unicode.org),
+         *   and Perl 5.6 (see Programming Perl, 3rd edition page 167).   Three blocks defined by Perl (and here) may
+         *   not be in the Unicode: IsHighPrivateUseSurrogates, IsHighSurrogates, and IsLowSurrogates.
+         *
         **/
         // Has to be sorted by the first column
         private static readonly String[][] _propTable = {
@@ -283,26 +283,26 @@ namespace System.Text.RegularExpressions
             Let U be the set of Unicode character values and let L be the lowercase
             function, mapping from U to U. To perform case insensitive matching of
             character sets, we need to be able to map an interval I in U, say
-    
+
                 I = [chMin, chMax] = { ch : chMin <= ch <= chMax }
-    
+
             to a set A such that A contains L(I) and A is contained in the union of
             I and L(I).
-    
+
             The table below partitions U into intervals on which L is non-decreasing.
             Thus, for any interval J = [a, b] contained in one of these intervals,
             L(J) is contained in [L(a), L(b)].
-    
+
             It is also true that for any such J, [L(a), L(b)] is contained in the
             union of J and L(J). This does not follow from L being non-decreasing on
             these intervals. It follows from the nature of the L on each interval.
             On each interval, L has one of the following forms:
-    
+
                 (1) L(ch) = constant            (LowercaseSet)
                 (2) L(ch) = ch + offset         (LowercaseAdd)
                 (3) L(ch) = ch | 1              (LowercaseBor)
                 (4) L(ch) = ch + (ch & 1)       (LowercaseBad)
-    
+
             It is easy to verify that for any of these forms [L(a), L(b)] is
             contained in the union of [a, b] and L([a, b]).
         ***************************************************************************/
@@ -770,9 +770,9 @@ namespace System.Text.RegularExpressions
         internal static bool IsECMAWordChar(char ch)
         {
             // According to ECMA-262, \s, \S, ., ^, and $ use Unicode-based interpretations of
-            // whitespace and newline, while \d, \D\, \w, \W, \b, and \B use ASCII-only 
+            // whitespace and newline, while \d, \D\, \w, \W, \b, and \B use ASCII-only
             // interpretations of digit, word character, and word boundary.  In other words,
-            // no special treatment of Unicode ZERO WIDTH NON-JOINER (ZWNJ U+200C) and 
+            // no special treatment of Unicode ZERO WIDTH NON-JOINER (ZWNJ U+200C) and
             // ZERO WIDTH JOINER (ZWJ U+200D) is required for ECMA word boundaries.
             return CharInClass(ch, ECMAWordClass);
         }
@@ -808,7 +808,7 @@ namespace System.Text.RegularExpressions
             bool b = CharInClassInternal(ch, set, start, mySetLength, myCategoryLength);
 
             // Note that we apply the negation *before* performing the subtraction.  This is because
-            // the negation only applies to the first char class, not the entire subtraction. 
+            // the negation only applies to the first char class, not the entire subtraction.
             if (set[start + FLAGS] == 1)
                 b = !b;
 
@@ -839,11 +839,11 @@ namespace System.Text.RegularExpressions
             }
 
             // The starting position of the set within the character class determines
-            // whether what an odd or even ending position means.  If the start is odd, 
-            // an *even* ending position means the character was in the set.  With recursive 
-            // subtractions in the mix, the starting position = start+SETSTART.  Since we know that 
-            // SETSTART is odd, we can simplify it out of the equation.  But if it changes we need to 
-            // reverse this check. 
+            // whether what an odd or even ending position means.  If the start is odd,
+            // an *even* ending position means the character was in the set.  With recursive
+            // subtractions in the mix, the starting position = start+SETSTART.  Since we know that
+            // SETSTART is odd, we can simplify it out of the equation.  But if it changes we need to
+            // reverse this check.
             Debug.Assert((SETSTART & 0x1) == 1, "If SETSTART is not odd, the calculation below this will be reversed");
             if ((min & 0x1) == (start & 0x1))
                 return true;
@@ -1037,9 +1037,9 @@ namespace System.Text.RegularExpressions
             if (!_canonical)
                 Canonicalize();
 
-            // make a guess about the length of the ranges.  We'll update this at the end. 
+            // make a guess about the length of the ranges.  We'll update this at the end.
             // This is important because if the last range ends in LastChar, we won't append
-            // LastChar to the list. 
+            // LastChar to the list.
             int rangeLen = _rangelist.Count * 2;
             StringBuilder sb = StringBuilderCache.Acquire(rangeLen + _categories.Length + 3);
 
