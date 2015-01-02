@@ -44,7 +44,7 @@ namespace System.Text.RegularExpressions
         private const String NullCharString = "\0";
 
         private const char NullChar = '\0';
-        private const char Lastchar = '\uFFFF';
+        private const char LastChar = '\uFFFF';
 
         private const char GroupChar = (char)0;
 
@@ -499,7 +499,7 @@ namespace System.Text.RegularExpressions
 
             if (i < set.Length)
             {
-                _rangelist.Add(new SingleRange(set[i], Lastchar));
+                _rangelist.Add(new SingleRange(set[i], LastChar));
             }
         }
 
@@ -727,7 +727,7 @@ namespace System.Text.RegularExpressions
         internal static bool IsSingleton(String set)
         {
             if (set[FLAGS] == 0 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
-                (set[SETSTART] == Lastchar || set[SETSTART] + 1 == set[SETSTART + 1]))
+                (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
                 return true;
             else
                 return false;
@@ -736,7 +736,7 @@ namespace System.Text.RegularExpressions
         internal static bool IsSingletonInverse(String set)
         {
             if (set[FLAGS] == 1 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
-                (set[SETSTART] == Lastchar || set[SETSTART] + 1 == set[SETSTART + 1]))
+                (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
                 return true;
             else
                 return false;
@@ -987,7 +987,7 @@ namespace System.Text.RegularExpressions
                 if (i < end)
                     last = (char)(charClass[i] - 1);
                 else
-                    last = Lastchar;
+                    last = LastChar;
                 i++;
                 ranges.Add(new SingleRange(first, last));
             }
@@ -1036,7 +1036,7 @@ namespace System.Text.RegularExpressions
                 SingleRange currentRange = _rangelist[i];
                 sb.Append(currentRange._first);
 
-                if (currentRange._last != Lastchar)
+                if (currentRange._last != LastChar)
                     sb.Append((char)(currentRange._last + 1));
             }
 
@@ -1084,7 +1084,7 @@ namespace System.Text.RegularExpressions
                 {
                     for (last = _rangelist[j]._last; ; i++)
                     {
-                        if (i == _rangelist.Count || last == Lastchar)
+                        if (i == _rangelist.Count || last == LastChar)
                         {
                             Done = true;
                             break;
@@ -1172,7 +1172,7 @@ namespace System.Text.RegularExpressions
                 if (index + 1 < set.Length)
                     ch2 = (char)(set[index + 1] - 1);
                 else
-                    ch2 = Lastchar;
+                    ch2 = LastChar;
 
                 desc.Append(CharDescription(ch1));
 
