@@ -87,7 +87,8 @@ namespace System.Text.RegularExpressions
         internal const String EmptyClass = "\x00\x00\x00";
 
         // UnicodeCategory is zero based, so we add one to each value and subtract it off later
-        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>(38)
+        private const int DefinedCategoriesCapacity = 38;
+        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>(DefinedCategoriesCapacity)
         {
             // Others
             { "Cc", "\u000F" }, // UnicodeCategory.Control + 1
@@ -412,7 +413,15 @@ namespace System.Text.RegularExpressions
 #if DEBUG
         static RegexCharClass()
         {
-            // Make sure the _propTable is correctly ordered
+            // Make sure the initial capacity for s_definedCategories is correct
+            Debug.Assert(
+                s_definedCategories.Count == DefinedCategoriesCapacity,
+                "RegexCharClass s_definedCategories's initial capacity (DefinedCategoriesCapacity) is incorrect.",
+                "Expected (s_definedCategories.Count): {0}, Actual (DefinedCategoriesCapacity): {1}",
+                s_definedCategories.Count,
+                DefinedCategoriesCapacity);
+
+            // Make sure the s_propTable is correctly ordered
             int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
                 Debug.Assert(String.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass s_propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
