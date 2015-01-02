@@ -3004,10 +3004,12 @@ static guint64
 read_enum_value (char *mem, int type)
 {
 	switch (type) {
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
 		return *(guint8*)mem;
 	case MONO_TYPE_I1:
 		return *(gint8*)mem;
+	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U2:
 		return *(guint16*)mem;
 	case MONO_TYPE_I2:
@@ -3083,7 +3085,7 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, MonoObject *value)
 
 	if (!enumc->enumtype)
 		mono_raise_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
-	if (!((objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_I1 && objc->byval_arg.type <= MONO_TYPE_U8)))
+	if (!((objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_BOOLEAN && objc->byval_arg.type <= MONO_TYPE_U8)))
 		mono_raise_exception (mono_get_exception_argument ("value", "The value passed in must be an enum base or an underlying type for an enum, such as an Int32."));
 
 	etype = mono_class_enum_basetype (enumc);
