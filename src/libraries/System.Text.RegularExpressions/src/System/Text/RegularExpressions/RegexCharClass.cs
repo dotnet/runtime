@@ -1067,7 +1067,7 @@ namespace System.Text.RegularExpressions
             int i;
             int j;
             char last;
-            bool Done;
+            bool done;
 
             _canonical = true;
             _rangelist.Sort();
@@ -1078,7 +1078,7 @@ namespace System.Text.RegularExpressions
 
             if (_rangelist.Count > 1)
             {
-                Done = false;
+                done = false;
 
                 for (i = 1, j = 0; ; i++)
                 {
@@ -1086,7 +1086,7 @@ namespace System.Text.RegularExpressions
                     {
                         if (i == _rangelist.Count || last == LastChar)
                         {
-                            Done = true;
+                            done = true;
                             break;
                         }
 
@@ -1101,7 +1101,7 @@ namespace System.Text.RegularExpressions
 
                     j++;
 
-                    if (Done)
+                    if (done)
                         break;
 
                     if (j < i)
