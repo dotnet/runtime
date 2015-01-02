@@ -33,6 +33,7 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-client.h"
+#include "metadata/sgen-bridge-internal.h"
 #include "metadata/threadpool-internals.h"
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE

@@ -32,6 +32,7 @@
 #include "metadata/abi-details.h"
 #include "metadata/mono-gc.h"
 #include "metadata/runtime.h"
+#include "metadata/sgen-bridge-internal.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internal.h"
 
@@ -2422,6 +2423,9 @@ sgen_client_handle_gc_param (const char *opt)
 			sgen_env_var_error (MONO_GC_PARAMS_NAME, conservative_stack_mark ? "Using `conservative`." : "Using `precise`.",
 					"Invalid value `%s` for `stack-mark` option, possible values are: `precise`, `conservative`.", opt);
 		}
+	} else if (g_str_has_prefix (opt, "bridge-implementation=")) {
+		opt = strchr (opt, '=') + 1;
+		sgen_set_bridge_implementation (opt);
 	} else {
 		return FALSE;
 	}
@@ -2439,7 +2443,7 @@ sgen_client_handle_gc_debug (const char *opt)
 {
 	if (!strcmp (opt, "xdomain-checks")) {
 		sgen_mono_xdomain_checks = TRUE;
-	} else {
+	} else if (!sgen_bridge_handle_gc_debug (opt)) {
 		return FALSE;
 	}
 	return TRUE;
@@ -2449,6 +2453,7 @@ void
 sgen_client_print_gc_debug_usage (void)
 {
 	fprintf (stderr, "  xdomain-checks\n");
+	sgen_bridge_print_gc_debug_usage ();
 }
 
 #endif

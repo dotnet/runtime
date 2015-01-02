@@ -138,13 +138,13 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 		if (!sgen_gc_is_object_ready_for_finalization (object))
 			continue;
 
-		if (!sgen_is_bridge_object (object))
+		if (!sgen_client_bridge_is_bridge_object (object))
 			continue;
 
 		copy = (char*)object;
 		copy_func ((void**)&copy, queue);
 
-		sgen_bridge_register_finalized_object ((GCObject*)copy);
+		sgen_client_bridge_register_finalized_object ((GCObject*)copy);
 		
 		if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
 			/* remove from the list */

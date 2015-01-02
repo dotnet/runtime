@@ -190,7 +190,6 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-protocol.h"
-#include "metadata/sgen-bridge.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-hash-table.h"
 #include "metadata/sgen-cardtable.h"
@@ -1144,8 +1143,8 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	We must reset the gathered bridges since their original block might be evacuated due to major
 	fragmentation in the meanwhile and the bridge code should not have to deal with that.
 	*/
-	if (sgen_need_bridge_processing ())
-		sgen_bridge_reset_data ();
+	if (sgen_client_bridge_need_processing ())
+		sgen_client_bridge_reset_data ();
 
 	/*
 	 * Walk the ephemeron tables marking all values with reachable keys. This must be completely done
@@ -1161,7 +1160,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 
 	sgen_mark_togglerefs (start_addr, end_addr, ctx);
 
-	if (sgen_need_bridge_processing ()) {
+	if (sgen_client_bridge_need_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
 		sgen_drain_gray_stack (-1, ctx);
 		sgen_collect_bridge_objects (generation, ctx);
@@ -1180,7 +1179,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		given we now have heuristics that perform major GC in anticipation of minor overflows this should not
 		be a big deal.
 		*/
-		sgen_bridge_processing_stw_step ();
+		sgen_client_bridge_processing_stw_step ();
 	}
 
 	/*
@@ -3013,8 +3012,7 @@ mono_gc_weak_link_get (void **link_addr)
 	 * conservatively wait for bridge processing when any weak
 	 * link is dereferenced.
 	 */
-	if (G_UNLIKELY (bridge_processing_in_progress))
-		mono_gc_wait_for_bridge_processing ();
+	sgen_client_bridge_wait_for_processing ();
 
 	if ((void*)*link_addr_volatile != ptr)
 		goto retry;
@@ -3247,11 +3245,6 @@ mono_gc_base_init (void)
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`soft-heap-limit` must be an integer.");
 				}
-				continue;
-			}
-			if (g_str_has_prefix (opt, "bridge-implementation=")) {
-				opt = strchr (opt, '=') + 1;
-				sgen_set_bridge_implementation (opt);
 				continue;
 			}
 			if (g_str_has_prefix (opt, "toggleref-test")) {
@@ -3488,7 +3481,7 @@ mono_gc_base_init (void)
 				do_not_finalize = TRUE;
 			} else if (!strcmp (opt, "log-finalizers")) {
 				log_finalizers = TRUE;
-			} else if (!sgen_client_handle_gc_debug (opt) && !sgen_bridge_handle_gc_debug (opt)) {
+			} else if (!sgen_client_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
 				if (usage_printed)
@@ -3520,7 +3513,6 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  do-not-finalize\n");
 				fprintf (stderr, "  log-finalizers\n");
 				sgen_client_print_gc_debug_usage ();
-				sgen_bridge_print_gc_debug_usage ();
 				fprintf (stderr, "\n");
 
 				usage_printed = TRUE;
@@ -3647,8 +3639,8 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 
 	sgen_try_free_some_memory = TRUE;
 
-	if (sgen_need_bridge_processing ())
-		sgen_bridge_processing_finish (generation);
+	if (sgen_client_bridge_need_processing ())
+		sgen_client_bridge_processing_finish (generation);
 
 	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
 

@@ -110,6 +110,14 @@ void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gbool
 int sgen_client_stop_world (int generation);
 int sgen_client_restart_world (int generation, GGTimingInfo *timing);
 
+gboolean sgen_client_bridge_need_processing (void);
+void sgen_client_bridge_reset_data (void);
+void sgen_client_bridge_processing_stw_step (void);
+void sgen_client_bridge_wait_for_processing (void);
+void sgen_client_bridge_processing_finish (int generation);
+gboolean sgen_client_bridge_is_bridge_object (GCObject *obj);
+void sgen_client_bridge_register_finalized_object (GCObject *object);
+
 void sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage);
 
 gboolean sgen_client_handle_gc_param (const char *opt);

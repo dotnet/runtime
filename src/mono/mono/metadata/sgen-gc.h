@@ -35,15 +35,14 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
-#include <mono/utils/mono-compiler.h>
-#include <mono/utils/atomic.h>
-#include <mono/utils/mono-mutex.h>
-#include <mono/metadata/sgen-conf.h>
-#include <mono/metadata/sgen-descriptor.h>
-#include <mono/metadata/sgen-gray.h>
-#include <mono/metadata/sgen-hash-table.h>
-#include <mono/metadata/sgen-bridge.h>
-#include <mono/metadata/sgen-protocol.h>
+#include "utils/mono-compiler.h"
+#include "utils/atomic.h"
+#include "utils/mono-mutex.h"
+#include "metadata/sgen-conf.h"
+#include "metadata/sgen-descriptor.h"
+#include "metadata/sgen-gray.h"
+#include "metadata/sgen-hash-table.h"
+#include "metadata/sgen-protocol.h"
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -154,9 +153,6 @@ extern FILE* gc_debug_file;
 extern int current_collection_generation;
 
 extern unsigned int sgen_global_stop_count;
-
-extern gboolean bridge_processing_in_progress;
-extern MonoGCBridgeCallbacks bridge_callbacks;
 
 #define SGEN_ALLOC_ALIGN		8
 #define SGEN_ALLOC_ALIGN_BITS	3
@@ -747,57 +743,15 @@ gboolean sgen_object_is_live (void *obj);
 
 void  sgen_init_fin_weak_hash (void);
 
-gboolean sgen_need_bridge_processing (void);
-void sgen_bridge_reset_data (void);
-void sgen_bridge_processing_stw_step (void);
-void sgen_bridge_processing_finish (int generation);
-void sgen_register_test_bridge_callbacks (const char *bridge_class_name);
-gboolean sgen_is_bridge_object (GCObject *obj);
-MonoGCBridgeObjectKind sgen_bridge_class_kind (MonoClass *klass);
-void sgen_mark_bridge_object (GCObject *obj);
-void sgen_bridge_register_finalized_object (GCObject *object);
-void sgen_bridge_describe_pointer (GCObject *object);
-
+/* FIXME: move the toggleref stuff out of here */
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
 
 void sgen_process_togglerefs (void);
 void sgen_register_test_toggleref_callback (void);
 
-gboolean sgen_is_bridge_object (GCObject *obj);
 void sgen_mark_bridge_object (GCObject *obj);
-
-gboolean sgen_bridge_handle_gc_debug (const char *opt);
-void sgen_bridge_print_gc_debug_usage (void);
-
-typedef struct {
-	void (*reset_data) (void);
-	void (*processing_stw_step) (void);
-	void (*processing_build_callback_data) (int generation);
-	void (*processing_after_callback) (int generation);
-	MonoGCBridgeObjectKind (*class_kind) (MonoClass *class);
-	void (*register_finalized_object) (GCObject *object);
-	void (*describe_pointer) (GCObject *object);
-	void (*enable_accounting) (void);
-	void (*set_dump_prefix) (const char *prefix);
-
-	/*
-	 * These are set by processing_build_callback_data().
-	 */
-	int num_sccs;
-	MonoGCBridgeSCC **api_sccs;
-
-	int num_xrefs;
-	MonoGCBridgeXRef *api_xrefs;
-} SgenBridgeProcessor;
-
-void sgen_old_bridge_init (SgenBridgeProcessor *collector);
-void sgen_new_bridge_init (SgenBridgeProcessor *collector);
-void sgen_tarjan_bridge_init (SgenBridgeProcessor *collector);
-void sgen_set_bridge_implementation (const char *name);
-void sgen_bridge_set_dump_prefix (const char *prefix);
-
-gboolean sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b);
+void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx);
 
 typedef mono_bool (*WeakLinkAlivePredicateFunc) (GCObject*, void*);
 
@@ -810,7 +764,6 @@ void sgen_gc_unlock (void);
 void sgen_queue_finalization_entry (GCObject *obj);
 const char* sgen_generation_name (int generation);
 
-void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx);
 void sgen_finalize_in_range (int generation, ScanCopyContext ctx);
 void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx);
 void sgen_null_links_for_domain (MonoDomain *domain, int generation);

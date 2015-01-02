@@ -22,6 +22,7 @@
 #include "metadata/sgen-archdep.h"
 #include "utils/mono-threads.h"
 #include "utils/mono-mmap.h"
+#include "metadata/object-internals.h"
 
 typedef MonoObject GCObject;
 typedef MonoVTable GCVTable;
@@ -143,6 +144,7 @@ struct _SgenClientThreadInfo {
 #include "utils/mono-logger-internal.h"
 #include "utils/mono-time.h"
 #include "utils/mono-semaphore.h"
+#include "metadata/sgen-bridge-internal.h"
 
 extern void mono_sgen_register_moved_object (void *obj, void *destination);
 extern void mono_sgen_gc_event_moves (void);
@@ -247,6 +249,48 @@ sgen_client_object_has_critical_finalizer (GCObject *obj)
 
 const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
 const char* sgen_client_vtable_get_name (GCVTable *vtable);
+
+static gboolean G_GNUC_UNUSED
+sgen_client_bridge_need_processing (void)
+{
+	return sgen_need_bridge_processing ();
+}
+
+static void G_GNUC_UNUSED
+sgen_client_bridge_reset_data (void)
+{
+	sgen_bridge_reset_data ();
+}
+
+static void G_GNUC_UNUSED
+sgen_client_bridge_processing_stw_step (void)
+{
+	sgen_bridge_processing_stw_step ();
+}
+
+static void G_GNUC_UNUSED
+sgen_client_bridge_wait_for_processing (void)
+{
+	mono_gc_wait_for_bridge_processing ();
+}
+
+static void G_GNUC_UNUSED
+sgen_client_bridge_processing_finish (int generation)
+{
+	sgen_bridge_processing_finish (generation);
+}
+
+static gboolean G_GNUC_UNUSED
+sgen_client_bridge_is_bridge_object (GCObject *obj)
+{
+	return sgen_is_bridge_object (obj);
+}
+
+static void G_GNUC_UNUSED
+sgen_client_bridge_register_finalized_object (GCObject *object)
+{
+	sgen_bridge_register_finalized_object (object);
+}
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_collection_requested (int generation, size_t requested_size, gboolean force)

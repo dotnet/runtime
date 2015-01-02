@@ -45,7 +45,7 @@
 #include <errno.h>
 
 #include "sgen-gc.h"
-#include "sgen-bridge.h"
+#include "sgen-bridge-internal.h"
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
 #include "sgen-client.h"

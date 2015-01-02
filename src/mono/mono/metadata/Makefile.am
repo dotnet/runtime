@@ -246,6 +246,7 @@ sgen_sources = \
 	sgen-protocol.c \
 	sgen-bridge.c		\
 	sgen-bridge.h		\
+	sgen-bridge-internal.h	\
 	sgen-old-bridge.c		\
 	sgen-new-bridge.c		\
 	sgen-tarjan-bridge.c		\
