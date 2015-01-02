@@ -574,9 +574,14 @@ namespace System.Text.RegularExpressions
             {
                 range = _rangelist[i];
                 if (range._first == range._last)
-                    range._first = range._last = culture.TextInfo.ToLower(range._first);
+                {
+                    char lower = culture.TextInfo.ToLower(range._first);
+                    _rangelist[i] = new SingleRange(lower, lower);
+                }
                 else
+                {
                     AddLowercaseRange(range._first, range._last, culture);
+                }
             }
         }
 
@@ -1122,7 +1127,7 @@ namespace System.Text.RegularExpressions
                             last = CurrentRange._last;
                     }
 
-                    _rangelist[j]._last = last;
+                    _rangelist[j] = new SingleRange(_rangelist[j]._first, last);
 
                     j++;
 
@@ -1373,7 +1378,7 @@ namespace System.Text.RegularExpressions
          *
          * A first/last pair representing a single range of characters.
          */
-        private sealed class SingleRange
+        private struct SingleRange
         {
             internal SingleRange(char first, char last)
             {
@@ -1381,8 +1386,8 @@ namespace System.Text.RegularExpressions
                 _last = last;
             }
 
-            internal char _first;
-            internal char _last;
+            internal readonly char _first;
+            internal readonly char _last;
         }
     }
 }
