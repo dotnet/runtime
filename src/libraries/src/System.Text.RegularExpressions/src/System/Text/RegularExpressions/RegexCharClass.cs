@@ -19,10 +19,9 @@
 //      m+1...n The categories.  This is a list of UnicodeCategory enum values which describe categories
 //              included in this class.
 
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace System.Text.RegularExpressions
