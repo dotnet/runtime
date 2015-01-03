@@ -19,20 +19,19 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexWriter
     {
-        internal int[] _intStack;
-        internal int _depth;
-        internal int[] _emitted;
-        internal int _curpos;
-        internal Dictionary<string, int> _stringhash;
-        internal List<String> _stringtable;
-        // not used! internal int         _stringcount;
-        internal bool _counting;
-        internal int _count;
-        internal int _trackcount;
-        internal Dictionary<Int32, Int32> _caps;
+        private int[] _intStack;
+        private int _depth;
+        private int[] _emitted;
+        private int _curpos;
+        private readonly Dictionary<string, int> _stringhash;
+        private readonly List<String> _stringtable;
+        private bool _counting;
+        private int _count;
+        private int _trackcount;
+        private Dictionary<Int32, Int32> _caps;
 
-        internal const int BeforeChild = 64;
-        internal const int AfterChild = 128;
+        private const int BeforeChild = 64;
+        private const int AfterChild = 128;
 
         /*
          * This is the only function that should be called from outside.
@@ -67,7 +66,7 @@ namespace System.Text.RegularExpressions
          * To avoid recursion, we use a simple integer stack.
          * This is the push.
          */
-        internal void PushInt(int I)
+        private void PushInt(int I)
         {
             if (_depth >= _intStack.Length)
             {
@@ -84,7 +83,7 @@ namespace System.Text.RegularExpressions
         /*
          * True if the stack is empty.
          */
-        internal bool EmptyStack()
+        private bool EmptyStack()
         {
             return _depth == 0;
         }
@@ -92,7 +91,7 @@ namespace System.Text.RegularExpressions
         /*
          * This is the pop.
          */
-        internal int PopInt()
+        private int PopInt()
         {
             return _intStack[--_depth];
         }
@@ -100,7 +99,7 @@ namespace System.Text.RegularExpressions
         /*
          * Returns the current position in the emitted code.
          */
-        internal int CurPos()
+        private int CurPos()
         {
             return _curpos;
         }
@@ -109,7 +108,7 @@ namespace System.Text.RegularExpressions
          * Fixes up a jump instruction at the specified offset
          * so that it jumps to the specified jumpDest.
          */
-        internal void PatchJump(int Offset, int jumpDest)
+        private void PatchJump(int Offset, int jumpDest)
         {
             _emitted[Offset + 1] = jumpDest;
         }
@@ -119,7 +118,7 @@ namespace System.Text.RegularExpressions
          * functions all run in two modes: they can emit code, or
          * they can just count the size of the code.
          */
-        internal void Emit(int op)
+        private void Emit(int op)
         {
             if (_counting)
             {
@@ -134,7 +133,7 @@ namespace System.Text.RegularExpressions
         /*
          * Emits a one-argument operation.
          */
-        internal void Emit(int op, int opd1)
+        private void Emit(int op, int opd1)
         {
             if (_counting)
             {
@@ -150,7 +149,7 @@ namespace System.Text.RegularExpressions
         /*
          * Emits a two-argument operation.
          */
-        internal void Emit(int op, int opd1, int opd2)
+        private void Emit(int op, int opd1, int opd2)
         {
             if (_counting)
             {
@@ -168,7 +167,7 @@ namespace System.Text.RegularExpressions
          * Returns an index in the string table for a string;
          * uses a hashtable to eliminate duplicates.
          */
-        internal int StringCode(String str)
+        private int StringCode(String str)
         {
             if (_counting)
                 return 0;
@@ -190,7 +189,7 @@ namespace System.Text.RegularExpressions
         /*
          * Just returns an exception; should be dead code
          */
-        internal ArgumentException MakeException(String message)
+        private ArgumentException MakeException(String message)
         {
             return new ArgumentException(message);
         }
@@ -201,7 +200,7 @@ namespace System.Text.RegularExpressions
          * for an array of capture slots. Instead of doing the hash
          * at match time, it's done at compile time, here.
          */
-        internal int MapCapnum(int capnum)
+        private int MapCapnum(int capnum)
         {
             if (capnum == -1)
                 return -1;
@@ -223,7 +222,7 @@ namespace System.Text.RegularExpressions
          * We should time it against the alternative, which is
          * to just generate the code and grow the array as we go.
          */
-        internal RegexCode RegexCodeFromRegexTree(RegexTree tree)
+        private RegexCode RegexCodeFromRegexTree(RegexTree tree)
         {
             RegexNode curNode;
             int curChild;
@@ -317,7 +316,7 @@ namespace System.Text.RegularExpressions
          * through the tree and calls EmitFragment to emits code before
          * and after each child of an interior node, and at each leaf.
          */
-        internal void EmitFragment(int nodetype, RegexNode node, int CurIndex)
+        private void EmitFragment(int nodetype, RegexNode node, int CurIndex)
         {
             int bits = 0;
 
