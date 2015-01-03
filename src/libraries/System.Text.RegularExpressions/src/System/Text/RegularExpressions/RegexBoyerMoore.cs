@@ -29,17 +29,15 @@ namespace System.Text.RegularExpressions
         private readonly bool _caseInsensitive;
         private readonly CultureInfo _culture;
 
-        /*
-         * Constructs a Boyer-Moore state machine for searching for the string
-         * pattern. The string must not be zero-length.
-         */
+        /// <summary>
+        /// Constructs a Boyer-Moore state machine for searching for the string
+        /// pattern. The string must not be zero-length.
+        /// </summary>
         internal RegexBoyerMoore(String pattern, bool caseInsensitive, bool rightToLeft, CultureInfo culture)
         {
-            /*
-             * Sorry,  you just can't use Boyer-Moore to find an empty pattern.
-             * We're doing this for your own protection. (Really, for speed.)
-             */
-            Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string.  This is bad for perf");
+            // Sorry, you just can't use Boyer-Moore to find an empty pattern.
+            // We're doing this for your own protection. (Really, for speed.)
+            Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string. This is bad for perf");
 
             int beforefirst;
             int last;
@@ -79,16 +77,15 @@ namespace System.Text.RegularExpressions
                 bump = -1;
             }
 
-            /*
-             * PART I - the good-suffix shift table
-             *
-             * compute the positive requirement:
-             * if char "i" is the first one from the right that doesn't match,
-             * then we know the matcher can advance by _positive[i].
-             *
-             * This algorithm is a simplified variant of the
-             *          standard Boyer-Moore good suffix calculation.
-             */
+            // PART I - the good-suffix shift table
+            //
+            // compute the positive requirement:
+            // if char "i" is the first one from the right that doesn't match,
+            // then we know the matcher can advance by _positive[i].
+            //
+            // This algorithm is a simplified variant of the standard
+            // Boyer-Moore good suffix calculation.
+
             _positive = new int[pattern.Length];
 
             examine = last;
@@ -142,12 +139,11 @@ namespace System.Text.RegularExpressions
 
             // scan for the chars for which there are no shifts that yield a different candidate
 
-            /*
-             *  The inside of the if statement used to say
-             *  "_positive[match] = last - beforefirst;"
-             *  This is slightly less agressive in how much we skip, but at worst it
-             *  should mean a little more work rather than skipping a potential match.
-             */
+
+            // The inside of the if statement used to say
+            // "_positive[match] = last - beforefirst;"
+            // This is slightly less agressive in how much we skip, but at worst it
+            // should mean a little more work rather than skipping a potential match.
             while (match != beforefirst)
             {
                 if (_positive[match] == 0)
@@ -156,19 +152,17 @@ namespace System.Text.RegularExpressions
                 match -= bump;
             }
 
-            /*
-             * PART II - the bad-character shift table
-             *
-             * compute the negative requirement:
-             * if char "ch" is the reject character when testing position "i",
-             * we can slide up by _negative[ch];
-             * (_negative[ch] = str.Length - 1 - str.LastIndexOf(ch))
-             *
-             * the lookup table is divided into ASCII and Unicode portions;
-             * only those parts of the Unicode 16-bit code set that actually
-             * appear in the string are in the table. (Maximum size with
-             * Unicode is 65K; ASCII only case is 512 bytes.)
-             */
+            // PART II - the bad-character shift table
+            //
+            // compute the negative requirement:
+            // if char "ch" is the reject character when testing position "i",
+            // we can slide up by _negative[ch];
+            // (_negative[ch] = str.Length - 1 - str.LastIndexOf(ch))
+            //
+            // the lookup table is divided into ASCII and Unicode portions;
+            // only those parts of the Unicode 16-bit code set that actually
+            // appear in the string are in the table. (Maximum size with
+            // Unicode is 65K; ASCII only case is 512 bytes.)
 
             _negativeASCII = new int[128];
 
@@ -251,9 +245,9 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*
-         * When a regex is anchored, we can do a quick IsMatch test instead of a Scan
-         */
+        /// <summary>
+        /// When a regex is anchored, we can do a quick IsMatch test instead of a Scan
+        /// </summary>
         internal bool IsMatch(String text, int index, int beglimit, int endlimit)
         {
             if (!_rightToLeft)
@@ -272,15 +266,14 @@ namespace System.Text.RegularExpressions
             }
         }
 
-
-        /*
-         * Scan uses the Boyer-Moore algorithm to find the first occurrance
-         * of the specified string within text, beginning at index, and
-         * constrained within beglimit and endlimit.
-         *
-         * The direction and case-sensitivity of the match is determined
-         * by the arguments to the RegexBoyerMoore constructor.
-         */
+        /// <summary>
+        /// Scan uses the Boyer-Moore algorithm to find the first occurrance
+        /// of the specified string within text, beginning at index, and
+        /// constrained within beglimit and endlimit.
+        ///
+        /// The direction and case-sensitivity of the match is determined
+        /// by the arguments to the RegexBoyerMoore constructor.
+        /// </summary>
         internal int Scan(String text, int index, int beglimit, int endlimit)
         {
             int test;
@@ -377,9 +370,9 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*
-         * Used when dumping for debugging.
-         */
+        /// <summary>
+        /// Used when dumping for debugging.
+        /// </summary>
         public override String ToString()
         {
             return _pattern;
