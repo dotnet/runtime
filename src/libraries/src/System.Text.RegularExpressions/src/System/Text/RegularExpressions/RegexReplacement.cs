@@ -19,8 +19,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal RegexReplacement(String rep, RegexNode concat, Dictionary<Int32, Int32> _caps)
         {
-            _rep = rep;
-
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
@@ -37,9 +35,11 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Multi:
                         sb.Append(child._str);
                         break;
+
                     case RegexNode.One:
                         sb.Append(child._ch);
                         break;
+
                     case RegexNode.Ref:
                         if (sb.Length > 0)
                         {
@@ -54,6 +54,7 @@ namespace System.Text.RegularExpressions
 
                         rules.Add(-Specials - 1 - slot);
                         break;
+
                     default:
                         throw new ArgumentException(SR.ReplacementError);
                 }
@@ -67,6 +68,7 @@ namespace System.Text.RegularExpressions
 
             StringBuilderCache.Release(sb);
 
+            _rep = rep;
             _strings = strings;
             _rules = rules;
         }
@@ -156,10 +158,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal String Pattern
         {
-            get
-            {
-                return _rep;
-            }
+            get { return _rep; }
         }
 
         /// <summary>
@@ -188,8 +187,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal String Replace(Regex regex, String input, int count, int startat)
         {
-            Match match;
-
             if (count < -1)
                 throw new ArgumentOutOfRangeException("count", SR.CountTooSmall);
             if (startat < 0 || startat > input.Length)
@@ -198,7 +195,7 @@ namespace System.Text.RegularExpressions
             if (count == 0)
                 return input;
 
-            match = regex.Match(input, startat);
+            Match match = regex.Match(input, startat);
             if (!match.Success)
             {
                 return input;
@@ -270,8 +267,6 @@ namespace System.Text.RegularExpressions
         internal static String Replace(MatchEvaluator evaluator, Regex regex,
                                        String input, int count, int startat)
         {
-            Match match;
-
             if (evaluator == null)
                 throw new ArgumentNullException("evaluator");
             if (count < -1)
@@ -282,7 +277,7 @@ namespace System.Text.RegularExpressions
             if (count == 0)
                 return input;
 
-            match = regex.Match(input, startat);
+            Match match = regex.Match(input, startat);
 
             if (!match.Success)
             {
@@ -353,14 +348,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal static String[] Split(Regex regex, String input, int count, int startat)
         {
-            Match match;
-            String[] result;
-
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count", SR.CountTooSmall);
-
             if (startat < 0 || startat > input.Length)
                 throw new ArgumentOutOfRangeException("startat", SR.BeginIndexNotNegative);
+
+            String[] result;
 
             if (count == 1)
             {
@@ -371,7 +364,7 @@ namespace System.Text.RegularExpressions
 
             count -= 1;
 
-            match = regex.Match(input, startat);
+            Match match = regex.Match(input, startat);
 
             if (!match.Success)
             {
