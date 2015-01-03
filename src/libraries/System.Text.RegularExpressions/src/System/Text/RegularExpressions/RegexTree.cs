@@ -11,7 +11,6 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexTree
     {
         internal RegexTree(RegexNode root, Dictionary<Int32, Int32> caps, Int32[] capnumlist, int captop, Dictionary<String, Int32> capnames, String[] capslist, RegexOptions opts)
-
         {
             _root = root;
             _caps = caps;
