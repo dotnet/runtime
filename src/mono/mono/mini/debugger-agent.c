@@ -5169,8 +5169,6 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 	/* Stop the previous operation */
 	ss_stop (ss_req);
 
-	ss_req->start_method = method;
-
 	/*
 	 * Implement single stepping using breakpoints if possible.
 	 */
@@ -5402,6 +5400,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, EventRequ
 			}
 		}
 	}
+
+	ss_req->start_method = method;
 
 	ss_start (ss_req, method, sp, info, &tls->context.ctx, tls, step_to_catch);
 
