@@ -1942,6 +1942,66 @@ enum {
 
 typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
+enum {
+	FILTER_IL_SEQ_POINT = 1 << 0,
+	FILTER_NOP          = 1 << 1,
+};
+
+static inline gboolean
+mono_inst_filter (MonoInst *ins, int filter)
+{
+	if (!ins || !filter)
+		return FALSE;
+
+	if ((filter & FILTER_IL_SEQ_POINT) && ins->opcode == OP_IL_SEQ_POINT)
+		return TRUE;
+
+	if ((filter & FILTER_NOP) && ins->opcode == OP_NOP)
+		return TRUE;
+
+	return FALSE;
+}
+
+static inline MonoInst*
+mono_inst_next (MonoInst *ins, int filter)
+{
+	do {
+		ins = ins->next;
+	} while (mono_inst_filter (ins, filter));
+
+	return ins;
+}
+
+static inline MonoInst*
+mono_inst_prev (MonoInst *ins, int filter)
+{
+	do {
+		ins = ins->prev;
+	} while (mono_inst_filter (ins, filter));
+
+	return ins;
+}
+
+static inline MonoInst*
+mono_bb_first_inst (MonoBasicBlock *bb, int filter)
+{
+	MonoInst *ins = bb->code;
+	if (mono_inst_filter (ins, filter))
+		ins = mono_inst_next (ins, filter);
+
+	return ins;
+}
+
+static inline MonoInst*
+mono_bb_last_inst (MonoBasicBlock *bb, int filter)
+{
+	MonoInst *ins = bb->last_ins;
+	if (mono_inst_filter (ins, filter))
+		ins = mono_inst_prev (ins, filter);
+
+	return ins;
+}
+
 /* main function */
 MONO_API int         mono_main                      (int argc, char* argv[]);
 MONO_API void        mono_set_defaults              (int verbose_level, guint32 opts);

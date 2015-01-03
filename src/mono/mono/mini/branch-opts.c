@@ -278,6 +278,7 @@ mono_if_conversion (MonoCompile *cfg)
 #ifdef MONO_ARCH_HAVE_CMOV_OPS
 	MonoBasicBlock *bb;
 	gboolean changed = FALSE;
+	int filter = FILTER_NOP | FILTER_IL_SEQ_POINT;
 
 	if (!(cfg->opt & MONO_OPT_CMOV))
 		return;
@@ -317,14 +318,15 @@ mono_if_conversion (MonoCompile *cfg)
 			int dreg, tmp_reg;
 			CompType comp_type;
 
-			if (bb->last_ins && (bb->last_ins->opcode == OP_BR_REG || bb->last_ins->opcode == OP_BR))
+			branch = mono_bb_last_inst (bb, filter);
+
+			if (!branch || branch->opcode == OP_BR_REG || branch->opcode == OP_BR)
 				continue;
 
 			/* Find the compare instruction */
-			if (!bb->last_ins || !bb->last_ins->prev)
+			compare = mono_inst_prev (branch, filter);
+			if (!compare)
 				continue;
-			branch = bb->last_ins;
-			compare = branch->prev;
 
 			if (!MONO_IS_COND_BRANCH_OP (branch))
 				/* This can happen if a cond branch is optimized away */
@@ -338,22 +340,19 @@ mono_if_conversion (MonoCompile *cfg)
 			 * variable.
 			 */
 			/* FIXME: Get rid of the nops earlier */
-			ins1 = true_bb->code;
-			while (ins1 && ins1->opcode == OP_NOP)
-				ins1 = ins1->next;
-			ins2 = false_bb->code;
-			while (ins2 && ins2->opcode == OP_NOP)
-				ins2 = ins2->next;
+			ins1 = mono_bb_first_inst (true_bb, filter);
+			ins2 = mono_bb_first_inst (false_bb, filter);
+
 			if (!(ins1 && ins2 && ins1->dreg == ins2->dreg && ins1->dreg != -1))
 				continue;
 
 			simple = TRUE;
 			for (tmp = ins1->next; tmp; tmp = tmp->next)
-				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_BR)))
+				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_IL_SEQ_POINT) || (tmp->opcode == OP_BR)))
 					simple = FALSE;
 					
 			for (tmp = ins2->next; tmp; tmp = tmp->next)
-				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_BR)))
+				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_IL_SEQ_POINT) || (tmp->opcode == OP_BR)))
 					simple = FALSE;
 
 			if (!simple)
@@ -381,7 +380,7 @@ mono_if_conversion (MonoCompile *cfg)
 			if (cfg->verbose_level > 2) {
 				printf ("\tBranch -> CMove optimization in BB%d on\n", bb->block_num);
 				printf ("\t\t"); mono_print_ins (compare);
-				printf ("\t\t"); mono_print_ins (compare->next);
+				printf ("\t\t"); mono_print_ins (mono_inst_next (compare, filter));
 				printf ("\t\t"); mono_print_ins (ins1);
 				printf ("\t\t"); mono_print_ins (ins2);
 			}
@@ -489,15 +488,15 @@ mono_if_conversion (MonoCompile *cfg)
 				next_bb = bb2;
 			}
 
-			ins1 = code_bb->code;
+			ins1 = mono_bb_first_inst (code_bb, filter);
 
 			if (!ins1)
 				continue;
 
 			/* Check that code_bb is simple */
 			simple = TRUE;
-			for (tmp = ins1->next; tmp; tmp = tmp->next)
-				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_BR)))
+			for (tmp = ins1; tmp; tmp = tmp->next)
+				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_IL_SEQ_POINT) || (tmp->opcode == OP_BR)))
 					simple = FALSE;
 
 			if (!simple)
@@ -507,15 +506,15 @@ mono_if_conversion (MonoCompile *cfg)
 			if (!MONO_INS_HAS_NO_SIDE_EFFECT (ins1))
 				continue;
 
-			if (bb->last_ins && bb->last_ins->opcode == OP_BR_REG)
+			branch = mono_bb_last_inst (bb, filter);
+
+			if (!branch || branch->opcode == OP_BR_REG)
 				continue;
 
 			/* Find the compare instruction */
-
-			if (!bb->last_ins || !bb->last_ins->prev)
+			compare = mono_inst_prev (branch, filter);
+			if (!compare)
 				continue;
-			branch = bb->last_ins;
-			compare = branch->prev;
 
 			if (!MONO_IS_COND_BRANCH_OP (branch))
 				/* This can happen if a cond branch is optimized away */
@@ -545,7 +544,7 @@ mono_if_conversion (MonoCompile *cfg)
 			if (cfg->verbose_level > 2) {
 				printf ("\tBranch -> CMove optimization (2) in BB%d on\n", bb->block_num);
 				printf ("\t\t"); mono_print_ins (compare);
-				printf ("\t\t"); mono_print_ins (compare->next);
+				printf ("\t\t"); mono_print_ins (mono_inst_next (compare, filter));
 				printf ("\t\t"); mono_print_ins (ins1);
 			}
 
@@ -628,7 +627,7 @@ mono_if_conversion (MonoCompile *cfg)
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoBasicBlock *bb1, *bb2, *true_bb, *false_bb, *next_bb;
-		MonoInst *branch1, *branch2, *compare1, *ins;
+		MonoInst *branch1, *branch2, *compare1, *ins, *next;
 
 		/* Look for the IR code generated from if (<var> < 0 || v > <limit>)
 		 * after branch opts which is:
@@ -654,14 +653,14 @@ mono_if_conversion (MonoCompile *cfg)
 		next_bb = bb2;
 
 		/* Check first branch */
-		branch1 = bb->last_ins;
+		branch1 = mono_bb_last_inst (bb, filter);
 		if (!(branch1 && ((branch1->opcode == OP_IBLT) || (branch1->opcode == OP_LBLT)) && (branch1->inst_false_bb == next_bb)))
 			continue;
 
 		true_bb = branch1->inst_true_bb;
 
 		/* Check second branch */
-		branch2 = next_bb->last_ins;
+		branch2 = mono_bb_last_inst (next_bb, filter);
 		if (!branch2)
 			continue;
 
@@ -674,19 +673,20 @@ mono_if_conversion (MonoCompile *cfg)
 			continue;
 
 		/* Check first compare */
-		compare1 = bb->last_ins->prev;
+		compare1 = mono_inst_prev (mono_bb_last_inst (bb, filter), filter);
 		if (!(compare1 && ((compare1->opcode == OP_ICOMPARE_IMM) || (compare1->opcode == OP_LCOMPARE_IMM)) && compare1->inst_imm == 0))
 			continue;
 
 		/* Check second bblock */
-		ins = next_bb->code;
+		ins = mono_bb_first_inst (next_bb, filter);
 		if (!ins)
 			continue;
-		if (((ins->opcode == OP_ICOMPARE_IMM) || (ins->opcode == OP_LCOMPARE_IMM)) && ins->sreg1 == compare1->sreg1 && ins->next == branch2) {
+		next = mono_inst_next (ins, filter);
+		if (((ins->opcode == OP_ICOMPARE_IMM) || (ins->opcode == OP_LCOMPARE_IMM)) && ins->sreg1 == compare1->sreg1 && next == branch2) {
 			/* The second arg must be positive */
 			if (ins->inst_imm < 0)
 				continue;
-		} else if (((ins->opcode == OP_LDLEN) || (ins->opcode == OP_STRLEN)) && ins->dreg != compare1->sreg1 && ins->next && ins->next->opcode == OP_ICOMPARE && ins->next->sreg1 == compare1->sreg1 && ins->next->sreg2 == ins->dreg && ins->next->next == branch2) {
+		} else if (((ins->opcode == OP_LDLEN) || (ins->opcode == OP_STRLEN)) && ins->dreg != compare1->sreg1 && next && next->opcode == OP_ICOMPARE && next->sreg1 == compare1->sreg1 && next->sreg2 == ins->dreg && mono_inst_next (next, filter) == branch2) {
 			/* Another common case: if (index < 0 || index > arr.Length) */
 		} else {
 			continue;
@@ -695,7 +695,7 @@ mono_if_conversion (MonoCompile *cfg)
 		if (cfg->verbose_level > 2) {
 			printf ("\tSigned->unsigned compare optimization in BB%d on\n", bb->block_num);
 			printf ("\t\t"); mono_print_ins (compare1);
-			printf ("\t\t"); mono_print_ins (compare1->next);
+			printf ("\t\t"); mono_print_ins (mono_inst_next (compare1, filter));
 			printf ("\t\t"); mono_print_ins (ins);
 		}
 
@@ -1243,6 +1243,8 @@ mono_optimize_branches (MonoCompile *cfg)
 	int i, changed = FALSE;
 	MonoBasicBlock *bb, *bbn;
 	guint32 niterations;
+	MonoInst *bbn_first_inst;
+	int filter = FILTER_IL_SEQ_POINT;
 
 	/*
 	 * Some crazy loops could cause the code below to go into an infinite
@@ -1339,17 +1341,18 @@ mono_optimize_branches (MonoCompile *cfg)
 
 				if (bb->last_ins && bb->last_ins->opcode == OP_BR) {
 					bbn = bb->last_ins->inst_target_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-						bbn->code->inst_target_bb != bbn &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn_first_inst = mono_bb_first_inst (bbn, filter);
+					if (bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
+						bbn_first_inst->inst_target_bb != bbn &&
+						bbn_first_inst->inst_target_bb->region == bb->region) {
 						
 						if (cfg->verbose_level > 2)
-							g_print ("branch to branch triggered %d -> %d -> %d\n", bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num);
+							g_print ("branch to branch triggered %d -> %d -> %d\n", bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num);
 
 						replace_in_block (bbn, bb, NULL);
-						replace_out_block (bb, bbn, bbn->code->inst_target_bb);
-						mono_link_bblock (cfg, bb, bbn->code->inst_target_bb);
-						bb->last_ins->inst_target_bb = bbn->code->inst_target_bb;
+						replace_out_block (bb, bbn, bbn_first_inst->inst_target_bb);
+						mono_link_bblock (cfg, bb, bbn_first_inst->inst_target_bb);
+						bb->last_ins->inst_target_bb = bbn_first_inst->inst_target_bb;
 						changed = TRUE;
 						continue;
 					}
@@ -1385,12 +1388,13 @@ mono_optimize_branches (MonoCompile *cfg)
 						continue;
 					}
 					bbn = bb->last_ins->inst_true_bb;
-					if (bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn_first_inst = mono_bb_first_inst (bbn, filter);
+					if (bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
+					    bbn_first_inst->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)		
 							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
-								 bbn->code->opcode);
+								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num, 
+								 bbn_first_inst->opcode);
 
 						/* 
 						 * Unlink, then relink bblocks to avoid various
@@ -1400,7 +1404,7 @@ mono_optimize_branches (MonoCompile *cfg)
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
-						bb->last_ins->inst_true_bb = bbn->code->inst_target_bb;
+						bb->last_ins->inst_true_bb = bbn_first_inst->inst_target_bb;
 
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_false_bb);
@@ -1410,17 +1414,18 @@ mono_optimize_branches (MonoCompile *cfg)
 					}
 
 					bbn = bb->last_ins->inst_false_bb;
-					if (bbn && bb->region == bbn->region && bbn->code && bbn->code->opcode == OP_BR &&
-					    bbn->code->inst_target_bb->region == bb->region) {
+					bbn_first_inst = mono_bb_first_inst (bbn, filter);
+					if (bbn && bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
+						bbn_first_inst->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
 							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn->code->inst_target_bb->block_num, 
-								 bbn->code->opcode);
+								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num, 
+								 bbn_first_inst->opcode);
 
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_false_bb);
 
-						bb->last_ins->inst_false_bb = bbn->code->inst_target_bb;
+						bb->last_ins->inst_false_bb = bbn_first_inst->inst_target_bb;
 
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_true_bb);
 						mono_link_bblock (cfg, bb, bb->last_ins->inst_false_bb);

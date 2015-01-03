@@ -3069,7 +3069,7 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *n;
 
 	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
-		MonoInst *last_ins = ins->prev;
+		MonoInst *last_ins = mono_inst_prev (ins, FILTER_IL_SEQ_POINT);
 
 		switch (ins->opcode) {
 		case OP_ADD_IMM:
@@ -3104,6 +3104,8 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 						/* Continue */
 					} else if (((ins2->opcode == OP_ICONST) || (ins2->opcode == OP_I8CONST)) && (ins2->dreg == ins->dreg) && (ins2->inst_c0 == 0)) {
 						NULLIFY_INS (ins2);
+						/* Continue */
+					} else if (ins2->opcode == OP_IL_SEQ_POINT) {
 						/* Continue */
 					} else {
 						break;
@@ -3161,9 +3163,10 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 		switch (ins->opcode) {
 		case OP_ICONST:
 		case OP_I8CONST: {
+			MonoInst *next = mono_inst_next (ins, FILTER_IL_SEQ_POINT);
 			/* reg = 0 -> XOR (reg, reg) */
 			/* XOR sets cflags on x86, so we cant do it always */
-			if (ins->inst_c0 == 0 && (!ins->next || (ins->next && INST_IGNORES_CFLAGS (ins->next->opcode)))) {
+			if (ins->inst_c0 == 0 && (!next || (next && INST_IGNORES_CFLAGS (next->opcode)))) {
 				ins->opcode = OP_LXOR;
 				ins->sreg1 = ins->dreg;
 				ins->sreg2 = ins->dreg;
@@ -3199,6 +3202,8 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 						/* Continue */
 					} else if (((ins2->opcode == OP_ICONST) || (ins2->opcode == OP_I8CONST)) && (ins2->dreg == ins->dreg) && (ins2->inst_c0 == 0)) {
 						NULLIFY_INS (ins2);
+						/* Continue */
+					} else if (ins2->opcode == OP_IL_SEQ_POINT) {
 						/* Continue */
 					} else {
 						break;
@@ -6934,11 +6939,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (!args_clobbered) {
 		MonoBasicBlock *first_bb = cfg->bb_entry;
 		MonoInst *next;
+		int filter = FILTER_IL_SEQ_POINT;
 
-		next = mono_bb_first_ins (first_bb);
+		next = mono_bb_first_inst (first_bb, filter);
 		if (!next && first_bb->next_bb) {
 			first_bb = first_bb->next_bb;
-			next = mono_bb_first_ins (first_bb);
+			next = mono_bb_first_inst (first_bb, filter);
 		}
 
 		if (first_bb->in_count > 1)
@@ -6948,11 +6954,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ArgInfo *ainfo = cinfo->args + i;
 			gboolean match = FALSE;
 
-			while (next && next->opcode == OP_IL_SEQ_POINT)
-				next = next->next;
-			if (!next)
-				break;
-			
 			ins = cfg->args [i];
 			if (ins->opcode != OP_REGVAR) {
 				switch (ainfo->storage) {
@@ -6989,7 +6990,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			}
 
 			if (match) {
-				next = next->next;
+				next = mono_inst_next (next, filter);
 				//next = mono_inst_list_next (&next->node, &first_bb->ins_list);
 				if (!next)
 					break;

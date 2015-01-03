@@ -168,7 +168,7 @@ restart:
 					!vreg_is_volatile (cfg, def->sreg1) &&
 					/* This avoids propagating local vregs across calls */
 					((get_vreg_to_inst (cfg, def->sreg1) || !defs [def->sreg1] || (def_index [def->sreg1] >= last_call_index) || (def->opcode == OP_VMOVE))) &&
-					!(defs [def->sreg1] && defs [def->sreg1]->next == def) &&
+					!(defs [def->sreg1] && mono_inst_next (defs [def->sreg1], FILTER_IL_SEQ_POINT) == def) &&
 					(!MONO_ARCH_USE_FPSTACK || (def->opcode != OP_FMOVE)) &&
 					(def->opcode != OP_FMOVE)) {
 					int vreg = def->sreg1;
@@ -512,6 +512,7 @@ mono_local_deadce (MonoCompile *cfg)
 			const char *spec = INS_INFO (ins->opcode);
 			int sregs [MONO_MAX_SRC_REGS];
 			int num_sregs, i;
+			MonoInst *prev_f = mono_inst_prev (ins, FILTER_NOP | FILTER_IL_SEQ_POINT);
 
 			if (ins->opcode == OP_NOP) {
 				MONO_DELETE_INS (bb, ins);
@@ -520,13 +521,11 @@ mono_local_deadce (MonoCompile *cfg)
 
 			g_assert (ins->opcode > MONO_CEE_LAST);
 
-			if (MONO_IS_NON_FP_MOVE (ins) && ins->prev) {
+			if (MONO_IS_NON_FP_MOVE (ins) && prev_f) {
 				MonoInst *def;
 				const char *spec2;
 
-				def = ins->prev;
-				while (def->prev && (def->opcode == OP_NOP))
-					def = def->prev;
+				def = prev_f;
 				spec2 = INS_INFO (def->opcode);
 
 				/* 
@@ -557,8 +556,8 @@ mono_local_deadce (MonoCompile *cfg)
 					(!get_vreg_to_inst (cfg, ins->dreg) || (!bb->extended && !vreg_is_volatile (cfg, ins->dreg) && mono_bitset_test_fast (defined, ins->dreg))) &&
 					MONO_INS_HAS_NO_SIDE_EFFECT (ins)) {
 					/* Happens with CMOV instructions */
-					if (ins->prev && ins->prev->opcode == OP_ICOMPARE_IMM) {
-						MonoInst *prev = ins->prev;
+					if (prev_f && prev_f->opcode == OP_ICOMPARE_IMM) {
+						MonoInst *prev = prev_f;
 						/* 
 						 * Can't use DELETE_INS since that would interfere with the
 						 * FOR_EACH_INS loop.
