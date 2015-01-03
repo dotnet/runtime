@@ -14,7 +14,6 @@
 //
 // Strings and sets are indices into a string table.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;

@@ -4,7 +4,6 @@
 // RegexTree is just a wrapper for a node tree with some
 // global information attached.
 
-using System.Collections;
 using System.Collections.Generic;
 
 namespace System.Text.RegularExpressions

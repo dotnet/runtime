@@ -5,7 +5,6 @@
 // It executes a block of regular expression codes while consuming
 // input.
 
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 

@@ -38,7 +38,6 @@
 // _operands, an an object (either a string or a set)
 // is stored in _data
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
