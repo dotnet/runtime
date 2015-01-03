@@ -1920,7 +1920,7 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins, *n;
 
 	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
-		MonoInst *last_ins = ins->prev;
+		MonoInst *last_ins = mono_inst_prev (ins, FILTER_IL_SEQ_POINT);
 
 		switch (ins->opcode) {
 		case OP_IADD_IMM:
@@ -2011,7 +2011,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * Convert succeeding STORE_MEMBASE_IMM 0 ins to STORE_MEMBASE_REG 
 				 * since it takes 3 bytes instead of 7.
 				 */
-				for (ins2 = ins->next; ins2; ins2 = ins2->next) {
+				for (ins2 = mono_inst_next (ins, FILTER_IL_SEQ_POINT); ins2; ins2 = ins2->next) {
 					if ((ins2->opcode == OP_STORE_MEMBASE_IMM) && (ins2->inst_imm == 0)) {
 						ins2->opcode = OP_STORE_MEMBASE_REG;
 						ins2->sreg1 = ins->dreg;
