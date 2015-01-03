@@ -71,9 +71,9 @@ namespace System.Text.RegularExpressions
             _rules = rules;
         }
 
-        internal String _rep;
-        internal List<String> _strings;          // table of string constants
-        internal List<Int32> _rules;            // negative -> group #, positive -> string #
+        private readonly String _rep;
+        private readonly List<String> _strings; // table of string constants
+        private readonly List<Int32> _rules;    // negative -> group #, positive -> string #
 
         // constants for special insertion patterns
 
