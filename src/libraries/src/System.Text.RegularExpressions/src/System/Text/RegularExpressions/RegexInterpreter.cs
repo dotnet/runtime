@@ -13,17 +13,17 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexInterpreter : RegexRunner
     {
-        private int _runoperator;
-        private readonly int[] _runcodes;
-        private int _runcodepos;
-        private readonly String[] _runstrings;
         private readonly RegexCode _runcode;
+        private readonly int[] _runcodes;
+        private readonly String[] _runstrings;
         private readonly RegexPrefix _runfcPrefix;
         private readonly RegexBoyerMoore _runbmPrefix;
         private readonly int _runanchors;
+        private readonly CultureInfo _runculture;
+        private int _runoperator;
+        private int _runcodepos;
         private bool _runrtl;
         private bool _runci;
-        private readonly CultureInfo _runculture;
 
         internal RegexInterpreter(RegexCode code, CultureInfo culture)
         {
