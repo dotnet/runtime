@@ -22,13 +22,13 @@ namespace System.Text.RegularExpressions
             _options = opts;
         }
 
-        internal RegexNode _root;
-        internal Dictionary<Int32, Int32> _caps;
-        internal Int32[] _capnumlist;
-        internal Dictionary<String, Int32> _capnames;
-        internal String[] _capslist;
-        internal RegexOptions _options;
-        internal int _captop;
+        internal readonly RegexNode _root;
+        internal readonly Dictionary<Int32, Int32> _caps;
+        internal readonly Int32[] _capnumlist;
+        internal readonly Dictionary<String, Int32> _capnames;
+        internal readonly String[] _capslist;
+        internal readonly RegexOptions _options;
+        internal readonly int _captop;
 
 #if DEBUG
         internal void Dump()
