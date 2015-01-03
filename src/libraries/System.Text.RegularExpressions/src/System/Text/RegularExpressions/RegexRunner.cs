@@ -71,18 +71,18 @@ namespace System.Text.RegularExpressions
 
         protected internal RegexRunner() { }
 
-        /*
-         * Scans the string to find the first match. Uses the Match object
-         * both to feed text in and as a place to store matches that come out.
-         *
-         * All the action is in the abstract Go() method defined by subclasses. Our
-         * responsibility is to load up the class members (as done here) before
-         * calling Go.
-         *
-         * The optimizer can compute a set of candidate starting characters,
-         * and we could use a separate method Skip() that will quickly scan past
-         * any characters that we know can't match.
-         */
+        /// <summary>
+        /// Scans the string to find the first match. Uses the Match object
+        /// both to feed text in and as a place to store matches that come out.
+        ///
+        /// All the action is in the abstract Go() method defined by subclasses. Our
+        /// responsibility is to load up the class members (as done here) before
+        /// calling Go.
+        ///
+        /// The optimizer can compute a set of candidate starting characters,
+        /// and we could use a separate method Skip() that will quickly scan past
+        /// any characters that we know can't match.
+        /// </summary>
         protected internal Match Scan(Regex regex, String text, int textbeg, int textend, int textstart, int prevlen, bool quick)
         {
             return Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
@@ -241,31 +241,31 @@ namespace System.Text.RegularExpressions
             throw new RegexMatchTimeoutException(_runtext, _runregex._pattern, TimeSpan.FromMilliseconds(_timeout));
         }
 
-        /*
-         * The responsibility of Go() is to run the regular expression at
-         * runtextpos and call Capture() on all the captured subexpressions,
-         * then to leave runtextpos at the ending position. It should leave
-         * runtextpos where it started if there was no match.
-         */
+        /// <summary>
+        /// The responsibility of Go() is to run the regular expression at
+        /// runtextpos and call Capture() on all the captured subexpressions,
+        /// then to leave runtextpos at the ending position. It should leave
+        /// runtextpos where it started if there was no match.
+        /// </summary>
         protected abstract void Go();
 
-        /*
-         * The responsibility of FindFirstChar() is to advance runtextpos
-         * until it is at the next position which is a candidate for the
-         * beginning of a successful match.
-         */
+        /// <summary>
+        /// The responsibility of FindFirstChar() is to advance runtextpos
+        /// until it is at the next position which is a candidate for the
+        /// beginning of a successful match.
+        /// </summary>
         protected abstract bool FindFirstChar();
 
-        /*
-         * InitTrackCount must initialize the runtrackcount field; this is
-         * used to know how large the initial runtrack and runstack arrays
-         * must be.
-         */
+        /// <summary>
+        /// InitTrackCount must initialize the runtrackcount field; this is
+        /// used to know how large the initial runtrack and runstack arrays
+        /// must be.
+        /// </summary>
         protected abstract void InitTrackCount();
 
-        /*
-         * Initializes all the data members that are used by Go()
-         */
+        /// <summary>
+        /// Initializes all the data members that are used by Go()
+        /// </summary>
         private void InitMatch()
         {
             // Use a hashtable'ed Match object if the capture numbers are sparse
@@ -315,9 +315,9 @@ namespace System.Text.RegularExpressions
             _runcrawlpos = 32;
         }
 
-        /*
-         * Put match in its canonical form before returning it.
-         */
+        /// <summary>
+        /// Put match in its canonical form before returning it.
+        /// </summary>
         private Match TidyMatch(bool quick)
         {
             if (!quick)
@@ -338,9 +338,9 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*
-         * Called by the implemenation of Go() to increase the size of storage
-         */
+        /// <summary>
+        /// Called by the implemenation of Go() to increase the size of storage
+        /// </summary>
         protected void EnsureStorage()
         {
             if (_runstackpos < _runtrackcount * 4)
@@ -349,11 +349,11 @@ namespace System.Text.RegularExpressions
                 DoubleTrack();
         }
 
-        /*
-         * Called by the implemenation of Go() to decide whether the pos
-         * at the specified index is a boundary or not. It's just not worth
-         * emitting inline code for this logic.
-         */
+        /// <summary>
+        /// Called by the implemenation of Go() to decide whether the pos
+        /// at the specified index is a boundary or not. It's just not worth
+        /// emitting inline code for this logic.
+        /// </summary>
         protected bool IsBoundary(int index, int startpos, int endpos)
         {
             return (index > startpos && RegexCharClass.IsWordChar(_runtext[index - 1])) !=
@@ -377,10 +377,10 @@ namespace System.Text.RegularExpressions
             return RegexCharClass.CharInClass(ch, charClass);
         }
 
-        /*
-         * Called by the implemenation of Go() to increase the size of the
-         * backtracking stack.
-         */
+        /// <summary>
+        /// Called by the implemenation of Go() to increase the size of the
+        /// backtracking stack.
+        /// </summary>
         protected void DoubleTrack()
         {
             int[] newtrack;
@@ -392,10 +392,10 @@ namespace System.Text.RegularExpressions
             _runtrack = newtrack;
         }
 
-        /*
-         * Called by the implemenation of Go() to increase the size of the
-         * grouping stack.
-         */
+        /// <summary>
+        /// Called by the implemenation of Go() to increase the size of the
+        /// grouping stack.
+        /// </summary>
         protected void DoubleStack()
         {
             int[] newstack;
@@ -407,9 +407,9 @@ namespace System.Text.RegularExpressions
             _runstack = newstack;
         }
 
-        /*
-         * Increases the size of the longjump unrolling stack.
-         */
+        /// <summary>
+        /// Increases the size of the longjump unrolling stack.
+        /// </summary>
         protected void DoubleCrawl()
         {
             int[] newcrawl;
@@ -421,9 +421,9 @@ namespace System.Text.RegularExpressions
             _runcrawl = newcrawl;
         }
 
-        /*
-         * Save a number on the longjump unrolling stack
-         */
+        /// <summary>
+        /// Save a number on the longjump unrolling stack
+        /// </summary>
         protected void Crawl(int i)
         {
             if (_runcrawlpos == 0)
@@ -432,27 +432,27 @@ namespace System.Text.RegularExpressions
             _runcrawl[--_runcrawlpos] = i;
         }
 
-        /*
-         * Remove a number from the longjump unrolling stack
-         */
+        /// <summary>
+        /// Remove a number from the longjump unrolling stack
+        /// </summary>
         protected int Popcrawl()
         {
             return _runcrawl[_runcrawlpos++];
         }
 
-        /*
-         * Get the height of the stack
-         */
+        /// <summary>
+        /// Get the height of the stack
+        /// </summary>
         protected int Crawlpos()
         {
             return _runcrawl.Length - _runcrawlpos;
         }
 
-        /*
-         * Called by Go() to capture a subexpression. Note that the
-         * capnum used here has already been mapped to a non-sparse
-         * index (by the code generator RegexWriter).
-         */
+        /// <summary>
+        /// Called by Go() to capture a subexpression. Note that the
+        /// capnum used here has already been mapped to a non-sparse
+        /// index (by the code generator RegexWriter).
+        /// </summary>
         protected void Capture(int capnum, int start, int end)
         {
             if (end < start)
@@ -468,11 +468,11 @@ namespace System.Text.RegularExpressions
             _runmatch.AddMatch(capnum, start, end - start);
         }
 
-        /*
-         * Called by Go() to capture a subexpression. Note that the
-         * capnum used here has already been mapped to a non-sparse
-         * index (by the code generator RegexWriter).
-         */
+        /// <summary>
+        /// Called by Go() to capture a subexpression. Note that the
+        /// capnum used here has already been mapped to a non-sparse
+        /// index (by the code generator RegexWriter).
+        /// </summary>
         protected void TransferCapture(int capnum, int uncapnum, int start, int end)
         {
             int start2;
@@ -530,34 +530,34 @@ namespace System.Text.RegularExpressions
             _runmatch.RemoveMatch(capnum);
         }
 
-        /*
-         * Call out to runmatch to get around visibility issues
-         */
+        /// <summary>
+        /// Call out to runmatch to get around visibility issues
+        /// </summary>
         protected bool IsMatched(int cap)
         {
             return _runmatch.IsMatched(cap);
         }
 
-        /*
-         * Call out to runmatch to get around visibility issues
-         */
+        /// <summary>
+        /// Call out to runmatch to get around visibility issues
+        /// </summary>
         protected int MatchIndex(int cap)
         {
             return _runmatch.MatchIndex(cap);
         }
 
-        /*
-         * Call out to runmatch to get around visibility issues
-         */
+        /// <summary>
+        /// Call out to runmatch to get around visibility issues
+        /// </summary>
         protected int MatchLength(int cap)
         {
             return _runmatch.MatchLength(cap);
         }
 
 #if DEBUG
-        /*
-         * Dump the current state
-         */
+        /// <summary>
+        /// Dump the current state
+        /// </summary>
         internal virtual void DumpState()
         {
             Debug.WriteLine("Text:  " + TextposDescription());
