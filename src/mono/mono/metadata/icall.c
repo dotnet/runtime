@@ -1898,13 +1898,20 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 		mono_raise_exception (mono_get_exception_invalid_operation (NULL));
 
 	if (image_is_dynamic (field->parent->image)) {
-		/* FIXME: */
-		g_assert_not_reached ();
-	}
+		MonoClass *klass = field->parent;
+		int fidx = field - klass->fields;
 
-	def_value = mono_class_get_field_default_value (field, &def_type);
-	if (!def_value) /*FIXME, maybe we should try to raise TLE if field->parent is broken */
-		mono_raise_exception (mono_get_exception_invalid_operation (NULL));
+		g_assert (fidx >= 0 && fidx < klass->field.count);
+		g_assert (klass->ext);
+		g_assert (klass->ext->field_def_values);
+		def_type = klass->ext->field_def_values [fidx].def_type;
+		def_value = klass->ext->field_def_values [fidx].data;
+	} else {
+		def_value = mono_class_get_field_default_value (field, &def_type);
+		/* FIXME, maybe we should try to raise TLE if field->parent is broken */
+		if (!def_value)
+			mono_raise_exception (mono_get_exception_invalid_operation (NULL));
+	}
 
 	/*FIXME unify this with reflection.c:mono_get_object_from_blob*/
 	switch (def_type) {
