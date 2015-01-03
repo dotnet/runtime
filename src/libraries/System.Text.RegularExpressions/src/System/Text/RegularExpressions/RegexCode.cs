@@ -151,11 +151,11 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        internal static int OpcodeSize(int Opcode)
+        internal static int OpcodeSize(int opcode)
         {
-            Opcode &= Mask;
+            opcode &= Mask;
 
-            switch (Opcode)
+            switch (opcode)
             {
                 case Nothing:
                 case Bol:
@@ -168,7 +168,6 @@ namespace System.Text.RegularExpressions
                 case Start:
                 case EndZ:
                 case End:
-
                 case Nullmark:
                 case Setmark:
                 case Getmark:
@@ -176,7 +175,6 @@ namespace System.Text.RegularExpressions
                 case Backjump:
                 case Forejump:
                 case Stop:
-
                     return 1;
 
                 case One:
@@ -184,8 +182,6 @@ namespace System.Text.RegularExpressions
                 case Multi:
                 case Ref:
                 case Testref:
-
-
                 case Goto:
                 case Nullcount:
                 case Setcount:
@@ -194,13 +190,11 @@ namespace System.Text.RegularExpressions
                 case Lazybranchmark:
                 case Prune:
                 case Set:
-
                     return 2;
 
                 case Capturemark:
                 case Branchcount:
                 case Lazybranchcount:
-
                 case Onerep:
                 case Notonerep:
                 case Oneloop:
@@ -210,18 +204,11 @@ namespace System.Text.RegularExpressions
                 case Setlazy:
                 case Setrep:
                 case Setloop:
-
                     return 3;
 
                 default:
-
-                    throw MakeException(SR.Format(SR.UnexpectedOpcode, Opcode.ToString(CultureInfo.CurrentCulture)));
+                    throw new ArgumentException(SR.Format(SR.UnexpectedOpcode, opcode.ToString(CultureInfo.CurrentCulture)));
             }
-        }
-
-        private static ArgumentException MakeException(String message)
-        {
-            return new ArgumentException(message);
         }
 
         private static readonly String[] CodeStr = new String[]
