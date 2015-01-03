@@ -12,7 +12,6 @@
 //
 
 using System.Collections.Generic;
-using System.Collections;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -70,7 +69,7 @@ namespace System.Text.RegularExpressions
             {
                 int[] expanded = new int[_depth * 2];
 
-                System.Array.Copy(_intStack, 0, expanded, 0, _depth);
+                Array.Copy(_intStack, 0, expanded, 0, _depth);
 
                 _intStack = expanded;
             }
