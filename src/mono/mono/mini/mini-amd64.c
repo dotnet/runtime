@@ -502,6 +502,8 @@ typedef struct {
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
 	gint8 pair_regs [2];
+	/* The size of each pair */
+	int pair_size [2];
 	int nregs;
 } ArgInfo;
 
@@ -688,7 +690,6 @@ static int
 count_fields_nested (MonoClass *klass)
 {
 	MonoMarshalType *info;
-	guint32 align;
 	int i, count;
 
 	info = mono_marshal_load_type_info (klass);
@@ -707,7 +708,6 @@ static int
 collect_field_info_nested (MonoClass *klass, MonoMarshalField *fields, int index, int offset)
 {
 	MonoMarshalType *info;
-	guint32 align;
 	int i;
 
 	info = mono_marshal_load_type_info (klass);
@@ -810,6 +810,11 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		nquads = 1;
 
 	if (!sig->pinvoke) {
+		int n = mono_class_value_size (klass, NULL);
+
+		quadsize [0] = n >= 8 ? 8 : n;
+		quadsize [1] = n >= 8 ? MAX (n - 8, 8) : 0;
+
 		/* Always pass in 1 or 2 integer registers */
 		args [0] = ARG_CLASS_INTEGER;
 		args [1] = ARG_CLASS_INTEGER;
@@ -914,8 +919,17 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 		int orig_gr = *gr;
 		int orig_fr = *fr;
 
+		while (quadsize [0] != 1 && quadsize [0] != 2 && quadsize [0] != 4 && quadsize [0] != 8)
+			quadsize [0] ++;
+		while (quadsize [1] != 1 && quadsize [1] != 2 && quadsize [1] != 4 && quadsize [1] != 8)
+			quadsize [1] ++;
+
 		ainfo->storage = ArgValuetypeInReg;
 		ainfo->pair_storage [0] = ainfo->pair_storage [1] = ArgNone;
+		g_assert (quadsize [0] <= 8);
+		g_assert (quadsize [1] <= 8);
+		ainfo->pair_size [0] = quadsize [0];
+		ainfo->pair_size [1] = quadsize [1];
 		ainfo->nregs = nquads;
 		for (quad = 0; quad < nquads; ++quad) {
 			switch (args [quad]) {
@@ -7096,7 +7110,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		for (quad = 0; quad < 2; quad ++) {
 			switch (ainfo->pair_storage [quad]) {
 			case ArgInIReg:
-				amd64_mov_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof(mgreg_t)), sizeof(mgreg_t));
+				amd64_mov_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof(mgreg_t)), ainfo->pair_size [quad]);
 				break;
 			case ArgInFloatSSEReg:
 				amd64_movss_reg_membase (code, ainfo->pair_regs [quad], inst->inst_basereg, inst->inst_offset + (quad * sizeof(mgreg_t)));
