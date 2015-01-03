@@ -575,6 +575,7 @@ typedef struct {
 	StepFilter filter;
 	gpointer last_sp;
 	gpointer start_sp;
+	MonoMethod *start_method;
 	MonoMethod *last_method;
 	int last_line;
 	/* Whenever single stepping is performed using start/stop_single_stepping () */
@@ -3508,7 +3509,8 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 				} else if (mod->kind == MOD_KIND_STEP) {
 					if ((mod->data.filter & STEP_FILTER_STATIC_CTOR) && ji &&
 						(jinfo_get_method (ji)->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
-						!strcmp (jinfo_get_method (ji)->name, ".cctor"))
+						!strcmp (jinfo_get_method (ji)->name, ".cctor") &&
+						(jinfo_get_method (ji) != ((SingleStepReq*)req->info)->start_method))
 						filtered = TRUE;
 					if ((mod->data.filter & STEP_FILTER_DEBUGGER_HIDDEN) && ji) {
 						MonoCustomAttrInfo *ainfo;
@@ -5166,6 +5168,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 
 	/* Stop the previous operation */
 	ss_stop (ss_req);
+
+	ss_req->start_method = method;
 
 	/*
 	 * Implement single stepping using breakpoints if possible.
