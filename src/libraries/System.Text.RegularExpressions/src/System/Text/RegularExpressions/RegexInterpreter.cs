@@ -27,6 +27,9 @@ namespace System.Text.RegularExpressions
 
         internal RegexInterpreter(RegexCode code, CultureInfo culture)
         {
+            Debug.Assert(code != null, "code cannot be null.");
+            Debug.Assert(culture != null, "culture cannot be null.");
+
             _runcode = code;
             _runcodes = code._codes;
             _runstrings = code._strings;
