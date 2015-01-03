@@ -148,6 +148,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
+#if DEBUG
         internal static int OpcodeSize(int Opcode)
         {
             Opcode &= Mask;
@@ -216,13 +217,12 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal static ArgumentException MakeException(String message)
+        private static ArgumentException MakeException(String message)
         {
             return new ArgumentException(message);
         }
 
-#if DEBUG
-        internal static String[] CodeStr = new String[]
+        private static readonly String[] CodeStr = new String[]
         {
             "Onerep", "Notonerep", "Setrep",
             "Oneloop", "Notoneloop", "Setloop",
