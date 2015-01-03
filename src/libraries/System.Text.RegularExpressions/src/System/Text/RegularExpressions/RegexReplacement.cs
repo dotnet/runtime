@@ -12,6 +12,17 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexReplacement
     {
+        // Constants for special insertion patterns
+        internal const int Specials = 4;
+        internal const int LeftPortion = -1;
+        internal const int RightPortion = -2;
+        internal const int LastGroup = -3;
+        internal const int WholeString = -4;
+
+        private readonly String _rep;
+        private readonly List<String> _strings; // table of string constants
+        private readonly List<Int32> _rules;    // negative -> group #, positive -> string #
+
         /// <summary>
         /// Since RegexReplacement shares the same parser as Regex,
         /// the constructor takes a RegexNode which is a concatenation
@@ -72,18 +83,6 @@ namespace System.Text.RegularExpressions
             _strings = strings;
             _rules = rules;
         }
-
-        private readonly String _rep;
-        private readonly List<String> _strings; // table of string constants
-        private readonly List<Int32> _rules;    // negative -> group #, positive -> string #
-
-        // constants for special insertion patterns
-
-        internal const int Specials = 4;
-        internal const int LeftPortion = -1;
-        internal const int RightPortion = -2;
-        internal const int LastGroup = -3;
-        internal const int WholeString = -4;
 
         /// <summary>
         /// Given a Match, emits into the StringBuilder the evaluated
