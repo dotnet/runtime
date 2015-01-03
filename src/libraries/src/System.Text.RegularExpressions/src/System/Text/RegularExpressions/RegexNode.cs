@@ -120,7 +120,7 @@ namespace System.Text.RegularExpressions
         internal char _ch;
         internal int _m;
         internal int _n;
-        internal RegexOptions _options;
+        internal readonly RegexOptions _options;
 
         internal RegexNode _next;
 
