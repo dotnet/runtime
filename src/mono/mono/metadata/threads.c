@@ -3996,13 +3996,13 @@ mono_thread_alloc_tls (MonoReflectionType *type)
 	return tls_offset;
 }
 
-void
-mono_thread_destroy_tls (uint32_t tls_offset)
+static void
+destroy_tls (MonoDomain *domain, uint32_t tls_offset)
 {
 	MonoTlsDataRecord *prev = NULL;
 	MonoTlsDataRecord *cur;
 	guint32 size = 0;
-	MonoDomain *domain = mono_domain_get ();
+
 	mono_domain_lock (domain);
 	cur = domain->tlsrec_list;
 	while (cur) {
@@ -4023,6 +4023,12 @@ mono_thread_destroy_tls (uint32_t tls_offset)
 		mono_special_static_data_free_slot (tls_offset, size);
 }
 
+void
+mono_thread_destroy_tls (uint32_t tls_offset)
+{
+	destroy_tls (mono_domain_get (), tls_offset);
+}
+
 /*
  * This is just to ensure cleanup: the finalizers should have taken care, so this is not perf-critical.
  */
@@ -4030,7 +4036,7 @@ void
 mono_thread_destroy_domain_tls (MonoDomain *domain)
 {
 	while (domain->tlsrec_list)
-		mono_thread_destroy_tls (domain->tlsrec_list->tls_offset);
+		destroy_tls (domain, domain->tlsrec_list->tls_offset);
 }
 
 static MonoClassField *local_slots = NULL;
