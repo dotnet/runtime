@@ -90,24 +90,15 @@ namespace System.Text.RegularExpressions
         internal const int Back2 = 256;  // bit to indicate that we're backtracking on a second branch.
         internal const int Ci = 512;  // bit to indicate that we're case-insensitive.
 
-        // the code
-
-        internal int[] _codes;                 // the code
-        internal String[] _strings;               // the string/set table
-        // not used! internal int[]           _sparseIndex;           // a list of the groups that are used
-        internal int _trackcount;            // how many instructions use backtracking
-
-        internal Dictionary<Int32, Int32> _caps;         // mapping of user group numbers -> impl group slots
-
-        internal int _capsize;               // number of impl group slots
-        internal RegexPrefix _fcPrefix;              // the set of candidate first characters (may be null)
-        internal RegexBoyerMoore _bmPrefix;              // the fixed prefix string as a Boyer-Moore machine (may be null)
-        internal int _anchors;               // the set of zero-length start anchors (RegexFCD.Bol, etc)
-        internal bool _rightToLeft;           // true if right to left
-
-        // optimizations
-
-        // constructor
+        internal readonly int[] _codes;                     // the code
+        internal readonly String[] _strings;                // the string/set table
+        internal readonly int _trackcount;                  // how many instructions use backtracking
+        internal readonly Dictionary<Int32, Int32> _caps;   // mapping of user group numbers -> impl group slots
+        internal readonly int _capsize;                     // number of impl group slots
+        internal readonly RegexPrefix _fcPrefix;            // the set of candidate first characters (may be null)
+        internal readonly RegexBoyerMoore _bmPrefix;        // the fixed prefix string as a Boyer-Moore machine (may be null)
+        internal readonly int _anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
+        internal readonly bool _rightToLeft;                // true if right to left
 
         internal RegexCode(int[] codes, List<String> stringlist, int trackcount,
                            Dictionary<Int32, Int32> caps, int capsize,
