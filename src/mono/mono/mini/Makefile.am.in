@@ -657,12 +657,14 @@ checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
 rcheck: mono $(regtests)
-	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || exit 1; done
 if NACL_CODEGEN
 	for i in $(regtests); do echo "running test $$i"; $(RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
 else
 	$(RUNTIME) --regression $(regtests)
 endif
+
+check-seq-points:
+	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || exit 1; done
 
 gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
