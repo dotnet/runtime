@@ -14,16 +14,16 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexInterpreter : RegexRunner
     {
         private int _runoperator;
-        private int[] _runcodes;
+        private readonly int[] _runcodes;
         private int _runcodepos;
-        private String[] _runstrings;
-        private RegexCode _runcode;
-        private RegexPrefix _runfcPrefix;
-        private RegexBoyerMoore _runbmPrefix;
-        private int _runanchors;
+        private readonly String[] _runstrings;
+        private readonly RegexCode _runcode;
+        private readonly RegexPrefix _runfcPrefix;
+        private readonly RegexBoyerMoore _runbmPrefix;
+        private readonly int _runanchors;
         private bool _runrtl;
         private bool _runci;
-        private CultureInfo _runculture;
+        private readonly CultureInfo _runculture;
 
         internal RegexInterpreter(RegexCode code, CultureInfo culture)
         {
