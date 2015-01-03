@@ -565,65 +565,65 @@ namespace System.Text.RegularExpressions
             Debug.WriteLine("Stack: " + StackDescription(_runstack, _runstackpos));
         }
 
-        internal static String StackDescription(int[] A, int Index)
+        internal static String StackDescription(int[] a, int index)
         {
-            StringBuilder Sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            Sb.Append(A.Length - Index);
-            Sb.Append('/');
-            Sb.Append(A.Length);
+            sb.Append(a.Length - index);
+            sb.Append('/');
+            sb.Append(a.Length);
 
-            if (Sb.Length < 8)
-                Sb.Append(' ', 8 - Sb.Length);
+            if (sb.Length < 8)
+                sb.Append(' ', 8 - sb.Length);
 
-            Sb.Append('(');
+            sb.Append('(');
 
-            for (int i = Index; i < A.Length; i++)
+            for (int i = index; i < a.Length; i++)
             {
-                if (i > Index)
-                    Sb.Append(' ');
-                Sb.Append(A[i]);
+                if (i > index)
+                    sb.Append(' ');
+                sb.Append(a[i]);
             }
 
-            Sb.Append(')');
+            sb.Append(')');
 
-            return Sb.ToString();
+            return sb.ToString();
         }
 
         internal virtual String TextposDescription()
         {
-            StringBuilder Sb = new StringBuilder();
+            var sb = new StringBuilder();
             int remaining;
 
-            Sb.Append(_runtextpos);
+            sb.Append(_runtextpos);
 
-            if (Sb.Length < 8)
-                Sb.Append(' ', 8 - Sb.Length);
+            if (sb.Length < 8)
+                sb.Append(' ', 8 - sb.Length);
 
             if (_runtextpos > _runtextbeg)
-                Sb.Append(RegexCharClass.CharDescription(_runtext[_runtextpos - 1]));
+                sb.Append(RegexCharClass.CharDescription(_runtext[_runtextpos - 1]));
             else
-                Sb.Append('^');
+                sb.Append('^');
 
-            Sb.Append('>');
+            sb.Append('>');
 
             remaining = _runtextend - _runtextpos;
 
             for (int i = _runtextpos; i < _runtextend; i++)
             {
-                Sb.Append(RegexCharClass.CharDescription(_runtext[i]));
+                sb.Append(RegexCharClass.CharDescription(_runtext[i]));
             }
-            if (Sb.Length >= 64)
+            if (sb.Length >= 64)
             {
-                Sb.Length = 61;
-                Sb.Append("...");
+                sb.Length = 61;
+                sb.Append("...");
             }
             else
             {
-                Sb.Append('$');
+                sb.Append('$');
             }
 
-            return Sb.ToString();
+            return sb.ToString();
         }
 #endif
     }
