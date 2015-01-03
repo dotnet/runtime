@@ -64,7 +64,7 @@ namespace System.Text.RegularExpressions
         /// To avoid recursion, we use a simple integer stack.
         /// This is the push.
         /// </summary>
-        private void PushInt(int I)
+        private void PushInt(int i)
         {
             if (_depth >= _intStack.Length)
             {
@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions
                 _intStack = expanded;
             }
 
-            _intStack[_depth++] = I;
+            _intStack[_depth++] = i;
         }
 
         /// <summary>
@@ -106,9 +106,9 @@ namespace System.Text.RegularExpressions
         /// Fixes up a jump instruction at the specified offset
         /// so that it jumps to the specified jumpDest.
         /// </summary>
-        private void PatchJump(int Offset, int jumpDest)
+        private void PatchJump(int offset, int jumpDest)
         {
-            _emitted[Offset + 1] = jumpDest;
+            _emitted[offset + 1] = jumpDest;
         }
 
         /// <summary>
@@ -306,7 +306,7 @@ namespace System.Text.RegularExpressions
         /// through the tree and calls EmitFragment to emits code before
         /// and after each child of an interior node, and at each leaf.
         /// </summary>
-        private void EmitFragment(int nodetype, RegexNode node, int CurIndex)
+        private void EmitFragment(int nodetype, RegexNode node, int curIndex)
         {
             int bits = 0;
 
@@ -326,7 +326,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Alternate | BeforeChild:
-                    if (CurIndex < node._children.Count - 1)
+                    if (curIndex < node._children.Count - 1)
                     {
                         PushInt(CurPos());
                         Emit(RegexCode.Lazybranch, 0);
@@ -335,7 +335,7 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.Alternate | AfterChild:
                     {
-                        if (CurIndex < node._children.Count - 1)
+                        if (curIndex < node._children.Count - 1)
                         {
                             int LBPos = PopInt();
                             PushInt(CurPos());
@@ -345,7 +345,7 @@ namespace System.Text.RegularExpressions
                         else
                         {
                             int I;
-                            for (I = 0; I < CurIndex; I++)
+                            for (I = 0; I < curIndex; I++)
                             {
                                 PatchJump(PopInt(), CurPos());
                             }
@@ -354,7 +354,7 @@ namespace System.Text.RegularExpressions
                     }
 
                 case RegexNode.Testref | BeforeChild:
-                    switch (CurIndex)
+                    switch (curIndex)
                     {
                         case 0:
                             Emit(RegexCode.Setjump);
@@ -367,7 +367,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Testref | AfterChild:
-                    switch (CurIndex)
+                    switch (curIndex)
                     {
                         case 0:
                             {
@@ -388,7 +388,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Testgroup | BeforeChild:
-                    switch (CurIndex)
+                    switch (curIndex)
                     {
                         case 0:
                             Emit(RegexCode.Setjump);
@@ -400,7 +400,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Testgroup | AfterChild:
-                    switch (CurIndex)
+                    switch (curIndex)
                     {
                         case 0:
                             Emit(RegexCode.Getmark);
