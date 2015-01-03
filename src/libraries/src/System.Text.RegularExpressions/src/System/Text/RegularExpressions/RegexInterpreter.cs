@@ -14,11 +14,6 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexInterpreter : RegexRunner
     {
         private readonly RegexCode _runcode;
-        private readonly int[] _runcodes;
-        private readonly String[] _runstrings;
-        private readonly RegexPrefix _runfcPrefix;
-        private readonly RegexBoyerMoore _runbmPrefix;
-        private readonly int _runanchors;
         private readonly CultureInfo _runculture;
         private int _runoperator;
         private int _runcodepos;
@@ -31,11 +26,6 @@ namespace System.Text.RegularExpressions
             Debug.Assert(culture != null, "culture cannot be null.");
 
             _runcode = code;
-            _runcodes = code._codes;
-            _runstrings = code._strings;
-            _runfcPrefix = code._fcPrefix;
-            _runbmPrefix = code._bmPrefix;
-            _runanchors = code._anchors;
             _runculture = culture;
         }
 
@@ -52,7 +42,7 @@ namespace System.Text.RegularExpressions
         private void Advance(int i)
         {
             _runcodepos += (i + 1);
-            SetOperator(_runcodes[_runcodepos]);
+            SetOperator(_runcode._codes[_runcodepos]);
         }
 
         private void Goto(int newpos)
@@ -61,7 +51,7 @@ namespace System.Text.RegularExpressions
             if (newpos < _runcodepos)
                 EnsureStorage();
 
-            SetOperator(_runcodes[newpos]);
+            SetOperator(_runcode._codes[newpos]);
             _runcodepos = newpos;
         }
 
@@ -146,11 +136,11 @@ namespace System.Text.RegularExpressions
             if (newpos < 0)
             {
                 newpos = -newpos;
-                SetOperator(_runcodes[newpos] | RegexCode.Back2);
+                SetOperator(_runcode._codes[newpos] | RegexCode.Back2);
             }
             else
             {
-                SetOperator(_runcodes[newpos] | RegexCode.Back);
+                SetOperator(_runcode._codes[newpos] | RegexCode.Back);
             }
 
             // When branching backward, ensure storage
@@ -238,7 +228,7 @@ namespace System.Text.RegularExpressions
 
         private int Operand(int i)
         {
-            return _runcodes[_runcodepos + i + 1];
+            return _runcode._codes[_runcodepos + i + 1];
         }
 
         private int Leftchars()
@@ -373,51 +363,51 @@ namespace System.Text.RegularExpressions
             int i;
             String set;
 
-            if (0 != (_runanchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
+            if (0 != (_runcode._anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
                 if (!_runcode._rightToLeft)
                 {
-                    if ((0 != (_runanchors & RegexFCD.Beginning) && _runtextpos > _runtextbeg) ||
-                        (0 != (_runanchors & RegexFCD.Start) && _runtextpos > _runtextstart))
+                    if ((0 != (_runcode._anchors & RegexFCD.Beginning) && _runtextpos > _runtextbeg) ||
+                        (0 != (_runcode._anchors & RegexFCD.Start) && _runtextpos > _runtextstart))
                     {
                         _runtextpos = _runtextend;
                         return false;
                     }
-                    if (0 != (_runanchors & RegexFCD.EndZ) && _runtextpos < _runtextend - 1)
+                    if (0 != (_runcode._anchors & RegexFCD.EndZ) && _runtextpos < _runtextend - 1)
                     {
                         _runtextpos = _runtextend - 1;
                     }
-                    else if (0 != (_runanchors & RegexFCD.End) && _runtextpos < _runtextend)
+                    else if (0 != (_runcode._anchors & RegexFCD.End) && _runtextpos < _runtextend)
                     {
                         _runtextpos = _runtextend;
                     }
                 }
                 else
                 {
-                    if ((0 != (_runanchors & RegexFCD.End) && _runtextpos < _runtextend) ||
-                        (0 != (_runanchors & RegexFCD.EndZ) && (_runtextpos < _runtextend - 1 ||
+                    if ((0 != (_runcode._anchors & RegexFCD.End) && _runtextpos < _runtextend) ||
+                        (0 != (_runcode._anchors & RegexFCD.EndZ) && (_runtextpos < _runtextend - 1 ||
                                                                (_runtextpos == _runtextend - 1 && CharAt(_runtextpos) != '\n'))) ||
-                        (0 != (_runanchors & RegexFCD.Start) && _runtextpos < _runtextstart))
+                        (0 != (_runcode._anchors & RegexFCD.Start) && _runtextpos < _runtextstart))
                     {
                         _runtextpos = _runtextbeg;
                         return false;
                     }
-                    if (0 != (_runanchors & RegexFCD.Beginning) && _runtextpos > _runtextbeg)
+                    if (0 != (_runcode._anchors & RegexFCD.Beginning) && _runtextpos > _runtextbeg)
                     {
                         _runtextpos = _runtextbeg;
                     }
                 }
 
-                if (_runbmPrefix != null)
+                if (_runcode._bmPrefix != null)
                 {
-                    return _runbmPrefix.IsMatch(_runtext, _runtextpos, _runtextbeg, _runtextend);
+                    return _runcode._bmPrefix.IsMatch(_runtext, _runtextpos, _runtextbeg, _runtextend);
                 }
 
                 return true; // found a valid start or end anchor
             }
-            else if (_runbmPrefix != null)
+            else if (_runcode._bmPrefix != null)
             {
-                _runtextpos = _runbmPrefix.Scan(_runtext, _runtextpos, _runtextbeg, _runtextend);
+                _runtextpos = _runcode._bmPrefix.Scan(_runtext, _runtextpos, _runtextbeg, _runtextend);
 
                 if (_runtextpos == -1)
                 {
@@ -427,14 +417,14 @@ namespace System.Text.RegularExpressions
 
                 return true;
             }
-            else if (_runfcPrefix == null)
+            else if (_runcode._fcPrefix == null)
             {
                 return true;
             }
 
             _runrtl = _runcode._rightToLeft;
-            _runci = _runfcPrefix.CaseInsensitive;
-            set = _runfcPrefix.Prefix;
+            _runci = _runcode._fcPrefix.CaseInsensitive;
+            set = _runcode._fcPrefix.Prefix;
 
             if (RegexCharClass.IsSingleton(set))
             {
@@ -896,7 +886,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexCode.Set:
-                        if (Forwardchars() < 1 || !RegexCharClass.CharInClass(Forwardcharnext(), _runstrings[Operand(0)]))
+                        if (Forwardchars() < 1 || !RegexCharClass.CharInClass(Forwardcharnext(), _runcode._strings[Operand(0)]))
                             break;
 
                         Advance(1);
@@ -904,7 +894,7 @@ namespace System.Text.RegularExpressions
 
                     case RegexCode.Multi:
                         {
-                            if (!Stringmatch(_runstrings[Operand(0)]))
+                            if (!Stringmatch(_runcode._strings[Operand(0)]))
                                 break;
 
                             Advance(1);
@@ -971,7 +961,7 @@ namespace System.Text.RegularExpressions
                             if (Forwardchars() < c)
                                 break;
 
-                            String set = _runstrings[Operand(0)];
+                            String set = _runcode._strings[Operand(0)];
 
                             while (c-- > 0)
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(), set))
@@ -1040,7 +1030,7 @@ namespace System.Text.RegularExpressions
                             if (c > Forwardchars())
                                 c = Forwardchars();
 
-                            String set = _runstrings[Operand(0)];
+                            String set = _runcode._strings[Operand(0)];
                             int i;
 
                             for (i = c; i > 0; i--)
@@ -1161,7 +1151,7 @@ namespace System.Text.RegularExpressions
                             int pos = TrackPeek(1);
                             Textto(pos);
 
-                            if (!RegexCharClass.CharInClass(Forwardcharnext(), _runstrings[Operand(0)]))
+                            if (!RegexCharClass.CharInClass(Forwardcharnext(), _runcode._strings[Operand(0)]))
                                 break;
 
                             int i = TrackPeek();
