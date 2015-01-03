@@ -18,7 +18,8 @@ typedef enum {
 	IcallLock,
 	AssemblyBindingLock,
 	MarshalLock,
-	LoaderGlobalDataLock,
+	ClassesLock,
+	LoaderGlobalDataLock
 } RuntimeLocks;
 
 #ifdef LOCK_TRACER
