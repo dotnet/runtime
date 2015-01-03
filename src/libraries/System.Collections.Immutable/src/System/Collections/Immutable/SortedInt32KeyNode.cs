@@ -20,7 +20,7 @@ namespace System.Collections.Immutable
     /// and then an interface call to Int32's IComparable's CompareTo method as part of
     /// the GenericComparer{Int32}'s Compare implementation.
     /// </remarks>
-    [DebuggerDisplay("{key} = {value}")]
+    [DebuggerDisplay("{_key} = {_value}")]
     internal sealed class SortedInt32KeyNode<TValue> : IBinaryTree
     {
         /// <summary>

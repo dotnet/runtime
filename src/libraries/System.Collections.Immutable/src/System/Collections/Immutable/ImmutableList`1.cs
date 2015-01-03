@@ -1767,7 +1767,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// A node in the AVL tree storing this set.
         /// </summary>
-        [DebuggerDisplay("{key}")]
+        [DebuggerDisplay("{_key}")]
         internal sealed class Node : IBinaryTree<T>, IEnumerable<T>
         {
             /// <summary>
