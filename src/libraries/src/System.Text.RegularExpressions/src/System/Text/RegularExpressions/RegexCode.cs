@@ -103,6 +103,9 @@ namespace System.Text.RegularExpressions
                            RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
                            int anchors, bool rightToLeft)
         {
+            Debug.Assert(codes != null, "codes cannot be null.");
+            Debug.Assert(stringlist != null, "stringlist cannot be null.");
+
             _codes = codes;
             _strings = new String[stringlist.Count];
             _trackcount = trackcount;
