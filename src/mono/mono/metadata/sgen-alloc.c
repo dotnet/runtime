@@ -416,7 +416,7 @@ sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size)
 }
 
 void*
-mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
+sgen_alloc_obj (GCVTable *vtable, size_t size)
 {
 	void *res;
 	TLAB_ACCESS_INIT;
@@ -455,7 +455,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	res = sgen_alloc_obj_nolock ((GCVTable*)vtable, size);
 	UNLOCK_GC;
 	if (G_UNLIKELY (!res))
-		return mono_gc_out_of_memory (size);
+		return sgen_client_out_of_memory (size);
 	return res;
 }
 
@@ -464,7 +464,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
  * We may want to explicitly free these objects.
  */
 void*
-mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
+sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
 {
 	void **p;
 
@@ -490,7 +490,7 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 }
 
 void*
-mono_gc_alloc_mature (MonoVTable *vtable)
+sgen_alloc_obj_mature (GCVTable *vtable)
 {
 	void *res;
 	size_t size = vtable->klass->instance_size;
@@ -502,31 +502,9 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 	LOCK_GC;
 	res = alloc_degraded ((GCVTable*)vtable, size, TRUE);
 	UNLOCK_GC;
-	if (G_UNLIKELY (vtable->klass->has_finalize))
-		mono_object_register_finalizer (res);
+	sgen_client_object_register_finalizer_if_necessary (res);
 
 	return res;
-}
-
-void*
-mono_gc_alloc_fixed (size_t size, void *descr)
-{
-	/* FIXME: do a single allocation */
-	void *res = calloc (1, size);
-	if (!res)
-		return NULL;
-	if (!mono_gc_register_root (res, size, descr)) {
-		free (res);
-		res = NULL;
-	}
-	return res;
-}
-
-void
-mono_gc_free_fixed (void* addr)
-{
-	mono_gc_deregister_root (addr);
-	free (addr);
 }
 
 void

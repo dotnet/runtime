@@ -32,6 +32,7 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/sgen-client.h"
+#include "metadata/gc-internal-agnostic.h"
 #include "utils/mono-memory-model.h"
 
 //#define CARDTABLE_STATS
@@ -166,6 +167,8 @@ sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 
 guint8 *sgen_shadow_cardtable;
+
+#define SGEN_CARDTABLE_END (sgen_cardtable + CARD_COUNT_IN_BYTES)
 
 static gboolean
 sgen_card_table_region_begin_scanning (mword start, mword size)
@@ -446,7 +449,7 @@ sgen_card_table_scan_remsets (ScanCopyContext ctx)
 }
 
 guint8*
-mono_gc_get_card_table (int *shift_bits, gpointer *mask)
+sgen_get_card_table_configuration (int *shift_bits, gpointer *mask)
 {
 #ifndef MANAGED_WBARRIER
 	return NULL;
@@ -463,12 +466,6 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 
 	return sgen_cardtable;
 #endif
-}
-
-gboolean
-mono_gc_card_table_nursery_check (void)
-{
-	return !major_collector.is_concurrent;
 }
 
 #if 0

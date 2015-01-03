@@ -33,6 +33,7 @@
 #include "metadata/mono-gc.h"
 #include "metadata/runtime.h"
 #include "metadata/sgen-bridge-internal.h"
+#include "metadata/gc-internal.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internal.h"
 
@@ -159,6 +160,12 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 		binary_protocol_wbarrier (slot_ptr, value, value->vtable);
 
 	sgen_get_remset ()->wbarrier_set_field ((GCObject*)arr, slot_ptr, value);
+}
+
+void
+mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
+{
+	sgen_wbarrier_value_copy_bitmap (_dest, _src, size, bitmap);
 }
 
 static MonoMethod *write_barrier_conc_method;
@@ -452,6 +459,13 @@ mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
 }
 
 void
+sgen_client_object_register_finalizer_if_necessary (MonoObject *obj)
+{
+	if (G_UNLIKELY (obj->vtable->klass->has_finalize))
+		mono_object_register_finalizer (obj);
+}
+
+void
 sgen_client_run_finalize (MonoObject *obj)
 {
 	mono_gc_run_finalize (obj, NULL);
@@ -461,6 +475,50 @@ int
 mono_gc_invoke_finalizers (void)
 {
 	return sgen_gc_invoke_finalizers ();
+}
+
+gboolean
+mono_gc_pending_finalizers (void)
+{
+	return sgen_have_pending_finalizers ();
+}
+
+void
+sgen_client_finalize_notify (void)
+{
+	mono_gc_finalize_notify ();
+}
+
+void
+mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+{
+	sgen_object_register_for_finalization (obj, user_data);
+}
+
+static gboolean
+finalizers_for_domain_callback (MonoObject *obj, void *user_data)
+{
+	MonoDomain *domain = user_data;
+	return mono_object_domain (obj) == domain;
+}
+
+/**
+ * mono_gc_finalizers_for_domain:
+ * @domain: the unloading appdomain
+ * @out_array: output array
+ * @out_size: size of output array
+ *
+ * Store inside @out_array up to @out_size objects that belong to the unloading
+ * appdomain @domain. Returns the number of stored items. Can be called repeteadly
+ * until it returns 0.
+ * The items are removed from the finalizer data structure, so the caller is supposed
+ * to finalize them.
+ * @out_array should be on the stack to allow the GC to know the objects are still alive.
+ */
+int
+mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size)
+{
+	return sgen_gather_finalizers_with_predicate (finalizers_for_domain_callback, domain, out_array, out_size);
 }
 
 /*
@@ -840,6 +898,49 @@ mono_gc_clear_domain (MonoDomain * domain)
 	binary_protocol_flush_buffers (FALSE);
 
 	UNLOCK_GC;
+}
+
+/*
+ * Allocation
+ */
+
+void*
+mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
+{
+	return sgen_alloc_obj (vtable, size);
+}
+
+void*
+mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
+{
+	return sgen_alloc_obj_pinned (vtable, size);
+}
+
+void*
+mono_gc_alloc_mature (MonoVTable *vtable)
+{
+	return sgen_alloc_obj_mature (vtable);
+}
+
+void*
+mono_gc_alloc_fixed (size_t size, void *descr)
+{
+	/* FIXME: do a single allocation */
+	void *res = calloc (1, size);
+	if (!res)
+		return NULL;
+	if (!mono_gc_register_root (res, size, descr)) {
+		free (res);
+		res = NULL;
+	}
+	return res;
+}
+
+void
+mono_gc_free_fixed (void* addr)
+{
+	mono_gc_deregister_root (addr);
+	free (addr);
 }
 
 /*
@@ -2086,6 +2187,22 @@ sgen_thread_detach (SgenThreadInfo *p)
 		mono_thread_detach_internal (mono_thread_internal_current ());
 }
 
+gboolean
+mono_gc_register_thread (void *baseptr)
+{
+	return mono_thread_info_attach (baseptr) != NULL;
+}
+
+gboolean
+mono_gc_is_gc_thread (void)
+{
+	gboolean result;
+	LOCK_GC;
+	result = mono_thread_info_current () != NULL;
+	UNLOCK_GC;
+	return result;
+}
+
 /* Variables holding start/end nursery so it won't have to be passed at every call */
 static void *scan_area_arg_start, *scan_area_arg_end;
 
@@ -2170,6 +2287,62 @@ mono_gc_set_stack_end (void *stack_end)
 	}
 	UNLOCK_GC;
 }
+
+/*
+ * Roots
+ */
+
+int
+mono_gc_register_root (char *start, size_t size, void *descr)
+{
+	return sgen_register_root (start, size, descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
+}
+
+int
+mono_gc_register_root_wbarrier (char *start, size_t size, void *descr)
+{
+	return sgen_register_root (start, size, descr, ROOT_TYPE_WBARRIER);
+}
+
+void
+mono_gc_deregister_root (char* addr)
+{
+	sgen_deregister_root (addr);
+}
+
+/*
+ * Pthread intercept
+ */
+
+#if USE_PTHREAD_INTERCEPT
+
+int
+mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
+{
+	return pthread_create (new_thread, attr, start_routine, arg);
+}
+
+int
+mono_gc_pthread_join (pthread_t thread, void **retval)
+{
+	return pthread_join (thread, retval);
+}
+
+int
+mono_gc_pthread_detach (pthread_t thread)
+{
+	return pthread_detach (thread);
+}
+
+void
+mono_gc_pthread_exit (void *retval) 
+{
+	mono_thread_info_detach ();
+	pthread_exit (retval);
+	g_assert_not_reached ();
+}
+
+#endif /* USE_PTHREAD_INTERCEPT */
 
 /*
  * Miscellaneous
@@ -2278,6 +2451,97 @@ mono_gc_get_heap_size (void)
 	return (int64_t)sgen_gc_get_total_heap_allocation ();
 }
 
+void*
+mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
+{
+	return sgen_make_user_root_descriptor (marker);
+}
+
+void*
+mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
+{
+	return (void*)SGEN_DESC_STRING;
+}
+
+void*
+mono_gc_get_nursery (int *shift_bits, size_t *size)
+{
+	*size = sgen_nursery_size;
+	*shift_bits = DEFAULT_NURSERY_BITS;
+	return sgen_get_nursery_start ();
+}
+
+int
+mono_gc_get_los_limit (void)
+{
+	return SGEN_MAX_SMALL_OBJ_SIZE;
+}
+
+void
+mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
+{
+	sgen_register_disappearing_link (obj, link_addr, track, FALSE);
+}
+
+void
+mono_gc_weak_link_remove (void **link_addr, gboolean track)
+{
+	sgen_register_disappearing_link (NULL, link_addr, track, FALSE);
+}
+
+MonoObject*
+mono_gc_weak_link_get (void **link_addr)
+{
+	return sgen_weak_link_get (link_addr);
+}
+
+gboolean
+mono_gc_set_allow_synchronous_major (gboolean flag)
+{
+	return sgen_set_allow_synchronous_major (flag);
+}
+
+void*
+mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data)
+{
+	void *result;
+	LOCK_INTERRUPTION;
+	result = func (data);
+	UNLOCK_INTERRUPTION;
+	return result;
+}
+
+void
+mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
+{
+	// FIXME:
+}
+
+gpointer
+sgen_client_out_of_memory (size_t size)
+{
+	return mono_gc_out_of_memory (size);
+}
+
+guint8*
+mono_gc_get_card_table (int *shift_bits, gpointer *mask)
+{
+	return sgen_get_card_table_configuration (shift_bits, mask);
+}
+
+gboolean
+mono_gc_card_table_nursery_check (void)
+{
+	return !sgen_get_major_collector ()->is_concurrent;
+}
+
+/* Negative value to remove */
+void
+mono_gc_add_memory_pressure (gint64 value)
+{
+	/* FIXME: Implement at some point? */
+}
+
 /*
  * Logging
  */
@@ -2378,12 +2642,6 @@ sgen_client_vtable_get_name (GCVTable *gc_vtable)
  */
 
 void
-sgen_client_init_early (void)
-{
-	mono_counters_init ();
-}
-
-void
 sgen_client_init (void)
 {
 	MonoThreadInfoCallbacks cb;
@@ -2443,6 +2701,10 @@ sgen_client_handle_gc_debug (const char *opt)
 {
 	if (!strcmp (opt, "xdomain-checks")) {
 		sgen_mono_xdomain_checks = TRUE;
+	} else if (!strcmp (opt, "do-not-finalize")) {
+		do_not_finalize = TRUE;
+	} else if (!strcmp (opt, "log-finalizers")) {
+		log_finalizers = TRUE;
 	} else if (!sgen_bridge_handle_gc_debug (opt)) {
 		return FALSE;
 	}
@@ -2453,7 +2715,17 @@ void
 sgen_client_print_gc_debug_usage (void)
 {
 	fprintf (stderr, "  xdomain-checks\n");
+	fprintf (stderr, "  do-not-finalize\n");
+	fprintf (stderr, "  log-finalizers\n");
 	sgen_bridge_print_gc_debug_usage ();
+}
+
+void
+mono_gc_base_init (void)
+{
+	mono_counters_init ();
+
+	sgen_gc_init ();
 }
 
 #endif

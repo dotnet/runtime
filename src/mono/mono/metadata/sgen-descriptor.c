@@ -43,6 +43,7 @@
 #endif
 
 #include "metadata/sgen-gc.h"
+#include "metadata/gc-internal-agnostic.h"
 
 #define MAX_USER_DESCRIPTORS 16
 
@@ -53,7 +54,7 @@
 static gsize* complex_descriptors = NULL;
 static int complex_descriptors_size = 0;
 static int complex_descriptors_next = 0;
-static MonoGCRootMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];
+static SgenUserRootMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];
 static int user_descriptors_next = 0;
 static void *all_ref_root_descrs [32];
 
@@ -117,12 +118,6 @@ sgen_get_complex_descriptor (mword desc)
 /*
  * Descriptor builders.
  */
-void*
-mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
-{
-	return (void*)SGEN_DESC_STRING;
-}
-
 void*
 mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 {
@@ -316,7 +311,7 @@ mono_gc_make_root_descr_all_refs (int numbits)
 }
 
 void*
-mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
+sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker)
 {
 	void *descr;
 
@@ -333,7 +328,7 @@ sgen_get_complex_descriptor_bitmap (mword desc)
 	return complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
 }
 
-MonoGCRootMarkFunc
+SgenUserRootMarkFunc
 sgen_get_user_descriptor_func (mword desc)
 {
 	return user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];

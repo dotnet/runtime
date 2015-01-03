@@ -52,7 +52,6 @@ static gboolean debug_print_allowance = FALSE;
 
 
 /* use this to tune when to do a major/minor collection */
-static mword memory_pressure = 0;
 static mword major_collection_trigger_size;
 
 static mword last_major_num_sections = 0;
@@ -178,19 +177,6 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 			sgen_client_log_timing (&info [i], last_major_num_sections, last_los_memory_usage);
 	}
 }
-
-/* Memory pressure API */
-
-/* Negative value to remove */
-void
-mono_gc_add_memory_pressure (gint64 value)
-{
-	/* FIXME: Use interlocked functions */
-	LOCK_GC;
-	memory_pressure += value;
-	UNLOCK_GC;
-}
-
 
 /*
 Global GC memory tracking.

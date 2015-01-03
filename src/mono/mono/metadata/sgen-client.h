@@ -19,7 +19,6 @@
 
 #include <metadata/sgen-pointer-queue.h>
 
-void sgen_client_init_early (void);
 void sgen_client_init (void);
 
 mword sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o);
@@ -48,6 +47,8 @@ void sgen_client_zero_array_fill_header (void *p, size_t size);
 
 gboolean sgen_client_object_is_array_fill (GCObject *o);
 
+void sgen_client_object_register_finalizer_if_necessary (GCObject *obj);
+
 gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
@@ -59,6 +60,8 @@ gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 void sgen_client_object_queued_for_finalization (GCObject *obj);
 
 void sgen_client_run_finalize (MonoObject *obj);
+
+void sgen_client_finalize_notify (void);
 
 gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 
@@ -86,6 +89,8 @@ void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPoin
 void sgen_client_degraded_allocation (size_t size);
 
 void sgen_client_total_allocated_heap (mword allocated_heap);
+
+gpointer sgen_client_out_of_memory (size_t size);
 
 /*
  * If the client has registered any internal memory types, this must return a string

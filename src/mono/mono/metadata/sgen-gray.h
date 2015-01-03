@@ -20,7 +20,7 @@
 #ifndef __MONO_SGEN_GRAY_H__
 #define __MONO_SGEN_GRAY_H__
 
-#include "metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-protocol.h"
 
 /*
  * This gray queue has to be as optimized as possible, because it is in the core of

@@ -1,7 +1,7 @@
 /*
- * test-sgen-qsort.c: Our own bzero/memmove.
+ * gc-memfuncs.c: Our own bzero/memmove.
  *
- * Copyright (C) 2013 Xamarin Inc
+ * Copyright (C) 2013-2015 Xamarin Inc
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -35,8 +35,9 @@
  */
 
 #include <config.h>
+#include <glib.h>
 
-#include "metadata/gc-internal.h"
+#include "metadata/gc-internal-agnostic.h"
 
 #define ptr_mask ((sizeof (void*) - 1))
 #define _toi(ptr) ((size_t)ptr)

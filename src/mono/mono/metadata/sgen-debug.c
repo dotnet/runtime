@@ -805,7 +805,7 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 			break;
 		}
 		case ROOT_DESC_USER: {
-			MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
+			SgenUserRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
 			marker (start_root, check_root_obj_specific_ref_from_marker, NULL);
 			break;
 		}
@@ -904,7 +904,7 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 			break;
 		}
 		case ROOT_DESC_USER: {
-			MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
+			SgenUserRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
 			marker (start_root, check_obj_not_in_domain_callback, NULL);
 			break;
 		}

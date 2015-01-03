@@ -248,8 +248,6 @@ register_for_finalization (GCObject *obj, void *user_data, int generation)
 	if (no_finalize)
 		return;
 
-	g_assert (user_data == NULL || user_data == mono_gc_run_finalize);
-
 	if (user_data) {
 		if (sgen_hash_table_replace (hash_table, obj, NULL, NULL)) {
 			GCVTable *vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
@@ -559,7 +557,7 @@ sgen_process_fin_stage_entries (void)
 }
 
 void
-mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+sgen_object_register_for_finalization (GCObject *obj, void *user_data)
 {
 	while (add_stage_entry (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, obj, user_data) == -1) {
 		if (try_lock_stage_for_processing (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry)) {
@@ -572,8 +570,7 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 
 /* LOCKING: requires that the GC lock is held */
 static int
-finalizers_for_domain (MonoDomain *domain, GCObject **out_array, int out_size,
-	SgenHashTable *hash_table)
+finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size, SgenHashTable *hash_table)
 {
 	GCObject *object;
 	gpointer dummy G_GNUC_UNUSED;
@@ -585,7 +582,7 @@ finalizers_for_domain (MonoDomain *domain, GCObject **out_array, int out_size,
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
 		object = tagged_object_get_object (object);
 
-		if (mono_object_domain (object) == domain) {
+		if (predicate (object, user_data)) {
 			/* remove and put in out_array */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			out_array [count ++] = object;
@@ -599,28 +596,31 @@ finalizers_for_domain (MonoDomain *domain, GCObject **out_array, int out_size,
 }
 
 /**
- * mono_gc_finalizers_for_domain:
- * @domain: the unloading appdomain
+ * sgen_gather_finalizers_with_predicate:
+ * @predicate: predicate function
+ * @user_data: predicate function data argument
  * @out_array: output array
  * @out_size: size of output array
  *
- * Store inside @out_array up to @out_size objects that belong to the unloading
- * appdomain @domain. Returns the number of stored items. Can be called repeteadly
- * until it returns 0.
+ * Store inside @out_array up to @out_size objects that match @predicate. Returns the number
+ * of stored items. Can be called repeteadly until it returns 0.
+ *
  * The items are removed from the finalizer data structure, so the caller is supposed
  * to finalize them.
- * @out_array should be on the stack to allow the GC to know the objects are still alive.
+ *
+ * @out_array me be on the stack, or registered as a root, to allow the GC to know the
+ * objects are still alive.
  */
 int
-mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size)
+sgen_gather_finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size)
 {
 	int result;
 
 	LOCK_GC;
 	sgen_process_fin_stage_entries ();
-	result = finalizers_for_domain (domain, (GCObject**)out_array, out_size, &minor_finalizable_hash);
+	result = finalizers_with_predicate (predicate, user_data, (GCObject**)out_array, out_size, &minor_finalizable_hash);
 	if (result < out_size) {
-		result += finalizers_for_domain (domain, (GCObject**)out_array + result, out_size - result,
+		result += finalizers_with_predicate (predicate, user_data, (GCObject**)out_array + result, out_size - result,
 			&major_finalizable_hash);
 	}
 	UNLOCK_GC;
