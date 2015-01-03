@@ -10,7 +10,6 @@
 // the string that is being searched for, the fewer characters
 // need to be examined.
 
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;

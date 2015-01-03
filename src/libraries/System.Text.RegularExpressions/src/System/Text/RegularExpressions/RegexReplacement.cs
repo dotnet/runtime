@@ -5,7 +5,6 @@
 // use when using regexs to search/replace, etc. It's logically
 // a sequence intermixed (1) constant strings and (2) group numbers.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 

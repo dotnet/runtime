@@ -13,9 +13,7 @@
 // methods to push new subpattern match results into (or remove
 // backtracked results from) the Match instance.
 
-using System.Collections;
 using System.Diagnostics;
-using System.ComponentModel;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions

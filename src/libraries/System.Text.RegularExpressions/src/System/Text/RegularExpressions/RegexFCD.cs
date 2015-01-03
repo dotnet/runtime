@@ -10,7 +10,6 @@
 // This step is as simple as walking the tree and emitting
 // sequences of codes.
 
-using System.Collections;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions

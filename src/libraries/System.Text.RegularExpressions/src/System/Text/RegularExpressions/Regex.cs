@@ -4,14 +4,11 @@
 // The Regex class represents a single compiled instance of a regular
 // expression.
 
-using System;
-using System.Threading;
 using System.Collections;
-using System.Reflection;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
