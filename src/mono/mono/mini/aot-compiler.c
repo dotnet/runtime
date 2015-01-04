@@ -206,6 +206,7 @@ typedef struct MonoAotCompile {
 	const char *user_symbol_prefix;
 	const char *llvm_label_prefix;
 	const char *inst_directive;
+	int align_pad_value;
 	guint32 label_generator;
 	gboolean llvm;
 	MonoAotFileFlags flags;
@@ -366,9 +367,39 @@ emit_line (MonoAotCompile *acfg)
 }
 
 static inline void
-emit_alignment (MonoAotCompile *acfg, int size) 
+emit_alignment (MonoAotCompile *acfg, int size)
 { 
-	img_writer_emit_alignment (acfg->w, size); 
+	img_writer_emit_alignment (acfg->w, size);
+}
+
+static inline void
+emit_alignment_code (MonoAotCompile *acfg, int size)
+{
+	if (acfg->align_pad_value)
+		img_writer_emit_alignment_fill (acfg->w, size, acfg->align_pad_value);
+	else
+		img_writer_emit_alignment (acfg->w, size);
+}
+
+static inline void
+emit_padding (MonoAotCompile *acfg, int size)
+{
+	int i;
+	guint8 buf [16];
+
+	if (acfg->align_pad_value) {
+		for (i = 0; i < 16; ++i)
+			buf [i] = acfg->align_pad_value;
+	} else {
+		memset (buf, 0, sizeof (buf));
+	}
+
+	for (i = 0; i < size; i += 16) {
+		if (size - i < 16)
+			emit_bytes (acfg, buf, size - i);
+		else
+			emit_bytes (acfg, buf, 16);
+	}
 }
 
 static inline void
@@ -685,6 +716,8 @@ arch_init (MonoAotCompile *acfg)
 
 #if defined(TARGET_AMD64)
 	g_string_append (acfg->llc_args, " -march=x86-64 -mattr=sse4.1");
+	/* NOP */
+	acfg->align_pad_value = 0x90;
 #endif
 
 #ifdef TARGET_ARM
@@ -4920,10 +4953,9 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	method_index = get_method_index (acfg, method);
 	symbol = g_strdup_printf ("%sme_%x", acfg->temp_prefix, method_index);
 
-
 	/* Make the labels local */
 	emit_section_change (acfg, ".text", 0);
-	emit_alignment (acfg, func_alignment);
+	emit_alignment_code (acfg, func_alignment);
 	
 	if (acfg->global_symbols && acfg->need_no_dead_strip)
 		fprintf (acfg->fp, "	.no_dead_strip %s\n", cfg->asm_symbol);
@@ -5734,7 +5766,7 @@ emit_plt (MonoAotCompile *acfg)
 	sprintf (symbol, "plt");
 
 	emit_section_change (acfg, ".text", 0);
-	emit_alignment (acfg, NACL_SIZE(16, kNaClAlignment));
+	emit_alignment_code (acfg, NACL_SIZE(16, kNaClAlignment));
 	emit_label (acfg, symbol);
 	emit_label (acfg, acfg->plt_symbol);
 
@@ -5877,7 +5909,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 
 	emit_section_change (acfg, ".text", 0);
 	emit_global (acfg, start_symbol, TRUE);
-	emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
+	emit_alignment_code (acfg, AOT_FUNC_ALIGNMENT);
 	emit_label (acfg, start_symbol);
 
 	sprintf (symbol, "%snamed_%s", acfg->temp_prefix, name);
@@ -6135,7 +6167,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			if (acfg->aot_opts.write_symbols)
 				emit_local_symbol (acfg, symbol, end_symbol, TRUE);
 
-			emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
+			emit_alignment_code (acfg, AOT_FUNC_ALIGNMENT);
 			emit_label (acfg, symbol);
 
 			acfg->trampoline_got_offset_base [ntype] = tramp_got_offset;
@@ -7175,7 +7207,7 @@ emit_code (MonoAotCompile *acfg)
 	 * AOT code, so it must be equal to the address of the first emitted method.
 	 */
 	emit_section_change (acfg, ".text", 0);
-	emit_alignment (acfg, 8);
+	emit_alignment_code (acfg, 8);
 	if (acfg->llvm) {
 		for (i = 0; i < acfg->nmethods; ++i) {
 			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm) {
@@ -7195,7 +7227,7 @@ emit_code (MonoAotCompile *acfg)
 	 * same address as 'methods'.
 	 */
 #if defined(__default_codegen__)
-	emit_zero_bytes (acfg, 16);
+	emit_padding (acfg, 16);
 #elif defined(__native_client_codegen__)
 	{
 		const int kPaddingSize = 16;
@@ -7236,9 +7268,8 @@ emit_code (MonoAotCompile *acfg)
 
 			arch_emit_unbox_trampoline (acfg, cfg, cfg->orig_method, cfg->asm_symbol);
 
-			if (acfg->thumb_mixed && cfg->compile_llvm) {
+			if (acfg->thumb_mixed && cfg->compile_llvm)
 				emit_set_arm_mode (acfg);
-			}
 		}
 
 		if (cfg->compile_llvm)
@@ -7249,10 +7280,10 @@ emit_code (MonoAotCompile *acfg)
 
 	sprintf (symbol, "methods_end");
 	emit_section_change (acfg, ".text", 0);
-	emit_alignment (acfg, 8);
+	emit_alignment_code (acfg, 8);
 	emit_label (acfg, symbol);
 	/* To distinguish it from the next symbol */
-	emit_int32 (acfg, 0);
+	emit_padding (acfg, 4);
 
 	/* 
 	 * Add .no_dead_strip directives for all LLVM methods to prevent the OSX linker
@@ -7278,7 +7309,7 @@ emit_code (MonoAotCompile *acfg)
 		 */
 		sprintf (symbol, "method_addresses");
 		emit_section_change (acfg, ".text", 1);
-		emit_alignment (acfg, 8);
+		emit_alignment_code (acfg, 8);
 		emit_label (acfg, symbol);
 		emit_local_symbol (acfg, symbol, "method_addresses_end", TRUE);
 		emit_unset_mode (acfg);
@@ -7329,7 +7360,7 @@ emit_code (MonoAotCompile *acfg)
 		emit_section_change (acfg, ".text", 0);
 	else
 		emit_section_change (acfg, RODATA_SECT, 0);
-	emit_alignment (acfg, 8);
+	emit_alignment_code (acfg, 8);
 	emit_label (acfg, symbol);
 
 	prev_index = -1;
@@ -8144,7 +8175,7 @@ emit_mem_end (MonoAotCompile *acfg)
 
 	sprintf (symbol, "mem_end");
 	emit_section_change (acfg, ".text", 1);
-	emit_alignment (acfg, 8);
+	emit_alignment_code (acfg, 8);
 	emit_label (acfg, symbol);
 }
 
@@ -9084,7 +9115,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		 */
 		sprintf (symbol, "thumb_end");
 		emit_section_change (acfg, ".text", 0);
-		emit_alignment (acfg, 8);
+		emit_alignment_code (acfg, 8);
 		emit_label (acfg, symbol);
 		emit_zero_bytes (acfg, 16);
 

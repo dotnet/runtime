@@ -1843,6 +1843,17 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 #endif
 }
 
+static void 
+asm_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
+{
+	asm_writer_emit_unset_mode (acfg);
+#if defined(TARGET_ASM_APPLE)
+	fprintf (acfg->fp, "\t.align %d, 0x%0x\n", ilog2 (size), fill);
+#else
+	asm_writer_emit_alignment (acfg, size);
+#endif
+}
+
 #ifdef __native_client_codegen__
 static void
 asm_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
@@ -2147,6 +2158,19 @@ img_writer_emit_alignment (MonoImageWriter *acfg, int size)
 		asm_writer_emit_alignment (acfg, size);
 #else
 	asm_writer_emit_alignment (acfg, size);
+#endif
+}
+
+void
+img_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
+{
+#ifdef USE_BIN_WRITER
+	if (acfg->use_bin_writer)
+		bin_writer_emit_alignment (acfg, size);
+	else
+		asm_writer_emit_alignment (acfg, size);
+#else
+	asm_writer_emit_alignment_fill (acfg, size, fill);
 #endif
 }
 
