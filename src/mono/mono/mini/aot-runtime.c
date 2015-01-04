@@ -1713,6 +1713,38 @@ get_arm_bl_target (guint32 *ins_addr)
 #endif
 }
 
+/*
+ * TABLE should point to a table of call instructions. Return the address called by the INDEXth entry.
+ */
+static void*
+get_call_table_entry (void *table, int index)
+{
+#if defined(TARGET_ARM)
+	guint32 *ins_addr;
+	guint32 ins;
+	gint32 offset;
+
+	ins_addr = (guint32*)table + index;
+	ins = *ins_addr;
+	if ((ins >> ARMCOND_SHIFT) == ARMCOND_NV) {
+		/* blx */
+		offset = (((int)(((ins & 0xffffff) << 1) | ((ins >> 24) & 0x1))) << 7) >> 7;
+		return (char*)ins_addr + (offset * 2) + 8 + 1;
+	} else {
+		offset = (((int)ins & 0xffffff) << 8) >> 8;
+		return (char*)ins_addr + (offset * 4) + 8;
+	}
+#elif defined(TARGET_ARM64)
+	return mono_arch_get_call_target ((guint8*)table + (index * 4) + 4);
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
+	/* The callee expects an ip which points after the call */
+	return mono_arch_get_call_target ((guint8*)table + (index * 5) + 5);
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif
+}
+
 static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
@@ -1944,15 +1976,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
 		for (i = 0; i < amodule->info.nmethods; ++i) {
 			/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
-			void *addr = NULL;
+			void *addr;
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
-			addr = get_arm_bl_target ((guint32*)amodule->method_addresses + i);
-#elif defined(TARGET_X86) || defined(TARGET_AMD64)
-			addr = mono_arch_get_call_target ((guint8*)amodule->method_addresses + (i * 5) + 5);
-#else
-			g_assert_not_reached ();
-#endif
+			addr = get_call_table_entry (amodule->method_addresses, i);
 			g_assert (addr);
 			if (addr == amodule->method_addresses)
 				amodule->code_offsets [i] = 0xffffffff;
@@ -4796,7 +4822,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	addresses = (guint8*)amodule->unbox_trampoline_addresses;
 	if (amodule->info.flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES)
-		code = get_arm_bl_target ((guint32*)addresses + entry_index);
+		code = get_call_table_entry (addresses, entry_index);
 	else
 		code = amodule->code + ((guint32*)addresses) [entry_index];
 	g_assert (code);
