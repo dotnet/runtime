@@ -3689,7 +3689,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			if (method->is_generic) {
 				// FIXME:
-			} else if (method->klass->generic_container) {
+			} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && method->klass->generic_container) {
 				MonoGenericContext ctx;
 				MonoMethod *inst, *gshared, *m;
 
