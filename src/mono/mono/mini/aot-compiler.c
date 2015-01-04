@@ -712,12 +712,14 @@ arch_init (MonoAotCompile *acfg)
 
 #if defined(TARGET_X86)
 	g_string_append (acfg->llc_args, " -march=x86 -mattr=sse4.1");
+	acfg->direct_method_addresses = TRUE;
 #endif
 
 #if defined(TARGET_AMD64)
 	g_string_append (acfg->llc_args, " -march=x86-64 -mattr=sse4.1");
 	/* NOP */
 	acfg->align_pad_value = 0x90;
+	acfg->direct_method_addresses = TRUE;
 #endif
 
 #ifdef TARGET_ARM
