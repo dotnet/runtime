@@ -220,7 +220,6 @@ typedef struct MonoAotCompile {
 	GHashTable *ginst_hash;
 	GHashTable *dwarf_ln_filenames;
 	gboolean global_symbols;
-	gboolean direct_method_addresses;
 	int objc_selector_index, objc_selector_index_2;
 	GPtrArray *objc_selectors;
 	GHashTable *objc_selector_to_index;
@@ -712,14 +711,12 @@ arch_init (MonoAotCompile *acfg)
 
 #if defined(TARGET_X86)
 	g_string_append (acfg->llc_args, " -march=x86 -mattr=sse4.1");
-	acfg->direct_method_addresses = TRUE;
 #endif
 
 #if defined(TARGET_AMD64)
 	g_string_append (acfg->llc_args, " -march=x86-64 -mattr=sse4.1");
 	/* NOP */
 	acfg->align_pad_value = 0x90;
-	acfg->direct_method_addresses = TRUE;
 #endif
 
 #ifdef TARGET_ARM
@@ -759,7 +756,6 @@ arch_init (MonoAotCompile *acfg)
 #endif
 
 #ifdef MONOTOUCH
-	acfg->direct_method_addresses = TRUE;
 	acfg->global_symbols = TRUE;
 #endif
 }
@@ -7302,58 +7298,32 @@ emit_code (MonoAotCompile *acfg)
 		}
 	}
 
-	if (acfg->direct_method_addresses) {
-		acfg->flags |= MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES;
+	/*
+	 * To work around linker issues, we emit a table of branches, and disassemble them at runtime.
+	 * This is PIE code, and the linker can update it if needed.
+	 */
+	sprintf (symbol, "method_addresses");
+	emit_section_change (acfg, ".text", 1);
+	emit_alignment_code (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_local_symbol (acfg, symbol, "method_addresses_end", TRUE);
+	emit_unset_mode (acfg);
+	if (acfg->need_no_dead_strip)
+		fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
 
-		/*
-		 * To work around linker issues, we emit a table of branches, and disassemble them at runtime.
-		 * This is PIE code, and the linker can update it if needed.
-		 */
-		sprintf (symbol, "method_addresses");
-		emit_section_change (acfg, ".text", 1);
-		emit_alignment_code (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_local_symbol (acfg, symbol, "method_addresses_end", TRUE);
-		emit_unset_mode (acfg);
-		if (acfg->need_no_dead_strip)
-			fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
-
-		for (i = 0; i < acfg->nmethods; ++i) {
+	for (i = 0; i < acfg->nmethods; ++i) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
-			int call_size;
+		int call_size;
 
-			if (acfg->cfgs [i])
-				arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
-			else
-				arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
+		if (acfg->cfgs [i])
+			arch_emit_direct_call (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &call_size);
+		else
+			arch_emit_direct_call (acfg, "method_addresses", FALSE, FALSE, NULL, &call_size);
 #endif
-		}
-
-		sprintf (symbol, "method_addresses_end");
-		emit_label (acfg, symbol);
-
-		/* Empty */
-		sprintf (symbol, "code_offsets");
-		emit_section_change (acfg, RODATA_SECT, 1);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-		emit_int32 (acfg, 0);
-	} else {
-		sprintf (symbol, "code_offsets");
-		emit_section_change (acfg, RODATA_SECT, 1);
-		emit_alignment (acfg, 8);
-		emit_label (acfg, symbol);
-
-		acfg->stats.offsets_size += acfg->nmethods * 4;
-
-		for (i = 0; i < acfg->nmethods; ++i) {
-			if (acfg->cfgs [i]) {
-				emit_symbol_diff (acfg, acfg->cfgs [i]->asm_symbol, acfg->methods_symbol, 0);
-			} else {
-				emit_int32 (acfg, 0xffffffff);
-			}
-		}
 	}
+
+	sprintf (symbol, "method_addresses_end");
+	emit_label (acfg, symbol);
 	emit_line (acfg);
 
 	/* Emit a sorted table mapping methods to the index of their unbox trampolines */
@@ -7389,10 +7359,7 @@ emit_code (MonoAotCompile *acfg)
 
 	/* Emit a separate table with the trampoline addresses/offsets */
 	sprintf (symbol, "unbox_trampoline_addresses");
-	if (acfg->direct_method_addresses)
-		emit_section_change (acfg, ".text", 0);
-	else
-		emit_section_change (acfg, RODATA_SECT, 0);
+	emit_section_change (acfg, ".text", 0);
 	emit_alignment_code (acfg, 8);
 	emit_label (acfg, symbol);
 
@@ -7410,18 +7377,12 @@ emit_code (MonoAotCompile *acfg)
 		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 			int call_size;
-#endif
 
 			index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
 
-			if (acfg->direct_method_addresses) {
-#ifdef MONO_ARCH_AOT_SUPPORTED
-				arch_emit_direct_call (acfg, symbol, FALSE, acfg->thumb_mixed && cfg->compile_llvm, NULL, &call_size);
+			arch_emit_direct_call (acfg, symbol, FALSE, acfg->thumb_mixed && cfg->compile_llvm, NULL, &call_size);
 #endif
-			} else {
-				emit_symbol_diff (acfg, symbol, acfg->methods_symbol, 0);
-			}
 		}
 	}
 }
@@ -8268,11 +8229,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_pointer (acfg, "class_info_offsets");
 	emit_pointer (acfg, "method_info_offsets");
 	emit_pointer (acfg, "ex_info_offsets");
-	emit_pointer (acfg, "code_offsets");
-	if (acfg->direct_method_addresses)
-		emit_pointer (acfg, "method_addresses");
-	else
-		emit_pointer (acfg, NULL);
+	emit_pointer (acfg, "method_addresses");
 	emit_pointer (acfg, "extra_method_info_offsets");
 	emit_pointer (acfg, "extra_method_table");
 	emit_pointer (acfg, "got_info_offsets");

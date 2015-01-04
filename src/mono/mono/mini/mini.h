@@ -103,7 +103,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 105
+#define MONO_AOT_FILE_VERSION 106
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -164,7 +164,6 @@ typedef enum {
 	MONO_AOT_FILE_FLAG_WITH_LLVM = 1,
 	MONO_AOT_FILE_FLAG_FULL_AOT = 2,
 	MONO_AOT_FILE_FLAG_DEBUG = 4,
-	MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES = 8
 } MonoAotFileFlags;
 
 /* This structure is stored in the AOT file */
@@ -189,7 +188,6 @@ typedef struct MonoAotFileInfo
 	gpointer class_info_offsets;
 	gpointer method_info_offsets;
 	gpointer ex_info_offsets;
-	gpointer code_offsets;
 	gpointer method_addresses;
 	gpointer extra_method_info_offsets;
 	gpointer extra_method_table;
