@@ -7354,8 +7354,39 @@ emit_code (MonoAotCompile *acfg)
 	}
 	emit_line (acfg);
 
-	/* Emit a sorted table mapping methods to their unbox trampolines */
+	/* Emit a sorted table mapping methods to the index of their unbox trampolines */
 	sprintf (symbol, "unbox_trampolines");
+	emit_section_change (acfg, RODATA_SECT, 0);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+
+	prev_index = -1;
+	for (i = 0; i < acfg->nmethods; ++i) {
+		MonoCompile *cfg;
+		MonoMethod *method;
+		int index;
+
+		cfg = acfg->cfgs [i];
+		if (!cfg)
+			continue;
+
+		method = cfg->orig_method;
+
+		if (acfg->aot_opts.full_aot && cfg->orig_method->klass->valuetype) {
+			index = get_method_index (acfg, method);
+
+			emit_int32 (acfg, index);
+			/* Make sure the table is sorted by index */
+			g_assert (index > prev_index);
+			prev_index = index;
+		}
+	}
+	sprintf (symbol, "unbox_trampolines_end");
+	emit_label (acfg, symbol);
+	emit_int32 (acfg, 0);
+
+	/* Emit a separate table with the trampoline addresses/offsets */
+	sprintf (symbol, "unbox_trampoline_addresses");
 	if (acfg->direct_method_addresses)
 		emit_section_change (acfg, ".text", 0);
 	else
@@ -7363,7 +7394,6 @@ emit_code (MonoAotCompile *acfg)
 	emit_alignment_code (acfg, 8);
 	emit_label (acfg, symbol);
 
-	prev_index = -1;
 	for (i = 0; i < acfg->nmethods; ++i) {
 		MonoCompile *cfg;
 		MonoMethod *method;
@@ -7383,7 +7413,6 @@ emit_code (MonoAotCompile *acfg)
 			index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
 
-			emit_int32 (acfg, index);
 			if (acfg->direct_method_addresses) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 				arch_emit_direct_call (acfg, symbol, FALSE, acfg->thumb_mixed && cfg->compile_llvm, NULL, &call_size);
@@ -7391,14 +7420,8 @@ emit_code (MonoAotCompile *acfg)
 			} else {
 				emit_symbol_diff (acfg, symbol, acfg->methods_symbol, 0);
 			}
-			/* Make sure the table is sorted by index */
-			g_assert (index > prev_index);
-			prev_index = index;
 		}
 	}
-	sprintf (symbol, "unbox_trampolines_end");
-	emit_label (acfg, symbol);
-	emit_int32 (acfg, 0);
 }
 
 static void
@@ -8283,6 +8306,7 @@ emit_file_info (MonoAotCompile *acfg)
 	emit_pointer (acfg, "assembly_name");
 	emit_pointer (acfg, "unbox_trampolines");
 	emit_pointer (acfg, "unbox_trampolines_end");
+	emit_pointer (acfg, "unbox_trampoline_addresses");
 
 	emit_int32 (acfg, acfg->plt_got_offset_base);
 	emit_int32 (acfg, (int)(acfg->got_offset * sizeof (gpointer)));

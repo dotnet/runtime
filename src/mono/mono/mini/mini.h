@@ -103,7 +103,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 104
+#define MONO_AOT_FILE_VERSION 105
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -226,6 +226,8 @@ typedef struct MonoAotFileInfo
 	gpointer unbox_trampolines;
 	/* Points to the end of the previous table */
 	gpointer unbox_trampolines_end;
+	/* Points to a table of unbox trampoline addresses/offsets */
+	gpointer unbox_trampoline_addresses;
 
 	/* The index of the first GOT slot used by the PLT */
 	guint32 plt_got_offset_base;

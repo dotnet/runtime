@@ -116,6 +116,7 @@ typedef struct MonoAotModule {
 	guint32 *extra_method_info_offsets;
 	guint32 *unbox_trampolines;
 	guint32 *unbox_trampolines_end;
+	guint32 *unbox_trampoline_addresses;
 	guint8 *unwind_info;
 	guint8 *thumb_end;
 
@@ -1924,6 +1925,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->extra_method_info_offsets = info->extra_method_info_offsets;
 	amodule->unbox_trampolines = info->unbox_trampolines;
 	amodule->unbox_trampolines_end = info->unbox_trampolines_end;
+	amodule->unbox_trampoline_addresses = info->unbox_trampoline_addresses;
 	amodule->got_info_offsets = info->got_info_offsets;
 	amodule->unwind_info = info->unwind_info;
 	amodule->mem_end = info->mem_end;
@@ -4759,6 +4761,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	gpointer code;
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index;
+	guint8 *addresses;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_extra_method (method, &amodule);
@@ -4778,22 +4781,24 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	/* Do a binary search in the sorted table */
 	code = NULL;
 	low = 0;
-	high = (ut_end - ut) / 2;
+	high = (ut_end - ut);
 	while (low < high) {
 		entry_index = (low + high) / 2;
-		entry = &ut [(entry_index * 2)];
+		entry = &ut [entry_index];
 		if (entry [0] < method_index) {
 			low = entry_index + 1;
 		} else if (entry [0] > method_index) {
 			high = entry_index;
 		} else {
-			if (amodule->info.flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES)
-				code = get_arm_bl_target (entry + 1);
-			else
-				code = amodule->code + entry [1];
 			break;
 		}
 	}
+
+	addresses = (guint8*)amodule->unbox_trampoline_addresses;
+	if (amodule->info.flags & MONO_AOT_FILE_FLAG_DIRECT_METHOD_ADDRESSES)
+		code = get_arm_bl_target ((guint32*)addresses + entry_index);
+	else
+		code = amodule->code + ((guint32*)addresses) [entry_index];
 	g_assert (code);
 
 	/* The caller expects an ftnptr */
