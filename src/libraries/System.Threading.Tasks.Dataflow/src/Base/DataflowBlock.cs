@@ -751,7 +751,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
             Task IDataflowBlock.Completion { get { return Task; } }
 
-            /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="LinkTo"]/*' />
+            /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
             IDisposable ISourceBlock<TOutput>.LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions) { throw new NotSupportedException(Strings.NotSupported_MemberNotNeeded); }
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
             void IDataflowBlock.Complete() { throw new NotSupportedException(Strings.NotSupported_MemberNotNeeded); }
