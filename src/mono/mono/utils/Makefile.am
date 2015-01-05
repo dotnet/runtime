@@ -119,7 +119,12 @@ monoutils_sources = \
 	mono-conc-hashtable.h	\
 	mono-conc-hashtable.c	\
 	sha1.h		\
-	sha1.c
+	sha1.c	\
+	networking.c	\
+	networking-posix.c	\
+	networking-fallback.c	\
+	networking-missing.c	\
+	networking.h
 
 arch_sources = 
 
