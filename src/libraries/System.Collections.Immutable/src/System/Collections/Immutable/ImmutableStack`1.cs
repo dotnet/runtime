@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
     /// An immutable stack.
     /// </summary>
     /// <typeparam name="T">The type of element stored by the stack.</typeparam>
-    [DebuggerDisplay("IsEmpty = {IsEmpty}; Top = {head}")]
+    [DebuggerDisplay("IsEmpty = {IsEmpty}; Top = {_head}")]
     [DebuggerTypeProxy(typeof(ImmutableStackDebuggerProxy<>))]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]

@@ -115,7 +115,7 @@ public partial class RegexReplaceStringTests
                 Console.WriteLine("Err_712ff! doesnot match, " + sResult + " " + s);
             }
 
-            // [] Replace with MatchEvaluators - relevant fn's for this are defined below 
+            // [] Replace with MatchEvaluators - relevant fn's for this are defined below
             //-----------------------------------------------------------------
             strLoc = "Loc_746tegd";
             sResult = Regex.Replace("Big mountain", "(Big|Small)", new MatchEvaluator(Rep1));

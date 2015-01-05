@@ -85,12 +85,13 @@ namespace System.Numerics
         public string ToString(string format, IFormatProvider formatProvider)
         {
             StringBuilder sb = new StringBuilder();
-            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator + " ";
-            sb.Append("<");
+            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
+            sb.Append('<');
             sb.Append(this.X.ToString(format, formatProvider));
             sb.Append(separator);
+            sb.Append(' ');
             sb.Append(this.Y.ToString(format, formatProvider));
-            sb.Append(">");
+            sb.Append('>');
             return sb.ToString();
         }
 

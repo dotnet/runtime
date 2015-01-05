@@ -1134,7 +1134,7 @@ namespace System.Numerics
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is Vector<T>))
+            if (!(obj is Vector<T>))
             {
                 return false;
             }
@@ -1514,16 +1514,17 @@ namespace System.Numerics
         public string ToString(string format, IFormatProvider formatProvider)
         {
             StringBuilder sb = new StringBuilder();
-            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator + " ";
-            sb.Append("<");
+            string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
+            sb.Append('<');
             for (int g = 0; g < Count - 1; g++)
             {
                 sb.Append(((IFormattable)this[g]).ToString(format, formatProvider));
                 sb.Append(separator);
+                sb.Append(' ');
             }
             // Append last element w/out separator
             sb.Append(((IFormattable)this[Count - 1]).ToString(format, formatProvider));
-            sb.Append(">");
+            sb.Append('>');
             return sb.ToString();
         }
         #endregion Public Instance Methods

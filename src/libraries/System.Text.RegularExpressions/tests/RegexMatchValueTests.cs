@@ -48,10 +48,10 @@ public class RegexMatchValueTests
         {
             /////////////////////////  START TESTS ////////////////////////////
             ///////////////////////////////////////////////////////////////////
-            //[] We are testing the Value property of Match, Group and Capture here. Value is the more semantic equivalent of 
+            //[] We are testing the Value property of Match, Group and Capture here. Value is the more semantic equivalent of
             //the current ToString
             //trim leading and trailing white spaces
-            //my answer to the csharp alias, Regex.Replace(strInput, @"\s*(.*?)\s*$", "${1}") works fine, Even Freidl gives it 
+            //my answer to the csharp alias, Regex.Replace(strInput, @"\s*(.*?)\s*$", "${1}") works fine, Even Freidl gives it
             //a solution, albeit not a very fast one
             iCountTestcases++;
             rgx1 = new Regex(@"\s*(.*?)\s*$");
