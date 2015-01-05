@@ -493,7 +493,7 @@ void*
 sgen_alloc_obj_mature (GCVTable *vtable)
 {
 	void *res;
-	size_t size = vtable->klass->instance_size;
+	size_t size = sgen_client_vtable_get_instance_size (vtable);
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;

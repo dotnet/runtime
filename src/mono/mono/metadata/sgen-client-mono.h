@@ -99,6 +99,12 @@ sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
 	return sgen_client_slow_object_get_size (vtable, o);
 }
 
+static inline size_t
+sgen_client_vtable_get_instance_size (MonoVTable *vtable)
+{
+	return vtable->klass->instance_size;
+}
+
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
 struct _SgenClientThreadInfo {
 	MonoThreadInfo info;
