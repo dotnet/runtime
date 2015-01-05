@@ -42,7 +42,7 @@ extern guint64 stat_scan_object_called_major;
 			major_copy_or_mark_object_concurrent ((ptr), __old, queue); \
 		} else {						\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
-				ADD_TO_GLOBAL_REMSET ((MonoObject*)(full_object), (ptr), __old); \
+				ADD_TO_GLOBAL_REMSET ((GCObject*)(full_object), (ptr), __old); \
 		}							\
 	} while (0)
 

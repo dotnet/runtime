@@ -680,7 +680,7 @@ SgenMajorCollector* sgen_get_major_collector (void);
 
 
 typedef struct _SgenRememberedSet {
-	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
+	void (*wbarrier_set_field) (GCObject *obj, gpointer field_ptr, GCObject* value);
 	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
 	void (*wbarrier_value_copy) (gpointer dest, gpointer src, int count, size_t element_size);
 	void (*wbarrier_object_copy) (GCObject* obj, GCObject *src);
@@ -727,11 +727,11 @@ sgen_safe_object_get_size (GCObject *obj)
 }
 
 static inline gboolean
-sgen_safe_object_is_small (MonoObject *obj, int type)
+sgen_safe_object_is_small (GCObject *obj, int type)
 {
 	if (type <= DESC_TYPE_MAX_SMALL_OBJ)
 		return TRUE;
-	return SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE;
+	return SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE;
 }
 
 /*
@@ -864,7 +864,7 @@ LOSObject* sgen_los_header_for_object (char *data);
 mword sgen_los_object_size (LOSObject *obj);
 void sgen_los_pin_object (char *obj);
 gboolean sgen_los_object_is_pinned (char *obj);
-void sgen_los_mark_mod_union_card (MonoObject *mono_obj, void **ptr);
+void sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr);
 
 
 /* nursery allocator */
@@ -979,7 +979,7 @@ gboolean sgen_is_managed_allocator (MonoMethod *method);
 gboolean sgen_has_managed_allocator (void);
 
 void* sgen_alloc_obj (GCVTable *vtable, size_t size);
-void* sgen_alloc_obj_pinned (MonoVTable *vtable, size_t size);
+void* sgen_alloc_obj_pinned (GCVTable *vtable, size_t size);
 void* sgen_alloc_obj_mature (GCVTable *vtable);
 
 /* Debug support */

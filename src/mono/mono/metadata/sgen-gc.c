@@ -2732,7 +2732,7 @@ sgen_thread_attach (SgenThreadInfo *info)
  * the conservative scan, otherwise by the remembered set scan.
  */
 void
-mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+mono_gc_wbarrier_set_field (GCObject *obj, gpointer field_ptr, GCObject* value)
 {
 	HEAVY_STAT (++stat_wbarrier_set_field);
 	if (ptr_in_nursery (field_ptr)) {
@@ -2799,7 +2799,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 }
 
 void
-mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
+mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
 {
 	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
@@ -2812,7 +2812,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
  * as an atomic operation with release semantics.
  */
 void
-mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
+mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
@@ -2886,7 +2886,7 @@ sgen_weak_link_get (void **link_addr)
 {
 	void * volatile *link_addr_volatile;
 	void *ptr;
-	MonoObject *obj;
+	GCObject *obj;
  retry:
 	link_addr_volatile = link_addr;
 	ptr = (void*)*link_addr_volatile;
@@ -2901,7 +2901,7 @@ sgen_weak_link_get (void **link_addr)
 	 * sure the object reference is valid.
 	 */
 	if (ptr)
-		obj = (MonoObject*) REVEAL_POINTER (ptr);
+		obj = (GCObject*) REVEAL_POINTER (ptr);
 	else
 		return NULL;
 

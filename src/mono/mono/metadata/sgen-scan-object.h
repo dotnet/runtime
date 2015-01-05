@@ -50,7 +50,7 @@
 #endif
 #else
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
-	binary_protocol_scan_vtype_begin (start + sizeof (MonoObject), size);
+	binary_protocol_scan_vtype_begin (start + SGEN_CLIENT_OBJECT_HEADER_SIZE, size);
 #endif
 #endif
 	switch (desc & DESC_TYPE_MASK) {

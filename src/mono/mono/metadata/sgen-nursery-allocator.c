@@ -842,7 +842,7 @@ sgen_can_alloc_size (size_t size)
 void*
 sgen_nursery_alloc (size_t size)
 {
-	SGEN_ASSERT (1, size >= sizeof (MonoObject) && size <= (SGEN_MAX_SMALL_OBJ_SIZE + CANARY_SIZE), "Invalid nursery object size");
+	SGEN_ASSERT (1, size >= (SGEN_CLIENT_MINIMUM_OBJECT_SIZE + CANARY_SIZE) && size <= (SGEN_MAX_SMALL_OBJ_SIZE + CANARY_SIZE), "Invalid nursery object size");
 
 	SGEN_LOG (4, "Searching nursery for size: %zd", size);
 	size = SGEN_ALIGN_UP (size);

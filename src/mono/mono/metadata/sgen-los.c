@@ -696,7 +696,7 @@ sgen_los_object_is_pinned (char *data)
 }
 
 void
-sgen_los_mark_mod_union_card (MonoObject *mono_obj, void **ptr)
+sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr)
 {
 	LOSObject *obj = sgen_los_header_for_object ((char*)mono_obj);
 	guint8 *mod_union = get_cardtable_mod_union_for_object (obj);

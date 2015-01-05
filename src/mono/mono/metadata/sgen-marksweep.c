@@ -1058,7 +1058,7 @@ major_get_cardtable_mod_union_for_reference (char *ptr)
  * Mark the mod-union card for `ptr`, which must be a reference within the object `obj`.
  */
 static void
-mark_mod_union_card (MonoObject *obj, void **ptr)
+mark_mod_union_card (GCObject *obj, void **ptr)
 {
 	int type = sgen_obj_get_descriptor ((char*)obj) & DESC_TYPE_MASK;
 	if (sgen_safe_object_is_small (obj, type)) {
@@ -1739,7 +1739,7 @@ ms_calculate_block_obj_sizes (double factor, int *arr)
 	 * proceed by increasing geometrically with the given factor.
 	 */
 
-	for (int size = sizeof (MonoObject); size <= 4 * sizeof (MonoObject); size += SGEN_ALLOC_ALIGN) {
+	for (int size = SGEN_CLIENT_MINIMUM_OBJECT_SIZE; size <= 4 * SGEN_CLIENT_MINIMUM_OBJECT_SIZE; size += SGEN_ALLOC_ALIGN) {
 		if (arr)
 			arr [num_sizes] = size;
 		++num_sizes;
