@@ -28,6 +28,7 @@ class Test {
 		s.Position = 0;
 		
 		do {
+			buf = new byte [1];
 			ar = s.BeginRead (buf, 0, 1, ac, buf);
 		} while (s.EndRead (ar) == 1);
 		sum -= buf [0];
