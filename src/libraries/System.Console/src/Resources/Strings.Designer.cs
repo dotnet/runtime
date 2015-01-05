@@ -134,6 +134,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot create &apos;{0}&apos; because a file or directory with the same name already exists..
+        /// </summary>
+        internal static string IO_AlreadyExists_Name {
+            get {
+                return ResourceManager.GetString("IO_AlreadyExists_Name", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The file &apos;{0}&apos; already exists..
         /// </summary>
         internal static string IO_FileExists_Name {
