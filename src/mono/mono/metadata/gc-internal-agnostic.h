@@ -35,6 +35,12 @@ typedef struct {
 
 extern GCStats gc_stats;
 
+/*
+ * Try to register a foreign thread with the GC, if we fail or the backend
+ * can't cope with this concept - we return FALSE.
+ */
+extern gboolean mono_gc_register_thread (void *baseptr);
+
 gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out);
 
 void* mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size);
