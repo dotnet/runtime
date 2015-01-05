@@ -3315,8 +3315,6 @@ sgen_gc_init (void)
 				do_concurrent_checks = TRUE;
 			} else if (!strcmp (opt, "dump-nursery-at-minor-gc")) {
 				do_dump_nursery_content = TRUE;
-			} else if (!strcmp (opt, "no-managed-allocator")) {
-				sgen_set_use_managed_allocator (FALSE);
 			} else if (!strcmp (opt, "disable-minor")) {
 				disable_minor_collections = TRUE;
 			} else if (!strcmp (opt, "disable-major")) {
@@ -3339,7 +3337,6 @@ sgen_gc_init (void)
 				binary_protocol_init (filename, (long long)limit);
 			} else if (!strcmp (opt, "nursery-canaries")) {
 				do_verify_nursery = TRUE;
-				sgen_set_use_managed_allocator (FALSE);
 				enable_nursery_canaries = TRUE;
 			} else if (!sgen_client_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
@@ -3364,7 +3361,6 @@ sgen_gc_init (void)
 				fprintf (stderr, "  clear-at-tlab-creation\n");
 				fprintf (stderr, "  debug-clear-at-tlab-creation\n");
 				fprintf (stderr, "  check-scan-starts\n");
-				fprintf (stderr, "  no-managed-allocator\n");
 				fprintf (stderr, "  print-allowance\n");
 				fprintf (stderr, "  print-pinning\n");
 				fprintf (stderr, "  heap-dump=<filename>\n");

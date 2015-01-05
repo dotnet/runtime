@@ -607,4 +607,8 @@ typedef MonoSemType SgenSemaphore;
 #define SGEN_SEMAPHORE_POST(sem)		MONO_SEM_POST ((sem))
 #define SGEN_SEMAPHORE_WAIT(sem)		MONO_SEM_WAIT ((sem))
 
+void sgen_set_use_managed_allocator (gboolean flag);
+gboolean sgen_is_managed_allocator (MonoMethod *method);
+gboolean sgen_has_managed_allocator (void);
+
 #endif
