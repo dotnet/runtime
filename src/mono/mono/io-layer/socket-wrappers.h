@@ -35,7 +35,6 @@
 #define _wapi_setsockopt setsockopt 
 #define _wapi_shutdown shutdown 
 #define _wapi_socket WSASocket 
-#define _wapi_gethostbyname gethostbyname 
 #define _wapi_select select 
 
 /* No need to wrap FD_ZERO because it doesnt involve file
@@ -76,7 +75,6 @@ extern int _wapi_setsockopt(guint32 handle, int level, int optname,
 extern int _wapi_shutdown(guint32 handle, int how);
 extern guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 			    guint32 unused2, guint32 flags);
-extern struct hostent *_wapi_gethostbyname(const char *hostname);
 
 #ifdef HAVE_SYS_SELECT_H
 extern int _wapi_select(int nfds, fd_set *readfds, fd_set *writefds,
