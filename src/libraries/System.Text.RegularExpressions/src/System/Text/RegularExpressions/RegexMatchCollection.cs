@@ -78,6 +78,14 @@ namespace System.Text.RegularExpressions
             return match;
         }
 
+        private void EnsureInitialized()
+        {
+            if (!_done)
+            {
+                GetMatch(s_infinite);
+            }
+        }
+
         /// <summary>
         /// Returns the number of captures.
         /// </summary>
@@ -85,11 +93,7 @@ namespace System.Text.RegularExpressions
         {
             get
             {
-                if (_done)
-                    return _matches.Count;
-
-                GetMatch(s_infinite);
-
+                EnsureInitialized();
                 return _matches.Count;
             }
         }
@@ -134,9 +138,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            if (!_done)
-                GetMatch(s_infinite);
-
+            EnsureInitialized();
             ((ICollection)_matches).CopyTo(array, arrayIndex);
         }
 
