@@ -4891,6 +4891,7 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 {
 	char *name1, *name2, *cached;
 	int i, j, len, count;
+	MonoMethod *cached_method;
 
 	name1 = mono_method_full_name (method, TRUE);
 
@@ -4921,13 +4922,16 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 	g_free (name1);
 
 	count = 0;
-	while (g_hash_table_lookup (cache, name2)) {
+	while (TRUE) {
+		cached_method = g_hash_table_lookup (cache, name2);
+		if (!(cached_method && cached_method != method))
+			break;
 		sprintf (name2 + j, "_%d", count);
 		count ++;
 	}
 
 	cached = g_strdup (name2);
-	g_hash_table_insert (cache, cached, cached);
+	g_hash_table_insert (cache, cached, method);
 
 	return name2;
 }
