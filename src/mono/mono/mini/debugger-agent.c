@@ -27,9 +27,6 @@
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-#ifdef HAVE_NETDB_H
-#include <netdb.h>
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -52,9 +49,6 @@
 #include <ws2tcpip.h>
 #ifdef __GNUC__
 /* cygwin's headers do not seem to define these */
-void WSAAPI freeaddrinfo (struct addrinfo*);
-int WSAAPI getaddrinfo (const char*,const char*,const struct addrinfo*,
-                        struct addrinfo**);
 int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
                        char*,DWORD,int);
 #endif
@@ -82,6 +76,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/networking.h>
 #include "debugger-agent.h"
 #include "mini.h"
 #include "seq-points.h"
@@ -1164,10 +1159,6 @@ socket_transport_recv (void *buf, int len)
 	} while ((res > 0 && total < len) || (res == -1 && get_last_sock_error () == MONO_EINTR));
 	return total;
 }
-
-#ifndef TARGET_PS3
-#define HAVE_GETADDRINFO 1
-#endif
  
 static void
 set_keepalive (void)
@@ -1220,14 +1211,9 @@ socket_transport_send (void *data, int len)
 static void
 socket_transport_connect (const char *address)
 {
-#ifdef HAVE_GETADDRINFO
-	struct addrinfo hints;
-	struct addrinfo *result, *rp;
-#else
-	struct hostent *result;
-#endif
+	MonoAddressInfo *result;
+	MonoAddressEntry *rp;
 	int sfd = -1, s, res;
-	char port_string [128];
 	char *host;
 	int port;
 
@@ -1243,34 +1229,18 @@ socket_transport_connect (const char *address)
 	listen_fd = -1;
 
 	if (host) {
-		sprintf (port_string, "%d", port);
 
 		mono_network_init ();
 
 		/* Obtain address(es) matching host/port */
-#ifdef HAVE_GETADDRINFO
-		memset (&hints, 0, sizeof (struct addrinfo));
-		hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-		hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
-		hints.ai_flags = 0;
-		hints.ai_protocol = 0;          /* Any protocol */
-
-		s = getaddrinfo (host, port_string, &hints, &result);
+		s = mono_get_address_info (host, port, MONO_HINT_UNSPECIFIED, &result);
 		if (s != 0) {
-			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %s\n", host, port, gai_strerror (s));
+			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %d\n", host, port, s); // FIXME add portable error conversion functions
 			exit (1);
 		}
-#else
-		/* The PS3 doesn't even have _r or hstrerror () */
-		result = gethostbyname (host);
-		if (!result) {
-			fprintf (stderr, "debugger-agent: Unable to resolve %s:%d: %d\n", host, port, h_errno);
-		}
-#endif
 	}
 
 	if (agent_config.server) {
-#ifdef HAVE_GETADDRINFO
 		/* Wait for a connection */
 		if (!host) {
 			struct sockaddr_in addr;
@@ -1301,18 +1271,22 @@ socket_transport_connect (const char *address)
 			printf ("%s:%d\n", host, port);
 		} else {
 			/* Listen on the provided address */
-			for (rp = result; rp != NULL; rp = rp->ai_next) {
+			for (rp = result->entries; rp != NULL; rp = rp->next) {
+				MonoSocketAddress sockaddr;
+				socklen_t sock_len;
 				int n = 1;
 
-				sfd = socket (rp->ai_family, rp->ai_socktype,
-							  rp->ai_protocol);
+				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+
+				sfd = socket (rp->family, rp->socktype,
+							  rp->protocol);
 				if (sfd == -1)
 					continue;
 
 				if (setsockopt (sfd, SOL_SOCKET, SO_REUSEADDR, &n, sizeof(n)) == -1)
 					continue;
 
-				res = bind (sfd, rp->ai_addr, rp->ai_addrlen);
+				res = bind (sfd, &sockaddr.addr, sock_len);
 				if (res == -1)
 					continue;
 
@@ -1323,17 +1297,7 @@ socket_transport_connect (const char *address)
 				break;
 			}
 
-#ifndef HOST_WIN32
-			/*
-			 * this function is not present on win2000 which we still support, and the
-			 * workaround described here:
-			 * http://msdn.microsoft.com/en-us/library/ms737931(VS.85).aspx
-			 * only works with MSVC.
-			 */
-#ifdef HAVE_GETADDRINFO
-			freeaddrinfo (result);
-#endif
-#endif
+			mono_free_address_info (result);
 		}
 
 		if (agent_config.defer)
@@ -1361,20 +1325,21 @@ socket_transport_connect (const char *address)
 			exit (1);
 
 		DEBUG (1, fprintf (log_file, "Accepted connection from client, socket fd=%d.\n", conn_fd));
-#else
-		NOT_IMPLEMENTED;
-#endif /* HAVE_GETADDRINFO */
 	} else {
 		/* Connect to the specified address */
-#ifdef HAVE_GETADDRINFO
 		/* FIXME: Respect the timeout */
-		for (rp = result; rp != NULL; rp = rp->ai_next) {
-			sfd = socket (rp->ai_family, rp->ai_socktype,
-						  rp->ai_protocol);
+		for (rp = result->entries; rp != NULL; rp = rp->next) {
+			MonoSocketAddress sockaddr;
+			socklen_t sock_len;
+
+			mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+
+			sfd = socket (rp->family, rp->socktype,
+						  rp->protocol);
 			if (sfd == -1)
 				continue;
 
-			if (connect (sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+			if (connect (sfd, &sockaddr.addr, sock_len) != -1)
 				break;       /* Success */
 			
 			close (sfd);
@@ -1384,23 +1349,10 @@ socket_transport_connect (const char *address)
 			fprintf (stderr, "debugger-agent: Unable to connect to %s:%d\n", host, port);
 			exit (1);
 		}
-#else
-			sfd = socket (result->h_addrtype, SOCK_STREAM, 0);
-			if (sfd == -1)
-				g_assert_not_reached ();
-			res = connect (sfd, (void*)result->h_addr_list [0], result->h_length);
-			if (res == -1)
-				g_assert_not_reached ();
-#endif
 
 		conn_fd = sfd;
 
-#ifndef HOST_WIN32
-		/* See the comment above */
-#ifdef HAVE_GETADDRINFO
-		freeaddrinfo (result);
-#endif
-#endif
+		mono_free_address_info (result);
 	}
 	
 	if (!transport_handshake ())
