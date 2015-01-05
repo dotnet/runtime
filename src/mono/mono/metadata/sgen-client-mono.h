@@ -310,6 +310,13 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 	MONO_GC_BEGIN (generation);
 
 	mono_profiler_gc_event (MONO_GC_EVENT_START, generation);
+
+#ifndef DISABLE_PERFCOUNTERS
+	if (generation == GENERATION_NURSERY)
+		mono_perfcounters->gc_collections0++;
+	else
+		mono_perfcounters->gc_collections1++;
+#endif
 }
 
 static void G_GNUC_UNUSED
