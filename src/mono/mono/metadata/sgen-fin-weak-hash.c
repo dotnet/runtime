@@ -790,7 +790,7 @@ sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predi
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
-		mono_bool is_alive;
+		gboolean is_alive;
 
 		if (!*link)
 			continue;

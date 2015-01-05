@@ -148,7 +148,7 @@ sgen_bridge_processing_stw_step (void)
 		compare_to_bridge_processor.processing_stw_step ();
 }
 
-static mono_bool
+static gboolean
 is_bridge_object_alive (GCObject *obj, void *data)
 {
 	SgenHashTable *table = data;
