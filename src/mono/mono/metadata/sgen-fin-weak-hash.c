@@ -72,7 +72,7 @@ tagged_object_apply (void *object, int tag_bits)
 static int
 tagged_object_hash (GCObject *o)
 {
-	return mono_aligned_addr_hash (tagged_object_get_object (o));
+	return sgen_aligned_addr_hash (tagged_object_get_object (o));
 }
 
 static gboolean
@@ -628,8 +628,8 @@ sgen_gather_finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *
 	return result;
 }
 
-static SgenHashTable minor_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, mono_aligned_addr_hash, NULL);
-static SgenHashTable major_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, mono_aligned_addr_hash, NULL);
+static SgenHashTable minor_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, sgen_aligned_addr_hash, NULL);
+static SgenHashTable major_disappearing_link_hash = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_DISLINK_TABLE, INTERNAL_MEM_DISLINK, 0, sgen_aligned_addr_hash, NULL);
 
 static SgenHashTable*
 get_dislink_hash_table (int generation)
