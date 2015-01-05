@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -12,10 +12,6 @@ namespace System.IO
     /// </summary>
     internal static class Win32Marshal
     {
-
-// BUG: 1001383 Proposal: Move DirectoryNotFoundException, PathTooLongException -> System.IO
-// When #if is removed, please also remove the appropriate ones around the tree in FxCore.
-#if WIN32MARSHAL_PATH_BASED_API
         /// <summary>
         ///     Converts, resetting it, the last Win32 error into a corresponding <see cref="Exception"/> object.
         /// </summary>
@@ -42,7 +38,7 @@ namespace System.IO
         {
             return GetExceptionForWin32Error(errorCode, string.Empty);
         }
-    
+
         /// <summary>
         ///     Converts the specified Win32 error into a corresponding <see cref="Exception"/> object, optionally 
         ///     including the specified path in the error message.
@@ -100,31 +96,6 @@ namespace System.IO
                     return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
             }
         }
-#else 
-        internal static Exception GetExceptionForWin32Error(int errorCode)
-        {
-            switch (errorCode)
-            {
-                case Interop.ERROR_FILE_NOT_FOUND:
-                    return new FileNotFoundException(SR.IO_FileNotFound);
-
-                case Interop.ERROR_ACCESS_DENIED:
-                    return new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);
-
-                case Interop.ERROR_INVALID_PARAMETER:
-                    return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
-
-                case Interop.ERROR_SHARING_VIOLATION:
-                    return new IOException(SR.IO_SharingViolation_NoFileName, MakeHRFromErrorCode(errorCode));
-
-                case Interop.ERROR_OPERATION_ABORTED:
-                    return new OperationCanceledException();
-
-                default:
-                    return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
-            }
-        }
-#endif
 
         /// <summary>
         ///     Returns a HRESULT for the specified Win32 error code.
@@ -140,15 +111,17 @@ namespace System.IO
         ///     Returns a Win32 error code for the specified HRESULT if it came from FACILITY_WIN32
         ///     If not, returns the HRESULT unchanged
         /// </summary>
-        internal static int TryMakeWin32ErrorCodeFromHR(int hr) {
-            if ((0xFFFF0000 & hr) == 0x80070000) {
+        internal static int TryMakeWin32ErrorCodeFromHR(int hr)
+        {
+            if ((0xFFFF0000 & hr) == 0x80070000)
+            {
                 // Win32 error, Win32Marshal.GetExceptionForWin32Error expects the Win32 format
                 hr &= 0x0000FFFF;
             }
 
             return hr;
         }
-        
+
         /// <summary>
         ///     Returns a string message for the specified Win32 error code.
         /// </summary>
