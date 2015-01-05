@@ -1520,15 +1520,87 @@ if test x$target_win32 = xno; then
 	])
 	
 	dnl **********************************
+	dnl *** Check for getaddrinfo ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getaddrinfo)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <netdb.h>
+	], [
+		getaddrinfo(NULL,NULL,NULL,NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETADDRINFO, 1, [Have getaddrinfo])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
 	dnl *** Check for gethostbyname2_r ***
 	dnl **********************************
 	AC_MSG_CHECKING(for gethostbyname2_r)
-		AC_TRY_LINK([#include <netdb.h>], [
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <netdb.h>
+	], [
+
 		gethostbyname2_r(NULL,0,NULL,NULL,0,NULL,NULL);
 	], [
 		# Yes, we have it...
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_GETHOSTBYNAME2_R, 1, [Have gethostbyname2_r])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for gethostbyname2 ***
+	dnl **********************************
+	AC_MSG_CHECKING(for gethostbyname2)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <netdb.h>
+	], [
+		gethostbyname2(NULL,0);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETHOSTBYNAME2, 1, [Have gethostbyname2])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for gethostbyname ***
+	dnl **********************************
+	AC_MSG_CHECKING(for gethostbyname)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <netdb.h>
+	], [
+		gethostbyname(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETHOSTBYNAME, 1, [Have gethostbyname])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for getprotobyname ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getprotobyname)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <netdb.h>
+	], [
+		getprotobyname(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETPROTOBYNAME, 1, [Have getprotobyname])
 	], [
 		AC_MSG_RESULT(no)
 	])
