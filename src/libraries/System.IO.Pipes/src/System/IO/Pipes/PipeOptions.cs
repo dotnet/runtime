@@ -3,19 +3,6 @@
 
 namespace System.IO.Pipes
 {
-    public enum PipeDirection
-    {
-        In = 1,
-        Out = 2,
-        InOut = In | Out,
-    }
-
-    public enum PipeTransmissionMode
-    {
-        Byte = 0,
-        Message = 1,
-    }
-
     [Flags]
     public enum PipeOptions
     {
@@ -24,5 +11,3 @@ namespace System.IO.Pipes
         Asynchronous = unchecked((int)0x40000000),  // corresponds to FILE_FLAG_OVERLAPPED
     }
 }
-
-
