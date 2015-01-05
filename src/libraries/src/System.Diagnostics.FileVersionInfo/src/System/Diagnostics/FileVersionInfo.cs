@@ -15,7 +15,18 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class FileVersionInfo
     {
-        private string _fileName;
+        // Some dlls might not contain correct codepage information,
+        // in which case the lookup will fail. Explorer will take
+        // a few shots in dark. We'll simulate similar behavior by
+        // falling back to the following lang-codepages:
+        private static readonly uint[] s_fallbackLanguageCodePages = new uint[]
+        {
+            0x040904B0, // US English + CP_UNICODE
+            0x040904E4, // US English + CP_USASCII
+            0x04090000  // US English + unknown codepage
+        };
+
+        private readonly string _fileName;
         private string _companyName;
         private string _fileDescription;
         private string _fileVersion;
@@ -346,22 +357,7 @@ namespace System.Diagnostics
 
         private static string ConvertTo8DigitHex(uint value)
         {
-            string s = Convert.ToString(value, 16);
-            s = s.ToUpperInvariant();
-            if (s.Length == 8)
-            {
-                return s;
-            }
-            else
-            {
-                StringBuilder b = new StringBuilder(8);
-                for (int l = s.Length; l < 8; l++)
-                {
-                    b.Append("0");
-                }
-                b.Append(s);
-                return b.ToString();
-            }
+            return value.ToString("X8", CultureInfo.InvariantCulture);
         }
 
         private static Interop.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
@@ -418,8 +414,8 @@ namespace System.Diagnostics
             return 0x040904E4;
         }
 
-        // 
-        // This function tries to find version informaiton for a specific codepage.
+        //
+        // This function tries to find version information for a specific codepage.
         // Returns true when version information is found.
         //
         private bool GetVersionInfoForCodePage(IntPtr memIntPtr, string codepage)
@@ -452,7 +448,7 @@ namespace System.Diagnostics
             _productPrivate = LOWORD(ffi.dwProductVersionLS);
             _fileFlags = ffi.dwFileFlags;
 
-            // fileVersion is chosen based on best guess. Other fields can be used if appropriate. 
+            // fileVersion is chosen based on best guess. Other fields can be used if appropriate.
             return (_fileVersion != string.Empty);
         }
 
@@ -489,16 +485,15 @@ namespace System.Diagnostics
                         uint langid = GetVarEntry(memIntPtr);
                         if (!versionInfo.GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(langid)))
                         {
-                            // Some dlls might not contain correct codepage information. In this case we will fail during lookup. 
-                            // Explorer will take a few shots in dark by trying following ID:
+                            // Some dlls might not contain correct codepage information. In this case we will fail during lookup.
+                            // Explorer will take a few shots in dark by trying following lang-codepages:
                             //
                             // 040904B0 // US English + CP_UNICODE
                             // 040904E4 // US English + CP_USASCII
                             // 04090000 // US English + unknown codepage
-                            // Explorer also randomly guess 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE) sometimes.
-                            // We will try to simulate similiar behavior here.            
-                            uint[] ids = new uint[] { 0x040904B0, 0x040904E4, 0x04090000 };
-                            foreach (uint id in ids)
+                            // Explorer also randomly guesses 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE sometimes.
+                            // We will try to simulate similar behavior here.
+                            foreach (uint id in s_fallbackLanguageCodePages)
                             {
                                 if (id != langid)
                                 {
@@ -532,21 +527,23 @@ namespace System.Diagnostics
         /// </summary>
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(128);
-            String nl = "\r\n";
-            sb.Append("File:             "); sb.Append(FileName); sb.Append(nl);
-            sb.Append("InternalName:     "); sb.Append(InternalName); sb.Append(nl);
-            sb.Append("OriginalFilename: "); sb.Append(OriginalFilename); sb.Append(nl);
-            sb.Append("FileVersion:      "); sb.Append(FileVersion); sb.Append(nl);
-            sb.Append("FileDescription:  "); sb.Append(FileDescription); sb.Append(nl);
-            sb.Append("Product:          "); sb.Append(ProductName); sb.Append(nl);
-            sb.Append("ProductVersion:   "); sb.Append(ProductVersion); sb.Append(nl);
-            sb.Append("Debug:            "); sb.Append(IsDebug.ToString()); sb.Append(nl);
-            sb.Append("Patched:          "); sb.Append(IsPatched.ToString()); sb.Append(nl);
-            sb.Append("PreRelease:       "); sb.Append(IsPreRelease.ToString()); sb.Append(nl);
-            sb.Append("PrivateBuild:     "); sb.Append(IsPrivateBuild.ToString()); sb.Append(nl);
-            sb.Append("SpecialBuild:     "); sb.Append(IsSpecialBuild.ToString()); sb.Append(nl);
-            sb.Append("Language:         "); sb.Append(Language); sb.Append(nl);
+            // An initial capacity of 512 was chosen because it is large enough to cover
+            // the size of the static strings with enough capacity left over to cover
+            // average length property values.
+            var sb = new StringBuilder(512);
+            sb.Append("File:             ").AppendLine(FileName);
+            sb.Append("InternalName:     ").AppendLine(InternalName);
+            sb.Append("OriginalFilename: ").AppendLine(OriginalFilename);
+            sb.Append("FileVersion:      ").AppendLine(FileVersion);
+            sb.Append("FileDescription:  ").AppendLine(FileDescription);
+            sb.Append("Product:          ").AppendLine(ProductName);
+            sb.Append("ProductVersion:   ").AppendLine(ProductVersion);
+            sb.Append("Debug:            ").AppendLine(IsDebug.ToString());
+            sb.Append("Patched:          ").AppendLine(IsPatched.ToString());
+            sb.Append("PreRelease:       ").AppendLine(IsPreRelease.ToString());
+            sb.Append("PrivateBuild:     ").AppendLine(IsPrivateBuild.ToString());
+            sb.Append("SpecialBuild:     ").AppendLine(IsSpecialBuild.ToString());
+            sb.Append("Language:         ").AppendLine(Language);
             return sb.ToString();
         }
     }

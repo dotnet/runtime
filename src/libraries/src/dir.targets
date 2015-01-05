@@ -1,4 +1,4 @@
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup Condition="'$(TargetFrameworkVersion)' != '' and '$(TargetFrameworkProfile)' != ''">
     <TargetingPortable>true</TargetingPortable>
@@ -17,13 +17,13 @@
     <AssemblySearchPaths>
       {HintPathFromItem};
       $(OutDir);
+      {RawFileName};
     </AssemblySearchPaths>
     <!-- For our projects we don't want to resolve from the usual paths for now only hint paths and output directory 
       {CandidateAssemblyFiles};
       $(ReferencePath);
       {TargetFrameworkDirectory};
       {Registry:$(FrameworkRegistryBase),$(TargetFrameworkVersion),$(AssemblyFoldersSuffix)$(AssemblyFoldersExConditions)};
-      {RawFileName};
     -->
   </PropertyGroup>
 
@@ -40,6 +40,8 @@
   </Target>
 
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+
+  <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
 
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
 

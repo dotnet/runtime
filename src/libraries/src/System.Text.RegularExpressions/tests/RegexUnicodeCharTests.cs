@@ -214,7 +214,7 @@ public class RegexUnicodeCharTests
                 }
             }
 
-            //[]\d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.            
+            //[]\d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.
             //[]Build a random string with valid characters and then again invalid
             iCountTestcases++;
 

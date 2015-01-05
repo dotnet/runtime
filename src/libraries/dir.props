@@ -1,7 +1,7 @@
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Build Tools Version -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.16-prerelease</BuildToolsVersion>
+    <BuildToolsVersion>1.0.17-prerelease</BuildToolsVersion>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -9,15 +9,15 @@
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)bin\</BinDir>
-    <ToolsDir>$(BinDir)tools\</ToolsDir>
     <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
     <PackagesDir>$(SourceDir)packages\</PackagesDir>
+    <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
   </PropertyGroup>
 
   <!-- Common nuget properties -->
   <PropertyGroup>
     <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
-    <NuGetConfigFile>$(SourceDir)nuget\NuGet.Config</NuGetConfigFile>
+    <NuGetConfigFile>$(SourceDir)NuGet.Config</NuGetConfigFile>
     <NuGetConfigCommandLine
       Condition="Exists('$(NuGetConfigFile)')">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
   </PropertyGroup>

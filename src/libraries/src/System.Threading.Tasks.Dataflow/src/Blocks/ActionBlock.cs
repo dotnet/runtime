@@ -258,7 +258,20 @@ namespace System.Threading.Tasks.Dataflow
             get { return _defaultTarget != null ? _defaultTarget.Completion : _spscTarget.Completion; }
         }
 
-        /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="Post"]/*' />
+        /// <summary>Posts an item to the <see cref="T:System.Threading.Tasks.Dataflow.ITargetBlock`1"/>.</summary>
+        /// <param name="item">The item being offered to the target.</param>
+        /// <returns>true if the item was accepted by the target block; otherwise, false.</returns>
+        /// <remarks>
+        /// This method will return once the target block has decided to accept or decline the item,
+        /// but unless otherwise dictated by special semantics of the target block, it does not wait
+        /// for the item to actually be processed (for example, <see cref="T:System.Threading.Tasks.Dataflow.ActionBlock`1"/>
+        /// will return from Post as soon as it has stored the posted item into its input queue).  From the perspective
+        /// of the block's processing, Post is asynchronous. For target blocks that support postponing offered messages, 
+        /// or for blocks that may do more processing in their Post implementation, consider using
+        ///  <see cref="T:System.Threading.Tasks.Dataflow.DataflowBlock.SendAsync">SendAsync</see>, 
+        /// which will return immediately and will enable the target to postpone the posted message and later consume it 
+        /// after SendAsync returns.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Post(TInput item)
         {
