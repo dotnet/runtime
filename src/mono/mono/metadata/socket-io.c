@@ -53,6 +53,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/networking.h>
 
 #include <time.h>
 #ifdef HAVE_SYS_TIME_H
@@ -97,14 +98,6 @@
 
 #define LOGDEBUG(...)  
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
-
-/* 
- * Some older versions of libc provide IPV6 support without defining the AI_ADDRCONFIG
- * flag for getaddrinfo.
- */
-#ifndef AI_ADDRCONFIG
-#define AI_ADDRCONFIG 0
-#endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
 /*
@@ -464,24 +457,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		break;
 		
 	case SocketOptionLevel_IP:
-#ifdef HAVE_SOL_IP
-		*system_level = SOL_IP;
-#else
-		if (1) {
-			static int cached = 0;
-			static int proto;
-			
-			if (!cached) {
-				struct protoent *pent;
-				
-				pent = getprotobyname ("IP");
-				proto = pent ? pent->p_proto : 0 /* 0 a good default value?? */;
-				cached = 1;
-			}
-			
-			*system_level = proto;
-		}
-#endif /* HAVE_SOL_IP */
+		*system_level = mono_networking_get_ip_protocol ();
 		
 		switch(mono_name) {
 		case SocketOptionName_IPOptions:
@@ -550,24 +526,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 
 #ifdef AF_INET6
 	case SocketOptionLevel_IPv6:
-#ifdef HAVE_SOL_IPV6
-		*system_level = SOL_IPV6;
-#else
-		if (1) {
-			static int cached = 0;
-			static int proto;
-
-			if (!cached) {
-				struct protoent *pent;
-
-				pent = getprotobyname ("IPV6");
-				proto = pent ? pent->p_proto : 41 /* 41 a good default value?? */;
-				cached = 1;
-			}
-
-			*system_level = proto;
-		}
-#endif /* HAVE_SOL_IPV6 */
+		*system_level = mono_networking_get_ipv6_protocol ();
 
 		switch(mono_name) {
 		case SocketOptionName_IpTimeToLive:
@@ -614,24 +573,7 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 #endif
 		
 	case SocketOptionLevel_Tcp:
-#ifdef HAVE_SOL_TCP
-		*system_level = SOL_TCP;
-#else
-		if (1) {
-			static int cached = 0;
-			static int proto;
-			
-			if (!cached) {
-				struct protoent *pent;
-				
-				pent = getprotobyname ("TCP");
-				proto = pent ? pent->p_proto : 6 /* is 6 a good default value?? */;
-				cached = 1;
-			}
-			
-			*system_level = proto;
-		}
-#endif /* HAVE_SOL_TCP */
+	*system_level = mono_networking_get_tcp_protocol ();
 		
 		switch(mono_name) {
 		case SocketOptionName_NoDelay:
@@ -774,16 +716,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 		*error = WSAGetLastError ();
 		return(NULL);
 	}
-
-	if (sock_family == AF_INET && sock_type == SOCK_DGRAM) {
-		return (GUINT_TO_POINTER (sock));
-	}
-
-#ifdef AF_INET6
-	if (sock_family == AF_INET6 && sock_type == SOCK_DGRAM) {
-		return (GUINT_TO_POINTER (sock));
-	}
-#endif
 
 	return(GUINT_TO_POINTER (sock));
 }
@@ -2102,26 +2034,10 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 	int sol_ipv6;
 
 	*error = 0;
-	
-#ifdef HAVE_SOL_IPV6
-	sol_ipv6 = SOL_IPV6;
-#else
-	{
-		struct protoent *pent;
-		pent = getprotobyname ("ipv6");
-		sol_ipv6 = (pent != NULL) ? pent->p_proto : 41;
-	}
-#endif
 
-#ifdef HAVE_SOL_IP
-	sol_ip = SOL_IP;
-#else
-	{
-		struct protoent *pent;
-		pent = getprotobyname ("ip");
-		sol_ip = (pent != NULL) ? pent->p_proto : 0;
-	}
-#endif
+	sol_ipv6 = mono_networking_get_ipv6_protocol ();
+	sol_ip = mono_networking_get_ip_protocol ();
+
 #endif /* AF_INET6 */
 
 	MONO_ARCH_SAVE_REGS;
@@ -2558,325 +2474,14 @@ get_local_ips (int family, int *nips)
 
 #endif /* HAVE_SIOCGIFCONF */
 
-#ifndef AF_INET6
-static gboolean hostent_to_IPHostEntry(struct hostent *he, MonoString **h_name,
-				       MonoArray **h_aliases,
-				       MonoArray **h_addr_list,
-				       gboolean add_local_ips)
-{
-	MonoDomain *domain = mono_domain_get ();
-	int i = 0;
-	struct in_addr *local_in = NULL;
-	int nlocal_in = 0;
-
-	if (he != NULL) {
-		if(he->h_length!=4 || he->h_addrtype!=AF_INET) {
-			return(FALSE);
-		}
-
-		*h_name=mono_string_new(domain, he->h_name);
-
-		while(he->h_aliases[i]!=NULL) {
-			i++;
-		}
-		
-		*h_aliases=mono_array_new(domain, mono_get_string_class (), i);
-		i=0;
-		while(he->h_aliases[i]!=NULL) {
-			MonoString *alias;
-			
-			alias=mono_string_new(domain, he->h_aliases[i]);
-			mono_array_setref (*h_aliases, i, alias);
-			i++;
-		}
-	} else if (!add_local_ips) {
-		return FALSE;
-	}
-
-	if (add_local_ips) {
-		local_in = (struct in_addr *) get_local_ips (AF_INET, &nlocal_in);
-		if (nlocal_in) {
-			*h_addr_list = mono_array_new(domain, mono_get_string_class (), nlocal_in);
-			for (i = 0; i < nlocal_in; i++) {
-				MonoString *addr_string;
-				char addr [16], *ptr;
-				
-				ptr = (char *) &local_in [i];
-				g_snprintf(addr, 16, "%u.%u.%u.%u",
-					 (unsigned char) ptr [0],
-					 (unsigned char) ptr [1],
-					 (unsigned char) ptr [2],
-					 (unsigned char) ptr [3]);
-				
-				addr_string = mono_string_new (domain, addr);
-				mono_array_setref (*h_addr_list, i, addr_string);
-				i++;
-			}
-
-			g_free (local_in);
-		} else if (he == NULL) {
-			/* If requesting "" and there are no other interfaces up, MS returns 127.0.0.1 */
-			*h_addr_list = mono_array_new(domain, mono_get_string_class (), 1);
-			mono_array_setref (*h_addr_list, 0, mono_string_new (domain, "127.0.0.1"));
-			return TRUE;
-		}
-	}
-	
-	if (nlocal_in == 0 && he != NULL) {
-		i = 0;
-		while (he->h_addr_list[i]!=NULL) {
-			i++;
-		}
-
-		*h_addr_list=mono_array_new(domain, mono_get_string_class (), i);
-		i=0;
-		while(he->h_addr_list[i]!=NULL) {
-			MonoString *addr_string;
-			char addr[16];
-			
-			g_snprintf(addr, 16, "%u.%u.%u.%u",
-				 (unsigned char)he->h_addr_list[i][0],
-				 (unsigned char)he->h_addr_list[i][1],
-				 (unsigned char)he->h_addr_list[i][2],
-				 (unsigned char)he->h_addr_list[i][3]);
-			
-			addr_string=mono_string_new(domain, addr);
-			mono_array_setref (*h_addr_list, i, addr_string);
-			i++;
-		}
-	}
-
-	return(TRUE);
-}
-
-static gboolean ipaddr_to_IPHostEntry(const char *addr, MonoString **h_name,
-				      MonoArray **h_aliases,
-				      MonoArray **h_addr_list)
-{
-	MonoDomain *domain = mono_domain_get ();
-
-	*h_name=mono_string_new(domain, addr);
-	*h_aliases=mono_array_new(domain, mono_get_string_class (), 0);
-	*h_addr_list=mono_array_new(domain, mono_get_string_class (), 1);
-	mono_array_setref (*h_addr_list, 0, *h_name);
-
-	return(TRUE);
-}
-#endif
-
-#if defined(AF_INET6) && defined(HAVE_GETHOSTBYNAME2_R)
-static gboolean hostent_to_IPHostEntry2(struct hostent *he1,struct hostent *he2, MonoString **h_name,
-				MonoArray **h_aliases, MonoArray **h_addr_list, gboolean add_local_ips)
-{
-	MonoDomain *domain = mono_domain_get ();
-	int i, host_count, host_index, family_hint;
-	struct in_addr *local_in = NULL;
-	int nlocal_in = 0;
-	struct in6_addr *local_in6 = NULL;
-	int nlocal_in6 = 0;
-	gboolean from_local = FALSE;
-
-	family_hint = get_family_hint ();
-
-	/*
-	 * Check if address length and family are correct
-	 */
-	if (he1 != NULL && (he1->h_length!=4 || he1->h_addrtype!=AF_INET)) {
-		return(FALSE);
-	}
-
-	if (he2 != NULL && (he2->h_length!=16 || he2->h_addrtype!=AF_INET6)) {
-		return(FALSE);
-	}
-
-	/*
-	 * Get the aliases and host name from he1 or he2 whichever is
-	 * not null, if he1 is not null then take aliases from he1
-	 */
-	if (he1 != NULL && (family_hint == PF_UNSPEC ||
-			    family_hint == PF_INET)) {
-		*h_name=mono_string_new (domain, he1->h_name);
-
-		i=0;
-		while(he1->h_aliases[i]!=NULL) {
-			i++;
-		}
-
-		*h_aliases=mono_array_new (domain, mono_get_string_class (),
-					   i);
-		i=0;
-		while(he1->h_aliases[i]!=NULL) {
-			MonoString *alias;
-
-			alias=mono_string_new (domain, he1->h_aliases[i]);
-			mono_array_setref (*h_aliases, i, alias);
-			i++;
-		}
-	} else if (he2 != NULL && (family_hint == PF_UNSPEC ||
-				   family_hint == PF_INET6)) {
-		*h_name=mono_string_new (domain, he2->h_name);
-
-		i=0;
-		while(he2->h_aliases [i] != NULL) {
-			i++;
-		}
-
-		*h_aliases=mono_array_new (domain, mono_get_string_class (),
-					   i);
-		i=0;
-		while(he2->h_aliases[i]!=NULL) {
-			MonoString *alias;
-
-			alias=mono_string_new (domain, he2->h_aliases[i]);
-			mono_array_setref (*h_aliases, i, alias);
-			i++;
-		}
-	} else if (!add_local_ips) {
-		return(FALSE);
-	}
-
-	/*
-	 * Count the number of addresses in he1 + he2
-	 */
-	host_count = 0;
-	if (he1 != NULL && (family_hint == PF_UNSPEC ||
-			    family_hint == PF_INET)) {
-		i=0;
-		while(he1->h_addr_list[i]!=NULL) {
-			i++;
-			host_count++;
-		}
-	}
-
-	if (he2 != NULL && (family_hint == PF_UNSPEC ||
-			    family_hint == PF_INET6)) {
-		i=0;
-		while(he2->h_addr_list[i]!=NULL) {
-			i++;
-			host_count++;
-		}
-	}
-
-	/*
-	 * Fills the array
-	 */
-	host_index = 0;
-	if (add_local_ips) {
-		if (family_hint == PF_UNSPEC || family_hint == PF_INET)
-			local_in = (struct in_addr *) get_local_ips (AF_INET, &nlocal_in);
-
-		if (family_hint == PF_UNSPEC || family_hint == PF_INET6)
-			local_in6 = (struct in6_addr *) get_local_ips (AF_INET6, &nlocal_in6);
-
-		if (nlocal_in || nlocal_in6) {
-			from_local = TRUE;
-			*h_addr_list = mono_array_new (domain, mono_get_string_class (),
-							     nlocal_in + nlocal_in6);
-
-			if (nlocal_in6) {
-				int n;
-				for (n = 0; n < nlocal_in6; n++) {
-					MonoString *addr_string;
-					const char *ret;
-					char addr[48]; /* INET6_ADDRSTRLEN == 46, but IPv6 addresses can be 48 bytes with the trailing NULL */
-
-					ret = inet_ntop (AF_INET6, &local_in6 [n], addr, sizeof(addr));
-
-					if (ret != NULL) {
-						addr_string = mono_string_new (domain, addr);
-						mono_array_setref (*h_addr_list, host_index, addr_string);
-						host_index++;
-					}
-				}
-			}
-
-			if (nlocal_in) {
-				int n;
-				for (n = 0; n < nlocal_in; n++) {
-					MonoString *addr_string;
-					const char *ret;
-					char addr[16]; /* INET_ADDRSTRLEN == 16 */
-
-					ret = inet_ntop (AF_INET, &local_in [n], addr, sizeof(addr));
-
-					if (ret != NULL) {
-						addr_string = mono_string_new (domain, addr);
-						mono_array_setref (*h_addr_list, host_index, addr_string);
-						host_index++;
-					}
-				}
-			}
-			g_free (local_in);
-			g_free (local_in6);
-			return TRUE;
-		} else if (he1 == NULL && he2 == NULL) {
-			/* If requesting "" and there are no other interfaces up, MS returns 127.0.0.1 */
-			*h_addr_list = mono_array_new(domain, mono_get_string_class (), 1);
-			mono_array_setref (*h_addr_list, 0, mono_string_new (domain, "127.0.0.1"));
-			g_free (local_in);
-			g_free (local_in6);
-			return TRUE;
-		}
-
-		g_free (local_in);
-		g_free (local_in6);
-	}
-
-	*h_addr_list=mono_array_new (domain, mono_get_string_class (), host_count);
-
-	if (he2 != NULL && (family_hint == PF_UNSPEC ||
-			    family_hint == PF_INET6)) {
-		i = 0;
-		while(he2->h_addr_list[i] != NULL) {
-			MonoString *addr_string;
-			const char *ret;
-			char addr[48]; /* INET6_ADDRSTRLEN == 46, but IPv6 addresses can be 48 bytes long with the trailing NULL */
-
-			ret = inet_ntop (AF_INET6, he2->h_addr_list[i], addr,
-					 sizeof(addr));
-
-			if (ret != NULL) {
-				addr_string = mono_string_new (domain, addr);
-				mono_array_setref (*h_addr_list, host_index, addr_string);
-				i++;
-				host_index++;
-			}
-		}
-	}
-
-	if (he1 != NULL && (family_hint == PF_UNSPEC ||
-			    family_hint == PF_INET)) {
-		i=0;
-		while(he1->h_addr_list[i] != NULL) {
-			MonoString *addr_string;
-			const char *ret;
-			char addr[16]; /* INET_ADDRSTRLEN == 16 */
-
-			ret = inet_ntop (AF_INET, he1->h_addr_list[i], addr,
-					 sizeof(addr));
-
-			if (ret != NULL) {
-				addr_string=mono_string_new (domain, addr);
-				mono_array_setref (*h_addr_list, host_index, addr_string);
-				i++;
-				host_index++;
-			}
-		}
-	}
-
-	return(TRUE);
-}
-#endif
-
-#if defined(AF_INET6)
 static gboolean 
-addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
+addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 						MonoArray **h_aliases,
 						MonoArray **h_addr_list,
 						gboolean add_local_ips)
 {
 	gint32 count, i;
-	struct addrinfo *ai = NULL;
+	MonoAddressEntry *ai = NULL;
 	struct in_addr *local_in = NULL;
 	int nlocal_in = 0;
 	struct in6_addr *local_in6 = NULL;
@@ -2924,7 +2529,7 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 			g_free (local_in);
 			g_free (local_in6);
 			if (info) {
-				freeaddrinfo (info);
+				mono_free_address_info (info);
 			}
 			return TRUE;
 		}
@@ -2933,8 +2538,8 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 		g_free (local_in6);
 	}
 
-	for (count=0, ai=info; ai!=NULL; ai=ai->ai_next) {
-		if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
+	for (count = 0, ai = info->entries; ai != NULL; ai = ai->next) {
+		if (ai->family != AF_INET && ai->family != AF_INET6)
 			continue;
 
 		count++;
@@ -2942,20 +2547,16 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 
 	*h_addr_list=mono_array_new(domain, mono_get_string_class (), count);
 
-	for (ai=info, i=0; ai!=NULL; ai=ai->ai_next) {
+	for (ai = info->entries, i = 0; ai != NULL; ai = ai->next) {
 		MonoString *addr_string;
 		const char *ret;
-		char buffer [48]; /* Max. size for IPv6 */
+		char buffer [INET6_ADDRSTRLEN]; /* Max. size for IPv6 */
 
-		if((ai->ai_family != PF_INET) && (ai->ai_family != PF_INET6)) {
+		if((ai->family != PF_INET) && (ai->family != PF_INET6)) {
 			continue;
 		}
 
-		if(ai->ai_family == PF_INET) {
-			ret = inet_ntop(ai->ai_family, (void*)&(((struct sockaddr_in*)ai->ai_addr)->sin_addr), buffer, 16);
-		} else {
-			ret = inet_ntop(ai->ai_family, (void*)&(((struct sockaddr_in6*)ai->ai_addr)->sin6_addr), buffer, 48);
-		}
+		ret = inet_ntop (ai->family, &ai->address, buffer, INET6_ADDRSTRLEN);
 
 		if(ret) {
 			addr_string=mono_string_new(domain, buffer);
@@ -2967,8 +2568,8 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 
 		if(!i) {
 			i++;
-			if (ai->ai_canonname != NULL) {
-				*h_name=mono_string_new(domain, ai->ai_canonname);
+			if (ai->canonical_name != NULL) {
+				*h_name=mono_string_new(domain, ai->canonical_name);
 			} else {
 				*h_name=mono_string_new(domain, buffer);
 			}
@@ -2978,22 +2579,34 @@ addrinfo_to_IPHostEntry(struct addrinfo *info, MonoString **h_name,
 	}
 
 	if(info) {
-		freeaddrinfo(info);
+		mono_free_address_info (info);
 	}
 
 	return(TRUE);
 }
-#endif
 
-#ifdef AF_INET6
+static int
+get_addrinfo_family_hint (void)
+{
+	switch (get_family_hint ()) {
+	case PF_UNSPEC: return MONO_HINT_UNSPECIFIED;
+	case PF_INET: return MONO_HINT_IPV4;
+#ifdef PF_INET6
+	case PF_INET6: return MONO_HINT_IPV6;
+#endif
+	default:
+		g_error ("invalid hint");
+		return 0;
+	}
+}
+
 MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	gboolean add_local_ips = FALSE;
 #ifdef HAVE_SIOCGIFCONF
 	gchar this_hostname [256];
 #endif
-#if !defined(HAVE_GETHOSTBYNAME2_R)
-	struct addrinfo *info = NULL, hints;
+	MonoAddressInfo *info = NULL;
 	char *hostname;
 	
 	MONO_ARCH_SAVE_REGS;
@@ -3012,172 +2625,28 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	}
 #endif
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = get_family_hint ();
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_CANONNAME;
-
-	if (*hostname && getaddrinfo(hostname, NULL, &hints, &info) == -1) {
+	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | get_addrinfo_family_hint (), &info)) {
 		g_free (hostname);
 		return(FALSE);
 	}
 	
 	g_free(hostname);
 
-	return(addrinfo_to_IPHostEntry(info, h_name, h_aliases, h_addr_list, add_local_ips));
-#else
-	struct hostent he1,*hp1, he2, *hp2;
-	int buffer_size1, buffer_size2;
-	char *buffer1, *buffer2;
-	int herr;
-	gboolean return_value;
-	char *hostname;
-	
-	MONO_ARCH_SAVE_REGS;
-	
-	hostname=mono_string_to_utf8 (host);
-	if (*hostname == '\0')
-		add_local_ips = TRUE;
-
-#ifdef HAVE_SIOCGIFCONF
-	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
-		if (!strcmp (hostname, this_hostname))
-			add_local_ips = TRUE;
-	}
-#endif
-
-	buffer_size1 = 512;
-	buffer_size2 = 512;
-	buffer1 = g_malloc0(buffer_size1);
-	buffer2 = g_malloc0(buffer_size2);
-
-	hp1 = NULL;
-	hp2 = NULL;
-	while (*hostname && gethostbyname2_r(hostname, AF_INET, &he1, buffer1, buffer_size1,
-				&hp1, &herr) == ERANGE) {
-		buffer_size1 *= 2;
-		buffer1 = g_realloc(buffer1, buffer_size1);
-	}
-
-	if (*hostname && hp1 == NULL)
-	{
-		while (gethostbyname2_r(hostname, AF_INET6, &he2, buffer2,
-					buffer_size2, &hp2, &herr) == ERANGE) {
-			buffer_size2 *= 2;
-			buffer2 = g_realloc(buffer2, buffer_size2);
-		}
-	}
-
-	return_value = hostent_to_IPHostEntry2(hp1, hp2, h_name, h_aliases,
-					       h_addr_list, add_local_ips);
-
-	g_free(buffer1);
-	g_free(buffer2);
-	g_free(hostname);
-
-	return(return_value);
-#endif /* HAVE_GETHOSTBYNAME2_R */
+	return (addrinfo_to_IPHostEntry(info, h_name, h_aliases, h_addr_list, add_local_ips));
 }
-#else /* AF_INET6 */
-MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
-{
-	struct hostent *he;
-	char *hostname;
-	gboolean add_local_ips = FALSE;
-#ifdef HAVE_SIOCGIFCONF
-	gchar this_hostname [256];
-#endif
-	
-	MONO_ARCH_SAVE_REGS;
-
-	hostname=mono_string_to_utf8(host);
-	if (*hostname == '\0')
-		add_local_ips = TRUE;
-#ifdef HAVE_SIOCGIFCONF
-	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
-		if (!strcmp (hostname, this_hostname))
-			add_local_ips = TRUE;
-	}
-#endif
-
-#ifndef HOST_WIN32
-	he = NULL;
-	if (*hostname)
-		he = _wapi_gethostbyname (hostname);
-#else
-	he = _wapi_gethostbyname (hostname);
-#endif
-
-	if (*hostname && he==NULL) {
-		g_free (hostname);
-		return(FALSE);
-	}
-
-	g_free (hostname);
-
-	return(hostent_to_IPHostEntry(he, h_name, h_aliases, h_addr_list, add_local_ips));
-}
-#endif /* AF_INET6 */
-
-#ifndef HAVE_INET_PTON
-static int
-inet_pton (int family, const char *address, void *inaddrp)
-{
-	if (family == AF_INET) {
-#ifdef HAVE_INET_ATON
-		struct in_addr inaddr;
-		
-		if (!inet_aton (address, &inaddr))
-			return 0;
-		
-		memcpy (inaddrp, &inaddr, sizeof (struct in_addr));
-		return 1;
-#else
-		/* assume the system has inet_addr(), if it doesn't
-		   have that we're pretty much screwed... */
-		guint32 inaddr;
-		
-		if (!strcmp (address, "255.255.255.255")) {
-			/* special-case hack */
-			inaddr = 0xffffffff;
-		} else {
-			inaddr = inet_addr (address);
-#ifndef INADDR_NONE
-#define INADDR_NONE ((in_addr_t) -1)
-#endif
-			if (inaddr == INADDR_NONE)
-				return 0;
-		}
-		
-		memcpy (inaddrp, &inaddr, sizeof (guint32));
-		return 1;
-#endif /* HAVE_INET_ATON */
-	}
-	
-	return -1;
-}
-#endif /* !HAVE_INET_PTON */
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list)
 {
 	char *address;
-	
-#ifdef AF_INET6
 	struct sockaddr_in saddr;
 	struct sockaddr_in6 saddr6;
-	struct addrinfo *info = NULL, hints;
+	MonoAddressInfo *info = NULL;
 	gint32 family;
 	char hostname[NI_MAXHOST] = {0};
 	int flags = 0;
-#else
-	struct in_addr inaddr;
-	struct hostent *he;
-	gboolean ret;
-#endif
 
 	address = mono_string_to_utf8 (addr);
 
-#ifdef AF_INET6
 	if (inet_pton (AF_INET, address, &saddr.sin_addr ) <= 0) {
 		/* Maybe an ipv6 address */
 		if (inet_pton (AF_INET6, address, &saddr6.sin6_addr) <= 0) {
@@ -3215,32 +2684,10 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 		}
 	}
 
-	memset (&hints, 0, sizeof(hints));
-	hints.ai_family = get_family_hint ();
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_CANONNAME | AI_ADDRCONFIG;
-
-	if( getaddrinfo (hostname, NULL, &hints, &info) == -1 ) {
-		return(FALSE);
-	}
+	if (mono_get_address_info (hostname, 0, get_addrinfo_family_hint () | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info))
+		return FALSE;
 
 	return(addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, FALSE));
-#else
-	if (inet_pton (AF_INET, address, &inaddr) <= 0) {
-		g_free (address);
-		return(FALSE);
-	}
-
-	if ((he = gethostbyaddr ((char *) &inaddr, sizeof (inaddr), AF_INET)) == NULL) {
-		ret = ipaddr_to_IPHostEntry (address, h_name, h_aliases, h_addr_list);
-	} else {
-		ret = hostent_to_IPHostEntry (he, h_name, h_aliases,
-					      h_addr_list, FALSE);
-	}
-
-	g_free (address);
-	return(ret);
-#endif
 }
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name)
