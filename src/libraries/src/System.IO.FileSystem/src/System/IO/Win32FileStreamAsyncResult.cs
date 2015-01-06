@@ -207,7 +207,8 @@ namespace System.IO
                     // Set completedSynchronously to false, since it's on another 
                     // thread, not the main thread.
                     _completedSynchronously = false;
-                    Task.Run(() => CallUserCallbackWorker());
+                    Task.Factory.StartNew(state => ((FileStreamAsyncResult)state).CallUserCallbackWorker(),
+                        this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                 }
                 else
                 {
