@@ -817,9 +817,9 @@ typedef struct {
 	int generation;
 	const char *reason;
 	gboolean is_overflow;
-	SGEN_TV_DECLARE (total_time);
-	SGEN_TV_DECLARE (stw_time);
-	SGEN_TV_DECLARE (bridge_time);
+	gint64 total_time;
+	gint64 stw_time;
+	gint64 bridge_time;
 } GGTimingInfo;
 
 int sgen_stop_world (int generation);
