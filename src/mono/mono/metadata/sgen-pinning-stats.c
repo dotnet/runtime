@@ -30,6 +30,7 @@
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-hash-table.h"
 
+#include "mono/metadata/sgen-client.h"
 
 typedef struct _PinStatAddress PinStatAddress;
 struct _PinStatAddress {
@@ -133,9 +134,9 @@ pin_stats_count_object_from_tree (char *obj, size_t size, PinStatAddress *node, 
 }
 
 static gpointer
-lookup_class_entry (SgenHashTable *hash_table, MonoClass *class, gpointer empty_entry)
+lookup_vtable_entry (SgenHashTable *hash_table, GCVTable *vtable, gpointer empty_entry)
 {
-	char *name = g_strdup_printf ("%s.%s", class->name_space, class->name);
+	char *name = g_strdup_printf ("%s.%s", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 	gpointer entry = sgen_hash_table_lookup (hash_table, name);
 
 	if (entry) {
@@ -149,14 +150,14 @@ lookup_class_entry (SgenHashTable *hash_table, MonoClass *class, gpointer empty_
 }
 
 static void
-register_class (MonoClass *class, int pin_types)
+register_vtable (GCVTable *vtable, int pin_types)
 {
 	PinnedClassEntry empty_entry;
 	PinnedClassEntry *entry;
 	int i;
 
 	memset (&empty_entry, 0, sizeof (PinnedClassEntry));
-	entry = lookup_class_entry (&pinned_class_hash_table, class, &empty_entry);
+	entry = lookup_vtable_entry (&pinned_class_hash_table, vtable, &empty_entry);
 
 	for (i = 0; i < PIN_TYPE_MAX; ++i) {
 		if (pin_types & (1 << i))
@@ -176,7 +177,7 @@ sgen_pin_stats_register_object (char *obj, size_t size)
 	sgen_pointer_queue_add (&pinned_objects, obj);
 
 	if (pin_types)
-		register_class (((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass, pin_types);
+		register_vtable ((GCVTable*)SGEN_LOAD_VTABLE (obj), pin_types);
 }
 
 void
@@ -189,7 +190,7 @@ sgen_pin_stats_register_global_remset (char *obj)
 		return;
 
 	memset (&empty_entry, 0, sizeof (GlobalRemsetClassEntry));
-	entry = lookup_class_entry (&global_remset_class_hash_table, ((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass, &empty_entry);
+	entry = lookup_vtable_entry (&global_remset_class_hash_table, (GCVTable*)SGEN_LOAD_VTABLE (obj), &empty_entry);
 
 	++entry->num_remsets;
 }
