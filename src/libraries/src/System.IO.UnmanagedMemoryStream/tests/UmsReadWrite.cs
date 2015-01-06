@@ -28,7 +28,10 @@ namespace System.IO.Tests
                 stream.Seek(0, SeekOrigin.Begin);
                 byte[] read = UmsReadTests.ReadAllBytes(stream);
                 Assert.Equal(stream.Position, read.Length);
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, manager.ToArray()));
+
+                byte[] current = manager.ToArray();
+                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, current));
+                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, bytes));
 
                 stream.Write(new byte[0], 0, 0);
             }

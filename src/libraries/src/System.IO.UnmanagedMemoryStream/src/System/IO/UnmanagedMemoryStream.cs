@@ -87,7 +87,7 @@ namespace System.IO
         private long _position;
         private long _offset;
         private FileAccess _access;
-        internal bool _isOpen;
+        private bool _isOpen;
 
         private Task<Int32> _lastReadTask; // The last successful task returned from ReadAsync 
 
@@ -97,7 +97,7 @@ namespace System.IO
         /// <param name="src"></param>
         /// <param name="len"></param>
         [System.Security.SecurityCritical]  // auto-generated
-        internal unsafe static void ZeroMemory(byte* src, long len)
+        private unsafe static void ZeroMemory(byte* src, long len)
         {
             while (len-- > 0)
                 *(src + len) = 0;
@@ -142,7 +142,7 @@ namespace System.IO
         // class is created while security is trying to start up.  Plus, doing
         // a Demand from Assembly.GetManifestResourceStream isn't useful.
         [System.Security.SecurityCritical]  // auto-generated
-        internal UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
+        private UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
         {
             Initialize(buffer, offset, length, access, skipSecurityCheck);
         }
@@ -161,7 +161,7 @@ namespace System.IO
         }
 
         [System.Security.SecurityCritical]  // auto-generated
-        internal void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
+        private void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
         {
             if (buffer == null)
             {
@@ -244,7 +244,7 @@ namespace System.IO
         // class is created while security is trying to start up.  Plus, doing
         // a Demand from Assembly.GetManifestResourceStream isn't useful.
         [System.Security.SecurityCritical]  // auto-generated
-        internal unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
+        private unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
         {
             Initialize(pointer, length, capacity, access, skipSecurityCheck);
         }
@@ -263,7 +263,7 @@ namespace System.IO
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
         [System.Security.SecurityCritical]  // auto-generated
-        internal unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
+        private unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
         {
             if (pointer == null)
                 throw new ArgumentNullException("pointer");
@@ -460,7 +460,7 @@ namespace System.IO
             }
         }
 
-        internal unsafe byte* Pointer
+        private unsafe byte* Pointer
         {
             [System.Security.SecurityCritical]  // auto-generated
             get
@@ -521,7 +521,7 @@ namespace System.IO
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.MemoryCopy(pBuffer + offset, pointer + pos + _offset, nInt, nInt);
+                            Buffer.MemoryCopy(source: pointer + pos + _offset, destination: pBuffer + offset, destinationSizeInBytes: nInt, sourceBytesToCopy: nInt);
                         }
                         finally
                         {
@@ -533,7 +533,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.MemoryCopy(pBuffer + offset, _mem + pos, nInt, nInt);
+                        Buffer.MemoryCopy(source: _mem + pos, destination: pBuffer + offset, destinationSizeInBytes: nInt, sourceBytesToCopy: nInt);
                     }
                 }
             }
@@ -769,7 +769,7 @@ namespace System.IO
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.MemoryCopy(pBuffer + offset, pointer + pos + _offset, count, count);
+                            Buffer.MemoryCopy(source: pBuffer + offset, destination: pointer + pos + _offset, destinationSizeInBytes: count, sourceBytesToCopy: count);
                         }
                         finally
                         {
@@ -781,7 +781,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.MemoryCopy(pBuffer + offset, _mem + pos, count, count);
+                        Buffer.MemoryCopy(source: pBuffer + offset, destination: _mem + pos, destinationSizeInBytes: count, sourceBytesToCopy: count);
                     }
                 }
             }
