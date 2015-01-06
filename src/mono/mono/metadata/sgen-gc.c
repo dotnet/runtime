@@ -1137,7 +1137,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		++ephemeron_rounds;
 	} while (!done_with_ephemerons);
 
-	sgen_mark_togglerefs (start_addr, end_addr, ctx);
+	sgen_client_mark_togglerefs (start_addr, end_addr, ctx);
 
 	if (sgen_client_bridge_need_processing ()) {
 		/*Make sure the gray stack is empty before we process bridge objects so we get liveness right*/
@@ -1205,7 +1205,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 * This is semantically more inline with what users expect and it allows for
 	 * user finalizers to correctly interact with TR objects.
 	*/
-	sgen_clear_togglerefs (start_addr, end_addr, ctx);
+	sgen_client_clear_togglerefs (start_addr, end_addr, ctx);
 
 	TV_GETTIME (btv);
 	SGEN_LOG (2, "Finalize queue handling scan for %s generation: %d usecs %d ephemeron rounds", generation_name (generation), TV_ELAPSED (atv, btv), ephemeron_rounds);
@@ -3096,10 +3096,6 @@ sgen_gc_init (void)
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`soft-heap-limit` must be an integer.");
 				}
-				continue;
-			}
-			if (g_str_has_prefix (opt, "toggleref-test")) {
-				sgen_register_test_toggleref_callback ();
 				continue;
 			}
 

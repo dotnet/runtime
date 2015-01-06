@@ -90,7 +90,7 @@ sgen_process_togglerefs (void)
 		w);
 }
 
-void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
+void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
@@ -110,7 +110,7 @@ void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 	sgen_drain_gray_stack (-1, ctx);
 }
 
-void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
+void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
