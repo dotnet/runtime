@@ -25,6 +25,8 @@
 #include "utils/lock-free-alloc.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-client.h"
+#include <string.h>
+
 
 /* keep each size a multiple of ALLOC_ALIGN */
 #if SIZEOF_VOID_P == 4

@@ -34,6 +34,8 @@
 #include "metadata/sgen-client.h"
 #include "metadata/gc-internal-agnostic.h"
 #include "utils/mono-memory-model.h"
+#include <string.h>
+
 
 //#define CARDTABLE_STATS
 

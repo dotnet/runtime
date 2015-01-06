@@ -38,6 +38,9 @@
 #include "metadata/sgen-workers.h"
 #include "metadata/sgen-thread-pool.h"
 #include "metadata/sgen-client.h"
+#include <string.h>
+#include <stdlib.h>
+
 
 #if defined(ARCH_MIN_MS_BLOCK_SIZE) && defined(ARCH_MIN_MS_BLOCK_SIZE_SHIFT)
 #define MS_BLOCK_SIZE	ARCH_MIN_MS_BLOCK_SIZE

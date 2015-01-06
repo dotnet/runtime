@@ -38,6 +38,8 @@
 #include "metadata/sgen-cardtable.h"
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-client.h"
+#include <string.h>
+
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
 

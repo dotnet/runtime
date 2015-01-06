@@ -22,6 +22,8 @@
 
 #ifdef HAVE_SGEN_GC
 
+#include <string.h>
+
 void
 sgen_pointer_queue_clear (SgenPointerQueue *queue)
 {

@@ -29,6 +29,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-hash-table.h"
+#include <string.h>
 
 #include "mono/metadata/sgen-client.h"
 

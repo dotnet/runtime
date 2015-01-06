@@ -21,6 +21,8 @@
 #include <glib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 #include "metadata/gc-internal-agnostic.h"
 

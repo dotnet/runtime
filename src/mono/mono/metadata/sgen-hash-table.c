@@ -25,6 +25,8 @@
 
 #ifdef HAVE_SGEN_GC
 
+#include <string.h>
+
 #include <mono/metadata/sgen-gc.h>
 #include <mono/metadata/sgen-hash-table.h>
 

@@ -35,6 +35,8 @@
 #include "metadata/sgen-client.h"
 #include "metadata/sgen-bridge-internal.h"
 #include "metadata/threadpool-internals.h"
+#include <string.h>
+
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 

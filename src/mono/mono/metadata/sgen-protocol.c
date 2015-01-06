@@ -31,7 +31,9 @@
 #include "sgen-client.h"
 
 #include <errno.h>
+#include <string.h>
 #ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #include <fcntl.h>
 #endif
 

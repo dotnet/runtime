@@ -27,6 +27,8 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-pointer-queue.h"
 #include "metadata/sgen-client.h"
+#include <string.h>
+
 
 static SgenPointerQueue pin_queue;
 static size_t last_num_pinned = 0;

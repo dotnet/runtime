@@ -27,6 +27,8 @@
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-layout-stats.h"
 #include "metadata/sgen-client.h"
+#include <string.h>
+
 
 static inline char*
 alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)

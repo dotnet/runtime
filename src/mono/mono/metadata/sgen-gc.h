@@ -32,9 +32,11 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #define THREAD_INFO_TYPE SgenThreadInfo
 
 #include <glib.h>
+#include <stdio.h>
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
+#include <stdint.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/atomic.h"
 #include "mono/utils/mono-mutex.h"

@@ -44,6 +44,8 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-client.h"
 #include "utils/mono-memory-model.h"
+#include <string.h>
+
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 #define ALLOC_ALIGN		SGEN_ALLOC_ALIGN

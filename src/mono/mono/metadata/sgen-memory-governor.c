@@ -31,6 +31,8 @@
 #include "metadata/sgen-memory-governor.h"
 #include "metadata/sgen-thread-pool.h"
 #include "metadata/sgen-client.h"
+#include <stdlib.h>
+
 
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 

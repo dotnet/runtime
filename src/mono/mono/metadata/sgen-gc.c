@@ -186,6 +186,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "mono/metadata/sgen-gc.h"
 #include "mono/metadata/sgen-cardtable.h"
