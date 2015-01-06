@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    class FakeSafeBuffer : SafeBuffer
+    internal class FakeSafeBuffer : SafeBuffer
     {
         public FakeSafeBuffer(ulong size)
             : base(true)
@@ -20,9 +20,9 @@ namespace System.IO.Tests
         }
     }
 
-    unsafe class TestSafeBuffer : SafeBuffer
+    internal unsafe class TestSafeBuffer : SafeBuffer
     {
-        bool _isDisposed;
+        private bool _isDisposed;
 
         public unsafe TestSafeBuffer(int capacity) : base(true)
         {
