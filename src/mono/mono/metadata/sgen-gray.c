@@ -140,7 +140,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	}
 
 	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
-	SGEN_ASSERT (9, queue->cursor >= GRAY_FIRST_CURSOR_POSITION (queue->first), "gray queue %p underflow, first %p, cursor %d", queue, queue->first, queue->cursor);
+	SGEN_ASSERT (9, queue->cursor >= GRAY_FIRST_CURSOR_POSITION (queue->first), "gray queue %p underflow", queue);
 
 	entry = *queue->cursor--;
 

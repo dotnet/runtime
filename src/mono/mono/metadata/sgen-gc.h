@@ -517,7 +517,7 @@ sgen_nursery_is_to_space (char *object)
 	size_t bit = idx & 0x7;
 
 	SGEN_ASSERT (4, sgen_ptr_in_nursery (object), "object %p is not in nursery [%p - %p]", object, sgen_get_nursery_start (), sgen_get_nursery_end ());
-	SGEN_ASSERT (4, byte < sgen_space_bitmap_size, "byte index %d out of range", byte, sgen_space_bitmap_size);
+	SGEN_ASSERT (4, byte < sgen_space_bitmap_size, "byte index %zd out of range (%zd)", byte, sgen_space_bitmap_size);
 
 	return (sgen_space_bitmap [byte] & (1 << bit)) != 0;
 }

@@ -275,7 +275,7 @@ sgen_check_mod_union_consistency (void)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
 		if (*(ptr) && !LOAD_VTABLE (*(ptr)))						\
-			g_error ("Could not load vtable for obj %p slot %d (size %d)", obj, (char*)ptr - (char*)obj, safe_object_get_size ((GCObject*)obj));		\
+			g_error ("Could not load vtable for obj %p slot %zd (size %zd)", obj, (char*)ptr - (char*)obj, (size_t)safe_object_get_size ((GCObject*)obj)); \
 	} while (0)
 
 static void
@@ -1056,14 +1056,13 @@ sgen_dump_section (GCMemSection *section, const char *type)
 	char *start = section->data;
 	char *end = section->data + section->size;
 	char *occ_start = NULL;
-	//GCVTable *vt;
-	char *old_start G_GNUC_UNUSED = NULL; /* just for debugging */
 
 	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
 
 	while (start < end) {
 		guint size;
-		//MonoClass *class G_GNUC_UNUSED;
+		//GCVTable *vt;
+		//MonoClass *class;
 
 		if (!*(void**)start) {
 			if (occ_start) {
@@ -1090,7 +1089,6 @@ sgen_dump_section (GCMemSection *section, const char *type)
 				size);
 		*/
 
-		old_start = start;
 		start += size;
 	}
 	if (occ_start)
