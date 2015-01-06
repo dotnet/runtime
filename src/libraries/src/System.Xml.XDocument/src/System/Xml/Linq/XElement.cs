@@ -239,9 +239,9 @@ namespace System.Xml.Linq
                 if (content == null) return string.Empty;
                 string s = content as string;
                 if (s != null) return s;
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = StringBuilderCache.Acquire();
                 AppendText(sb);
-                return sb.ToString();
+                return StringBuilderCache.GetStringAndRelease(sb);
             }
             set
             {
