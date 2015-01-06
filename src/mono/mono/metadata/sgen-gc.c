@@ -203,16 +203,6 @@
 
 #include <mono/utils/memcheck.h>
 
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	a = i,
-
-enum {
-#include "mono/cil/opcode.def"
-	CEE_LAST
-};
-
-#undef OPDEF
-
 #undef pthread_create
 #undef pthread_join
 #undef pthread_detach
