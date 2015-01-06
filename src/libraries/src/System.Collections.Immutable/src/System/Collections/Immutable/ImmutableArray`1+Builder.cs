@@ -392,7 +392,7 @@ namespace System.Collections.Immutable
                 var elements = _elements;
                 for (int i = 0; i < tmp.Length; i++)
                 {
-                    tmp[i] = elements[i].Value;
+                    tmp[i] = elements[i];
                 }
 
                 return tmp;
