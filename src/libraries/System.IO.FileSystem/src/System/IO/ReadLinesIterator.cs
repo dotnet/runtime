@@ -23,7 +23,7 @@ namespace System.IO
     //    is called twice in a normal foreach construct.
     //
     //  - IEnumerator<T> instances from the same IEnumerable<T> party on the same underlying 
-    //    reader (Dev10 Bugs 904764).
+    //    reader.
     //
     internal class ReadLinesIterator : Iterator<string>
     {
@@ -65,8 +65,8 @@ namespace System.IO
             // iterator in 4.0, we have all the IEnumerator<T> instances share the same 
             // underlying reader. If we have already been disposed, _reader will be null, 
             // which will cause CreateIterator to simply new up a new instance to start up
-            // a new iteration. Dev10 Bugs 904764 has been filed to fix this in next side-
-            // by-side release.
+            // a new iteration. We cannot change this behavior due to compatibility 
+            // concerns.
             return CreateIterator(_path, _encoding, _reader);
         }
 
