@@ -40,6 +40,18 @@ public class TestRunner
 	class ProcessData {
 		public string test;
 		public StreamWriter stdout, stderr;
+		public string stdoutFile, stderrFile;
+
+		public void CloseStreams () {
+			if (stdout != null) {
+				stdout.Close ();
+				stdout = null;
+			}
+			if (stderr != null) {
+				stderr.Close ();
+				stderr = null;
+			}
+		}
 	}
 
 	class TestInfo {
@@ -126,7 +138,7 @@ public class TestRunner
 		int nfailed = 0;
 
 		var processes = new List<Process> ();
-		var failed = new List<string> ();
+		var failed = new List<ProcessData> ();
 		var process_data = new Dictionary<Process, ProcessData> ();
 
 		object monitor = new object ();
@@ -206,7 +218,7 @@ public class TestRunner
 							Console.WriteLine ("failed.");
 						else
 							Console.Write ("F");
-						failed.Add (process_data [dead].test);
+						failed.Add (process_data [dead]);
 						nfailed ++;
 					}
 					processes.Remove (dead);
@@ -219,9 +231,11 @@ public class TestRunner
 			if (opt_set != null)
 				log_prefix = "." + opt_set.Replace ("-", "no").Replace (",", "_");
 
-			data.stdout = new StreamWriter (new FileStream (test + log_prefix + ".stdout", FileMode.Create));
+			data.stdoutFile = test + log_prefix + ".stdout";
+			data.stdout = new StreamWriter (new FileStream (data.stdoutFile, FileMode.Create));
 
-			data.stderr = new StreamWriter (new FileStream (test + log_prefix + ".stderr", FileMode.Create));
+			data.stderrFile = test + log_prefix + ".stderr";
+			data.stderr = new StreamWriter (new FileStream (data.stderrFile, FileMode.Create));
 
 			p.OutputDataReceived += delegate (object sender, DataReceivedEventArgs e) {
 				Process p2 = (Process)sender;
@@ -235,10 +249,12 @@ public class TestRunner
 						process_data [p2].stdout = null;
 				}
 
-				if (String.IsNullOrEmpty (e.Data))
+				if (String.IsNullOrEmpty (e.Data)) {
 					fs.Close ();
-				else
+				} else {
 					fs.WriteLine (e.Data);
+					fs.Flush ();
+				}
 			};
 
 			p.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs e) {
@@ -260,9 +276,10 @@ public class TestRunner
 					lock (monitor) {
 						process_data [p2].stderr = null;
 					}
-				}
-				else
+				} else {
 					fs.WriteLine (e.Data);
+					fs.Flush ();
+				}
 			};
 
 			lock (monitor) {
@@ -300,8 +317,12 @@ public class TestRunner
 			Console.WriteLine (npassed + nfailed);
 			lock (monitor) {
 				foreach (Process p in processes) {
-					Console.WriteLine (process_data [p].test);
+					ProcessData pd = process_data [p];
+					pd.CloseStreams ();
+					Console.WriteLine (pd.test);
 					p.Kill ();
+					DumpFile (pd.stdoutFile);
+					DumpFile (pd.stderrFile);
 				}
 			}
 			return 1;
@@ -310,11 +331,22 @@ public class TestRunner
 		Console.WriteLine ("" + npassed + " test(s) passed. " + nfailed + " test(s) did not pass.");
 		if (nfailed > 0) {
 			Console.WriteLine ("\nFailed tests:\n");
-			foreach (string s in failed)
-				Console.WriteLine (s);
+			foreach (ProcessData pd in failed) {
+				Console.WriteLine (pd.test);
+				DumpFile (pd.stdoutFile);
+				DumpFile (pd.stderrFile);
+			}
 			return 1;
 		} else {
 			return 0;
+		}
+	}
+	
+	static void DumpFile (string filename) {
+		if (File.Exists (filename)) {
+			Console.WriteLine ("=============== {0} ===============", filename);
+			Console.WriteLine (File.ReadAllText (filename));
+			Console.WriteLine ("=============== EOF ===============");
 		}
 	}
 }
