@@ -67,7 +67,7 @@ static char* describe_nursery_ptr (char *ptr, gboolean need_setup);
 static void
 describe_pointer (char *ptr, gboolean need_setup)
 {
-	MonoVTable *vtable;
+	GCVTable *vtable;
 	mword desc;
 	int type;
 	char *start;
@@ -80,7 +80,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 		if (!start)
 			return;
 		ptr = start;
-		vtable = (MonoVTable*)LOAD_VTABLE (ptr);
+		vtable = (GCVTable*)LOAD_VTABLE (ptr);
 	} else {
 		if (sgen_ptr_is_in_los (ptr, &start)) {
 			if (ptr == start)
@@ -89,7 +89,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
 			ptr = start;
 			mono_sgen_los_describe_pointer (ptr);
-			vtable = (MonoVTable*)LOAD_VTABLE (ptr);
+			vtable = (GCVTable*)LOAD_VTABLE (ptr);
 		} else if (major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
 			if (ptr == start)
 				printf ("Pointer is the start of object %p in oldspace.\n", start);
@@ -99,11 +99,11 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer inside oldspace.\n");
 			if (start)
 				ptr = start;
-			vtable = (MonoVTable*)major_collector.describe_pointer (ptr);
+			vtable = (GCVTable*)major_collector.describe_pointer (ptr);
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			// FIXME: Handle pointers to the inside of objects
 			printf ("Pointer is inside a pinned chunk.\n");
-			vtable = (MonoVTable*)LOAD_VTABLE (ptr);
+			vtable = (GCVTable*)LOAD_VTABLE (ptr);
 		} else {
 			printf ("Pointer unknown.\n");
 			return;
@@ -128,7 +128,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 		printf ("VTable is invalid (points inside nursery).\n");
 		goto bridge;
 	}
-	printf ("Class: %s.%s\n", vtable->klass->name_space, vtable->klass->name);
+	printf ("Class: %s.%s\n", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 
 	desc = sgen_vtable_get_descriptor ((GCVTable*)vtable);
 	printf ("Descriptor: %lx\n", (long)desc);
@@ -177,7 +177,7 @@ static gboolean missing_remsets;
 static void
 check_consistency_callback (char *start, size_t size, void *dummy)
 {
-	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (start);
+	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
 	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
 
@@ -235,7 +235,7 @@ static void
 check_mod_union_callback (char *start, size_t size, void *dummy)
 {
 	gboolean in_los = (gboolean) (size_t) dummy;
-	MonoVTable *vt = (MonoVTable*)LOAD_VTABLE (start);
+	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
 	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
 	guint8 *cards;
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
@@ -406,11 +406,11 @@ static void
 bad_pointer_spew (char *obj, char **slot)
 {
 	char *ptr = *slot;
-	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
 
 	SGEN_LOG (0, "Invalid object pointer %p at offset %td in object %p (%s.%s):", ptr,
-		(char*)slot - obj,
-		obj, vtable->klass->name_space, vtable->klass->name);
+			(char*)slot - obj,
+			obj, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 	describe_pointer (ptr, FALSE);
 	broken_heap = TRUE;
 }
@@ -419,11 +419,11 @@ static void
 missing_remset_spew (char *obj, char **slot)
 {
 	char *ptr = *slot;
-	MonoVTable *vtable = (MonoVTable*)LOAD_VTABLE (obj);
+	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
 
 	SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.",
- 		ptr, (char*)slot - obj, obj, 
-		vtable->klass->name_space, vtable->klass->name);
+			ptr, (char*)slot - obj, obj, 
+			sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 
 	broken_heap = TRUE;
 }
@@ -1051,14 +1051,14 @@ sgen_dump_section (GCMemSection *section, const char *type)
 	char *start = section->data;
 	char *end = section->data + section->size;
 	char *occ_start = NULL;
-	MonoVTable *vt;
+	//GCVTable *vt;
 	char *old_start G_GNUC_UNUSED = NULL; /* just for debugging */
 
 	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
 
 	while (start < end) {
 		guint size;
-		MonoClass *class G_GNUC_UNUSED;
+		//MonoClass *class G_GNUC_UNUSED;
 
 		if (!*(void**)start) {
 			if (occ_start) {
@@ -1073,8 +1073,8 @@ sgen_dump_section (GCMemSection *section, const char *type)
 		if (!occ_start)
 			occ_start = start;
 
-		vt = (MonoVTable*)SGEN_LOAD_VTABLE (start);
-		class = vt->klass;
+		//vt = (GCVTable*)SGEN_LOAD_VTABLE (start);
+		//class = vt->klass;
 
 		size = SGEN_ALIGN_UP (safe_object_get_size ((GCObject*) start));
 
@@ -1253,7 +1253,7 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 		g_assert (scc->num_objs > 0);
 
 		for (j = 0; j < scc->num_objs; ++j) {
-			MonoObject *obj = scc->objs [j];
+			GCObject *obj = scc->objs [j];
 			gboolean new_entry = sgen_hash_table_replace (&obj_to_a_scc, obj, &i, NULL);
 			g_assert (new_entry);
 		}
