@@ -2950,6 +2950,46 @@ SPARC64)
 	;;
 esac
 
+dnl *************
+dnl *** VTUNE ***
+dnl *************
+
+AC_ARG_ENABLE(vtune,[  --enable-vtune	Enable the VTUNE back-end], enable_vtune=$enableval, enable_vtune=no)
+AC_ARG_WITH(vtune, [  --with-vtune=<vtune prefix>	Enable jit vtune profiling], enable_vtune=yes,)
+
+AM_CONDITIONAL(HAVE_VTUNE, test x$enable_vtune = xyes)
+
+if test "x$enable_vtune" = "xyes"; then
+	if test "x$with_vtune" = "x"; then
+		VTUNE_PATH=/opt/intel/vtune_amplifier_xe
+	else
+		VTUNE_PATH=$with_vtune
+	fi
+	VTUNE_INCLUDE=$VTUNE_PATH/include
+	case "$TARGET" in
+	X86)
+		VTUNE_LIB=$VTUNE_PATH/lib32
+		;;
+	AMD64)
+		VTUNE_LIB=$VTUNE_PATH/lib64
+		;;
+	*)
+		AC_MSG_ERROR([Unsupported target $TARGET for VTUNE.])
+		;;
+	esac
+	if test ! -f $VTUNE_INCLUDE/jitprofiling.h; then
+		AC_MSG_ERROR([VTUNE $VTUNE_INCLUDE/jitprofiling.h not found.])
+	fi
+	if test ! -f $VTUNE_LIB/libjitprofiling.a; then
+		AC_MSG_ERROR([VTUNE $VTUNE_LIB/libjitprofiling.a not found.])
+	fi
+
+	VTUNE_CFLAGS=-I$VTUNE_INCLUDE
+	VTUNE_LIBS="-L/$VTUNE_LIB/ -ljitprofiling"
+
+	AC_SUBST(VTUNE_LIBS)
+	AC_SUBST(VTUNE_CFLAGS)
+fi
 dnl Use GCC atomic ops if they work on the target.
 if test x$GCC = "xyes"; then
 	case $TARGET in

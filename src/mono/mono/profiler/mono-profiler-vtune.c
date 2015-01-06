@@ -37,7 +37,34 @@
 
 #define bool char
 
-#include "jitprofiling.h"
+#include <jitprofiling.h>
+
+static const char*
+code_buffer_desc (MonoProfilerCodeBufferType type)
+{
+	switch (type) {
+	case MONO_PROFILER_CODE_BUFFER_METHOD:
+		return "code_buffer_method";
+	case MONO_PROFILER_CODE_BUFFER_METHOD_TRAMPOLINE:
+		return "code_buffer_method_trampoline";
+	case MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE:
+		return "code_buffer_unbox_trampoline";
+	case MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE:
+		return "code_buffer_imt_trampoline";
+	case MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE:
+		return "code_buffer_generics_trampoline";
+	case MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE:
+		return "code_buffer_specific_trampoline";
+	case MONO_PROFILER_CODE_BUFFER_HELPER:
+		return "code_buffer_misc_helper";
+	case MONO_PROFILER_CODE_BUFFER_MONITOR:
+		return "code_buffer_monitor";
+	case MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE:
+		return "code_buffer_delegate_invoke";
+	default:
+		return "unspecified";
+	}
+}
 
 /* called at the end of the program */
 static void
@@ -51,7 +78,6 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 	if (result == MONO_PROFILE_OK) {
 		int i;
 		MonoDebugSourceLocation *sourceLoc;
-		MonoDebugMethodInfo *methodDebugInfo;
 		MonoDebugMethodJitInfo *dmji;
 		MonoClass *klass = mono_method_get_class (method);
 		char *signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
@@ -108,6 +134,30 @@ method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, i
 	}
 }
 
+static void
+code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBufferType type, void *data)
+{
+	char *name;
+	iJIT_Method_Load vtuneMethod;
+
+	if (type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE)
+		name = g_strdup_printf ("code_buffer_specific_trampoline_%s", (char*) data);
+	else
+		name = (char*) code_buffer_desc (type);
+
+	memset (&vtuneMethod, 0, sizeof (vtuneMethod));
+	vtuneMethod.method_id = iJIT_GetNewMethodID ();
+	vtuneMethod.method_name = name;
+	vtuneMethod.method_load_address = buffer;
+	vtuneMethod.method_size = size;
+
+	iJIT_NotifyEvent (iJVM_EVENT_TYPE_METHOD_LOAD_FINISHED, &vtuneMethod);
+
+	if (type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE) {
+		g_free (name);
+	}
+}
+
 /* the entry point */
 void
 mono_profiler_startup (const char *desc)
@@ -117,6 +167,7 @@ mono_profiler_startup (const char *desc)
 	{
 		mono_profiler_install (NULL, codeanalyst_shutdown);
 		mono_profiler_install_jit_end (method_jit_result);
+		mono_profiler_install_code_buffer_new (code_buffer_new);
 		mono_profiler_set_events (MONO_PROFILE_JIT_COMPILATION);
 	}
 }
