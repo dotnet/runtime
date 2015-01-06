@@ -77,15 +77,11 @@ mono_gc_parse_environment_string_extract_number (const char *str, size_t *out)
 	if (is_suffix) {
 		size_t unshifted;
 
-		if (val < 0)	/* negative numbers cannot be suffixed */
-			return FALSE;
 		if (*(endptr + 1)) /* Invalid string. */
 			return FALSE;
 
 		unshifted = (size_t)val;
 		val <<= shift;
-		if (val < 0)	/* overflow */
-			return FALSE;
 		if (((size_t)val >> shift) != unshifted) /* value too large */
 			return FALSE;
 	}
