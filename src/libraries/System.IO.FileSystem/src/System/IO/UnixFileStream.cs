@@ -496,7 +496,7 @@ namespace System.IO
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
             if (_fileHandle.IsClosed)
             {
@@ -510,7 +510,7 @@ namespace System.IO
             }
             catch (Exception e)
             {
-                return TaskHelpers.FromException(e);
+                return Task.FromException(e);
             }
 
             // We then separately flush to disk asynchronously.  This is only 
@@ -526,7 +526,7 @@ namespace System.IO
             }
             else
             {
-                return TaskHelpers.CompletedTask();
+                return Task.CompletedTask;
             }
         }
 

@@ -16,9 +16,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\IO\TaskHelpers.cs">
-      <Link>Common\TaskHelpers.cs</Link>
-    </Compile>
     <Compile Include="Common\__Error.cs" />
     <Compile Include="System\IO\UnmanagedMemoryAccessor.cs" />
     <Compile Include="System\IO\UnmanagedMemoryStream.cs" />

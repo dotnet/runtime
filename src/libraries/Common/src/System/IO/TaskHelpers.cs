@@ -8,9 +8,13 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
+    /// <summary>
+    /// Helpers for assemblies that don't yet depend on the System.Threading.Tasks contract
+    /// that includes Task.CompletedTask, Task.FromCanceled, and Task.FromException.
+    /// </summary>
     internal static class TaskHelpers
     {
-        internal struct VoidTaskResult { }
+        private struct VoidTaskResult { }
 
         internal static Task FromCancellation(CancellationToken cancellationToken)
         {
@@ -20,7 +24,7 @@ namespace System.IO
         internal static Task<T> FromCancellation<T>(CancellationToken cancellationToken)
         {
             Contract.Assert(cancellationToken.IsCancellationRequested, "Can only create a canceled task from a cancellation token if cancellation was requested.");
-            return new Task<T>(DelegateCache<T>.DefaultT ?? (DelegateCache<T>.DefaultT = () => default(T)), cancellationToken);
+            return new Task<T>(DelegateCache<T>.DefaultT, cancellationToken);
         }
 
         internal static Task FromException(Exception e)
@@ -30,21 +34,26 @@ namespace System.IO
 
         internal static Task<T> FromException<T>(Exception e)
         {
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
+            var tcs = new TaskCompletionSource<T>();
             tcs.SetException(e);
             return tcs.Task;
         }
 
         internal static Task CompletedTask()
         {
-            return _completedTask ?? (_completedTask = Task.FromResult(default(VoidTaskResult)));
+            return s_completedTask ?? (s_completedTask = Task.FromResult(default(VoidTaskResult)));
         }
 
-        private static Task _completedTask;
+        private static Task s_completedTask;
 
         private static class DelegateCache<T>
         {
-            internal static Func<T> DefaultT;
+            private static Func<T> s_defaultT;
+
+            internal static Func<T> DefaultT
+            {
+                get { return s_defaultT ?? (s_defaultT = () => default(T)); }
+            }
         }
     }
 }
