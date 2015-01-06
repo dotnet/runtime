@@ -641,7 +641,7 @@ namespace System
                     // Create a StringBuilder to store the output of this processing.  We use the format's length as an 
                     // approximation of an upper-bound for how large the output will be, though with parameter processing,
                     // this is just an estimate, sometimes way over, sometimes under.
-                    StringBuilder output = new StringBuilder(format.Length);
+                    StringBuilder output = StringBuilderCache.Acquire(format.Length);
 
                     // Format strings support conditionals, including the equivalent of "if ... then ..." and
                     // "if ... then ... else ...", as well as "if ... then ... else ... then ..."
@@ -851,7 +851,7 @@ namespace System
                                 if (!sawIfConditional)
                                 {
                                     stack.Push(1);
-                                    return output.ToString();
+                                    return StringBuilderCache.GetStringAndRelease(output);
                                 }
 
                                 // Otherwise, we're done processing the conditional in its entirety.
@@ -861,7 +861,7 @@ namespace System
                             case ';':
                                 // Let our caller know why we're exiting, whether due to the end of the conditional or an else branch.
                                 stack.Push(AsInt(format[pos] == ';'));
-                                return output.ToString();
+                                return StringBuilderCache.GetStringAndRelease(output);
 
                             // Anything else is an error
                             default:
@@ -870,7 +870,7 @@ namespace System
                     }
 
                     stack.Push(1);
-                    return output.ToString();
+                    return StringBuilderCache.GetStringAndRelease(output);
                 }
 
                 /// <summary>Converts an Int32 to a Boolean, with 0 meaning false and all non-zero values meaning true.</summary>

@@ -21,6 +21,9 @@
     <Compile Include="$(CommonPath)\System\SR.cs">
       <Link>Resources\SR.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>System\StringBuilderCache.cs</Link>
+    </Compile>
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

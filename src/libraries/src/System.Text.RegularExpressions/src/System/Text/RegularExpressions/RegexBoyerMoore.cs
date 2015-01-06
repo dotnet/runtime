@@ -13,6 +13,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 
 namespace System.Text.RegularExpressions
 {
@@ -56,10 +57,10 @@ namespace System.Text.RegularExpressions
             // consistent.
             if (caseInsensitive)
             {
-                StringBuilder sb = new StringBuilder(pattern.Length);
+                StringBuilder sb = StringBuilderCache.Acquire(pattern.Length);
                 for (int i = 0; i < pattern.Length; i++)
                     sb.Append(culture.TextInfo.ToLower(pattern[i]));
-                pattern = sb.ToString();
+                pattern = StringBuilderCache.GetStringAndRelease(sb);
             }
 
             _pattern = pattern;
