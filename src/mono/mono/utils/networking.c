@@ -32,7 +32,7 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 {
 	memset (sa, 0, sizeof (MonoSocketAddress));
 	if (family == AF_INET) {
-		*len = sizeof (struct in_addr);
+		*len = sizeof (struct sockaddr_in);
 
 		sa->v4.sin_family = family;
 		sa->v4.sin_addr = *(struct in_addr*)address;
@@ -41,7 +41,7 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 		sa->v4.sin_len = sizeof (*len);
 #endif
 	} else if (family == AF_INET6) {
-		*len = sizeof (struct in6_addr);
+		*len = sizeof (struct sockaddr_in6);
 
 		sa->v6.sin6_family = family;
 		sa->v6.sin6_addr = *(struct in6_addr*)address;
