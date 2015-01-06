@@ -13,7 +13,7 @@ namespace System.IO
     ///   To append to a file, use Append (which maps to OpenOrCreate then we seek
     ///   to the end of the file).  To truncate a file or create it if it doesn't
     ///   exist, use Create.
-    /// <devdoc>
+    /// </devdoc>
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileMode
     {
