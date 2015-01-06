@@ -35,7 +35,6 @@ namespace System.IO.Tests
 
         public static byte[] CreateByteArray(long length, byte value)
         {
-            var random = new Random(100);
             var data = new byte[length];
             for (int index = 0; index < length; index++)
             {
@@ -49,7 +48,7 @@ namespace System.IO.Tests
             return (T[])source.Clone();
         }
 
-        sealed class ArrayComparer<T> : IEqualityComparer<T[]>
+        private sealed class ArrayComparer<T> : IEqualityComparer<T[]>
         {
             public static ArrayComparer<T> Instance = new ArrayComparer<T>();
 
@@ -66,6 +65,14 @@ namespace System.IO.Tests
                 }
                 for (int i = 0; i < x.Length; i++)
                 {
+                    if (x[i] == null)
+                    {
+                        if (y[i] == null)
+                        {
+                            return true;
+                        }
+                        else return false;
+                    }
                     if (!x[i].Equals(y[i]))
                     {
                         return false;

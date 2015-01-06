@@ -7,12 +7,12 @@ using Xunit;
 namespace System.IO.Tests
 {
     // this class holds manageds native memory used by UnmanagedMemoryStream
-    class UmsManager : IDisposable
+    internal class UmsManager : IDisposable
     {
-        UnmanagedMemoryStream _stream;
-        IntPtr _memory;
-        int _memorySizeInBytes;
-        bool _isDisposed;
+        private UnmanagedMemoryStream _stream;
+        private IntPtr _memory;
+        private int _memorySizeInBytes;
+        private bool _isDisposed;
 
         public unsafe UmsManager(FileAccess access, int capacity)
         {
