@@ -37,9 +37,6 @@
     <Compile Include="..\..\Common\src\System\IO\StreamAsyncHelper.cs">
       <Link>System\IO\StreamAsyncHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\IO\TaskHelpers.cs">
-      <Link>System\IO\TaskHelpers.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\IO\Win32Marshal.cs">
       <Link>System\IO\Win32Marshal.cs</Link>
     </Compile>
