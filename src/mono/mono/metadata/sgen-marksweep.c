@@ -285,6 +285,7 @@ ms_find_block_obj_size_index (size_t size)
 		if (block_obj_sizes [i] >= size)
 			return i;
 	g_error ("no object of size %d\n", size);
+	return -1;
 }
 
 #define FREE_BLOCKS_FROM(lists,p,r)	(lists [((p) ? MS_BLOCK_FLAG_PINNED : 0) | ((r) ? MS_BLOCK_FLAG_REFS : 0)])
