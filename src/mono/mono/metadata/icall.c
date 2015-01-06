@@ -1906,6 +1906,8 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *this)
 		g_assert (klass->ext->field_def_values);
 		def_type = klass->ext->field_def_values [fidx].def_type;
 		def_value = klass->ext->field_def_values [fidx].data;
+		if (def_type == MONO_TYPE_END)
+			mono_raise_exception (mono_get_exception_invalid_operation (NULL));
 	} else {
 		def_value = mono_class_get_field_default_value (field, &def_type);
 		/* FIXME, maybe we should try to raise TLE if field->parent is broken */
