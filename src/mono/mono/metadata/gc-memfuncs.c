@@ -38,7 +38,7 @@
 #include <glib.h>
 #include <string.h>
 
-#include "metadata/gc-internal-agnostic.h"
+#include "mono/metadata/gc-internal-agnostic.h"
 
 #define ptr_mask ((sizeof (void*) - 1))
 #define _toi(ptr) ((size_t)ptr)

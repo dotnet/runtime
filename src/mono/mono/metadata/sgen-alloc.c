@@ -39,13 +39,13 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-client.h"
-#include "utils/mono-memory-model.h"
 #include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-client.h"
+#include "mono/utils/mono-memory-model.h"
 
 #define ALIGN_UP		SGEN_ALIGN_UP
 #define ALLOC_ALIGN		SGEN_ALLOC_ALIGN

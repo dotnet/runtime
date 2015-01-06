@@ -17,12 +17,12 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-pointer-queue.h"
-
 #ifdef HAVE_SGEN_GC
 
 #include <string.h>
+
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-pointer-queue.h"
 
 void
 sgen_pointer_queue_clear (SgenPointerQueue *queue)

@@ -42,8 +42,8 @@
 #define _XOPEN_SOURCE
 #endif
 
-#include "metadata/sgen-gc.h"
-#include "metadata/gc-internal-agnostic.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/gc-internal-agnostic.h"
 
 #define MAX_USER_DESCRIPTORS 16
 

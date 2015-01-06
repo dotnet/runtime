@@ -27,11 +27,12 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-gray.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-pointer-queue.h"
-#include "metadata/sgen-client.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-gray.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-pointer-queue.h"
+#include "mono/metadata/sgen-client.h"
+#include "mono/utils/mono-membar.h"
 
 #define ptr_in_nursery sgen_ptr_in_nursery
 

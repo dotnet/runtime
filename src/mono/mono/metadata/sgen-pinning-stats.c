@@ -26,11 +26,11 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-pinning.h"
-#include "metadata/sgen-hash-table.h"
 #include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-pinning.h"
+#include "mono/metadata/sgen-hash-table.h"
 #include "mono/metadata/sgen-client.h"
 
 typedef struct _PinStatAddress PinStatAddress;

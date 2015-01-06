@@ -21,12 +21,12 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "utils/lock-free-alloc.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-client.h"
 #include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/utils/lock-free-alloc.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-client.h"
 
 /* keep each size a multiple of ALLOC_ALIGN */
 #if SIZEOF_VOID_P == 4

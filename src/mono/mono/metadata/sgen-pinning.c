@@ -22,13 +22,13 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-pinning.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-pointer-queue.h"
-#include "metadata/sgen-client.h"
 #include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-pinning.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-pointer-queue.h"
+#include "mono/metadata/sgen-client.h"
 
 static SgenPointerQueue pin_queue;
 static size_t last_num_pinned = 0;

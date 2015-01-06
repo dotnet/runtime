@@ -24,10 +24,10 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "utils/mono-compiler.h"
+#include "mono/utils/mono-compiler.h"
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-bridge.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-bridge.h"
 
 extern gboolean bridge_processing_in_progress;
 extern MonoGCBridgeCallbacks bridge_callbacks;

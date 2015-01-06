@@ -28,19 +28,16 @@
 #include <math.h>
 #include <errno.h>
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-layout-stats.h"
-#include "metadata/sgen-pointer-queue.h"
-#include "metadata/sgen-pinning.h"
-#include "metadata/sgen-workers.h"
-#include "metadata/sgen-thread-pool.h"
-#include "metadata/sgen-client.h"
-#include <string.h>
-#include <stdlib.h>
-
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-cardtable.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-layout-stats.h"
+#include "mono/metadata/sgen-pointer-queue.h"
+#include "mono/metadata/sgen-pinning.h"
+#include "mono/metadata/sgen-workers.h"
+#include "mono/metadata/sgen-thread-pool.h"
+#include "mono/metadata/sgen-client.h"
 
 #if defined(ARCH_MIN_MS_BLOCK_SIZE) && defined(ARCH_MIN_MS_BLOCK_SIZE_SHIFT)
 #define MS_BLOCK_SIZE	ARCH_MIN_MS_BLOCK_SIZE

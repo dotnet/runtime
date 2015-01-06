@@ -33,13 +33,13 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-client.h"
 #include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-cardtable.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-client.h"
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
 

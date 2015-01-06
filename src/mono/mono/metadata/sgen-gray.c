@@ -21,8 +21,8 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "sgen-protocol.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
 
 #ifdef HEAVY_STATISTICS
 guint64 stat_gray_queue_section_alloc;

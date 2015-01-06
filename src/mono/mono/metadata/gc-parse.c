@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "metadata/gc-internal-agnostic.h"
+#include "mono/metadata/gc-internal-agnostic.h"
 
 /**
  * mono_gc_parse_environment_string_extract_number:

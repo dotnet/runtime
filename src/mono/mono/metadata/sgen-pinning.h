@@ -20,7 +20,7 @@
 #ifndef __MONO_SGEN_PINNING_H__
 #define __MONO_SGEN_PINNING_H__
 
-#include "metadata/sgen-pointer-queue.h"
+#include "mono/metadata/sgen-pointer-queue.h"
 
 enum {
 	PIN_TYPE_STACK,

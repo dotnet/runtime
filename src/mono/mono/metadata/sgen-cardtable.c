@@ -26,16 +26,16 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-layout-stats.h"
-#include "metadata/sgen-client.h"
-#include "metadata/gc-internal-agnostic.h"
-#include "utils/mono-memory-model.h"
 #include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-cardtable.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-layout-stats.h"
+#include "mono/metadata/sgen-client.h"
+#include "mono/metadata/gc-internal-agnostic.h"
+#include "mono/utils/mono-memory-model.h"
 
 //#define CARDTABLE_STATS
 
