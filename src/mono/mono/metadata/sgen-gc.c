@@ -3027,13 +3027,7 @@ sgen_gc_init (void)
 
 	sgen_client_init ();
 
-	/*
-	 * This needs to happen before any internal allocations because
-	 * it inits the small id which is required for hazard pointer
-	 * operations.
-	 */
-	sgen_os_init ();
-
+	/* FIXME: Move this to mono code! */
 	mono_gc_register_thread (&dummy);
 
 	if (!minor_collector_opt) {

@@ -2712,6 +2712,13 @@ sgen_client_init (void)
 		mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, tls_offset);
 	}
 #endif
+
+	/*
+	 * This needs to happen before any internal allocations because
+	 * it inits the small id which is required for hazard pointer
+	 * operations.
+	 */
+	sgen_os_init ();
 }
 
 gboolean
