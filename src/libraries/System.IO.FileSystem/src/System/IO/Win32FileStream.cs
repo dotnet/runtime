@@ -1818,7 +1818,7 @@ namespace System.IO
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
 
             if (_handle.IsClosed)
                 throw __Error.GetFileNotOpen();
@@ -1857,7 +1857,7 @@ namespace System.IO
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             if (_handle.IsClosed)
                 throw __Error.GetFileNotOpen();
@@ -1869,9 +1869,9 @@ namespace System.IO
 #endif
             return base.WriteAsync(buffer, offset, count, cancellationToken);
 #if USE_OVERLAPPED
-            var asyncState = new FileStreamTaskAsyncState<TaskHelpers.VoidTaskResult>();
+            var asyncState = new FileStreamTaskAsyncState<VoidTaskResult>();
             asyncState._cancellationToken = cancellationToken;
-            asyncState._taskCompletionSource = new TaskCompletionSource<TaskHelpers.VoidTaskResult>(asyncState);
+            asyncState._taskCompletionSource = new TaskCompletionSource<VoidTaskResult>(asyncState);
             var endWriteTask = s_endWriteTask;
             if (endWriteTask == null) s_endWriteTask = endWriteTask = EndWriteTask; // benign initialization race condition
             asyncState._asyncResult = BeginWriteAsync(buffer, offset, count, endWriteTask, asyncState);
@@ -1879,7 +1879,7 @@ namespace System.IO
             if (asyncState._asyncResult.IsAsync && cancellationToken.CanBeCanceled)
             {
                 var cancelWriteHandler = s_cancelWriteHandler;
-                if (cancelWriteHandler == null) s_cancelWriteHandler = cancelWriteHandler = CancelTask<TaskHelpers.VoidTaskResult>; // benign initialization race condition
+                if (cancelWriteHandler == null) s_cancelWriteHandler = cancelWriteHandler = CancelTask<VoidTaskResult>; // benign initialization race condition
                 asyncState._registration = cancellationToken.Register(cancelWriteHandler, asyncState);
 
                 // In case the task is completed right before we register the cancellation callback.
@@ -1916,7 +1916,7 @@ namespace System.IO
             // 2. asyncResult.IsAsync is false: asyncResult is a "synchronous" FileStreamAsyncResult.
             // 3. The asyncResult is completed: this should never happen.
             Contract.Assert((!asyncResult.IsWrite && typeof(T) == typeof(int)) ||
-                            (asyncResult.IsWrite && typeof(T) == typeof(TaskHelpers.VoidTaskResult)));
+                            (asyncResult.IsWrite && typeof(T) == typeof(VoidTaskResult)));
             Contract.Assert(asyncResult != null);
             Contract.Assert(asyncResult.IsAsync);
 
@@ -1976,7 +1976,7 @@ namespace System.IO
             Contract.Assert(asyncResult != null);
             Contract.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
 
-            var asyncState = iar.AsyncState as FileStreamTaskAsyncState<TaskHelpers.VoidTaskResult>;
+            var asyncState = iar.AsyncState as FileStreamTaskAsyncState<VoidTaskResult>;
             Contract.Assert(asyncState != null);
 
             try
@@ -1996,7 +1996,7 @@ namespace System.IO
                     TrySetCanceled(asyncState._taskCompletionSource, cancellationToken);
                 }
                 else
-                    asyncState._taskCompletionSource.TrySetResult(default(TaskHelpers.VoidTaskResult));
+                    asyncState._taskCompletionSource.TrySetResult(default(VoidTaskResult));
             }
             catch (Exception ex)
             {
@@ -2019,7 +2019,7 @@ namespace System.IO
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             if (_handle.IsClosed)
                 throw __Error.GetFileNotOpen();
@@ -2037,7 +2037,7 @@ namespace System.IO
             }
             catch (Exception e)
             {
-                return TaskHelpers.FromException(e);
+                return Task.FromException(e);
             }
 
             if (CanWrite)
@@ -2048,7 +2048,9 @@ namespace System.IO
                     TaskCreationOptions.DenyChildAttach,
                     TaskScheduler.Default);
             else
-                return TaskHelpers.CompletedTask();
+                return Task.CompletedTask;
         }
+
+        private struct VoidTaskResult { }
     }
 }

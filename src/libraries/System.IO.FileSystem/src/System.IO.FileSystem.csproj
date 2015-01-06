@@ -60,9 +60,6 @@
     <Compile Include="$(CommonPath)\System\IO\StreamAsyncHelper.cs">
       <Link>Common\System\IO\StreamAsyncHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\TaskHelpers.cs">
-      <Link>Common\System\IO\TaskHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">

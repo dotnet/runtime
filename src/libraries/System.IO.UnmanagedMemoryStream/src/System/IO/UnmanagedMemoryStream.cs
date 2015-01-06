@@ -351,16 +351,16 @@ namespace System.IO
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             try
             {
                 Flush();
-                return TaskHelpers.CompletedTask();
+                return Task.CompletedTask;
             }
             catch (Exception ex)
             {
-                return TaskHelpers.FromException(ex);
+                return Task.FromException(ex);
             }
         }
 
@@ -563,7 +563,7 @@ namespace System.IO
             Contract.EndContractBlock();  // contract validation copied from Read(...) 
 
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation<Int32>(cancellationToken);
+                return Task.FromCanceled<Int32>(cancellationToken);
 
             try
             {
@@ -574,7 +574,7 @@ namespace System.IO
             catch (Exception ex)
             {
                 Contract.Assert(!(ex is OperationCanceledException));
-                return TaskHelpers.FromException<Int32>(ex);
+                return Task.FromException<Int32>(ex);
             }
         }
 
@@ -811,17 +811,17 @@ namespace System.IO
             Contract.EndContractBlock();  // contract validation copied from Write(..) 
 
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             try
             {
                 Write(buffer, offset, count);
-                return TaskHelpers.CompletedTask();
+                return Task.CompletedTask;
             }
             catch (Exception ex)
             {
                 Contract.Assert(!(ex is OperationCanceledException));
-                return TaskHelpers.FromException<Int32>(ex);
+                return Task.FromException(ex);
             }
         }
 
