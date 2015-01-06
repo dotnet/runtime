@@ -600,7 +600,7 @@ namespace System.IO.Pipes
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             if (!IsAsync)
@@ -1166,7 +1166,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             // We need to measure time here, not in the lambda

@@ -11,7 +11,6 @@ namespace System.IO
 {
     internal sealed class SyncTextWriter : TextWriter, IDisposable
     {
-        private static Task CompletedTask;
         private readonly object _methodLock = new object();
         private TextWriter _out;
 
@@ -308,48 +307,43 @@ namespace System.IO
         public override Task WriteAsync(char value)
         {
             Write(value);
-            return GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteAsync(String value)
         {
             Write(value);
-            return GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
             Write(buffer, index, count);
-            return GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteLineAsync(char value)
         {
             WriteLine(value);
-            return GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteLineAsync(String value)
         {
             WriteLine(value);
-            return GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
             WriteLine(buffer, index, count);
-            return GetCompletedTask();
+            return Task.CompletedTask;
         }
 
         public override Task FlushAsync()
         {
             Flush();
-            return GetCompletedTask();
-        }
-
-        private static Task GetCompletedTask()
-        {
-            return CompletedTask ?? (CompletedTask = Task.FromResult(0));
+            return Task.CompletedTask;
         }
     }
 }
