@@ -8,7 +8,7 @@ namespace System.IO
     /// <devdoc>
     ///   Defines constants for read, write, or read/write
     ///   access to a file.
-    /// <devdoc>
+    /// </devdoc>
     [Flags]
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileAccess
