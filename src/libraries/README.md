@@ -40,8 +40,14 @@ Today, the repository contains the following components:
 * **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
   stopping of local system processes.
 
+* **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
+  file system objects and for reading and writing files via streams.
+
 * **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
   and/or named pipes.
+
+* **System.IO.UnmanagedMemoryStream**. Provides a stream for accessing unmanaged memory as represented by a pointer, 
+  as well as an accessor for reading and writing primitive types from unmanaged memory.
 
 * **System.Linq.Parallel**.  Provides a parallelized implementation of LINQ to Objects. "Parallel LINQ" (PLINQ) 
   implements the full set of LINQ standard query operators as well as additional operators specific to parallel operations.
