@@ -2226,6 +2226,12 @@ mono_gc_is_gc_thread (void)
 	return result;
 }
 
+void
+sgen_client_thread_register_worker (void)
+{
+	mono_thread_info_register_small_id ();
+}
+
 /* Variables holding start/end nursery so it won't have to be passed at every call */
 static void *scan_area_arg_start, *scan_area_arg_end;
 

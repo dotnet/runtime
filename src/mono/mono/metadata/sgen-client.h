@@ -112,6 +112,8 @@ void sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallb
 void sgen_client_thread_unregister (SgenThreadInfo *p);
 void sgen_client_thread_attach (SgenThreadInfo *info);
 
+void sgen_client_thread_register_worker (void);
+
 void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx);
 
 int sgen_client_stop_world (int generation);
