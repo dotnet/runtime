@@ -23,6 +23,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Text.RegularExpressions
 {
@@ -771,7 +772,7 @@ namespace System.Text.RegularExpressions
 
         internal static string ConvertOldStringsToClass(string set, string category)
         {
-            StringBuilder sb = new StringBuilder(set.Length + category.Length + 3);
+            StringBuilder sb = StringBuilderCache.Acquire(set.Length + category.Length + 3);
 
             if (set.Length >= 2 && set[0] == '\0' && set[1] == '\0')
             {
@@ -789,7 +790,7 @@ namespace System.Text.RegularExpressions
             }
             sb.Append(category);
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         /*
@@ -1054,14 +1055,14 @@ namespace System.Text.RegularExpressions
             if (category == null)
                 return null;
 
-            StringBuilder sb = new StringBuilder(category.Length);
+            StringBuilder sb = StringBuilderCache.Acquire(category.Length);
 
             for (int i = 0; i < category.Length; i++)
             {
                 short ch = (short)category[i];
                 sb.Append((char)-ch);
             }
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         internal static RegexCharClass Parse(string charClass)
@@ -1123,7 +1124,7 @@ namespace System.Text.RegularExpressions
             // This is important because if the last range ends in LastChar, we won't append
             // LastChar to the list. 
             int rangeLen = _rangelist.Count * 2;
-            StringBuilder sb = new StringBuilder(rangeLen + _categories.Length + 3);
+            StringBuilder sb = StringBuilderCache.Acquire(rangeLen + _categories.Length + 3);
 
             int flags;
             if (_negate)
@@ -1151,7 +1152,7 @@ namespace System.Text.RegularExpressions
             if (_subtractor != null)
                 sb.Append(_subtractor.ToStringClass());
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         /*

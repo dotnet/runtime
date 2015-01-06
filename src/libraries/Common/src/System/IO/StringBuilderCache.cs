@@ -66,6 +66,13 @@ namespace System.IO
             return new StringBuilder(capacity);
         }
 
+        public static StringBuilder Acquire(string value)
+        {
+            StringBuilder sb = Acquire(Math.Max(value.Length, DEFAULT_CAPACITY));
+            sb.Append(value);
+            return sb;
+        }
+
         public static void Release(StringBuilder sb)
         {
             if (sb.Capacity <= MAX_BUILDER_SIZE)
