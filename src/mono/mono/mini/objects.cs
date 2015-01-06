@@ -1639,6 +1639,20 @@ ncells ) {
 		var s = EmptyClass.s;
 		return 0;
 	}
+
+	// #25487
+	static int test_0_int_to_r4 () {
+		return int_to_r4_inner (255);
+	}
+
+	static int int_to_r4_inner (int value1) {
+		int sub = -value1;
+		float mult = sub * 1f;
+		if (mult != -255.0f)
+			return 1;
+		else
+			return 0;
+	}
 }
 
 #if MOBILE
