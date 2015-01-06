@@ -12,6 +12,22 @@
     <Warning Text="Looks like there may be an update to the build tools. Please run build.cmd from the root of the repo to refresh the build tools." /> 
   </Target>
 
+  <ItemGroup>
+    <!-- Include test runtime when restoring packages in EnsureDependencies -->
+    <PackageConfigs Include="$(BaseIntermediateOutputPath)test-runtime\packages.config" />
+  </ItemGroup>
+  
+  <Target Name="PrepareTestRuntimeRestore" BeforeTargets="EnsureDependencies">
+    <Copy
+      SourceFiles="$(ToolsDir)test-runtime-packages.config"
+      DestinationFiles="$(BaseIntermediateOutputPath)test-runtime\packages.config"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" />
+  </Target>
+
   <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
   <Target Name="RestoreAllPackages" BeforeTargets="Build" DependsOnTargets="EnsureDependencies" />
 
@@ -26,17 +42,10 @@
     <!-- Explicity set the OutDir as it is used by the packaging targets -->
     <OutDir>$(BaseOutputPathWithConfig)</OutDir>
   </PropertyGroup>
-
+  
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
   <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
 
-  <ItemGroup>
-    <DisabledTestAssembly Include="System.Threading.Tasks.Dataflow.Tests" />
-    <DisabledTestAssembly Include="System.Linq.Parallel.Tests" />
-
-    <_SkipTestAssemblies Include="@(DisabledTestAssembly)" />
-  </ItemGroup>
-  
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
 

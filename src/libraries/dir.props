@@ -45,6 +45,9 @@
     <BaseIntermediateOutputPath>$(BaseOutputPath)obj\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(Platform)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+    
+    <TestPath>$(TestWorkingDir)$(MSBuildProjectName)\$(Configuration)\</TestPath>
+    <TestPath Condition="'$(Platform)' != 'AnyCPU'">$(TestWorkingDir)$(MSBuildProjectName)\$(Configuration)\$(Platform)\</TestPath>
   </PropertyGroup>
 
   <PropertyGroup>
