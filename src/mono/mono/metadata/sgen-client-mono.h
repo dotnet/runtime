@@ -607,8 +607,13 @@ typedef MonoSemType SgenSemaphore;
 #define SGEN_SEMAPHORE_POST(sem)		MONO_SEM_POST ((sem))
 #define SGEN_SEMAPHORE_WAIT(sem)		MONO_SEM_WAIT ((sem))
 
+gboolean sgen_has_critical_method (void);
+gboolean sgen_is_critical_method (MonoMethod *method);
+
 void sgen_set_use_managed_allocator (gboolean flag);
 gboolean sgen_is_managed_allocator (MonoMethod *method);
 gboolean sgen_has_managed_allocator (void);
+
+void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type);
 
 #endif
