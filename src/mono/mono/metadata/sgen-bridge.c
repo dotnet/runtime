@@ -149,13 +149,13 @@ sgen_bridge_processing_stw_step (void)
 }
 
 static gboolean
-is_bridge_object_alive (GCObject *obj, void *data)
+is_bridge_object_dead (GCObject *obj, void *data)
 {
 	SgenHashTable *table = data;
 	unsigned char *value = sgen_hash_table_lookup (table, obj);
 	if (!value)
-		return TRUE;
-	return *value;
+		return FALSE;
+	return !*value;
 }
 
 static void
@@ -179,9 +179,9 @@ null_weak_links_to_dead_objects (SgenBridgeProcessor *processor, int generation)
 	}
 
 	/* Null weak links to dead objects. */
-	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &alive_hash);
+	sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_NURSERY);
 	if (generation == GENERATION_OLD)
-		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
+		sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_OLD);
 
 	sgen_hash_table_clean (&alive_hash);
 }

@@ -766,9 +766,9 @@ void sgen_register_test_toggleref_callback (void);
 void sgen_mark_bridge_object (GCObject *obj);
 void sgen_collect_bridge_objects (int generation, ScanCopyContext ctx);
 
-typedef gboolean (*WeakLinkAlivePredicateFunc) (GCObject*, void*);
+typedef gboolean (*SgenObjectPredicateFunc) (GCObject *obj, void *user_data);
 
-void sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predicate, void *data);
+void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation);
 
 gboolean sgen_gc_is_object_ready_for_finalization (void *object);
 void sgen_gc_lock (void);
@@ -779,15 +779,12 @@ const char* sgen_generation_name (int generation);
 
 void sgen_finalize_in_range (int generation, ScanCopyContext ctx);
 void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx);
-void sgen_null_links_for_domain (MonoDomain *domain, int generation);
-void sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation);
 void sgen_process_fin_stage_entries (void);
 gboolean sgen_have_pending_finalizers (void);
 void sgen_object_register_for_finalization (GCObject *obj, void *user_data);
 
-typedef gboolean (*SgenObjectPredicateFunc) (GCObject *obj, void *user_data);
-
-int sgen_gather_finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size);
+int sgen_gather_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size);
+void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
 
 void sgen_process_dislink_stage_entries (void);
 void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track, gboolean in_gc);

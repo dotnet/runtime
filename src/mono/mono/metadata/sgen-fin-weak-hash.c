@@ -596,7 +596,7 @@ finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, G
 }
 
 /**
- * sgen_gather_finalizers_with_predicate:
+ * sgen_gather_finalizers_if:
  * @predicate: predicate function
  * @user_data: predicate function data argument
  * @out_array: output array
@@ -612,7 +612,7 @@ finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, G
  * objects are still alive.
  */
 int
-sgen_gather_finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size)
+sgen_gather_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size)
 {
 	int result;
 
@@ -749,65 +749,30 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 }
 
 /* LOCKING: requires that the GC lock is held */
-/* FIXME: Rename and remove domain argument. */
 void
-sgen_null_links_for_domain (MonoDomain *domain, int generation)
+sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation)
 {
 	void **link;
 	gpointer dummy G_GNUC_UNUSED;
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
-
-		if (object)
-			SGEN_ASSERT (0, SGEN_LOAD_VTABLE_UNCHECKED (object), "Can't have objects without vtables.");
-
-		if (*link && object && ((MonoVTable*)SGEN_LOAD_VTABLE_UNCHECKED (object))->domain == domain) {
-			*link = NULL;
-			binary_protocol_dislink_update (link, NULL, 0, 0);
-			/*
-			 * This can happen if finalizers are not ran, i.e. Environment.Exit ()
-			 * is called from finalizer like in finalizer-abort.cs.
-			 */
-			SGEN_LOG (5, "Disappearing link %p not freed", link);
-
-			/*
-			 * FIXME: Why don't we free the entry here?
-			 */
-			SGEN_HASH_TABLE_FOREACH_REMOVE (FALSE);
-
-			continue;
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;
-}
-
-/* LOCKING: requires that the GC lock is held */
-void
-sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predicate, void *data)
-{
-	void **link;
-	gpointer dummy G_GNUC_UNUSED;
-	SgenHashTable *hash = get_dislink_hash_table (generation);
-	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
-		char *object = DISLINK_OBJECT (link);
-		gboolean is_alive;
 
 		if (!*link)
 			continue;
-		is_alive = predicate ((GCObject*)object, data);
 
-		if (!is_alive) {
+		if (predicate ((GCObject*)object, data)) {
 			*link = NULL;
 			binary_protocol_dislink_update (link, NULL, 0, 0);
 			SGEN_LOG (5, "Dislink nullified by predicate at %p to GCed object %p", link, object);
-			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+			SGEN_HASH_TABLE_FOREACH_REMOVE (FALSE /* TRUE */);
 			continue;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 void
-sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation)
+sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation)
 {
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	GCObject *object;
@@ -816,9 +781,7 @@ sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation)
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
 		object = tagged_object_get_object (object);
 
-		if (mono_object_domain (object) == domain) {
-			SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", object, sgen_client_object_safe_name (object));
-
+		if (predicate (object, user_data)) {
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;
 		}

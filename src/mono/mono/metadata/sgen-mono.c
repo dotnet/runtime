@@ -502,10 +502,14 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 }
 
 static gboolean
-finalizers_for_domain_callback (MonoObject *obj, void *user_data)
+object_in_domain_predicate (MonoObject *obj, void *user_data)
 {
 	MonoDomain *domain = user_data;
-	return mono_object_domain (obj) == domain;
+	if (mono_object_domain (obj) == domain) {
+		SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", obj, sgen_client_object_safe_name (obj));
+		return TRUE;
+	}
+	return FALSE;
 }
 
 /**
@@ -524,7 +528,7 @@ finalizers_for_domain_callback (MonoObject *obj, void *user_data)
 int
 mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size)
 {
-	return sgen_gather_finalizers_with_predicate (finalizers_for_domain_callback, domain, out_array, out_size);
+	return sgen_gather_finalizers_if (object_in_domain_predicate, domain, out_array, out_size);
 }
 
 /*
@@ -855,10 +859,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 	null_ephemerons_for_domain (domain);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		sgen_null_links_for_domain (domain, i);
+		sgen_null_links_if (object_in_domain_predicate, domain, i);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		sgen_remove_finalizers_for_domain (domain, i);
+		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
 			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE);
