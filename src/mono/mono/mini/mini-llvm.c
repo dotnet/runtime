@@ -55,6 +55,7 @@ typedef struct {
 	GPtrArray *subprogram_mds;
 	MonoEERef *mono_ee;
 	LLVMExecutionEngineRef ee;
+	gboolean external_symbols;
 } MonoLLVMModule;
 
 /*
@@ -4450,6 +4451,10 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		/* This causes an assertion in later LLVM versions */
 		LLVMSetVisibility (method, LLVMHiddenVisibility);
 #endif
+		if (ctx->lmodule->external_symbols) {
+			LLVMSetLinkage (method, LLVMExternalLinkage);
+			LLVMSetVisibility (method, LLVMHiddenVisibility);
+		}
 	} else {
 		LLVMSetLinkage (method, LLVMPrivateLinkage);
 	}
@@ -5333,7 +5338,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_create_aot_module (const char *got_symbol)
+mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols)
 {
 	/* Delete previous module */
 	if (aot_module.plt_entries)
@@ -5345,6 +5350,7 @@ mono_llvm_create_aot_module (const char *got_symbol)
 
 	aot_module.module = LLVMModuleCreateWithName ("aot");
 	aot_module.got_symbol = got_symbol;
+	aot_module.external_symbols = external_symbols;
 
 	add_intrinsics (aot_module.module);
 	add_types (&aot_module);
@@ -5400,8 +5406,12 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name, int got_si
 	got_type = LLVMArrayType (aot_module.ptr_type, got_size);
 	real_got = LLVMAddGlobal (aot_module.module, got_type, aot_module.got_symbol);
 	LLVMSetInitializer (real_got, LLVMConstNull (got_type));
-	LLVMSetLinkage (real_got, LLVMInternalLinkage);
-
+	if (module->external_symbols) {
+		LLVMSetLinkage (real_got, LLVMExternalLinkage);
+		LLVMSetVisibility (real_got, LLVMHiddenVisibility);
+	} else {
+		LLVMSetLinkage (real_got, LLVMInternalLinkage);
+	}
 	mono_llvm_replace_uses_of (aot_module.got_var, real_got);
 
 	mark_as_used (&aot_module, real_got);

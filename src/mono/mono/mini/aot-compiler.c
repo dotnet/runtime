@@ -114,7 +114,6 @@ typedef struct MonoAotOptions {
 	gboolean no_instances;
 	gboolean gnu_asm;
 	gboolean llvm;
-	gboolean llvm_separate;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -189,6 +188,7 @@ typedef struct MonoAotCompile {
 	mono_mutex_t mutex;
 	gboolean use_bin_writer;
 	gboolean gas_line_numbers;
+	gboolean llvm_separate;
 	MonoImageWriter *w;
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
@@ -907,26 +907,46 @@ arch_emit_got_offset (MonoAotCompile *acfg, guint8 *code, int *code_size)
 static void
 arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *code_size)
 {
-	/* Emit beginning of instruction */
-	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
+	/* This needs to emit the same code as OP_AOTCONST */
 
-	/* Emit the offset */
 #ifdef TARGET_AMD64
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
-	*code_size = mono_arch_get_patch_offset (code) + 4;
+	/* mov reg, got+offset(%rip) */
+	if (acfg->llvm_separate) {
+		/* The GOT symbol is in the LLVM module, the clang assembler has problems emitting symbol diffs for it */
+		int dreg;
+		int rex_r;
+
+		/* Decode reg, see amd64_mov_reg_membase () */
+		rex_r = code [0] & AMD64_REX_R;
+		g_assert (code [0] == 0x49 + rex_r);
+		g_assert (code [1] == 0x8b);
+		dreg = ((code [2] >> 3) & 0x7) + (rex_r ? 8 : 0);
+
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (unsigned int) ((got_slot * sizeof (gpointer))), mono_arch_regname (dreg));
+		*code_size = 7;
+	} else {
+		emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
+		*code_size = mono_arch_get_patch_offset (code) + 4;
+	}
 #elif defined(TARGET_X86)
+	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 	emit_int32 (acfg, (unsigned int) ((got_slot * sizeof (gpointer))));
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM)
+	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM64)
+	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 	arm64_emit_got_access (acfg, code, got_slot, code_size);
 #elif defined(TARGET_POWERPC)
 	{
 		guint8 buf [32];
 		guint8 *code;
 
+		emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
 		code = buf;
 		ppc_load32 (code, ppc_r0, got_slot * sizeof (gpointer));
 		g_assert (code - buf == 8);
@@ -1005,15 +1025,14 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 #endif /*__native_client_codegen__*/
 #elif defined(TARGET_AMD64)
 #if defined(__default_codegen__)
-		/*
-		 * We can't emit jumps because they are 32 bits only so they can't be patched.
-		 * So we make indirect calls through GOT entries which are patched by the AOT 
-		 * loader to point to .Lpd entries. 
-		 */
-		/* jmpq *<offset>(%rip) */
-		emit_byte (acfg, '\xff');
-		emit_byte (acfg, '\x25');
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+		if (acfg->use_bin_writer) {
+			emit_byte (acfg, '\xff');
+			emit_byte (acfg, '\x25');
+			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+		} else {
+			emit_unset_mode (acfg);
+			fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", acfg->got_symbol, (int)((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+		}
 		/* Used by mono_aot_get_plt_info_offset */
 		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
 		acfg->stats.plt_size += 10;
@@ -4967,7 +4986,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	
 	emit_label (acfg, cfg->asm_symbol);
 
-	if (acfg->aot_opts.write_symbols && !acfg->global_symbols) {
+	if (acfg->aot_opts.write_symbols && !acfg->global_symbols && !acfg->llvm_separate) {
 		/* 
 		 * Write a C style symbol for every method, this has two uses:
 		 * - it works on platforms where the dwarf debugging info is not
@@ -5801,7 +5820,7 @@ emit_plt (MonoAotCompile *acfg)
 
 		if (acfg->llvm && !acfg->thumb_mixed) {
 			emit_label (acfg, plt_entry->llvm_symbol);
-			if (acfg->aot_opts.llvm_separate) {
+			if (acfg->llvm_separate) {
 				emit_global (acfg, plt_entry->llvm_symbol, TRUE);
 				fprintf (acfg->fp, ".private_extern %s\n", plt_entry->llvm_symbol);
 			}
@@ -7176,7 +7195,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
-	if (acfg->aot_opts.llvm_separate)
+	if (acfg->llvm_separate)
 		g_string_append_printf (acfg->llc_args, " -mono-eh-frame-symbol=mono_eh_frame");
 
 #if defined(TARGET_MACH) && defined(TARGET_ARM)
@@ -7190,7 +7209,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	unlink (acfg->tmpfname);
 
-	if (acfg->aot_opts.llvm_separate)
+	if (acfg->llvm_separate)
 		output_fname = g_strdup_printf ("%s", acfg->llvm_sfile);
 	else
 		output_fname = g_strdup (acfg->tmpfname);
@@ -8644,7 +8663,7 @@ compile_asm (MonoAotCompile *acfg)
 		return 1;
 	}
 
-	if (acfg->aot_opts.llvm_separate) {
+	if (acfg->llvm_separate) {
 		command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", acfg->llvm_ofile, acfg->llvm_sfile);
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
 		if (system (command) != 0) {
@@ -8670,7 +8689,7 @@ compile_asm (MonoAotCompile *acfg)
 
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
-	if (acfg->aot_opts.llvm_separate) {
+	if (acfg->llvm_separate) {
 		llvm_ofile = g_strdup (acfg->llvm_ofile);
 	} else {
 		llvm_ofile = g_strdup ("");
@@ -8910,7 +8929,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		mini_llvm_init ();
 
-		if (!acfg->aot_opts.static_link && !acfg->aot_opts.asm_only) {
+		if (!acfg->aot_opts.static_link && !acfg->aot_opts.asm_only && !acfg->aot_opts.full_aot) {
 			/*
 			 * Emit all LLVM code into a separate assembly/object file and link with it
 			 * normally.
@@ -8919,9 +8938,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			 * to users because we generate two files now. Also, symbol names have to be
 			 * prefixed by a unique prefix so multiple files can be linked together.
 			 * This also affects the mono_eh_frame symbol emitted by LLVM.
+			 * Can't use this with full aot until the trampolines are updated
+			 * (i.e. get rid of the emit_symbol_diff () stuff).
 			 */
-#if LLVM_API_VERSION >= 3
-			//acfg->aot_opts.llvm_separate = TRUE;
+#if LLVM_API_VERSION >= 3 && defined(TARGET_AMD64)
+			//acfg->llvm_separate = TRUE;
 #endif
 		}
 	}
@@ -8992,7 +9013,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		mono_llvm_create_aot_module (acfg->got_symbol_base);
+		mono_llvm_create_aot_module (acfg->got_symbol_base, acfg->llvm_separate);
 	}
 #endif
 
@@ -9036,7 +9057,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		gboolean res;
 
 		if (acfg->aot_opts.asm_only) {
-			g_assert (!acfg->aot_opts.llvm_separate);
+			g_assert (!acfg->llvm_separate);
 			if (acfg->aot_opts.outfile) {
 				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 				acfg->tmpbasename = g_strdup (acfg->tmpfname);
@@ -9048,7 +9069,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			acfg->tmpbasename = g_strdup_printf ("%s", "temp");
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup ("temp-llvm.s");
-			acfg->llvm_ofile = g_strdup ("temp-llvm.s");
+			acfg->llvm_ofile = g_strdup ("temp-llvm.o");
 		}
 
 		res = emit_llvm_file (acfg);
@@ -9078,7 +9099,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->w = img_writer_create (acfg->fp, TRUE);
 		acfg->use_bin_writer = TRUE;
 	} else {
-		if (acfg->llvm && !acfg->aot_opts.llvm_separate) {
+		if (acfg->llvm && !acfg->llvm_separate) {
 			/* Append to the .s file created by llvm */
 			/* FIXME: Use multiple files instead */
 			acfg->fp = fopen (acfg->tmpfname, "a+");
@@ -9114,7 +9135,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 			if (COMPILE_LLVM (cfg))
 				cfg->asm_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, cfg->llvm_method_name);
-			else if (acfg->global_symbols)
+			else if (acfg->global_symbols || acfg->llvm_separate)
 				cfg->asm_symbol = get_debug_sym (cfg->method, "", acfg->method_label_hash);
 			else
 				cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
