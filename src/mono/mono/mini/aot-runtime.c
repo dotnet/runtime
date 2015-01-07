@@ -1982,6 +1982,15 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			amodule->code_offsets [i] = 0xffffffff;
 		else
 			amodule->code_offsets [i] = (char*)addr - (char*)amodule->code;
+		/*
+		 * FIXME: When using a separate llvm object file,
+		 * need to add separate symbols to denote the beginning and
+		 * end of llvm compiled code.
+		 */
+		// FIXME: Update both code and code_end
+		// FIXME: Last method
+		if ((guint8*)addr > (guint8*)amodule->code_end)
+			amodule->code_end = addr;
 	}
 
 	if (make_unreadable) {

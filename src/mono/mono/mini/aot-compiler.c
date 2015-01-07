@@ -114,6 +114,7 @@ typedef struct MonoAotOptions {
 	gboolean no_instances;
 	gboolean gnu_asm;
 	gboolean llvm;
+	gboolean llvm_separate;
 	int nthreads;
 	int ntrampolines;
 	int nrgctx_trampolines;
@@ -193,6 +194,8 @@ typedef struct MonoAotCompile {
 	FILE *fp;
 	char *tmpbasename;
 	char *tmpfname;
+	char *llvm_sfile;
+	char *llvm_ofile;
 	GSList *cie_program;
 	GHashTable *unwind_info_offsets;
 	GPtrArray *unwind_ops;
@@ -778,7 +781,7 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* Need to make sure this is exactly 5 bytes long */
-	if (external && !acfg->use_bin_writer) {
+	if (!acfg->use_bin_writer) {
 		emit_unset_mode (acfg);
 		fprintf (acfg->fp, "call %s\n", target);
 	} else {
@@ -5796,8 +5799,13 @@ emit_plt (MonoAotCompile *acfg)
 		if (!plt_entry->jit_used && !plt_entry->llvm_used)
 			continue;
 
-		if (acfg->llvm && !acfg->thumb_mixed)
+		if (acfg->llvm && !acfg->thumb_mixed) {
 			emit_label (acfg, plt_entry->llvm_symbol);
+			if (acfg->aot_opts.llvm_separate) {
+				emit_global (acfg, plt_entry->llvm_symbol, TRUE);
+				fprintf (acfg->fp, ".private_extern %s\n", plt_entry->llvm_symbol);
+			}
+		}
 
 		if (debug_sym) {
 			if (acfg->need_no_dead_strip) {
@@ -7076,7 +7084,7 @@ mono_aot_patch_info_dup (MonoJumpInfo* ji)
 static gboolean
 emit_llvm_file (MonoAotCompile *acfg)
 {
-	char *command, *opts, *tempbc;
+	char *command, *opts, *tempbc, *output_fname;
 	int i;
 	MonoJumpInfo *patch_info;
 
@@ -7168,6 +7176,9 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
+	if (acfg->aot_opts.llvm_separate)
+		g_string_append_printf (acfg->llc_args, " -mono-eh-frame-symbol=mono_eh_frame");
+
 #if defined(TARGET_MACH) && defined(TARGET_ARM)
 	/* ios requires PIC code now */
 	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
@@ -7179,7 +7190,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	unlink (acfg->tmpfname);
 
-	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, acfg->tmpfname, acfg->tmpbasename);
+	if (acfg->aot_opts.llvm_separate)
+		output_fname = g_strdup_printf ("%s", acfg->llvm_sfile);
+	else
+		output_fname = g_strdup (acfg->tmpfname);
+	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
 
 	aot_printf (acfg, "Executing llc: %s\n", command);
 
@@ -8562,7 +8577,7 @@ static int
 compile_asm (MonoAotCompile *acfg)
 {
 	char *command, *objfile;
-	char *outfile_name, *tmp_outfile_name;
+	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
 	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
 
 #if defined(TARGET_AMD64) && !defined(TARGET_MACH)
@@ -8629,6 +8644,16 @@ compile_asm (MonoAotCompile *acfg)
 		return 1;
 	}
 
+	if (acfg->aot_opts.llvm_separate) {
+		command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", acfg->llvm_ofile, acfg->llvm_sfile);
+		aot_printf (acfg, "Executing the native assembler: %s\n", command);
+		if (system (command) != 0) {
+			g_free (command);
+			g_free (objfile);
+			return 1;
+		}
+	}
+
 	g_free (command);
 
 	if (acfg->aot_opts.static_link) {
@@ -8645,10 +8670,16 @@ compile_asm (MonoAotCompile *acfg)
 
 	tmp_outfile_name = g_strdup_printf ("%s.tmp", outfile_name);
 
+	if (acfg->aot_opts.llvm_separate) {
+		llvm_ofile = g_strdup (acfg->llvm_ofile);
+	} else {
+		llvm_ofile = g_strdup ("");
+	}
+
 #ifdef LD_NAME
-	command = g_strdup_printf ("%s -o %s %s.o", LD_NAME, tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("%s -o %s %s %s.o", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname);
 #else
-	command = g_strdup_printf ("%sld %s -shared -o %s %s.o", tool_prefix, LD_OPTIONS, tmp_outfile_name, acfg->tmpfname);
+	command = g_strdup_printf ("%sld %s -shared -o %s %s %s.o", tool_prefix, LD_OPTIONS, tmp_outfile_name, llvm_ofile, acfg->tmpfname);
 #endif
 	aot_printf (acfg, "Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
@@ -8878,6 +8909,21 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 
 		mini_llvm_init ();
+
+		if (!acfg->aot_opts.static_link && !acfg->aot_opts.asm_only) {
+			/*
+			 * Emit all LLVM code into a separate assembly/object file and link with it
+			 * normally.
+			 * FIXME:
+			 * Can't use it when using asm_only or static_link, since it requires changes
+			 * to users because we generate two files now. Also, symbol names have to be
+			 * prefixed by a unique prefix so multiple files can be linked together.
+			 * This also affects the mono_eh_frame symbol emitted by LLVM.
+			 */
+#if LLVM_API_VERSION >= 3
+			//acfg->aot_opts.llvm_separate = TRUE;
+#endif
+		}
 	}
 
 	if (acfg->aot_opts.full_aot)
@@ -8990,6 +9036,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		gboolean res;
 
 		if (acfg->aot_opts.asm_only) {
+			g_assert (!acfg->aot_opts.llvm_separate);
 			if (acfg->aot_opts.outfile) {
 				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 				acfg->tmpbasename = g_strdup (acfg->tmpfname);
@@ -9000,6 +9047,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		} else {
 			acfg->tmpbasename = g_strdup_printf ("%s", "temp");
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+			acfg->llvm_sfile = g_strdup ("temp-llvm.s");
+			acfg->llvm_ofile = g_strdup ("temp-llvm.s");
 		}
 
 		res = emit_llvm_file (acfg);
@@ -9029,7 +9078,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->w = img_writer_create (acfg->fp, TRUE);
 		acfg->use_bin_writer = TRUE;
 	} else {
-		if (acfg->llvm) {
+		if (acfg->llvm && !acfg->aot_opts.llvm_separate) {
 			/* Append to the .s file created by llvm */
 			/* FIXME: Use multiple files instead */
 			acfg->fp = fopen (acfg->tmpfname, "a+");
