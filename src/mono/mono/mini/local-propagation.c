@@ -53,6 +53,7 @@ mono_local_cprop (MonoCompile *cfg)
 	MonoInst **defs;
 	gint32 *def_index;
 	int max;
+	int filter = FILTER_IL_SEQ_POINT;
 
 restart:
 
@@ -168,7 +169,7 @@ restart:
 					!vreg_is_volatile (cfg, def->sreg1) &&
 					/* This avoids propagating local vregs across calls */
 					((get_vreg_to_inst (cfg, def->sreg1) || !defs [def->sreg1] || (def_index [def->sreg1] >= last_call_index) || (def->opcode == OP_VMOVE))) &&
-					!(defs [def->sreg1] && mono_inst_next (defs [def->sreg1], FILTER_IL_SEQ_POINT) == def) &&
+					!(defs [def->sreg1] && mono_inst_next (defs [def->sreg1], filter) == def) &&
 					(!MONO_ARCH_USE_FPSTACK || (def->opcode != OP_FMOVE)) &&
 					(def->opcode != OP_FMOVE)) {
 					int vreg = def->sreg1;
@@ -256,14 +257,14 @@ restart:
 					 * We have to guarantee that def->sreg1 haven't changed since def->dreg
 					 * was defined. cfg->frame_reg is assumed to remain constant.
 					 */
-					if ((def->sreg1 == cfg->frame_reg) || ((def->next == ins) && (def->dreg != def->sreg1))) {
+					if ((def->sreg1 == cfg->frame_reg) || ((mono_inst_next (def, filter) == ins) && (def->dreg != def->sreg1))) {
 						ins->inst_basereg = def->sreg1;
 						ins->inst_offset += def->inst_imm;
 					}
-				} else if ((ins->opcode == OP_ISUB_IMM) && (def->opcode == OP_IADD_IMM) && (def->next == ins) && (def->dreg != def->sreg1)) {
+				} else if ((ins->opcode == OP_ISUB_IMM) && (def->opcode == OP_IADD_IMM) && (mono_inst_next (def, filter) == ins) && (def->dreg != def->sreg1)) {
 					ins->sreg1 = def->sreg1;
 					ins->inst_imm -= def->inst_imm;
-				} else if ((ins->opcode == OP_IADD_IMM) && (def->opcode == OP_ISUB_IMM) && (def->next == ins) && (def->dreg != def->sreg1)) {
+				} else if ((ins->opcode == OP_IADD_IMM) && (def->opcode == OP_ISUB_IMM) && (mono_inst_next (def, filter) == ins) && (def->dreg != def->sreg1)) {
 					ins->sreg1 = def->sreg1;
 					ins->inst_imm -= def->inst_imm;
 				} else if (ins->opcode == OP_STOREI1_MEMBASE_REG &&
