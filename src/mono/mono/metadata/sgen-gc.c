@@ -2683,10 +2683,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 
 	sgen_init_tlab_info (info);
 
-#ifdef SGEN_POSIX_STW
-	info->stop_count = -1;
-	info->signal = 0;
-#endif
 	sgen_client_thread_register (info, stack_bottom_fallback);
 
 	return info;

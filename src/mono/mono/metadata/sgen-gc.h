@@ -402,13 +402,6 @@ struct _SgenThreadInfo {
 	char **tlab_temp_end_addr;
 	char **tlab_real_end_addr;
 
-#ifdef SGEN_POSIX_STW
-	/* This is -1 until the first suspend. */
-	int signal;
-	/* FIXME: kill this, we only use signals on systems that have rt-posix, which doesn't have issues with duplicates. */
-	unsigned int stop_count; /* to catch duplicate signals. */
-#endif
-
 #ifndef HAVE_KW_THREAD
 	char *tlab_start;
 	char *tlab_next;

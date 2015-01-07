@@ -60,10 +60,10 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	gpointer stack_start;
 
 	info->client_info.stopped_domain = mono_domain_get ();
-	info->signal = 0;
+	info->client_info.signal = 0;
 	stop_count = sgen_global_stop_count;
 	/* duplicate signal */
-	if (0 && info->stop_count == stop_count)
+	if (0 && info->client_info.stop_count == stop_count)
 		return;
 
 #ifdef USE_MONO_CTX
@@ -76,7 +76,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 		stack_start = NULL;
 	}
 #else
-	info->stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
+	info->client_info.stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
 	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
 #endif
 
@@ -118,13 +118,13 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 	/* notify the waiting thread */
 	SGEN_SEMAPHORE_POST (suspend_ack_semaphore_ptr);
-	info->stop_count = stop_count;
+	info->client_info.stop_count = stop_count;
 
 	/* wait until we receive the restart signal */
 	do {
-		info->signal = 0;
+		info->client_info.signal = 0;
 		sigsuspend (&suspend_signal_mask);
-	} while (info->signal != restart_signal_num);
+	} while (info->client_info.signal != restart_signal_num);
 
 	/* Unblock the restart signal. */
 	pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
@@ -162,7 +162,7 @@ MONO_SIG_HANDLER_FUNC (static, restart_handler)
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-	info->signal = restart_signal_num;
+	info->client_info.signal = restart_signal_num;
 	SGEN_LOG (4, "Restart handler in %p %p", info, (gpointer)mono_native_thread_id_get ());
 	errno = old_errno;
 }
