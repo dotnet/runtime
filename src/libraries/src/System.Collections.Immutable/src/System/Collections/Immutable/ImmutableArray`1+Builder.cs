@@ -149,7 +149,7 @@ namespace System.Collections.Immutable
             /// <returns>An immutable array.</returns>
             public ImmutableArray<T> ToImmutable()
             {
-                if (this.Count == 0)
+                if (Count == 0)
                 {
                     return Empty;
                 }
@@ -159,10 +159,17 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Extracts the internal array as an <see cref="ImmutableArray{T}"/> and replaces it 
-            /// with a zero length array
+            /// with a zero length array.
             /// </summary>
-            public ImmutableArray<T> ExtractToImmutable()
+            /// <exception cref="InvalidOperationException">When <see cref="ImmutableArray{T}.Builder.Count"/> doesn't 
+            /// equal <see cref="ImmutableArray{T}.Builder.Capacity"/>.</exception>
+            public ImmutableArray<T> MoveToImmutable()
             {
+                if (Capacity != Count)
+                {
+                    throw new InvalidOperationException(Strings.CapacityMustEqualCountOnMove);
+                }
+
                 var temp = _elements;
                 _elements = ImmutableArray<T>.Empty.array;
                 _count = 0;

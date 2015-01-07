@@ -470,64 +470,76 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ExtractToImmutableNormal()
+        public void MoveToImmutableNormal()
         {
             var builder = CreateBuilderWithCount<string>(2);
             Assert.Equal(2, builder.Count);
             Assert.Equal(2, builder.Capacity);
             builder[1] = "b";
             builder[0] = "a";
-            var array = builder.ExtractToImmutable();
+            var array = builder.MoveToImmutable();
             Assert.Equal(new[] { "a", "b" }, array);
             Assert.Equal(0, builder.Count);
             Assert.Equal(0, builder.Capacity);
         }
 
         [Fact]
-        public void ExtractToImmutableRepeat()
+        public void MoveToImmutableRepeat()
         {
             var builder = CreateBuilderWithCount<string>(2);
             builder[0] = "a";
             builder[1] = "b";
-            var array1 = builder.ExtractToImmutable();
-            var array2 = builder.ExtractToImmutable();
+            var array1 = builder.MoveToImmutable();
+            var array2 = builder.MoveToImmutable();
             Assert.Equal(new[] { "a", "b" }, array1);
             Assert.Equal(0, array2.Length);
         }
 
         [Fact]
-        public void ExtractToImmutablePartialFill()
+        public void MoveToImmutablePartialFill()
         {
             var builder = ImmutableArray.CreateBuilder<int>(4);
             builder.Add(42);
             builder.Add(13);
             Assert.Equal(4, builder.Capacity);
             Assert.Equal(2, builder.Count);
-            var array = builder.ExtractToImmutable();
+            Assert.Throws(typeof(InvalidOperationException), () => builder.MoveToImmutable());
+        }
+
+        [Fact]
+        public void MoveToImmutablePartialFillWithCountUpdate()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(4);
+            builder.Add(42);
+            builder.Add(13);
+            Assert.Equal(4, builder.Capacity);
+            Assert.Equal(2, builder.Count);
+            builder.Count = builder.Capacity;
+            var array = builder.MoveToImmutable();
             Assert.Equal(new[] { 42, 13, 0, 0 }, array);
         }
 
         [Fact]
-        public void ExtractToImmutableThenUse()
+        public void MoveToImmutableThenUse()
         {
             var builder = CreateBuilderWithCount<string>(2);
-            Assert.Equal(2, builder.ExtractToImmutable().Length);
+            Assert.Equal(2, builder.MoveToImmutable().Length);
             Assert.Equal(0, builder.Capacity);
             builder.Add("a");
             builder.Add("b");
             Assert.Equal(2, builder.Count);
             Assert.True(builder.Capacity >= 2);
-            Assert.Equal(new[] { "a", "b" }, builder.ExtractToImmutable());
+            Assert.Equal(new[] { "a", "b" }, builder.MoveToImmutable());
         }
 
         [Fact]
-        public void ExtractToImmutableAfterClear()
+        public void MoveToImmutableAfterClear()
         {
             var builder = CreateBuilderWithCount<string>(2);
             builder[0] = "a";
             builder[1] = "b";
             builder.Clear();
-            Assert.Equal(new string[] { null, null }, builder.ExtractToImmutable());
+            Assert.Throws(typeof(InvalidOperationException), () => builder.MoveToImmutable());
         }
 
         private static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)
