@@ -1,21 +1,42 @@
 #!/bin/bash
 
- TESTFILE=$1
+TEST_FILE=$1
+TMP_FILE_PREFIX=$(basename $0).tmp
+BASEDIR=$(dirname $0)
+
+MONO_PATH=$BASEDIR/../../mcs/class/lib/net_4_5:$BASEDIR
+RUNTIME=$BASEDIR/../../runtime/mono-wrapper
+
+trap "rm -rf ${TMP_FILE_PREFIX}*" EXIT
+
+tmp_file () {
+	mktemp ./${TMP_FILE_PREFIX}XXXX
+}
+
+clean_aot () {
+	rm -rf *.exe..so *.exe.dylib *.exe.dylib.dSYM
+}
 
 get_methods () {
-    ./mono -v -v $1 | grep '^Method \|^000' | sed 's/emitted[^()]*//' | sed 's/0x[0-9a-fA-F]*/0x0/g' | awk -v RS='' '{gsub(/\n000/, "000"); print}' | sort
+	clean_aot
+    MONO_PATH=$1 $2 --aot -v -v $3 | grep '^Method .*code length\|^000' | sed 's/emitted[^()]*//' | sed 's/0x[0-9a-fA-F]*/0x0/g' | awk -v RS='' '{gsub(/\n000/, "000"); print}' | sort
 }
 
 get_method () {
-	MONO_VERBOSE_METHOD="$2" ./mono $1 | grep '^Method \|^000' | sed 's/emitted[^()]*//' | sed 's/0x[0-9a-fA-F]*/0x0/g'
+	clean_aot
+	MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 --aot $3  | sed 's/0x[0-9a-fA-F]*/0x0/g'
 }
 
-sdiff_methods () {
-    sdiff -s -w 1000 <(echo "$(get_methods $1)") <(echo "$(MONO_DEBUG=gen-compact-seq-points  get_methods $1)")
+diff_methods () {
+	TMP_FILE=tmp_file
+	echo "$(get_methods $1 $2 $3)" >$TMP_FILE
+    sdiff -s -w 1000 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3)")
 }
 
 diff_method () {
-	diff <(echo "$(get_method $1 $2)") <(echo "$(MONO_DEBUG=gen-compact-seq-points  get_method $1 $2)")
+	TMP_FILE=tmp_file
+	echo "$(get_method $1 $2 $3 $4)" >$TMP_FILE
+	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_method $1 $2 $3 $4 | grep -Ev il_seq_point)")
 }
 
 get_method_name () {
@@ -26,9 +47,11 @@ get_method_length () {
 	echo $1 | sed 's/.*code length \([0-9]*\).*/\1/'
 }
 
-DIFF_FILE=mktemp
+echo "Checking unintended native code changes in $TEST_FILE"
 
-echo "$(sdiff_methods $TESTFILE)" > $DIFF_FILE
+TMP_FILE=tmp_file
+
+echo "$(diff_methods $MONO_PATH $RUNTIME $TEST_FILE)" > $TMP_FILE
 
 CHANGES=0
 METHOD=""
@@ -44,20 +67,20 @@ while read line; do
 			METHOD="$line"
 		fi
 	fi
-done < $DIFF_FILE
+done < $TMP_FILE
 
 if [ $CHANGES != 0 ]
 then
 	METHOD_NAME=$(get_method_name "$METHOD")
 
-	echo "$(diff_method $TESTFILE $METHOD_NAME)"
-
 	echo ''
-	echo "Detected OP_IL_SEQ_POINT incompatibility on $TESTFILE"
+	echo "Detected OP_IL_SEQ_POINT incompatibility on $TEST_FILE"
 	echo "  $CHANGES methods differ when sequence points are enabled."
 	echo '  This is probably caused by a runtime optimization that is not handling OP_IL_SEQ_POINT'
-	echo '  Differences can be obtained by comparing the output of the following commands:'
-	echo "    MONO_VERBOSE_METHOD=\"$METHOD_NAME\" mono/mini/mono mono/mini/$TESTFILE"
-	echo "    MONO_DEBUG=gen-compact-seq-points MONO_VERBOSE_METHOD=\"$METHOD_NAME\" mono/mini/mono mono/mini/$TESTFILE"
+
+	echo ''
+	echo "Diff $METHOD_NAME"
+	echo "Without IL_OP_SEQ_POINT                                                         With IL_OP_SEQ_POINT"
+	echo "$(diff_method $MONO_PATH $RUNTIME $TEST_FILE $METHOD_NAME)"
 	exit 1
 fi
