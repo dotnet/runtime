@@ -68,7 +68,7 @@ namespace System.IO.Tests
                     {
                         if (y[i] == null)
                         {
-                            return true;
+                            continue;
                         }
                         else return false;
                     }
