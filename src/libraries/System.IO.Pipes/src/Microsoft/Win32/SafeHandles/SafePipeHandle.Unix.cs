@@ -7,18 +7,17 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     public sealed partial class SafePipeHandle : SafeHandle
     {
-        private SafePipeHandle() 
-            : base(IntPtr.Zero, true) 
+        protected override bool ReleaseHandle()
         {
+            throw NotImplemented.ByDesign; // TODO: Implement this
         }
 
-        public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
-            : base(IntPtr.Zero, ownsHandle)
+        public override bool IsInvalid
         {
-            SetHandle(preexistingHandle);
+            [SecurityCritical]
+            get { throw NotImplemented.ByDesign; } // TODO: Implement this
         }
     }
 }
