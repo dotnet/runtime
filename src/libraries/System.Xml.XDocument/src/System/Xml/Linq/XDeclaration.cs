@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.IO;
 using StringBuilder = System.Text.StringBuilder;
 
 namespace System.Xml.Linq
@@ -101,7 +102,7 @@ namespace System.Xml.Linq
         /// <returns>A formatted XML string.</returns>
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder("<?xml");
+            StringBuilder sb = StringBuilderCache.Acquire("<?xml");
             if (_version != null)
             {
                 sb.Append(" version=\"");
@@ -121,7 +122,7 @@ namespace System.Xml.Linq
                 sb.Append('\"');
             }
             sb.Append("?>");
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
     }
 }

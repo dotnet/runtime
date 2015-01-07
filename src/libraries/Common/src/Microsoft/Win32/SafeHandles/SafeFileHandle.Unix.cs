@@ -12,8 +12,13 @@ namespace Microsoft.Win32.SafeHandles
     [System.Security.SecurityCritical]
     sealed partial class SafeFileHandle : SafeHandle
     {
-        private SafeFileHandle() : base(IntPtr.Zero, true)
+        /// <summary>A handle value of -1.</summary>
+        private static readonly IntPtr s_invalidHandle = new IntPtr(-1);
+
+        private SafeFileHandle(bool ownsHandle)
+            : base(s_invalidHandle, ownsHandle)
         {
+            handle = s_invalidHandle; // TODO: remove this once base implementation correctly sets it
         }
 
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
@@ -29,7 +34,7 @@ namespace Microsoft.Win32.SafeHandles
             // We still use a finally block to house the code that opens the file and stores the handle in hopes
             // of making it as non-interruptable as possible.  The SafeFileHandle is also allocated first to avoid
             // the allocation after getting the file descriptor but before storing it.
-            SafeFileHandle handle = new SafeFileHandle();
+            SafeFileHandle handle = new SafeFileHandle(ownsHandle: true);
             try { } finally
             {
                 int fd;
@@ -46,7 +51,9 @@ namespace Microsoft.Win32.SafeHandles
             // Close the handle. We do not want to throw here nor retry
             // in the case of an EINTR error, so we simply check whether
             // the call was successful or not.
-            return Interop.close((int)handle) == 0;
+            int fd = (int)handle;
+            Contract.Assert(fd >= 0);
+            return Interop.close(fd) == 0;
         }
 
         public override bool IsInvalid

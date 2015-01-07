@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_LengthGreaterThanCapacity" xml:space="preserve">
+    <value>The length cannot be greater than the capacity.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non negative number is required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
+    <value>The position may not be greater or equal to the capacity of the accessor.</value>
+  </data>
+  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
+    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
+  </data>
+  <data name="ArgumentOutOfRange_UnmanagedMemStreamLength" xml:space="preserve">
+    <value>UnmanagedMemoryStream length must be non-negative and less than 2^63 - 1 - baseAddress.</value>
+  </data>
+  <data name="ArgumentOutOfRange_UnmanagedMemStreamWrapAround" xml:space="preserve">
+    <value>The UnmanagedMemoryStream capacity would wrap around the high end of the address space.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidSafeBufferOffLen" xml:space="preserve">
+    <value>Offset and length were greater than the size of the SafeBuffer.</value>
+  </data>
+  <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
+    <value>Invalid seek origin.</value>
+  </data>
+  <data name="Argument_NotEnoughBytesToRead" xml:space="preserve">
+    <value>There are not enough bytes remaining in the accessor to read at this position.</value>
+  </data>
+  <data name="Argument_NotEnoughBytesToWrite" xml:space="preserve">
+    <value>There are not enough bytes remaining in the accessor to write at this position.</value>
+  </data>
+  <data name="Argument_OffsetAndCapacityOutOfBounds" xml:space="preserve">
+    <value>Offset and capacity were greater than the size of the view.</value>
+  </data>
+  <data name="Argument_UnmanagedMemAccessorWrapAround" xml:space="preserve">
+    <value>The UnmanagedMemoryAccessor capacity and offset would wrap around the high end of the address space.</value>
+  </data>
+  <data name="Arg_BufferTooSmall" xml:space="preserve">
+    <value>Not enough space available in the buffer.</value>
+  </data>
+  <data name="IndexOutOfRange_UMSPosition" xml:space="preserve">
+    <value>Unmanaged memory stream position was beyond the capacity of the stream.</value>
+  </data>
+  <data name="InvalidOperation_CalledTwice" xml:space="preserve">
+    <value>The method cannot be called twice on the same instance.</value>
+  </data>
+  <data name="IO_FixedCapacity" xml:space="preserve">
+    <value>Unable to expand length of this stream beyond its capacity.</value>
+  </data>
+  <data name="IO_SeekBeforeBegin" xml:space="preserve">
+    <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="IO_StreamTooLong" xml:space="preserve">
+    <value>Stream was too long.</value>
+  </data>
+  <data name="NotSupported_Reading" xml:space="preserve">
+    <value>Accessor does not support reading.</value>
+  </data>
+  <data name="NotSupported_UmsSafeBuffer" xml:space="preserve">
+    <value>This operation is not supported for an UnmanagedMemoryStream created from a SafeBuffer.</value>
+  </data>
+  <data name="NotSupported_Writing" xml:space="preserve">
+    <value>Accessor does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
+    <value>Cannot access a closed accessor.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+</root>

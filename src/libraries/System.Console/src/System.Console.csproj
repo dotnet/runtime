@@ -54,6 +54,9 @@
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="Interop\Interop.manual.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>Common\System\IO\StringBuilderCache.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Interop.CoreFileIO.Unix.cs">
       <Link>Common\Interop\Interop.CoreFileIO.Unix.cs</Link>
     </Compile>
