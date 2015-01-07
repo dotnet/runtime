@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    class FakeSafeBuffer : SafeBuffer
+    internal class FakeSafeBuffer : SafeBuffer
     {
         public FakeSafeBuffer(ulong size)
             : base(true)
@@ -20,9 +20,9 @@ namespace System.IO.Tests
         }
     }
 
-    unsafe class TestSafeBuffer : SafeBuffer
+    internal unsafe class TestSafeBuffer : SafeBuffer
     {
-        bool _isDisposed;
+        private bool _isDisposed;
 
         public unsafe TestSafeBuffer(int capacity) : base(true)
         {
@@ -93,7 +93,8 @@ namespace System.IO.Tests
         public static void WriteSafeBuffer()
         {
             var length = 1000;
-            using (var buffer = new TestSafeBuffer(length)) { 
+            using (var buffer = new TestSafeBuffer(length))
+            {
                 var stream = new UnmanagedMemoryStream(buffer, 0, (long)buffer.ByteLength, FileAccess.Write);
                 Assert.Equal(stream.Length, length);
 
@@ -119,7 +120,7 @@ namespace System.IO.Tests
                 Assert.Equal(stream.Length, length);
 
                 var bytes = ArrayHelpers.CreateByteArray(length);
-                for(int index = 0; index < length; index++)
+                for (int index = 0; index < length; index++)
                 {
                     stream.WriteByte(bytes[index]);
                 }

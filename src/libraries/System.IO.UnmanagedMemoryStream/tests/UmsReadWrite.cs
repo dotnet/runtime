@@ -48,7 +48,7 @@ namespace System.IO.Tests
 
                 var bytes = ArrayHelpers.CreateByteArray(length);
 
-                for(int index = 0; index < bytes.Length; index++)
+                for (int index = 0; index < bytes.Length; index++)
                 {
                     byte byteToWrite = bytes[index];
                     stream.WriteByte(byteToWrite);
