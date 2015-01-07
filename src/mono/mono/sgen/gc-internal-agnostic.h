@@ -31,13 +31,28 @@
 #include "mono/sgen/sgen-conf.h"
 #endif
 
-#ifndef HIDE_POINTER
-#define HIDE_POINTER(p) ((gpointer)~(size_t)(p))
-#endif
+/* h indicates whether to hide or just tag.
+ * (-!!h ^ p) is used instead of (h ? ~p : p) to avoid multiple mentions of p.
+ */
+#define MONO_GC_HIDE_POINTER(p,t,h) ((gpointer)(((-(size_t)!!(h) ^ (size_t)(p)) & ~3UL) | (t & 3UL)))
+#define MONO_GC_REVEAL_POINTER(p,h) ((gpointer)((-(size_t)!!(h) ^ (size_t)(p)) & ~3UL))
 
-#ifndef REVEAL_POINTER
-#define REVEAL_POINTER(p) ((gpointer)~(size_t)(p))
-#endif
+#define MONO_GC_POINTER_TAG(p) ((size_t)(p) & 3UL)
+
+#define MONO_GC_HANDLE_OCCUPIED_MASK (1)
+#define MONO_GC_HANDLE_VALID_MASK (2)
+#define MONO_GC_HANDLE_TAG_MASK (MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK)
+
+#define MONO_GC_HANDLE_DOMAIN_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK, (h)))
+#define MONO_GC_HANDLE_OBJECT_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK, (h)))
+
+#define MONO_GC_HANDLE_OCCUPIED(slot) ((size_t)(slot) & MONO_GC_HANDLE_OCCUPIED_MASK)
+#define MONO_GC_HANDLE_VALID(slot) ((size_t)(slot) & MONO_GC_HANDLE_VALID_MASK)
+
+#define MONO_GC_HANDLE_TAG(slot) ((size_t)(slot) & MONO_GC_HANDLE_TAG_MASK)
+
+#define MONO_GC_HANDLE_IS_OBJECT_POINTER(slot) (MONO_GC_HANDLE_TAG (slot) == (MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK))
+#define MONO_GC_HANDLE_IS_DOMAIN_POINTER(slot) (MONO_GC_HANDLE_TAG (slot) == MONO_GC_HANDLE_OCCUPIED_MASK)
 
 typedef enum {
 	HANDLE_TYPE_MIN = 0,
@@ -48,7 +63,9 @@ typedef enum {
 	HANDLE_TYPE_MAX
 } GCHandleType;
 
-void mono_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer *, GCHandleType, gpointer), gpointer user);
+#define GC_HANDLE_TYPE_IS_WEAK(x) ((x) <= HANDLE_WEAK_TRACK)
+
+void mono_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, gpointer), gpointer user);
 
 typedef struct {
 	guint minor_gc_count;
@@ -98,5 +115,20 @@ void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
 void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 
 FILE *mono_gc_get_logfile (void);
+
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static inline void
+mono_gc_dummy_use (gpointer v) {
+#if defined(__GNUC__)
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+#elif defined(_MSC_VER)
+	static volatile gpointer ptr;
+	ptr = v;
+#else
+#error "Implement mono_gc_dummy_use for your compiler"
+#endif
+}
 
 #endif

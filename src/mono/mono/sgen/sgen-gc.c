@@ -1138,9 +1138,9 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	We must clear weak links that don't track resurrection before processing object ready for
 	finalization so they can be cleared before that.
 	*/
-	sgen_null_link_in_range (generation, TRUE, ctx, FALSE);
+	sgen_null_link_in_range (generation, ctx, FALSE);
 	if (generation == GENERATION_OLD)
-		sgen_null_link_in_range (GENERATION_NURSERY, TRUE, ctx, FALSE);
+		sgen_null_link_in_range (GENERATION_NURSERY, ctx, FALSE);
 
 
 	/* walk the finalization queue and move also the objects that need to be
@@ -1187,9 +1187,9 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 */
 	g_assert (sgen_gray_object_queue_is_empty (queue));
 	for (;;) {
-		sgen_null_link_in_range (generation, FALSE, ctx, TRUE);
+		sgen_null_link_in_range (generation, ctx, TRUE);
 		if (generation == GENERATION_OLD)
-			sgen_null_link_in_range (GENERATION_NURSERY, FALSE, ctx, TRUE);
+			sgen_null_link_in_range (GENERATION_NURSERY, ctx, TRUE);
 		if (sgen_gray_object_queue_is_empty (queue))
 			break;
 		sgen_drain_gray_stack (-1, ctx);
@@ -2674,7 +2674,7 @@ mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value) || concurrent_collection_in_progress)
 		mono_gc_wbarrier_generic_nostore (ptr);
-	sgen_dummy_use (value);
+	mono_gc_dummy_use (value);
 }
 
 /* Same as mono_gc_wbarrier_generic_store () but performs the store
@@ -2692,7 +2692,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 	if (ptr_in_nursery (value) || concurrent_collection_in_progress)
 		mono_gc_wbarrier_generic_nostore (ptr);
 
-	sgen_dummy_use (value);
+	mono_gc_dummy_use (value);
 }
 
 void
@@ -2748,48 +2748,6 @@ sgen_gc_get_used_size (void)
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
 	return tot;
-}
-
-GCObject*
-sgen_weak_link_get (void **link_addr)
-{
-	void * volatile *link_addr_volatile;
-	void *ptr;
-	GCObject *obj;
- retry:
-	link_addr_volatile = link_addr;
-	ptr = (void*)*link_addr_volatile;
-	/*
-	 * At this point we have a hidden pointer.  If the GC runs
-	 * here, it will not recognize the hidden pointer as a
-	 * reference, and if the object behind it is not referenced
-	 * elsewhere, it will be freed.  Once the world is restarted
-	 * we reveal the pointer, giving us a pointer to a freed
-	 * object.  To make sure we don't return it, we load the
-	 * hidden pointer again.  If it's still the same, we can be
-	 * sure the object reference is valid.
-	 */
-	if (ptr)
-		obj = (GCObject*) REVEAL_POINTER (ptr);
-	else
-		return NULL;
-
-	mono_memory_barrier ();
-
-	/*
-	 * During the second bridge processing step the world is
-	 * running again.  That step processes all weak links once
-	 * more to null those that refer to dead objects.  Before that
-	 * is completed, those links must not be followed, so we
-	 * conservatively wait for bridge processing when any weak
-	 * link is dereferenced.
-	 */
-	sgen_client_bridge_wait_for_processing ();
-
-	if ((void*)*link_addr_volatile != ptr)
-		goto retry;
-
-	return obj;
 }
 
 gboolean
@@ -2873,7 +2831,7 @@ sgen_gc_init (void)
 	mono_thread_smr_init ();
 #endif
 
-	mono_mutex_init_recursive (&gc_mutex);
+	LOCK_INIT (gc_mutex);
 
 	gc_debug_file = stderr;
 

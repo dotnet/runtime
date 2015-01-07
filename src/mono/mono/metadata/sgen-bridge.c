@@ -53,7 +53,7 @@ MonoGCBridgeCallbacks bridge_callbacks;
 static SgenBridgeProcessor bridge_processor;
 static SgenBridgeProcessor compare_to_bridge_processor;
 
-gboolean bridge_processing_in_progress = FALSE;
+volatile gboolean bridge_processing_in_progress = FALSE;
 
 void
 mono_gc_wait_for_bridge_processing (void)

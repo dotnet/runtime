@@ -788,7 +788,7 @@ void sgen_queue_finalization_entry (GCObject *obj);
 const char* sgen_generation_name (int generation);
 
 void sgen_finalize_in_range (int generation, ScanCopyContext ctx);
-void sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx, gboolean track);
+void sgen_null_link_in_range (int generation, ScanCopyContext ctx, gboolean track);
 void sgen_process_fin_stage_entries (void);
 gboolean sgen_have_pending_finalizers (void);
 void sgen_object_register_for_finalization (GCObject *obj, void *user_data);
@@ -1003,23 +1003,6 @@ void sgen_debug_dump_heap (const char *type, int num, const char *reason);
 
 void sgen_debug_verify_nursery (gboolean do_dump_nursery_content);
 void sgen_debug_check_nursery_is_clean (void);
-
-/* Write barrier support */
-
-/*
- * This causes the compile to extend the liveness of 'v' till the call to dummy_use
- */
-static inline void
-sgen_dummy_use (gpointer v) {
-#if defined(__GNUC__)
-	__asm__ volatile ("" : "=r"(v) : "r"(v));
-#elif defined(_MSC_VER)
-	static volatile gpointer ptr;
-	ptr = v;
-#else
-#error "Implement sgen_dummy_use for your compiler"
-#endif
-}
 
 /* Environment variable parsing */
 

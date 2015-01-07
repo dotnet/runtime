@@ -1164,15 +1164,15 @@ setup_stack_trace (MonoException *mono_ex, GSList *dynamic_methods, MonoArray *i
 			MonoMList *list = NULL;
 
 			for (l = dynamic_methods; l; l = l->next) {
-				gpointer *dis_link;
+				guint32 dis_link;
 				MonoDomain *domain = mono_domain_get ();
 
 				if (domain->method_to_dyn_method) {
 					mono_domain_lock (domain);
-					dis_link = g_hash_table_lookup (domain->method_to_dyn_method, l->data);
+					dis_link = (guint32)(size_t)g_hash_table_lookup (domain->method_to_dyn_method, l->data);
 					mono_domain_unlock (domain);
 					if (dis_link) {
-						MonoObject *o = mono_gc_weak_link_get (dis_link);
+						MonoObject *o = mono_gchandle_get_target (dis_link);
 						if (o) {
 							list = mono_mlist_prepend (list, o);
 						}

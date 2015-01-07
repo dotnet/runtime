@@ -345,7 +345,7 @@ delegate_hash_table_remove (MonoDelegate *d)
 		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
 	mono_marshal_unlock ();
-	if (mono_gc_is_moving ())
+	if (gchandle && mono_gc_is_moving ())
 		mono_gchandle_free (gchandle);
 }
 
