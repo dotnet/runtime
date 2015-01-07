@@ -2,8 +2,8 @@
 
 [![Build status][build-status-image]][build-status]  [![Issue Stats][pull-requests-image]][pull-requests]  [![Issue Stats][issues-closed-image]][issues-closed]
 
-[build-status-image]: http://corefx-ci.cloudapp.net/jenkins/job/CoreFX_Windows_Build/badge/icon
-[build-status]: http://corefx-ci.cloudapp.net/jenkins/job/CoreFX_Windows_Build/
+[build-status-image]: http://corefx-ci.cloudapp.net/jenkins/job/dotnet_corefx_windows/badge/icon
+[build-status]: http://corefx-ci.cloudapp.net/jenkins/job/dotnet_corefx_windows/
 [pull-requests-image]: http://www.issuestats.com/github/dotnet/corefx/badge/pr
 [pull-requests]: http://www.issuestats.com/github/dotnet/corefx
 [issues-closed-image]: http://www.issuestats.com/github/dotnet/corefx/badge/issue
