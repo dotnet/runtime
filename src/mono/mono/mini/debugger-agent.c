@@ -8864,6 +8864,13 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	frame_idx = i;
 	frame = tls->frames [frame_idx];
 
+	/* This is supported for frames without has_ctx etc. set */
+	if (command == CMD_STACK_FRAME_GET_DOMAIN) {
+		if (CHECK_PROTOCOL_VERSION (2, 38))
+			buffer_add_domainid (buf, frame->domain);
+		return ERR_NONE;
+	}
+
 	if (!frame->has_ctx)
 		return ERR_ABSENT_INFORMATION;
 
