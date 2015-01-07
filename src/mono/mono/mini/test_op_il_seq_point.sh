@@ -1,6 +1,8 @@
 #!/bin/bash
 
 TEST_FILE=$1
+USE_AOT=$2
+
 TMP_FILE_PREFIX=$(basename $0).tmp
 BASEDIR=$(dirname $0)
 
@@ -18,25 +20,33 @@ clean_aot () {
 }
 
 get_methods () {
-	clean_aot
-    MONO_PATH=$1 $2 --aot -v -v $3 | grep '^Method .*code length\|^000' | sed 's/emitted[^()]*//' | sed 's/0x[0-9a-fA-F]*/0x0/g' | awk -v RS='' '{gsub(/\n000/, "000"); print}' | sort
+	if [ -z $4 ]; then
+		MONO_PATH=$1 $2 -v $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
+	else
+		clean_aot
+		MONO_PATH=$1 $2 --aot -v -v $3 | grep '^Method .*code length\|^000' | sed 's/emitted[^()]*//' | sed 's/0x[0-9a-fA-F]*/0x0/g' | awk -v RS='' '{gsub(/\n000/, "000"); print}' | sort
+	fi
 }
 
 get_method () {
-	clean_aot
-	MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 --aot $3  | sed 's/0x[0-9a-fA-F]*/0x0/g'
+	if [ -z $5 ]; then
+		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
+	else
+		clean_aot
+		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 --aot $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
+	fi
 }
 
 diff_methods () {
 	TMP_FILE=tmp_file
-	echo "$(get_methods $1 $2 $3)" >$TMP_FILE
-    sdiff -s -w 1000 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3)")
+	echo "$(get_methods $1 $2 $3 $4)" >$TMP_FILE
+	sdiff -s -w 1000 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
 }
 
 diff_method () {
 	TMP_FILE=tmp_file
-	echo "$(get_method $1 $2 $3 $4)" >$TMP_FILE
-	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_method $1 $2 $3 $4 | grep -Ev il_seq_point)")
+	echo "$(get_method $1 $2 $3 $4 $5)" >$TMP_FILE
+	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)")
 }
 
 get_method_name () {
@@ -47,11 +57,15 @@ get_method_length () {
 	echo $1 | sed 's/.*code length \([0-9]*\).*/\1/'
 }
 
-echo "Checking unintended native code changes in $TEST_FILE"
+if [ -z $USE_AOT ]; then
+	echo "Checking unintended native code changes in $TEST_FILE without AOT"
+else
+	echo "Checking unintended native code changes in $TEST_FILE with AOT"
+fi
 
 TMP_FILE=tmp_file
 
-echo "$(diff_methods $MONO_PATH $RUNTIME $TEST_FILE)" > $TMP_FILE
+echo "$(diff_methods $MONO_PATH $RUNTIME $TEST_FILE $USE_AOT)" > $TMP_FILE
 
 CHANGES=0
 METHOD=""
@@ -81,6 +95,6 @@ then
 	echo ''
 	echo "Diff $METHOD_NAME"
 	echo "Without IL_OP_SEQ_POINT                                                         With IL_OP_SEQ_POINT"
-	echo "$(diff_method $MONO_PATH $RUNTIME $TEST_FILE $METHOD_NAME)"
+	echo "$(diff_method $MONO_PATH $RUNTIME $TEST_FILE $METHOD_NAME $USE_AOT)"
 	exit 1
 fi
