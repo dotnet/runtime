@@ -112,7 +112,7 @@ namespace System.IO.Pipes
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             if (!IsAsync)

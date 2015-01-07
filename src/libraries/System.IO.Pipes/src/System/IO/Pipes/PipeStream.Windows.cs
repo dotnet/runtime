@@ -573,7 +573,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             CheckReadOperations();
@@ -603,7 +603,7 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             CheckWriteOperations();

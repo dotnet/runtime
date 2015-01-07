@@ -50,7 +50,7 @@ namespace System.IO.Pipes
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
             }
 
             return Task.Factory.StartNew(s => ((NamedPipeServerStream)s).WaitForConnection(),
