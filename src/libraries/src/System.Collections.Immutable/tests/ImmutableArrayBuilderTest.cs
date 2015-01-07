@@ -542,6 +542,58 @@ namespace System.Collections.Immutable.Test
             Assert.Throws(typeof(InvalidOperationException), () => builder.MoveToImmutable());
         }
 
+        [Fact]
+        public void CapacitySetToZero()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            builder.Capacity = 0;
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(new int[] { }, builder.ToArray());
+        }
+
+        [Fact]
+        public void CapacitySetToLessThanCount()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            builder.Add(1);
+            builder.Add(1);
+            Assert.Throws(typeof(ArgumentException), () => builder.Capacity = 1);
+        }
+
+        [Fact]
+        public void CapacitySetToCount()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            builder.Add(1);
+            builder.Add(2);
+            builder.Capacity = builder.Count;
+            Assert.Equal(2, builder.Capacity);
+            Assert.Equal(new[] { 1, 2 }, builder.ToArray());
+        }
+
+        [Fact]
+        public void CapacitySetToCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            builder.Add(1);
+            builder.Add(2);
+            builder.Capacity = builder.Capacity;
+            Assert.Equal(10, builder.Capacity);
+            Assert.Equal(new[] { 1, 2 }, builder.ToArray());
+        }
+
+        [Fact]
+        public void CapacitySetToBiggerCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            builder.Add(1);
+            builder.Add(2);
+            builder.Capacity = 20;
+            Assert.Equal(20, builder.Capacity);
+            Assert.Equal(2, builder.Count);
+            Assert.Equal(new[] { 1, 2 }, builder.ToArray());
+        }
+
         private static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)
         {
             var builder = ImmutableArray.CreateBuilder<T>(count);
