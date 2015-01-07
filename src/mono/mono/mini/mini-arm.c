@@ -5188,9 +5188,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 0, ARMCOND_GT);
 			break;
 		case OP_ICGE_UN:
-		case OP_ICLE_UN:
 			ARM_MOV_REG_IMM8 (code, ins->dreg, 1);
 			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 0, ARMCOND_LO);
+			break;
+		case OP_ICLE_UN:
+			ARM_MOV_REG_IMM8 (code, ins->dreg, 1);
+			ARM_MOV_REG_IMM8_COND (code, ins->dreg, 0, ARMCOND_HI);
 			break;
 		case OP_COND_EXC_EQ:
 		case OP_COND_EXC_NE_UN:
