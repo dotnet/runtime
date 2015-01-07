@@ -43,6 +43,8 @@
 static int sgen_unified_suspend_restart_world (void);
 static int sgen_unified_suspend_stop_world (void);
 
+unsigned int sgen_global_stop_count = 0;
+
 inline static void*
 align_pointer (void *ptr)
 {
