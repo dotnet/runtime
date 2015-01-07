@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 
 namespace System.Diagnostics
@@ -15,7 +12,6 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
-
     public sealed class ProcessStartInfo
     {
         private string _fileName;
