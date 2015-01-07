@@ -49,11 +49,37 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Get the length of the internal array. 
+            /// Get and sets the length of the internal array.  When set the internal array is 
+            /// is reallocated to the given capacity if it is not already the specified length.
             /// </summary>
             public int Capacity
             {
                 get { return _elements.Length; }
+                set
+                {
+                    if (value < _count)
+                    {
+                        throw new ArgumentException(Strings.CapacityMustBeGreaterThanOrEqualToCount, paramName: "value");
+                    }
+
+                    if (value != _elements.Length)
+                    {
+                        if (value > 0)
+                        {
+                            var temp = new T[value];
+                            if (_count > 0)
+                            {
+                                Array.Copy(_elements, 0, temp, 0, _count);
+                            }
+
+                            _elements = temp;
+                        }
+                        else
+                        {
+                            _elements = ImmutableArray<T>.Empty.array;
+                        }
+                    }
+                }
             }
 
             /// <summary>
@@ -421,7 +447,7 @@ namespace System.Collections.Immutable
             /// Resizes the array to accommodate the specified capacity requirement.
             /// </summary>
             /// <param name="capacity">The required capacity.</param>
-            public void EnsureCapacity(int capacity)
+            private void EnsureCapacity(int capacity)
             {
                 if (_elements.Length < capacity)
                 {

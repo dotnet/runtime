@@ -89,6 +89,15 @@ namespace System.Collections.Immutable {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Capacity was less than the current Count of elements..
+        /// </summary>
+        internal static string CapacityMustBeGreaterThanOrEqualToCount {
+            get {
+                return ResourceManager.GetString("CapacityMustBeGreaterThanOrEqualToCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to MoveToImmutable can only be performed when Count equals Capacity..
         /// </summary>
         internal static string CapacityMustEqualCountOnMove {
