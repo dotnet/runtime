@@ -12,6 +12,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 namespace System.Text.RegularExpressions
 {
@@ -104,7 +105,7 @@ namespace System.Text.RegularExpressions
             {
                 if (IsMetachar(input[i]))
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = StringBuilderCache.Acquire();
                     char ch = input[i];
                     int lastpos;
 
@@ -143,7 +144,7 @@ namespace System.Text.RegularExpressions
                         sb.Append(input, lastpos, i - lastpos);
                     } while (i < input.Length);
 
-                    return sb.ToString();
+                    return StringBuilderCache.GetStringAndRelease(sb);
                 }
             }
 
@@ -159,7 +160,7 @@ namespace System.Text.RegularExpressions
             {
                 if (input[i] == '\\')
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = StringBuilderCache.Acquire();
                     RegexParser p = new RegexParser(CultureInfo.InvariantCulture);
                     int lastpos;
                     p.SetPattern(input);
@@ -178,7 +179,7 @@ namespace System.Text.RegularExpressions
                         sb.Append(input, lastpos, i - lastpos);
                     } while (i < input.Length);
 
-                    return sb.ToString();
+                    return StringBuilderCache.GetStringAndRelease(sb);
                 }
             }
 
@@ -2037,10 +2038,10 @@ namespace System.Text.RegularExpressions
                     // a ToLower on the entire string could actually change the surrogate pair.  This is more correct
                     // linguistically, but since Regex doesn't support surrogates, it's more important to be
                     // consistent.
-                    StringBuilder sb = new StringBuilder(str.Length);
+                    StringBuilder sb = StringBuilderCache.Acquire(str.Length);
                     for (int i = 0; i < str.Length; i++)
                         sb.Append(_culture.TextInfo.ToLower(str[i]));
-                    str = sb.ToString();
+                    str = StringBuilderCache.GetStringAndRelease(sb);
                 }
 
                 node = new RegexNode(RegexNode.Multi, _options, str);
