@@ -64,6 +64,7 @@ internal static partial class Interop
     public const int RPC_S_CALL_FAILED = 1726;
 
     public const int SE_PRIVILEGE_ENABLED = 2;
+    public const string SeDebugPrivilege = "SeDebugPrivilege";
 
     public const int TOKEN_ADJUST_PRIVILEGES = 0x20;
 
