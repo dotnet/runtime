@@ -9013,7 +9013,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		mono_llvm_create_aot_module (acfg->got_symbol_base, acfg->llvm_separate);
+		mono_llvm_create_aot_module (acfg->got_symbol_base, acfg->llvm_separate, acfg->llvm_separate);
 	}
 #endif
 

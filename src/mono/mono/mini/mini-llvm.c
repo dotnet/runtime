@@ -56,6 +56,7 @@ typedef struct {
 	MonoEERef *mono_ee;
 	LLVMExecutionEngineRef ee;
 	gboolean external_symbols;
+	gboolean emit_dwarf;
 } MonoLLVMModule;
 
 /*
@@ -4509,8 +4510,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	}
 	g_free (names);
 
-	// See emit_dbg_info ()
-	if (FALSE && cfg->compile_aot && mono_debug_enabled ()) {
+	if (ctx->lmodule->emit_dwarf && cfg->compile_aot && mono_debug_enabled ()) {
 		ctx->minfo = mono_debug_lookup_method (cfg->method);
 		ctx->dbg_md = emit_dbg_subprogram (ctx, cfg, method, method_name);
 	}
@@ -5338,7 +5338,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols)
+mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, gboolean emit_dwarf)
 {
 	/* Delete previous module */
 	if (aot_module.plt_entries)
@@ -5351,6 +5351,7 @@ mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols)
 	aot_module.module = LLVMModuleCreateWithName ("aot");
 	aot_module.got_symbol = got_symbol;
 	aot_module.external_symbols = external_symbols;
+	aot_module.emit_dwarf = emit_dwarf;
 
 	add_intrinsics (aot_module.module);
 	add_types (&aot_module);
@@ -5473,12 +5474,14 @@ emit_dbg_info (MonoLLVMModule *lmodule, const char *filename, const char *cu_nam
 	int n_cuargs;
 	char *build_info, *s, *dir;
 
-	//
-	// FIXME: This cannot be enabled, since the AOT compiler also emits dwarf info,
-	// and the abbrev indexes will not be correct since llvm has added its own
-	// abbrevs.
-	//
-	return;
+	/*
+	 * This can only be enabled when LLVM code is emitted into a separate object
+	 * file, since the AOT compiler also emits dwarf info,
+	 * and the abbrev indexes will not be correct since llvm has added its own
+	 * abbrevs.
+	 */
+	if (!lmodule->emit_dwarf)
+		return;
 
 	/*
 	 * Emit dwarf info in the form of LLVM metadata. There is some
