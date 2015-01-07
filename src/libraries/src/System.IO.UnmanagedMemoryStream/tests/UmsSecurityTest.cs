@@ -26,7 +26,7 @@ public class UmsSecurityTests
                     for (int positionLoop = 0; positionLoop < positionPointerByteArrayNumber; positionLoop++)
                     {
                         //New Byte array
-                        positionPointerByteArrays[positionLoop] = ArrayHelpers.CreateByteArray(length:123, value:24);
+                        positionPointerByteArrays[positionLoop] = ArrayHelpers.CreateByteArray(length: 123, value: 24);
                         //change via PositionPointer
                         fixed (byte* invalidbytePtr = positionPointerByteArrays[positionLoop])
                         {

@@ -4,6 +4,7 @@
 using Xunit;
 
 // TODO: add WriteAsync, Timeout, Flush, CopyTo tests
+
 namespace System.IO.Tests
 {
     public class UmsTests
@@ -58,7 +59,7 @@ namespace System.IO.Tests
 
                 int mid = (int)stream.Length / 2;
                 stream.Position = mid;
-                Assert.Equal(stream.Position, mid); 
+                Assert.Equal(stream.Position, mid);
             }
         }
 
@@ -111,7 +112,7 @@ namespace System.IO.Tests
                     Assert.Equal(position, stream.Position);
                 }
 
-                for (int position = (int)stream.Length; position >=0; position--)
+                for (int position = (int)stream.Length; position >= 0; position--)
                 {
                     stream.Seek(position, SeekOrigin.Begin);
                     Assert.Equal(position, stream.Position);
