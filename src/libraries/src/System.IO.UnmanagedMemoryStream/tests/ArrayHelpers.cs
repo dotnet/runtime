@@ -15,7 +15,7 @@ namespace System.IO.Tests
         public static byte[] Flatten(this IEnumerable<byte[]> segments)
         {
             List<byte> bytes = new List<byte>();
-            foreach(var segment in segments)
+            foreach (var segment in segments)
             {
                 bytes.AddRange(segment);
             }
@@ -54,7 +54,6 @@ namespace System.IO.Tests
 
             private ArrayComparer() // use the static Instance singleton
             {
-
             }
 
             public bool Equals(T[] x, T[] y)
