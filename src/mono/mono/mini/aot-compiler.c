@@ -8942,7 +8942,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			 * (i.e. get rid of the emit_symbol_diff () stuff).
 			 */
 #if LLVM_API_VERSION >= 3 && defined(TARGET_AMD64)
-			//acfg->llvm_separate = TRUE;
+			acfg->llvm_separate = TRUE;
 #endif
 		}
 	}
