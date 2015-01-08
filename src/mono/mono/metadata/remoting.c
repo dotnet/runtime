@@ -165,6 +165,8 @@ mono_remoting_marshal_init (void)
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
 	method_needs_context_sink = mono_class_get_method_from_name (klass, "get_NeedsContextSink", -1);
 
+	mono_loader_lock ();
+
 	register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 	register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
 	register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
@@ -172,6 +174,8 @@ mono_remoting_marshal_init (void)
 	register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
 	register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 	register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+
+	mono_loader_unlock ();
 
 	module_initialized = TRUE;
 }
