@@ -89,6 +89,13 @@ build_script:
 test: off
 
 #
+# Only build the master branch
+#
+branches:
+  only:
+    - master
+
+#
 # NOTE: Currently this is the Mono installation tree. In future we will create an installation package artifact.
 #       It has to be relative to the project path. Thus we have installed to within the build tree.
 #
