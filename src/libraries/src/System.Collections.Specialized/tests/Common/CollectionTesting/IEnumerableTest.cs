@@ -113,8 +113,8 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// Modifies the collection. If null the test that verify that enumerating a 
-        /// collection that has been modified since the enumerator has been created 
+        /// Modifies the collection. If null the test that verify that enumerating a
+        /// collection that has been modified since the enumerator has been created
         /// will not be run.
         /// </summary>
         /// <value>Modifies the collection.</value>
@@ -150,7 +150,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// If true specifies that IEnumerator.Current has undefined behavior when 
+        /// If true specifies that IEnumerator.Current has undefined behavior when
         /// the enumerator is poitioned before the first item or after the last item.
         /// </summary>
         public bool IsGenericCompatibility
@@ -166,7 +166,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// If true specifes that IEnumerator.Reset is not supported on the 
+        /// If true specifes that IEnumerator.Reset is not supported on the
         /// IEnumerator returned from Collection and will throw NotSupportedException.
         /// </summary>
         public bool IsResetNotSupported
@@ -182,8 +182,8 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// The Verification level to use. If VerificationLevel is Extensize the collection 
-        /// will be verified after argument checking (invalid) tests. 
+        /// The Verification level to use. If VerificationLevel is Extensize the collection
+        /// will be verified after argument checking (invalid) tests.
         /// </summary>
         /// <value>The Verification level to use.</value>
         public VerificationLevel VerificationLevel
@@ -199,9 +199,9 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// This specifies where Add places an item at the beginning of the collection, 
-        /// the end of the collection, or unspecifed. Items is expected to be in the 
-        /// smae order as the enumerator unless AddOrder.Unspecified is used. 
+        /// This specifies where Add places an item at the beginning of the collection,
+        /// the end of the collection, or unspecifed. Items is expected to be in the
+        /// smae order as the enumerator unless AddOrder.Unspecified is used.
         /// </summary>
         /// <value>This specifies where Add places an item.</value>
         public CollectionOrder CollectionOrder
@@ -457,7 +457,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// Runs tests when the collection has been modified after 
+        /// Runs tests when the collection has been modified after
         /// the enumerator was created.
         /// </summary>
         /// <returns>true if all of the test passed else false.</returns>
@@ -485,7 +485,7 @@ namespace TestSupport.Collections
 
                 //[] Verify enumerating to the first item
                 //We can only do this test if there is more then 1 item in it
-                //If the collection only has one item in it we will enumerate 
+                //If the collection only has one item in it we will enumerate
                 //to the first item in the test "Verify enumerating the entire collection"
                 if (1 < _items.Length)
                 {
@@ -506,8 +506,8 @@ namespace TestSupport.Collections
 
                 //[] Verify enumerating part of the collection
                 //We can only do this test if there is more then 1 item in it
-                //If the collection only has one item in it we will enumerate 
-                //to the first item in the test "Verify enumerating the entire collection"				
+                //If the collection only has one item in it we will enumerate
+                //to the first item in the test "Verify enumerating the entire collection"
                 if (1 < _items.Length)
                 {
                     testDescription = "Verify enumerating part of the collection";
@@ -532,7 +532,7 @@ namespace TestSupport.Collections
 
                     retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length, ExpectedEnumeratorRange.Start), "Err_" + testDescription + " FAILED\n");
 
-                    //[] Verify Modifying collection on an enumerator that has enumerated the entire collection		
+                    //[] Verify Modifying collection on an enumerator that has enumerated the entire collection
                     testDescription = "Verify Modifying collection on an enumerator that has enumerated the entire collection";
                     currentItem = enumerator.Current;
                     _items = _modifyCollection(_collection, _items);
@@ -548,7 +548,7 @@ namespace TestSupport.Collections
 
                     retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
-                    //[] Verify Modifying collection on an enumerator that has enumerated past the end of the collection		
+                    //[] Verify Modifying collection on an enumerator that has enumerated past the end of the collection
                     testDescription = "Verify Modifying collection on an enumerator that has enumerated past the end of the collection";
                     currentItem = null;
                     _items = _modifyCollection(_collection, _items);

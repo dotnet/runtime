@@ -76,7 +76,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] linked list of sections with maxValue = 1
-            //-----------------------------------------------------------------  
+            //-----------------------------------------------------------------
 
             maxValue = 1;
             sectionArgument = BitVector32.CreateSection(maxValue);
@@ -114,7 +114,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] linked list of sections with maxValue = 3
-            //-----------------------------------------------------------------  
+            //-----------------------------------------------------------------
 
             maxValue = 3;
             sectionArgument = BitVector32.CreateSection(maxValue);
@@ -151,8 +151,8 @@ namespace System.Collections.Specialized.Tests
                 }
             }
 
-            // [] set section with maxValue = 3 to out of range value 6 
-            //----------------------------------------------------------------- 
+            // [] set section with maxValue = 3 to out of range value 6
+            //-----------------------------------------------------------------
 
             maxValue = 3;
             bv32 = new BitVector32(-1);

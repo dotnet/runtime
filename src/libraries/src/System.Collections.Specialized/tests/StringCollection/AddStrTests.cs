@@ -35,7 +35,7 @@ namespace System.Collections.Specialized.Tests
                 Int32.MaxValue.ToString()
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             int ind = 0;            // Index
 
             // initialize IntStrings

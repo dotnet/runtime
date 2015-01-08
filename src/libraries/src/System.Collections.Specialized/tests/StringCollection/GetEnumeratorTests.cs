@@ -65,7 +65,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<InvalidOperationException>(() => { curr = en.Current; });
 
             //
-            //   Filled collection  
+            //   Filled collection
             // [] Enumerator for filled collection
             //
             sc.AddRange(values);

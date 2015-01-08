@@ -45,7 +45,7 @@ namespace System.Collections.Specialized.Tests
             string[] valuesLong = new string[BIG_LENGTH];
             string[] keysLong = new string[BIG_LENGTH];
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -119,7 +119,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, removed wrong item", i));
                 }
-                // remove second time 
+                // remove second time
                 hd.Remove(keysShort[i]);
                 if (hd.Count != cnt - 1)
                 {
@@ -155,7 +155,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, removed wrong item", i));
                 }
-                // remove second time 
+                // remove second time
                 hd.Remove(keysLong[i]);
                 if (hd.Count != cnt - 1)
                 {

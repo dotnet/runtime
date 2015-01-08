@@ -62,7 +62,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             hd.Add("Name", "Value");
             if (hd.Count != 1)
@@ -93,7 +93,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -118,7 +118,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Clear() dictionary with many entires 
+            // [] Clear() dictionary with many entires
             //
             hd.Clear();
             if (hd.Count != 0)
@@ -127,7 +127,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             Hashtable[] lbls = new Hashtable[2];
@@ -166,7 +166,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] many elements not overriding Equals() 
+            // [] many elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[BIG_LENGTH];
@@ -237,7 +237,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             hd.Add("Name", "Value");
             if (hd.Count != 1)
@@ -268,7 +268,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -302,7 +302,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];
@@ -341,7 +341,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] many elements not overriding Equals() 
+            // [] many elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[BIG_LENGTH];
@@ -412,7 +412,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             hd.Add("Name", "Value");
             if (hd.Count != 1)
@@ -443,7 +443,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -477,7 +477,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];
@@ -516,7 +516,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] many elements not overriding Equals() 
+            // [] many elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[BIG_LENGTH];

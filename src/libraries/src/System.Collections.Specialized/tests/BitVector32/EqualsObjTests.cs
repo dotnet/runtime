@@ -14,7 +14,7 @@ namespace System.Collections.Specialized.Tests
         public void Test01()
         {
             BitVector32 bv32;
-            BitVector32 bv32_1;       // extra BitVector32 - for comparison  
+            BitVector32 bv32_1;       // extra BitVector32 - for comparison
             int data = 0;
 
             // [] two BitVectors that are the same - expected true

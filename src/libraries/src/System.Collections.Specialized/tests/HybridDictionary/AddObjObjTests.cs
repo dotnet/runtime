@@ -43,7 +43,7 @@ namespace System.Collections.Specialized.Tests
             string[] valuesLong = new string[BIG_LENGTH];
             string[] keysLong = new string[BIG_LENGTH];
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -216,7 +216,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            //   [] Add multiple valuesShort with the same key 
+            //   [] Add multiple valuesShort with the same key
             //   Add multiple valuesShort with the same key - ArgumentException expected
             //
 

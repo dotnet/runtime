@@ -49,7 +49,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             ld.Add("Name", "Value");
             if (ld.Count != 1)
@@ -62,7 +62,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Clear() 
+            // [] Clear()
             //
             ld.Clear();
             if (ld.Count != 0)
@@ -75,7 +75,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] elements not overriding Equals() 
+            // [] elements not overriding Equals()
             //
             ld.Clear();
             Hashtable lbl = new Hashtable();

@@ -51,7 +51,7 @@ namespace System.Collections.Specialized.Tests
                 "2222222222222222222222222"
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             // initialize IntStrings
             intl = new IntlStrings();
 
@@ -180,7 +180,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity: search should be case-sensitive
-            // 
+            //
 
             sd.Clear();
             if (sd.Count != 0)

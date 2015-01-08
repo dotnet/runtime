@@ -51,7 +51,7 @@ namespace System.Collections.Specialized.Tests
                 "2222222222222222222222222"
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             // initialize IntStrings
             intl = new IntlStrings();
 
@@ -72,7 +72,7 @@ namespace System.Collections.Specialized.Tests
             }
 
 
-            // [] add simple strings and verify ContainsKey() 
+            // [] add simple strings and verify ContainsKey()
             //
 
             cnt = values.Length;
@@ -101,7 +101,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // Intl strings
-            // [] add Intl strings and verify ContainsKey() 
+            // [] add Intl strings and verify ContainsKey()
             //
 
             int len = values.Length;
@@ -160,7 +160,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // add null string wiuth non-null key
-            // [] add null string with non-null key and verify ContainsKey() 
+            // [] add null string with non-null key and verify ContainsKey()
             //
             cnt = sd.Count;
             string k = "keykey";
@@ -180,7 +180,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity: search should be case-sensitive
-            // 
+            //
 
             sd.Clear();
             if (sd.Count != 0)

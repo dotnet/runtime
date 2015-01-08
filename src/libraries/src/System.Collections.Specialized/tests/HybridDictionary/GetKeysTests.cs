@@ -141,7 +141,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", hd.Count, 2));
             }
 
-            // get Keys 
+            // get Keys
             //
 
             ks = hd.Keys;
@@ -178,7 +178,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", hd.Count, BIG_LENGTH + 2));
             }
 
-            // get Keys 
+            // get Keys
             //
 
             ks = hd.Keys;

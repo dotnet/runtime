@@ -160,7 +160,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {1} instead of {2}", sc.Count, values.Length + 2));
             }
 
-            // remove  
+            // remove
             //
             sc.RemoveAt(values.Length + 1);
             if (!sc.Contains(intlStr))

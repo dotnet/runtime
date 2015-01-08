@@ -81,8 +81,8 @@ namespace TestSupport
     public enum VerificationLevel { None, Normal, Extensive };
 
     /// <summary>
-    /// This specifies how the collection is ordered. 
-    /// Sequential specifies that Add places items at  the end of the collection and Remove will remove the first item found. 
+    /// This specifies how the collection is ordered.
+    /// Sequential specifies that Add places items at  the end of the collection and Remove will remove the first item found.
     /// Reverse specifies that Add places items at the begining of the collection and Remove will remove the first item found.
     /// Unspecified specifies that Add and Remove do not specify where items are added or removed.
     /// </summary>
@@ -256,7 +256,7 @@ namespace TestSupport
         /// <typeparam name="T"></typeparam>
         /// <param name="expected">The expected value.</param>
         /// <param name="actual">The actual value.</param>
-        /// <param name="errorMsg">The message to output. 
+        /// <param name="errorMsg">The message to output.
         /// Uses String.Format(errorMsg, expected, actual)</param>
         /// <returns>true if expected and actual are equal else false.</returns>
         public static bool EvalFormatted<T>(T expected, T actual, String errorMsg)
@@ -270,7 +270,7 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Compares expected and actual if expected and actual are differnet outputs the 
+        /// Compares expected and actual if expected and actual are differnet outputs the
         /// error message and increments the error count.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -315,7 +315,7 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Compares expected and actual if expected and actual are differnet outputs the 
+        /// Compares expected and actual if expected and actual are differnet outputs the
         /// error message and increments the error count.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -550,7 +550,7 @@ namespace TestSupport
         /// Verifies that exceptionGenerator throws an exception of type expectedExceptionType.
         /// </summary>
         /// <param name="expectedExceptionType"></param>
-        /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of 
+        /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of
         /// type expectedExceptionType.</param>
         /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType else false.</returns>
         public static bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator)
@@ -575,7 +575,7 @@ namespace TestSupport
         /// Verifies that exceptionGenerator throws an exception of type expectedExceptionType.
         /// </summary>
         /// <param name="expectedExceptionType"></param>
-        /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of 
+        /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of
         /// type expectedExceptionType.</param>
         /// <param name="message">The message to output if the verification fails.</param>
         /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType else false.</returns>
@@ -613,7 +613,7 @@ namespace TestSupport
         /// <param name="expectedExceptionType2">The second exception type exceptionGenerator may throw.</param>
         /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of type
         /// expectedExceptionType1 or expectedExceptionType2.</param>
-        /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType1 
+        /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType1
         /// of expectedExceptionType2 else false.</returns>
         public static bool VerifyException(Type expectedExceptionType1, Type expectedExceptionType2, ExceptionGenerator exceptionGenerator)
         {
@@ -629,7 +629,7 @@ namespace TestSupport
         /// <param name="expectedExceptionType3">The third exception type exceptionGenerator may throw.</param>
         /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of type
         /// expectedExceptionType1 or expectedExceptionType2 or expectedExceptionType3.</param>
-        /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType1 
+        /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType1
         /// or expectedExceptionType2 or expectedExceptionType3 else false.</returns>
         public static bool VerifyException(Type expectedExceptionType1, Type expectedExceptionType2,
             Type expectedExceptionType3, ExceptionGenerator exceptionGenerator)
@@ -651,9 +651,9 @@ namespace TestSupport
         /// Verifies that exceptionGenerator throws an exception of one of types in expectedExceptionTypes.
         /// </summary>
         /// <param name="expectedExceptionTypes">An array of the expected exception type that exceptionGenerator may throw.</param>
-        /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of 
+        /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of
         /// one of the types in expectedExceptionTypes.</param>
-        /// <returns>true if exceptionGenerator through an exception of one of types in 
+        /// <returns>true if exceptionGenerator through an exception of one of types in
         /// expectedExceptionTypes else false.</returns>
         public static bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator, string message)
         {
@@ -911,7 +911,7 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Creates an array with a length of size and fills it with the items 
+        /// Creates an array with a length of size and fills it with the items
         /// returned from generatedItem.
         /// </summary>
         /// <typeparam name="T"></typeparam>

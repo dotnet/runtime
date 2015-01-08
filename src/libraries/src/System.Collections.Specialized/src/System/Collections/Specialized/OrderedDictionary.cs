@@ -8,12 +8,12 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Collections.Specialized
 {
     /// <devdoc>
-    /// <para> 
+    /// <para>
     /// OrderedDictionary offers IDictionary syntax with ordering.  Objects
-    /// added or inserted in an IOrderedDictionary must have both a key and an index, and 
+    /// added or inserted in an IOrderedDictionary must have both a key and an index, and
     /// can be retrieved by either.
     /// OrderedDictionary is used by the ParameterCollection because MSAccess relies on ordering of
-    /// parameters, while almost all other DBs do not.  DataKeyArray also uses it so 
+    /// parameters, while almost all other DBs do not.  DataKeyArray also uses it so
     /// DataKeys can be retrieved by either their name or their index.
     /// </para>
     /// </devdoc>

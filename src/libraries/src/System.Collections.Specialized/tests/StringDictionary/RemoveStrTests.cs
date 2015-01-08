@@ -123,7 +123,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len + 2));
             }
 
-            // remove  
+            // remove
             //
             sd.Remove("keykey2");
             if (!sd.ContainsValue(intlStr))
@@ -169,7 +169,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
             }
 
-            // remove      
+            // remove
             for (int i = 0; i < len; i++)
             {
                 cnt = sd.Count;
@@ -193,7 +193,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity: keys are always lowercased
-            // 
+            //
 
             sd.Clear();
 
@@ -206,7 +206,7 @@ namespace System.Collections.Specialized.Tests
                 intlValues[i] = intlValues[i].ToLowerInvariant();
             }
 
-            // array of uppercase keys 
+            // array of uppercase keys
             for (int i = 0; i < len; i++)
             {
                 intlValuesUpper[i] = intlValues[i + len].ToUpperInvariant();
@@ -225,7 +225,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
             }
 
-            // remove      
+            // remove
             for (int i = 0; i < len; i++)
             {
                 cnt = sd.Count;
