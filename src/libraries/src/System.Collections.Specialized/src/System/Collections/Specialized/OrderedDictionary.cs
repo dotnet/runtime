@@ -21,9 +21,9 @@ namespace System.Collections.Specialized
     {
         private ArrayList _objectsArray;
         private Hashtable _objectsTable;
-        private int _initialCapacity;
-        private IEqualityComparer _comparer;
-        private bool _readOnly;
+        private readonly int _initialCapacity;
+        private readonly IEqualityComparer _comparer;
+        private readonly bool _readOnly;
         private Object _syncRoot;
 
         public OrderedDictionary() : this(0)
