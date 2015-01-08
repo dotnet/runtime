@@ -78,9 +78,8 @@ internal static partial class Interop
     public const int WM_NULL = 0x0000;
     public const int WM_CLOSE = 0x0010;
 
-
     [StructLayout(LayoutKind.Sequential)]
-    internal class STARTUPINFO
+    internal class STARTUPINFO : IDisposable
     {
         public int cb;
         public IntPtr lpReserved = IntPtr.Zero;

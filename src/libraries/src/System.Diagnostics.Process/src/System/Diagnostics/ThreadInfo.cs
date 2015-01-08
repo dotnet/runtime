@@ -12,12 +12,12 @@ namespace System.Diagnostics
     /// <internalonly/>
     internal sealed class ThreadInfo
     {
-        public int threadId;
-        public int processId;
-        public int basePriority;
-        public int currentPriority;
-        public IntPtr startAddress;
-        public ThreadState threadState;
-        public ThreadWaitReason threadWaitReason;
+        internal int _threadId;
+        internal int _processId;
+        internal int _basePriority;
+        internal int _currentPriority;
+        internal IntPtr _startAddress;
+        internal ThreadState _threadState;
+        internal ThreadWaitReason _threadWaitReason;
     }
 }

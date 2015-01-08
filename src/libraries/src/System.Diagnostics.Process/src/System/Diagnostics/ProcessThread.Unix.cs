@@ -15,6 +15,15 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Resets the ideal processor so there is no ideal processor for this thread (e.g.
+        /// any processor is ideal).
+        /// </summary>
+        public void ResetIdealProcessor()
+        {
+            throw NotImplemented.ByDesign; // TODO: Implement this
+        }
+
+        /// <summary>
         /// Returns or sets whether this thread would like a priority boost if the user interacts
         /// with user interface associated with this thread.
         /// </summary>

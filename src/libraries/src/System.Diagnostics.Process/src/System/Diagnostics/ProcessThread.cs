@@ -35,7 +35,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public int BasePriority
         {
-            get { return _threadInfo.basePriority; }
+            get { return _threadInfo._basePriority; }
         }
 
         /// <devdoc>
@@ -45,7 +45,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public int CurrentPriority
         {
-            get { return _threadInfo.currentPriority; }
+            get { return _threadInfo._currentPriority; }
         }
 
         /// <devdoc>
@@ -53,7 +53,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public int Id
         {
-            get { return _threadInfo.threadId; }
+            get { return _threadInfo._threadId; }
         }
 
         /// <devdoc>
@@ -105,7 +105,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public IntPtr StartAddress
         {
-            get { return _threadInfo.startAddress; }
+            get { return _threadInfo._startAddress; }
         }
 
         /// <devdoc>
@@ -113,7 +113,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public ThreadState ThreadState
         {
-            get { return _threadInfo.threadState; }
+            get { return _threadInfo._threadState; }
         }
 
         /// <devdoc>
@@ -123,22 +123,12 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_threadInfo.threadState != ThreadState.Wait)
+                if (_threadInfo._threadState != ThreadState.Wait)
                 {
                     throw new InvalidOperationException(SR.WaitReasonUnavailable);
                 }
-                return _threadInfo.threadWaitReason;
+                return _threadInfo._threadWaitReason;
             }
-        }
-
-        /// <devdoc>
-        ///     Resets the ideal processor so there is no ideal processor for this thread (e.g.
-        ///     any processor is ideal).
-        /// </devdoc>
-        public void ResetIdealProcessor()
-        {
-            // 32 means "any processor is fine"
-            IdealProcessor = 32;
         }
 
         /// <devdoc>

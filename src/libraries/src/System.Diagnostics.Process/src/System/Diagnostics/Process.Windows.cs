@@ -111,11 +111,9 @@ namespace System.Diagnostics
         {
             get
             {
-                // We only return null if we couldn't find a main module. This could be because:
-                //      1. The process hasn't finished loading the main module (most likely)
-                //      2. There are no modules loaded (possible for certain OS processes)
-                //      3. Possibly other?
-                // On NT the first module is the main module.
+                // We only return null if we couldn't find a main module. This could be because
+                // the process hasn't finished loading the main module (most likely).
+                // On NT, the first module is the main module.
                 EnsureState(State.HaveId | State.IsLocal);
                 ModuleInfo module = NtProcessManager.GetFirstModuleInfo(_processId);
                 return new ProcessModule(module);
@@ -523,10 +521,10 @@ namespace System.Diagnostics
 
                     // set up the environment block parameter
                     IntPtr environmentPtr = (IntPtr)0;
-                    if (startInfo.environmentVariables != null)
+                    if (startInfo._environmentVariables != null)
                     {
                         creationFlags |= Interop.CREATE_UNICODE_ENVIRONMENT;
-                        byte[] environmentBytes = EnvironmentVariablesToByteArray(startInfo.environmentVariables);
+                        byte[] environmentBytes = EnvironmentVariablesToByteArray(startInfo._environmentVariables);
                         environmentHandle = GCHandle.Alloc(environmentBytes, GCHandleType.Pinned);
                         environmentPtr = environmentHandle.AddrOfPinnedObject();
                     }
@@ -623,7 +621,9 @@ namespace System.Diagnostics
                 }
 
                 ProcessThreadTimes processTimes = new ProcessThreadTimes();
-                if (!Interop.mincore.GetProcessTimes(handle, out processTimes.create, out processTimes.exit, out processTimes.kernel, out processTimes.user))
+                if (!Interop.mincore.GetProcessTimes(handle, 
+                    out processTimes._create, out processTimes._exit, 
+                    out processTimes._kernel, out processTimes._user))
                 {
                     throw new Win32Exception();
                 }
@@ -673,7 +673,7 @@ namespace System.Diagnostics
             finally
             {
 #if FEATURE_TRACESWITCH
-                Debug.WriteLineIf(processTracing.TraceVerbose, "Process - CloseHandle(processToken)");
+                Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(processToken)");
 #endif
                 if (hToken != null)
                 {
@@ -691,9 +691,9 @@ namespace System.Diagnostics
         private SafeProcessHandle GetProcessHandle(int access, bool throwIfExited)
         {
 #if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(processTracing.TraceVerbose, "GetProcessHandle(access = 0x" + access.ToString("X8", CultureInfo.InvariantCulture) + ", throwIfExited = " + throwIfExited + ")");
+            Debug.WriteLineIf(_processTracing.TraceVerbose, "GetProcessHandle(access = 0x" + access.ToString("X8", CultureInfo.InvariantCulture) + ", throwIfExited = " + throwIfExited + ")");
 #if DEBUG
-            if (processTracing.TraceVerbose) {
+            if (_processTracing.TraceVerbose) {
                 StackFrame calledFrom = new StackTrace(true).GetFrame(0);
                 Debug.WriteLine("   called from " + calledFrom.GetFileName() + ", line " + calledFrom.GetFileLineNumber());
             }

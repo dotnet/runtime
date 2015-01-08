@@ -12,9 +12,9 @@ namespace System.Diagnostics
     /// </devdoc>
     public class ProcessModule
     {
-        internal ModuleInfo moduleInfo;
+        private readonly ModuleInfo _moduleInfo;
 #if FEATURE_FILEVERSIONINFO
-        FileVersionInfo fileVersionInfo;
+        private FileVersionInfo _fileVersionInfo;
 #endif
 
         /// <devdoc>
@@ -23,7 +23,7 @@ namespace System.Diagnostics
         /// <internalonly/>
         internal ProcessModule(ModuleInfo moduleInfo)
         {
-            this.moduleInfo = moduleInfo;
+            _moduleInfo = moduleInfo;
             GC.SuppressFinalize(this);
         }
 
@@ -34,7 +34,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return moduleInfo.baseName;
+                return _moduleInfo._baseName;
             }
         }
 
@@ -45,7 +45,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return moduleInfo.fileName;
+                return _moduleInfo._fileName;
             }
         }
 
@@ -56,7 +56,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return moduleInfo.baseOfDll;
+                return _moduleInfo._baseOfDll;
             }
         }
 
@@ -70,7 +70,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return moduleInfo.sizeOfImage;
+                return _moduleInfo._sizeOfImage;
             }
         }
 
@@ -82,7 +82,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return moduleInfo.entryPoint;
+                return _moduleInfo._entryPoint;
             }
         }
 
@@ -96,9 +96,9 @@ namespace System.Diagnostics
             [ResourceConsumption(ResourceScope.Machine)]
             get
             {
-                if (fileVersionInfo == null)
-                    fileVersionInfo = FileVersionInfo.GetVersionInfo(FileName);
-                return fileVersionInfo;
+                if (_fileVersionInfo == null)
+                    _fileVersionInfo = FileVersionInfo.GetVersionInfo(FileName);
+                return _fileVersionInfo;
             }
         }
 #endif
