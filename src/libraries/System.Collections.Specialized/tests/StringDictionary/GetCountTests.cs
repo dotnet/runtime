@@ -62,7 +62,7 @@ namespace System.Collections.Specialized.Tests
             sd = new StringDictionary();
 
             // [] Count on empty dictionary
-            // 
+            //
             cnt = sd.Count;
             if (cnt != 0)
             {

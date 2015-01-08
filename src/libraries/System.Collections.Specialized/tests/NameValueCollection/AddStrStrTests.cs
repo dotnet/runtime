@@ -51,7 +51,7 @@ namespace System.Collections.Specialized.Tests
                 "2222222222222222222222222"
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -200,7 +200,7 @@ namespace System.Collections.Specialized.Tests
                     Assert.False(true, string.Format("Error, key was converted to lower", i));
                 }
 
-                // but search among keys is case-insensitive 
+                // but search among keys is case-insensitive
                 if (String.Compare(nvc[intlValuesLower[i + len]], intlValues[i]) != 0)
                 {
                     Assert.False(true, string.Format("Error, could not find item using differently cased key", i));

@@ -35,7 +35,7 @@ namespace System.Collections.Specialized.Tests
                 Int32.MaxValue.ToString()
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -143,7 +143,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //  [] Case sensitivity: search should be case-sensitive
-            // 
+            //
 
             sc.Clear();
             if (sc.Count != 0)
@@ -151,7 +151,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {1} instead of {2} after Clear()", sc.Count, 0));
             }
 
-            // add uppercase item 
+            // add uppercase item
             //
             intlStr = intlValues[0].ToUpper();
             sc.Add(intlStr);

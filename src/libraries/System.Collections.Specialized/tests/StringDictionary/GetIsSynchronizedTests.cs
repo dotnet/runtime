@@ -54,7 +54,7 @@ namespace System.Collections.Specialized.Tests
             sd = new StringDictionary();
 
             // [] on empty dictionary
-            // 
+            //
             if (sd.IsSynchronized)
             {
                 Assert.False(true, string.Format("Error, IsSynchronized returned true"));

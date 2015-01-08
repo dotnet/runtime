@@ -143,7 +143,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", hd.Count, 2));
             }
 
-            // get Values 
+            // get Values
             //
 
             vs = hd.Values;
@@ -175,7 +175,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", hd.Count, BIG_LENGTH + 2));
             }
 
-            // get Values 
+            // get Values
             //
 
             vs = hd.Values;
@@ -200,7 +200,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   [] Change long dictionary and check Values
-            // 
+            //
 
             hd.Clear();
             len = valuesLong.Length;

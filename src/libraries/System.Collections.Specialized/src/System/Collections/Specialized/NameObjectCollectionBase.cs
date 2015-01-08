@@ -5,7 +5,7 @@
  * Ordered String/Object collection of name/value pairs with support for null key
  *
  * This class is intended to be used as a base class
- * 
+ *
  */
 
 using System.Collections;
@@ -15,7 +15,7 @@ using System.Globalization;
 namespace System.Collections.Specialized
 {
     /// <devdoc>
-    /// <para>Provides the <see langword='abstract '/>base class for a sorted collection of associated <see cref='System.String' qualify='true'/> keys 
+    /// <para>Provides the <see langword='abstract '/>base class for a sorted collection of associated <see cref='System.String' qualify='true'/> keys
     ///    and <see cref='System.Object' qualify='true'/> values that can be accessed either with the hash code of
     ///    the key or with the index.</para>
     /// </devdoc>
@@ -52,7 +52,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Creates an empty <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance with the specified 
+        /// <para>Creates an empty <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance with the specified
         ///    initial capacity and using the default case-insensitive hash code provider
         ///    and the default case-insensitive comparer.</para>
         /// </devdoc>
@@ -113,7 +113,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Gets a value indicating whether the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance contains entries whose 
+        /// <para>Gets a value indicating whether the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance contains entries whose
         ///    keys are not <see langword='null'/>.</para>
         /// </devdoc>
         protected bool BaseHasKeys()
@@ -126,7 +126,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        ///    <para>Adds an entry with the specified key and value into the 
+        ///    <para>Adds an entry with the specified key and value into the
         ///    <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected void BaseAdd(String name, Object value)
@@ -155,7 +155,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Removes the entries with the specified key from the 
+        ///    <para>Removes the entries with the specified key from the
         ///    <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected void BaseRemove(String name)
@@ -192,7 +192,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para> Removes the entry at the specified index of the 
+        ///    <para> Removes the entry at the specified index of the
         ///    <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected void BaseRemoveAt(int index)
@@ -235,7 +235,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        ///    <para>Gets the value of the first entry with the specified key from 
+        ///    <para>Gets the value of the first entry with the specified key from
         ///       the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected Object BaseGet(String name)
@@ -245,7 +245,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Sets the value of the first entry with the specified key in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> 
+        /// <para>Sets the value of the first entry with the specified key in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/>
         /// instance, if found; otherwise, adds an entry with the specified key and value
         /// into the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/>
         /// instance.</para>
@@ -272,7 +272,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        ///    <para>Gets the value of the entry at the specified index of 
+        ///    <para>Gets the value of the entry at the specified index of
         ///       the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected Object BaseGet(int index)
@@ -282,8 +282,8 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Gets the key of the entry at the specified index of the 
-        ///    <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> 
+        ///    <para>Gets the key of the entry at the specified index of the
+        ///    <see cref='System.Collections.Specialized.NameObjectCollectionBase'/>
         ///    instance.</para>
         /// </devdoc>
         protected String BaseGetKey(int index)
@@ -293,7 +293,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Sets the value of the entry at the specified index of 
+        ///    <para>Sets the value of the entry at the specified index of
         ///       the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected void BaseSet(int index, Object value)
@@ -377,7 +377,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        /// <para>Returns a <see cref='System.String' qualify='true'/> array containing all the keys in the 
+        /// <para>Returns a <see cref='System.String' qualify='true'/> array containing all the keys in the
         /// <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected String[] BaseGetAllKeys()
@@ -392,7 +392,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Returns an <see cref='System.Object' qualify='true'/> array containing all the values in the 
+        /// <para>Returns an <see cref='System.Object' qualify='true'/> array containing all the values in the
         /// <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected Object[] BaseGetAllValues()
@@ -407,7 +407,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Returns an array of the specified type containing 
+        ///    <para>Returns an array of the specified type containing
         ///       all the values in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         protected object[] BaseGetAllValues(Type type)
@@ -432,7 +432,7 @@ namespace System.Collections.Specialized
         //
 
         /// <devdoc>
-        /// <para>Returns a <see cref='System.Collections.Specialized.NameObjectCollectionBase.KeysCollection'/> instance containing 
+        /// <para>Returns a <see cref='System.Collections.Specialized.NameObjectCollectionBase.KeysCollection'/> instance containing
         ///    all the keys in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
         public virtual KeysCollection Keys
@@ -558,7 +558,7 @@ namespace System.Collections.Specialized
             // ICollection implementation
 
             /// <devdoc>
-            ///    <para>Returns an enumerator that can iterate through the 
+            ///    <para>Returns an enumerator that can iterate through the
             ///    <see cref='System.Collections.Specialized.NameObjectCollectionBase.KeysCollection'/>.</para>
             /// </devdoc>
             public IEnumerator GetEnumerator()

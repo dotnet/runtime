@@ -47,7 +47,7 @@ namespace System.Collections.Specialized.Tests
             string[] valuesLong = new string[BIG_LENGTH];
             string[] keysLong = new string[BIG_LENGTH];
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             Object itm;         // Item
 
             // initialize IntStrings
@@ -209,7 +209,7 @@ namespace System.Collections.Specialized.Tests
                     val = intl.GetRandomString(MAX_LEN);
                 intlValues[i] = val;
             }
-            string toSet = intlValues[len * 2];      // string to set            
+            string toSet = intlValues[len * 2];      // string to set
 
             cnt = hd.Count;
             for (int i = 0; i < len; i++)
@@ -593,7 +593,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //  [] set Item() to null on filled HD - list
-            // 
+            //
             hd = new HybridDictionary();
 
             hd.Clear();
@@ -621,7 +621,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //  [] set Item() to null on filled HD - hashtable
-            // 
+            //
             hd.Clear();
 
             len = valuesLong.Length;

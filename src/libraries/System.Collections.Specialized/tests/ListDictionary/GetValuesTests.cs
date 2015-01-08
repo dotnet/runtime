@@ -125,7 +125,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", ld.Count, len + 2));
             }
 
-            // get Values 
+            // get Values
             //
 
             vs = ld.Values;
@@ -196,7 +196,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //  [] Change dictionary and check Values
-            // 
+            //
 
             ld.Clear();
             for (int i = 0; i < len; i++)

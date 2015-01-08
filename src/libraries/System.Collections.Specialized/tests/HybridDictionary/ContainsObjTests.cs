@@ -44,7 +44,7 @@ namespace System.Collections.Specialized.Tests
             string[] valuesLong = new string[BIG_LENGTH];
             string[] keysLong = new string[BIG_LENGTH];
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -114,7 +114,7 @@ namespace System.Collections.Specialized.Tests
                     Assert.False(true, string.Format("Error, doesn't contain \"{1}\"", i, keysLong[i]));
                 }
             }
-            // verify old keys 
+            // verify old keys
             for (int i = 0; i < valuesShort.Length; i++)
             {
                 if (!hd.Contains(keysShort[i]))
@@ -238,7 +238,7 @@ namespace System.Collections.Specialized.Tests
                     Assert.False(true, string.Format("Error, doesn't contain \"{1}\"", i, keysLong[i]));
                 }
             }
-            // verify old keys 
+            // verify old keys
             for (int i = 0; i < ks.Length; i++)
             {
                 if (!hd.Contains(ks[i]))
@@ -294,7 +294,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] few not_overriding_Equals objects and Contains()
-            // 
+            //
 
             hd = new HybridDictionary();
             hd.Clear();

@@ -53,7 +53,7 @@ namespace System.Collections.Specialized.Tests
                 "2222222222222222222222222"
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -145,7 +145,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // Intl strings
-            // [] Add(intl_strings_coll) to empty collection 
+            // [] Add(intl_strings_coll) to empty collection
             //
 
             string[] intlValues = new string[len * 2];

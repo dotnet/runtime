@@ -57,7 +57,7 @@ namespace System.Collections.Specialized.Tests
 
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             nvc.Add("Name", "Value");
             if (nvc.Count != 1)
@@ -70,7 +70,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Clear() 
+            // [] Clear()
             //
             nvc.Clear();
             if (nvc.Count != 0)

@@ -61,7 +61,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Clear empty dictionary and check Count
-            // 
+            //
             hd.Clear();
             cnt = hd.Count;
             if (cnt != 0)

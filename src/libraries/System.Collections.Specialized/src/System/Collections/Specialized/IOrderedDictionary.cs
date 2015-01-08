@@ -7,9 +7,9 @@ using System.Collections;
 namespace System.Collections.Specialized
 {
     /// <devdoc>
-    /// <para> 
+    /// <para>
     /// This interface adds indexing on the IDictionary keyed table concept.  Objects
-    /// added or inserted in an IOrderedDictionary must have both a key and an index, and 
+    /// added or inserted in an IOrderedDictionary must have both a key and an index, and
     /// can be retrieved by either.
     /// This interface is useful when preserving easy IDictionary access semantics via a key is
     /// desired while ordering is necessary.

@@ -68,7 +68,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] Clear() on empty collection
-            // 
+            //
             nvc.Clear();
             cnt = nvc.Count;
             if (cnt != 0)
