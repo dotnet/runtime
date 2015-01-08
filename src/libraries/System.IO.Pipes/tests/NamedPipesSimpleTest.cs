@@ -16,7 +16,7 @@ public class NamedPipesSimpleTest
         {
             byte[] sent = new byte[] { 123 };
             byte[] received = new byte[] { 0 };
-            Task t = Task.Factory.StartNew(() =>
+            Task t = Task.Run(() =>
                 {
                     using (NamedPipeClientStream client = new NamedPipeClientStream(".", "foo", PipeDirection.In))
                     {
@@ -26,7 +26,7 @@ public class NamedPipesSimpleTest
                         int bytesReceived = client.Read(received, 0, 1);
                         Assert.Equal(1, bytesReceived);
                     }
-                }, TaskCreationOptions.LongRunning);
+                });
             server.WaitForConnection();
             Assert.True(server.IsConnected);
 
@@ -44,7 +44,7 @@ public class NamedPipesSimpleTest
         {
             byte[] sent = new byte[] { 123 };
             byte[] received = new byte[] { 0 };
-            Task t = Task.Factory.StartNew(() =>
+            Task t = Task.Run(() =>
                 {
                     using (NamedPipeClientStream client = new NamedPipeClientStream(".", "foo", PipeDirection.Out))
                     {
@@ -53,7 +53,7 @@ public class NamedPipesSimpleTest
 
                         client.Write(sent, 0, 1);
                     }
-                }, TaskCreationOptions.LongRunning);
+                });
             server.WaitForConnection();
             Assert.True(server.IsConnected);
 
@@ -94,18 +94,18 @@ public class NamedPipesSimpleTest
         }
     }
 
-    public static async Task StartClientAsync(PipeDirection direction)
+    public static Task StartClientAsync(PipeDirection direction)
     {
-        await Task.Factory.StartNew(() => StartClient(direction), TaskCreationOptions.LongRunning);
+        return Task.Run(() => StartClient(direction));
     }
 
-    public static async Task DoServerOperationsAsync(NamedPipeServerStream server)
+    public static Task DoServerOperationsAsync(NamedPipeServerStream server)
     {
-        await Task.Factory.StartNew(() =>
-            {
-                server.WaitForConnection();
-                DoStreamOperations(server);
-            }, TaskCreationOptions.LongRunning);
+        return Task.Run(() =>
+        {
+            server.WaitForConnection();
+            DoStreamOperations(server);
+        });
     }
 
     [Fact]
