@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 public struct SmallMixed
@@ -88,11 +89,26 @@ class Driver {
 		}
 	}
 
+	static unsafe void FillPtr (int cycles) {
+		var l = new List<Byte*[]> ();
+		for (int i = 0; i < cycles; ++i)
+		{
+			var a = new Byte* [128];
+			for (int j = 0; j < a.Length; ++j)
+				a [j] = (Byte*) new IntPtr (j).ToPointer ();
+			if (i < 1000)
+				l.Add (a);
+			else
+				l [i % 1000] = a;
+		}
+	}
+
 	static void Main () {
 		int loops = 3;
 		int cycles = 200000;
 		for (int i = 0; i < loops; ++i) {
 			Fill (cycles);
+			FillPtr (cycles);
 		}
 	}
 }
