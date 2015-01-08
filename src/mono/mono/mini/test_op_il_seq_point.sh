@@ -40,7 +40,7 @@ get_method () {
 diff_methods () {
 	TMP_FILE=tmp_file
 	echo "$(get_methods $1 $2 $3 $4)" >$TMP_FILE
-	sdiff -s -w 1000 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
+	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
 }
 
 diff_method () {
@@ -50,7 +50,7 @@ diff_method () {
 }
 
 get_method_name () {
-	echo $1 | sed -E 's/Method (\([^)]*\) )?([^ ]*).*/\2/g'
+	echo $1 | sed -E 's/.*Method (\([^)]*\) )?([^ ]*).*/\2/g'
 }
 
 get_method_length () {
@@ -73,9 +73,10 @@ MIN_SIZE=10000
 
 while read line; do
 	if [ "$line" != "" ]; then
-		echo $line | sed 's/000.*//g'
+		METHOD_INFO=$(echo $line | sed 's/000.*//g')
+		echo $METHOD_INFO
 		CHANGES=$((CHANGES+1))
-		SIZE=$(get_method_length "$line")
+		SIZE=$(get_method_length "$METHOD_INFO")
 		if [[ SIZE -lt MIN_SIZE ]]; then
 			MIN_SIZE=$SIZE
 			METHOD="$line"
