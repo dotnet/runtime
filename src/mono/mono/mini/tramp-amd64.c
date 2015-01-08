@@ -544,7 +544,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 			/* Load the GOT offset */
 			amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, tramp_offset, sizeof(gpointer));
 #if defined(__default_codegen__)
-			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 7, 4);
+			/*
+			 * r11 points to a call *<offset>(%rip) instruction, load the
+			 * pc-relative offset from the instruction itself.
+			 */
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 3, 4);
+			/* 7 is the length of the call, 8 is the offset to the next got slot */
+			amd64_alu_reg_imm_size (code, X86_ADD, AMD64_RAX, 7 + sizeof (gpointer), sizeof(gpointer));
 #elif defined(__native_client_codegen__)
 			/* The arg is hidden in a "push imm32" instruction, */
 			/* add one to skip the opcode.                      */

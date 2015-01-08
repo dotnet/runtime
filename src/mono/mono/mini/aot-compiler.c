@@ -1338,16 +1338,20 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	 */
 #if defined(TARGET_AMD64)
 #if defined(__default_codegen__)
-	/* This should be exactly 16 bytes long */
-	*tramp_size = 16;
+	/* This should be exactly 8 bytes long */
+	*tramp_size = 8;
 	/* call *<offset>(%rip) */
-	emit_byte (acfg, '\x41');
-	emit_byte (acfg, '\xff');
-	emit_byte (acfg, '\x15');
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
-	/* This should be relative to the start of the trampoline */
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset+1) * sizeof (gpointer)) + 7);
-	emit_zero_bytes (acfg, 5);
+	if (acfg->llvm_separate) {
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "call *%s+%d(%%rip)\n", acfg->got_symbol, (int)(offset * sizeof (gpointer)));
+		emit_zero_bytes (acfg, 2);
+	} else {
+		emit_byte (acfg, '\x41');
+		emit_byte (acfg, '\xff');
+		emit_byte (acfg, '\x15');
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+		emit_zero_bytes (acfg, 1);
+	}
 #elif defined(__native_client_codegen__)
 	guint8 buf [256];
 	guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
@@ -1525,8 +1529,13 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 
 	emit_bytes (acfg, buf, code - buf);
 	/* jump <method> */
-	emit_byte (acfg, '\xe9');
-	emit_symbol_diff (acfg, call_target, ".", -4);
+	if (acfg->llvm_separate) {
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "jmp %s\n", call_target);
+	} else {
+		emit_byte (acfg, '\xe9');
+		emit_symbol_diff (acfg, call_target, ".", -4);
+	}
 #elif defined(TARGET_X86)
 	guint8 buf [32];
 	guint8 *code;
@@ -1606,16 +1615,22 @@ arch_emit_static_rgctx_trampoline (MonoAotCompile *acfg, int offset, int *tramp_
 	/* This should be exactly 13 bytes long */
 	*tramp_size = 13;
 
-	/* mov <OFFSET>(%rip), %r10 */
-	emit_byte (acfg, '\x4d');
-	emit_byte (acfg, '\x8b');
-	emit_byte (acfg, '\x15');
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+	if (acfg->llvm_separate) {
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %%r10\n", acfg->got_symbol, (int)(offset * sizeof (gpointer)));
+		fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", acfg->got_symbol, (int)((offset + 1) * sizeof (gpointer)));
+	} else {
+		/* mov <OFFSET>(%rip), %r10 */
+		emit_byte (acfg, '\x4d');
+		emit_byte (acfg, '\x8b');
+		emit_byte (acfg, '\x15');
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
 
-	/* jmp *<offset>(%rip) */
-	emit_byte (acfg, '\xff');
-	emit_byte (acfg, '\x25');
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
+		/* jmp *<offset>(%rip) */
+		emit_byte (acfg, '\xff');
+		emit_byte (acfg, '\x25');
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((offset + 1) * sizeof (gpointer)) - 4);
+	}
 #elif defined(__native_client_codegen__)
 	guint8 buf [128];
 	guint8 *buf_aligned = ALIGN_TO(buf, kNaClAlignment);
@@ -1775,6 +1790,11 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 
 	/* MONO_ARCH_IMT_SCRATCH_REG is a free register */
 
+	if (acfg->llvm_separate) {
+		emit_unset_mode (acfg);
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (int)(offset * sizeof (gpointer)), mono_arch_regname (MONO_ARCH_IMT_SCRATCH_REG));
+	}
+
 	labels [0] = code;
 	amd64_alu_membase_imm (code, X86_CMP, MONO_ARCH_IMT_SCRATCH_REG, 0, 0);
 	labels [1] = code;
@@ -1809,15 +1829,16 @@ arch_emit_imt_thunk (MonoAotCompile *acfg, int offset, int *tramp_size)
 	mono_amd64_patch (labels [3], code);
 	x86_breakpoint (code);
 
-	/* mov <OFFSET>(%rip), MONO_ARCH_IMT_SCRATCH_REG */
-	amd64_emit_rex (mov_buf_ptr, sizeof(gpointer), MONO_ARCH_IMT_SCRATCH_REG, 0, AMD64_RIP);
-	*(mov_buf_ptr)++ = (unsigned char)0x8b; /* mov opcode */
-	x86_address_byte (mov_buf_ptr, 0, MONO_ARCH_IMT_SCRATCH_REG & 0x7, 5);
-	emit_bytes (acfg, mov_buf, mov_buf_ptr - mov_buf);
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
-
+	if (!acfg->llvm_separate) {
+		/* mov <OFFSET>(%rip), MONO_ARCH_IMT_SCRATCH_REG */
+		amd64_emit_rex (mov_buf_ptr, sizeof(gpointer), MONO_ARCH_IMT_SCRATCH_REG, 0, AMD64_RIP);
+		*(mov_buf_ptr)++ = (unsigned char)0x8b; /* mov opcode */
+		x86_address_byte (mov_buf_ptr, 0, MONO_ARCH_IMT_SCRATCH_REG & 0x7, 5);
+		emit_bytes (acfg, mov_buf, mov_buf_ptr - mov_buf);
+		emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (gpointer)) - 4);
+	}
 	emit_bytes (acfg, buf, code - buf);
-	
+
 	*tramp_size = code - buf + kSizeOfMove;
 #if defined(__native_client_codegen__)
 	/* The tramp will be padded to the next kNaClAlignment bundle. */
@@ -8929,7 +8950,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		mini_llvm_init ();
 
-		if (!acfg->aot_opts.static_link && !acfg->aot_opts.asm_only && !acfg->aot_opts.full_aot) {
+		if (!acfg->aot_opts.static_link && !acfg->aot_opts.asm_only) {
 			/*
 			 * Emit all LLVM code into a separate assembly/object file and link with it
 			 * normally.
