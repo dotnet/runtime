@@ -27,7 +27,7 @@ namespace System.Collections.Specialized
         // Instance variables. This keeps the HybridDictionary very light-weight when empty
         private ListDictionary _list;
         private Hashtable _hashtable;
-        private bool _caseInsensitive;
+        private readonly bool _caseInsensitive;
 
         public HybridDictionary()
         {
