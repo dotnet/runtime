@@ -30,7 +30,9 @@
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
        defined(__FreeBSD__) || defined(__OpenBSD__)
-#define MONO_SIGNAL_USE_SIGACTION
+#ifdef HAVE_SIGACTION
+#define MONO_SIGNAL_USE_SIGACTION 1
+#endif
 #endif
 
 #if defined(__native_client__)
@@ -148,7 +150,9 @@ typedef struct {
 
 #if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
 
+#ifdef HAVE_SIGACTION
 #define MONO_SIGNAL_USE_SIGACTION 1
+#endif
 
 #endif
 
