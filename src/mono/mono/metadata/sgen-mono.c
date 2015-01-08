@@ -45,6 +45,12 @@ gboolean sgen_mono_xdomain_checks = FALSE;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
+#ifdef HAVE_KW_THREAD
+__thread SgenThreadInfo *sgen_thread_info;
+#else
+MonoNativeTlsKey thread_info_key;
+#endif
+
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -2092,6 +2098,13 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	size_t stsize = 0;
 	guint8 *staddr = NULL;
 
+#ifndef HAVE_KW_THREAD
+	g_assert (!mono_native_tls_get_value (thread_info_key));
+	mono_native_tls_set_value (thread_info_key, info);
+#else
+	sgen_thread_info = info;
+#endif
+
 	info->client_info.skip = 0;
 	info->client_info.stopped_ip = NULL;
 	info->client_info.stopped_domain = NULL;
@@ -2130,6 +2143,12 @@ void
 sgen_client_thread_unregister (SgenThreadInfo *p)
 {
 	MonoNativeThreadId tid;
+
+#ifndef HAVE_KW_THREAD
+	mono_native_tls_set_value (thread_info_key, NULL);
+#else
+	sgen_thread_info = NULL;
+#endif
 
 	tid = mono_thread_info_get_tid (p);
 
@@ -2666,6 +2685,23 @@ sgen_client_init (void)
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_EPHEMERON_LINK, sizeof (EphemeronLinkNode));
 
 	mono_sgen_init_stw ();
+
+#ifndef HAVE_KW_THREAD
+	mono_native_tls_alloc (&thread_info_key, NULL);
+#if defined(__APPLE__) || defined (HOST_WIN32)
+	/* 
+	 * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
+	 * where the two are the same.
+	 */
+	mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, thread_info_key);
+#endif
+#else
+	{
+		int tls_offset = -1;
+		MONO_THREAD_VAR_OFFSET (sgen_thread_info, tls_offset);
+		mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, tls_offset);
+	}
+#endif
 }
 
 gboolean

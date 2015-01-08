@@ -391,12 +391,6 @@ SgenHashTable roots_hash [ROOT_TYPE_NUM] = {
 };
 static mword roots_size = 0; /* amount of memory in the root set */
 
-MonoNativeTlsKey thread_info_key;
-
-#ifdef HAVE_KW_THREAD
-__thread SgenThreadInfo *sgen_thread_info;
-#endif
-
 /* The size of a TLAB */
 /* The bigger the value, the less often we have to go to the slow path to allocate a new 
  * one, but the more space is wasted by threads not allocating much memory.
@@ -2694,11 +2688,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 {
 #ifndef HAVE_KW_THREAD
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
-
-	g_assert (!mono_native_tls_get_value (thread_info_key));
-	mono_native_tls_set_value (thread_info_key, info);
-#else
-	sgen_thread_info = info;
 #endif
 
 	sgen_init_tlab_info (info);
@@ -2715,12 +2704,6 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 void
 sgen_thread_unregister (SgenThreadInfo *p)
 {
-#ifndef HAVE_KW_THREAD
-	mono_native_tls_set_value (thread_info_key, NULL);
-#else
-	sgen_thread_info = NULL;
-#endif
-
 	sgen_client_thread_unregister (p);
 }
 
@@ -3054,23 +3037,6 @@ sgen_gc_init (void)
 
 	sgen_client_init ();
 
-#ifndef HAVE_KW_THREAD
-	mono_native_tls_alloc (&thread_info_key, NULL);
-#if defined(__APPLE__) || defined (HOST_WIN32)
-	/* 
-	 * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
-	 * where the two are the same.
-	 */
-	mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, thread_info_key);
-#endif
-#else
-	{
-		int tls_offset = -1;
-		MONO_THREAD_VAR_OFFSET (sgen_thread_info, tls_offset);
-		mono_tls_key_set_offset (TLS_KEY_SGEN_THREAD_INFO, tls_offset);
-	}
-#endif
-
 	/*
 	 * This needs to happen before any internal allocations because
 	 * it inits the small id which is required for hazard pointer
@@ -3078,7 +3044,7 @@ sgen_gc_init (void)
 	 */
 	sgen_os_init ();
 
-	mono_thread_info_attach (&dummy);
+	mono_gc_register_thread (&dummy);
 
 	if (!minor_collector_opt) {
 		sgen_simple_nursery_init (&sgen_minor_collector);

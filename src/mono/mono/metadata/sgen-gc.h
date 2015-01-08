@@ -936,14 +936,6 @@ sgen_is_object_alive_for_current_gen (char *object)
 
 int sgen_gc_invoke_finalizers (void);
 
-/* TLS Data */
-
-extern MonoNativeTlsKey thread_info_key;
-
-#ifdef HAVE_KW_THREAD
-extern __thread SgenThreadInfo *sgen_thread_info;
-#endif
-
 /* Other globals */
 
 extern GCMemSection *nursery_section;
