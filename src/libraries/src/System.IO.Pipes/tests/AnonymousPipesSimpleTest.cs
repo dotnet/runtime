@@ -81,9 +81,9 @@ public class AnonymousPipesSimpleTest
         Console.WriteLine("*** Client operations suceedeed. ***");
     }
 
-    public static async Task StartClientAsync(PipeDirection direction, SafePipeHandle clientPipeHandle)
+    public static Task StartClientAsync(PipeDirection direction, SafePipeHandle clientPipeHandle)
     {
-        await Task.Factory.StartNew(() => StartClient(direction, clientPipeHandle), TaskCreationOptions.LongRunning);
+        return Task.Run(() => StartClient(direction, clientPipeHandle));
     }
 
     public static void DoServerOperations(AnonymousPipeServerStream server)
@@ -91,9 +91,9 @@ public class AnonymousPipesSimpleTest
         DoStreamOperations(server);
     }
 
-    public static async Task DoServerOperationsAsync(AnonymousPipeServerStream server)
+    public static Task DoServerOperationsAsync(AnonymousPipeServerStream server)
     {
-        await Task.Factory.StartNew(() => DoServerOperations(server), TaskCreationOptions.LongRunning);
+        return Task.Run(() => DoServerOperations(server));
     }
 
     [Fact]
@@ -118,6 +118,7 @@ public class AnonymousPipesSimpleTest
             server.Write(new byte[] { 123 }, 0, 1);
             server.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
             server.Flush();
+            Console.WriteLine("Waiting for Pipe Drain.");
             server.WaitForPipeDrain();
             clientTask.Wait();
             server.DisposeLocalCopyOfClientHandle();
