@@ -64,15 +64,7 @@ namespace System.IO.Tests
                 }
                 for (int i = 0; i < x.Length; i++)
                 {
-                    if (x[i] == null)
-                    {
-                        if (y[i] == null)
-                        {
-                            return true;
-                        }
-                        else return false;
-                    }
-                    if (!x[i].Equals(y[i]))
+                    if(!EqualityComparer<T>.Default.Equals(x[i], y[i]))
                     {
                         return false;
                     }
