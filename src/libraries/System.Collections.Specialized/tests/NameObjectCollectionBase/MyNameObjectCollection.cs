@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Specialized;
-using System.Runtime.Serialization;
 
 // Derived class to test NameObjectCollectionBase
 
