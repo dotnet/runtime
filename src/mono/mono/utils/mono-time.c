@@ -80,7 +80,7 @@ mono_100ns_datetime (void)
 static gint64
 get_boot_time (void)
 {
-#if defined (HAVE_SYS_PARAM_H)
+#if defined (HAVE_SYS_PARAM_H) && defined (KERN_BOOTTIME)
 	int mib [2];
 	size_t size;
 	time_t now;
