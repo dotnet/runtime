@@ -44,7 +44,6 @@
 
 #include <glib.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

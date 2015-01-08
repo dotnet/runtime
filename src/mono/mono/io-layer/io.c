@@ -27,8 +27,6 @@
 #include <sys/mount.h>
 #endif
 #include <sys/types.h>
-#include <dirent.h>
-#include <fnmatch.h>
 #include <stdio.h>
 #include <utime.h>
 #ifdef __linux__
