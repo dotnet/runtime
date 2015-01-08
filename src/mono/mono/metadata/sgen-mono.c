@@ -506,7 +506,7 @@ object_in_domain_predicate (MonoObject *obj, void *user_data)
 {
 	MonoDomain *domain = user_data;
 	if (mono_object_domain (obj) == domain) {
-		SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", obj, sgen_client_object_safe_name (obj));
+		SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
 		return TRUE;
 	}
 	return FALSE;
@@ -2648,13 +2648,6 @@ sgen_client_pre_collection_checks (void)
 		sgen_clear_nursery_fragments ();
 		sgen_check_for_xdomain_refs ();
 	}
-}
-
-const char*
-sgen_client_object_safe_name (GCObject *obj)
-{
-	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
-	return vt->klass->name;
 }
 
 const char*

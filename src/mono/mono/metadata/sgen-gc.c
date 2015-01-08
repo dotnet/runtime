@@ -565,7 +565,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
 				return TRUE;
-			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_object_safe_name ((GCObject*)obj));
+			SGEN_LOG (9, "Precise gray object scan %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
 			scan_func (obj, desc, queue);
 		}
 	} while (max_objs < 0);
@@ -712,7 +712,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 			scan_func (obj_to_pin, desc, queue);
 		} else {
 			SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
-					obj_to_pin, *(void**)obj_to_pin, sgen_client_object_safe_name (obj_to_pin), count);
+					obj_to_pin, *(void**)obj_to_pin, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj_to_pin)), count);
 			binary_protocol_pin (obj_to_pin,
 					(gpointer)LOAD_VTABLE (obj_to_pin),
 					safe_object_get_size (obj_to_pin));
@@ -1067,7 +1067,7 @@ scan_finalizer_entries (SgenPointerQueue *fin_queue, ScanCopyContext ctx)
 		void *obj = fin_queue->data [i];
 		if (!obj)
 			continue;
-		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", obj, sgen_client_object_safe_name (obj));
+		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
 		copy_func (&fin_queue->data [i], queue);
 	}
 }
@@ -1829,7 +1829,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
 			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((GCObject*) bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data,
-					sgen_client_object_safe_name ((GCObject*)bigobj->data),
+					sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (bigobj->data)),
 					(unsigned long)sgen_los_object_size (bigobj));
 
 			sgen_client_pinned_los_object (bigobj->data);
@@ -2578,7 +2578,7 @@ sgen_gc_invoke_finalizers (void)
 		}
 
 		if (obj)
-			SGEN_LOG (7, "Finalizing object %p (%s)", obj, sgen_client_object_safe_name (obj));
+			SGEN_LOG (7, "Finalizing object %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
 
 		UNLOCK_GC;
 
@@ -2788,7 +2788,7 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
 {
-	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
+	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (value)) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value))
 		mono_gc_wbarrier_generic_nostore (ptr);
@@ -2803,7 +2803,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
-	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_object_safe_name (value) : "null");
+	SGEN_LOG (8, "Wbarrier atomic store at %p to %p (%s)", ptr, value, value ? sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (value)) : "null");
 
 	InterlockedWritePointer (ptr, value);
 

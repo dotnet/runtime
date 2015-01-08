@@ -100,9 +100,6 @@ gpointer sgen_client_out_of_memory (size_t size);
  */
 const char* sgen_client_description_for_internal_mem_type (int type);
 
-/* FIXME: Use `sgen_client_vtable_get_name()` instead of this. */
-const char* sgen_client_object_safe_name (GCObject *obj);
-
 const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
 const char* sgen_client_vtable_get_name (GCVTable *vtable);
 

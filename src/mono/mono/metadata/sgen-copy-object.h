@@ -49,7 +49,7 @@ par_copy_object_no_checks (char *destination, GCVTable *vt, void *obj, mword obj
 	sgen_client_update_copied_object (destination, vt, obj, objsize);
 	obj = destination;
 	if (queue) {
-		SGEN_LOG (9, "Enqueuing gray object %p (%s)", obj, sgen_client_object_safe_name (obj));
+		SGEN_LOG (9, "Enqueuing gray object %p (%s)", obj, sgen_client_vtable_get_name (vt));
 		GRAY_OBJECT_ENQUEUE (queue, obj, sgen_vtable_get_descriptor (vt));
 	}
 }

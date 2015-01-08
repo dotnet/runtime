@@ -297,7 +297,7 @@ sgen_check_major_refs (void)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr)) {	\
-			g_assert (sgen_client_object_safe_name (*(ptr)) != NULL);	\
+			g_assert (sgen_client_vtable_get_name (SGEN_LOAD_VTABLE_UNCHECKED (*(ptr))));	\
 		}	\
 	} while (0)
 
@@ -668,11 +668,12 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 		size = SGEN_ALIGN_UP (ss);
 		verify_scan_starts (cur, cur + size);
 		if (do_dump_nursery_content) {
+			GCVTable *vtable = SGEN_LOAD_VTABLE (cur);
 			if (cur > hole_start)
 				SGEN_LOG (0, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
-			SGEN_LOG (0, "OBJ  [%p %p %d %d %s %d]", cur, cur + size, (int)size, (int)ss,
-					sgen_client_object_safe_name ((GCObject*)cur),
-					(gpointer)LOAD_VTABLE (cur) == sgen_client_get_array_fill_vtable ());
+			SGEN_LOG (0, "OBJ  [%p %p %d %d %s.%s %d]", cur, cur + size, (int)size, (int)ss,
+					sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable),
+					vtable == sgen_client_get_array_fill_vtable ());
 		}
 		if (nursery_canaries_enabled () && (GCVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
 			CHECK_CANARY_FOR_OBJECT (cur);
@@ -718,11 +719,12 @@ sgen_debug_check_nursery_is_clean (void)
 static gboolean scan_object_for_specific_ref_precise = TRUE;
 
 #undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj) do {		\
-	if ((GCObject*)*(ptr) == key) {	\
-	g_print ("found ref to %p in object %p (%s) at offset %td\n",	\
-			key, (obj), sgen_client_object_safe_name ((GCObject*)(obj)), ((char*)(ptr) - (char*)(obj))); \
-	}								\
+#define HANDLE_PTR(ptr,obj) do {					\
+		if ((GCObject*)*(ptr) == key) {				\
+			GCVTable *vtable = SGEN_LOAD_VTABLE (*(ptr));	\
+			g_print ("found ref to %p in object %p (%s.%s) at offset %td\n", \
+					key, (obj), sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), ((char*)(ptr) - (char*)(obj))); \
+		}							\
 	} while (0)
 
 static void
@@ -742,8 +744,9 @@ scan_object_for_specific_ref (char *start, GCObject *key)
 		int i;
 		for (i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
-				g_print ("found possible ref to %p in object %p (%s) at offset %td\n",
-						key, start, sgen_client_object_safe_name ((GCObject*)start), i * sizeof (mword));
+				GCVTable *vtable = SGEN_LOAD_VTABLE (start);
+				g_print ("found possible ref to %p in object %p (%s.%s) at offset %td\n",
+						key, start, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), i * sizeof (mword));
 			}
 		}
 	}

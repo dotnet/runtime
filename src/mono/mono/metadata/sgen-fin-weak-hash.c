@@ -154,7 +154,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 			/* insert it into the major hash */
 			sgen_hash_table_replace (&major_finalizable_hash, tagged_object_apply (copy, tag), NULL, NULL);
 
-			SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_object_safe_name ((GCObject*)copy), object);
+			SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (copy)), object);
 
 			continue;
 		} else if (copy != (char*)object) {
@@ -164,7 +164,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 			/* register for reinsertion */
 			sgen_pointer_queue_add (&moved_fin_objects, tagged_object_apply (copy, tag));
 
-			SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_client_object_safe_name ((GCObject*)copy), object);
+			SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (copy)), object);
 
 			continue;
 		}
@@ -205,7 +205,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 				sgen_queue_finalization_entry (copy);
 				/* Make it survive */
-				SGEN_LOG (5, "Queueing object for finalization: %p (%s) (was at %p) (%d)", copy, sgen_client_object_safe_name (copy), object, sgen_hash_table_num_entries (hash_table));
+				SGEN_LOG (5, "Queueing object for finalization: %p (%s) (was at %p) (%d)", copy, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (copy)), object, sgen_hash_table_num_entries (hash_table));
 				continue;
 			} else {
 				if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
@@ -215,7 +215,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 					/* insert it into the major hash */
 					sgen_hash_table_replace (&major_finalizable_hash, tagged_object_apply (copy, tag), NULL, NULL);
 
-					SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_object_safe_name (copy), object);
+					SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (copy)), object);
 
 					continue;
 				} else if (copy != object) {
@@ -225,7 +225,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 					/* register for reinsertion */
 					sgen_pointer_queue_add (&moved_fin_objects, tagged_object_apply (copy, tag));
 
-					SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_client_object_safe_name (copy), object);
+					SGEN_LOG (5, "Updating object for finalization: %p (%s) (was at %p)", copy, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (copy)), object);
 
 					continue;
 				}
@@ -587,7 +587,7 @@ finalizers_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, G
 			/* remove and put in out_array */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			out_array [count ++] = object;
-			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d)", object, sgen_client_object_safe_name (object), sgen_hash_table_num_entries (hash_table));
+			SGEN_LOG (5, "Collecting object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
 			if (count == out_size)
 				return count;
 			continue;
