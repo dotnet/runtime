@@ -55,7 +55,7 @@ namespace System.Collections.Specialized.Tests
             // string [] destination;
             Array destination;
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -216,7 +216,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Value, ld[intlValues[i + len]]));
                 }
-                // verify keys 
+                // verify keys
                 if (String.Compare(intlValues[i + len], ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) != 0)
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Key, intlValues[i + len]));
@@ -297,7 +297,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, copied lowercase string"));
                 }
-                // verify keys 
+                // verify keys
                 if (String.Compare(intlValues[i + len], ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) != 0)
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Key, intlValues[i + len]));

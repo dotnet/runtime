@@ -52,7 +52,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             // should be able to add keys that differ only in casing
             hd.Add("Name", "Value");
@@ -80,7 +80,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Clear() short dictionary 
+            // [] Clear() short dictionary
             //
             hd.Clear();
             if (hd.Count != 0)
@@ -93,7 +93,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -127,7 +127,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             Hashtable[] lbls = new Hashtable[2];
@@ -166,7 +166,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] many elements not overriding Equals() 
+            // [] many elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[BIG_LENGTH];
@@ -226,7 +226,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             // should be able to add keys that differ only in casing
             hd.Add("Name", "Value");
@@ -267,7 +267,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -301,7 +301,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];
@@ -340,7 +340,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] many elements not overriding Equals() 
+            // [] many elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[BIG_LENGTH];
@@ -400,7 +400,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             // should be able to add keys that differ only in casing
             hd.Add("Name", "Value");
@@ -441,7 +441,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -466,7 +466,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Clear() long dictionary 
+            // [] Clear() long dictionary
             //
             hd.Clear();
             if (hd.Count != 0)
@@ -475,7 +475,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];
@@ -514,7 +514,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] many elements not overriding Equals() 
+            // [] many elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[BIG_LENGTH];
@@ -576,7 +576,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             hd.Add("Name", "Value");
             if (hd.Count != 1)
@@ -615,7 +615,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -650,7 +650,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];
@@ -691,7 +691,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             hd.Add("Name", "Value");
             if (hd.Count != 1)
@@ -730,7 +730,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -765,7 +765,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];
@@ -806,7 +806,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Add(string, string) 
+            // [] Add(string, string)
             //
             hd.Add("Name", "Value");
             if (hd.Count != 1)
@@ -832,7 +832,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] Clear() 
+            // [] Clear()
             //
             hd.Clear();
             if (hd.Count != 0)
@@ -845,7 +845,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] numerous Add(string, string) 
+            // [] numerous Add(string, string)
             //
             len = valuesLong.Length;
             hd.Clear();
@@ -880,7 +880,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // [] few elements not overriding Equals() 
+            // [] few elements not overriding Equals()
             //
             hd.Clear();
             lbls = new Hashtable[2];

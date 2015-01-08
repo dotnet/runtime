@@ -123,7 +123,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len + 2));
             }
 
-            // get Keys 
+            // get Keys
             //
 
             ks = sd.Keys;
@@ -201,7 +201,7 @@ namespace System.Collections.Specialized.Tests
             //
             //  Case sensitivity: keys are always lowercased - not doing it
             // [] Change dictionary and check Keys
-            // 
+            //
 
             sd.Clear();
             for (int i = 0; i < len; i++)

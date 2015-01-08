@@ -29,7 +29,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Gets the number of strings in the 
+        ///    <para>Gets the number of strings in the
         ///    <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
         public int Count
@@ -58,7 +58,7 @@ namespace System.Collections.Specialized
 
 
         /// <devdoc>
-        ///    <para>Adds a string with the specified value to the 
+        ///    <para>Adds a string with the specified value to the
         ///    <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
         public int Add(string value)
@@ -79,7 +79,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Removes all the strings from the 
+        ///    <para>Removes all the strings from the
         ///    <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
         public void Clear()
@@ -88,8 +88,8 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Gets a value indicating whether the 
-        ///    <see cref='System.Collections.Specialized.StringCollection'/> contains a string with the specified 
+        ///    <para>Gets a value indicating whether the
+        ///    <see cref='System.Collections.Specialized.StringCollection'/> contains a string with the specified
         ///       value.</para>
         /// </devdoc>
         public bool Contains(string value)
@@ -98,7 +98,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Copies the <see cref='System.Collections.Specialized.StringCollection'/> values to a one-dimensional <see cref='System.Array'/> instance at the 
+        /// <para>Copies the <see cref='System.Collections.Specialized.StringCollection'/> values to a one-dimensional <see cref='System.Array'/> instance at the
         ///    specified index.</para>
         /// </devdoc>
         public void CopyTo(string[] array, int index)
@@ -107,7 +107,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Returns an enumerator that can iterate through 
+        ///    <para>Returns an enumerator that can iterate through
         ///       the <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
         public StringEnumerator GetEnumerator()
@@ -116,7 +116,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Returns the index of the first occurrence of a string in 
+        ///    <para>Returns the index of the first occurrence of a string in
         ///       the <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
         public int IndexOf(string value)
@@ -125,7 +125,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Inserts a string into the <see cref='System.Collections.Specialized.StringCollection'/> at the specified 
+        /// <para>Inserts a string into the <see cref='System.Collections.Specialized.StringCollection'/> at the specified
         ///    index.</para>
         /// </devdoc>
         public void Insert(int index, string value)
@@ -145,8 +145,8 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para>Gets a value indicating whether access to the 
-        ///    <see cref='System.Collections.Specialized.StringCollection'/> 
+        ///    <para>Gets a value indicating whether access to the
+        ///    <see cref='System.Collections.Specialized.StringCollection'/>
         ///    is synchronized (thread-safe).</para>
         /// </devdoc>
         public bool IsSynchronized
@@ -158,7 +158,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para> Removes a specific string from the 
+        ///    <para> Removes a specific string from the
         ///    <see cref='System.Collections.Specialized.StringCollection'/> .</para>
         /// </devdoc>
         public void Remove(string value)
@@ -257,7 +257,7 @@ namespace System.Collections.Specialized
         {
             return _baseEnumerator.MoveNext();
         }
-        
+
         public void Reset()
         {
             _baseEnumerator.Reset();

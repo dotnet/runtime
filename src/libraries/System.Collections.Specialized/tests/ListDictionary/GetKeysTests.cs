@@ -111,7 +111,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //  get Keys on dictionary with identical values
-            // 
+            //
             //  [] get Keys for filled dictionary with identical value
             //
 
@@ -129,7 +129,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", ld.Count, len + 2));
             }
 
-            // get Keys 
+            // get Keys
             //
 
             ks = ld.Keys;
@@ -207,7 +207,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   [] Change dictionary and verify Keys
-            // 
+            //
 
             ld.Clear();
             for (int i = 0; i < len; i++)

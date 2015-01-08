@@ -50,7 +50,7 @@ namespace System.Collections.Specialized.Tests
                 "2222222222222222222222222"
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             string ind;            // key
             // initialize IntStrings
             intl = new IntlStrings();

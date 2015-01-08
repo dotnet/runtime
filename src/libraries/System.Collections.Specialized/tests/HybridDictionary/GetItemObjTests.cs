@@ -48,7 +48,7 @@ namespace System.Collections.Specialized.Tests
             string[] valuesLong = new string[BIG_LENGTH];
             string[] keysLong = new string[BIG_LENGTH];
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             Object itm;         // Item
 
             // initialize IntStrings

@@ -7,7 +7,7 @@ using System.Globalization;
 namespace System.Collections.Specialized
 {
     /// <devdoc>
-    ///  <para> 
+    ///  <para>
     ///    This data structure implements IDictionary first using a linked list
     ///    (ListDictionary) and then switching over to use Hashtable when large. This is recommended
     ///    for cases where the number of elements in a dictionary is unknown and might be small.
@@ -64,7 +64,7 @@ namespace System.Collections.Specialized
             {
                 // Hashtable supports multiple read, one writer thread safety.
                 // Although we never made the same guarantee for HybridDictionary,
-                // it is still nice to do the same thing here since we have recommended 
+                // it is still nice to do the same thing here since we have recommended
                 // HybridDictioary as replacement for Hashtable.
                 ListDictionary cachedList = _list;
                 if (_hashtable != null)
@@ -76,11 +76,11 @@ namespace System.Collections.Specialized
                     return cachedList[key];
                 }
                 else
-                {             
-                    // cachedList can be null in two cases:
+                {
+                    // cachedList can be null in too cases:
                     //   (1) The dictionary is empty, we will return null in this case
                     //   (2) There is writer which is doing ChangeOver. However in that case
-                    //       we should see the change to hashtable as well. 
+                    //       we should see the change to hashtable as well.
                     //       So it should work just fine.
                     if (key == null)
                     {
@@ -145,8 +145,8 @@ namespace System.Collections.Specialized
             }
 
             // Keep the order of writing to hashtable and list.
-            // We assume we will see the change in hashtable if list is set to null in 
-            // this method in another reader thread. 
+            // We assume we will see the change in hashtable if list is set to null in
+            // this method in another reader thread.
             _hashtable = newTable;
             _list = null;
         }

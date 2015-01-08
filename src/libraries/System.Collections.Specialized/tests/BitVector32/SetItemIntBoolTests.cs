@@ -27,9 +27,9 @@ namespace System.Collections.Specialized.Tests
                 15,                 //  bits[5] = 15
                 16,                 //  bits[6] = 16
                 Int16.MaxValue,     //  bits[7] = Int16.MaxValue
-                Int32.MaxValue - 1, //  bits[8] = Int32.MaxValue - 1                     
-                Int32.MinValue,     //  bits[9] = Int32.MinValue                      
-                Int16.MinValue,     //  bits[10] = Int16.MinValue                      
+                Int32.MaxValue - 1, //  bits[8] = Int32.MaxValue - 1
+                Int32.MinValue,     //  bits[9] = Int32.MinValue
+                Int16.MinValue,     //  bits[10] = Int16.MinValue
                 -1                  //  bits[11] = -1
             };
 
@@ -78,7 +78,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   (-1)
-            //   
+            //
             data = -1;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -121,7 +121,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   loop through different vectors
-            //   
+            //
 
             // loop through bits
             // set given bit flag to false, verify Data, set to true

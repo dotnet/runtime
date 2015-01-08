@@ -6,7 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Specialized;
 
-//  
+//
 // test for read-only Data property
 //
 

@@ -90,7 +90,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // Move beyond the last item and try to get Current - exception expected 
+            // Move beyond the last item and try to get Current - exception expected
             //
             // next MoveNext should bring us outside of the collection
             //

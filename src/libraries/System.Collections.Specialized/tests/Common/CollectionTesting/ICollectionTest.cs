@@ -33,7 +33,7 @@ namespace TestSupport.Collections
         /// <param name="collection">The collection to run the tests on.</param>
         /// <param name="items">The items currently in the collection.</param>
         /// <param name="expectedIsSynchronized">The expected value of IsSynchronized</param>
-        /// <param name="createNewCollection">Creates a new Collection. This is used to verify 
+        /// <param name="createNewCollection">Creates a new Collection. This is used to verify
         /// that SyncRoot returns different values from different collections.</param>
         public ICollection_Test(ICollection collection, Object[] items, bool expectedIsSynchronized, CreateNewICollection createNewCollection) : base(collection, items)
         {
@@ -85,7 +85,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// Creates a new Collection. This is used to verify 
+        /// Creates a new Collection. This is used to verify
         /// that SyncRoot returns different values from different collections.
         /// If this is null the test that use this will not be run.
         /// </summary>
@@ -103,7 +103,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// Specifies the types that are valid with CopyTo(Array). 
+        /// Specifies the types that are valid with CopyTo(Array).
         /// By defaut this is a Type array containing only typeof(Object).
         /// </summary>
         /// <value>Specifies the types that are valid with CopyTo(Array)</value>
@@ -123,9 +123,9 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// Specifies the types that are not valid with CopyTo(Array). 
-        /// By defaut this is a Type array containing only 
-        /// typeof(MyInvalidReferenceType) and typeof(MyInvalidValueType). 
+        /// Specifies the types that are not valid with CopyTo(Array).
+        /// By defaut this is a Type array containing only
+        /// typeof(MyInvalidReferenceType) and typeof(MyInvalidValueType).
         /// </summary>
         /// <value>Specifies the types that are invalid with CopyTo(Array)</value>
         public Type[] InvalidArrayTypes
@@ -144,7 +144,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// Specifies if CopyTo(Array) only supports Arrays with a zero lower bound. 
+        /// Specifies if CopyTo(Array) only supports Arrays with a zero lower bound.
         /// </summary>
         /// <value></value>
         public bool CopyToOnlySupportsZeroLowerBounds

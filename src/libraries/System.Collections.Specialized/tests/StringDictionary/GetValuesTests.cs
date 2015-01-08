@@ -122,7 +122,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len + 2));
             }
 
-            // get Values 
+            // get Values
             //
 
             vs = sd.Values;
@@ -195,7 +195,7 @@ namespace System.Collections.Specialized.Tests
             //  Case sensitivity: values are case sensitive
             // and changing Dictionary
             // [] change dictionary and verify case sensitivity
-            // 
+            //
 
             sd.Clear();
             for (int i = 0; i < len; i++)

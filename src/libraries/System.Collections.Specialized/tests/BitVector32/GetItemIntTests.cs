@@ -27,9 +27,9 @@ namespace System.Collections.Specialized.Tests
                 15,                 //  bits[5] = 15
                 16,                 //  bits[6] = 16
                 Int16.MaxValue,     //  bits[7] = Int16.MaxValue
-                Int32.MaxValue - 1, //  bits[8] = Int32.MaxValue - 1                     
-                Int32.MinValue,     //  bits[9] = Int32.MinValue                      
-                Int16.MinValue,     //  bits[10] = Int16.MinValue                      
+                Int32.MaxValue - 1, //  bits[8] = Int32.MaxValue - 1
+                Int32.MinValue,     //  bits[9] = Int32.MinValue
+                Int16.MinValue,     //  bits[10] = Int16.MinValue
                 -1                  //  bits[11] = -1
             };
 
@@ -60,7 +60,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   (-1)
-            //   
+            //
             data = -1;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -69,7 +69,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return true 
+            // all values should return true
             expected = true;
             for (int i = 0; i < bits.Length; i++)
             {
@@ -82,7 +82,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   Int32.MaxValue
-            //   
+            //
             data = Int32.MaxValue;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -91,7 +91,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // positive values should return true, negative should return false 
+            // positive values should return true, negative should return false
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i == (bits.Length - 1) || i == (bits.Length - 2) || i == (bits.Length - 3))
@@ -107,7 +107,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   Int32.MinValue
-            //   
+            //
             data = Int32.MinValue;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -116,7 +116,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return false, except 0, 9 = true 
+            // all values should return false, except 0, 9 = true
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i == 0 || i == 9)
@@ -133,7 +133,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   1
-            //   
+            //
             data = 1;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -142,7 +142,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return false, except 0, 1 = true 
+            // all values should return false, except 0, 1 = true
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i == 0 || i == 1)
@@ -159,7 +159,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //  2
-            //   
+            //
             data = 2;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -168,7 +168,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return false, except 0, 2 = true 
+            // all values should return false, except 0, 2 = true
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i == 0 || i == 2)
@@ -184,7 +184,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   3
-            //   
+            //
             data = 3;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -193,7 +193,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return false, except 0, 1, 2, 3 = true 
+            // all values should return false, except 0, 1, 2, 3 = true
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i < 4)
@@ -209,7 +209,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   7
-            //   
+            //
             data = 7;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -218,7 +218,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return false, except 0, 1, 2, 3, 7 = true 
+            // all values should return false, except 0, 1, 2, 3, 7 = true
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i < 5)
@@ -234,7 +234,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   Int16.MaxValue
-            //   
+            //
             data = Int16.MaxValue;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -243,7 +243,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return true, except for last 3 
+            // all values should return true, except for last 3
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i < 8)
@@ -260,7 +260,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   Int16.MinValue
-            //   
+            //
             data = Int16.MinValue;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -269,7 +269,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through bits
-            // all values should return false, except for 0, 9, 10 
+            // all values should return false, except for 0, 9, 10
             for (int i = 0; i < bits.Length; i++)
             {
                 if (i == 0 || i == 9 || i == 10)

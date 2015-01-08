@@ -125,7 +125,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len + 2));
             }
 
-            // set/get Item  
+            // set/get Item
             //
             sd["keykey1"] = intlStr1;
             if (String.Compare(sd["keykey1"], intlStr1) != 0)
@@ -173,7 +173,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
             }
 
-            // get item      
+            // get item
             for (int i = 0; i < len; i++)
             {
                 sd[intlValues[i + len]] = intlSets[i];
@@ -185,7 +185,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity: keys are always lowercased
-            // 
+            //
 
             sd.Clear();
 
@@ -198,7 +198,7 @@ namespace System.Collections.Specialized.Tests
                 intlValues[i] = intlValues[i].ToLowerInvariant();
             }
 
-            // array of uppercase keys 
+            // array of uppercase keys
             for (int i = 0; i < len; i++)
             {
                 intlValuesUpper[i] = intlValues[i].ToUpperInvariant();
@@ -217,7 +217,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {0} instead of {1}", sd.Count, len));
             }
 
-            // set/get Item      
+            // set/get Item
             for (int i = 0; i < len; i++)
             {
                 sd[intlValues[i + len]] = intlValuesUpper[i];

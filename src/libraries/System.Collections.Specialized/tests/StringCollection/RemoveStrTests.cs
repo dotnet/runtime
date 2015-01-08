@@ -34,7 +34,7 @@ namespace System.Collections.Specialized.Tests
                 Int32.MaxValue.ToString()
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             // initialize IntStrings
             intl = new IntlStrings();
 
@@ -44,7 +44,7 @@ namespace System.Collections.Specialized.Tests
 
             sc = new StringCollection();
 
-            // [] Remove() from empty collection 
+            // [] Remove() from empty collection
             //
             for (int i = 0; i < values.Length; i++)
             {
@@ -175,7 +175,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, IndexOf returned {0} instead of {1}", sc.IndexOf(intlStr), 0));
             }
 
-            // remove  
+            // remove
             //
             sc.Remove(intlStr);
             if (!sc.Contains(intlStr))
@@ -206,7 +206,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity: search should be case-sensitive
-            // 
+            //
 
             sc.Clear();
             sc.Add(intlStr.ToUpper());
@@ -218,7 +218,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {1} instead of {2} ", sc.Count, cnt));
             }
 
-            // remove lowercase item  
+            // remove lowercase item
             //
             intlStr = intlStr.ToLower();
 
@@ -242,7 +242,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //  remove item that is not in the collection
-            // 
+            //
 
             sc.Clear();
             sc.AddRange(values);
@@ -252,7 +252,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {1} instead of {2} ", sc.Count, cnt));
             }
 
-            // remove non-existing item  
+            // remove non-existing item
             //
             intlStr = "Hello";
             cnt = sc.Count;

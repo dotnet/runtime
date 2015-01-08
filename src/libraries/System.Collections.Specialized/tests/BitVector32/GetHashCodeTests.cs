@@ -14,7 +14,7 @@ namespace System.Collections.Specialized.Tests
         public void Test01()
         {
             BitVector32 bv32;
-            BitVector32 bv32_1;       // extra BitVector32 - for comparison 
+            BitVector32 bv32_1;       // extra BitVector32 - for comparison
             int code = 0;              // HashCode of bv32
             int code_1 = 0;                    // HashCode of bv32_1
             int data = 0;

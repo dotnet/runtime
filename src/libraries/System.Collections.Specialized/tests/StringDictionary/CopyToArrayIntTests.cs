@@ -51,7 +51,7 @@ namespace System.Collections.Specialized.Tests
             };
 
             Array destination;
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
             // initialize IntStrings
             intl = new IntlStrings();
 
@@ -68,7 +68,7 @@ namespace System.Collections.Specialized.Tests
             sd.CopyTo(destination, 0);
             Assert.Throws<ArgumentException>(() => { sd.CopyTo(destination, 1); });
 
-            // [] Copy empty dictionary into non-empty array 
+            // [] Copy empty dictionary into non-empty array
             //
             destination = Array.CreateInstance(typeof(Object), values.Length);
             for (int i = 0; i < values.Length; i++)

@@ -83,7 +83,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, Count = {0} instead of 15", nvc.Count));
             }
 
-            //////////////////////////////////////////////////////////////  
+            //////////////////////////////////////////////////////////////
             //
             //  [] create with capacity 100
             //

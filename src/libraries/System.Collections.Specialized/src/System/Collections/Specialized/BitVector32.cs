@@ -24,7 +24,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the BitVector32 structure with the information in the specified 
+        /// <para>Initializes a new instance of the BitVector32 structure with the information in the specified
         ///    value.</para>
         /// </devdoc>
         public BitVector32(BitVector32 value)
@@ -226,7 +226,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        ///    <para> 
+        ///    <para>
         ///       Represents an section of the vector that can contain a integer number.</para>
         /// </devdoc>
         public struct Section

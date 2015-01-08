@@ -20,15 +20,15 @@ namespace System.Collections.Specialized
     {
         // For compatibility, we want the Keys property to return values in lower-case.
         // That means using ToLower in each property on this type.  Also for backwards
-        // compatibility, we will be converting strings to lower-case, which has a 
-        // problem for some Georgian alphabets.  
+        // compatibility, we will be converting strings to lower-case, which has a
+        // problem for some Georgian alphabets.
         private readonly Hashtable _contents = new Hashtable();
 
 
         /// <devdoc>
         /// <para>Initializes a new instance of the StringDictionary class.</para>
         /// <para>If you're using file names, registry keys, etc, you want to use
-        /// a Dictionary&lt;String, Object&gt; and use 
+        /// a Dictionary&lt;String, Object&gt; and use
         /// StringComparer.OrdinalIgnoreCase.</para>
         /// </devdoc>
         public StringDictionary()
@@ -48,7 +48,7 @@ namespace System.Collections.Specialized
 
 
         /// <devdoc>
-        /// <para>Indicates whether access to the StringDictionary is synchronized (thread-safe). This property is 
+        /// <para>Indicates whether access to the StringDictionary is synchronized (thread-safe). This property is
         ///    read-only.</para>
         /// </devdoc>
         public virtual bool IsSynchronized
@@ -161,7 +161,7 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// <para>Copies the string dictionary values to a one-dimensional <see cref='System.Array'/> instance at the 
+        /// <para>Copies the string dictionary values to a one-dimensional <see cref='System.Array'/> instance at the
         ///    specified index.</para>
         /// </devdoc>
         public virtual void CopyTo(Array array, int index)
