@@ -7,7 +7,6 @@
  * (C) 2015 Xamarin
  */
 
-#include <config.h>
 #include <mono/utils/networking.h>
 #include <glib.h>
 
