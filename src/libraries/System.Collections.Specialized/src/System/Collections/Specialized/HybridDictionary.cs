@@ -77,7 +77,7 @@ namespace System.Collections.Specialized
                 }
                 else
                 {             
-                    // cachedList can be null in too cases:
+                    // cachedList can be null in two cases:
                     //   (1) The dictionary is empty, we will return null in this case
                     //   (2) There is writer which is doing ChangeOver. However in that case
                     //       we should see the change to hashtable as well. 
