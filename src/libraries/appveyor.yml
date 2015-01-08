@@ -1,8 +1,0 @@
-build_script:
-  - '"%VS120COMNTOOLS%VsDevCmd.bat"'
-  - build.cmd
-test: off  # disable automatic test discovery, xUnit already runs as part of build.cmd
-
-artifacts:
-  - path: msbuild.log
-    name: MSBuild Log
