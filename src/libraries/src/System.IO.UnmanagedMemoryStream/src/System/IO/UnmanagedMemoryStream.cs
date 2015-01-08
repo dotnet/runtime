@@ -1,13 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -74,10 +71,6 @@ namespace System.IO
     /// </summary>
     public class UnmanagedMemoryStream : Stream
     {
-        // BUGBUG: Consider removing this restriction, or making in 
-        // Int64.MaxValue and ensuring we never wrap around to positive.
-        private const long UnmanagedMemStreamMaxLength = Int64.MaxValue;
-
         [System.Security.SecurityCritical] // auto-generated
         private SafeBuffer _buffer;
         [SecurityCritical]
@@ -402,10 +395,9 @@ namespace System.IO
             [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException("value", Strings.ArgumentOutOfRange_NeedNonNegNum);
-                Contract.EndContractBlock();
+                if (value < 0) throw new ArgumentOutOfRangeException("value", Strings.ArgumentOutOfRange_NeedNonNegNum);
                 if (!CanSeek) throw __Error.GetStreamIsClosed();
+                Contract.EndContractBlock();
 
                 if (IntPtr.Size == 4)
                 {
@@ -429,32 +421,22 @@ namespace System.IO
             [System.Security.SecurityCritical]  // auto-generated_required
             get
             {
-                if (_buffer != null)
-                {
-                    throw new NotSupportedException(Strings.NotSupported_UmsSafeBuffer);
-                }
+                if (_buffer != null) throw new NotSupportedException(Strings.NotSupported_UmsSafeBuffer);
+                if (!_isOpen) throw __Error.GetStreamIsClosed();
 
                 // Use a temp to avoid a race
                 long pos = Interlocked.Read(ref _position);
-                if (pos > _capacity)
-                    throw new IndexOutOfRangeException(Strings.IndexOutOfRange_UMSPosition);
+                if (pos > _capacity) throw new IndexOutOfRangeException(Strings.IndexOutOfRange_UMSPosition);
                 byte* ptr = _mem + pos;
-                if (!_isOpen) throw __Error.GetStreamIsClosed();
+
                 return ptr;
             }
             [System.Security.SecurityCritical]  // auto-generated_required
             set
             {
-                if (_buffer != null)
-                    throw new NotSupportedException(Strings.NotSupported_UmsSafeBuffer);
+                if (_buffer != null) throw new NotSupportedException(Strings.NotSupported_UmsSafeBuffer);
                 if (!_isOpen) throw __Error.GetStreamIsClosed();
-
-                // Note: subtracting pointers returns an Int64.  Working around
-                // to avoid hitting compiler warning CS0652 on this line. 
-                if (new IntPtr(value - _mem).ToInt64() > UnmanagedMemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException("offset", Strings.ArgumentOutOfRange_UnmanagedMemStreamLength);
-                if (value < _mem)
-                    throw new IOException(Strings.IO_SeekBeforeBegin);
+                if (value < _mem) throw new IOException(Strings.IO_SeekBeforeBegin);
 
                 Interlocked.Exchange(ref _position, value - _mem);
             }
@@ -633,8 +615,6 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin loc)
         {
             if (!_isOpen) throw __Error.GetStreamIsClosed();
-            if (offset > UnmanagedMemStreamMaxLength)
-                throw new ArgumentOutOfRangeException("offset", Strings.ArgumentOutOfRange_UnmanagedMemStreamLength);
             switch (loc)
             {
                 case SeekOrigin.Begin:
