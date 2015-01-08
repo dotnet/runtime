@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
 
 namespace System.Diagnostics
@@ -15,7 +12,6 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
-
     public sealed class ProcessStartInfo
     {
         private string _fileName;
@@ -29,7 +25,7 @@ namespace System.Diagnostics
 
         private bool _createNoWindow = false;
         private WeakReference _weakParentProcess;
-        internal Dictionary<string, string> environmentVariables;
+        internal Dictionary<string, string> _environmentVariables;
 
         /// <devdoc>
         ///     Default constructor.  At least the <see cref='System.Diagnostics.ProcessStartInfo.FileName'/>
@@ -91,19 +87,19 @@ namespace System.Diagnostics
         {
             get
             {
-                if (environmentVariables == null)
+                if (_environmentVariables == null)
                 {
-                    environmentVariables = new Dictionary<string, string>();
+                    _environmentVariables = new Dictionary<string, string>();
 
                     // if not in design mode, initialize the child environment block with all the parent variables
                     if (!(_weakParentProcess != null &&
                           _weakParentProcess.IsAlive))
                     {
                         foreach (DictionaryEntry entry in System.Environment.GetEnvironmentVariables())
-                            environmentVariables.Add((string)entry.Key, (string)entry.Value);
+                            _environmentVariables.Add((string)entry.Key, (string)entry.Value);
                     }
                 }
-                return environmentVariables;
+                return _environmentVariables;
             }
         }
 

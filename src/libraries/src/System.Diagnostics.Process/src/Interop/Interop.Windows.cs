@@ -64,6 +64,7 @@ internal static partial class Interop
     public const int RPC_S_CALL_FAILED = 1726;
 
     public const int SE_PRIVILEGE_ENABLED = 2;
+    public const string SeDebugPrivilege = "SeDebugPrivilege";
 
     public const int TOKEN_ADJUST_PRIVILEGES = 0x20;
 
@@ -77,9 +78,8 @@ internal static partial class Interop
     public const int WM_NULL = 0x0000;
     public const int WM_CLOSE = 0x0010;
 
-
     [StructLayout(LayoutKind.Sequential)]
-    internal class STARTUPINFO
+    internal class STARTUPINFO : IDisposable
     {
         public int cb;
         public IntPtr lpReserved = IntPtr.Zero;
