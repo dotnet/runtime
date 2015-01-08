@@ -11,19 +11,15 @@
 **
 ===========================================================*/
 
-using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
-    internal delegate void UserCallBack(String data);
-
-    internal class AsyncStreamReader : IDisposable
+    internal sealed class AsyncStreamReader : IDisposable
     {
         internal const int DefaultBufferSize = 1024;  // Byte buffer size
         private const int MinBufferSize = 128;
@@ -44,7 +40,7 @@ namespace System.Diagnostics
         private Process _process;
 
         // Delegate to call user function.
-        private UserCallBack _userCallBack;
+        private Action<string> _userCallBack;
 
         // Internal Cancel operation
         private bool _cancelOperation;
@@ -53,7 +49,7 @@ namespace System.Diagnostics
         private StringBuilder _sb;
         private bool _bLastCarriageReturn;
 
-        internal AsyncStreamReader(Process process, Stream stream, UserCallBack callback, Encoding encoding)
+        internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding)
             : this(process, stream, callback, encoding, DefaultBufferSize)
         {
         }
@@ -63,7 +59,7 @@ namespace System.Diagnostics
         // character encoding is set by encoding and the buffer size, 
         // in number of 16-bit characters, is set by bufferSize.  
         // 
-        internal AsyncStreamReader(Process process, Stream stream, UserCallBack callback, Encoding encoding, int bufferSize)
+        internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
         {
             Debug.Assert(process != null && stream != null && encoding != null && callback != null, "Invalid arguments!");
             Debug.Assert(stream.CanRead, "Stream must be readable!");
@@ -73,7 +69,7 @@ namespace System.Diagnostics
             _messageQueue = new Queue<string>();
         }
 
-        private void Init(Process process, Stream stream, UserCallBack callback, Encoding encoding, int bufferSize)
+        private void Init(Process process, Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
         {
             _process = process;
             _stream = stream;
@@ -90,7 +86,7 @@ namespace System.Diagnostics
             _bLastCarriageReturn = false;
         }
 
-        public virtual void Close()
+        public void Close()
         {
             Dispose(true);
         }
@@ -101,7 +97,7 @@ namespace System.Diagnostics
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -124,12 +120,12 @@ namespace System.Diagnostics
             }
         }
 
-        public virtual Encoding CurrentEncoding
+        public Encoding CurrentEncoding
         {
             get { return _encoding; }
         }
 
-        public virtual Stream BaseStream
+        public Stream BaseStream
         {
             get { return _stream; }
         }
