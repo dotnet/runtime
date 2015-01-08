@@ -20,11 +20,13 @@
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <errno.h>
 #endif
 
