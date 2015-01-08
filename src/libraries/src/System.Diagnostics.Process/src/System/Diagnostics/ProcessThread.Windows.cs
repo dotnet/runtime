@@ -29,8 +29,9 @@ namespace System.Diagnostics
         /// </summary>
         public void ResetIdealProcessor()
         {
-            // 32 means "any processor is fine"
-            IdealProcessor = 32;
+            // MAXIMUM_PROCESSORS == 32 on 32-bit or 64 on 64-bit, and means the thread has no preferred processor
+            int MAXIMUM_PROCESSORS = IntPtr.Size == 4 ? 32 : 64;
+            IdealProcessor = MAXIMUM_PROCESSORS;
         }
 
         /// <summary>
