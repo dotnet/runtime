@@ -7,7 +7,7 @@ namespace System.Diagnostics
 
     public class DataReceivedEventArgs : EventArgs
     {
-        internal readonly string _data;
+        private readonly string _data;
 
         internal DataReceivedEventArgs(string data)
         {

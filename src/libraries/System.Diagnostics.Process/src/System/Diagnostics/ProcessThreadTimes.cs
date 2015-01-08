@@ -5,12 +5,12 @@ namespace System.Diagnostics
 {
     internal sealed class ProcessThreadTimes
     {
-        internal long create, exit, kernel, user;
+        internal long _create, _exit, _kernel, _user;
 
-        public DateTime StartTime { get { return DateTime.FromFileTime(create); } }
-        public DateTime ExitTime { get { return DateTime.FromFileTime(exit); } }
-        public TimeSpan PrivilegedProcessorTime { get { return new TimeSpan(kernel); } }
-        public TimeSpan UserProcessorTime { get { return new TimeSpan(user); } }
-        public TimeSpan TotalProcessorTime { get { return new TimeSpan(user + kernel); } }
+        public DateTime StartTime { get { return DateTime.FromFileTime(_create); } }
+        public DateTime ExitTime { get { return DateTime.FromFileTime(_exit); } }
+        public TimeSpan PrivilegedProcessorTime { get { return new TimeSpan(_kernel); } }
+        public TimeSpan UserProcessorTime { get { return new TimeSpan(_user); } }
+        public TimeSpan TotalProcessorTime { get { return new TimeSpan(_user + _kernel); } }
     }
 }

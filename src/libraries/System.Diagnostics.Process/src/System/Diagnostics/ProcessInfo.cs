@@ -13,20 +13,20 @@ namespace System.Diagnostics
     /// </summary>
     internal sealed class ProcessInfo
     {
-        public readonly List<ThreadInfo> threadInfoList = new List<ThreadInfo>();
-        public int basePriority;
-        public string processName;
-        public int processId;
-        public int handleCount;
-        public long poolPagedBytes;
-        public long poolNonpagedBytes;
-        public long virtualBytes;
-        public long virtualBytesPeak;
-        public long workingSetPeak;
-        public long workingSet;
-        public long pageFileBytesPeak;
-        public long pageFileBytes;
-        public long privateBytes;
-        public int sessionId;
+        internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
+        internal int _basePriority;
+        internal string _processName;
+        internal int _processId;
+        internal int _handleCount;
+        internal long _poolPagedBytes;
+        internal long _poolNonpagedBytes;
+        internal long _virtualBytes;
+        internal long _virtualBytesPeak;
+        internal long _workingSetPeak;
+        internal long _workingSet;
+        internal long _pageFileBytesPeak;
+        internal long _pageFileBytes;
+        internal long _privateBytes;
+        internal int _sessionId;
     }
 }

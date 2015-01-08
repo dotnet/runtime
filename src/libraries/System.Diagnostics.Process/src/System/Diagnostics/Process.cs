@@ -77,7 +77,7 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 #if FEATURE_TRACESWITCH
-        internal static TraceSwitch processTracing =
+        internal static TraceSwitch _processTracing =
 #if DEBUG
             new TraceSwitch("processTracing", "Controls debug output from Process component");
 #else
@@ -137,7 +137,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.basePriority;
+                return _processInfo._basePriority;
             }
         }
 
@@ -217,7 +217,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.handleCount;
+                return _processInfo._handleCount;
             }
         }
 
@@ -314,7 +314,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.poolNonpagedBytes;
+                return _processInfo._poolNonpagedBytes;
             }
         }
 
@@ -323,7 +323,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.pageFileBytes;
+                return _processInfo._pageFileBytes;
             }
         }
 
@@ -332,7 +332,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.poolPagedBytes;
+                return _processInfo._poolPagedBytes;
             }
         }
 
@@ -341,7 +341,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.pageFileBytesPeak;
+                return _processInfo._pageFileBytesPeak;
             }
         }
 
@@ -350,7 +350,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.workingSetPeak;
+                return _processInfo._workingSetPeak;
             }
         }
 
@@ -359,7 +359,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.virtualBytesPeak;
+                return _processInfo._virtualBytesPeak;
             }
         }
 
@@ -424,7 +424,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.privateBytes;
+                return _processInfo._privateBytes;
             }
         }
 
@@ -439,8 +439,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                String processName = _processInfo.processName;
-                return _processInfo.processName;
+                return _processInfo._processName;
             }
         }
 
@@ -473,7 +472,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.sessionId;
+                return _processInfo._sessionId;
             }
         }
 
@@ -516,11 +515,11 @@ namespace System.Diagnostics
                 if (_threads == null)
                 {
                     EnsureState(State.HaveProcessInfo);
-                    int count = _processInfo.threadInfoList.Count;
+                    int count = _processInfo._threadInfoList.Count;
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
                     {
-                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, (ThreadInfo)_processInfo.threadInfoList[i]);
+                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, (ThreadInfo)_processInfo._threadInfoList[i]);
                     }
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
                     _threads = newThreads;
@@ -534,7 +533,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.virtualBytes;
+                return _processInfo._virtualBytes;
             }
         }
 
@@ -644,7 +643,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return _processInfo.workingSet;
+                return _processInfo._workingSet;
             }
         }
 
@@ -677,7 +676,7 @@ namespace System.Diagnostics
                 return;
             }
 #if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(processTracing.TraceVerbose, "Process - CloseHandle(process)");
+            Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(process)");
 #endif
             handle.Dispose();
         }
@@ -724,7 +723,7 @@ namespace System.Diagnostics
                 {
                     StopWatchingForExit();
 #if FEATURE_TRACESWITCH
-                    Debug.WriteLineIf(processTracing.TraceVerbose, "Process - CloseHandle(process) in Close()");
+                    Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(process) in Close()");
 #endif
                     _processHandle.Dispose();
                     _processHandle = null;
@@ -788,7 +787,7 @@ namespace System.Diagnostics
                     ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(_machineName);
                     for (int i = 0; i < processInfos.Length; i++)
                     {
-                        if (processInfos[i].processId == _processId)
+                        if (processInfos[i]._processId == _processId)
                         {
                             _processInfo = processInfos[i];
                             break;
@@ -964,12 +963,12 @@ namespace System.Diagnostics
             for (int i = 0; i < processInfos.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(machineName, isRemoteMachine, processInfo.processId, processInfo);
+                processes[i] = new Process(machineName, isRemoteMachine, processInfo._processId, processInfo);
             }
 #if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(processTracing.TraceVerbose, "Process.GetProcesses(" + machineName + ")");
+            Debug.WriteLineIf(_processTracing.TraceVerbose, "Process.GetProcesses(" + machineName + ")");
 #if DEBUG
-            if (processTracing.TraceVerbose) {
+            if (_processTracing.TraceVerbose) {
                 Debug.Indent();
                 for (int i = 0; i < processInfos.Length; i++) {
                     Debug.WriteLine(processes[i].Id + ": " + processes[i].ProcessName);

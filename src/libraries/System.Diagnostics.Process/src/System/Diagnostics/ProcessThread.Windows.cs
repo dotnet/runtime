@@ -24,6 +24,16 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Resets the ideal processor so there is no ideal processor for this thread (e.g.
+        /// any processor is ideal).
+        /// </summary>
+        public void ResetIdealProcessor()
+        {
+            // 32 means "any processor is fine"
+            IdealProcessor = 32;
+        }
+
+        /// <summary>
         /// Returns or sets whether this thread would like a priority boost if the user interacts
         /// with user interface associated with this thread.
         /// </summary>
@@ -147,8 +157,8 @@ namespace System.Diagnostics
             {
                 var threadTimes = new ProcessThreadTimes();
                 if (!Interop.mincore.GetThreadTimes(threadHandle,
-                    out threadTimes.create, out threadTimes.exit,
-                    out threadTimes.kernel, out threadTimes.user))
+                    out threadTimes._create, out threadTimes._exit,
+                    out threadTimes._kernel, out threadTimes._user))
                 {
                     throw new Win32Exception();
                 }
@@ -160,7 +170,7 @@ namespace System.Diagnostics
         private SafeThreadHandle OpenThreadHandle(int access)
         {
             EnsureState(State.IsLocal);
-            return ProcessManager.OpenThread(_threadInfo.threadId, access);
+            return ProcessManager.OpenThread(_threadInfo._threadId, access);
         }
     }
 }

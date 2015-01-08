@@ -25,7 +25,7 @@ namespace System.Diagnostics
 
         private bool _createNoWindow = false;
         private WeakReference _weakParentProcess;
-        internal Dictionary<string, string> environmentVariables;
+        internal Dictionary<string, string> _environmentVariables;
 
         /// <devdoc>
         ///     Default constructor.  At least the <see cref='System.Diagnostics.ProcessStartInfo.FileName'/>
@@ -87,19 +87,19 @@ namespace System.Diagnostics
         {
             get
             {
-                if (environmentVariables == null)
+                if (_environmentVariables == null)
                 {
-                    environmentVariables = new Dictionary<string, string>();
+                    _environmentVariables = new Dictionary<string, string>();
 
                     // if not in design mode, initialize the child environment block with all the parent variables
                     if (!(_weakParentProcess != null &&
                           _weakParentProcess.IsAlive))
                     {
                         foreach (DictionaryEntry entry in System.Environment.GetEnvironmentVariables())
-                            environmentVariables.Add((string)entry.Key, (string)entry.Value);
+                            _environmentVariables.Add((string)entry.Key, (string)entry.Value);
                     }
                 }
-                return environmentVariables;
+                return _environmentVariables;
             }
         }
 

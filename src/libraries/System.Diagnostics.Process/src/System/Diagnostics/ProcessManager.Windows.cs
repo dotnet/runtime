@@ -226,7 +226,7 @@ namespace System.Diagnostics
             ProcessInfo[] infos = GetProcessInfos(machineName, isRemoteMachine);
             int[] ids = new int[infos.Length];
             for (int i = 0; i < infos.Length; i++)
-                ids[i] = infos[i].processId;
+                ids[i] = infos[i]._processId;
             return ids;
         }
 
@@ -386,25 +386,25 @@ namespace System.Diagnostics
                         Interop.NtModuleInfo ntModuleInfo = new Interop.NtModuleInfo();
                         if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, ntModuleInfo, Marshal.SizeOf(ntModuleInfo)))
                             throw new Win32Exception();
-                        moduleInfo.sizeOfImage = ntModuleInfo.SizeOfImage;
-                        moduleInfo.entryPoint = ntModuleInfo.EntryPoint;
-                        moduleInfo.baseOfDll = ntModuleInfo.BaseOfDll;
+                        moduleInfo._sizeOfImage = ntModuleInfo.SizeOfImage;
+                        moduleInfo._entryPoint = ntModuleInfo.EntryPoint;
+                        moduleInfo._baseOfDll = ntModuleInfo.BaseOfDll;
 
                         StringBuilder baseName = new StringBuilder(1024);
                         ret = Interop.mincore.GetModuleBaseName(processHandle, moduleHandle, baseName, baseName.Capacity * 2);
                         if (ret == 0) throw new Win32Exception();
-                        moduleInfo.baseName = baseName.ToString();
+                        moduleInfo._baseName = baseName.ToString();
 
                         StringBuilder fileName = new StringBuilder(1024);
                         ret = Interop.mincore.GetModuleFileNameEx(processHandle, moduleHandle, fileName, fileName.Capacity * 2);
                         if (ret == 0) throw new Win32Exception();
-                        moduleInfo.fileName = fileName.ToString();
+                        moduleInfo._fileName = fileName.ToString();
 
-                        if (moduleInfo.fileName != null
-                            && moduleInfo.fileName.Length >= 4
-                            && moduleInfo.fileName.StartsWith(@"\\?\", StringComparison.Ordinal))
+                        if (moduleInfo._fileName != null
+                            && moduleInfo._fileName.Length >= 4
+                            && moduleInfo._fileName.StartsWith(@"\\?\", StringComparison.Ordinal))
                         {
-                            moduleInfo.fileName = moduleInfo.fileName.Substring(4);
+                            moduleInfo._fileName = moduleInfo._fileName.Substring(4);
                         }
 
                         moduleInfos.Add(moduleInfo);
@@ -437,7 +437,7 @@ namespace System.Diagnostics
             finally
             {
 #if FEATURE_TRACESWITCH
-                Debug.WriteLineIf(Process.processTracing.TraceVerbose, "Process - CloseHandle(process)");
+                Debug.WriteLineIf(Process._processTracing.TraceVerbose, "Process - CloseHandle(process)");
 #endif
                 if (!processHandle.IsInvalid)
                 {
@@ -445,7 +445,6 @@ namespace System.Diagnostics
                 }
             }
         }
-
 
         public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
         {
@@ -512,7 +511,7 @@ namespace System.Diagnostics
         static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library, int processIndex, int threadIndex, byte[] data)
         {
 #if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(Process.processTracing.TraceVerbose, "GetProcessInfos()");
+            Debug.WriteLineIf(Process._processTracing.TraceVerbose, "GetProcessInfos()");
 #endif
             Dictionary<int, ProcessInfo> processInfos = new Dictionary<int, ProcessInfo>();
             List<ThreadInfo> threadInfos = new List<ThreadInfo>();
@@ -561,24 +560,24 @@ namespace System.Diagnostics
                         if (type.ObjectNameTitleIndex == processIndex)
                         {
                             ProcessInfo processInfo = GetProcessInfo(type, (IntPtr)((long)instancePtr + instance.ByteLength), counters);
-                            if (processInfo.processId == 0 && string.Compare(instanceName, "Idle", StringComparison.OrdinalIgnoreCase) != 0)
+                            if (processInfo._processId == 0 && string.Compare(instanceName, "Idle", StringComparison.OrdinalIgnoreCase) != 0)
                             {
                                 // Sometimes we'll get a process structure that is not completely filled in.
                                 // We can catch some of these by looking for non-"idle" processes that have id 0
                                 // and ignoring those.
 #if FEATURE_TRACESWITCH
-                                Debug.WriteLineIf(Process.processTracing.TraceVerbose, "GetProcessInfos() - found a non-idle process with id 0; ignoring.");
+                                Debug.WriteLineIf(Process._processTracing.TraceVerbose, "GetProcessInfos() - found a non-idle process with id 0; ignoring.");
 #endif
                             }
                             else
                             {
-                                if (processInfos.ContainsKey(processInfo.processId))
+                                if (processInfos.ContainsKey(processInfo._processId))
                                 {
                                     // We've found two entries in the perfcounters that claim to be the
                                     // same process.  We throw an exception.  Is this really going to be
                                     // helpfull to the user?  Should we just ignore?
 #if FEATURE_TRACESWITCH
-                                    Debug.WriteLineIf(Process.processTracing.TraceVerbose, "GetProcessInfos() - found a duplicate process id");
+                                    Debug.WriteLineIf(Process._processTracing.TraceVerbose, "GetProcessInfos() - found a duplicate process id");
 #endif
                                 }
                                 else
@@ -593,15 +592,15 @@ namespace System.Diagnostics
                                         else if (instanceName.EndsWith(".e", StringComparison.Ordinal)) processName = instanceName.Substring(0, 13);
                                         else if (instanceName.EndsWith(".ex", StringComparison.Ordinal)) processName = instanceName.Substring(0, 12);
                                     }
-                                    processInfo.processName = processName;
-                                    processInfos.Add(processInfo.processId, processInfo);
+                                    processInfo._processName = processName;
+                                    processInfos.Add(processInfo._processId, processInfo);
                                 }
                             }
                         }
                         else if (type.ObjectNameTitleIndex == threadIndex)
                         {
                             ThreadInfo threadInfo = GetThreadInfo(type, (IntPtr)((long)instancePtr + instance.ByteLength), counters);
-                            if (threadInfo.threadId != 0) threadInfos.Add(threadInfo);
+                            if (threadInfo._threadId != 0) threadInfos.Add(threadInfo);
                         }
                         instancePtr = (IntPtr)((long)instancePtr + instance.ByteLength + counterBlock.ByteLength);
                     }
@@ -618,9 +617,9 @@ namespace System.Diagnostics
             {
                 ThreadInfo threadInfo = (ThreadInfo)threadInfos[i];
                 ProcessInfo processInfo;
-                if (processInfos.TryGetValue(threadInfo.processId, out processInfo))
+                if (processInfos.TryGetValue(threadInfo._processId, out processInfo))
                 {
-                    processInfo.threadInfoList.Add(threadInfo);
+                    processInfo._threadInfoList.Add(threadInfo);
                 }
             }
 
@@ -639,25 +638,25 @@ namespace System.Diagnostics
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
                     case ValueId.ProcessId:
-                        threadInfo.processId = (int)value;
+                        threadInfo._processId = (int)value;
                         break;
                     case ValueId.ThreadId:
-                        threadInfo.threadId = (int)value;
+                        threadInfo._threadId = (int)value;
                         break;
                     case ValueId.BasePriority:
-                        threadInfo.basePriority = (int)value;
+                        threadInfo._basePriority = (int)value;
                         break;
                     case ValueId.CurrentPriority:
-                        threadInfo.currentPriority = (int)value;
+                        threadInfo._currentPriority = (int)value;
                         break;
                     case ValueId.StartAddress:
-                        threadInfo.startAddress = (IntPtr)value;
+                        threadInfo._startAddress = (IntPtr)value;
                         break;
                     case ValueId.ThreadState:
-                        threadInfo.threadState = (ThreadState)value;
+                        threadInfo._threadState = (ThreadState)value;
                         break;
                     case ValueId.ThreadWaitReason:
-                        threadInfo.threadWaitReason = GetThreadWaitReason((int)value);
+                        threadInfo._threadWaitReason = GetThreadWaitReason((int)value);
                         break;
                 }
             }
@@ -703,40 +702,40 @@ namespace System.Diagnostics
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
                     case ValueId.ProcessId:
-                        processInfo.processId = (int)value;
+                        processInfo._processId = (int)value;
                         break;
                     case ValueId.HandleCount:
-                        processInfo.handleCount = (int)value;
+                        processInfo._handleCount = (int)value;
                         break;
                     case ValueId.PoolPagedBytes:
-                        processInfo.poolPagedBytes = value;
+                        processInfo._poolPagedBytes = value;
                         break;
                     case ValueId.PoolNonpagedBytes:
-                        processInfo.poolNonpagedBytes = value;
+                        processInfo._poolNonpagedBytes = value;
                         break;
                     case ValueId.VirtualBytes:
-                        processInfo.virtualBytes = value;
+                        processInfo._virtualBytes = value;
                         break;
                     case ValueId.VirtualBytesPeak:
-                        processInfo.virtualBytesPeak = value;
+                        processInfo._virtualBytesPeak = value;
                         break;
                     case ValueId.WorkingSetPeak:
-                        processInfo.workingSetPeak = value;
+                        processInfo._workingSetPeak = value;
                         break;
                     case ValueId.WorkingSet:
-                        processInfo.workingSet = value;
+                        processInfo._workingSet = value;
                         break;
                     case ValueId.PageFileBytesPeak:
-                        processInfo.pageFileBytesPeak = value;
+                        processInfo._pageFileBytesPeak = value;
                         break;
                     case ValueId.PageFileBytes:
-                        processInfo.pageFileBytes = value;
+                        processInfo._pageFileBytes = value;
                         break;
                     case ValueId.PrivateBytes:
-                        processInfo.privateBytes = value;
+                        processInfo._privateBytes = value;
                         break;
                     case ValueId.BasePriority:
-                        processInfo.basePriority = (int)value;
+                        processInfo._basePriority = (int)value;
                         break;
                 }
             }
@@ -892,45 +891,45 @@ namespace System.Diagnostics
                 // get information for a process
                 ProcessInfo processInfo = new ProcessInfo();
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
-                processInfo.processId = pi.UniqueProcessId.ToInt32();
-                processInfo.handleCount = (int)pi.HandleCount;
-                processInfo.sessionId = (int)pi.SessionId;
-                processInfo.poolPagedBytes = (long)pi.QuotaPagedPoolUsage; ;
-                processInfo.poolNonpagedBytes = (long)pi.QuotaNonPagedPoolUsage;
-                processInfo.virtualBytes = (long)pi.VirtualSize;
-                processInfo.virtualBytesPeak = (long)pi.PeakVirtualSize;
-                processInfo.workingSetPeak = (long)pi.PeakWorkingSetSize;
-                processInfo.workingSet = (long)pi.WorkingSetSize;
-                processInfo.pageFileBytesPeak = (long)pi.PeakPagefileUsage;
-                processInfo.pageFileBytes = (long)pi.PagefileUsage;
-                processInfo.privateBytes = (long)pi.PrivatePageCount;
-                processInfo.basePriority = pi.BasePriority;
+                processInfo._processId = pi.UniqueProcessId.ToInt32();
+                processInfo._handleCount = (int)pi.HandleCount;
+                processInfo._sessionId = (int)pi.SessionId;
+                processInfo._poolPagedBytes = (long)pi.QuotaPagedPoolUsage; ;
+                processInfo._poolNonpagedBytes = (long)pi.QuotaNonPagedPoolUsage;
+                processInfo._virtualBytes = (long)pi.VirtualSize;
+                processInfo._virtualBytesPeak = (long)pi.PeakVirtualSize;
+                processInfo._workingSetPeak = (long)pi.PeakWorkingSetSize;
+                processInfo._workingSet = (long)pi.WorkingSetSize;
+                processInfo._pageFileBytesPeak = (long)pi.PeakPagefileUsage;
+                processInfo._pageFileBytes = (long)pi.PagefileUsage;
+                processInfo._privateBytes = (long)pi.PrivatePageCount;
+                processInfo._basePriority = pi.BasePriority;
 
 
                 if (pi.NamePtr == IntPtr.Zero)
                 {
-                    if (processInfo.processId == NtProcessManager.SystemProcessID)
+                    if (processInfo._processId == NtProcessManager.SystemProcessID)
                     {
-                        processInfo.processName = "System";
+                        processInfo._processName = "System";
                     }
-                    else if (processInfo.processId == NtProcessManager.IdleProcessID)
+                    else if (processInfo._processId == NtProcessManager.IdleProcessID)
                     {
-                        processInfo.processName = "Idle";
+                        processInfo._processName = "Idle";
                     }
                     else
                     {
                         // for normal process without name, using the process ID. 
-                        processInfo.processName = processInfo.processId.ToString(CultureInfo.InvariantCulture);
+                        processInfo._processName = processInfo._processId.ToString(CultureInfo.InvariantCulture);
                     }
                 }
                 else
                 {
                     string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.NamePtr, pi.NameLength / sizeof(char)));
-                    processInfo.processName = processName;
+                    processInfo._processName = processName;
                 }
 
                 // get the threads for current process
-                processInfos[processInfo.processId] = processInfo;
+                processInfos[processInfo._processId] = processInfo;
 
                 currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(pi));
                 int i = 0;
@@ -940,15 +939,15 @@ namespace System.Diagnostics
                     Marshal.PtrToStructure(currentPtr, ti);
                     ThreadInfo threadInfo = new ThreadInfo();
 
-                    threadInfo.processId = (int)ti.UniqueProcess;
-                    threadInfo.threadId = (int)ti.UniqueThread;
-                    threadInfo.basePriority = ti.BasePriority;
-                    threadInfo.currentPriority = ti.Priority;
-                    threadInfo.startAddress = ti.StartAddress;
-                    threadInfo.threadState = (ThreadState)ti.ThreadState;
-                    threadInfo.threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason);
+                    threadInfo._processId = (int)ti.UniqueProcess;
+                    threadInfo._threadId = (int)ti.UniqueThread;
+                    threadInfo._basePriority = ti.BasePriority;
+                    threadInfo._currentPriority = ti.Priority;
+                    threadInfo._startAddress = ti.StartAddress;
+                    threadInfo._threadState = (ThreadState)ti.ThreadState;
+                    threadInfo._threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason);
 
-                    processInfo.threadInfoList.Add(threadInfo);
+                    processInfo._threadInfoList.Add(threadInfo);
                     currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(ti));
                     i++;
                 }
@@ -974,7 +973,7 @@ namespace System.Diagnostics
             if (String.IsNullOrEmpty(name))
             {
 #if FEATURE_TRACESWITCH
-                Debug.WriteLineIf(Process.processTracing.TraceVerbose, "GetProcessInfos() - unexpected blank ProcessName");
+                Debug.WriteLineIf(Process._processTracing.TraceVerbose, "GetProcessInfos() - unexpected blank ProcessName");
 #endif
                 return String.Empty;
             }

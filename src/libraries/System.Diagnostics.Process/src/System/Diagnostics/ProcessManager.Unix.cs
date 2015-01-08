@@ -19,30 +19,30 @@ namespace System.Diagnostics
 
             var pi = new ProcessInfo // dummy code using fields just to suppress warnings for now
             {
-                basePriority = 0,
-                processId = 0,
-                handleCount = 0,
-                poolPagedBytes = 0,
-                poolNonpagedBytes = 0,
-                virtualBytes = 0,
-                virtualBytesPeak = 0,
-                workingSetPeak = 0,
-                workingSet = 0,
-                pageFileBytesPeak = 0,
-                pageFileBytes = 0,
-                privateBytes = 0,
-                sessionId = 0,
-                processName = null
+                _basePriority = 0,
+                _processId = 0,
+                _handleCount = 0,
+                _poolPagedBytes = 0,
+                _poolNonpagedBytes = 0,
+                _virtualBytes = 0,
+                _virtualBytesPeak = 0,
+                _workingSetPeak = 0,
+                _workingSet = 0,
+                _pageFileBytesPeak = 0,
+                _pageFileBytes = 0,
+                _privateBytes = 0,
+                _sessionId = 0,
+                _processName = null
             };
-            pi.threadInfoList.Add(new ThreadInfo // dummy code using fields just to suppress warnings for now
+            pi._threadInfoList.Add(new ThreadInfo // dummy code using fields just to suppress warnings for now
             {
-                threadId = 0,
-                processId = 0,
-                basePriority = 0,
-                currentPriority = 0,
-                startAddress = IntPtr.Zero,
-                threadState = default(ThreadState),
-                threadWaitReason = default(ThreadWaitReason)
+                _threadId = 0,
+                _processId = 0,
+                _basePriority = 0,
+                _currentPriority = 0,
+                _startAddress = IntPtr.Zero,
+                _threadState = default(ThreadState),
+                _threadWaitReason = default(ThreadWaitReason)
             });
 
             throw NotImplemented.ByDesign; // TODO: Implement this
@@ -80,11 +80,11 @@ namespace System.Diagnostics
         public static ModuleInfo[] GetModuleInfos(int processId)
         {
             ModuleInfo mi = new ModuleInfo(); // dummy code using fields just to suppress warnings for now
-            mi.baseName = null;
-            mi.fileName = null;
-            mi.baseOfDll = IntPtr.Zero;
-            mi.entryPoint = IntPtr.Zero;
-            mi.sizeOfImage = 0;
+            mi._baseName = null;
+            mi._fileName = null;
+            mi._baseOfDll = IntPtr.Zero;
+            mi._entryPoint = IntPtr.Zero;
+            mi._sizeOfImage = 0;
 
             throw NotImplemented.ByDesign; // TODO: Implement this
         }

@@ -12,10 +12,10 @@ namespace System.Diagnostics
     /// <internalonly/>
     internal sealed class ModuleInfo
     {
-        public string baseName;
-        public string fileName;
-        public IntPtr baseOfDll;
-        public IntPtr entryPoint;
-        public int sizeOfImage;
+        internal string _baseName;
+        internal string _fileName;
+        internal IntPtr _baseOfDll;
+        internal IntPtr _entryPoint;
+        internal int _sizeOfImage;
     }
 }
