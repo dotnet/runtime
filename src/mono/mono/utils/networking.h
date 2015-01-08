@@ -20,6 +20,10 @@
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+#ifdef HOST_WIN32
+#include <winsock2.h>
+#endif
+
 #include <mono/utils/mono-compiler.h>
 
 typedef enum {
