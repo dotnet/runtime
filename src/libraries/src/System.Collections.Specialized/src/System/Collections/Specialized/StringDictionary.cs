@@ -22,7 +22,7 @@ namespace System.Collections.Specialized
         // That means using ToLower in each property on this type.  Also for backwards
         // compatibility, we will be converting strings to lower-case, which has a 
         // problem for some Georgian alphabets.  
-        internal Hashtable contents = new Hashtable();
+        private readonly Hashtable contents = new Hashtable();
 
 
         /// <devdoc>

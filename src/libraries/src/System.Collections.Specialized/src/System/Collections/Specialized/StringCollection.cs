@@ -11,7 +11,7 @@ namespace System.Collections.Specialized
     /// </devdoc>
     public class StringCollection : IList
     {
-        private ArrayList _data = new ArrayList();
+        private readonly ArrayList _data = new ArrayList();
 
         /// <devdoc>
         /// <para>Represents the entry at the specified index of the <see cref='System.Collections.Specialized.StringCollection'/>.</para>

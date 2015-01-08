@@ -17,7 +17,7 @@ namespace System.Collections.Specialized
         private DictionaryNode _head;
         private int _version;
         private int _count;
-        private IComparer _comparer;
+        private readonly IComparer _comparer;
         private Object _syncRoot;
 
         public ListDictionary()
