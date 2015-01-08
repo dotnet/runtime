@@ -208,15 +208,15 @@ namespace System.Collections.Specialized
             {
                 if ((locdata & 0x80000000) != 0)
                 {
-                    sb.Append("1");
+                    sb.Append('1');
                 }
                 else
                 {
-                    sb.Append("0");
+                    sb.Append('0');
                 }
                 locdata <<= 1;
             }
-            sb.Append("}");
+            sb.Append('}');
             return sb.ToString();
         }
 
