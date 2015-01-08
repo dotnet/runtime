@@ -4,9 +4,10 @@
 #include <config.h>
 #if defined(PLATFORM_ANDROID)
 #include <asm/sigcontext.h>
+#endif
+
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
-#endif
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -153,10 +154,6 @@ typedef struct ucontext {
 #endif
 
 #elif defined(TARGET_AMD64)
-
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-#include <ucontext.h>
-#endif
 
 #if defined(__APPLE__)
 	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rax)
