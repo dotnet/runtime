@@ -2097,13 +2097,14 @@ mono_marshal_free_ccw (MonoObject* object)
 			g_free (ccw_iter);
 		}
 		else
-			ccw_list_item = g_list_next(ccw_list_item);
+			ccw_list_item = g_list_next (ccw_list_item);
 	}
 
 	/* if list is empty remove original address from hash */
 	if (g_list_length (ccw_list) == 0)
 		g_hash_table_remove (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)));
-
+	else if (ccw_list != ccw_list_orig)
+		g_hash_table_insert (ccw_hash, GINT_TO_POINTER (mono_object_hash (object)), ccw_list);
 
 	return TRUE;
 }
