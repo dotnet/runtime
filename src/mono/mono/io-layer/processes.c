@@ -1262,7 +1262,12 @@ GetExitCodeProcess (gpointer process, guint32 *code)
 		
 		return FALSE;
 	}
-	
+
+	if (process_handle->id == _wapi_getpid ()) {
+		*code = STILL_ACTIVE;
+		return TRUE;
+	}
+
 	/* A process handle is only signalled if the process has exited
 	 * and has been waited for */
 
