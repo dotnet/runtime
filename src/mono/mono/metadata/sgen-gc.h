@@ -393,7 +393,6 @@ struct _SgenThreadInfo {
 	char **tlab_start_addr;
 	char **tlab_temp_end_addr;
 	char **tlab_real_end_addr;
-	gpointer runtime_data;
 
 #ifdef SGEN_POSIX_STW
 	/* This is -1 until the first suspend. */

@@ -72,7 +72,7 @@ update_current_thread_stack (void *start)
 	MONO_CONTEXT_GET_CURRENT (cur_thread_ctx);
 	memcpy (&info->client_info.ctx, &cur_thread_ctx, sizeof (MonoContext));
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, NULL, &info->client_info.ctx);
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, &info->client_info.ctx);
 #else
 	ARCH_STORE_REGS (reg_ptr);
 	memcpy (&info->client_info.regs, reg_ptr, sizeof (info->client_info.regs));

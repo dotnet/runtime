@@ -119,6 +119,8 @@ struct _SgenClientThreadInfo {
 	*/
 	gboolean gc_disabled;
 
+	gpointer runtime_data;
+
 	void *stack_end;
 	void *stack_start;
 	void *stack_start_limit;

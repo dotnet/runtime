@@ -2756,43 +2756,27 @@ sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	sgen_thread_info = info;
 #endif
 
+	sgen_init_tlab_info (info);
+
 #ifdef SGEN_POSIX_STW
 	info->stop_count = -1;
 	info->signal = 0;
 #endif
 	sgen_client_thread_register (info, stack_bottom_fallback);
 
-	sgen_init_tlab_info (info);
-
-	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
-
-	if (gc_callbacks.thread_attach_func)
-		info->runtime_data = gc_callbacks.thread_attach_func ();
 	return info;
 }
 
 void
 sgen_thread_unregister (SgenThreadInfo *p)
 {
-	MonoNativeThreadId tid;
-
-	tid = mono_thread_info_get_tid (p);
-	binary_protocol_thread_unregister ((gpointer)tid);
-	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
-
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_set_value (thread_info_key, NULL);
 #else
 	sgen_thread_info = NULL;
 #endif
 
-	if (p->client_info.info.runtime_thread)
-		mono_threads_add_joinable_thread ((gpointer)tid);
-
-	if (gc_callbacks.thread_detach_func) {
-		gc_callbacks.thread_detach_func (p->runtime_data);
-		p->runtime_data = NULL;
-	}
+	sgen_client_thread_unregister (p);
 }
 
 
@@ -2803,10 +2787,10 @@ sgen_thread_attach (SgenThreadInfo *info)
 	/*this is odd, can we get attached before the gc is inited?*/
 	init_stats ();
 	UNLOCK_GC;
-	
-	if (gc_callbacks.thread_attach_func && !info->runtime_data)
-		info->runtime_data = gc_callbacks.thread_attach_func ();
+
+	sgen_client_thread_attach (info);
 }
+
 gboolean
 mono_gc_register_thread (void *baseptr)
 {

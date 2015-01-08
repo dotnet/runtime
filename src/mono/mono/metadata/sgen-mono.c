@@ -1989,7 +1989,31 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 	memset (&info->client_info.regs, 0, sizeof (info->regs));
 #endif
 
+	if (mono_gc_get_gc_callbacks ()->thread_attach_func)
+		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();
+
+	binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
+
 	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.stack_end);
+}
+
+void
+sgen_client_thread_unregister (SgenThreadInfo *p)
+{
+	MonoNativeThreadId tid;
+
+	tid = mono_thread_info_get_tid (p);
+
+	if (p->client_info.info.runtime_thread)
+		mono_threads_add_joinable_thread ((gpointer)tid);
+
+	if (mono_gc_get_gc_callbacks ()->thread_detach_func) {
+		mono_gc_get_gc_callbacks ()->thread_detach_func (p->client_info.runtime_data);
+		p->client_info.runtime_data = NULL;
+	}
+
+	binary_protocol_thread_unregister ((gpointer)tid);
+	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
 }
 
 void
@@ -2012,6 +2036,13 @@ static gboolean
 thread_in_critical_region (SgenThreadInfo *info)
 {
 	return info->client_info.in_critical_region;
+}
+
+void
+sgen_client_thread_attach (SgenThreadInfo *info)
+{
+	if (mono_gc_get_gc_callbacks ()->thread_attach_func && !info->client_info.runtime_data)
+		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();
 }
 
 static void
@@ -2071,7 +2102,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 		g_assert (info->client_info.suspend_done);
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
 		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {
-			mono_gc_get_gc_callbacks ()->thread_mark_func (info->runtime_data, info->client_info.stack_start, info->client_info.stack_end, precise, &ctx);
+			mono_gc_get_gc_callbacks ()->thread_mark_func (info->client_info.runtime_data, info->client_info.stack_start, info->client_info.stack_end, precise, &ctx);
 		} else if (!precise) {
 			if (!conservative_stack_mark) {
 				fprintf (stderr, "Precise stack mark not supported - disabling.\n");
