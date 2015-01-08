@@ -44,7 +44,7 @@
     <ItemGroup>
       <BuildToolFiles Include="$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\**\*" />
     </ItemGroup>
-    <Copy SourceFiles="@(BuildToolFiles)" DestinationFolder="$(ToolsDir)" />
+    <Copy SourceFiles="@(BuildToolFiles)" DestinationFiles="@(BuildToolFiles->'$(ToolsDir)%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <Touch Files="$(BuildToolsInstallSempahore)" AlwaysCreate="true" />
   </Target>

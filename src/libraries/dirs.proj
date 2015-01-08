@@ -14,20 +14,9 @@
 
   <ItemGroup>
     <!-- Include test runtime when restoring packages in EnsureDependencies -->
-    <PackageConfigs Include="$(BaseIntermediateOutputPath)test-runtime\packages.config" />
+    <PackageConfigs Include="$(ToolsDir)test-runtime\packages.config" />
   </ItemGroup>
   
-  <Target Name="PrepareTestRuntimeRestore" BeforeTargets="EnsureDependencies">
-    <Copy
-      SourceFiles="$(ToolsDir)test-runtime-packages.config"
-      DestinationFiles="$(BaseIntermediateOutputPath)test-runtime\packages.config"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" />
-  </Target>
-
   <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
   <Target Name="RestoreAllPackages" BeforeTargets="Build" DependsOnTargets="EnsureDependencies" />
 
