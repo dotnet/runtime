@@ -22,7 +22,7 @@ namespace System.Collections.Specialized
         // That means using ToLower in each property on this type.  Also for backwards
         // compatibility, we will be converting strings to lower-case, which has a 
         // problem for some Georgian alphabets.  
-        private readonly Hashtable contents = new Hashtable();
+        private readonly Hashtable _contents = new Hashtable();
 
 
         /// <devdoc>
@@ -42,7 +42,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return contents.Count;
+                return _contents.Count;
             }
         }
 
@@ -55,7 +55,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return contents.IsSynchronized;
+                return _contents.IsSynchronized;
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Collections.Specialized
                     throw new ArgumentNullException("key");
                 }
 
-                return (string)contents[key.ToLowerInvariant()];
+                return (string)_contents[key.ToLowerInvariant()];
             }
             set
             {
@@ -80,7 +80,7 @@ namespace System.Collections.Specialized
                     throw new ArgumentNullException("key");
                 }
 
-                contents[key.ToLowerInvariant()] = value;
+                _contents[key.ToLowerInvariant()] = value;
             }
         }
 
@@ -91,7 +91,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return contents.Keys;
+                return _contents.Keys;
             }
         }
 
@@ -103,7 +103,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return contents.SyncRoot;
+                return _contents.SyncRoot;
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return contents.Values;
+                return _contents.Values;
             }
         }
 
@@ -128,7 +128,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentNullException("key");
             }
 
-            contents.Add(key.ToLowerInvariant(), value);
+            _contents.Add(key.ToLowerInvariant(), value);
         }
 
         /// <devdoc>
@@ -136,7 +136,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual void Clear()
         {
-            contents.Clear();
+            _contents.Clear();
         }
 
         /// <devdoc>
@@ -149,7 +149,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentNullException("key");
             }
 
-            return contents.ContainsKey(key.ToLowerInvariant());
+            return _contents.ContainsKey(key.ToLowerInvariant());
         }
 
         /// <devdoc>
@@ -157,7 +157,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual bool ContainsValue(string value)
         {
-            return contents.ContainsValue(value);
+            return _contents.ContainsValue(value);
         }
 
         /// <devdoc>
@@ -166,7 +166,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual void CopyTo(Array array, int index)
         {
-            contents.CopyTo(array, index);
+            _contents.CopyTo(array, index);
         }
 
         /// <devdoc>
@@ -174,7 +174,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual IEnumerator GetEnumerator()
         {
-            return contents.GetEnumerator();
+            return _contents.GetEnumerator();
         }
 
         /// <devdoc>
@@ -187,7 +187,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentNullException("key");
             }
 
-            contents.Remove(key.ToLowerInvariant());
+            _contents.Remove(key.ToLowerInvariant());
         }
     }
 }
