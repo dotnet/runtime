@@ -62,7 +62,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        void Initialize(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access)
+        protected void Initialize(SafeBuffer buffer, Int64 offset, Int64 capacity, FileAccess access)
         {
             if (buffer == null)
             {
