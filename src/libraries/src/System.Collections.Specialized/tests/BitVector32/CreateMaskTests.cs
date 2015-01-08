@@ -39,7 +39,7 @@ namespace System.Collections.Specialized.Tests
                 }
             }
 
-            // [] apply first Mask 
+            // [] apply first Mask
             //-----------------------------------------------------------------
 
             data = 0;

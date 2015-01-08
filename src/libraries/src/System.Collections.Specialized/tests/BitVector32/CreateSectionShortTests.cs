@@ -49,7 +49,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] CreateSection for random maxValue
-            //-----------------------------------------------------------------           
+            //-----------------------------------------------------------------
 
             // generate random previous max value
             int max = -55;

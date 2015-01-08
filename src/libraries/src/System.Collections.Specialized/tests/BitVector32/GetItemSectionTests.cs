@@ -57,7 +57,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             //   (-1)
-            //   
+            //
             data = -1;
             bv32 = new BitVector32(data);
             if (bv32.Data != data)
@@ -66,7 +66,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // loop through sections
-            // all values should correspond to 'values'-array elements 
+            // all values should correspond to 'values'-array elements
             for (int i = 0; i < sect.Length; i++)
             {
                 if (bv32[sect[i]] != values[i])
@@ -90,7 +90,7 @@ namespace System.Collections.Specialized.Tests
 
             values[values.Length - 1] = 0;
             // loop through sections
-            // all values should correspond to 'values'-array elements 
+            // all values should correspond to 'values'-array elements
             for (int i = 0; i < sect.Length; i++)
             {
                 if (bv32[sect[i]] != values[i])
@@ -113,7 +113,7 @@ namespace System.Collections.Specialized.Tests
             ClearArray(values);
             values[values.Length - 1] = 1;
             // loop through sections
-            // all values should correspond to 'values'-array elements 
+            // all values should correspond to 'values'-array elements
             for (int i = 0; i < sect.Length; i++)
             {
                 if (bv32[sect[i]] != values[i])
@@ -140,7 +140,7 @@ namespace System.Collections.Specialized.Tests
             values[2] = 1;
             values[3] = 1;
             // loop through sections
-            // all values should correspond to 'values'-array elements 
+            // all values should correspond to 'values'-array elements
             for (int i = 0; i < sect.Length; i++)
             {
                 if (bv32[sect[i]] != values[i])

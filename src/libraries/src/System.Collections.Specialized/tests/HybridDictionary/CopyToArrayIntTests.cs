@@ -46,7 +46,7 @@ namespace System.Collections.Specialized.Tests
             // string [] destination;
             Array destination;
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -295,7 +295,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Value, hd[k]));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (String.Compare(k.ToString(), ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) != 0)
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Key, k));
@@ -364,7 +364,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Value, hd[k]));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (String.Compare(k.ToString(), ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) != 0)
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Key, k));
@@ -459,7 +459,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, copied lowercase string"));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (String.Compare(k.ToString(), ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) != 0)
                 {
                     Assert.False(true, string.Format("Error, copied \"{1}\" instead of \"{2}\"", i, ((DictionaryEntry)destination.GetValue(i)).Key, k));
@@ -618,7 +618,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0}th entry", i));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (!k.Equals(((DictionaryEntry)destination.GetValue(i)).Key))
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0} entry", i));
@@ -654,7 +654,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0}th entry", i));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (!k.Equals(((DictionaryEntry)destination.GetValue(i)).Key))
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0} entry", i));
@@ -687,7 +687,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0}th entry when case-insensitive", i));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (String.Compare(k.ToString(), ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) < 0)
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0} entry when case-insensitive", i));
@@ -719,7 +719,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0}th entry when case-insensitive", i));
                 }
-                // verify keysShort 
+                // verify keysShort
                 if (String.Compare(k.ToString(), ((DictionaryEntry)destination.GetValue(i)).Key.ToString()) < 0)
                 {
                     Assert.False(true, string.Format("Error, failed to copy {0} entry when case-insensitive", i));

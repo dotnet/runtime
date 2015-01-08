@@ -14,7 +14,7 @@ namespace System.Collections.Specialized.Tests
         public void Test01()
         {
             BitVector32 bv32;
-            BitVector32 bv32_1;       // extra BitVector32 - for comparison 
+            BitVector32 bv32_1;       // extra BitVector32 - for comparison
             string str = "";              // result of ToString() for bv32
             string str_1 = "";                    // result of ToString() for bv32_1
             int data = 0;

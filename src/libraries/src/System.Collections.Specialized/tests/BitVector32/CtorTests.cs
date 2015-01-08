@@ -14,7 +14,7 @@ namespace System.Collections.Specialized.Tests
         public void Test01()
         {
             BitVector32 bv32;
-            BitVector32 bv32Temp;       // extra BitVector32 - for comparison        
+            BitVector32 bv32Temp;       // extra BitVector32 - for comparison
 
             // [] BitVector is constructed as expected
             //-----------------------------------------------------------------

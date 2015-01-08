@@ -36,7 +36,7 @@ namespace System.Collections.Specialized.Tests
                 Int32.MaxValue.ToString()
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -162,7 +162,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity: search should be case-sensitive
-            // 
+            //
 
             sc.Clear();
             sc.Add(intlValues[0].ToUpper());
@@ -174,7 +174,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.False(true, string.Format("Error, count is {1} instead of {2} ", sc.Count, cnt));
             }
 
-            // look for lowercase item - should be (values.Length  + 1) index 
+            // look for lowercase item - should be (values.Length  + 1) index
             //
             intlStr = intlValues[0].ToLower();
 

@@ -52,7 +52,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] Clear() on empty collection
-            // 
+            //
             sc.Clear();
             cnt = sc.Count;
             if (cnt != 0)

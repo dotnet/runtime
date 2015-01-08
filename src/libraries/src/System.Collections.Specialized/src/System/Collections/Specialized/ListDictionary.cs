@@ -6,7 +6,7 @@ using System.Collections;
 namespace System.Collections.Specialized
 {
     /// <devdoc>
-    ///  <para> 
+    ///  <para>
     ///    This is a simple implementation of IDictionary using a singly linked list. This
     ///    will be smaller and faster than a Hashtable if the number of elements is 10 or less.
     ///    This should not be used if performance is important for large numbers of elements.

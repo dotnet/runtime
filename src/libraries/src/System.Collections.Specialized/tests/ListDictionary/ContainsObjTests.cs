@@ -80,7 +80,7 @@ namespace System.Collections.Specialized.Tests
                 "2222222222222222222222222"
             };
 
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
@@ -287,7 +287,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             // [] Contains() and objects_not_overriding_Equals
-            // 
+            //
 
             ld = new ListDictionary();
             ld.Clear();

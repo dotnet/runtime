@@ -52,7 +52,7 @@ namespace System.Collections.Specialized.Tests
             };
 
             string[] destination;
-            int cnt = 0;            // Count 
+            int cnt = 0;            // Count
 
             // initialize IntStrings
             intl = new IntlStrings();
