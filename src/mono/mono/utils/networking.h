@@ -11,11 +11,15 @@
 #ifndef __MONO_NETWORKING_H__
 #define __MONO_NETWORKING_H__
 
+#include <config.h>
+
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
 #include <sys/types.h>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
 #include <mono/utils/mono-compiler.h>
 
 typedef enum {
