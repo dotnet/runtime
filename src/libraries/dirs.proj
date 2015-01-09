@@ -28,7 +28,12 @@
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
-  <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
+  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets')">
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependsOn);
+      BuildPackages;
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
   <ItemGroup>
     <DisabledTestAssembly Include="System.Threading.Tasks.Dataflow.Tests" />
@@ -38,6 +43,11 @@
   </ItemGroup>
   
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
-  <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
+  <PropertyGroup Condition="Exists('$(ToolsDir)tests.targets')">
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependsOn);
+      RunTests;
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
 </Project>
