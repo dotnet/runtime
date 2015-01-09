@@ -123,12 +123,6 @@
   <data name="AlternationCantHaveComment" xml:space="preserve">
     <value>Alternation conditions cannot be comments.</value>
   </data>
-  <data name="Arg_InvalidArrayType" xml:space="preserve">
-    <value>Target array type is not compatible with the type of items in the collection.</value>
-  </data>
-  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
-    <value>Only single dimensional arrays are supported for the requested action.</value>
-  </data>
   <data name="BadClassInCharRange" xml:space="preserve">
     <value>Cannot include class \{0} in character range.</value>
   </data>

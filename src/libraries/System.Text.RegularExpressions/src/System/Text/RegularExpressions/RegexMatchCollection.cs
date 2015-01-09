@@ -78,6 +78,14 @@ namespace System.Text.RegularExpressions
             return match;
         }
 
+        private void EnsureInitialized()
+        {
+            if (!_done)
+            {
+                GetMatch(s_infinite);
+            }
+        }
+
         /// <summary>
         /// Returns the number of captures.
         /// </summary>
@@ -85,11 +93,7 @@ namespace System.Text.RegularExpressions
         {
             get
             {
-                if (_done)
-                    return _matches.Count;
-
-                GetMatch(s_infinite);
-
+                EnsureInitialized();
                 return _matches.Count;
             }
         }
@@ -134,22 +138,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            if ((array != null) && (array.Rank != 1))
-            {
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
-            }
-
-            // property access to force computation of whole array
-            int count = Count;
-            try
-            {
-                // Array.Copy will check for null.
-                Array.Copy(_matches.ToArray(), 0, array, arrayIndex, count);
-            }
-            catch (ArrayTypeMismatchException ex)
-            {
-                throw new ArgumentException(SR.Arg_InvalidArrayType, ex);
-            }
+            EnsureInitialized();
+            ((ICollection)_matches).CopyTo(array, arrayIndex);
         }
 
         /// <summary>
