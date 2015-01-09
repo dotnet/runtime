@@ -297,7 +297,7 @@ sgen_check_major_refs (void)
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {	\
 		if (*(ptr)) {	\
-			g_assert (sgen_client_vtable_get_name (SGEN_LOAD_VTABLE_UNCHECKED (*(ptr))));	\
+			g_assert (sgen_client_vtable_get_namespace (SGEN_LOAD_VTABLE_UNCHECKED (*(ptr))));	\
 		}	\
 	} while (0)
 
