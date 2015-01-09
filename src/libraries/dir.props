@@ -1,7 +1,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Build Tools Version -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.17-prerelease</BuildToolsVersion>
+    <BuildToolsVersion>1.0.19-prerelease</BuildToolsVersion>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -24,9 +24,9 @@
 
   <!-- Common build tool properties -->
   <PropertyGroup>
-    <BuildToolsInstallSempahore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSempahore>
+    <BuildToolsInstallSemaphore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSemaphore>
 
     <BuildToolsTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsTargetInputs>
-    <BuildToolsTargetOutputs>$(BuildToolsInstallSempahore)</BuildToolsTargetOutputs>
+    <BuildToolsTargetOutputs>$(BuildToolsInstallSemaphore)</BuildToolsTargetOutputs>
   </PropertyGroup>
 </Project>
