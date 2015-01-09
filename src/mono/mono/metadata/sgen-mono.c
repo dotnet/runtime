@@ -2547,10 +2547,10 @@ mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack,
 	// FIXME:
 }
 
-gpointer
+void
 sgen_client_out_of_memory (size_t size)
 {
-	return mono_gc_out_of_memory (size);
+	mono_gc_out_of_memory (size);
 }
 
 guint8*

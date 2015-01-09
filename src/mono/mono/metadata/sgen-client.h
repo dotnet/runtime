@@ -80,7 +80,7 @@ void sgen_client_degraded_allocation (size_t size);
 
 void sgen_client_total_allocated_heap_changed (size_t allocated_heap_size);
 
-gpointer sgen_client_out_of_memory (size_t size);
+void sgen_client_out_of_memory (size_t size);
 
 /*
  * If the client has registered any internal memory types, this must return a string
