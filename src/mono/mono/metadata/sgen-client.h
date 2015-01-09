@@ -19,8 +19,15 @@
 
 #include "mono/metadata/sgen-pointer-queue.h"
 
+/*
+ * Init whatever needs initing.  This is called relatively early in SGen initialization.
+ */
 void sgen_client_init (void);
 
+/*
+ * The slow path for getting an object's size.  We're passing in the vtable because we've
+ * already fetched it.
+ */
 mword sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o);
 
 /*
@@ -37,8 +44,15 @@ gboolean sgen_client_array_fill_range (char *start, size_t size);
  */
 void sgen_client_zero_array_fill_header (void *p, size_t size);
 
+/*
+ * Return whether the given object is an array fill dummy object.
+ */
 gboolean sgen_client_object_is_array_fill (GCObject *o);
 
+/*
+ * Return whether the given finalizable object's finalizer is critical, i.e., needs to run
+ * after all non-critical finalizers have run.
+ */
 gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
@@ -49,10 +63,21 @@ gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
  */
 void sgen_client_object_queued_for_finalization (GCObject *obj);
 
+/*
+ * Run the given object's finalizer.
+ */
 void sgen_client_run_finalize (GCObject *obj);
 
+/*
+ * Is called after a collection if there are objects to finalize.  The world is still
+ * stopped.  This will usually notify the finalizer thread that it needs to run.
+ */
 void sgen_client_finalize_notify (void);
 
+/*
+ * Returns TRUE if no ephemerons have been marked.  Will be called again if it returned
+ * FALSE.  If ephemerons are not supported, just return TRUE.
+ */
 gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 
 /*
@@ -68,18 +93,45 @@ void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
  */
 gboolean sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx);
 
+/*
+ * Called after nursery objects have been pinned.  No action is necessary.
+ */
 void sgen_client_nursery_objects_pinned (void **definitely_pinned, int count);
 
+/*
+ * Called at a semi-random point during minor collections.  No action is necessary.
+ */
 void sgen_client_collecting_minor (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
+
+/*
+ * Called at semi-random points during major collections.  No action is necessary.
+ */
 void sgen_client_collecting_major_1 (void);
-void sgen_client_pinned_los_object (char *obj);
 void sgen_client_collecting_major_2 (void);
 void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *critical_fin_queue);
 
+/*
+ * Called after a LOS object has been pinned.  No action is necessary.
+ */
+void sgen_client_pinned_los_object (char *obj);
+
+/*
+ * Called for every degraded allocation.  No action is necessary.
+ */
 void sgen_client_degraded_allocation (size_t size);
 
+/*
+ * Called whenever the amount of memory allocated for the managed heap changes.  No action
+ * is necessary.
+ */
 void sgen_client_total_allocated_heap_changed (size_t allocated_heap_size);
 
+/*
+ * Called when an object allocation fails.  The suggested action is to abort the program.
+ *
+ * FIXME: Don't we want to return a BOOL here that indicates whether to retry the
+ * allocation?
+ */
 void sgen_client_out_of_memory (size_t size);
 
 /*
@@ -88,22 +140,50 @@ void sgen_client_out_of_memory (size_t size);
  */
 const char* sgen_client_description_for_internal_mem_type (int type);
 
+/*
+ * Only used for debugging.  `sgen_client_vtable_get_namespace()` may return NULL.
+ */
 const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
 const char* sgen_client_vtable_get_name (GCVTable *vtable);
 
+/*
+ * Called before starting collections.  The world is already stopped.  No action is
+ * necessary.
+ */
 void sgen_client_pre_collection_checks (void);
 
+/*
+ * The `stack_bottom_fallback` is the value passed through via `sgen_thread_register()`.
+ */
 void sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback);
 void sgen_client_thread_unregister (SgenThreadInfo *p);
 
+/*
+ * Called on each worker thread when it starts up.
+ */
 void sgen_client_thread_register_worker (void);
 
+/*
+ * The least this function needs to do is scan all registers and thread stacks.  To do this
+ * conservatively, use `sgen_conservatively_pin_objects_from()`.
+ */
 void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx);
 
+/*
+ * Stop and restart the world, i.e., all threads that interact with the managed heap.  For
+ * single-threaded programs this is a nop.
+ */
 void sgen_client_stop_world (int generation);
 void sgen_client_restart_world (int generation, GGTimingInfo *timing);
 
+/*
+ * Must return FALSE.  The bridge is not supported outside of Mono.
+ */
 gboolean sgen_client_bridge_need_processing (void);
+
+/*
+ * None of these should ever be called.
+ */
 void sgen_client_bridge_reset_data (void);
 void sgen_client_bridge_processing_stw_step (void);
 void sgen_client_bridge_wait_for_processing (void);
@@ -111,16 +191,33 @@ void sgen_client_bridge_processing_finish (int generation);
 gboolean sgen_client_bridge_is_bridge_object (GCObject *obj);
 void sgen_client_bridge_register_finalized_object (GCObject *object);
 
+/*
+ * No action is necessary.
+ */
 void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
 
+/*
+ * Called after collections, reporting the amount of time they took.  No action is
+ * necessary.
+ */
 void sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage);
 
+/*
+ * Called to handle `MONO_GC_PARAMS` and `MONO_GC_DEBUG` options.  The `handle` functions
+ * must return TRUE if they have recognized and processed the option, FALSE otherwise.
+ */
 gboolean sgen_client_handle_gc_param (const char *opt);
 void sgen_client_print_gc_params_usage (void);
-
 gboolean sgen_client_handle_gc_debug (const char *opt);
 void sgen_client_print_gc_debug_usage (void);
+
+/*
+ * These client binary protocol functions are called from the respective binary protocol
+ * functions.  No action is necessary.  We suggest implementing them as inline functions in
+ * the client header file so that no overhead is incurred if they don't actually do
+ * anything.
+ */
 
 #define TYPE_INT int
 #define TYPE_LONGLONG long long
