@@ -142,7 +142,7 @@ sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, siz
 static void
 sgen_card_table_wbarrier_object_copy (GCObject* obj, GCObject *src)
 {
-	size_t size = sgen_client_vtable_get_instance_size (SGEN_LOAD_VTABLE_UNCHECKED(obj));
+	size_t size = sgen_client_par_object_get_size (SGEN_LOAD_VTABLE_UNCHECKED (obj), obj);
 
 #ifdef DISABLE_CRITICAL_REGION
 	LOCK_GC;

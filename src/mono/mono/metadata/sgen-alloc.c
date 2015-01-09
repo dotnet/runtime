@@ -492,10 +492,9 @@ sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
 }
 
 void*
-sgen_alloc_obj_mature (GCVTable *vtable)
+sgen_alloc_obj_mature (GCVTable *vtable, size_t size)
 {
 	void *res;
-	size_t size = sgen_client_vtable_get_instance_size (vtable);
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
