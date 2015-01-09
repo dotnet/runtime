@@ -5236,6 +5236,13 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		}
 		break;
 	}
+	case MONO_PATCH_INFO_LDSTR_LIT: {
+		const char *s = patch_info->data.target;
+
+		encode_value (strlen (s), p, &p);
+		memcpy (p, s, strlen (s) + 1);
+		break;
+	}
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
 		g_assert_not_reached ();

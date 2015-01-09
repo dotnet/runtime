@@ -9644,8 +9644,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			else if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				MonoInst *iargs [1];
+				char *str = mono_method_get_wrapper_data (method, n);
 
-				EMIT_NEW_PCONST (cfg, iargs [0], mono_method_get_wrapper_data (method, n));				
+				if (cfg->compile_aot)
+					EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
+				else
+					EMIT_NEW_PCONST (cfg, iargs [0], str);
 				*sp = mono_emit_jit_icall (cfg, mono_string_new_wrapper, iargs);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {

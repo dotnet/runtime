@@ -3378,6 +3378,17 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.target = info;
 		break;
 	}
+	case MONO_PATCH_INFO_LDSTR_LIT: {
+		int len = decode_value (p, &p);
+		char *s;
+
+	    s = mono_mempool_alloc0 (mp, len + 1);
+		memcpy (s, p, len + 1);
+		p += len + 1;
+
+		ji->data.target = s;
+		break;
+	}
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();
