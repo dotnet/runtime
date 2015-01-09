@@ -107,7 +107,6 @@ void sgen_client_pre_collection_checks (void);
 
 void sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback);
 void sgen_client_thread_unregister (SgenThreadInfo *p);
-void sgen_client_thread_attach (SgenThreadInfo *info);
 
 void sgen_client_thread_register_worker (void);
 

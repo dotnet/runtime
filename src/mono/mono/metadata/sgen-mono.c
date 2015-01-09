@@ -2195,8 +2195,8 @@ thread_in_critical_region (SgenThreadInfo *info)
 	return info->client_info.in_critical_region;
 }
 
-void
-sgen_client_thread_attach (SgenThreadInfo *info)
+static void
+sgen_thread_attach (SgenThreadInfo *info)
 {
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func && !info->client_info.runtime_data)
 		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();

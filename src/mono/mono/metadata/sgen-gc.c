@@ -2695,17 +2695,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 }
 
 
-void
-sgen_thread_attach (SgenThreadInfo *info)
-{
-	LOCK_GC;
-	/*this is odd, can we get attached before the gc is inited?*/
-	init_stats ();
-	UNLOCK_GC;
-
-	sgen_client_thread_attach (info);
-}
-
 /*
  * ######################################################################
  * ########  Write barriers

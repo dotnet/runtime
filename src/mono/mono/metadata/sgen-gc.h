@@ -892,7 +892,6 @@ void* sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size);
 
 void* sgen_thread_register (SgenThreadInfo* info, void *addr);
 void sgen_thread_unregister (SgenThreadInfo *p);
-void sgen_thread_attach (SgenThreadInfo *info);
 
 /* Finalization/ephemeron support */
 
