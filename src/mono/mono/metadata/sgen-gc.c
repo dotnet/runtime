@@ -3420,33 +3420,28 @@ count_cards (long long *major_total, long long *major_marked, long long *los_tot
 static gboolean world_is_stopped = FALSE;
 
 /* LOCKING: assumes the GC lock is held */
-int
+void
 sgen_stop_world (int generation)
 {
-	int count;
 	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
 
 	SGEN_ASSERT (0, !world_is_stopped, "Why are we stopping a stopped world?");
 
 	binary_protocol_world_stopping (generation, sgen_timestamp ());
 
-	count = sgen_client_stop_world (generation);
+	sgen_client_stop_world (generation);
 
 	world_is_stopped = TRUE;
 
 	if (binary_protocol_is_heavy_enabled ())
 		count_cards (&major_total, &major_marked, &los_total, &los_marked);
 	binary_protocol_world_stopped (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
-
-	return count;
 }
 
 /* LOCKING: assumes the GC lock is held */
-int
+void
 sgen_restart_world (int generation, GGTimingInfo *timing)
 {
-	int count;
-
 	SGEN_ASSERT (0, world_is_stopped, "Why are we restarting a running world?");
 
 	if (binary_protocol_is_enabled ()) {
@@ -3456,7 +3451,7 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 		binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 	}
 
-	count = sgen_client_restart_world (generation, timing);
+	sgen_client_restart_world (generation, timing);
 
 	world_is_stopped = FALSE;
 
@@ -3468,8 +3463,6 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 		sgen_client_bridge_processing_finish (generation);
 
 	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
-
-	return count;
 }
 
 gboolean

@@ -113,8 +113,8 @@ void sgen_client_thread_register_worker (void);
 
 void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, ScanCopyContext ctx);
 
-int sgen_client_stop_world (int generation);
-int sgen_client_restart_world (int generation, GGTimingInfo *timing);
+void sgen_client_stop_world (int generation);
+void sgen_client_restart_world (int generation, GGTimingInfo *timing);
 
 gboolean sgen_client_bridge_need_processing (void);
 void sgen_client_bridge_reset_data (void);
