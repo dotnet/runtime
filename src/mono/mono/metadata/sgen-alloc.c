@@ -503,7 +503,6 @@ sgen_alloc_obj_mature (GCVTable *vtable, size_t size)
 	LOCK_GC;
 	res = alloc_degraded ((GCVTable*)vtable, size, TRUE);
 	UNLOCK_GC;
-	sgen_client_object_register_finalizer_if_necessary (res);
 
 	return res;
 }

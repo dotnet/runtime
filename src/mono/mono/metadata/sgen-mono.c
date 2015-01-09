@@ -465,13 +465,6 @@ mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks)
 }
 
 void
-sgen_client_object_register_finalizer_if_necessary (MonoObject *obj)
-{
-	if (G_UNLIKELY (obj->vtable->klass->has_finalize))
-		mono_object_register_finalizer (obj);
-}
-
-void
 sgen_client_run_finalize (MonoObject *obj)
 {
 	mono_gc_run_finalize (obj, NULL);
@@ -929,7 +922,10 @@ mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 void*
 mono_gc_alloc_mature (MonoVTable *vtable)
 {
-	return sgen_alloc_obj_mature (vtable, vtable->klass->instance_size);
+	MonoObject *obj = sgen_alloc_obj_mature (vtable, vtable->klass->instance_size);
+	if (obj && G_UNLIKELY (obj->vtable->klass->has_finalize))
+		mono_object_register_finalizer (obj);
+	return obj;
 }
 
 void*

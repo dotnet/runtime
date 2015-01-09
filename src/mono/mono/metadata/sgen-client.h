@@ -39,8 +39,6 @@ void sgen_client_zero_array_fill_header (void *p, size_t size);
 
 gboolean sgen_client_object_is_array_fill (GCObject *o);
 
-void sgen_client_object_register_finalizer_if_necessary (GCObject *obj);
-
 gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
