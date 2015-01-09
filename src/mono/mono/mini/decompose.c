@@ -629,14 +629,13 @@ mono_decompose_long_opts (MonoCompile *cfg)
 	first_bb = cfg->cbb;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		MonoInst *tree = bb->code;	
+		MonoInst *tree = mono_bb_first_inst(bb, FILTER_IL_SEQ_POINT);
 		MonoInst *prev = NULL;
 
 		   /*
 		mono_print_bb (bb, "BEFORE LOWER_LONG_OPTS");
 		*/
 
-		tree = bb->code;
 		cfg->cbb->code = cfg->cbb->last_ins = NULL;
 
 		while (tree) {
@@ -967,7 +966,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 				break;
 
 			case OP_LCOMPARE: {
-				MonoInst *next = tree->next;
+				MonoInst *next = mono_inst_next (tree, FILTER_IL_SEQ_POINT);
 
 				g_assert (next);
 
@@ -1049,7 +1048,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 
 			/* Not yet used, since lcompare is decomposed before local cprop */
 			case OP_LCOMPARE_IMM: {
-				MonoInst *next = tree->next;
+				MonoInst *next = mono_inst_next (tree, FILTER_IL_SEQ_POINT);
 				guint32 low_imm = tree->inst_ls_word;
 				guint32 high_imm = tree->inst_ms_word;
 				int low_reg = tree->sreg1 + 1;
@@ -1149,9 +1148,9 @@ mono_decompose_long_opts (MonoCompile *cfg)
 
 				/* Process the newly added ops again since they can be long ops too */
 				if (prev)
-					tree = prev->next;
+					tree = mono_inst_next (prev, FILTER_IL_SEQ_POINT);
 				else
-					tree = bb->code;
+					tree = mono_bb_first_inst (bb, FILTER_IL_SEQ_POINT);
 
 				first_bb->code = first_bb->last_ins = NULL;
 				first_bb->in_count = first_bb->out_count = 0;
@@ -1159,7 +1158,7 @@ mono_decompose_long_opts (MonoCompile *cfg)
 			}
 			else {
 				prev = tree;
-				tree = tree->next;
+				tree = mono_inst_next (tree, FILTER_IL_SEQ_POINT);
 			}
 		}
 	}

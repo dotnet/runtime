@@ -663,8 +663,9 @@ else
 	$(RUNTIME) --regression $(regtests)
 endif
 
-check-seq-points:
+check-seq-points: mono $(regtests)
 	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || exit 1; done
+	for i in $(regtests); do ./test_op_il_seq_point.sh $$i --aot || exit 1; done
 
 gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
@@ -723,7 +724,7 @@ stat3: mono bench.exe
 docu: mini.sgm
 	docbook2txt mini.sgm
 
-check-local: rcheck
+check-local: rcheck check-seq-points
 
 clean-local:
 	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe
