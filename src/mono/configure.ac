@@ -2263,6 +2263,97 @@ else
 			AC_MSG_RESULT(no)
 		])
 	])
+
+	dnl **********************************
+	dnl *** Check for getaddrinfo ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getaddrinfo)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <winsock2.h>
+		#include <ws2tcpip.h>
+	], [
+		getaddrinfo(NULL,NULL,NULL,NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETADDRINFO, 1, [Have getaddrinfo])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for gethostbyname ***
+	dnl **********************************
+	AC_MSG_CHECKING(for gethostbyname)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <winsock2.h>
+		#include <ws2tcpip.h>
+	], [
+		gethostbyname(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETHOSTBYNAME, 1, [Have gethostbyname])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for getprotobyname ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getprotobyname)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <winsock2.h>
+		#include <ws2tcpip.h>
+	], [
+		getprotobyname(NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETPROTOBYNAME, 1, [Have getprotobyname])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for getnameinfo ***
+	dnl **********************************
+	AC_MSG_CHECKING(for getnameinfo)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <winsock2.h>
+		#include <ws2tcpip.h>
+	], [
+		getnameinfo (NULL, 0, NULL, 0, NULL, 0, 0);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GETNAMEINFO, 1, [Have getnameinfo])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+	dnl **********************************
+	dnl *** Check for inet_ntop ***
+	dnl **********************************
+	AC_MSG_CHECKING(for inet_ntop)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <winsock2.h>
+		#include <ws2tcpip.h>
+	], [
+		inet_ntop (0, NULL, NULL, 0);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_INET_NTOP, 1, [Have inet_ntop])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
 	AC_CHECK_DECLS(InterlockedExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedCompareExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedDecrement64, [], [], [[#include <windows.h>]])
