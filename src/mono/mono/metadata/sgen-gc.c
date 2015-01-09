@@ -471,8 +471,6 @@ gray_queue_enable_redirect (SgenGrayQueue *queue)
 void
 sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags)
 {
-	GCVTable *array_fill_vtable = sgen_client_get_array_fill_vtable ();
-
 	while (start < end) {
 		size_t size;
 		char *obj;
@@ -489,7 +487,7 @@ sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc 
 			obj = start;
 		}
 
-		if ((GCVTable*)SGEN_LOAD_VTABLE (obj) != array_fill_vtable) {
+		if (!sgen_client_object_is_array_fill ((GCObject*)obj)) {
 			CHECK_CANARY_FOR_OBJECT (obj);
 			size = ALIGN_UP (safe_object_get_size ((GCObject*)obj));
 			callback (obj, size, data);

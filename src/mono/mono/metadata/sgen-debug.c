@@ -653,6 +653,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 
 	while (cur < end) {
 		size_t ss, size;
+		gboolean is_array_fill;
 
 		if (!*(void**)cur) {
 			cur += sizeof (void*);
@@ -667,15 +668,16 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 		ss = safe_object_get_size ((GCObject*)cur);
 		size = SGEN_ALIGN_UP (ss);
 		verify_scan_starts (cur, cur + size);
+		is_array_fill = sgen_client_object_is_array_fill ((GCObject*)cur);
 		if (do_dump_nursery_content) {
 			GCVTable *vtable = SGEN_LOAD_VTABLE (cur);
 			if (cur > hole_start)
 				SGEN_LOG (0, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
 			SGEN_LOG (0, "OBJ  [%p %p %d %d %s.%s %d]", cur, cur + size, (int)size, (int)ss,
 					sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable),
-					vtable == sgen_client_get_array_fill_vtable ());
+					is_array_fill);
 		}
-		if (nursery_canaries_enabled () && (GCVTable*)SGEN_LOAD_VTABLE (cur) != sgen_client_get_array_fill_vtable ()) {
+		if (nursery_canaries_enabled () && !is_array_fill) {
 			CHECK_CANARY_FOR_OBJECT (cur);
 			CANARIFY_SIZE (size);
 		}

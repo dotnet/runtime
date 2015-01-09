@@ -340,8 +340,8 @@ mono_gc_get_write_barrier (void)
 /* Vtable of the objects used to fill out nursery fragments before a collection */
 static GCVTable *array_fill_vtable;
 
-GCVTable*
-sgen_client_get_array_fill_vtable (void)
+static GCVTable*
+get_array_fill_vtable (void)
 {
 	if (!array_fill_vtable) {
 		static MonoClass klass;
@@ -379,7 +379,7 @@ sgen_client_array_fill_range (char *start, size_t size)
 	}
 
 	o = (MonoArray*)start;
-	o->obj.vtable = (MonoVTable*)sgen_client_get_array_fill_vtable ();
+	o->obj.vtable = (MonoVTable*)get_array_fill_vtable ();
 	/* Mark this as not a real object */
 	o->obj.synchronisation = GINT_TO_POINTER (-1);
 	o->bounds = NULL;
