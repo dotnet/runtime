@@ -29,6 +29,13 @@
 #endif
 #include <ctype.h>
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
 #endif
