@@ -284,7 +284,7 @@ sgen_memgov_try_alloc_space (mword size, int space)
 	}
 
 	SGEN_ATOMIC_ADD_P (allocated_heap, size);
-	sgen_client_total_allocated_heap (allocated_heap);
+	sgen_client_total_allocated_heap_changed (allocated_heap);
 	return TRUE;
 }
 

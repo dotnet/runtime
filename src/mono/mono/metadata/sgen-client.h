@@ -78,7 +78,7 @@ void sgen_client_collecting_major_3 (SgenPointerQueue *fin_ready_queue, SgenPoin
 
 void sgen_client_degraded_allocation (size_t size);
 
-void sgen_client_total_allocated_heap (mword allocated_heap);
+void sgen_client_total_allocated_heap_changed (size_t allocated_heap_size);
 
 gpointer sgen_client_out_of_memory (size_t size);
 

@@ -2379,7 +2379,7 @@ mono_gc_pthread_exit (void *retval)
  */
 
 void
-sgen_client_total_allocated_heap (mword allocated_heap)
+sgen_client_total_allocated_heap_changed (size_t allocated_heap)
 {
 	mono_runtime_resource_check_limit (MONO_RESOURCE_GC_HEAP, allocated_heap);
 }
