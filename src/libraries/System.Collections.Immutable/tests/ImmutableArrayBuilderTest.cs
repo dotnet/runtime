@@ -543,6 +543,53 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        public void MoveToImmutableAddToCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
+            for (int i = 0; i < builder.Capacity; i++)
+            {
+                builder.Add(i);
+            }
+
+            Assert.Equal(new[] { 0, 1, 2 }, builder.MoveToImmutable());
+        }
+
+        [Fact]
+        public void MoveToImmutableInsertToCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
+            for (int i = 0; i < builder.Capacity; i++)
+            {
+                builder.Insert(i, i);
+            }
+
+            Assert.Equal(new[] { 0, 1, 2 }, builder.MoveToImmutable());
+        }
+
+        [Fact]
+        public void MoveToImmutableAddRangeToCapcity()
+        {
+            var array = new[] { 1, 2, 3, 4, 5 };
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: array.Length);
+            builder.AddRange(array);
+            Assert.Equal(array, builder.MoveToImmutable());
+        }
+
+        [Fact]
+        public void MoveToImmutableAddRemoveAddToCapacity()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
+            for (int i = 0; i < builder.Capacity; i++)
+            {
+                builder.Add(i);
+                builder.RemoveAt(i);
+                builder.Add(i);
+            }
+
+            Assert.Equal(new[] { 0, 1, 2 }, builder.MoveToImmutable());
+        }
+
+        [Fact]
         public void CapacitySetToZero()
         {
             var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
