@@ -196,7 +196,7 @@ namespace System.Collections.Immutable
                     throw new InvalidOperationException(Strings.CapacityMustEqualCountOnMove);
                 }
 
-                var temp = _elements;
+                T[] temp = _elements;
                 _elements = ImmutableArray<T>.Empty.array;
                 _count = 0;
                 return new ImmutableArray<T>(temp);
