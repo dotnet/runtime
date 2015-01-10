@@ -40,7 +40,7 @@ get_method () {
 diff_methods () {
 	TMP_FILE=tmp_file
 	echo "$(get_methods $1 $2 $3 $4)" >$TMP_FILE
-	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
+	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)") | grep '^<'
 }
 
 diff_method () {
