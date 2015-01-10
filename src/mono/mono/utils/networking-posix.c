@@ -19,9 +19,6 @@
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
-#ifdef HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

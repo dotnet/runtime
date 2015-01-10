@@ -15,7 +15,6 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>
-#include <signal.h>
 #include <string.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tabledefs.h>

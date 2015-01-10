@@ -26,7 +26,7 @@
 #include <mono/metadata/rand.h>
 #include <mono/metadata/exception.h>
 
-#if !defined(__native_client__) && !defined(HOST_WIN32)
+#if !defined(__native_client__) && !defined(HOST_WIN32) && defined (HAVE_SYS_UN_H)
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <errno.h>
@@ -180,7 +180,7 @@ ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose (gpoint
 	CryptReleaseContext ((HCRYPTPROV) handle, 0);
 }
 
-#elif defined (__native_client__)
+#elif defined (__native_client__) || !defined (HAVE_SYS_UN_H)
 
 #include <time.h>
 

@@ -33,8 +33,12 @@
 #else
 
 #include <config.h>
+#ifdef HAVE_GRP_H
 #include <grp.h>
+#endif
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
