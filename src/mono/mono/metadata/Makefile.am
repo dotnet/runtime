@@ -176,7 +176,7 @@ common_sources = \
 	remoting.h		\
 	remoting.c		\
 	runtime.c		\
-	security.c		\
+	mono-security.c		\
 	security.h		\
 	security-core-clr.c	\
 	security-core-clr.h	\
