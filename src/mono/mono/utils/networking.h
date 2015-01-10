@@ -25,7 +25,9 @@
 #include <sys/sockio.h>
 #endif
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
 
 #ifdef HOST_WIN32
 #include <winsock2.h>
