@@ -148,10 +148,10 @@ namespace System.Threading.Tasks.Dataflow
             // through the reordering buffer when async processing completes, 
             // we know for certain that no more messages will need to be sent to the source.
 #if PRENET45
-            m_target.Completion.ContinueWith(completed =>
+            _target.Completion.ContinueWith(completed =>
             {
-                if (completed.IsFaulted) m_source.AddAndUnwrapAggregateException(completed.Exception);
-                m_source.Complete();
+                if (completed.IsFaulted) _source.AddAndUnwrapAggregateException(completed.Exception);
+                _source.Complete();
             }, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
 #else
             _target.Completion.ContinueWith((completed, state) =>
@@ -167,7 +167,7 @@ namespace System.Threading.Tasks.Dataflow
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
 #if PRENET45
-            m_source.Completion.ContinueWith(completed =>
+            _source.Completion.ContinueWith(completed =>
             {
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 (this as IDataflowBlock).Fault(completed.Exception);
@@ -279,7 +279,7 @@ namespace System.Threading.Tasks.Dataflow
             },
             CancellationToken.None,
             Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously),
-            m_source.DataflowBlockOptions.TaskScheduler);
+            _source.DataflowBlockOptions.TaskScheduler);
 #else
             task.ContinueWith((completed, state) =>
             {

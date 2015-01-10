@@ -399,7 +399,7 @@ namespace System.Threading.Tasks.Dataflow
             private int _cancellationState; // one of the CANCELLATION_STATE_* constant values, defaulting to NONE
 
             // Cancellation states:
-            // m_cancellationState starts out as NONE, and will remain that way unless a CancellationToken
+            // _cancellationState starts out as NONE, and will remain that way unless a CancellationToken
             // is provided in the initial OfferToTarget call.  As such, unless a token is provided,
             // all synchronization related to cancellation will be avoided.  Once a token is provided,
             // the state transitions to REGISTERED.  If cancellation then is requested or if the target
@@ -408,10 +408,10 @@ namespace System.Threading.Tasks.Dataflow
             // take effect (e.g. if cancellation raced with the target consuming, such that the cancellation
             // action was able to transition to COMPLETING but the consumption wasn't, then ConsumeMessage
             // would return false indicating that the message could not be consumed).  The only additional
-            // complication here is around reservations.  If a target reserves a message, m_cancellationState
+            // complication here is around reservations.  If a target reserves a message, _cancellationState
             // transitions to RESERVED.  A subsequent ConsumeMessage call can successfully transition from
             // RESERVED to COMPLETING, but cancellation can't; cancellation can only transition from REGISTERED
-            // to COMPLETING.  If the reservation on the message is instead released, m_cancellationState
+            // to COMPLETING.  If the reservation on the message is instead released, _cancellationState
             // will transition back to REGISTERED.
 
             /// <summary>No cancellation registration is used.</summary>
@@ -1114,8 +1114,8 @@ namespace System.Threading.Tasks.Dataflow
                 // is canceled or the source block completes.
                 if (cancellationToken.CanBeCanceled)
                 {
-                    target.m_externalCancellationToken = cancellationToken;
-                    target.m_regFromExternalCancellationToken = cancellationToken.Register(_cancelCts, target.m_cts);
+                    target._externalCancellationToken = cancellationToken;
+                    target._regFromExternalCancellationToken = cancellationToken.Register(_cancelCts, target._cts);
                 }
 
                 // We need to cleanup if one of a few things happens:
@@ -1130,34 +1130,34 @@ namespace System.Threading.Tasks.Dataflow
                 // called multiple times concurrently.)
                 if (millisecondsTimeout > 0)
                 {
-                    target.m_timer = new Timer(
+                    target._timer = new Timer(
                         ReceiveTarget<TOutput>.CachedLinkingTimerCallback, target,
                         millisecondsTimeout, Timeout.Infinite);
                 }
 
-                if (target.m_cts.Token.CanBeCanceled)
+                if (target._cts.Token.CanBeCanceled)
                 {
-                    target.m_cts.Token.Register(
+                    target._cts.Token.Register(
                         ReceiveTarget<TOutput>.CachedLinkingCancellationCallback, target); // we don't have to cleanup this registration, as this cts is short-lived
                 }
 
                 // Link the target to the source
                 var unlink = source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion);
-                target.m_unlink = unlink;
+                target._unlink = unlink;
 
                 // If completion has started, there is a chance it started after we linked.
                 // In that case, we must dispose of the unlinker.
                 // If completion started before we linked, the cleanup code will try to unlink.
                 // So we are racing to dispose of the unlinker.
-                if (Volatile.Read(ref target.m_cleanupReserved))
+                if (Volatile.Read(ref target._cleanupReserved))
                 {
-                    var disposableUnlink = Interlocked.CompareExchange(ref target.m_unlink, null, unlink);
+                    var disposableUnlink = Interlocked.CompareExchange(ref target._unlink, null, unlink);
                     if (disposableUnlink != null) disposableUnlink.Dispose();
                 }
             }
             catch (Exception exception)
             {
-                target.m_receivedException = exception;
+                target._receivedException = exception;
                 target.TryCleanupAndComplete(ReceiveCoreByLinkingCleanupReason.SourceProtocolError);
                 // If we lose the race here, we may end up eating this exception.
             }
@@ -1191,22 +1191,22 @@ namespace System.Threading.Tasks.Dataflow
             private T _receivedValue;
 
             /// <summary>The cancellation token source representing both external and internal cancellation.</summary>
-            internal readonly CancellationTokenSource m_cts = new CancellationTokenSource();
+            internal readonly CancellationTokenSource _cts = new CancellationTokenSource();
             /// <summary>Indicates a code path is already on route to complete the target. 0 is false, 1 is true.</summary>
-            internal bool m_cleanupReserved; // must only be accessed under IncomingLock
+            internal bool _cleanupReserved; // must only be accessed under IncomingLock
             /// <summary>The external token that cancels the internal token.</summary>
-            internal CancellationToken m_externalCancellationToken;
+            internal CancellationToken _externalCancellationToken;
             /// <summary>The registration on the external token that cancels the internal token.</summary>
-            internal CancellationTokenRegistration m_regFromExternalCancellationToken;
+            internal CancellationTokenRegistration _regFromExternalCancellationToken;
             /// <summary>The timer that fires when the timeout has been exceeded.</summary>
-            internal Timer m_timer;
+            internal Timer _timer;
             /// <summary>The unlinker from removing this target from the source from which we're receiving.</summary>
-            internal IDisposable m_unlink;
+            internal IDisposable _unlink;
             /// <summary>The received exception if an error occurred.</summary>
-            internal Exception m_receivedException;
+            internal Exception _receivedException;
 
             /// <summary>Gets the sync obj used to synchronize all activity on this target.</summary>
-            internal object IncomingLock { get { return m_cts; } }
+            internal object IncomingLock { get { return _cts; } }
 
             /// <summary>Initializes the target.</summary>
             internal ReceiveTarget() { }
@@ -1224,13 +1224,13 @@ namespace System.Threading.Tasks.Dataflow
 
                 // If we're already one our way to being done, don't accept anything.
                 // This is a fast-path check prior to taking the incoming lock;
-                // m_cleanupReserved only ever goes from false to true.
-                if (Volatile.Read(ref m_cleanupReserved)) return DataflowMessageStatus.DecliningPermanently;
+                // _cleanupReserved only ever goes from false to true.
+                if (Volatile.Read(ref _cleanupReserved)) return DataflowMessageStatus.DecliningPermanently;
 
                 lock (IncomingLock)
                 {
                     // Check again now that we've taken the lock
-                    if (m_cleanupReserved) return DataflowMessageStatus.DecliningPermanently;
+                    if (_cleanupReserved) return DataflowMessageStatus.DecliningPermanently;
 
                     try
                     {
@@ -1241,7 +1241,7 @@ namespace System.Threading.Tasks.Dataflow
                         {
                             status = DataflowMessageStatus.Accepted;
                             _receivedValue = acceptedValue;
-                            m_cleanupReserved = true;
+                            _cleanupReserved = true;
                         }
                     }
                     catch (Exception exc)
@@ -1249,8 +1249,8 @@ namespace System.Threading.Tasks.Dataflow
                         // An error occured.  Take ourselves out of the game.
                         status = DataflowMessageStatus.DecliningPermanently;
                         Common.StoreDataflowMessageValueIntoExceptionData(exc, messageValue);
-                        m_receivedException = exc;
-                        m_cleanupReserved = true;
+                        _receivedException = exc;
+                        _cleanupReserved = true;
                     }
                 }
 
@@ -1276,13 +1276,13 @@ namespace System.Threading.Tasks.Dataflow
             internal bool TryCleanupAndComplete(ReceiveCoreByLinkingCleanupReason reason)
             {
                 // If cleanup was already reserved, bail.
-                if (Volatile.Read(ref m_cleanupReserved)) return false;
+                if (Volatile.Read(ref _cleanupReserved)) return false;
 
                 // Atomically using IncomingLock try to reserve the completion routine.
                 lock (IncomingLock)
                 {
-                    if (m_cleanupReserved) return false;
-                    m_cleanupReserved = true;
+                    if (_cleanupReserved) return false;
+                    _cleanupReserved = true;
                 }
 
                 // We've reserved cleanup and completion, so do it.
@@ -1298,16 +1298,16 @@ namespace System.Threading.Tasks.Dataflow
             private void CleanupAndComplete(ReceiveCoreByLinkingCleanupReason reason)
             {
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
-                Contract.Assert(Volatile.Read(ref m_cleanupReserved), "Should only be called once by whomever reserved the right.");
+                Contract.Assert(Volatile.Read(ref _cleanupReserved), "Should only be called once by whomever reserved the right.");
 
                 // Unlink from the source.  If we're cleaning up because the source
                 // completed, this is unnecessary, as the source should have already
                 // emptied out its target registry, or at least be in the process of doing so.
                 // We are racing with the linking code - only one can dispose of the unlinker.
-                var unlink = m_unlink;
+                var unlink = _unlink;
                 if (reason != ReceiveCoreByLinkingCleanupReason.SourceCompletion && unlink != null)
                 {
-                    var disposableUnlink = Interlocked.CompareExchange(ref m_unlink, null, unlink);
+                    var disposableUnlink = Interlocked.CompareExchange(ref _unlink, null, unlink);
                     if (disposableUnlink != null)
                     {
                         // If an error occurs, fault the target and override the reason to
@@ -1319,7 +1319,7 @@ namespace System.Threading.Tasks.Dataflow
                         }
                         catch (Exception exc)
                         {
-                            m_receivedException = exc;
+                            _receivedException = exc;
                             reason = ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                         }
                     }
@@ -1327,7 +1327,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Cleanup the timer.  (Even if we're here because of the timer firing, we still
                 // want to aggressively dispose of the timer.)
-                if (m_timer != null) m_timer.Dispose();
+                if (_timer != null) _timer.Dispose();
 
                 // Cancel the token everyone is listening to.  We also want to unlink
                 // from the user-provided cancellation token to prevent a leak.
@@ -1343,13 +1343,13 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     // if the source complete without receiving a value, we check the cancellation one more time
                     if (reason == ReceiveCoreByLinkingCleanupReason.SourceCompletion &&
-                        (m_externalCancellationToken.IsCancellationRequested || m_cts.IsCancellationRequested))
+                        (_externalCancellationToken.IsCancellationRequested || _cts.IsCancellationRequested))
                     {
                         reason = ReceiveCoreByLinkingCleanupReason.Cancellation;
                     }
-                    m_cts.Cancel();
+                    _cts.Cancel();
                 }
-                Common.SafeDisposeTokenRegistration(m_regFromExternalCancellationToken);
+                Common.SafeDisposeTokenRegistration(_regFromExternalCancellationToken);
 
                 // No need to dispose of the cts, either, as we're not accessing its WaitHandle
                 // nor was it created as a linked token source.  Disposing it could also be dangerous
@@ -1385,19 +1385,19 @@ namespace System.Threading.Tasks.Dataflow
 
                     // Task final state: Faulted
                     case ReceiveCoreByLinkingCleanupReason.SourceCompletion:
-                        if (m_receivedException == null) m_receivedException = CreateExceptionForSourceCompletion();
+                        if (_receivedException == null) _receivedException = CreateExceptionForSourceCompletion();
                         goto case ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                     case ReceiveCoreByLinkingCleanupReason.Timer:
-                        if (m_receivedException == null) m_receivedException = CreateExceptionForTimeout();
+                        if (_receivedException == null) _receivedException = CreateExceptionForTimeout();
                         goto case ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                     case ReceiveCoreByLinkingCleanupReason.SourceProtocolError:
                     case ReceiveCoreByLinkingCleanupReason.ErrorDuringCleanup:
-                        Contract.Assert(m_receivedException != null, "We need an exception with which to fault the task.");
+                        Contract.Assert(_receivedException != null, "We need an exception with which to fault the task.");
                         System.Threading.Tasks.Task.Factory.StartNew(state =>
                         {
                             // Complete with the received exception
                             var target = (ReceiveTarget<T>)state;
-                            try { target.TrySetException(target.m_receivedException ?? new Exception()); }
+                            try { target.TrySetException(target._receivedException ?? new Exception()); }
                             catch (ObjectDisposedException) { /* benign race if returned task is already disposed */ }
                         }, this, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                         break;
@@ -1506,7 +1506,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Link from the source.  If the source propagates a message during or immediately after linking
                 // such that our target is already completed, just return its task.
-                target.m_unlinker = source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion);
+                target._unlinker = source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion);
 
                 // If the task is already completed (an exception may have occurred, or the source may have propagated
                 // a message to the target during LinkTo or soon thereafter), just return the task directly.
@@ -1519,7 +1519,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (cancellationToken.CanBeCanceled)
                 {
                     // When cancellation is requested, unlink the target from the source and cancel the target.
-                    target.m_ctr = cancellationToken.Register(OutputAvailableAsyncTarget<TOutput>.s_cancelAndUnlink, target);
+                    target._ctr = cancellationToken.Register(OutputAvailableAsyncTarget<TOutput>.s_cancelAndUnlink, target);
                 }
 
                 // We can't return the task directly, as the source block will be completing the task synchronously,
@@ -1562,7 +1562,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 var target = state as OutputAvailableAsyncTarget<T>;
                 Contract.Assert(target != null, "Expected non-null target");
-                Common.SafeDisposeTokenRegistration(target.m_ctr);
+                Common.SafeDisposeTokenRegistration(target._ctr);
                 return
 #if PRENET45
                     antecedent.Result;
@@ -1596,21 +1596,21 @@ namespace System.Threading.Tasks.Dataflow
                     target, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
             }
 
-            /// <summary>Disposes of m_unlinker if the target has been linked.</summary>
+            /// <summary>Disposes of _unlinker if the target has been linked.</summary>
             internal void AttemptThreadSafeUnlink()
             {
                 // A race is possible. Therefore use an interlocked operation.
-                var cachedUnlinker = m_unlinker;
-                if (cachedUnlinker != null && Interlocked.CompareExchange(ref m_unlinker, null, cachedUnlinker) == cachedUnlinker)
+                var cachedUnlinker = _unlinker;
+                if (cachedUnlinker != null && Interlocked.CompareExchange(ref _unlinker, null, cachedUnlinker) == cachedUnlinker)
                 {
                     cachedUnlinker.Dispose();
                 }
             }
 
             /// <summary>The IDisposable used to unlink this target from its source.</summary>
-            internal IDisposable m_unlinker;
+            internal IDisposable _unlinker;
             /// <summary>The registration used to unregister this target from the cancellation token.</summary>
-            internal CancellationTokenRegistration m_ctr;
+            internal CancellationTokenRegistration _ctr;
 
             /// <summary>Completes the task when offered a message (but doesn't consume the message).</summary>
             DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
@@ -2265,8 +2265,8 @@ namespace System.Threading.Tasks.Dataflow
                 Contract.Requires(completed != null, "Requires a shared target to complete.");
                 _completed = completed;
 
-                // Handle async cancellation by canceling the target without storing it into m_completed.
-                // m_completed must only be set to a RanToCompletion task for a successful branch.
+                // Handle async cancellation by canceling the target without storing it into _completed.
+                // _completed must only be set to a RanToCompletion task for a successful branch.
                 Common.WireCancellationToComplete(cancellationToken, base.Task,
                     state =>
                     {
@@ -2559,7 +2559,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// Temporary list to keep track of SendAsync tasks to TargetObservers with back pressure.
                 /// This field gets instantiated on demand. It gets populated and cleared within an offering cycle.
                 /// </summary>
-                private List<Task<bool>> _TempSendAsyncTaskList;
+                private List<Task<bool>> _tempSendAsyncTaskList;
 
                 /// <summary>Initializes the target instance.</summary>
                 /// <param name="observable">The owning observable.</param>
@@ -2640,10 +2640,10 @@ namespace System.Threading.Tasks.Dataflow
                                 if (sendAsyncTask.Status != TaskStatus.RanToCompletion)
                                 {
                                     // Ensure the SendAsyncTaskList is instantiated
-                                    if (_TempSendAsyncTaskList == null) _TempSendAsyncTaskList = new List<Task<bool>>();
+                                    if (_tempSendAsyncTaskList == null) _tempSendAsyncTaskList = new List<Task<bool>>();
 
                                     // Add the task to the list
-                                    _TempSendAsyncTaskList.Add(sendAsyncTask);
+                                    _tempSendAsyncTaskList.Add(sendAsyncTask);
                                 }
                             }
                             else
@@ -2653,17 +2653,17 @@ namespace System.Threading.Tasks.Dataflow
                         }
 
                         // If there are SendAsync tasks to wait on...
-                        if (_TempSendAsyncTaskList != null && _TempSendAsyncTaskList.Count > 0)
+                        if (_tempSendAsyncTaskList != null && _tempSendAsyncTaskList.Count > 0)
                         {
                             // Consolidate all SendAsync tasks into one
                             var allSendAsyncTasksConsolidated =
 #if PRENET45
-                            Task.Factory.ContinueWhenAll((Task[])TempSendAsyncTaskList.ToArray(), s_whenAllAction);
+                            Task.Factory.ContinueWhenAll((Task[])_TempSendAsyncTaskList.ToArray(), s_whenAllAction);
 #else
-                            Task.WhenAll(_TempSendAsyncTaskList);
+                            Task.WhenAll(_tempSendAsyncTaskList);
 #endif
                             // Clear the temp SendAsync task list
-                            _TempSendAsyncTaskList.Clear();
+                            _tempSendAsyncTaskList.Clear();
 
                             // Return the consolidated task
                             return allSendAsyncTasksConsolidated;

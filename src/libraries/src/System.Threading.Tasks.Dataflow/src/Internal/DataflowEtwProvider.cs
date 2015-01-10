@@ -16,8 +16,8 @@ using System.Linq;
 using System.Security;
 #if FEATURE_TRACING
 using System.Diagnostics.Tracing;
-
 #endif
+
 namespace System.Threading.Tasks.Dataflow.Internal
 {
 #if FEATURE_TRACING
@@ -106,7 +106,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [ThreadStatic]
-        private static object[] _sharedArray;
+        private static object[] t_sharedArray;
 
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
         private void TaskLaunchedForMessageHandling(int blockId, TaskLaunchedReason reason, int availableMessages, int taskId)
@@ -116,16 +116,16 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Therefore this call would hit the "params" overload, which leads to multiple object 
             // allocations every time this event is fired.
 
-            if (_sharedArray == null)
+            if (t_sharedArray == null)
             {
-                _sharedArray = new object[4];
+                t_sharedArray = new object[4];
             }
-            _sharedArray[0] = blockId;
-            _sharedArray[1] = (int)reason;
-            _sharedArray[2] = availableMessages;
-            _sharedArray[3] = taskId;
+            t_sharedArray[0] = blockId;
+            t_sharedArray[1] = (int)reason;
+            t_sharedArray[2] = availableMessages;
+            t_sharedArray[3] = taskId;
 
-            WriteEvent(TASKLAUNCHED_EVENTID, _sharedArray);
+            WriteEvent(TASKLAUNCHED_EVENTID, t_sharedArray);
         }
 
         /// <summary>Describes the reason a task is being launched.</summary>

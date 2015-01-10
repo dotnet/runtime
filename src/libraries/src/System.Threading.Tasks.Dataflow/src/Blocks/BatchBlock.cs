@@ -82,7 +82,7 @@ namespace System.Threading.Tasks.Dataflow
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
 #if PRENET45
-            m_source.Completion.ContinueWith(completed =>
+            _source.Completion.ContinueWith(completed =>
             {
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 (this as IDataflowBlock).Fault(completed.Exception);
@@ -337,7 +337,7 @@ namespace System.Threading.Tasks.Dataflow
                 _batchCompletedAction = batchCompletedAction;
                 _dataflowBlockOptions = dataflowBlockOptions;
 
-                // We'll be using m_nonGreedyState even if we are greedy with bounding
+                // We'll be using _nonGreedyState even if we are greedy with bounding
                 var boundingEnabled = dataflowBlockOptions.BoundedCapacity > 0;
                 if (!_dataflowBlockOptions.Greedy || boundingEnabled) _nonGreedyState = new NonGreedyState(batchSize);
                 if (boundingEnabled) _boundingState = new BoundingState(dataflowBlockOptions.BoundedCapacity);
@@ -427,9 +427,9 @@ namespace System.Threading.Tasks.Dataflow
                     // Otherwise, we try to postpone if a source was provided
                     else if (source != null)
                     {
-                        Contract.Assert(_nonGreedyState != null, "m_nonGreedyState must have been initialized during construction in non-greedy mopde.");
+                        Contract.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mopde.");
 
-                        // We always postpone using m_nonGreedyState even if we are being greedy with bounding
+                        // We always postpone using _nonGreedyState even if we are being greedy with bounding
                         _nonGreedyState.PostponedMessages.Push(source, messageHeader);
 
                         // In non-greedy mode, we need to see if batch could be completed
@@ -506,7 +506,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
             }
 
-            /// <summary>Returns the available capacity to bring in postponed items. The exact values above m_batchSize don't matter.</summary>
+            /// <summary>Returns the available capacity to bring in postponed items. The exact values above _batchSize don't matter.</summary>
             private int BoundedCapacityAvailable
             {
                 get
@@ -650,8 +650,8 @@ namespace System.Threading.Tasks.Dataflow
             {
                 Contract.Requires(BatchesNeedProcessing, "There must be a batch that needs processing.");
 
-                // Create task and store into m_taskForInputProcessing prior to scheduling the task
-                // so that m_taskForInputProcessing will be visibly set in the task loop.
+                // Create task and store into _taskForInputProcessing prior to scheduling the task
+                // so that _taskForInputProcessing will be visibly set in the task loop.
                 _nonGreedyState.TaskForInputProcessing = new Task(thisBatchTarget => ((BatchBlockTargetCore)thisBatchTarget).ProcessMessagesLoopCore(), this,
                                                     Common.GetCreationOptionsForTask(isReplacementReplica));
 
@@ -1004,7 +1004,7 @@ namespace System.Threading.Tasks.Dataflow
                 var reserved = _nonGreedyState.ReservedSourcesTemp;
                 for (int i = 0; i < reserved.Count; i++)
                 {
-                    // We can only store the data into m_messages while holding the IncomingLock, we 
+                    // We can only store the data into _messages while holding the IncomingLock, we 
                     // don't want to allocate extra objects for each batch, and we don't want to 
                     // take and release the lock for each individual item... but we do need to use
                     // the consumed message rather than the initial one.  To handle this, because KeyValuePair is immutable,
@@ -1056,7 +1056,7 @@ namespace System.Threading.Tasks.Dataflow
                 var reserved = _nonGreedyState.ReservedSourcesTemp;
                 for (int i = 0; i < reserved.Count; i++)
                 {
-                    // We can only store the data into m_messages while holding the IncomingLock, we 
+                    // We can only store the data into _messages while holding the IncomingLock, we 
                     // don't want to allocate extra objects for each batch, and we don't want to 
                     // take and release the lock for each individual item... but we do need to use
                     // the consumed message rather than the initial one.  To handle this, because KeyValuePair is immutable,
