@@ -103,7 +103,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 106
+#define MONO_AOT_FILE_VERSION 107
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -178,8 +178,12 @@ typedef struct MonoAotFileInfo
 
 	/* Mono's Global Offset Table */
 	gpointer got;
+	/* Global Offset Table for LLVM code */
+	gpointer llvm_got;
 	/* Compiled code for methods */
 	gpointer methods;
+	gpointer jit_code_start;
+	gpointer jit_code_end;
 	/* Mono EH Frame created by llc when using LLVM */
 	gpointer mono_eh_frame;
 	/* Data blob */
@@ -192,6 +196,7 @@ typedef struct MonoAotFileInfo
 	gpointer extra_method_info_offsets;
 	gpointer extra_method_table;
 	gpointer got_info_offsets;
+	gpointer llvm_got_info_offsets;
 	gpointer methods_end;
 	gpointer unwind_info;
 	gpointer mem_end;
@@ -2238,7 +2243,7 @@ void     mono_llvm_cleanup                  (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_call                (MonoCompile *cfg, MonoCallInst *call) MONO_LLVM_INTERNAL;
 void     mono_llvm_create_aot_module        (const char *got_symbol, gboolean external_symbols, gboolean emit_dwarf) MONO_LLVM_INTERNAL;
-void     mono_llvm_emit_aot_module          (const char *filename, const char *cu_name, int got_size) MONO_LLVM_INTERNAL;
+void     mono_llvm_emit_aot_module          (const char *filename, const char *cu_name) MONO_LLVM_INTERNAL;
 void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 void     mono_llvm_free_domain_info         (MonoDomain *domain) MONO_LLVM_INTERNAL;
 

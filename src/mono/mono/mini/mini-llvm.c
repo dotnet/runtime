@@ -57,6 +57,7 @@ typedef struct {
 	LLVMExecutionEngineRef ee;
 	gboolean external_symbols;
 	gboolean emit_dwarf;
+	int max_got_offset;
 } MonoLLVMModule;
 
 /*
@@ -3244,6 +3245,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				   
 			//mono_add_patch_info (cfg, 0, (MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 			got_offset = mono_aot_get_got_offset (cfg->patch_info);
+			ctx->lmodule->max_got_offset = MAX (ctx->lmodule->max_got_offset, got_offset);
  
 			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
@@ -5352,6 +5354,8 @@ mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, 
 	aot_module.got_symbol = got_symbol;
 	aot_module.external_symbols = external_symbols;
 	aot_module.emit_dwarf = emit_dwarf;
+	/* The first few entries are reserved */
+	aot_module.max_got_offset = 16;
 
 	add_intrinsics (aot_module.module);
 	add_types (&aot_module);
@@ -5394,7 +5398,7 @@ mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, 
  * Emit the aot module into the LLVM bitcode file FILENAME.
  */
 void
-mono_llvm_emit_aot_module (const char *filename, const char *cu_name, int got_size)
+mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 {
 	LLVMTypeRef got_type;
 	LLVMValueRef real_got;
@@ -5404,7 +5408,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name, int got_si
 	 * Create the real got variable and replace all uses of the dummy variable with
 	 * the real one.
 	 */
-	got_type = LLVMArrayType (aot_module.ptr_type, got_size);
+	got_type = LLVMArrayType (aot_module.ptr_type, module->max_got_offset + 1);
 	real_got = LLVMAddGlobal (aot_module.module, got_type, aot_module.got_symbol);
 	LLVMSetInitializer (real_got, LLVMConstNull (got_type));
 	if (module->external_symbols) {
