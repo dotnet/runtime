@@ -2284,21 +2284,24 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 				int i;
 
 				for (i = 0; i < nlocal_in; i++) {
-					inet_ntop (AF_INET, &local_in [i], addr, sizeof (addr));
-					addr_string = mono_string_new (domain, addr);
-					mono_array_setref (*h_addr_list, addr_index, addr_string);
-					addr_index++;
+					MonoAddress maddr;
+					mono_address_init (&maddr, AF_INET, &local_in [i]);
+					if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
+						addr_string = mono_string_new (domain, addr);
+						mono_array_setref (*h_addr_list, addr_index, addr_string);
+						addr_index++;
+					}
 				}
 			}
 
 			if (nlocal_in6) {
 				MonoString *addr_string;
-				const char *ret;
 				int i;
 
 				for (i = 0; i < nlocal_in6; i++) {
-					ret = inet_ntop (AF_INET6, &local_in6 [i], addr, sizeof (addr));
-					if (ret != NULL) {
+					MonoAddress maddr;
+					mono_address_init (&maddr, AF_INET6, &local_in6 [i]);
+					if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
 						addr_string = mono_string_new (domain, addr);
 						mono_array_setref (*h_addr_list, addr_index, addr_string);
 						addr_index++;
@@ -2328,17 +2331,16 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 	*h_addr_list=mono_array_new(domain, mono_get_string_class (), count);
 
 	for (ai = info->entries, i = 0; ai != NULL; ai = ai->next) {
+		MonoAddress maddr;
 		MonoString *addr_string;
-		const char *ret;
 		char buffer [INET6_ADDRSTRLEN]; /* Max. size for IPv6 */
 
 		if((ai->family != PF_INET) && (ai->family != PF_INET6)) {
 			continue;
 		}
 
-		ret = inet_ntop (ai->family, &ai->address, buffer, INET6_ADDRSTRLEN);
-
-		if(ret) {
+		mono_address_init (&maddr, ai->family, &ai->address);
+		if(mono_networking_addr_to_str (&maddr, buffer, sizeof (buffer))) {
 			addr_string=mono_string_new(domain, buffer);
 		} else {
 			addr_string=mono_string_new(domain, "");
