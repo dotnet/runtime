@@ -160,7 +160,7 @@ namespace System.Threading.Tasks.Dataflow
             // OfferToTargets calls to potentially multiple targets, each of which
             // could be faulty and throw an exception.  OfferToTargets creates a
             // list of all such exceptions and returns it.
-            // If m_value is null, OfferToTargets does nothing.
+            // If _value is null, OfferToTargets does nothing.
             var exceptions = OfferToTargets();
             CompleteBlock(exceptions);
         }
@@ -171,7 +171,7 @@ namespace System.Threading.Tasks.Dataflow
         /// </remarks>
         private void CompleteBlock(IList<Exception> exceptions)
         {
-            // Do not invoke the CompletionTaskSource property if there is a chance that m_lazyCompletionTaskSource
+            // Do not invoke the CompletionTaskSource property if there is a chance that _lazyCompletionTaskSource
             // has not been initialized yet and we may have to complete normally, because that would defeat the 
             // sole purpose of the TCS being lazily initialized.
 
@@ -268,7 +268,7 @@ namespace System.Threading.Tasks.Dataflow
         public Boolean TryReceive(Predicate<T> filter, out T item)
         {
             // No need to take the outgoing lock, as we don't need to synchronize with other
-            // targets, and m_value only ever goes from null to non-null, not the other way around.
+            // targets, and _value only ever goes from null to non-null, not the other way around.
 
             // If we have a value, give it up.  All receives on a successfully
             // completed WriteOnceBlock will return true, as long as the message

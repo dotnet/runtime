@@ -106,30 +106,30 @@ namespace System.Threading.Tasks
         // multiple producer threads concurrently or multiple consumer threads concurrently.
         // 
         // SPSCQueue is based on segments that behave like circular buffers. Each circular buffer is represented 
-        // as an array with two indexes: m_first and m_last. m_first is the index of the array slot for the consumer 
-        // to read next, and m_last is the slot for the producer to write next. The circular buffer is empty when 
-        // (m_first == m_last), and full when ((m_last+1) % m_array.Length == m_first).
+        // as an array with two indexes: _first and _last. _first is the index of the array slot for the consumer 
+        // to read next, and _last is the slot for the producer to write next. The circular buffer is empty when 
+        // (_first == _last), and full when ((_last+1) % _array.Length == _first).
         //
-        // Since m_first is only ever modified by the consumer thread and m_last by the producer, the two indices can 
+        // Since _first is only ever modified by the consumer thread and _last by the producer, the two indices can 
         // be updated without interlocked operations. As long as the queue size fits inside a single circular buffer, 
         // enqueues and dequeues simply advance the corresponding indices around the circular buffer. If an enqueue finds 
         // that there is no room in the existing buffer, however, a new circular buffer is allocated that is twice as big 
         // as the old buffer. From then on, the producer will insert values into the new buffer. The consumer will first 
         // empty out the old buffer and only then follow the producer into the new (larger) buffer.
         //
-        // As described above, the enqueue operation on the fast path only modifies the m_first field of the current segment. 
-        // However, it also needs to read m_last in order to verify that there is room in the current segment. Similarly, the 
-        // dequeue operation on the fast path only needs to modify m_last, but also needs to read m_first to verify that the 
+        // As described above, the enqueue operation on the fast path only modifies the _first field of the current segment. 
+        // However, it also needs to read _last in order to verify that there is room in the current segment. Similarly, the 
+        // dequeue operation on the fast path only needs to modify _last, but also needs to read _first to verify that the 
         // queue is non-empty. This results in true cache line sharing between the producer and the consumer.
         //
-        // The cache line sharing issue can be mitigating by having a possibly stale copy of m_first that is owned by the producer, 
-        // and a possibly stale copy of m_last that is owned by the consumer. So, the consumer state is described using 
-        // (m_first, m_lastCopy) and the producer state using (m_firstCopy, m_last). The consumer state is separated from 
+        // The cache line sharing issue can be mitigating by having a possibly stale copy of _first that is owned by the producer, 
+        // and a possibly stale copy of _last that is owned by the consumer. So, the consumer state is described using 
+        // (_first, _lastCopy) and the producer state using (_firstCopy, _last). The consumer state is separated from 
         // the producer state by padding, which allows fast-path enqueues and dequeues from hitting shared cache lines. 
-        // m_lastCopy is the consumer's copy of m_last. Whenever the consumer can tell that there is room in the buffer 
-        // simply by observing m_lastCopy, the consumer thread does not need to read m_last and thus encounter a cache miss. Only 
-        // when the buffer appears to be empty will the consumer refresh m_lastCopy from m_last. m_firstCopy is used by the producer 
-        // in the same way to avoid reading m_first on the hot path.
+        // _lastCopy is the consumer's copy of _last. Whenever the consumer can tell that there is room in the buffer 
+        // simply by observing _lastCopy, the consumer thread does not need to read _last and thus encounter a cache miss. Only 
+        // when the buffer appears to be empty will the consumer refresh _lastCopy from _last. _firstCopy is used by the producer 
+        // in the same way to avoid reading _first on the hot path.
 
         /// <summary>The initial size to use for segments (in number of elements).</summary>
         private const int INIT_SEGMENT_SIZE = 32; // must be a power of 2
@@ -159,15 +159,15 @@ namespace System.Threading.Tasks
         public void Enqueue(T item)
         {
             Segment segment = _tail;
-            var array = segment.m_array;
-            int last = segment.m_state.m_last; // local copy to avoid multiple volatile reads
+            var array = segment._array;
+            int last = segment._state._last; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously room in the current segment
             int tail2 = (last + 1) & (array.Length - 1);
-            if (tail2 != segment.m_state.m_firstCopy)
+            if (tail2 != segment._state._firstCopy)
             {
                 array[last] = item;
-                segment.m_state.m_last = tail2;
+                segment._state._last = tail2;
             }
             // Slow path: there may not be room in the current segment.
             else EnqueueSlow(item, ref segment);
@@ -180,28 +180,28 @@ namespace System.Threading.Tasks
         {
             Contract.Requires(segment != null, "Expected a non-null segment.");
 
-            if (segment.m_state.m_firstCopy != segment.m_state.m_first)
+            if (segment._state._firstCopy != segment._state._first)
             {
-                segment.m_state.m_firstCopy = segment.m_state.m_first;
+                segment._state._firstCopy = segment._state._first;
                 Enqueue(item); // will only recur once for this enqueue operation
                 return;
             }
 
-            int newSegmentSize = _tail.m_array.Length << 1; // double size
+            int newSegmentSize = _tail._array.Length << 1; // double size
             Contract.Assert(newSegmentSize > 0, "The max size should always be small enough that we don't overflow.");
             if (newSegmentSize > MAX_SEGMENT_SIZE) newSegmentSize = MAX_SEGMENT_SIZE;
 
             var newSegment = new Segment(newSegmentSize);
-            newSegment.m_array[0] = item;
-            newSegment.m_state.m_last = 1;
-            newSegment.m_state.m_lastCopy = 1;
+            newSegment._array[0] = item;
+            newSegment._state._last = 1;
+            newSegment._state._lastCopy = 1;
 
             try { }
             finally
             {
                 // Finally block to protect against corruption due to a thread abort 
-                // between setting m_next and setting m_tail.
-                Volatile.Write(ref _tail.m_next, newSegment); // ensure segment not published until item is fully stored
+                // between setting _next and setting _tail.
+                Volatile.Write(ref _tail._next, newSegment); // ensure segment not published until item is fully stored
                 _tail = newSegment;
             }
         }
@@ -212,15 +212,15 @@ namespace System.Threading.Tasks
         public bool TryDequeue(out T result)
         {
             Segment segment = _head;
-            var array = segment.m_array;
-            int first = segment.m_state.m_first; // local copy to avoid multiple volatile reads
+            var array = segment._array;
+            int first = segment._state._first; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously data available in the current segment
-            if (first != segment.m_state.m_lastCopy)
+            if (first != segment._state._lastCopy)
             {
                 result = array[first];
                 array[first] = default(T); // Clear the slot to release the element
-                segment.m_state.m_first = (first + 1) & (array.Length - 1);
+                segment._state._first = (first + 1) & (array.Length - 1);
                 return true;
             }
             // Slow path: there may not be data available in the current segment
@@ -237,22 +237,22 @@ namespace System.Threading.Tasks
             Contract.Requires(segment != null, "Expected a non-null segment.");
             Contract.Requires(array != null, "Expected a non-null item array.");
 
-            if (segment.m_state.m_last != segment.m_state.m_lastCopy)
+            if (segment._state._last != segment._state._lastCopy)
             {
-                segment.m_state.m_lastCopy = segment.m_state.m_last;
+                segment._state._lastCopy = segment._state._last;
                 return TryDequeue(out result); // will only recur once for this dequeue operation
             }
 
-            if (segment.m_next != null && segment.m_state.m_first == segment.m_state.m_last)
+            if (segment._next != null && segment._state._first == segment._state._last)
             {
-                segment = segment.m_next;
-                array = segment.m_array;
+                segment = segment._next;
+                array = segment._array;
                 _head = segment;
             }
 
-            var first = segment.m_state.m_first; // local copy to avoid extraneous volatile reads
+            var first = segment._state._first; // local copy to avoid extraneous volatile reads
 
-            if (first == segment.m_state.m_last)
+            if (first == segment._state._last)
             {
                 result = default(T);
                 return false;
@@ -260,8 +260,8 @@ namespace System.Threading.Tasks
 
             result = array[first];
             array[first] = default(T); // Clear the slot to release the element
-            segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
-            segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
+            segment._state._first = (first + 1) & (segment._array.Length - 1);
+            segment._state._lastCopy = segment._state._last; // Refresh _lastCopy to ensure that _first has not passed _lastCopy
 
             return true;
         }
@@ -272,11 +272,11 @@ namespace System.Threading.Tasks
         public bool TryPeek(out T result)
         {
             Segment segment = _head;
-            var array = segment.m_array;
-            int first = segment.m_state.m_first; // local copy to avoid multiple volatile reads
+            var array = segment._array;
+            int first = segment._state._first; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously data available in the current segment
-            if (first != segment.m_state.m_lastCopy)
+            if (first != segment._state._lastCopy)
             {
                 result = array[first];
                 return true;
@@ -295,22 +295,22 @@ namespace System.Threading.Tasks
             Contract.Requires(segment != null, "Expected a non-null segment.");
             Contract.Requires(array != null, "Expected a non-null item array.");
 
-            if (segment.m_state.m_last != segment.m_state.m_lastCopy)
+            if (segment._state._last != segment._state._lastCopy)
             {
-                segment.m_state.m_lastCopy = segment.m_state.m_last;
+                segment._state._lastCopy = segment._state._last;
                 return TryPeek(out result); // will only recur once for this peek operation
             }
 
-            if (segment.m_next != null && segment.m_state.m_first == segment.m_state.m_last)
+            if (segment._next != null && segment._state._first == segment._state._last)
             {
-                segment = segment.m_next;
-                array = segment.m_array;
+                segment = segment._next;
+                array = segment._array;
                 _head = segment;
             }
 
-            var first = segment.m_state.m_first; // local copy to avoid extraneous volatile reads
+            var first = segment._state._first; // local copy to avoid extraneous volatile reads
 
-            if (first == segment.m_state.m_last)
+            if (first == segment._state._last)
             {
                 result = default(T);
                 return false;
@@ -327,17 +327,17 @@ namespace System.Threading.Tasks
         public bool TryDequeueIf(Predicate<T> predicate, out T result)
         {
             Segment segment = _head;
-            var array = segment.m_array;
-            int first = segment.m_state.m_first; // local copy to avoid multiple volatile reads
+            var array = segment._array;
+            int first = segment._state._first; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously data available in the current segment
-            if (first != segment.m_state.m_lastCopy)
+            if (first != segment._state._lastCopy)
             {
                 result = array[first];
                 if (predicate == null || predicate(result))
                 {
                     array[first] = default(T); // Clear the slot to release the element
-                    segment.m_state.m_first = (first + 1) & (array.Length - 1);
+                    segment._state._first = (first + 1) & (array.Length - 1);
                     return true;
                 }
                 else
@@ -361,22 +361,22 @@ namespace System.Threading.Tasks
             Contract.Requires(segment != null, "Expected a non-null segment.");
             Contract.Requires(array != null, "Expected a non-null item array.");
 
-            if (segment.m_state.m_last != segment.m_state.m_lastCopy)
+            if (segment._state._last != segment._state._lastCopy)
             {
-                segment.m_state.m_lastCopy = segment.m_state.m_last;
+                segment._state._lastCopy = segment._state._last;
                 return TryDequeueIf(predicate, out result); // will only recur once for this dequeue operation
             }
 
-            if (segment.m_next != null && segment.m_state.m_first == segment.m_state.m_last)
+            if (segment._next != null && segment._state._first == segment._state._last)
             {
-                segment = segment.m_next;
-                array = segment.m_array;
+                segment = segment._next;
+                array = segment._array;
                 _head = segment;
             }
 
-            var first = segment.m_state.m_first; // local copy to avoid extraneous volatile reads
+            var first = segment._state._first; // local copy to avoid extraneous volatile reads
 
-            if (first == segment.m_state.m_last)
+            if (first == segment._state._last)
             {
                 result = default(T);
                 return false;
@@ -386,8 +386,8 @@ namespace System.Threading.Tasks
             if (predicate == null || predicate(result))
             {
                 array[first] = default(T); // Clear the slot to release the element
-                segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
-                segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
+                segment._state._first = (first + 1) & (segment._array.Length - 1);
+                segment._state._lastCopy = segment._state._last; // Refresh _lastCopy to ensure that _first has not passed _lastCopy
                 return true;
             }
             else
@@ -411,9 +411,9 @@ namespace System.Threading.Tasks
             get
             {
                 var head = _head;
-                if (head.m_state.m_first != head.m_state.m_lastCopy) return false; // m_first is volatile, so the read of m_lastCopy cannot get reordered
-                if (head.m_state.m_first != head.m_state.m_last) return false;
-                return head.m_next == null;
+                if (head._state._first != head._state._lastCopy) return false; // _first is volatile, so the read of _lastCopy cannot get reordered
+                if (head._state._first != head._state._last) return false;
+                return head._next == null;
             }
         }
 
@@ -421,13 +421,13 @@ namespace System.Threading.Tasks
         /// <remarks>WARNING: This should only be used for debugging purposes.  It is not safe to be used concurrently.</remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            for (Segment segment = _head; segment != null; segment = segment.m_next)
+            for (Segment segment = _head; segment != null; segment = segment._next)
             {
-                for (int pt = segment.m_state.m_first;
-                    pt != segment.m_state.m_last;
-                    pt = (pt + 1) & (segment.m_array.Length - 1))
+                for (int pt = segment._state._first;
+                    pt != segment._state._last;
+                    pt = (pt + 1) & (segment._array.Length - 1))
                 {
-                    yield return segment.m_array[pt];
+                    yield return segment._array[pt];
                 }
             }
         }
@@ -442,15 +442,15 @@ namespace System.Threading.Tasks
             get
             {
                 int count = 0;
-                for (Segment segment = _head; segment != null; segment = segment.m_next)
+                for (Segment segment = _head; segment != null; segment = segment._next)
                 {
-                    int arraySize = segment.m_array.Length;
+                    int arraySize = segment._array.Length;
                     int first, last;
                     while (true) // Count is not meant to be used concurrently, but this helps to avoid issues if it is
                     {
-                        first = segment.m_state.m_first;
-                        last = segment.m_state.m_last;
-                        if (first == segment.m_state.m_first) break;
+                        first = segment._state._first;
+                        last = segment._state._last;
+                        if (first == segment._state._first) break;
                     }
                     count += (last - first) & (arraySize - 1);
                 }
@@ -474,18 +474,18 @@ namespace System.Threading.Tasks
         private sealed class Segment
         {
             /// <summary>The next segment in the linked list of segments.</summary>
-            internal Segment m_next;
+            internal Segment _next;
             /// <summary>The data stored in this segment.</summary>
-            internal readonly T[] m_array;
+            internal readonly T[] _array;
             /// <summary>Details about the segment.</summary>
-            internal SegmentState m_state; // separated out to enable StructLayout attribute to take effect
+            internal SegmentState _state; // separated out to enable StructLayout attribute to take effect
 
             /// <summary>Initializes the segment.</summary>
             /// <param name="size">The size to use for this segment.</param>
             internal Segment(int size)
             {
                 Contract.Requires((size & (size - 1)) == 0, "Size must be a power of 2");
-                m_array = new T[size];
+                _array = new T[size];
             }
         }
 
@@ -493,24 +493,24 @@ namespace System.Threading.Tasks
         [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
         private struct SegmentState
         {
-            /// <summary>Padding to reduce false sharing between the segment's array and m_first.</summary>
-            internal PaddingFor32 m_pad0;
+            /// <summary>Padding to reduce false sharing between the segment's array and _first.</summary>
+            internal PaddingFor32 _pad0;
 
             /// <summary>The index of the current head in the segment.</summary>
-            internal volatile int m_first;
+            internal volatile int _first;
             /// <summary>A copy of the current tail index.</summary>
-            internal int m_lastCopy; // not volatile as read and written by the producer, except for IsEmpty, and there m_lastCopy is only read after reading the volatile m_first
+            internal int _lastCopy; // not volatile as read and written by the producer, except for IsEmpty, and there _lastCopy is only read after reading the volatile _first
 
             /// <summary>Padding to reduce false sharing between the first and last.</summary>
-            internal PaddingFor32 m_pad1;
+            internal PaddingFor32 _pad1;
 
             /// <summary>A copy of the current head index.</summary>
-            internal int m_firstCopy; // not voliatle as only read and written by the consumer thread
+            internal int _firstCopy; // not voliatle as only read and written by the consumer thread
             /// <summary>The index of the current tail in the segment.</summary>
-            internal volatile int m_last;
+            internal volatile int _last;
 
             /// <summary>Padding to reduce false sharing with the last and what's after the segment.</summary>
-            internal PaddingFor32 m_pad2;
+            internal PaddingFor32 _pad2;
         }
 
         /// <summary>Debugger type proxy for a SingleProducerSingleConsumerQueue of T.</summary>
