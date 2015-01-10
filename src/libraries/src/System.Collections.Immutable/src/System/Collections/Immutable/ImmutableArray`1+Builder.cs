@@ -49,8 +49,8 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Get and sets the length of the internal array.  When set the internal array is 
-            /// is reallocated to the given capacity if it is not already the specified length.
+            /// Get and sets the length of the internal array.  When set the internal array is
+            /// reallocated to the given capacity if it is not already the specified length.
             /// </summary>
             public int Capacity
             {
