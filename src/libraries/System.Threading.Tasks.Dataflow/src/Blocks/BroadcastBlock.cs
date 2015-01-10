@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Dataflow
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
 #if PRENET45
-            m_source.Completion.ContinueWith(completed =>
+            _source.Completion.ContinueWith(completed =>
             {
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 (this as IDataflowBlock).Fault(completed.Exception);
@@ -264,8 +264,8 @@ namespace System.Threading.Tasks.Dataflow
                 _boundingState.PostponedMessages.Count > 0 &&
                 _boundingState.CountIsLessThanBound)
             {
-                // Create task and store into m_taskForInputProcessing prior to scheduling the task
-                // so that m_taskForInputProcessing will be visibly set in the task loop.
+                // Create task and store into _taskForInputProcessing prior to scheduling the task
+                // so that _taskForInputProcessing will be visibly set in the task loop.
                 _boundingState.TaskForInputProcessing =
                     new Task(state => ((BroadcastBlock<T>)state).ConsumeMessagesLoopCore(), this,
                         Common.GetCreationOptionsForTask(isReplacementReplica));
@@ -543,7 +543,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>The cloning function to use.</summary>
             private readonly Func<TOutput, TOutput> _cloningFunction;
 
-            /// <summary>An indicator whether m_currentMessage has a value.</summary>
+            /// <summary>An indicator whether _currentMessage has a value.</summary>
             private bool _currentMessageIsValid;
             /// <summary>The message currently being broadcast.</summary>
             private TOutput _currentMessage;
@@ -663,7 +663,7 @@ namespace System.Threading.Tasks.Dataflow
 
                     // Complete may be called in a context where an incoming lock is held.  We need to 
                     // call CompleteBlockIfPossible, but we can't do so if the incoming lock is held.
-                    // However, now that m_decliningPermanently has been set, the timing of
+                    // However, now that _decliningPermanently has been set, the timing of
                     // CompleteBlockIfPossible doesn't matter, so we schedule it to run asynchronously
                     // and take the necessary locks in a situation where we're sure it won't cause a problem.
                     Task.Factory.StartNew(state =>
@@ -711,7 +711,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (!isValid) return;
 
                 // Offer it to the target.
-                // We must not increment the message ID here. We only do that when we populate m_currentMessage, i.e. when we dequeue.
+                // We must not increment the message ID here. We only do that when we populate _currentMessage, i.e. when we dequeue.
                 bool useCloning = _cloningFunction != null;
                 var result = target.OfferMessage(new DataflowMessageHeader(_nextMessageId), currentMessage, _owningSource, consumeToAccept: useCloning);
 
@@ -790,7 +790,7 @@ namespace System.Threading.Tasks.Dataflow
                     {
                         // Note that during OfferMessage, a target may call ConsumeMessage, which may unlink the target
                         // if the target is registered as "once".  Doing so will remove the target from the targets list.
-                        // As such, we avoid using an enumerator over m_targetRegistry and instead walk from back to front,
+                        // As such, we avoid using an enumerator over _targetRegistry and instead walk from back to front,
                         // so that if an element is removed, it won't affect the rest of our walk.
                         var next = cur.Next;
                         var target = cur.Target;
@@ -855,8 +855,8 @@ namespace System.Threading.Tasks.Dataflow
                 // If there's any work to be done...
                 if (!currentlyProcessing && processingToDo && !CanceledOrFaulted)
                 {
-                    // Create task and store into m_taskForOutputProcessing prior to scheduling the task
-                    // so that m_taskForOutputProcessing will be visibly set in the task loop.
+                    // Create task and store into _taskForOutputProcessing prior to scheduling the task
+                    // so that _taskForOutputProcessing will be visibly set in the task loop.
                     _taskForOutputProcessing = new Task(thisSourceCore => ((BroadcastingSourceCore<TOutput>)thisSourceCore).OfferMessagesLoopCore(), this,
                                                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
@@ -989,7 +989,7 @@ namespace System.Threading.Tasks.Dataflow
                 List<Exception> exceptions;
 
                 // Clear out the target registry and buffers to help avoid memory leaks.
-                // We do not clear m_currentMessage, which should remain as that message forever.
+                // We do not clear _currentMessage, which should remain as that message forever.
                 lock (OutgoingLock)
                 {
                     // Save the linked list of targets so that it could be traveresed later to propagate completion
@@ -1163,7 +1163,7 @@ namespace System.Threading.Tasks.Dataflow
                     // We need to explicitly reoffer this message to the releaser,
                     // as otherwise if the target has join behavior it could end up waiting for an offer from
                     // this broadcast forever, even though data is in fact available.  We could only
-                    // do this if m_messages.Count == 0, as if it's > 0 the message will get overwritten
+                    // do this if _messages.Count == 0, as if it's > 0 the message will get overwritten
                     // as part of the asynchronous offering, but for consistency we should always reoffer
                     // the current message.
                     OfferMessageToTarget(messageHeader, messageToReoffer, target);

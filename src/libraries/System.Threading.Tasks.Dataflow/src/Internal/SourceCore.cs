@@ -391,7 +391,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             if (_decliningPermanently) return;
             _messages.Enqueue(item);
 
-            Interlocked.MemoryBarrier(); // ensure the read of m_taskForOutputProcessing doesn't move up before the writes in Enqueue
+            Interlocked.MemoryBarrier(); // ensure the read of _taskForOutputProcessing doesn't move up before the writes in Enqueue
 
             if (_taskForOutputProcessing == null)
             {
@@ -446,7 +446,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
             }
 
-            Interlocked.MemoryBarrier(); // ensure the read of m_taskForOutputProcessing doesn't move up before the writes in Enqueue
+            Interlocked.MemoryBarrier(); // ensure the read of _taskForOutputProcessing doesn't move up before the writes in Enqueue
 
             if (_taskForOutputProcessing == null)
             {
@@ -493,12 +493,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
-        /// <summary>Gets whether the m_exceptions list is non-null.</summary>
+        /// <summary>Gets whether the _exceptions list is non-null.</summary>
         internal bool HasExceptions
         {
             get
             {
-                // We may check whether m_exceptions is null without taking a lock because it is volatile
+                // We may check whether _exceptions is null without taking a lock because it is volatile
                 return Volatile.Read(ref _exceptions) != null;
             }
         }
@@ -512,7 +512,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // CompleteAdding may be called in a context where an incoming lock is held.  We need to 
                 // call CompleteBlockIfPossible, but we can't do so if the incoming lock is held.
-                // However, we know that m_decliningPermanently has been set, and thus the timing of
+                // However, we know that _decliningPermanently has been set, and thus the timing of
                 // CompleteBlockIfPossible doesn't matter, so we schedule it to run asynchronously
                 // and take the necessary locks in a situation where we're sure it won't cause a problem.
                 Task.Factory.StartNew(state =>
@@ -757,8 +757,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If there's any work to be done...
             if (targetsAvailable && !CanceledOrFaulted)
             {
-                // Create task and store into m_taskForOutputProcessing prior to scheduling the task
-                // so that m_taskForOutputProcessing will be visibly set in the task loop.
+                // Create task and store into _taskForOutputProcessing prior to scheduling the task
+                // so that _taskForOutputProcessing will be visibly set in the task loop.
                 _taskForOutputProcessing = new Task(thisSourceCore => ((SourceCore<TOutput>)thisSourceCore).OfferMessagesLoopCore(), this,
                                                      Common.GetCreationOptionsForTask(isReplacementReplica));
 
@@ -867,7 +867,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         Contract.Assert(_taskForOutputProcessing != null && _taskForOutputProcessing.Id == Task.CurrentId,
                             "Must be part of the current processing task.");
                         _taskForOutputProcessing = null;
-                        Interlocked.MemoryBarrier(); // synchronize with AddMessage(s) and its read of m_taskForOutputProcessing
+                        Interlocked.MemoryBarrier(); // synchronize with AddMessage(s) and its read of _taskForOutputProcessing
 
                         // However, we may have given up early because we hit our own configured
                         // processing limits rather than because we ran out of work to do.  If that's
@@ -929,7 +929,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _completionReserved = true;
 
                 // Get out from under currently held locks.  This is to avoid
-                // invoking synchronous continuations off of m_completionTask.Task
+                // invoking synchronous continuations off of _completionTask.Task
                 // while holding a lock.
                 Task.Factory.StartNew(state => ((SourceCore<TOutput>)state).CompleteBlockOncePossible(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);

@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Dataflow
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
 #if PRENET45
-            m_source.Completion.ContinueWith(completed =>
+            _source.Completion.ContinueWith(completed =>
             {
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 (this as IDataflowBlock).Fault(completed.Exception);
@@ -264,8 +264,8 @@ namespace System.Threading.Tasks.Dataflow
                 _boundingState.PostponedMessages.Count > 0 &&
                 _boundingState.CountIsLessThanBound)
             {
-                // Create task and store into m_taskForInputProcessing prior to scheduling the task
-                // so that m_taskForInputProcessing will be visibly set in the task loop.
+                // Create task and store into _taskForInputProcessing prior to scheduling the task
+                // so that _taskForInputProcessing will be visibly set in the task loop.
                 _boundingState.TaskForInputProcessing =
                     new Task(state => ((BufferBlock<T>)state).ConsumeMessagesLoopCore(), this,
                         Common.GetCreationOptionsForTask(isReplacementReplica));
