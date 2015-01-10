@@ -29,19 +29,6 @@
 #include <ifaddrs.h>
 #endif
 
-
-static int
-get_address_size_by_family (int family)
-{
-	switch (family) {
-	case AF_INET:
-		return sizeof (struct in_addr);
-	case AF_INET6:
-		return sizeof (struct in6_addr);
-	}
-	return 0;
-}
-
 static void*
 get_address_from_sockaddr (struct sockaddr *sa)
 {
@@ -186,7 +173,7 @@ mono_get_local_interfaces (int family, int *interface_count)
 
 	*interface_count = 0;
 
-	if (!get_address_size_by_family (family))
+	if (!mono_address_size_for_family (family))
 		return NULL;
 
 	fd = socket (family, SOCK_STREAM, 0);
@@ -232,7 +219,7 @@ mono_get_local_interfaces (int family, int *interface_count)
 		++if_count;
 	}
 
-	result_ptr = result = g_malloc (if_count * get_address_size_by_family (family));
+	result_ptr = result = g_malloc (if_count * mono_address_size_for_family (family));
 	FOREACH_IFR (ifr, ifc) {
 		if (ifr->ifr_name [0] == '\0')
 			continue;
@@ -242,10 +229,10 @@ mono_get_local_interfaces (int family, int *interface_count)
 			continue;
 		}
 
-		memcpy (result_ptr, get_address_from_sockaddr (&ifr->ifr_addr), get_address_size_by_family (family));
-		result_ptr += get_address_size_by_family (family);
+		memcpy (result_ptr, get_address_from_sockaddr (&ifr->ifr_addr), mono_address_size_for_family (family));
+		result_ptr += mono_address_size_for_family (family);
 	}
-	g_assert (result_ptr <= (char*)result + if_count * get_address_size_by_family (family));
+	g_assert (result_ptr <= (char*)result + if_count * mono_address_size_for_family (family));
 
 done:
 	*interface_count = if_count;
@@ -267,7 +254,7 @@ mono_get_local_interfaces (int family, int *interface_count)
 
 	*interface_count = 0;
 
-	if (!get_address_size_by_family (family))
+	if (!mono_address_size_for_family (family))
 		return NULL;
 
 	if (getifaddrs (&ifap))
@@ -293,7 +280,7 @@ mono_get_local_interfaces (int family, int *interface_count)
 		if_count++;
 	}
 
-	result_ptr = result = g_malloc (if_count * get_address_size_by_family (family));
+	result_ptr = result = g_malloc (if_count * mono_address_size_for_family (family));
 	for (cur = ifap; cur; cur = cur->ifa_next) {
 		if (!cur->ifa_addr)
 			continue;
@@ -308,14 +295,36 @@ mono_get_local_interfaces (int family, int *interface_count)
 			continue;
 		}
 
-		memcpy (result_ptr, get_address_from_sockaddr (cur->ifa_addr), get_address_size_by_family (family));
-		result_ptr += get_address_size_by_family (family);
+		memcpy (result_ptr, get_address_from_sockaddr (cur->ifa_addr), mono_address_size_for_family (family));
+		result_ptr += mono_address_size_for_family (family);
 	}
-	g_assert (result_ptr <= (char*)result + if_count * get_address_size_by_family (family));
+	g_assert (result_ptr <= (char*)result + if_count * mono_address_size_for_family (family));
 
 	freeifaddrs (ifap);
 	*interface_count = if_count;
 	return result;
+}
+
+#endif
+
+#ifdef HAVE_GETNAMEINFO
+
+gboolean
+mono_networking_addr_to_str (MonoAddress *address, char *buffer, socklen_t buflen)
+{
+	MonoSocketAddress saddr;
+	socklen_t len;
+	mono_socket_address_init (&saddr, &len, address->family, &address->addr, 0);
+
+	return getnameinfo (&saddr.addr, len, buffer, buflen, NULL, 0, NI_NUMERICHOST) == 0;
+}
+
+#elif HAVE_INET_NTOP
+
+gboolean
+mono_networking_addr_to_str (MonoAddress *address, char *buffer, socklen_t buflen)
+{
+	return inet_ntop (address->family, &address->addr, buffer, buflen) != NULL;
 }
 
 #endif

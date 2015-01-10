@@ -12,6 +12,7 @@
 #define __MONO_NETWORKING_H__
 
 #include <config.h>
+#include <glib.h>
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -62,6 +63,14 @@ typedef union {
 	struct sockaddr addr;
 } MonoSocketAddress;
 
+typedef struct {
+	int family;
+	union {
+		struct in_addr v4;
+		struct in6_addr v6;
+	} addr;
+} MonoAddress;
+
 /* This only supports IPV4 / IPV6 and tcp */
 int mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInfo **res) MONO_INTERNAL;
 
@@ -75,8 +84,13 @@ void *mono_get_local_interfaces (int family, int *interface_count) MONO_INTERNAL
 int inet_pton (int family, const char *address, void *inaddrp) MONO_INTERNAL;
 #endif
 
+void mono_address_init (MonoAddress *out_addr, int family, void *in_addr) MONO_INTERNAL;
+int mono_address_size_for_family (int family) MONO_INTERNAL;
+gboolean mono_networking_addr_to_str (MonoAddress *address, char *buffer, socklen_t buflen) MONO_INTERNAL;
+
 int mono_networking_get_tcp_protocol (void) MONO_INTERNAL;
 int mono_networking_get_ip_protocol (void) MONO_INTERNAL;
 int mono_networking_get_ipv6_protocol (void) MONO_INTERNAL;
+
 
 #endif

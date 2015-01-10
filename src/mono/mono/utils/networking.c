@@ -10,6 +10,19 @@
 #include <mono/utils/networking.h>
 #include <glib.h>
 
+int
+mono_address_size_for_family (int family)
+{
+	switch (family) {
+	case AF_INET:
+		return sizeof (struct in_addr);
+	case AF_INET6:
+		return sizeof (struct in6_addr);
+	}
+	return 0;
+}
+
+
 void
 mono_free_address_info (MonoAddressInfo *ai)
 {
@@ -51,4 +64,12 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 	} else {
 		g_error ("Cannot handle address family %d", family);
 	}
+}
+
+void
+mono_address_init (MonoAddress *out_addr, int family, void *in_addr)
+{
+	memset (out_addr, 0, sizeof (MonoAddress));
+	out_addr->family = family;
+	memcpy (&out_addr->addr, in_addr, mono_address_size_for_family (family));
 }

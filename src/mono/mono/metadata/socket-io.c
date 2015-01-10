@@ -2277,10 +2277,10 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 		local_in = (struct in_addr *) mono_get_local_interfaces (AF_INET, &nlocal_in);
 		local_in6 = (struct in6_addr *) mono_get_local_interfaces (AF_INET6, &nlocal_in6);
 		if (nlocal_in || nlocal_in6) {
+			char addr [INET6_ADDRSTRLEN];
 			*h_addr_list=mono_array_new(domain, mono_get_string_class (), nlocal_in + nlocal_in6);
 			if (nlocal_in) {
 				MonoString *addr_string;
-				char addr [16];
 				int i;
 
 				for (i = 0; i < nlocal_in; i++) {
@@ -2294,7 +2294,6 @@ addrinfo_to_IPHostEntry(MonoAddressInfo *info, MonoString **h_name,
 			if (nlocal_in6) {
 				MonoString *addr_string;
 				const char *ret;
-				char addr [48];
 				int i;
 
 				for (i = 0; i < nlocal_in6; i++) {
