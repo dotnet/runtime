@@ -8986,7 +8986,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			 * Can't use this with full aot until the trampolines are updated
 			 * (i.e. get rid of the emit_symbol_diff () stuff).
 			 */
-#if LLVM_API_VERSION >= 3 && defined(TARGET_AMD64)
+#if LLVM_API_VERSION >= 3 && (defined(TARGET_AMD64) || defined(TARGET_X86))
 			acfg->llvm_separate = TRUE;
 			acfg->llvm_owriter = TRUE;
 #endif
