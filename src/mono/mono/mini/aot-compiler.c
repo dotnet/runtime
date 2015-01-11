@@ -9181,7 +9181,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			if (COMPILE_LLVM (cfg))
 				cfg->asm_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, cfg->llvm_method_name);
 			else if (acfg->global_symbols || acfg->llvm_separate)
-				cfg->asm_symbol = get_debug_sym (cfg->method, "", acfg->method_label_hash);
+				cfg->asm_symbol = get_debug_sym (cfg->orig_method, "", acfg->method_label_hash);
 			else
 				cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
 		}
