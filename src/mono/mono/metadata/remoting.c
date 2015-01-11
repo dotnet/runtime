@@ -142,6 +142,7 @@ mono_remoting_marshal_init (void)
 	MonoClass *klass;
 
 	static gboolean module_initialized = FALSE;
+	static gboolean icalls_registered = FALSE;
 
 	if (module_initialized)
 		return;
@@ -167,13 +168,17 @@ mono_remoting_marshal_init (void)
 
 	mono_loader_lock ();
 
-	register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
-	register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
-	register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
-	register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
-	register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
-	register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
-	register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+	if (!icalls_registered) {
+		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
+		register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
+		register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
+		register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
+		register_icall (mono_marshal_xdomain_copy_out_value, "mono_marshal_xdomain_copy_out_value", "void object object", FALSE);
+		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
+		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+	}
+
+	icalls_registered = TRUE;
 
 	mono_loader_unlock ();
 
