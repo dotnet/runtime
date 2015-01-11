@@ -128,39 +128,23 @@ namespace System.Threading.Tasks.Dataflow
             // As the target has completed, and as the target synchronously pushes work
             // through the reordering buffer when async processing completes, 
             // we know for certain that no more messages will need to be sent to the source.
-#if PRENET45
-            _target.Completion.ContinueWith(completed =>
-            {
-                if (completed.IsFaulted) _source.AddAndUnwrapAggregateException(completed.Exception);
-                _source.Complete();
-            }, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
-#else
             _target.Completion.ContinueWith((completed, state) =>
             {
                 var sourceCore = (SourceCore<TOutput>)state;
                 if (completed.IsFaulted) sourceCore.AddAndUnwrapAggregateException(completed.Exception);
                 sourceCore.Complete();
             }, _source, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
-#endif
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
             // In those cases we need to fault the target half to drop its buffered messages and to release its 
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-#if PRENET45
-            _source.Completion.ContinueWith(completed =>
-            {
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                (this as IDataflowBlock).Fault(completed.Exception);
-            }, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#else
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((TransformBlock<TInput, TOutput>)state) as IDataflowBlock;
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#endif
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
@@ -251,19 +235,12 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             // Otherwise, join with the asynchronous operation when it completes.
-#if PRENET45
-            task.ContinueWith(completed =>
-            {
-                this.AsyncCompleteProcessMessageWithTask(completed, messageWithId);
-            }, CancellationToken.None, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-#else
             task.ContinueWith((completed, state) =>
             {
                 var tuple = (Tuple<TransformBlock<TInput, TOutput>, KeyValuePair<TInput, long>>)state;
                 tuple.Item1.AsyncCompleteProcessMessageWithTask(completed, tuple.Item2);
             }, Tuple.Create(this, messageWithId), CancellationToken.None,
             Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-#endif
         }
 
         /// <summary>Completes the processing of an asynchronous message.</summary>

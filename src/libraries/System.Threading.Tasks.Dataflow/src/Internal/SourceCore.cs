@@ -744,11 +744,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // where a derived type's incoming lock is held.
 
             bool targetsAvailable = true;
-#if PRENET45
-            if (outgoingLockKnownAcquired)
-#else
             if (outgoingLockKnownAcquired || Monitor.IsEntered(OutgoingLock))
-#endif
             {
                 Common.ContractAssertMonitorStatus(OutgoingLock, held: true);
                 targetsAvailable = _targetRegistry.FirstTargetNode != null;
