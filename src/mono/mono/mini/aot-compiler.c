@@ -194,7 +194,10 @@ typedef struct MonoAotCompile {
 	mono_mutex_t mutex;
 	gboolean use_bin_writer;
 	gboolean gas_line_numbers;
+	/* Whenever to emit LLVM code into a separate object file */
 	gboolean llvm_separate;
+	/* Whenever to emit an object file directly from llc */
+	gboolean llvm_owriter;
 	MonoImageWriter *w;
 	MonoDwarfWriter *dwarf;
 	FILE *fp;
@@ -7188,6 +7191,8 @@ emit_llvm_file (MonoAotCompile *acfg)
 	/* Verbose asm slows down llc greatly */
 	g_string_append (acfg->llc_args, " -asm-verbose=false");
 
+	g_string_append (acfg->llc_args, " -disable-gnu-eh-frame -enable-mono-eh-frame");
+
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
@@ -7205,11 +7210,18 @@ emit_llvm_file (MonoAotCompile *acfg)
 #endif
 	unlink (acfg->tmpfname);
 
-	if (acfg->llvm_separate)
-		output_fname = g_strdup_printf ("%s", acfg->llvm_sfile);
-	else
+	if (acfg->llvm_separate) {
+		if (acfg->llvm_owriter) {
+			/* Emit an object file directly */
+			output_fname = g_strdup_printf ("%s", acfg->llvm_ofile);
+			g_string_append_printf (acfg->llc_args, " -filetype=obj");
+		} else {
+			output_fname = g_strdup_printf ("%s", acfg->llvm_sfile);
+		}
+	} else {
 		output_fname = g_strdup (acfg->tmpfname);
-	command = g_strdup_printf ("%sllc %s -disable-gnu-eh-frame -enable-mono-eh-frame -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
+	}
+	command = g_strdup_printf ("%sllc %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
 
 	aot_printf (acfg, "Executing llc: %s\n", command);
 
@@ -8679,7 +8691,7 @@ compile_asm (MonoAotCompile *acfg)
 		return 1;
 	}
 
-	if (acfg->llvm_separate) {
+	if (acfg->llvm_separate && !acfg->llvm_owriter) {
 		command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", acfg->llvm_ofile, acfg->llvm_sfile);
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
 		if (system (command) != 0) {
@@ -8976,6 +8988,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			 */
 #if LLVM_API_VERSION >= 3 && defined(TARGET_AMD64)
 			acfg->llvm_separate = TRUE;
+			acfg->llvm_owriter = TRUE;
 #endif
 		}
 	}
