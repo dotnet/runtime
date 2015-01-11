@@ -439,7 +439,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
                 else
                 {
-                    foreach (var item in items)
+                    foreach (TOutput item in items)
                     {
                         _messages.Enqueue(item);
                     }
@@ -474,7 +474,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
             lock (ValueLock)
             {
-                foreach (var exception in exceptions)
+                foreach (Exception exception in exceptions)
                 {
                     Common.AddException(ref _exceptions, exception);
                 }
@@ -591,10 +591,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // separately from cur.Next, in case cur.Next changes by cur being removed from the list.
                     // No other node in the list should change, as we're protected by OutgoingLock.
 
-                    var cur = _targetRegistry.FirstTargetNode;
+                    TargetRegistry<TOutput>.LinkedTargetInfo cur = _targetRegistry.FirstTargetNode;
                     while (cur != null)
                     {
-                        var next = cur.Next;
+                        TargetRegistry<TOutput>.LinkedTargetInfo next = cur.Next;
                         if (OfferMessageToTarget(header, message, cur.Target, out messageWasAccepted)) break;
                         cur = next;
                     }
@@ -673,7 +673,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Common.ContractAssertMonitorStatus(OutgoingLock, held: true);
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
-            var result = target.OfferMessage(header, message, _owningSource, consumeToAccept: false);
+            DataflowMessageStatus result = target.OfferMessage(header, message, _owningSource, consumeToAccept: false);
             Contract.Assert(result != DataflowMessageStatus.NotAvailable, "Messages are not being offered concurrently, so nothing should be missed.");
             messageWasAccepted = false;
 
@@ -759,7 +759,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                                                      Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -769,7 +769,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // Start the task handling scheduling exceptions
 #pragma warning disable 0420
-                var exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
 #pragma warning restore 0420
                 if (exception != null)
                 {
@@ -806,7 +806,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 "Must be part of the current processing task.");
             try
             {
-                var maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
+                int maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
 
                 // We need to hold the outgoing lock while offering messages.  We can either
                 // lock and unlock for each individual offering, or we can lock around multiple or all
@@ -978,7 +978,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(_owningSource);

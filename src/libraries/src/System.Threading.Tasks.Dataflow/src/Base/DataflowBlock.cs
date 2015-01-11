@@ -576,7 +576,7 @@ namespace System.Threading.Tasks.Dataflow
             /// </param>
             private static void CancellationHandler(object state)
             {
-                var source = Common.UnwrapWeakReference<SendAsyncSource<TOutput>>(state);
+                SendAsyncSource<TOutput> source = Common.UnwrapWeakReference<SendAsyncSource<TOutput>>(state);
                 if (source != null)
                 {
                     Contract.Assert(source._cancellationState != CANCELLATION_STATE_NONE,
@@ -676,7 +676,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 if (validMessage)
                 {
-                    var curState = _cancellationState;
+                    int curState = _cancellationState;
                     Contract.Assert(
                         curState == CANCELLATION_STATE_NONE || curState == CANCELLATION_STATE_REGISTERED ||
                         curState == CANCELLATION_STATE_RESERVED || curState == CANCELLATION_STATE_COMPLETING,
@@ -990,7 +990,7 @@ namespace System.Threading.Tasks.Dataflow
             // Get a TCS to represent the receive operation and wait for it to complete.
             // If it completes successfully, return the result. Otherwise, throw the 
             // original inner exception representing the cause.  This could be an OCE.
-            var task = ReceiveCore(source, false, timeout, cancellationToken);
+            Task<TOutput> task = ReceiveCore(source, false, timeout, cancellationToken);
             try
             {
                 return task.GetAwaiter().GetResult(); // block until the result is available
@@ -1125,7 +1125,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 // Link the target to the source
-                var unlink = source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion);
+                IDisposable unlink = source.LinkTo(target, DataflowLinkOptions.UnlinkAfterOneAndPropagateCompletion);
                 target._unlink = unlink;
 
                 // If completion has started, there is a chance it started after we linked.
@@ -1134,7 +1134,7 @@ namespace System.Threading.Tasks.Dataflow
                 // So we are racing to dispose of the unlinker.
                 if (Volatile.Read(ref target._cleanupReserved))
                 {
-                    var disposableUnlink = Interlocked.CompareExchange(ref target._unlink, null, unlink);
+                    IDisposable disposableUnlink = Interlocked.CompareExchange(ref target._unlink, null, unlink);
                     if (disposableUnlink != null) disposableUnlink.Dispose();
                 }
             }
@@ -1203,7 +1203,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
                 Contract.EndContractBlock();
 
-                var status = DataflowMessageStatus.NotAvailable;
+                DataflowMessageStatus status = DataflowMessageStatus.NotAvailable;
 
                 // If we're already one our way to being done, don't accept anything.
                 // This is a fast-path check prior to taking the incoming lock;
@@ -1219,7 +1219,7 @@ namespace System.Threading.Tasks.Dataflow
                     {
                         // Accept the message if possible and complete this task with the message's value.
                         bool consumed = true;
-                        var acceptedValue = consumeToAccept ? source.ConsumeMessage(messageHeader, this, out consumed) : messageValue;
+                        T acceptedValue = consumeToAccept ? source.ConsumeMessage(messageHeader, this, out consumed) : messageValue;
                         if (consumed)
                         {
                             status = DataflowMessageStatus.Accepted;
@@ -1287,10 +1287,10 @@ namespace System.Threading.Tasks.Dataflow
                 // completed, this is unnecessary, as the source should have already
                 // emptied out its target registry, or at least be in the process of doing so.
                 // We are racing with the linking code - only one can dispose of the unlinker.
-                var unlink = _unlink;
+                IDisposable unlink = _unlink;
                 if (reason != ReceiveCoreByLinkingCleanupReason.SourceCompletion && unlink != null)
                 {
-                    var disposableUnlink = Interlocked.CompareExchange(ref _unlink, null, unlink);
+                    IDisposable disposableUnlink = Interlocked.CompareExchange(ref _unlink, null, unlink);
                     if (disposableUnlink != null)
                     {
                         // If an error occurs, fault the target and override the reason to
@@ -1574,7 +1574,7 @@ namespace System.Threading.Tasks.Dataflow
             internal void AttemptThreadSafeUnlink()
             {
                 // A race is possible. Therefore use an interlocked operation.
-                var cachedUnlinker = _unlinker;
+                IDisposable cachedUnlinker = _unlinker;
                 if (cachedUnlinker != null && Interlocked.CompareExchange(ref _unlinker, null, cachedUnlinker) == cachedUnlinker)
                 {
                     cachedUnlinker.Dispose();
@@ -1987,7 +1987,7 @@ namespace System.Threading.Tasks.Dataflow
             Task<int> resultTask;
             try
             {
-                var scheduler = dataflowBlockOptions.TaskScheduler;
+                TaskScheduler scheduler = dataflowBlockOptions.TaskScheduler;
                 if (TryChooseFromSource(source1, action1, 0, scheduler, out resultTask) ||
                     TryChooseFromSource(source2, action2, 1, scheduler, out resultTask) ||
                     (hasThirdSource && TryChooseFromSource(source3, action3, 2, scheduler, out resultTask)))
@@ -2073,10 +2073,10 @@ namespace System.Threading.Tasks.Dataflow
             // Set up teardown cancellation.  We will request cancellation when a) the supplied options token
             // has cancellation requested or b) when we actually complete somewhere in order to tear down
             // the rest of our configured set up.
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(dataflowBlockOptions.CancellationToken, CancellationToken.None);
+            CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(dataflowBlockOptions.CancellationToken, CancellationToken.None);
 
             // Set up the branches.
-            var scheduler = dataflowBlockOptions.TaskScheduler;
+            TaskScheduler scheduler = dataflowBlockOptions.TaskScheduler;
             var branchTasks = new Task<int>[hasThirdSource ? 3 : 2];
             branchTasks[0] = CreateChooseBranch(boxedCompleted, cts, scheduler, 0, source1, action1);
             branchTasks[1] = CreateChooseBranch(boxedCompleted, cts, scheduler, 1, source2, action2);
@@ -2098,7 +2098,7 @@ namespace System.Threading.Tasks.Dataflow
                 // we just ignore.
                 List<Exception> exceptions = null;
                 int successfulBranchId = -1;
-                foreach (var task in tasks)
+                foreach (Task<int> task in tasks)
                 {
                     switch (task.Status)
                     {
@@ -2368,7 +2368,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <returns>The aggregate exception of all errors, or null if everything completed successfully.</returns>
             private AggregateException GetCompletionError()
             {
-                var sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(_source);
+                Task sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(_source);
                 return sourceCompletionTask != null && sourceCompletionTask.IsFaulted ?
                     sourceCompletionTask.Exception : null;
             }
@@ -2384,7 +2384,7 @@ namespace System.Threading.Tasks.Dataflow
                 Contract.EndContractBlock();
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: false);
 
-                var sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(_source);
+                Task sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(_source);
 
                 // Synchronize all observers for this source.
                 Exception error = null;
@@ -2437,7 +2437,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 lock (_SubscriptionLock)
                 {
-                    var currentState = _observersState;
+                    ObserversState currentState = _observersState;
                     Contract.Assert(currentState != null, "Observer state should never be null.");
 
                     // If the observer was already unsubscribed (or is otherwise no longer present in our list), bail.
@@ -2465,13 +2465,13 @@ namespace System.Threading.Tasks.Dataflow
             {
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: true);
 
-                var currentState = _observersState;
+                ObserversState currentState = _observersState;
                 Contract.Assert(currentState != null, "Observer state should never be null.");
                 Contract.Assert(currentState.Unlinker != null, "The target should be linked.");
                 Contract.Assert(currentState.Canceler != null, "The target should have set up continuations.");
 
                 // Replace the target with a clean one, unlink and cancel, and return the previous set of observers
-                var currentObservers = currentState.Observers;
+                ImmutableList<IObserver<TOutput>> currentObservers = currentState.Observers;
                 _observersState = new ObserversState(this);
                 currentState.Unlinker.Dispose();
                 currentState.Canceler.Cancel();
@@ -2555,7 +2555,7 @@ namespace System.Threading.Tasks.Dataflow
 
                     // When the source completes, complete the target. Then when the target completes, 
                     // send completion messages to any observers still registered.
-                    var sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(Observable._source);
+                    Task sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(Observable._source);
                     if (sourceCompletionTask != null)
                     {
                         sourceCompletionTask.ContinueWith((_1, state1) =>
@@ -2582,7 +2582,7 @@ namespace System.Threading.Tasks.Dataflow
                     lock (Observable._SubscriptionLock) currentObservers = Observers;
                     try
                     {
-                        foreach (var observer in currentObservers)
+                        foreach (IObserver<TOutput> observer in currentObservers)
                         {
                             // If the observer is our own TargetObserver, we SendAsync() to it
                             // rather than going through IObserver.OnNext() which allows us to
@@ -2590,7 +2590,7 @@ namespace System.Threading.Tasks.Dataflow
                             var targetObserver = observer as TargetObserver<TOutput>;
                             if (targetObserver != null)
                             {
-                                var sendAsyncTask = targetObserver.SendAsyncToTarget(item);
+                                Task<bool> sendAsyncTask = targetObserver.SendAsyncToTarget(item);
                                 if (sendAsyncTask.Status != TaskStatus.RanToCompletion)
                                 {
                                     // Ensure the SendAsyncTaskList is instantiated
@@ -2610,7 +2610,7 @@ namespace System.Threading.Tasks.Dataflow
                         if (_tempSendAsyncTaskList != null && _tempSendAsyncTaskList.Count > 0)
                         {
                             // Consolidate all SendAsync tasks into one
-                            var allSendAsyncTasksConsolidated = Task.WhenAll(_tempSendAsyncTaskList);
+                            Task<bool[]> allSendAsyncTasksConsolidated = Task.WhenAll(_tempSendAsyncTaskList);
 
                             // Clear the temp SendAsync task list
                             _tempSendAsyncTaskList.Clear();
@@ -2657,17 +2657,17 @@ namespace System.Threading.Tasks.Dataflow
                     if (currentObservers.Count > 0)
                     {
                         // Determine if we should fault or complete the observers
-                        var error = targetException ?? Observable.GetCompletionError();
+                        Exception error = targetException ?? Observable.GetCompletionError();
                         try
                         {
                             // Do it.
                             if (error != null)
                             {
-                                foreach (var observer in currentObservers) observer.OnError(error);
+                                foreach (IObserver<TOutput> observer in currentObservers) observer.OnError(error);
                             }
                             else
                             {
-                                foreach (var observer in currentObservers) observer.OnCompleted();
+                                foreach (IObserver<TOutput> observer in currentObservers) observer.OnCompleted();
                             }
                         }
                         catch (Exception exc)
@@ -2716,7 +2716,7 @@ namespace System.Threading.Tasks.Dataflow
             void IObserver<TInput>.OnNext(TInput value)
             {
                 // Send the value asynchronously...
-                var task = SendAsyncToTarget(value);
+                Task<bool> task = SendAsyncToTarget(value);
 
                 // And block until it's received.
                 task.GetAwaiter().GetResult(); // propagate original (non-aggregated) exception

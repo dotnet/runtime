@@ -87,7 +87,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Invoke the action.</summary>
             void IDisposable.Dispose()
             {
-                var toRun = _action;
+                Action<T1, T2> toRun = _action;
                 if (toRun != null &&
                     Interlocked.CompareExchange(ref _action, null, toRun) == toRun)
                 {
@@ -130,7 +130,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Invoke the action.</summary>
             void IDisposable.Dispose()
             {
-                var toRun = _action;
+                Action<T1, T2, T3> toRun = _action;
                 if (toRun != null &&
                     Interlocked.CompareExchange(ref _action, null, toRun) == toRun)
                 {

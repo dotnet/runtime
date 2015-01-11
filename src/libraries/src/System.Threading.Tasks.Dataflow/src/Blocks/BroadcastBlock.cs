@@ -99,7 +99,7 @@ namespace System.Threading.Tasks.Dataflow
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BroadcastBlock<T>)state).Complete(), this);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -263,7 +263,7 @@ namespace System.Threading.Tasks.Dataflow
                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -273,7 +273,7 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(_boundingState.TaskForInputProcessing, _source.DataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(_boundingState.TaskForInputProcessing, _source.DataflowBlockOptions.TaskScheduler);
                 if (exception != null)
                 {
                     // Get out from under currently held locks. Complete re-acquires the locks it needs.
@@ -295,7 +295,7 @@ namespace System.Threading.Tasks.Dataflow
 
             try
             {
-                var maxMessagesPerTask = _source.DataflowBlockOptions.ActualMaxMessagesPerTask;
+                int maxMessagesPerTask = _source.DataflowBlockOptions.ActualMaxMessagesPerTask;
                 for (int i = 0;
                     i < maxMessagesPerTask && ConsumeAndStoreOneMessageIfAvailable();
                     i++)
@@ -358,7 +358,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool consumed = false;
                 try
                 {
-                    var consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
+                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
                     if (consumed)
                     {
                         _source.AddMessage(consumedValue);
@@ -705,7 +705,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Offer it to the target.
                 // We must not increment the message ID here. We only do that when we populate _currentMessage, i.e. when we dequeue.
                 bool useCloning = _cloningFunction != null;
-                var result = target.OfferMessage(new DataflowMessageHeader(_nextMessageId), currentMessage, _owningSource, consumeToAccept: useCloning);
+                DataflowMessageStatus result = target.OfferMessage(new DataflowMessageHeader(_nextMessageId), currentMessage, _owningSource, consumeToAccept: useCloning);
 
                 // If accepted and the target was linked as "unlinkAfterOne", remove it
                 if (result == DataflowMessageStatus.Accepted)
@@ -777,15 +777,15 @@ namespace System.Threading.Tasks.Dataflow
                     if (_itemsRemovedAction != null) _itemsRemovedAction(numDequeuedMessages);
 
                     // Offer it to each target, unless a soleTarget was provided, which case just offer it to that one.
-                    var cur = _targetRegistry.FirstTargetNode;
+                    TargetRegistry<TOutput>.LinkedTargetInfo cur = _targetRegistry.FirstTargetNode;
                     while (cur != null)
                     {
                         // Note that during OfferMessage, a target may call ConsumeMessage, which may unlink the target
                         // if the target is registered as "once".  Doing so will remove the target from the targets list.
                         // As such, we avoid using an enumerator over _targetRegistry and instead walk from back to front,
                         // so that if an element is removed, it won't affect the rest of our walk.
-                        var next = cur.Next;
-                        var target = cur.Target;
+                        TargetRegistry<TOutput>.LinkedTargetInfo next = cur.Next;
+                        ITargetBlock<TOutput> target = cur.Target;
                         OfferMessageToTarget(header, message, target);
                         cur = next;
                     }
@@ -853,7 +853,7 @@ namespace System.Threading.Tasks.Dataflow
                                                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
-                    var etwLog = DataflowEtwProvider.Log;
+                    DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.TaskLaunchedForMessageHandling(
@@ -862,7 +862,7 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                     // Start the task handling scheduling exceptions
-                    var exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
+                    Exception exception = Common.StartTaskSafe(_taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
                     if (exception != null)
                     {
                         // First, log the exception while the processing state is dirty which is preventing the block from completing.
@@ -895,7 +895,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 try
                 {
-                    var maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
+                    int maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
                     lock (OutgoingLock)
                     {
                         // Offer as many messages as we can
@@ -1017,7 +1017,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Now that the completion task is completed, we may propagate completion to the linked targets
                 _targetRegistry.PropagateCompletion(linkedTargets);
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.DataflowBlockCompleted(_owningSource);
@@ -1195,7 +1195,7 @@ namespace System.Threading.Tasks.Dataflow
                 Contract.Requires(!Completion.IsCompleted || Completion.IsFaulted, "The block must either not be completed or be faulted if we're still storing exceptions.");
                 lock (ValueLock)
                 {
-                    foreach (var exception in exceptions)
+                    foreach (Exception exception in exceptions)
                     {
                         Common.AddException(ref _exceptions, exception);
                     }

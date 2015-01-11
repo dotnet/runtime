@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // We won the race.  This task is now the consumer.
 
 #if FEATURE_TRACING
-                    var etwLog = DataflowEtwProvider.Log;
+                    DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.TaskLaunchedForMessageHandling(
@@ -257,7 +257,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         else
                         {
                             // Mark that we're exiting.
-                            var previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
+                            Task previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
                             Contract.Assert(previousConsumer != null && previousConsumer.Id == Task.CurrentId,
                                 "The running task should have been denoted as the active task.");
 

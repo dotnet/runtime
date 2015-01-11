@@ -99,7 +99,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
             }
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -127,7 +127,7 @@ namespace System.Threading.Tasks.Dataflow
                                                         Common.GetCreationOptionsForTask());
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -136,7 +136,7 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
                 if (exception != null) CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: true);
             }
             else
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Dataflow
             // could be faulty and throw an exception.  OfferToTargets creates a
             // list of all such exceptions and returns it.
             // If _value is null, OfferToTargets does nothing.
-            var exceptions = OfferToTargets();
+            List<Exception> exceptions = OfferToTargets();
             CompleteBlock(exceptions);
         }
 
@@ -178,7 +178,7 @@ namespace System.Threading.Tasks.Dataflow
             Contract.Requires(_lazyCompletionTaskSource == null || !_lazyCompletionTaskSource.Task.IsCompleted, "The task completion source must not be completed. This must be the only thread that ever completes the block.");
 
             // Save the linked list of targets so that it could be traveresed later to propagate completion
-            var linkedTargets = _targetRegistry.ClearEntryPoints();
+            TargetRegistry<T>.LinkedTargetInfo linkedTargets = _targetRegistry.ClearEntryPoints();
 
             // Complete the block's completion task
             if (exceptions != null && exceptions.Count > 0)
@@ -204,7 +204,7 @@ namespace System.Threading.Tasks.Dataflow
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(this);
@@ -468,11 +468,11 @@ namespace System.Threading.Tasks.Dataflow
             List<Exception> exceptions = null;
             if (HasValue)
             {
-                var cur = _targetRegistry.FirstTargetNode;
+                TargetRegistry<T>.LinkedTargetInfo cur = _targetRegistry.FirstTargetNode;
                 while (cur != null)
                 {
-                    var next = cur.Next;
-                    var target = cur.Target;
+                    TargetRegistry<T>.LinkedTargetInfo next = cur.Next;
+                    ITargetBlock<T> target = cur.Target;
                     try
                     {
                         // Offer the message.  If there's a cloning function, we force the target to
