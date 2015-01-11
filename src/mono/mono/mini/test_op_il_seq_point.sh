@@ -40,7 +40,7 @@ get_method () {
 diff_methods () {
 	TMP_FILE=tmp_file
 	echo "$(get_methods $1 $2 $3 $4)" >$TMP_FILE
-	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)") | grep '^<'
+	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
 }
 
 diff_method () {
@@ -72,11 +72,10 @@ METHOD=""
 MIN_SIZE=10000
 
 while read line; do
-	if [ "$line" != "" ]; then
-		METHOD_INFO=$(echo $line | sed 's/000.*//g')
-		echo $METHOD_INFO
+	echo $line
+	if [[ ${line:0:1} == "<" ]]; then
 		CHANGES=$((CHANGES+1))
-		SIZE=$(get_method_length "$METHOD_INFO")
+		SIZE=$(get_method_length "$line")
 		if [[ SIZE -lt MIN_SIZE ]]; then
 			MIN_SIZE=$SIZE
 			METHOD="$line"
