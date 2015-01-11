@@ -187,17 +187,10 @@ namespace System.Threading.Tasks.Dataflow
             else
             {
                 // Otherwise, join with the asynchronous operation when it completes.
-#if PRENET45
-                task.ContinueWith(completed =>
-                {
-                    this.AsyncCompleteProcessMessageWithTask(completed);
-                }, CancellationToken.None, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-#else
                 task.ContinueWith((completed, state) =>
                 {
                     ((ActionBlock<TInput>)state).AsyncCompleteProcessMessageWithTask(completed);
                 }, this, CancellationToken.None, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-#endif
             }
         }
 

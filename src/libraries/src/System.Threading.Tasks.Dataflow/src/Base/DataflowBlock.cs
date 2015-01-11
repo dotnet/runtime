@@ -445,7 +445,7 @@ namespace System.Threading.Tasks.Dataflow
                     try
                     {
                         _cancellationRegistration = cancellationToken.Register(
-                            _cancellationCallback, Common.WrapWeakReference(this));
+                            _cancellationCallback, new WeakReference<SendAsyncSource<TOutput>>(this));
                     }
                     catch
                     {
@@ -541,7 +541,7 @@ namespace System.Threading.Tasks.Dataflow
                 {
                     Contract.Assert(_cancellationRegistration != default(CancellationTokenRegistration),
                         "If we're not in NONE, we must have a cancellation token we've registered with.");
-                    Common.SafeDisposeTokenRegistration(_cancellationRegistration);
+                    _cancellationRegistration.Dispose();
                 }
 
                 // If we're meant to run asynchronously, launch a task.
@@ -741,7 +741,7 @@ namespace System.Threading.Tasks.Dataflow
                     if (Interlocked.CompareExchange(ref _cancellationState, CANCELLATION_STATE_REGISTERED, CANCELLATION_STATE_RESERVED) != CANCELLATION_STATE_RESERVED)
                         throw new InvalidOperationException(Strings.InvalidOperation_MessageNotReservedByTarget);
                     if (_cancellationToken.IsCancellationRequested)
-                        CancellationHandler(Common.WrapWeakReference(this)); // same code as registered with the CancellationToken
+                        CancellationHandler(new WeakReference<SendAsyncSource<TOutput>>(this)); // same code as registered with the CancellationToken
                 }
 
                 // Start the process over by reoffering the message asynchronously.
@@ -991,22 +991,6 @@ namespace System.Threading.Tasks.Dataflow
             // If it completes successfully, return the result. Otherwise, throw the 
             // original inner exception representing the cause.  This could be an OCE.
             var task = ReceiveCore(source, false, timeout, cancellationToken);
-#if PRENET45
-            try
-            {
-                return task.Result;
-            }
-            catch (AggregateException aggregate)
-            {
-                // Special case cancellation in order to ensure the exception contains the token
-                if (task.IsCanceled) cancellationToken.ThrowIfCancellationRequested();
-
-                // If not canceled due to the token, propagate the unwrapped exception
-                Contract.Assert(aggregate.InnerExceptions.Count == 1,
-                    "Our ReceiveCore task should result in one and only one exception.");
-                throw aggregate.InnerException ?? (Exception)aggregate;
-            }
-#else
             try
             {
                 return task.GetAwaiter().GetResult(); // block until the result is available
@@ -1022,7 +1006,6 @@ namespace System.Threading.Tasks.Dataflow
                 // If we get here, propagate the original exception.
                 throw;
             }
-#endif
         }
         #endregion
 
@@ -1057,7 +1040,7 @@ namespace System.Threading.Tasks.Dataflow
                         TOutput fastCheckedItem;
                         if (receivableSource.TryReceive(null, out fastCheckedItem))
                         {
-                            return Common.CreateTaskFromResult<TOutput>(fastCheckedItem);
+                            return Task.FromResult<TOutput>(fastCheckedItem);
                         }
                     }
                     catch (Exception exc)
@@ -1349,7 +1332,7 @@ namespace System.Threading.Tasks.Dataflow
                     }
                     _cts.Cancel();
                 }
-                Common.SafeDisposeTokenRegistration(_regFromExternalCancellationToken);
+                _regFromExternalCancellationToken.Dispose();
 
                 // No need to dispose of the cts, either, as we're not accessing its WaitHandle
                 // nor was it created as a linked token source.  Disposing it could also be dangerous
@@ -1528,11 +1511,7 @@ namespace System.Threading.Tasks.Dataflow
                 // set as NotOnCanceled, so the continuation will be canceled immediately when the antecedent is canceled, which
                 // will thusly be asynchronously from the cancellation token source's cancellation call.
                 return target.Task.ContinueWith(
-#if PRENET45
-                    antecedent => OutputAvailableAsyncTarget<TOutput>.s_handleCompletion(antecedent, target),
-#else
                     OutputAvailableAsyncTarget<TOutput>.s_handleCompletion, target,
-#endif
                     CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
             }
             catch (Exception exc)
@@ -1562,13 +1541,8 @@ namespace System.Threading.Tasks.Dataflow
             {
                 var target = state as OutputAvailableAsyncTarget<T>;
                 Contract.Assert(target != null, "Expected non-null target");
-                Common.SafeDisposeTokenRegistration(target._ctr);
-                return
-#if PRENET45
-                    antecedent.Result;
-#else
-                    antecedent.GetAwaiter().GetResult();
-#endif
+                target._ctr.Dispose();
+                return antecedent.GetAwaiter().GetResult();
             };
 
             /// <summary>
@@ -2573,36 +2547,17 @@ namespace System.Threading.Tasks.Dataflow
 
                     // If the target block fails due to an unexpected exception (e.g. it calls back to the source and the source throws an error), 
                     // we fault currently registered observers and reset the observable.
-#if PRENET45
-                    Target.Completion.ContinueWith(
-                        t => NotifyObserversOfCompletion(t.Exception),
-                        CancellationToken.None,
-                        Common.GetContinuationOptions(TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
-                        TaskScheduler.Default);
-#else
                     Target.Completion.ContinueWith(
                         (t, state) => ((ObserversState)state).NotifyObserversOfCompletion(t.Exception), this,
                         CancellationToken.None,
                         Common.GetContinuationOptions(TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
                         TaskScheduler.Default);
-#endif
 
                     // When the source completes, complete the target. Then when the target completes, 
                     // send completion messages to any observers still registered.
                     var sourceCompletionTask = Common.GetPotentiallyNotSupportedCompletionTask(Observable._source);
                     if (sourceCompletionTask != null)
                     {
-#if PRENET45
-                        sourceCompletionTask.ContinueWith(delegate
-                        {
-                            Target.Complete();
-                            Target.Completion.ContinueWith(
-                                delegate { NotifyObserversOfCompletion(); },
-                                CancellationToken.None,
-                                Common.GetContinuationOptions(TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
-                                TaskScheduler.Default);
-                        }, Canceler.Token, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-#else
                         sourceCompletionTask.ContinueWith((_1, state1) =>
                         {
                             var ti = (ObserversState)state1;
@@ -2613,7 +2568,6 @@ namespace System.Threading.Tasks.Dataflow
                                 Common.GetContinuationOptions(TaskContinuationOptions.NotOnFaulted | TaskContinuationOptions.ExecuteSynchronously),
                                 TaskScheduler.Default);
                         }, this, Canceler.Token, Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously), TaskScheduler.Default);
-#endif
                     }
                 }
 
@@ -2656,12 +2610,8 @@ namespace System.Threading.Tasks.Dataflow
                         if (_tempSendAsyncTaskList != null && _tempSendAsyncTaskList.Count > 0)
                         {
                             // Consolidate all SendAsync tasks into one
-                            var allSendAsyncTasksConsolidated =
-#if PRENET45
-                            Task.Factory.ContinueWhenAll((Task[])_TempSendAsyncTaskList.ToArray(), s_whenAllAction);
-#else
-                            Task.WhenAll(_tempSendAsyncTaskList);
-#endif
+                            var allSendAsyncTasksConsolidated = Task.WhenAll(_tempSendAsyncTaskList);
+
                             // Clear the temp SendAsync task list
                             _tempSendAsyncTaskList.Clear();
 
@@ -2679,27 +2629,6 @@ namespace System.Threading.Tasks.Dataflow
                     // Return a completed task.
                     return Common.CompletedTaskWithTrueResult;
                 }
-
-#if PRENET45
-                private static readonly Action<Task[]> s_whenAllAction = taskArray =>
-                    {
-                        List<Exception> exceptions = null;
-
-                        // If any antecedent task has faulted, fault this task
-                        for (int i = 0; i < taskArray.Length; i++)
-                        {
-                            var task = taskArray[i];
-                            if (task.Status == TaskStatus.Faulted)
-                            {
-                                if (exceptions == null) exceptions = new List<Exception>();
-                                exceptions.AddRange(task.Exception.InnerExceptions);
-                            }
-                        }
-
-                        // If there were exceptions, wrap them into a single AggregateException and throw
-                        if (exceptions != null) throw new AggregateException(exceptions);
-                    };
-#endif
 
                 /// <summary>Notifies all currently registered observers that they should complete.</summary>
                 /// <param name="targetException">
@@ -2790,11 +2719,7 @@ namespace System.Threading.Tasks.Dataflow
                 var task = SendAsyncToTarget(value);
 
                 // And block until it's received.
-#if PRENET45
-                task.Wait();
-#else
                 task.GetAwaiter().GetResult(); // propagate original (non-aggregated) exception
-#endif
             }
 
             /// <summary>Completes the target.</summary>
