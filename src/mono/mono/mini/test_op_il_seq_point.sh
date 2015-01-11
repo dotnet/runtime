@@ -24,7 +24,7 @@ get_methods () {
 		MONO_PATH=$1 $2 -v $3 -q | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
 	else
 		clean_aot
-		MONO_PATH=$1 $2 -v $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
+		MONO_PATH=$1 $2 -v --aot $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
 	fi
 }
 
@@ -33,7 +33,7 @@ get_method () {
 		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 $3 -q | sed 's/0x[0-9a-fA-F]*/0x0/g'
 	else
 		clean_aot
-		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
+		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 --aot $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
 	fi
 }
 
