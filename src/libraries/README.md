@@ -25,9 +25,13 @@ Today, the repository contains the following components:
   mutable state under control without sacrificing performance or memory
   footprint. You can read more about them on [MSDN][immutable-msdn].
 
-* **System.Collections.NonGeneric**.  Provides classes that define various collections of objects, such as ArrayList, Hashtable, SortedList, Stack, and Queue. 
+* **System.Collections.NonGeneric**.  Provides classes that define various collections of objects, such as ArrayList, 
+  Hashtable, SortedList, Stack, and Queue. These collections exist in .NET Core primarily for backwards compatibility
+  and generally should be avoided when writing new code.
 
-* **System.Collections.Specialized**. Provides classes that define specialized collections of objects, for example, a linked list dictionary, a bit vector, and collections that contain only strings.
+* **System.Collections.Specialized**. Provides classes that define specialized collections of objects, for example, 
+  a linked list dictionary, a bit vector, and collections that contain only strings. These collections exist in 
+  .NET Core primarily for backwards compatibility and generally should be avoided when writing new code.
 
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
