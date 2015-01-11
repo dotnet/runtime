@@ -23,6 +23,7 @@ public class TestDriver {
 		MethodInfo[] methods;
 		bool do_timings = false;
 		bool verbose = false;
+		bool quiet = false;
 		int tms = 0;
 		DateTime start, end = DateTime.Now;
 
@@ -33,13 +34,18 @@ public class TestDriver {
 		if (args != null && args.Length > 0) {
 			for (j = 0; j < args.Length;) {
 				if (args [j] == "--time") {
-					do_timings = true;
+					do_timings = !quiet;
 					j ++;
 				} else if (args [j] == "--iter") {
 					iterations = Int32.Parse (args [j + 1]);
 					j += 2;
 				} else if ((args [j] == "-v") || (args [j] == "--verbose")) {
-					verbose = true;
+					verbose = !quiet;
+					j += 1;
+				} else if ((args [j] == "-q") || (args [j] == "--quiet")) {
+					quiet = true;
+					verbose = false;
+					do_timings = false;
 					j += 1;
 				} else if (args [j] == "--exclude") {
 					exclude [args [j + 1]] = args [j + 1];
@@ -107,13 +113,15 @@ public class TestDriver {
 				}
 			}
 		
-			if (do_timings) {
-				Console.WriteLine ("Total ms: {0}", tms);
+			if (!quiet) {
+				if (do_timings) {
+					Console.WriteLine ("Total ms: {0}", tms);
+				}
+				if (nskipped > 0)
+					Console.WriteLine ("Regression tests: {0} ran, {1} skipped, {2} failed in {3}", ran, nskipped, failed, type);
+				else
+					Console.WriteLine ("Regression tests: {0} ran, {1} failed in {2}", ran, failed, type);
 			}
-			if (nskipped > 0)
-				Console.WriteLine ("Regression tests: {0} ran, {1} skipped, {2} failed in {3}", ran, nskipped, failed, type);
-			else
-				Console.WriteLine ("Regression tests: {0} ran, {1} failed in {2}", ran, failed, type);
 		}
 
 		//Console.WriteLine ("Regression tests: {0} ran, {1} failed in [{2}]{3}", ran, failed, type.Assembly.GetName().Name, type);
