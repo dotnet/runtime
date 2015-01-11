@@ -936,11 +936,11 @@ mono_profiler_install_iomap (MonoProfileIomapFunc callback)
 }
 
 void
-mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, void *data) {
+mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, gconstpointer data) {
 	ProfilerDesc *prof;
 	for (prof = prof_list; prof; prof = prof->next) {
 		if (prof->code_buffer_new)
-			prof->code_buffer_new (prof->profiler, buffer, size, type, data);
+			prof->code_buffer_new (prof->profiler, buffer, size, type, (void*)data);
 	}
 }
 
