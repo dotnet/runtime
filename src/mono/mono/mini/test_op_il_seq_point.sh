@@ -72,13 +72,15 @@ METHOD=""
 MIN_SIZE=10000
 
 while read line; do
-	echo $line
-	if [[ ${line:0:1} == "<" ]]; then
-		CHANGES=$((CHANGES+1))
-		SIZE=$(get_method_length "$line")
-		if [[ SIZE -lt MIN_SIZE ]]; then
-			MIN_SIZE=$SIZE
-			METHOD="$line"
+	if [ "$line" != "" ]; then
+		echo $line
+		if [[ ${line:0:1} == "<" ]]; then
+			CHANGES=$((CHANGES+1))
+			SIZE=$(get_method_length "$line")
+			if [[ SIZE -lt MIN_SIZE ]]; then
+				MIN_SIZE=$SIZE
+				METHOD="$line"
+			fi
 		fi
 	fi
 done < $TMP_FILE
