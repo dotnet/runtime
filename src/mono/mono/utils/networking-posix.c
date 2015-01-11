@@ -302,6 +302,15 @@ mono_get_local_interfaces (int family, int *interface_count)
 	return result;
 }
 
+#else
+
+void *
+mono_get_local_interfaces (int family, int *interface_count)
+{
+	*interface_count = 0;
+	return NULL;
+}
+
 #endif
 
 #ifdef HAVE_GETNAMEINFO
