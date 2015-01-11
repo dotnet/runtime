@@ -169,7 +169,7 @@ namespace System.Threading.Tasks.Dataflow
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state).Complete(exception: null, dropPendingMessages: true), _target);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -188,7 +188,7 @@ namespace System.Threading.Tasks.Dataflow
             try
             {
                 // Run the user transform and store the results.
-                var outputItems = transformFunction(messageWithId.Key);
+                IEnumerable<TOutput> outputItems = transformFunction(messageWithId.Key);
                 userDelegateSucceeded = true;
                 StoreOutputItems(messageWithId, outputItems);
             }
@@ -279,7 +279,7 @@ namespace System.Threading.Tasks.Dataflow
             switch (completed.Status)
             {
                 case TaskStatus.RanToCompletion:
-                    var outputItems = completed.Result;
+                    IEnumerable<TOutput> outputItems = completed.Result;
                     try
                     {
                         // Get the resulting enumerable and persist it.
@@ -371,7 +371,7 @@ namespace System.Threading.Tasks.Dataflow
             Contract.Requires(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
 
             // Grab info about the transform
-            var target = _target;
+            TargetCore<TInput> target = _target;
             bool isBounded = target.IsBounded;
 
             // Handle invalid items (null enumerables) by delegating to the base
@@ -480,7 +480,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool outputFirstItem = false;
                 try
                 {
-                    foreach (var item in outputItems)
+                    foreach (TOutput item in outputItems)
                     {
                         if (outputFirstItem) _target.ChangeBoundingCount(count: 1);
                         else outputFirstItem = true;
@@ -495,7 +495,7 @@ namespace System.Threading.Tasks.Dataflow
             // If we're not bounding, just output each individual item.
             else
             {
-                foreach (var item in outputItems) _source.AddMessage(item);
+                foreach (TOutput item in outputItems) _source.AddMessage(item);
             }
         }
 

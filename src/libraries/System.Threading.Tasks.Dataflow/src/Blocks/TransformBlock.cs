@@ -150,7 +150,7 @@ namespace System.Threading.Tasks.Dataflow
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state).Complete(exception: null, dropPendingMessages: true), _target);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);

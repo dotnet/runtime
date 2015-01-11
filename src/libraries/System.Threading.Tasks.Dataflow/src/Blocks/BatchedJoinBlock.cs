@@ -109,7 +109,7 @@ namespace System.Threading.Tasks.Dataflow
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2>)state).CompleteEachTarget(), this);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -374,7 +374,7 @@ namespace System.Threading.Tasks.Dataflow
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2, T3>)state).CompleteEachTarget(), this);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -586,7 +586,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Common.ContractAssertMonitorStatus(_sharedResources._incomingLock, held: true);
 
-            var toReturn = _messages;
+            IList<T> toReturn = _messages;
             _messages = new List<T>();
             return toReturn;
         }

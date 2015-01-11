@@ -195,7 +195,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // leak into a long-living cancellation token.
             else if (cancellationToken.CanBeCanceled)
             {
-                var reg = cancellationToken.Register(completeAction, completeState);
+                CancellationTokenRegistration reg = cancellationToken.Register(completeAction, completeState);
                 completionTask.ContinueWith((completed, state) => ((CancellationTokenRegistration)state).Dispose(),
                     reg, cancellationToken, Common.GetContinuationOptions(), TaskScheduler.Default);
             }
@@ -248,7 +248,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 var aggregate = exc as AggregateException;
                 if (aggregate != null)
                 {
-                    foreach (var innerException in aggregate.InnerExceptions)
+                    foreach (Exception innerException in aggregate.InnerExceptions)
                     {
                         StoreStringIntoExceptionData(innerException, Common.EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE, strValue);
                     }
@@ -297,7 +297,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </remarks>
         internal static void ThrowAsync(Exception error)
         {
-            var edi = ExceptionDispatchInfo.Capture(error);
+            ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(error);
             ThreadPool.QueueUserWorkItem(state => { ((ExceptionDispatchInfo)state).Throw(); }, edi);
         }
 
@@ -488,7 +488,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Contract.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
 
                 // Observe the task's exception
-                var ignoredTaskException = task.Exception;
+                AggregateException ignoredTaskException = task.Exception;
 
                 schedulingException = caughtException;
             }
@@ -554,7 +554,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
             Contract.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
 
-            var exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
+            AggregateException exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
 
             try
             {
