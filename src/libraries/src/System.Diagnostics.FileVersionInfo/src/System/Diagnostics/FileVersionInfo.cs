@@ -43,6 +43,7 @@ namespace System.Diagnostics
         private FileVersionInfo(string fileName)
         {
             _fileName = fileName;
+            Initialize();
         }
 
         /// <summary>
@@ -275,9 +276,7 @@ namespace System.Diagnostics
                 throw new FileNotFoundException(fileName);
             }
 
-            var versionInfo = new FileVersionInfo(fileName);
-            versionInfo.Initialize();
-            return versionInfo;
+            return new FileVersionInfo(fileName);
         }
 
         /// <summary>
