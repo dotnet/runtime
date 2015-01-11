@@ -15,17 +15,17 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="BlockingCollectionCancellationTests.cs" />
+    <!--<Compile Include="BlockingCollectionCancellationTests.cs" />-->
     <Compile Include="BlockingCollectionTests.cs" />
     <Compile Include="ConcurrentBagTests.cs" />
     <Compile Include="ConcurrentDictionaryTests.cs" />
     <Compile Include="ConcurrentQueueTests.cs" />
     <Compile Include="ConcurrentStackTests.cs" />
-    <Compile Include="IntRangePartitionerTests.cs" />
+    <!--<Compile Include="IntRangePartitionerTests.cs" />
     <Compile Include="LongRangePartitionerTests.cs" />
     <Compile Include="PartitionerHelpers.cs" />
     <Compile Include="PartitionerStaticTests.cs" />
-    <Compile Include="RangePartitionerNegativeTests.cs" />
+    <Compile Include="RangePartitionerNegativeTests.cs" />-->
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
