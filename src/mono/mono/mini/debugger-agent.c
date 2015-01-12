@@ -48,7 +48,6 @@
 #endif
 #include <ws2tcpip.h>
 #endif
-#endif
 
 #ifdef PLATFORM_ANDROID
 #include <linux/in.h>
