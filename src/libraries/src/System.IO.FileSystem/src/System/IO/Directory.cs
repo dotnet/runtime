@@ -59,7 +59,7 @@ namespace System.IO
             String fullPathWithTrailingDirectorySeparator;
 
             if (!PathHelpers.EndsInDirectorySeparator(fullPath))
-                fullPathWithTrailingDirectorySeparator = fullPath + Path.DirectorySeparatorChar;
+                fullPathWithTrailingDirectorySeparator = fullPath + PathHelpers.DirectorySeparatorCharAsString;
             else
                 fullPathWithTrailingDirectorySeparator = fullPath;
 

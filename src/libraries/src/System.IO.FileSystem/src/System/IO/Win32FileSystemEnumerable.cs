@@ -502,7 +502,7 @@ namespace System.IO
             char lastChar = tempStr[tempStr.Length - 1];
             if (PathHelpers.IsDirectorySeparator(lastChar) || lastChar == Path.VolumeSeparatorChar)
             {
-                tempStr = tempStr + '*';
+                tempStr = tempStr + "*";
             }
 
             return tempStr;
