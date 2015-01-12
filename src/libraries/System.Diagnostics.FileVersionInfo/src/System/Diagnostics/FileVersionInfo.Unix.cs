@@ -5,8 +5,10 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
-        private void Initialize()
+        private FileVersionInfo(string fileName)
         {
+            _fileName = fileName;
+
             // TODO: Implement this
 
             _companyName = string.Empty;

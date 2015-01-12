@@ -9,8 +9,10 @@ namespace System.Diagnostics
 {
     public sealed partial class FileVersionInfo
     {
-        private unsafe void Initialize()
+        private unsafe FileVersionInfo(string fileName)
         {
+            _fileName = fileName;
+
             uint handle;  // This variable is not used, but we need an out variable.
             uint infoSize = Interop.mincore.GetFileVersionInfoSizeEx(
                 (uint)Interop.Constants.FileVerGetLocalised, _fileName, out handle);

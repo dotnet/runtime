@@ -40,12 +40,6 @@ namespace System.Diagnostics
         private bool _isPreRelease;
         private bool _isSpecialBuild;
 
-        private FileVersionInfo(string fileName)
-        {
-            _fileName = fileName;
-            Initialize();
-        }
-
         /// <summary>
         /// Gets the comments associated with the file.
         /// </summary>
