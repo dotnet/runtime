@@ -623,7 +623,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Reverses the order of elements in the collection.
             /// </summary>
-            public void ReverseContents()
+            public void Reverse()
             {
                 Array.Reverse(_elements, 0, _count);
             }

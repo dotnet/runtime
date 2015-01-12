@@ -239,23 +239,23 @@ namespace System.Collections.Immutable.Test
         {
             var builder = new ImmutableArray<int>.Builder();
             builder.AddRange(1, 2, 3, 4);
-            builder.ReverseContents();
+            builder.Reverse();
             Assert.Equal(new[] { 4, 3, 2, 1 }, builder);
 
             builder.RemoveAt(0);
-            builder.ReverseContents();
+            builder.Reverse();
             Assert.Equal(new[] { 1, 2, 3 }, builder);
 
             builder.RemoveAt(0);
-            builder.ReverseContents();
+            builder.Reverse();
             Assert.Equal(new[] { 3, 2 }, builder);
 
             builder.RemoveAt(0);
-            builder.ReverseContents();
+            builder.Reverse();
             Assert.Equal(new[] { 2 }, builder);
 
             builder.RemoveAt(0);
-            builder.ReverseContents();
+            builder.Reverse();
             Assert.Equal(new int[0], builder);
         }
 
