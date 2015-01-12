@@ -216,6 +216,7 @@ typedef struct MonoAotCompile {
 	char *llvm_got_symbol;
 	char *plt_symbol;
 	char *methods_symbol;
+	char *llvm_eh_frame_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
 	const char *user_symbol_prefix;
@@ -5779,38 +5780,48 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 {
 	char *debug_sym = NULL;
 	char *s;
+	char *prefix;
+
+	if (acfg->llvm_separate && llvm_acfg->aot_opts.static_link) {
+		/* Need to add a prefix to create unique symbols */
+		prefix = g_strdup_printf ("plt_%s_", acfg->assembly_name_sym);
+	} else {
+		prefix = g_strdup ("plt_");
+	}
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_METHOD:
-		debug_sym = get_debug_sym (ji->data.method, "plt_", cache);
+		debug_sym = get_debug_sym (ji->data.method, prefix, cache);
 		break;
 	case MONO_PATCH_INFO_INTERNAL_METHOD:
-		debug_sym = g_strdup_printf ("plt__jit_icall_%s", ji->data.name);
+		debug_sym = g_strdup_printf ("%s_jit_icall_%s", prefix, ji->data.name);
 		break;
 	case MONO_PATCH_INFO_CLASS_INIT:
 		s = mono_type_get_name (&ji->data.klass->byval_arg);
-		debug_sym = g_strdup_printf ("plt__class_init_%s", s);
+		debug_sym = g_strdup_printf ("%s__class_init_%s", prefix, s);
 		g_free (s);
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH:
-		debug_sym = g_strdup_printf ("plt__rgctx_fetch_%d", acfg->label_generator ++);
+		debug_sym = g_strdup_printf ("%s_rgctx_fetch_%d", prefix, acfg->label_generator ++);
 		break;
 	case MONO_PATCH_INFO_ICALL_ADDR: {
 		char *s = get_debug_sym (ji->data.method, "", cache);
 		
-		debug_sym = g_strdup_printf ("plt__icall_native_%s", s);
+		debug_sym = g_strdup_printf ("%s_icall_native_%s", prefix, s);
 		g_free (s);
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-		debug_sym = g_strdup_printf ("plt__jit_icall_native_%s", ji->data.name);
+		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, ji->data.name);
 		break;
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-		debug_sym = g_strdup_printf ("plt__generic_class_init");
+		debug_sym = g_strdup_printf ("%s_generic_class_init", prefix);
 		break;
 	default:
 		break;
 	}
+
+	g_free (prefix);
 
 	return sanitize_symbol (acfg, debug_sym);
 }
@@ -7201,7 +7212,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
 	if (acfg->llvm_separate)
-		g_string_append_printf (acfg->llc_args, " -mono-eh-frame-symbol=mono_eh_frame");
+		g_string_append_printf (acfg->llc_args, " -mono-eh-frame-symbol=%s", acfg->llvm_eh_frame_symbol);
 
 #if defined(TARGET_MACH) && defined(TARGET_ARM)
 	/* ios requires PIC code now */
@@ -8093,7 +8104,7 @@ emit_globals (MonoAotCompile *acfg)
 	int i, table_size;
 	guint32 hash;
 	GPtrArray *table;
-	char symbol [256];
+	char symbol [1024];
 	GlobalsTableEntry *entry, *new_entry;
 
 	if (!acfg->aot_opts.static_link)
@@ -8187,6 +8198,7 @@ emit_globals (MonoAotCompile *acfg)
 		sprintf (symbol, "name_%d", i);
 		emit_pointer (acfg, symbol);
 
+		g_assert (strlen (name) < sizeof (symbol));
 		sprintf (symbol, "%s", name);
 		emit_pointer (acfg, symbol);
 	}
@@ -8286,7 +8298,7 @@ emit_file_info (MonoAotCompile *acfg)
 		/*
 		 * Emit a reference to the mono_eh_frame table created by our modified LLVM compiler.
 		 */
-		emit_pointer (acfg, "mono_eh_frame");
+		emit_pointer (acfg, acfg->llvm_eh_frame_symbol);
 	} else {
 		emit_pointer (acfg, NULL);
 	}
@@ -8980,21 +8992,20 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		mini_llvm_init ();
 
-		if (!acfg->aot_opts.static_link && (!acfg->aot_opts.asm_only || acfg->aot_opts.llvm_outfile)) {
+		if (!acfg->aot_opts.asm_only || acfg->aot_opts.llvm_outfile) {
 			/*
 			 * Emit all LLVM code into a separate assembly/object file and link with it
 			 * normally.
-			 * FIXME:
-			 * Can't use it when using asm_only or static_link, since it requires changes
-			 * to users because we generate two files now. Also, symbol names have to be
-			 * prefixed by a unique prefix so multiple files can be linked together.
-			 * This also affects the mono_eh_frame symbol emitted by LLVM.
 			 */
-#if LLVM_API_VERSION >= 3 && (defined(TARGET_AMD64) || defined(TARGET_X86))
+#if LLVM_API_VERSION >= 3
 			acfg->llvm_separate = TRUE;
 			if (!acfg->aot_opts.asm_only)
 				acfg->llvm_owriter = TRUE;
 #endif
+		}
+		if (acfg->aot_opts.llvm_outfile && !acfg->llvm_separate) {
+			aot_printerrf (acfg, "The llvm-outputfile= option is not supported on this platform.\n");
+			return 1;
 		}
 	}
 
@@ -9037,8 +9048,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->plt_symbol = g_strdup_printf ("%smono_aot_%s_plt", acfg->llvm_label_prefix, acfg->assembly_name_sym);
 
 	acfg->got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->got_symbol_base);
-	if (acfg->llvm)
+	if (acfg->llvm) {
 		acfg->llvm_got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->llvm_got_symbol_base);
+		acfg->llvm_eh_frame_symbol = g_strdup_printf ("mono_aot_%s_eh_frame", acfg->assembly_name_sym);
+	}
 
 	acfg->method_index = 1;
 

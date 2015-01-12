@@ -97,6 +97,7 @@ typedef struct MonoAotModule {
 	guint8 *mem_begin;
 	guint8 *mem_end;
 	guint8 *code;
+	guint8 *code_start;
 	guint8 *code_end;
 	guint8 *plt;
 	guint8 *plt_end;
@@ -1970,6 +1971,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->thumb_end = info->thumb_end;
 
 	/* Compute code_offsets from the method addresses */
+	amodule->code_start = amodule->code;
 	amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
 	for (i = 0; i < amodule->info.nmethods; ++i) {
 		/* method_addresses () contains a table of branches, since the ios linker can update those correctly */
@@ -1990,6 +1992,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		// FIXME: Last method
 		if ((guint8*)addr > (guint8*)amodule->code_end)
 			amodule->code_end = addr;
+		if ((guint8*)addr < (guint8*)amodule->code_start)
+			amodule->code_start = addr;
 	}
 
 	if (make_unreadable) {
@@ -2013,7 +2017,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	mono_aot_lock ();
 
-	aot_code_low_addr = MIN (aot_code_low_addr, (gsize)amodule->code);
+	aot_code_low_addr = MIN (aot_code_low_addr, (gsize)amodule->code_start);
 	aot_code_high_addr = MAX (aot_code_high_addr, (gsize)amodule->code_end);
 
 	g_hash_table_insert (aot_modules, assembly, amodule);
@@ -4094,7 +4098,7 @@ find_aot_module_cb (gpointer key, gpointer value, gpointer user_data)
 	FindAotModuleUserData *data = (FindAotModuleUserData*)user_data;
 	MonoAotModule *aot_module = (MonoAotModule*)value;
 
-	if ((data->addr >= (guint8*)(aot_module->code)) && (data->addr < (guint8*)(aot_module->code_end)))
+	if ((data->addr >= (guint8*)(aot_module->code_start)) && (data->addr < (guint8*)(aot_module->code_end)))
 		data->module = aot_module;
 }
 
