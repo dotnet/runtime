@@ -1034,7 +1034,7 @@ mono_arch_get_call_target (guint8 *code)
 	/* Should be a 'bl' */
 	if ((((ins >> 25) & 0x7) == 0x5) && (((ins >> 24) & 0x1) == 0x1)) {
 #endif
-		gint32 disp = ((gint32)ins) & 0xffffff;
+		gint32 disp = ((((gint32)ins) & 0xffffff) << 8) >> 8;
 		guint8 *target = code - 4 + 8 + (disp * 4);
 
 		return target;
