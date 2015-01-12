@@ -103,7 +103,7 @@ namespace System.IO.Pipes
             _handle = handle;
             _isAsync = isAsync;
 
-            // track these separately; m_isHandleExposed will get updated if accessed though the property
+            // track these separately; _isHandleExposed will get updated if accessed though the property
             _isHandleExposed = isExposed;
             _isFromExistingHandle = isExposed;
         }
