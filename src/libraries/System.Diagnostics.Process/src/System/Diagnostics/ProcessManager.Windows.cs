@@ -483,15 +483,14 @@ namespace System.Diagnostics
 
         static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library)
         {
-            ProcessInfo[] processInfos = new ProcessInfo[0];
-            byte[] dataPtr = null;
+            ProcessInfo[] processInfos;
 
             int retryCount = 5;
-            while (processInfos.Length == 0 && retryCount != 0)
+            do
             {
                 try
                 {
-                    dataPtr = library.GetPerformanceData(PerfCounterQueryString);
+                    byte[] dataPtr = library.GetPerformanceData(PerfCounterQueryString);
                     processInfos = GetProcessInfos(library, ProcessPerfCounterId, ThreadPerfCounterId, dataPtr);
                 }
                 catch (Exception e)
@@ -501,6 +500,7 @@ namespace System.Diagnostics
 
                 --retryCount;
             }
+            while (processInfos.Length == 0 && retryCount != 0);
 
             if (processInfos.Length == 0)
                 throw new InvalidOperationException(SR.ProcessDisabled);
