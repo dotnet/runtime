@@ -24,7 +24,7 @@ namespace System.IO
 
         // String-representation of the directory-separator character, used when appending the character to another
         // string so as to avoid the boxing of the character when calling String.Concat(..., object).
-        internal static readonly string DirectorySeparatorCharAsString = new string(Path.DirectorySeparatorChar, 1);
+        internal static readonly string DirectorySeparatorCharAsString = Path.DirectorySeparatorChar.ToString();
 
         // Gets the length of the root DirectoryInfo or whatever DirectoryInfo markers
         // are specified for the first part of the DirectoryInfo name.
