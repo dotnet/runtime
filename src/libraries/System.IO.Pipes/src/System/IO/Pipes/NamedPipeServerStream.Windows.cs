@@ -300,13 +300,13 @@ namespace System.IO.Pipes
             RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(tryCode, cleanupCode, execHelper);
 
             // now handle win32 impersonate/revert specific errors by throwing corresponding exceptions
-            if (execHelper.m_impersonateErrorCode != 0)
+            if (execHelper._impersonateErrorCode != 0)
             {
-                WinIOError(execHelper.m_impersonateErrorCode);
+                WinIOError(execHelper._impersonateErrorCode);
             }
-            else if (execHelper.m_revertImpersonateErrorCode != 0)
+            else if (execHelper._revertImpersonateErrorCode != 0)
             {
-                WinIOError(execHelper.m_revertImpersonateErrorCode);
+                WinIOError(execHelper._revertImpersonateErrorCode);
             }
         }
 
@@ -324,20 +324,20 @@ namespace System.IO.Pipes
             try { }
             finally
             {
-                if (UnsafeNativeMethods.ImpersonateNamedPipeClient(execHelper.m_handle))
+                if (UnsafeNativeMethods.ImpersonateNamedPipeClient(execHelper._handle))
                 {
-                    execHelper.m_mustRevert = true;
+                    execHelper._mustRevert = true;
                 }
                 else
                 {
-                    execHelper.m_impersonateErrorCode = Marshal.GetLastWin32Error();
+                    execHelper._impersonateErrorCode = Marshal.GetLastWin32Error();
                 }
 
             }
 
-            if (execHelper.m_mustRevert)
+            if (execHelper._mustRevert)
             { // impersonate passed so run user code
-                execHelper.m_userCode();
+                execHelper._userCode();
             }
         }
 
@@ -347,28 +347,28 @@ namespace System.IO.Pipes
         {
             ExecuteHelper execHelper = (ExecuteHelper)helper;
 
-            if (execHelper.m_mustRevert)
+            if (execHelper._mustRevert)
             {
                 if (!UnsafeNativeMethods.RevertToSelf())
                 {
-                    execHelper.m_revertImpersonateErrorCode = Marshal.GetLastWin32Error();
+                    execHelper._revertImpersonateErrorCode = Marshal.GetLastWin32Error();
                 }
             }
         }
 
         internal class ExecuteHelper
         {
-            internal PipeStreamImpersonationWorker m_userCode;
-            internal SafePipeHandle m_handle;
-            internal bool m_mustRevert;
-            internal int m_impersonateErrorCode;
-            internal int m_revertImpersonateErrorCode;
+            internal PipeStreamImpersonationWorker _userCode;
+            internal SafePipeHandle _handle;
+            internal bool _mustRevert;
+            internal int _impersonateErrorCode;
+            internal int _revertImpersonateErrorCode;
 
             [SecurityCritical]
             internal ExecuteHelper(PipeStreamImpersonationWorker userCode, SafePipeHandle handle)
             {
-                m_userCode = userCode;
-                m_handle = handle;
+                _userCode = userCode;
+                _handle = handle;
             }
         }
 #endif
