@@ -47,10 +47,6 @@
 #include <process.h>
 #endif
 #include <ws2tcpip.h>
-#ifdef __GNUC__
-/* cygwin's headers do not seem to define these */
-int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
-                       char*,DWORD,int);
 #endif
 #endif
 
