@@ -952,7 +952,7 @@ namespace System.IO.Pipes
             return secAttrs;
         }
 
-        // When doing IO asynchronously (i.e., m_isAsync==true), this callback is 
+        // When doing IO asynchronously (i.e., _isAsync==true), this callback is 
         // called by a free thread in the threadpool when the IO operation 
         // completes.  
         [SecurityCritical]
