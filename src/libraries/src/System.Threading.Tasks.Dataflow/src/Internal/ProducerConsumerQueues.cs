@@ -159,7 +159,7 @@ namespace System.Threading.Tasks
         public void Enqueue(T item)
         {
             Segment segment = _tail;
-            var array = segment._array;
+            T[] array = segment._array;
             int last = segment._state._last; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously room in the current segment
@@ -212,7 +212,7 @@ namespace System.Threading.Tasks
         public bool TryDequeue(out T result)
         {
             Segment segment = _head;
-            var array = segment._array;
+            T[] array = segment._array;
             int first = segment._state._first; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously data available in the current segment
@@ -250,7 +250,7 @@ namespace System.Threading.Tasks
                 _head = segment;
             }
 
-            var first = segment._state._first; // local copy to avoid extraneous volatile reads
+            int first = segment._state._first; // local copy to avoid extraneous volatile reads
 
             if (first == segment._state._last)
             {
@@ -272,7 +272,7 @@ namespace System.Threading.Tasks
         public bool TryPeek(out T result)
         {
             Segment segment = _head;
-            var array = segment._array;
+            T[] array = segment._array;
             int first = segment._state._first; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously data available in the current segment
@@ -308,7 +308,7 @@ namespace System.Threading.Tasks
                 _head = segment;
             }
 
-            var first = segment._state._first; // local copy to avoid extraneous volatile reads
+            int first = segment._state._first; // local copy to avoid extraneous volatile reads
 
             if (first == segment._state._last)
             {
@@ -327,7 +327,7 @@ namespace System.Threading.Tasks
         public bool TryDequeueIf(Predicate<T> predicate, out T result)
         {
             Segment segment = _head;
-            var array = segment._array;
+            T[] array = segment._array;
             int first = segment._state._first; // local copy to avoid multiple volatile reads
 
             // Fast path: there's obviously data available in the current segment
@@ -374,7 +374,7 @@ namespace System.Threading.Tasks
                 _head = segment;
             }
 
-            var first = segment._state._first; // local copy to avoid extraneous volatile reads
+            int first = segment._state._first; // local copy to avoid extraneous volatile reads
 
             if (first == segment._state._last)
             {
@@ -410,7 +410,7 @@ namespace System.Threading.Tasks
             // This implementation is optimized for calls from the consumer.
             get
             {
-                var head = _head;
+                Segment head = _head;
                 if (head._state._first != head._state._lastCopy) return false; // _first is volatile, so the read of _lastCopy cannot get reordered
                 if (head._state._first != head._state._last) return false;
                 return head._next == null;

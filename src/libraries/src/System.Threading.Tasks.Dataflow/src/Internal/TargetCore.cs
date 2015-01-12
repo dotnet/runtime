@@ -381,7 +381,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                                                       Common.GetCreationOptionsForTask(repeat));
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -391,7 +391,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
                 if (exception != null)
                 {
                     // Get out from under currently held locks. Complete re-acquires the locks it needs.
@@ -415,7 +415,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 bool shouldAttemptPostponedTransfer = _boundingState != null && _boundingState.BoundedCapacity > 1;
                 int numberOfMessagesProcessedByThisTask = 0;
                 int numberOfMessagesProcessedSinceTheLastKeepAlive = 0;
-                var maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
+                int maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
 
                 while (numberOfMessagesProcessedByThisTask < maxMessagesPerTask && !CanceledOrFaulted)
                 {
@@ -672,7 +672,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 } // Must not call to source while holding lock
 
                 bool consumed;
-                var consumedValue = element.Key.ConsumeMessage(element.Value, _owningTarget, out consumed);
+                TInput consumedValue = element.Key.ConsumeMessage(element.Value, _owningTarget, out consumed);
                 if (consumed)
                 {
                     result = new KeyValuePair<TInput, long>(consumedValue, messageId);
@@ -771,7 +771,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // which may still contain orphaned data if we were canceled or faulted.  However,
             // we don't reset the bounding count here, as the block as a whole may still be active.
             KeyValuePair<TInput, long> ignored;
-            var messages = _messages;
+            IProducerConsumerQueue<KeyValuePair<TInput, long>> messages = _messages;
             while (messages.TryDequeue(out ignored)) ;
 
             // If we completed with any unhandled exception, finish in an error state
