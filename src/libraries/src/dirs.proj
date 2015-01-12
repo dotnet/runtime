@@ -1,11 +1,11 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="RestoreAllPackages;VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
   <Target Name="VerifyBuildTools" 
     Inputs="$(BuildToolsTargetInputs)"
     Outputs="$(BuildToolsTargetOutputs)"
     >
-    <Error Condition="!Exists('$(BuildToolsInstallSempahore)')" 
+    <Error Condition="!Exists('$(BuildToolsInstallSemaphore)')" 
       Text="The build tools have not been installed. Please run build.cmd from the root of the repo at least once to get the tools installed." />
 
     <!-- If we enter this target at all then the inputs are newer then the outputs so give a warning. -->
@@ -13,7 +13,7 @@
   </Target>
 
   <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
-  <Target Name="RestoreAllPackages" BeforeTargets="Build" DependsOnTargets="EnsureDependencies" />
+  <Target Name="RestoreAllPackages" DependsOnTargets="EnsureDependencies" />
 
   <ItemGroup>
     <Project Include="*\src\*.csproj" />
@@ -28,7 +28,12 @@
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
-  <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
+  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets')">
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependsOn);
+      BuildPackages;
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
   <ItemGroup>
     <DisabledTestAssembly Include="System.Threading.Tasks.Dataflow.Tests" />
@@ -38,6 +43,14 @@
   </ItemGroup>
   
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
-  <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
+  <Target Name="RunDirTests" DependsOnTargets="RunTests">
+    <Error Text="One or more tests failed" Condition="'%(XUnitExitCodes.Identity)' != '0'" />
+  </Target>
+  <PropertyGroup Condition="Exists('$(ToolsDir)tests.targets')">
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependsOn);
+      RunDirTests;
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
 </Project>
