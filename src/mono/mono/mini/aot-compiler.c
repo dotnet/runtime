@@ -93,6 +93,7 @@ static ReadOnlyValue *readonly_values;
 
 typedef struct MonoAotOptions {
 	char *outfile;
+	char *llvm_outfile;
 	gboolean save_temps;
 	gboolean write_symbols;
 	gboolean metadata_only;
@@ -6382,6 +6383,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 
 		if (str_begins_with (arg, "outfile=")) {
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
+		} else if (str_begins_with (arg, "llvm-outfile=")) {
+			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
 		} else if (str_begins_with (arg, "save-temps")) {
 			opts->save_temps = TRUE;
 		} else if (str_begins_with (arg, "keep-temps")) {
@@ -6466,6 +6469,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
+			printf ("    llvm-outfile=\n");
 			printf ("    save-temps\n");
 			printf ("    keep-temps\n");
 			printf ("    write-symbols\n");
@@ -8672,6 +8676,8 @@ compile_asm (MonoAotCompile *acfg)
 		aot_printf (acfg, "Output file: '%s'.\n", acfg->tmpfname);
 		if (acfg->aot_opts.static_link)
 			aot_printf (acfg, "Linking symbol: '%s'.\n", acfg->static_linking_symbol);
+		if (acfg->llvm_separate)
+			aot_printf (acfg, "LLVM output file: '%s'.\n", acfg->llvm_sfile);
 		return 0;
 	}
 
@@ -8974,7 +8980,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 
 		mini_llvm_init ();
 
-		if (!acfg->aot_opts.static_link && !acfg->aot_opts.asm_only) {
+		if (!acfg->aot_opts.static_link && (!acfg->aot_opts.asm_only || acfg->aot_opts.llvm_outfile)) {
 			/*
 			 * Emit all LLVM code into a separate assembly/object file and link with it
 			 * normally.
@@ -8983,12 +8989,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			 * to users because we generate two files now. Also, symbol names have to be
 			 * prefixed by a unique prefix so multiple files can be linked together.
 			 * This also affects the mono_eh_frame symbol emitted by LLVM.
-			 * Can't use this with full aot until the trampolines are updated
-			 * (i.e. get rid of the emit_symbol_diff () stuff).
 			 */
 #if LLVM_API_VERSION >= 3 && (defined(TARGET_AMD64) || defined(TARGET_X86))
 			acfg->llvm_separate = TRUE;
-			acfg->llvm_owriter = TRUE;
+			if (!acfg->aot_opts.asm_only)
+				acfg->llvm_owriter = TRUE;
 #endif
 		}
 	}
@@ -9104,13 +9109,16 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		gboolean res;
 
 		if (acfg->aot_opts.asm_only) {
-			g_assert (!acfg->llvm_separate);
 			if (acfg->aot_opts.outfile) {
 				acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 				acfg->tmpbasename = g_strdup (acfg->tmpfname);
 			} else {
 				acfg->tmpbasename = g_strdup_printf ("%s", acfg->image->name);
 				acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+			}
+			if (acfg->llvm_separate) {
+				g_assert (acfg->aot_opts.llvm_outfile);
+				acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
 			}
 		} else {
 			acfg->tmpbasename = g_strdup_printf ("%s", "temp");
