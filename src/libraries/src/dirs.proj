@@ -44,7 +44,7 @@
   
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Target Name="RunDirTests" DependsOnTargets="RunTests">
-    <Error Text="One or more tests failed" Condition="'%(XUnitExitCodes.Identity)' != '0'" />
+    <Error Text="One or more tests failed" Condition="'@(XUnitExitCodes)' != '' and '%(XUnitExitCodes.Identity)' != '0'" />
   </Target>
   <PropertyGroup Condition="Exists('$(ToolsDir)tests.targets')">
     <TraversalBuildDependsOn>
