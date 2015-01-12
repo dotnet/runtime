@@ -788,7 +788,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 
 	LIVENESS_DEBUG (printf ("\t%x: ", inst_num); mono_print_ins (ins));
 
-	if (ins->opcode == OP_NOP | ins->opcode == OP_IL_SEQ_POINT)
+	if (ins->opcode == OP_NOP || ins->opcode == OP_IL_SEQ_POINT)
 		return;
 
 	/* DREG */
