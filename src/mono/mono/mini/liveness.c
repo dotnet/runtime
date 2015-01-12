@@ -788,7 +788,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 
 	LIVENESS_DEBUG (printf ("\t%x: ", inst_num); mono_print_ins (ins));
 
-	if (ins->opcode == OP_NOP)
+	if (ins->opcode == OP_NOP | ins->opcode == OP_IL_SEQ_POINT)
 		return;
 
 	/* DREG */
@@ -814,10 +814,17 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 					LIVENESS_DEBUG (printf ("\tdead def of R%d, eliminated\n", ins->dreg));
 					NULLIFY_INS (ins);
 					return;
-				}
+				} else {
+					int inst_num_add = 1;
+					MonoInst *next = ins->next;
+					while (next && next->opcode == OP_IL_SEQ_POINT) {
+						inst_num_add++;
+						next = next->next;
+					}
 
-				LIVENESS_DEBUG (printf ("\tdead def of R%d, add range to R%d: [%x, %x]\n", ins->dreg, ins->dreg, inst_num, inst_num + 1));
-				mono_linterval_add_range (cfg, vi->interval, inst_num, inst_num + 1);
+					LIVENESS_DEBUG (printf ("\tdead def of R%d, add range to R%d: [%x, %x]\n", ins->dreg, ins->dreg, inst_num, inst_num + inst_num_add));
+					mono_linterval_add_range (cfg, vi->interval, inst_num, inst_num + inst_num_add);
+				}
 			}
 		}
 	}
