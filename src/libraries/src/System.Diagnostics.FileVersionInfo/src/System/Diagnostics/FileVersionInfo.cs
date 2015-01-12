@@ -1,32 +1,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Text;
-using System.Runtime.InteropServices;
-using System;
 using System.IO;
-using System.Globalization;
-using System.Runtime.Versioning;
+using System.Text;
 
 namespace System.Diagnostics
 {
     /// <summary>
     /// Provides version information for a physical file on disk.
     /// </summary>
-    public sealed class FileVersionInfo
+    public sealed partial class FileVersionInfo
     {
-        // Some dlls might not contain correct codepage information,
-        // in which case the lookup will fail. Explorer will take
-        // a few shots in dark. We'll simulate similar behavior by
-        // falling back to the following lang-codepages:
-        private static readonly uint[] s_fallbackLanguageCodePages = new uint[]
-        {
-            0x040904B0, // US English + CP_UNICODE
-            0x040904E4, // US English + CP_USASCII
-            0x04090000  // US English + unknown codepage
-        };
-
         private readonly string _fileName;
+
         private string _companyName;
         private string _fileDescription;
         private string _fileVersion;
@@ -40,30 +26,26 @@ namespace System.Diagnostics
         private string _privateBuild;
         private string _specialBuild;
         private string _language;
-        private uint _fileMajor;
-        private uint _fileMinor;
-        private uint _fileBuild;
-        private uint _filePrivate;
-        private uint _productMajor;
-        private uint _productMinor;
-        private uint _productBuild;
-        private uint _productPrivate;
-        private uint _fileFlags;
-
-        private FileVersionInfo(string fileName)
-        {
-            _fileName = fileName;
-        }
+        private int _fileMajor;
+        private int _fileMinor;
+        private int _fileBuild;
+        private int _filePrivate;
+        private int _productMajor;
+        private int _productMinor;
+        private int _productBuild;
+        private int _productPrivate;
+        private bool _isDebug;
+        private bool _isPatched;
+        private bool _isPrivateBuild;
+        private bool _isPreRelease;
+        private bool _isSpecialBuild;
 
         /// <summary>
         /// Gets the comments associated with the file.
         /// </summary>
         public string Comments
         {
-            get
-            {
-                return _comments;
-            }
+            get { return _comments; }
         }
 
         /// <summary>
@@ -71,10 +53,7 @@ namespace System.Diagnostics
         /// </summary>
         public string CompanyName
         {
-            get
-            {
-                return _companyName;
-            }
+            get { return _companyName; }
         }
 
         /// <summary>
@@ -82,10 +61,7 @@ namespace System.Diagnostics
         /// </summary>
         public int FileBuildPart
         {
-            get
-            {
-                return (int)_fileBuild;
-            }
+            get { return _fileBuild; }
         }
 
         /// <summary>
@@ -93,10 +69,7 @@ namespace System.Diagnostics
         /// </summary>
         public string FileDescription
         {
-            get
-            {
-                return _fileDescription;
-            }
+            get { return _fileDescription; }
         }
 
         /// <summary>
@@ -104,10 +77,7 @@ namespace System.Diagnostics
         /// </summary>
         public int FileMajorPart
         {
-            get
-            {
-                return (int)_fileMajor;
-            }
+            get { return _fileMajor; }
         }
 
         /// <summary>
@@ -115,10 +85,7 @@ namespace System.Diagnostics
         /// </summary>
         public int FileMinorPart
         {
-            get
-            {
-                return (int)_fileMinor;
-            }
+            get { return _fileMinor; }
         }
 
         /// <summary>
@@ -126,10 +93,7 @@ namespace System.Diagnostics
         /// </summary>
         public string FileName
         {
-            get
-            {
-                return _fileName;
-            }
+            get { return _fileName; }
         }
 
         /// <summary>
@@ -137,10 +101,7 @@ namespace System.Diagnostics
         /// </summary>
         public int FilePrivatePart
         {
-            get
-            {
-                return (int)_filePrivate;
-            }
+            get { return _filePrivate; }
         }
 
         /// <summary>
@@ -148,10 +109,7 @@ namespace System.Diagnostics
         /// </summary>
         public string FileVersion
         {
-            get
-            {
-                return _fileVersion;
-            }
+            get { return _fileVersion; }
         }
 
         /// <summary>
@@ -159,10 +117,7 @@ namespace System.Diagnostics
         /// </summary>
         public string InternalName
         {
-            get
-            {
-                return _internalName;
-            }
+            get { return _internalName; }
         }
 
         /// <summary>
@@ -171,10 +126,7 @@ namespace System.Diagnostics
         /// </summary>
         public bool IsDebug
         {
-            get
-            {
-                return (_fileFlags & (uint)Interop.Constants.VS_FF_Debug) != 0;
-            }
+            get { return _isDebug; }
         }
 
         /// <summary>
@@ -183,10 +135,7 @@ namespace System.Diagnostics
         /// </summary>
         public bool IsPatched
         {
-            get
-            {
-                return (_fileFlags & (uint)Interop.Constants.VS_FF_Patched) != 0;
-            }
+            get { return _isPatched; }
         }
 
         /// <summary>
@@ -194,10 +143,7 @@ namespace System.Diagnostics
         /// </summary>
         public bool IsPrivateBuild
         {
-            get
-            {
-                return (_fileFlags & (uint)Interop.Constants.VS_FF_PrivateBuild) != 0;
-            }
+            get { return _isPrivateBuild; }
         }
 
         /// <summary>
@@ -206,10 +152,7 @@ namespace System.Diagnostics
         /// </summary>
         public bool IsPreRelease
         {
-            get
-            {
-                return (_fileFlags & (uint)Interop.Constants.VS_FF_Prerelease) != 0;
-            }
+            get { return _isPreRelease; }
         }
 
         /// <summary>
@@ -217,10 +160,7 @@ namespace System.Diagnostics
         /// </summary>
         public bool IsSpecialBuild
         {
-            get
-            {
-                return (_fileFlags & (uint)Interop.Constants.VS_FF_SpecialBuild) != 0;
-            }
+            get { return _isSpecialBuild; }
         }
 
         /// <summary>
@@ -228,10 +168,7 @@ namespace System.Diagnostics
         /// </summary>
         public string Language
         {
-            get
-            {
-                return _language;
-            }
+            get { return _language; }
         }
 
         /// <summary>
@@ -239,10 +176,7 @@ namespace System.Diagnostics
         /// </summary>
         public string LegalCopyright
         {
-            get
-            {
-                return _legalCopyright;
-            }
+            get { return _legalCopyright; }
         }
 
         /// <summary>
@@ -250,10 +184,7 @@ namespace System.Diagnostics
         /// </summary>
         public string LegalTrademarks
         {
-            get
-            {
-                return _legalTrademarks;
-            }
+            get { return _legalTrademarks; }
         }
 
         /// <summary>
@@ -261,10 +192,7 @@ namespace System.Diagnostics
         /// </summary>
         public string OriginalFilename
         {
-            get
-            {
-                return _originalFilename;
-            }
+            get { return _originalFilename; }
         }
 
         /// <summary>
@@ -272,10 +200,7 @@ namespace System.Diagnostics
         /// </summary>
         public string PrivateBuild
         {
-            get
-            {
-                return _privateBuild;
-            }
+            get { return _privateBuild; }
         }
 
         /// <summary>
@@ -283,10 +208,7 @@ namespace System.Diagnostics
         /// </summary>
         public int ProductBuildPart
         {
-            get
-            {
-                return (int)_productBuild;
-            }
+            get { return _productBuild; }
         }
 
         /// <summary>
@@ -294,10 +216,7 @@ namespace System.Diagnostics
         /// </summary>
         public int ProductMajorPart
         {
-            get
-            {
-                return (int)_productMajor;
-            }
+            get { return _productMajor; }
         }
 
         /// <summary>
@@ -305,10 +224,7 @@ namespace System.Diagnostics
         /// </summary>
         public int ProductMinorPart
         {
-            get
-            {
-                return (int)_productMinor;
-            }
+            get { return _productMinor; }
         }
 
         /// <summary>
@@ -316,10 +232,7 @@ namespace System.Diagnostics
         /// </summary>
         public string ProductName
         {
-            get
-            {
-                return _productName;
-            }
+            get { return _productName; }
         }
 
         /// <summary>
@@ -327,10 +240,7 @@ namespace System.Diagnostics
         /// </summary>
         public int ProductPrivatePart
         {
-            get
-            {
-                return (int)_productPrivate;
-            }
+            get { return _productPrivate; }
         }
 
         /// <summary>
@@ -338,10 +248,7 @@ namespace System.Diagnostics
         /// </summary>
         public string ProductVersion
         {
-            get
-            {
-                return _productVersion;
-            }
+            get { return _productVersion; }
         }
 
         /// <summary>
@@ -349,176 +256,21 @@ namespace System.Diagnostics
         /// </summary>
         public string SpecialBuild
         {
-            get
-            {
-                return _specialBuild;
-            }
-        }
-
-        private static string ConvertTo8DigitHex(uint value)
-        {
-            return value.ToString("X8", CultureInfo.InvariantCulture);
-        }
-
-        private static Interop.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
-        {
-            IntPtr memRef = IntPtr.Zero;
-            uint memLen;
-
-            if (Interop.mincore.VerQueryValue(memPtr, "\\", out memRef, out memLen))
-            {
-                Interop.VS_FIXEDFILEINFO fixedFileInfo =
-                    (Interop.VS_FIXEDFILEINFO)Marshal.PtrToStructure<Interop.VS_FIXEDFILEINFO>(memRef);
-                return fixedFileInfo;
-            }
-
-            return new Interop.VS_FIXEDFILEINFO();
-        }
-
-        private static string GetFileVersionLanguage(IntPtr memPtr)
-        {
-            uint langid = GetVarEntry(memPtr) >> 16;
-
-            StringBuilder lang = new StringBuilder(256);
-            Interop.mincore.VerLanguageName(langid, lang, (uint)lang.Capacity);
-            return lang.ToString();
-        }
-
-        private static string GetFileVersionString(IntPtr memPtr, string name)
-        {
-            string data = "";
-
-            IntPtr memRef = IntPtr.Zero;
-            uint memLen;
-
-            if (Interop.mincore.VerQueryValue(memPtr, name, out memRef, out memLen))
-            {
-                if (memRef != IntPtr.Zero)
-                {
-                    data = Marshal.PtrToStringUni(memRef);
-                }
-            }
-            return data;
-        }
-
-        private static uint GetVarEntry(IntPtr memPtr)
-        {
-            IntPtr memRef = IntPtr.Zero;
-            uint memLen;
-
-            if (Interop.mincore.VerQueryValue(memPtr, "\\VarFileInfo\\Translation", out memRef, out memLen))
-            {
-                return (uint)((Marshal.ReadInt16(memRef) << 16) + Marshal.ReadInt16((IntPtr)((long)memRef + 2)));
-            }
-
-            return 0x040904E4;
-        }
-
-        //
-        // This function tries to find version information for a specific codepage.
-        // Returns true when version information is found.
-        //
-        private bool GetVersionInfoForCodePage(IntPtr memIntPtr, string codepage)
-        {
-            string template = "\\\\StringFileInfo\\\\{0}\\\\{1}";
-
-            _companyName = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "CompanyName"));
-            _fileDescription = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "FileDescription"));
-            _fileVersion = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "FileVersion"));
-            _internalName = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "InternalName"));
-            _legalCopyright = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "LegalCopyright"));
-            _originalFilename = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "OriginalFilename"));
-            _productName = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "ProductName"));
-            _productVersion = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "ProductVersion"));
-            _comments = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "Comments"));
-            _legalTrademarks = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "LegalTrademarks"));
-            _privateBuild = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "PrivateBuild"));
-            _specialBuild = GetFileVersionString(memIntPtr, string.Format(CultureInfo.InvariantCulture, template, codepage, "SpecialBuild"));
-
-            _language = GetFileVersionLanguage(memIntPtr);
-
-            Interop.VS_FIXEDFILEINFO ffi = GetFixedFileInfo(memIntPtr);
-            _fileMajor = HIWORD(ffi.dwFileVersionMS);
-            _fileMinor = LOWORD(ffi.dwFileVersionMS);
-            _fileBuild = HIWORD(ffi.dwFileVersionLS);
-            _filePrivate = LOWORD(ffi.dwFileVersionLS);
-            _productMajor = HIWORD(ffi.dwProductVersionMS);
-            _productMinor = LOWORD(ffi.dwProductVersionMS);
-            _productBuild = HIWORD(ffi.dwProductVersionLS);
-            _productPrivate = LOWORD(ffi.dwProductVersionLS);
-            _fileFlags = ffi.dwFileFlags;
-
-            // fileVersion is chosen based on best guess. Other fields can be used if appropriate.
-            return (_fileVersion != string.Empty);
+            get { return _specialBuild; }
         }
 
         /// <summary>
         /// Returns a System.Windows.Forms.FileVersionInfo representing the version information associated with the specified file.
         /// </summary>
-        public unsafe static FileVersionInfo GetVersionInfo(string fileName)
+        public static FileVersionInfo GetVersionInfo(string fileName)
         {
-            // Check for the existence of the file. File.Exists returns false
-            // if Read permission is denied.
+            // Check for the existence of the file. File.Exists returns false if Read permission is denied.
             if (!File.Exists(fileName))
             {
                 throw new FileNotFoundException(fileName);
             }
 
-            uint handle;  // This variable is not used, but we need an out variable.
-            uint infoSize = Interop.mincore.GetFileVersionInfoSizeEx(
-                (uint)Interop.Constants.FileVerGetLocalised, fileName, out handle);
-            FileVersionInfo versionInfo = new FileVersionInfo(fileName);
-
-            if (infoSize != 0)
-            {
-                byte[] mem = new byte[infoSize];
-                fixed (byte* memPtr = mem)
-                {
-                    IntPtr memIntPtr = new IntPtr((void*)memPtr);
-                    if (Interop.mincore.GetFileVersionInfoEx(
-                            (uint)Interop.Constants.FileVerGetLocalised | (uint)Interop.Constants.FileVerGetNeutral,
-                            fileName,
-                            0U,
-                            infoSize,
-                            memIntPtr))
-                    {
-                        uint langid = GetVarEntry(memIntPtr);
-                        if (!versionInfo.GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(langid)))
-                        {
-                            // Some dlls might not contain correct codepage information. In this case we will fail during lookup.
-                            // Explorer will take a few shots in dark by trying following lang-codepages:
-                            //
-                            // 040904B0 // US English + CP_UNICODE
-                            // 040904E4 // US English + CP_USASCII
-                            // 04090000 // US English + unknown codepage
-                            // Explorer also randomly guesses 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE sometimes.
-                            // We will try to simulate similar behavior here.
-                            foreach (uint id in s_fallbackLanguageCodePages)
-                            {
-                                if (id != langid)
-                                {
-                                    if (versionInfo.GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(id)))
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return versionInfo;
-        }
-
-        private static uint HIWORD(uint dword)
-        {
-            return (dword >> 16) & 0xffff;
-        }
-
-        private static uint LOWORD(uint dword)
-        {
-            return dword & 0xffff;
+            return new FileVersionInfo(fileName);
         }
 
         /// <summary>
