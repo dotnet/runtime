@@ -148,13 +148,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(block != null, "Block needed for the ETW event.");
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                var completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
+                Task completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
                 bool blockIsCompleted = completionTask != null && completionTask.IsCompleted;
                 Contract.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
                 if (blockIsCompleted)
                 {
                     var reason = (BlockCompletionReason)completionTask.Status;
-                    var exceptionData = string.Empty;
+                    string exceptionData = string.Empty;
 
                     if (completionTask.IsFaulted)
                     {

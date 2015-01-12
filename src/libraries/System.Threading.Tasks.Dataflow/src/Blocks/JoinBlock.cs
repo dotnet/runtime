@@ -92,26 +92,18 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its 
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-#if PRENET45
-            _source.Completion.ContinueWith(completed =>
-            {
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                (this as IDataflowBlock).Fault(completed.Exception);
-            }, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#else
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((JoinBlock<T1, T2>)state) as IDataflowBlock;
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#endif
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2>)state)._sharedResources.CompleteEachTarget(), this);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -333,26 +325,18 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its 
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-#if PRENET45
-            _source.Completion.ContinueWith(completed =>
-            {
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                (this as IDataflowBlock).Fault(completed.Exception);
-            }, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#else
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((JoinBlock<T1, T2, T3>)state) as IDataflowBlock;
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#endif
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((JoinBlock<T1, T2, T3>)state)._sharedResources.CompleteEachTarget(), this);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -546,7 +530,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(sharedResources != null, "Targets need shared resources through which to communicate.");
 
             // Store arguments and initialize configuration
-            var dbo = sharedResources._dataflowBlockOptions;
+            GroupingDataflowBlockOptions dbo = sharedResources._dataflowBlockOptions;
             _sharedResources = sharedResources;
             if (!dbo.Greedy || dbo.BoundedCapacity > 0) _nonGreedy = new NonGreedyState();
             if (dbo.Greedy) _messages = new Queue<T>();
@@ -566,7 +550,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             else
             {
                 Contract.Assert(_nonGreedy.ConsumedMessage.Key, "A message must have been consumed by this point.");
-                var value = _nonGreedy.ConsumedMessage.Value;
+                T value = _nonGreedy.ConsumedMessage.Value;
                 _nonGreedy.ConsumedMessage = new KeyValuePair<bool, T>(false, default(T));
                 return value;
             }
@@ -630,8 +614,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // Note: If there is a tie, we must return true
                 int count = _messages.Count;
-                foreach (var target in _sharedResources._targets)
-                    if (target != this && target.NumberOfMessagesAvailableOrPostponed > count) return false; // Strictly bigger!
+                foreach (JoinBlockTargetBase target in _sharedResources._targets)
+                    if (target != this && target.NumberOfMessagesAvailableOrPostponed > count) 
+                        return false; // Strictly bigger!
                 return true;
             }
         }
@@ -685,7 +670,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Assert(_nonGreedy.ReservedMessage.Key != null, "This target must have a reserved message");
 
             bool consumed;
-            var consumedValue = _nonGreedy.ReservedMessage.Key.ConsumeMessage(_nonGreedy.ReservedMessage.Value, this, out consumed);
+            T consumedValue = _nonGreedy.ReservedMessage.Key.ConsumeMessage(_nonGreedy.ReservedMessage.Value, this, out consumed);
 
             // Null out our reservation
             _nonGreedy.ReservedMessage = default(KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>);
@@ -746,7 +731,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 // Try to consume the popped message
                 bool consumed;
-                var consumedValue = next.Key.ConsumeMessage(next.Value, this, out consumed);
+                T consumedValue = next.Key.ConsumeMessage(next.Value, this, out consumed);
                 if (consumed)
                 {
                     lock (_sharedResources.IncomingLock)
@@ -769,7 +754,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private void CompleteIfLastJoinIsFeasible()
         {
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: true);
-            var messageCount = _sharedResources._dataflowBlockOptions.Greedy ?
+            int messageCount = _sharedResources._dataflowBlockOptions.Greedy ?
                                     _messages.Count :
                                     _nonGreedy.ConsumedMessage.Key ? 1 : 0;
             if ((_sharedResources._joinsCreated + messageCount) >= _sharedResources._dataflowBlockOptions.ActualMaxNumberOfGroups)
@@ -777,7 +762,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _decliningPermanently = true;
 
                 bool allAreDeclininingPermanently = true;
-                foreach (var target in _sharedResources._targets)
+                foreach (JoinBlockTargetBase target in _sharedResources._targets)
                 {
                     if (!target.IsDecliningPermanently)
                     {
@@ -927,7 +912,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         internal override void CompleteCore(Exception exception, bool dropPendingMessages, bool releaseReservedMessages)
         {
-            var greedy = _sharedResources._dataflowBlockOptions.Greedy;
+            bool greedy = _sharedResources._dataflowBlockOptions.Greedy;
             lock (_sharedResources.IncomingLock)
             {
                 // Faulting from outside is allowed until we start declining permanently.
@@ -1124,7 +1109,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Invokes Complete on each target with dropping buffered messages.</summary>
         internal void CompleteEachTarget()
         {
-            foreach (var target in _targets)
+            foreach (JoinBlockTargetBase target in _targets)
             {
                 target.CompleteCore(exception: null, dropPendingMessages: true, releaseReservedMessages: false);
             }
@@ -1136,7 +1121,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 Common.ContractAssertMonitorStatus(IncomingLock, held: true);
-                foreach (var target in _targets)
+                foreach (JoinBlockTargetBase target in _targets)
                 {
                     if (!target.HasAtLeastOneMessageAvailable) return false;
                 }
@@ -1153,7 +1138,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 if (_boundingState == null)
                 {
-                    foreach (var target in _targets)
+                    foreach (JoinBlockTargetBase target in _targets)
                     {
                         if (!target.HasAtLeastOneMessageAvailable &&
                             (_decliningPermanently || target.IsDecliningPermanently || !target.HasAtLeastOnePostponedMessage))
@@ -1176,7 +1161,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     bool joinIsPossible = true;
                     bool joinWillNotAffectBoundingCount = false;
-                    foreach (var target in _targets)
+                    foreach (JoinBlockTargetBase target in _targets)
                     {
                         bool targetCanConsumePostponedMessages = !_decliningPermanently && !target.IsDecliningPermanently && target.HasAtLeastOnePostponedMessage;
 
@@ -1214,7 +1199,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Try to reserve a postponed message on every target that doesn't already have messages available
             bool reservedAll = true;
-            foreach (var target in _targets)
+            foreach (JoinBlockTargetBase target in _targets)
             {
                 if (!target.ReserveOneMessage())
                 {
@@ -1226,7 +1211,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If we were able to, consume them all and place the consumed messages into each's queue
             if (reservedAll)
             {
-                foreach (var target in _targets)
+                foreach (JoinBlockTargetBase target in _targets)
                 {
                     // If we couldn't consume a message, release reservations wherever possible 
                     if (!target.ConsumeReservedMessage())
@@ -1240,7 +1225,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If we were unable to reserve all meessages, release the reservations
             if (!reservedAll)
             {
-                foreach (var target in _targets)
+                foreach (JoinBlockTargetBase target in _targets)
                 {
                     target.ReleaseReservedMessage();
                 }
@@ -1257,7 +1242,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // Try to consume a postponed message through each target as possible
             bool consumed = false;
-            foreach (var target in _targets)
+            foreach (JoinBlockTargetBase target in _targets)
             {
                 // It is sufficient to consume through one target to consider we've made progress
                 consumed |= target.ConsumeOnePostponedMessage();
@@ -1319,7 +1304,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                                                 Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.TaskLaunchedForMessageHandling(
@@ -1329,7 +1314,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 #endif
 
             // Start the task handling scheduling exceptions
-            var exception = Common.StartTaskSafe(_taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
+            Exception exception = Common.StartTaskSafe(_taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
             if (exception != null)
             {
                 // All of the following actions must be performed under the lock. 
@@ -1357,7 +1342,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 if (!impossibleToCompleteAnotherJoin)
                 {
                     //...or that could happen if an individual target isn't accepting messages and doesn't have any messages available
-                    foreach (var target in _targets)
+                    foreach (JoinBlockTargetBase target in _targets)
                     {
                         if (target.IsDecliningPermanently && !target.HasAtLeastOneMessageAvailable)
                         {
@@ -1384,7 +1369,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     Task.Factory.StartNew(state =>
                     {
                         var sharedResources = (JoinBlockTargetSharedResources)state;
-                        foreach (var target in sharedResources._targets) target.CompleteOncePossible();
+                        foreach (JoinBlockTargetBase target in sharedResources._targets) target.CompleteOncePossible();
                     }, this, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
                 }
             }
@@ -1399,7 +1384,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             try
             {
                 int timesThroughLoop = 0;
-                var maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
+                int maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
                 bool madeProgress;
                 do
                 {

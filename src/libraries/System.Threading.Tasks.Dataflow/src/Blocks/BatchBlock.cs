@@ -81,26 +81,18 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its 
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-#if PRENET45
-            _source.Completion.ContinueWith(completed =>
-            {
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                (this as IDataflowBlock).Fault(completed.Exception);
-            }, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#else
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BatchBlock<T>)state) as IDataflowBlock;
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#endif
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchBlockTargetCore)state).Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false), _target);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -338,7 +330,7 @@ namespace System.Threading.Tasks.Dataflow
                 _dataflowBlockOptions = dataflowBlockOptions;
 
                 // We'll be using _nonGreedyState even if we are greedy with bounding
-                var boundingEnabled = dataflowBlockOptions.BoundedCapacity > 0;
+                bool boundingEnabled = dataflowBlockOptions.BoundedCapacity > 0;
                 if (!_dataflowBlockOptions.Greedy || boundingEnabled) _nonGreedyState = new NonGreedyState(batchSize);
                 if (boundingEnabled) _boundingState = new BoundingState(dataflowBlockOptions.BoundedCapacity);
             }
@@ -656,7 +648,7 @@ namespace System.Threading.Tasks.Dataflow
                                                     Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -666,7 +658,7 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(_nonGreedyState.TaskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(_nonGreedyState.TaskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
                 if (exception != null)
                 {
                     // Get out from under currently held locks. Complete re-acquires the locks it needs.
@@ -684,7 +676,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
                 try
                 {
-                    var maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
+                    int maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
                     int timesThroughLoop = 0;
                     bool madeProgress;
                     do
@@ -774,9 +766,9 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 
                 // Shortcuts just to keep the code cleaner
-                var postponed = _nonGreedyState.PostponedMessages;
-                var postponedTemp = _nonGreedyState.PostponedMessagesTemp;
-                var reserved = _nonGreedyState.ReservedSourcesTemp;
+                QueuedMap<ISourceBlock<T>, DataflowMessageHeader> postponed = _nonGreedyState.PostponedMessages;
+                KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>[] postponedTemp = _nonGreedyState.PostponedMessagesTemp;
+                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader,T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
 
                 // Clear the temporary buffer.  This is safe to do without a lock because
                 // it is only accessed by the serial message loop.
@@ -806,7 +798,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Try to reserve the initial batch of messages.
                 for (int i = 0; i < poppedInitially; i++)
                 {
-                    var sourceAndMessage = postponedTemp[i];
+                    KeyValuePair<ISourceBlock<T>, DataflowMessageHeader> sourceAndMessage = postponedTemp[i];
                     if (sourceAndMessage.Key.ReserveMessage(sourceAndMessage.Value, _owningBatch))
                     {
                         var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T));
@@ -892,9 +884,9 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 
                 // Shortcuts just to keep the code cleaner
-                var postponed = _nonGreedyState.PostponedMessages;
-                var postponedTemp = _nonGreedyState.PostponedMessagesTemp;
-                var reserved = _nonGreedyState.ReservedSourcesTemp;
+                QueuedMap<ISourceBlock<T>, DataflowMessageHeader> postponed = _nonGreedyState.PostponedMessages;
+                KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>[] postponedTemp = _nonGreedyState.PostponedMessagesTemp;
+                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
 
                 // Clear the temporary buffer.  This is safe to do without a lock because
                 // it is only accessed by the serial message loop.
@@ -923,7 +915,7 @@ namespace System.Threading.Tasks.Dataflow
                 // We don't have to formally reserve because we are in greedy mode.
                 for (int i = 0; i < poppedInitially; i++)
                 {
-                    var sourceAndMessage = postponedTemp[i];
+                    KeyValuePair<ISourceBlock<T>, DataflowMessageHeader> sourceAndMessage = postponedTemp[i];
                     var reservedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value, default(T));
                     var reservedSourceAndMessage = new KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>(sourceAndMessage.Key, reservedMessage);
                     reserved.Add(reservedSourceAndMessage);
@@ -1001,7 +993,7 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 
                 // Consume the reserved items and store the data.
-                var reserved = _nonGreedyState.ReservedSourcesTemp;
+                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
                 for (int i = 0; i < reserved.Count; i++)
                 {
                     // We can only store the data into _messages while holding the IncomingLock, we 
@@ -1010,10 +1002,10 @@ namespace System.Threading.Tasks.Dataflow
                     // the consumed message rather than the initial one.  To handle this, because KeyValuePair is immutable,
                     // we store a new KVP with the newly consumed message back into the temp list, so that we can
                     // then enumerate the temp list en mass while taking the lock once afterwards.
-                    var sourceAndMessage = reserved[i];
+                    KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>); // in case of exception from ConsumeMessage
                     bool consumed;
-                    var consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
+                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (!consumed)
                     {
                         // The protocol broke down, so throw an exception, as this is fatal.  Before doing so, though,
@@ -1033,7 +1025,7 @@ namespace System.Threading.Tasks.Dataflow
                     if (_boundingState != null) _boundingState.CurrentCount += reserved.Count;
 
                     // Enqueue the consumed mesasages
-                    foreach (var sourceAndMessage in reserved)
+                    foreach (KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage in reserved)
                     {
                         _messages.Enqueue(sourceAndMessage.Value.Value);
                     }
@@ -1053,7 +1045,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Consume the reserved items and store the data.
                 int consumedCount = 0;
-                var reserved = _nonGreedyState.ReservedSourcesTemp;
+                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
                 for (int i = 0; i < reserved.Count; i++)
                 {
                     // We can only store the data into _messages while holding the IncomingLock, we 
@@ -1062,10 +1054,10 @@ namespace System.Threading.Tasks.Dataflow
                     // the consumed message rather than the initial one.  To handle this, because KeyValuePair is immutable,
                     // we store a new KVP with the newly consumed message back into the temp list, so that we can
                     // then enumerate the temp list en mass while taking the lock once afterwards.
-                    var sourceAndMessage = reserved[i];
+                    KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>); // in case of exception from ConsumeMessage
                     bool consumed;
-                    var consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
+                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value.Key, _owningBatch, out consumed);
                     if (consumed)
                     {
                         var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue);
@@ -1082,7 +1074,7 @@ namespace System.Threading.Tasks.Dataflow
                     if (_boundingState != null) _boundingState.CurrentCount += consumedCount;
 
                     // Enqueue the consumed mesasages
-                    foreach (var sourceAndMessage in reserved)
+                    foreach (KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage in reserved)
                     {
                         // If we didn't consume this message, the KeyValuePai will be default, i.e. the source will be null
                         if (sourceAndMessage.Key != null) _messages.Enqueue(sourceAndMessage.Value.Value);
@@ -1106,13 +1098,13 @@ namespace System.Threading.Tasks.Dataflow
 
                 List<Exception> exceptions = null;
 
-                var reserved = _nonGreedyState.ReservedSourcesTemp;
+                List<KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>> reserved = _nonGreedyState.ReservedSourcesTemp;
                 for (int i = 0; i < reserved.Count; i++)
                 {
-                    var sourceAndMessage = reserved[i];
+                    KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>> sourceAndMessage = reserved[i];
                     reserved[i] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>);
-                    var source = sourceAndMessage.Key;
-                    var message = sourceAndMessage.Value;
+                    ISourceBlock<T> source = sourceAndMessage.Key;
+                    KeyValuePair<DataflowMessageHeader, T> message = sourceAndMessage.Value;
                     if (source != null && message.Key.IsValid)
                     {
                         try { source.ReleaseReservation(message.Key, _owningBatch); }
@@ -1163,7 +1155,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // multipleOutputItems != null. Count the elements in each item.
                 int count = 0;
-                foreach (var item in multipleOutputItems) count += item.Length;
+                foreach (T[] item in multipleOutputItems) count += item.Length;
                 return count;
             }
 
