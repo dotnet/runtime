@@ -178,8 +178,8 @@ struct _WapiFileShare
 #ifdef WAPI_FILE_SHARE_PLATFORM_EXTRA_DATA
 	WAPI_FILE_SHARE_PLATFORM_EXTRA_DATA
 #endif
-	dev_t device;
-	ino_t inode;
+	guint64 device;
+	guint64 inode;
 	pid_t opened_by_pid;
 	guint32 sharemode;
 	guint32 access;

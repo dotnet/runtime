@@ -1351,8 +1351,8 @@ typedef struct
 	gpointer address_end;
 	char *perms;
 	gpointer address_offset;
-	dev_t device;
-	ino_t inode;
+	guint64 device;
+	guint64 inode;
 	char *filename;
 } WapiProcModule;
 
@@ -1421,7 +1421,7 @@ static GSList *load_modules (void)
 		mod->perms = g_strdup ("r--p");
 		mod->address_offset = 0;
 		mod->device = makedev (0, 0);
-		mod->inode = (ino_t) i;
+		mod->inode = i;
 		mod->filename = g_strdup (name); 
 		
 		if (g_slist_find_custom (ret, mod, find_procmodule) == NULL) {
@@ -1473,7 +1473,7 @@ static GSList *load_modules (void)
                                        info->dlpi_phdr[info->dlpi_phnum - 1].p_vaddr);
 		mod->perms = g_strdup ("r--p");
 		mod->address_offset = 0;
-		mod->inode = (ino_t) i;
+		mod->inode = i;
 		mod->filename = g_strdup (info->dlpi_name); 
 
 		DEBUG ("%s: inode=%d, filename=%s, address_start=%p, address_end=%p", __func__,
@@ -1535,8 +1535,8 @@ static GSList *load_modules (FILE *fp)
 	char *maj_dev_start, *min_dev_start, *inode_start, prot_buf[5];
 	gpointer address_start, address_end, address_offset;
 	guint32 maj_dev, min_dev;
-	ino_t inode;
-	dev_t device;
+	guint64 inode;
+	guint64 device;
 	
 	while (fgets (buf, sizeof(buf), fp)) {
 		p = buf;
@@ -1609,7 +1609,7 @@ static GSList *load_modules (FILE *fp)
 		if (!g_ascii_isxdigit (*inode_start)) {
 			continue;
 		}
-		inode = (ino_t)strtol (inode_start, &endp, 10);
+		inode = (guint64)strtol (inode_start, &endp, 10);
 		p = endp;
 		if (!g_ascii_isspace (*p)) {
 			continue;

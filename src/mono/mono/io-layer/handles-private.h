@@ -84,7 +84,7 @@ extern int _wapi_handle_timedwait_signal (struct timespec *timeout, gboolean pol
 extern int _wapi_handle_wait_signal_handle (gpointer handle, gboolean alertable);
 extern int _wapi_handle_timedwait_signal_handle (gpointer handle,
 												 struct timespec *timeout, gboolean alertable, gboolean poll);
-extern gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
+extern gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 					       guint32 new_sharemode,
 					       guint32 new_access,
 					       guint32 *old_sharemode,

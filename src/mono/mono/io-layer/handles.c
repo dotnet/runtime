@@ -1654,7 +1654,7 @@ wapi_share_info_hash (gconstpointer data)
 	return s->inode;
 }
 
-gboolean _wapi_handle_get_or_set_share (dev_t device, ino_t inode,
+gboolean _wapi_handle_get_or_set_share (guint64 device, guint64 inode,
 					guint32 new_sharemode,
 					guint32 new_access,
 					guint32 *old_sharemode,
