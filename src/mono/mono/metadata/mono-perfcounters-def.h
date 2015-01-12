@@ -28,6 +28,7 @@ PERFCTR_COUNTER(PROC_PBYTES,    "Private Bytes", "", NumberOfItems64, unused)
 PERFCTR_CAT(MONO_MEM, "Mono Memory", "", SingleInstance, Mono, MEM_NUM_OBJECTS)
 PERFCTR_COUNTER(MEM_NUM_OBJECTS, "Allocated Objects", "", NumberOfItems64, unused)
 PERFCTR_COUNTER(MEM_PHYS_TOTAL, "Total Physical Memory", "Physical memory installed in the machine, in bytes", NumberOfItems64, unused)
+PERFCTR_COUNTER(MEM_PHYS_AVAILABLE, "Available Physical Memory", "Physical memory available in the machine, in bytes", NumberOfItems64, unused)
 
 PERFCTR_CAT(ASPNET, "ASP.NET", "", MultiInstance, Mono, ASPNET_REQ_Q)
 PERFCTR_COUNTER(ASPNET_REQ_Q, "Requests Queued", "", NumberOfItems64, aspnet_requests_queued)

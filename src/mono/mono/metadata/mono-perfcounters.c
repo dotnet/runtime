@@ -25,6 +25,11 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+#if defined (__APPLE__)
+#include <mach/message.h>
+#include <mach/mach_host.h>
+#include <mach/host_info.h>
+#endif
 #if defined (__NetBSD__) || defined (__APPLE__)
 #include <sys/sysctl.h>
 #endif
@@ -452,6 +457,76 @@ mono_determine_physical_ram_size (void)
 	return page_size * num_pages;
 #else
 	return 134217728;
+#endif
+}
+
+static guint64
+mono_determine_physical_ram_available_size (void)
+{
+#if defined (TARGET_WIN32)
+	MEMORYSTATUSEX memstat;
+
+	memstat.dwLength = sizeof (memstat);
+	GlobalMemoryStatusEx (&memstat);
+	return (guint64)memstat.ullAvailPhys;
+
+#elif defined (__NetBSD__)
+	struct vmtotal vm_total;
+	guint64 page_size;
+	int mib [2];
+	size_t len;
+
+
+	mib = {
+		CTL_VM,
+#if defined (VM_METER)
+		VM_METER
+#else
+		VM_TOTAL
+#endif
+	};
+	len = sizeof (vm_total);
+	sysctl (mib, 2, &vm_total, &len, NULL, 0);
+
+	mib = {
+		CTL_HW,
+		HW_PAGESIZE
+	};
+	len = sizeof (page_size);
+	sysctl (mib, 2, &page_size, &len, NULL, 0
+
+	return ((guint64) value.t_free * page_size) / 1024;
+#elif defined (__APPLE__)
+	mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
+	vm_statistics_data_t vmstat;
+	if (KERN_SUCCESS != host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmstat, &count)) {
+		g_warning ("Mono was unable to retrieve memory usage!");
+		return 0;
+	}
+
+	return (guint64) vmstat.free_count;
+
+#elif defined (HAVE_SYSCONF)
+	guint64 page_size = 0, num_pages = 0;
+
+	/* sysconf works on most *NIX operating systems, if your system doesn't have it or if it
+	 * reports invalid values, please add your OS specific code below. */
+#ifdef _SC_PAGESIZE
+	page_size = (guint64)sysconf (_SC_PAGESIZE);
+#endif
+
+#ifdef _SC_AVPHYS_PAGES
+	num_pages = (guint64)sysconf (_SC_AVPHYS_PAGES);
+#endif
+
+	if (!page_size || !num_pages) {
+		g_warning ("Your operating system's sysconf (3) function doesn't correctly report physical memory size!");
+		return 0;
+	}
+
+	return page_size * num_pages;
+#else
+	return 0;
 #endif
 }
 
@@ -916,6 +991,9 @@ mono_mem_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample 
 		return TRUE;
 	case COUNTER_MEM_PHYS_TOTAL:
 		sample->rawValue = mono_determine_physical_ram_size ();;
+		return TRUE;
+	case COUNTER_MEM_PHYS_AVAILABLE:
+		sample->rawValue = mono_determine_physical_ram_available_size ();;
 		return TRUE;
 	}
 	return FALSE;
