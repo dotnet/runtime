@@ -1,6 +1,35 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\dir.props" />
+  <!-- Build Tools Version -->
+  <PropertyGroup>
+    <BuildToolsVersion>1.0.19-prerelease</BuildToolsVersion>
+  </PropertyGroup>
 
+  <!-- Common repo directories -->
+  <PropertyGroup>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <BinDir>$(ProjectDir)bin\</BinDir>
+    <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
+    <PackagesDir>$(SourceDir)packages\</PackagesDir>
+    <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
+  </PropertyGroup>
+
+  <!-- Common nuget properties -->
+  <PropertyGroup>
+    <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
+    <NuGetConfigFile>$(SourceDir)NuGet.Config</NuGetConfigFile>
+    <NuGetConfigCommandLine
+      Condition="Exists('$(NuGetConfigFile)')">-ConfigFile &quot;$(NuGetConfigFile)&quot;</NuGetConfigCommandLine>
+  </PropertyGroup>
+
+  <!-- Common build tool properties -->
+  <PropertyGroup>
+    <BuildToolsInstallSemaphore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSemaphore>
+
+    <BuildToolsTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsTargetInputs>
+    <BuildToolsTargetOutputs>$(BuildToolsInstallSemaphore)</BuildToolsTargetOutputs>
+  </PropertyGroup>
+  
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' ==''">Debug</Configuration>
@@ -59,5 +88,4 @@
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
   </PropertyGroup>
-
 </Project>
