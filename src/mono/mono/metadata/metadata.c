@@ -5692,27 +5692,24 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 }
 
 MonoMethod*
-method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context)
+method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error)
 {
-	MonoError error;
 	MonoMethod *result = NULL;
 	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
 
+	mono_error_init (error);
+
 	switch (tok & MONO_METHODDEFORREF_MASK) {
 	case MONO_METHODDEFORREF_METHODDEF:
-		result = mono_get_method_checked (m, MONO_TOKEN_METHOD_DEF | idx, NULL, context, &error);
+		result = mono_get_method_checked (m, MONO_TOKEN_METHOD_DEF | idx, NULL, context, error);
 		break;
 	case MONO_METHODDEFORREF_METHODREF:
-		result = mono_get_method_checked (m, MONO_TOKEN_MEMBER_REF | idx, NULL, context, &error);
+		result = mono_get_method_checked (m, MONO_TOKEN_MEMBER_REF | idx, NULL, context, error);
 		break;
 	default:
-		g_assert_not_reached ();
+		mono_error_set_bad_image (error, m, "Invalid MethodDefOfRef token %x", tok);
 	}
 
-	if (!mono_error_ok (&error)) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error);
-	}
 	return result;
 }
 
@@ -5774,21 +5771,25 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 		MonoMethod *method;
 
 		if (!mono_verifier_verify_methodimpl_row (image, start + i, &error)) {
-			mono_error_cleanup (&error);
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			ok = FALSE;
 			break;
 		}
 
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
 		method = method_from_method_def_or_ref (
-			image, cols [MONO_METHODIMPL_DECLARATION], generic_context);
-		if (method == NULL)
+			image, cols [MONO_METHODIMPL_DECLARATION], generic_context, &error);
+		if (method == NULL) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			ok = FALSE;
+		}
 		result [i * 2] = method;
 		method = method_from_method_def_or_ref (
-			image, cols [MONO_METHODIMPL_BODY], generic_context);
-		if (method == NULL)
+			image, cols [MONO_METHODIMPL_BODY], generic_context, &error);
+		if (method == NULL) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 			ok = FALSE;
+		}
 		result [i * 2 + 1] = method;
 	}
 

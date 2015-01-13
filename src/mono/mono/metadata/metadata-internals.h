@@ -795,7 +795,7 @@ MonoException *mono_get_exception_field_access_msg (const char *msg) MONO_INTERN
 
 MonoException *mono_get_exception_method_access_msg (const char *msg) MONO_INTERNAL;
 
-MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context) MONO_INTERNAL;
+MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 
 MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
 MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context, MonoMethod **cil_method, MonoError *error) MONO_INTERNAL;

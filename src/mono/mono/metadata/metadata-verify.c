@@ -4296,19 +4296,13 @@ mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *e
 
 	mono_metadata_decode_row (table, row, data, MONO_METHODIMPL_SIZE);
 
-	body = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_BODY], NULL);
-	if (!body || mono_loader_get_last_error ()) {
-		mono_loader_clear_error ();
-		mono_error_set_bad_image (error, image, "Invalid methodimpl body for row %x", row);
+	body = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_BODY], NULL, error);
+	if (!body)
 		return FALSE;
-	}
 
-	declaration = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_DECLARATION], NULL);
-	if (!declaration || mono_loader_get_last_error ()) {
-		mono_loader_clear_error ();
-		mono_error_set_bad_image (error, image, "Invalid methodimpl declaration for row %x", row);
+	declaration = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_DECLARATION], NULL, error);
+	if (!declaration)
 		return FALSE;
-	}
 
 	/* FIXME
 	mono_class_setup_supertypes (class);
