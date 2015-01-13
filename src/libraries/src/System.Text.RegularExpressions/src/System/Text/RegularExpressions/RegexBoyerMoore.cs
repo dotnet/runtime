@@ -13,6 +13,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 
 namespace System.Text.RegularExpressions
 {
@@ -52,14 +53,14 @@ namespace System.Text.RegularExpressions
 
             // We do the ToLower character by character for consistency.  With surrogate chars, doing
             // a ToLower on the entire string could actually change the surrogate pair.  This is more correct
-            // linguistically, but since Regex doesn't support surrogates, it's more important to be 
-            // consistent. 
+            // linguistically, but since Regex doesn't support surrogates, it's more important to be
+            // consistent.
             if (caseInsensitive)
             {
-                StringBuilder sb = new StringBuilder(pattern.Length);
+                StringBuilder sb = StringBuilderCache.Acquire(pattern.Length);
                 for (int i = 0; i < pattern.Length; i++)
                     sb.Append(culture.TextInfo.ToLower(pattern[i]));
-                pattern = sb.ToString();
+                pattern = StringBuilderCache.GetStringAndRelease(sb);
             }
 
             _pattern = pattern;
@@ -82,12 +83,12 @@ namespace System.Text.RegularExpressions
 
             /*
              * PART I - the good-suffix shift table
-             * 
+             *
              * compute the positive requirement:
              * if char "i" is the first one from the right that doesn't match,
              * then we know the matcher can advance by _positive[i].
              *
-             * This algorithm is a simplified variant of the 
+             * This algorithm is a simplified variant of the
              *          standard Boyer-Moore good suffix calculation.
              */
             _positive = new int[pattern.Length];
@@ -121,7 +122,7 @@ namespace System.Text.RegularExpressions
                     {
                         // at the end of the match, note the difference in _positive
                         // this is not the length of the match, but the distance from the internal match
-                        // to the tail suffix. 
+                        // to the tail suffix.
                         if (_positive[match] == 0)
                             _positive[match] = match - scan;
 
@@ -143,10 +144,10 @@ namespace System.Text.RegularExpressions
 
             // scan for the chars for which there are no shifts that yield a different candidate
 
-            /* 
-             *  The inside of the if statement used to say 
+            /*
+             *  The inside of the if statement used to say
              *  "_positive[match] = last - beforefirst;"
-             *  This is slightly less agressive in how much we skip, but at worst it 
+             *  This is slightly less agressive in how much we skip, but at worst it
              *  should mean a little more work rather than skipping a potential match.
              */
             while (match != beforefirst)
@@ -159,7 +160,7 @@ namespace System.Text.RegularExpressions
 
             /*
              * PART II - the bad-character shift table
-             * 
+             *
              * compute the negative requirement:
              * if char "ch" is the reject character when testing position "i",
              * we can slide up by _negative[ch];

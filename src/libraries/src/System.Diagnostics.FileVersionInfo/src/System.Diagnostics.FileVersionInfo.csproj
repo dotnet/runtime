@@ -15,10 +15,20 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
+
   <ItemGroup>
     <Compile Include="System\Diagnostics\FileVersionInfo.cs" />
-    <Compile Include="Interop\Interop.manual.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <Compile Include="Interop\Interop.Windows.cs" />
+    <Compile Include="System\Diagnostics\FileVersionInfo.Windows.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+    <Compile Include="System\Diagnostics\FileVersionInfo.Unix.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>

@@ -175,8 +175,8 @@ namespace System.Text.RegularExpressions
             _runtrackpos += framesize;
         }
 
-        // Technically we are actually peeking at items already popped.  So if you want to 
-        // get and pop the top item from the stack, you do 
+        // Technically we are actually peeking at items already popped.  So if you want to
+        // get and pop the top item from the stack, you do
         // TrackPop();
         // TrackPeek();
         private int TrackPeek()
@@ -213,8 +213,8 @@ namespace System.Text.RegularExpressions
             _runstackpos += framesize;
         }
 
-        // Technically we are actually peeking at items already popped.  So if you want to 
-        // get and pop the top item from the stack, you do 
+        // Technically we are actually peeking at items already popped.  So if you want to
+        // get and pop the top item from the stack, you do
         // StackPop();
         // StackPeek();
         private int StackPeek()
@@ -592,9 +592,9 @@ namespace System.Text.RegularExpressions
 
                     case RegexCode.Lazybranchmark:
                         {
-                            // We hit this the first time through a lazy loop and after each 
+                            // We hit this the first time through a lazy loop and after each
                             // successful match of the inner expression.  It simply continues
-                            // on and doesn't loop. 
+                            // on and doesn't loop.
                             StackPop();
 
                             int oldMarkPos = StackPeek();
@@ -610,7 +610,7 @@ namespace System.Text.RegularExpressions
                             {
                                 // The inner expression found an empty match, so we'll go directly to 'back2' if we
                                 // backtrack.  In this case, we need to push something on the stack, since back2 pops.
-                                // However, in the case of ()+? or similar, this empty match may be legitimate, so push the text 
+                                // However, in the case of ()+? or similar, this empty match may be legitimate, so push the text
                                 // position associated with that empty match.
                                 StackPush(oldMarkPos);
 
@@ -624,8 +624,8 @@ namespace System.Text.RegularExpressions
                         {
                             // After the first time, Lazybranchmark | RegexCode.Back occurs
                             // with each iteration of the loop, and therefore with every attempted
-                            // match of the inner expression.  We'll try to match the inner expression, 
-                            // then go back to Lazybranchmark if successful.  If the inner expression 
+                            // match of the inner expression.  We'll try to match the inner expression,
+                            // then go back to Lazybranchmark if successful.  If the inner expression
                             // failes, we go to Lazybranchmark | RegexCode.Back2
                             int pos;
 
@@ -639,8 +639,8 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Lazybranchmark | RegexCode.Back2:
-                        // The lazy loop has failed.  We'll do a true backtrack and 
-                        // start over before the lazy loop. 
+                        // The lazy loop has failed.  We'll do a true backtrack and
+                        // start over before the lazy loop.
                         StackPop();
                         TrackPop();
                         StackPush(TrackPeek());                      // Recall old mark

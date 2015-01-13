@@ -14,7 +14,7 @@ namespace System
         // Don't remove or change without reading this comment:
         //
         // On .NET Native, ArrayT<>.Copy()'s body never gets executed as the IL2IL transform stage redirects calls to it to
-        // to Array.Copy<>(). We don't want to use the non-generic Array.Copy() as it is painfully slow on .NET Native. 
+        // to Array.Copy<>(). We don't want to use the non-generic Array.Copy() as it is painfully slow on .NET Native.
         //
         // On Phone, this is a normal method and invokes the non-generic Array.Copy() (which on phone is a nice fast FCall.)
         //
@@ -27,7 +27,7 @@ namespace System
         // Copies the first "copyCount" elements from "src" to a newly allocated array of size "newLength".
         //
         // This is primarily used by collection classes when they grow their internal storage. Unlike its nongeneric BCL counterpart,
-        // it does not attempt to validate inputs. 
+        // it does not attempt to validate inputs.
         //
         // Input validation:
         //    On checked builds, passing in bad input values assert. The only exception is "newLength"

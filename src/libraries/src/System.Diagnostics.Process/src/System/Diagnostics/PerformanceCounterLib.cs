@@ -2,18 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace System.Diagnostics
 {
-    internal class PerformanceCounterLib
+    internal sealed class PerformanceCounterLib
     {
         private static volatile string s_computerName;
 
@@ -23,19 +21,19 @@ namespace System.Diagnostics
 
         private static volatile Dictionary<String, PerformanceCounterLib> s_libraryTable;
         private Dictionary<int, string> _nameTable;
-        private readonly object _NameTableLock = new Object();
+        private readonly object _nameTableLock = new Object();
 
-        private static Object s_InternalSyncObject;
+        private static Object s_internalSyncObject;
         private static Object InternalSyncObject
         {
             get
             {
-                if (s_InternalSyncObject == null)
+                if (s_internalSyncObject == null)
                 {
                     Object o = new Object();
-                    Interlocked.CompareExchange(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange(ref s_internalSyncObject, o, null);
                 }
-                return s_InternalSyncObject;
+                return s_internalSyncObject;
             }
         }
 
@@ -71,7 +69,7 @@ namespace System.Diagnostics
             {
                 if (_nameTable == null)
                 {
-                    lock (_NameTableLock)
+                    lock (_nameTableLock)
                     {
                         if (_nameTable == null)
                             _nameTable = GetStringTable(false);
@@ -84,10 +82,8 @@ namespace System.Diagnostics
 
         internal string GetCounterName(int index)
         {
-            if (NameTable.ContainsKey(index))
-                return (string)NameTable[index];
-
-            return "";
+            string result;
+            return NameTable.TryGetValue(index, out result) ? result : "";
         }
 
         internal static PerformanceCounterLib GetPerformanceCounterLib(string machineName, CultureInfo culture)
@@ -108,14 +104,13 @@ namespace System.Diagnostics
             }
 
             string libraryKey = machineName + ":" + lcidString;
-            if (PerformanceCounterLib.s_libraryTable.ContainsKey(libraryKey))
-                return (PerformanceCounterLib)PerformanceCounterLib.s_libraryTable[libraryKey];
-            else
+            PerformanceCounterLib library;
+            if (!PerformanceCounterLib.s_libraryTable.TryGetValue(libraryKey, out library))
             {
-                PerformanceCounterLib library = new PerformanceCounterLib(machineName, lcidString);
+                library = new PerformanceCounterLib(machineName, lcidString);
                 PerformanceCounterLib.s_libraryTable[libraryKey] = library;
-                return library;
             }
+            return library;
         }
 
         internal byte[] GetPerformanceData(string item)

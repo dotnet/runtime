@@ -137,7 +137,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Internal Complete entry point with extra parameters for different contexts.</summary>
         /// <param name="exception">If not null, the block will be faulted.</param>
         /// <param name="dropPendingMessages">If true, any unprocessed input messages will be dropped.</param>
-        /// <param name="storeExceptionEvenIfAlreadyCompleting">If true, an exception will be stored after m_decliningPermanently has been set to true.</param>
+        /// <param name="storeExceptionEvenIfAlreadyCompleting">If true, an exception will be stored after _decliningPermanently has been set to true.</param>
         /// <param name="unwrapInnerExceptions">If true, exception will be treated as an AggregateException.</param>
         /// <param name="revertProcessingState">Indicates whether the processing state is dirty and has to be reverted.</param>
         internal void Complete(Exception exception, bool dropPendingMessages, bool storeExceptionEvenIfAlreadyCompleting = false,
@@ -304,7 +304,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Contract.Requires(_numberOfOutstandingOperations >= _numberOfOutstandingServiceTasks, "Number of outstanding service tasks should never exceed the number of outstanding operations.");
                 Common.ContractAssertMonitorStatus(IncomingLock, held: true);
 
-                // In async mode, we increment m_numberOfOutstandingOperations before we start 
+                // In async mode, we increment _numberOfOutstandingOperations before we start 
                 // our own processing loop which should not count towards the MaxDOP.
                 return (_numberOfOutstandingOperations - _numberOfOutstandingServiceTasks) < _dataflowBlockOptions.ActualMaxDegreeOfParallelism;
             }
@@ -381,7 +381,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                                                       Common.GetCreationOptionsForTask(repeat));
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -391,7 +391,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(taskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
                 if (exception != null)
                 {
                     // Get out from under currently held locks. Complete re-acquires the locks it needs.
@@ -415,7 +415,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 bool shouldAttemptPostponedTransfer = _boundingState != null && _boundingState.BoundedCapacity > 1;
                 int numberOfMessagesProcessedByThisTask = 0;
                 int numberOfMessagesProcessedSinceTheLastKeepAlive = 0;
-                var maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
+                int maxMessagesPerTask = _dataflowBlockOptions.ActualMaxMessagesPerTask;
 
                 while (numberOfMessagesProcessedByThisTask < maxMessagesPerTask && !CanceledOrFaulted)
                 {
@@ -425,7 +425,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // until the input queue is entirely empty).  If the bounded size is 1,
                     // there's no need to transfer, as attempting to get the next message will
                     // just go and consume the postponed message anyway, and we'll save
-                    // the extra trip through the m_messages queue.
+                    // the extra trip through the _messages queue.
                     KeyValuePair<TInput, long> transferMessageWithId;
                     if (shouldAttemptPostponedTransfer &&
                         TryConsumePostponedMessage(forPostponementTransfer: true, result: out transferMessageWithId))
@@ -499,14 +499,14 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 lock (IncomingLock)
                 {
-                    // We incremented m_numberOfOutstandingOperations before we launched this task.
+                    // We incremented _numberOfOutstandingOperations before we launched this task.
                     // So we must decremented it before exiting.
                     // Note that each async task additionally incremented it before starting and 
                     // is responsible for decrementing it prior to exiting.
                     Contract.Assert(_numberOfOutstandingOperations > 0, "Expected a positive number of outstanding operations, since we're completing one here.");
                     _numberOfOutstandingOperations--;
 
-                    // If we are in async mode, we've also incremented m_numberOfOutstandingServiceTasks.
+                    // If we are in async mode, we've also incremented _numberOfOutstandingServiceTasks.
                     // Now it's time to decrement it.
                     if (UsesAsyncCompletion)
                     {
@@ -550,7 +550,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // If a parallelism slot was available, try to get an item.
                 // Be careful, because an exception may be thrown from ConsumeMessage
-                // and we have alredy incremented m_numberOfOutstandingOperations.
+                // and we have alredy incremented _numberOfOutstandingOperations.
                 bool gotMessage = false;
                 try
                 {
@@ -573,7 +573,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 return gotMessage;
             }
 
-            // If there was no parallelism available, we didn't increment m_numberOfOutstandingOperations.
+            // If there was no parallelism available, we didn't increment _numberOfOutstandingOperations.
             // So there is nothing to do except to return false.
             return false;
         }
@@ -596,7 +596,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If we can't, but if we have any postponed messages due to bounding, then
             // try to consume one of these postponed messages.
             // Since we are not currently holding the lock, it is possible that new messages get queued up
-            // by the time we take the lock to manipulate m_boundingState. So we have to double-check the
+            // by the time we take the lock to manipulate _boundingState. So we have to double-check the
             // input queue once we take the lock before we consider postponed messages.
             else if (_boundingState != null && TryConsumePostponedMessage(forPostponementTransfer: false, result: out messageWithId))
             {
@@ -672,7 +672,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 } // Must not call to source while holding lock
 
                 bool consumed;
-                var consumedValue = element.Key.ConsumeMessage(element.Value, _owningTarget, out consumed);
+                TInput consumedValue = element.Key.ConsumeMessage(element.Value, _owningTarget, out consumed);
                 if (consumed)
                 {
                     result = new KeyValuePair<TInput, long>(consumedValue, messageId);
@@ -742,7 +742,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _decliningPermanently = true;
 
                 // Get out from under currently held locks.  This is to avoid
-                // invoking synchronous continuations off of m_completionSource.Task
+                // invoking synchronous continuations off of _completionSource.Task
                 // while holding a lock.
                 Task.Factory.StartNew(state => ((TargetCore<TInput>)state).CompleteBlockOncePossible(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
@@ -771,13 +771,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // which may still contain orphaned data if we were canceled or faulted.  However,
             // we don't reset the bounding count here, as the block as a whole may still be active.
             KeyValuePair<TInput, long> ignored;
-            var messages = _messages;
+            IProducerConsumerQueue<KeyValuePair<TInput, long>> messages = _messages;
             while (messages.TryDequeue(out ignored)) ;
 
             // If we completed with any unhandled exception, finish in an error state
             if (Volatile.Read(ref _exceptions) != null)
             {
-                // It's ok to read m_exceptions' content here, because
+                // It's ok to read _exceptions' content here, because
                 // at this point no more exceptions can be generated and thus no one will
                 // be writing to it.
                 _completionSource.TrySetException(Volatile.Read(ref _exceptions));

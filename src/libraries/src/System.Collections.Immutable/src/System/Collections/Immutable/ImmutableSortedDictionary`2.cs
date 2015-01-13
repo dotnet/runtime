@@ -1149,7 +1149,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// A node in the AVL tree storing this map.
         /// </summary>
-        [DebuggerDisplay("{key} = {value}")]
+        [DebuggerDisplay("{_key} = {_value}")]
         internal sealed class Node : IBinaryTree<KeyValuePair<TKey, TValue>>, IEnumerable<KeyValuePair<TKey, TValue>>
         {
             /// <summary>

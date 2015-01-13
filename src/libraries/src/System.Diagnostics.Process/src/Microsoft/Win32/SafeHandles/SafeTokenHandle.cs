@@ -13,24 +13,25 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCriticalAttribute]
-    internal sealed class SafeTokenHandle : SafeHandle
+    [SecurityCritical]
+    internal sealed partial class SafeTokenHandle : SafeHandle
     {
-        internal static SafeTokenHandle InvalidHandle = new SafeTokenHandle(IntPtr.Zero);
+        internal static readonly SafeTokenHandle InvalidHandle = new SafeTokenHandle(new IntPtr(DefaultInvalidHandleValue));
 
-        internal SafeTokenHandle() : base(IntPtr.Zero, true) { }
+        internal SafeTokenHandle() : base(new IntPtr(DefaultInvalidHandleValue), true) { }
 
         internal SafeTokenHandle(IntPtr handle)
-            : base(IntPtr.Zero, true)
+            : base(new IntPtr(DefaultInvalidHandleValue), true)
         {
             SetHandle(handle);
         }
 
         public SafeTokenHandle(IntPtr handle, bool ownsHandle)
-            : base(IntPtr.Zero, ownsHandle)
+            : base(new IntPtr(DefaultInvalidHandleValue), ownsHandle)
         {
             SetHandle(handle);
         }
@@ -39,19 +40,6 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(IsInvalid, "Safe handle should only be set once");
             base.handle = h;
-        }
-
-        public override bool IsInvalid
-        {
-            [System.Security.SecurityCritical]
-            get
-            { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
-        }
-
-        [System.Security.SecurityCritical]
-        override protected bool ReleaseHandle()
-        {
-            return Interop.mincore.CloseHandle(handle);
         }
     }
 }

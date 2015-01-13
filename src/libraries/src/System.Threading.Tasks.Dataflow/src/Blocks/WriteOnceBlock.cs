@@ -99,7 +99,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
             }
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -127,7 +127,7 @@ namespace System.Threading.Tasks.Dataflow
                                                         Common.GetCreationOptionsForTask());
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -136,7 +136,7 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
                 if (exception != null) CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: true);
             }
             else
@@ -160,8 +160,8 @@ namespace System.Threading.Tasks.Dataflow
             // OfferToTargets calls to potentially multiple targets, each of which
             // could be faulty and throw an exception.  OfferToTargets creates a
             // list of all such exceptions and returns it.
-            // If m_value is null, OfferToTargets does nothing.
-            var exceptions = OfferToTargets();
+            // If _value is null, OfferToTargets does nothing.
+            List<Exception> exceptions = OfferToTargets();
             CompleteBlock(exceptions);
         }
 
@@ -171,14 +171,14 @@ namespace System.Threading.Tasks.Dataflow
         /// </remarks>
         private void CompleteBlock(IList<Exception> exceptions)
         {
-            // Do not invoke the CompletionTaskSource property if there is a chance that m_lazyCompletionTaskSource
+            // Do not invoke the CompletionTaskSource property if there is a chance that _lazyCompletionTaskSource
             // has not been initialized yet and we may have to complete normally, because that would defeat the 
             // sole purpose of the TCS being lazily initialized.
 
             Contract.Requires(_lazyCompletionTaskSource == null || !_lazyCompletionTaskSource.Task.IsCompleted, "The task completion source must not be completed. This must be the only thread that ever completes the block.");
 
             // Save the linked list of targets so that it could be traveresed later to propagate completion
-            var linkedTargets = _targetRegistry.ClearEntryPoints();
+            TargetRegistry<T>.LinkedTargetInfo linkedTargets = _targetRegistry.ClearEntryPoints();
 
             // Complete the block's completion task
             if (exceptions != null && exceptions.Count > 0)
@@ -204,7 +204,7 @@ namespace System.Threading.Tasks.Dataflow
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(this);
@@ -268,7 +268,7 @@ namespace System.Threading.Tasks.Dataflow
         public Boolean TryReceive(Predicate<T> filter, out T item)
         {
             // No need to take the outgoing lock, as we don't need to synchronize with other
-            // targets, and m_value only ever goes from null to non-null, not the other way around.
+            // targets, and _value only ever goes from null to non-null, not the other way around.
 
             // If we have a value, give it up.  All receives on a successfully
             // completed WriteOnceBlock will return true, as long as the message
@@ -468,11 +468,11 @@ namespace System.Threading.Tasks.Dataflow
             List<Exception> exceptions = null;
             if (HasValue)
             {
-                var cur = _targetRegistry.FirstTargetNode;
+                TargetRegistry<T>.LinkedTargetInfo cur = _targetRegistry.FirstTargetNode;
                 while (cur != null)
                 {
-                    var next = cur.Next;
-                    var target = cur.Target;
+                    TargetRegistry<T>.LinkedTargetInfo next = cur.Next;
+                    ITargetBlock<T> target = cur.Target;
                     try
                     {
                         // Offer the message.  If there's a cloning function, we force the target to

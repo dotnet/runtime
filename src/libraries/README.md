@@ -2,14 +2,8 @@
 
 [![Build status][build-status-image]][build-status]  [![Issue Stats][pull-requests-image]][pull-requests]  [![Issue Stats][issues-closed-image]][issues-closed]
 
-Beta Jenkins-CI
-
-[![Jenkins CI Build Status][jenkins-build-status-image]][jenkins-build-status]
-
-[jenkins-build-status-image]: http://corefx-ci.cloudapp.net/jenkins/job/CoreFX_Windows_Build/badge/icon
-[jenkins-build-status]: http://corefx-ci.cloudapp.net/jenkins/job/CoreFX_Windows_Build/
-[build-status-image]: https://ci.appveyor.com/api/projects/status/xje8bkekyu130e9y/branch/master?svg=true
-[build-status]: https://ci.appveyor.com/project/dotnet-bot/corefx/branch/master
+[build-status-image]: http://corefx-ci.cloudapp.net/jenkins/job/dotnet_corefx_windows/badge/icon
+[build-status]: http://corefx-ci.cloudapp.net/jenkins/job/dotnet_corefx_windows/
 [pull-requests-image]: http://www.issuestats.com/github/dotnet/corefx/badge/pr
 [pull-requests]: http://www.issuestats.com/github/dotnet/corefx
 [issues-closed-image]: http://www.issuestats.com/github/dotnet/corefx/badge/issue
@@ -31,6 +25,14 @@ Today, the repository contains the following components:
   mutable state under control without sacrificing performance or memory
   footprint. You can read more about them on [MSDN][immutable-msdn].
 
+* **System.Collections.NonGeneric**.  Provides classes that define various collections of objects, such as ArrayList, 
+  Hashtable, SortedList, Stack, and Queue. These collections exist in .NET Core primarily for backwards compatibility
+  and generally should be avoided when writing new code.
+
+* **System.Collections.Specialized**. Provides classes that define specialized collections of objects, for example, 
+  a linked list dictionary, a bit vector, and collections that contain only strings. These collections exist in 
+  .NET Core primarily for backwards compatibility and generally should be avoided when writing new code.
+
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
 
@@ -40,8 +42,14 @@ Today, the repository contains the following components:
 * **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
   stopping of local system processes.
 
+* **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
+  file system objects and for reading and writing files via streams.
+
 * **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
   and/or named pipes.
+
+* **System.IO.UnmanagedMemoryStream**. Provides a stream for accessing unmanaged memory as represented by a pointer, 
+  as well as an accessor for reading and writing primitive types from unmanaged memory.
 
 * **System.Linq.Parallel**.  Provides a parallelized implementation of LINQ to Objects. "Parallel LINQ" (PLINQ) 
   implements the full set of LINQ standard query operators as well as additional operators specific to parallel operations.

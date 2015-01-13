@@ -22,6 +22,7 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)\System\Xml\Ref.cs" />
     <Compile Include="$(CommonPath)\System\Xml\SecureStringHasher.cs" />
     <Compile Include="$(CommonPath)\System\Xml\XmlTextWriter.cs" />

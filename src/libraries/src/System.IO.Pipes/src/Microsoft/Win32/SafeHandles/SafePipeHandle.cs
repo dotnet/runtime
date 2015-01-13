@@ -3,34 +3,22 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [System.Security.SecurityCritical]
-    public sealed class SafePipeHandle : SafeHandle
+    [SecurityCritical]
+    public sealed partial class SafePipeHandle : SafeHandle
     {
-        private SafePipeHandle()
-            : base(IntPtr.Zero, true)
-        { }
+        private SafePipeHandle() 
+            : base(IntPtr.Zero, true) 
+        {
+        }
 
         public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(IntPtr.Zero, ownsHandle)
         {
             SetHandle(preexistingHandle);
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            return Interop.mincore.CloseHandle(handle);
-        }
-
-        public override bool IsInvalid
-        {
-            [System.Security.SecurityCritical]
-            get
-            {
-                return handle == new IntPtr(0) || handle == new IntPtr(-1);
-            }
         }
     }
 }

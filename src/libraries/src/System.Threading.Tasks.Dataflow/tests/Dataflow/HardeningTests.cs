@@ -224,7 +224,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return passed;
         }
 
-#if !PRENET45
         // Test to make sure we appropriately store data into exceptions for debugging purposes
         [Fact]
         [OuterLoop]
@@ -323,7 +322,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.True(localPassed, string.Format("Handle faulty Exception.Data property: {0}", localPassed ? "Passed" : "FAILED"));
             }
         }
-#endif
+
         private class ThrowFromToString
         {
             public override string ToString() { throw new InvalidOperationException(); }

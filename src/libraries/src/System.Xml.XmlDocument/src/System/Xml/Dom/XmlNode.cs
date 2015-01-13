@@ -661,7 +661,7 @@ namespace System.Xml
         public virtual void Normalize()
         {
             XmlNode firstChildTextLikeNode = null;
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
             for (XmlNode crtChild = this.FirstChild; crtChild != null;)
             {
                 XmlNode nextChild = crtChild.NextSibling;
@@ -705,6 +705,8 @@ namespace System.Xml
             }
             if (firstChildTextLikeNode != null && sb.Length > 0)
                 firstChildTextLikeNode.Value = sb.ToString();
+
+            StringBuilderCache.Release(sb);
         }
 
         private XmlNode NormalizeWinner(XmlNode firstNode, XmlNode secondNode)
@@ -850,9 +852,9 @@ namespace System.Xml
                             return fc.Value;
                     }
                 }
-                StringBuilder builder = new StringBuilder();
+                StringBuilder builder = StringBuilderCache.Acquire();
                 AppendChildText(builder);
-                return builder.ToString();
+                return StringBuilderCache.GetStringAndRelease(builder);
             }
 
             set
