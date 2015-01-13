@@ -7263,10 +7263,7 @@ mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *c
 	if (class && context && mono_metadata_token_table (type_token) == MONO_TABLE_TYPESPEC)
 		class = mono_class_inflate_generic_class_checked (class, context, &error);
 
-	if (!class) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /*FIXME don't swallow this error */
-	}
+	g_assert (mono_error_ok (&error)); /* FIXME deprecate this function and forbit the runtime from using it. */
 	return class;
 }
 
@@ -7681,6 +7678,7 @@ search_modules (MonoImage *image, const char *name_space, const char *name)
 MonoClass *
 mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
 {
+	MonoError error;
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
 	guint32 token = 0;
@@ -7782,7 +7780,11 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 
 	token = MONO_TOKEN_TYPE_DEF | token;
 
-	class = mono_class_get (image, token);
+	class = mono_class_get_checked (image, token, &error);
+	if (!mono_error_ok (&error)) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+	}
 	if (nested)
 		return return_nested_in (class, nested);
 	return class;
