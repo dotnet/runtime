@@ -16,9 +16,6 @@ public class RegexLangElementsCoverageTests
         String strLoc = "Loc_000oo";
         int iCountErrors = 0;
         int iCountTestcases = 0;
-        long startWorkingSet = 0, endWorkingSet;
-        double percentDifference;
-        double maxAcceptablePercentDifference = .3;
 
         try
         {
@@ -37,12 +34,6 @@ public class RegexLangElementsCoverageTests
                         Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2}\n", i, s_regexTests[i].Pattern, s_regexTests[i].Input);
                         iCountErrors++;
                     }
-
-                    if (i == 0)
-                    {
-                        startWorkingSet = GC.GetTotalMemory(true);
-                        Console.WriteLine("GC.GetTotalMemory={0}", startWorkingSet);
-                    }
                 }
                 catch (Exception e)
                 {
@@ -52,20 +43,6 @@ public class RegexLangElementsCoverageTests
                 }
             }
 
-            endWorkingSet = GC.GetTotalMemory(true);
-            Console.WriteLine("GC.GetTotalMemory={0}", endWorkingSet);//This should be relatively close to the previous value printed out.
-            //On my machine in Whidbey the difference was of about 3%
-            //In Everett the difference was over 100%
-
-            percentDifference = ((double)Math.Abs(startWorkingSet - endWorkingSet)) / startWorkingSet;
-
-            if (maxAcceptablePercentDifference < percentDifference)
-            {
-                Console.WriteLine("Err_004888anied Total memory increased significantly there may be a memory leak");
-                Console.WriteLine("Percent Difference={0}, Max Acceptable Percent Difference={1}, Start Working Set={2}, End Working Set={3}",
-                    percentDifference, maxAcceptablePercentDifference, startWorkingSet, endWorkingSet);
-                iCountErrors++;
-            }
             ///////////////////////////////////////////////////////////////////
             /////////////////////////// END TESTS /////////////////////////////
         }
