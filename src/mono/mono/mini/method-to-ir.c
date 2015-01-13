@@ -11069,7 +11069,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					handle = &((MonoClass*)handle)->byval_arg;
 			}
 			else {
-				handle = mono_ldtoken (image, n, &handle_class, generic_context);
+				handle = mono_ldtoken_checked (image, n, &handle_class, generic_context, &cfg->error);
+				CHECK_CFG_ERROR;
 			}
 			if (!handle)
 				LOAD_ERROR;

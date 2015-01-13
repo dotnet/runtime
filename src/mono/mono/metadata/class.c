@@ -8474,6 +8474,18 @@ gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	      MonoGenericContext *context)
 {
+	MonoError error;
+	gpointer res = mono_ldtoken_checked (image, token, handle_class, context, &error);
+	g_assert (mono_error_ok (&error));
+	return res;
+}
+
+gpointer
+mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
+	      MonoGenericContext *context, MonoError *error)
+{
+	mono_error_init (error);
+
 	if (image_is_dynamic (image)) {
 		MonoClass *tmp_handle_class;
 		gpointer obj = mono_lookup_dynamic_token_class (image, token, TRUE, &tmp_handle_class, context);
@@ -8492,49 +8504,42 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_TYPE_DEF:
 	case MONO_TOKEN_TYPE_REF:
 	case MONO_TOKEN_TYPE_SPEC: {
-		MonoError error;
 		MonoType *type;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
-		type = mono_type_get_checked (image, token, context, &error);
-		if (!type) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+		type = mono_type_get_checked (image, token, context, error);
+		if (!type)
 			return NULL;
-		}
+
 		mono_class_init (mono_class_from_mono_type (type));
 		/* We return a MonoType* as handle */
 		return type;
 	}
 	case MONO_TOKEN_FIELD_DEF: {
 		MonoClass *class;
-		MonoError error;
 		guint32 type = mono_metadata_typedef_from_field (image, mono_metadata_token_index (token));
-		if (!type)
-			return NULL;
-		if (handle_class)
-			*handle_class = mono_defaults.fieldhandle_class;
-		class = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_DEF | type, context, &error);
-		if (!class) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+		if (!type) {
+			mono_error_set_bad_image (error, image, "Bad ldtoken %x", token);
 			return NULL;
 		}
+		if (handle_class)
+			*handle_class = mono_defaults.fieldhandle_class;
+		class = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_DEF | type, context, error);
+		if (!class)
+			return NULL;
+
 		mono_class_init (class);
 		return mono_class_get_field (class, token);
 	}
 	case MONO_TOKEN_METHOD_DEF:
 	case MONO_TOKEN_METHOD_SPEC: {
-		MonoError error;
 		MonoMethod *meth;
-		meth = mono_get_method_checked (image, token, NULL, context, &error);
+		meth = mono_get_method_checked (image, token, NULL, context, error);
 		if (handle_class)
 			*handle_class = mono_defaults.methodhandle_class;
-		if (!meth) {
-			mono_loader_set_error_from_mono_error (&error);
-			mono_error_cleanup (&error); /* FIXME Don't swallow the error */
+		if (!meth)
 			return NULL;
-		}
+
 		return meth;
 	}
 	case MONO_TOKEN_MEMBER_REF: {
@@ -8544,33 +8549,22 @@ mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 		sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
 		mono_metadata_decode_blob_size (sig, &sig);
 		if (*sig == 0x6) { /* it's a field */
-			MonoError error;
 			MonoClass *klass;
 			MonoClassField *field;
-			field = mono_field_from_token_checked (image, token, &klass, context, &error);
+			field = mono_field_from_token_checked (image, token, &klass, context, error);
 			if (handle_class)
 				*handle_class = mono_defaults.fieldhandle_class;
-			if (!field) {
-				mono_loader_set_error_from_mono_error (&error);
-				mono_error_cleanup (&error); /* FIXME Don't swallow the error */
-			}
 			return field;
 		} else {
-			MonoError error;
 			MonoMethod *meth;
-			meth = mono_get_method_checked (image, token, NULL, context, &error);
+			meth = mono_get_method_checked (image, token, NULL, context, error);
 			if (handle_class)
 				*handle_class = mono_defaults.methodhandle_class;
-			if (!meth) {
-				mono_loader_set_error_from_mono_error (&error);
-				mono_error_cleanup (&error); /* FIXME Don't swallow the error */
-			}
 			return meth;
 		}
 	}
 	default:
-		g_warning ("Unknown token 0x%08x in ldtoken", token);
-		break;
+		mono_error_set_bad_image (error, image, "Bad ldtoken %x", token);
 	}
 	return NULL;
 }

@@ -8639,8 +8639,10 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					break;
 				}
 			} else {
-				val = mono_ldtoken (method->klass->image, token, &handle_class, NULL);
-				g_assert (val);
+				MonoError error;
+				val = mono_ldtoken_checked (method->klass->image, token, &handle_class, NULL, &error);
+				if (!val)
+					g_error ("Could not load token due to %s", mono_error_get_message (&error));
 			}
 
 			if (handle_class == mono_defaults.typehandle_class) {
