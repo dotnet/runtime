@@ -647,7 +647,8 @@ mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 											 MonoClass           ***interfaces,
 											 guint                 *count,
 											 gboolean               heap_alloc_result,
-											 MonoGenericContext    *context) MONO_INTERNAL;
+											 MonoGenericContext    *context,
+											 MonoError *error) MONO_INTERNAL;
 
 MonoArrayType *
 mono_metadata_parse_array_full              (MonoImage             *image,
