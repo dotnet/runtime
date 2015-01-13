@@ -10,9 +10,8 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Threading;
 using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Collections.Concurrent
 {
@@ -553,10 +552,10 @@ namespace System.Collections.Concurrent
                 private readonly IEnumerator<TSource> _sharedReader;
                 private SharedLong _sharedIndex;//initial value -1
 
-                private volatile KeyValuePair<long, TSource>[] _FillBuffer;  // intermediate buffer to reduce locking
-                private volatile int _FillBufferSize;               // actual number of elements in _FillBuffer. Will start
+                private volatile KeyValuePair<long, TSource>[] _fillBuffer;  // intermediate buffer to reduce locking
+                private volatile int _fillBufferSize;               // actual number of elements in _FillBuffer. Will start
                                                                      // at _FillBuffer.Length, and might be reduced during the last refill
-                private volatile int _FillBufferCurrentPosition;    //shared value to be accessed by Interlock.Increment only
+                private volatile int _fillBufferCurrentPosition;    //shared value to be accessed by Interlock.Increment only
                 private volatile int _activeCopiers;               //number of active copiers
 
                 //fields shared by all partitions that this Enumerable owns, their allocation is deferred
@@ -592,7 +591,7 @@ namespace System.Collections.Concurrent
                         int fillBufferMultiplier = (PlatformHelper.ProcessorCount > 4) ? 4 : 1;
 
                         // and allocate the fill buffer using these two numbers
-                        _FillBuffer = new KeyValuePair<long, TSource>[fillBufferMultiplier * Partitioner.GetDefaultChunkSize<TSource>()];
+                        _fillBuffer = new KeyValuePair<long, TSource>[fillBufferMultiplier * Partitioner.GetDefaultChunkSize<TSource>()];
                     }
 
                     if (isStaticPartitioning)
@@ -642,12 +641,12 @@ namespace System.Collections.Concurrent
 
 
                     // making a local defensive copy of the fill buffer reference, just in case it gets nulled out
-                    KeyValuePair<long, TSource>[] fillBufferLocalRef = _FillBuffer;
+                    KeyValuePair<long, TSource>[] fillBufferLocalRef = _fillBuffer;
                     if (fillBufferLocalRef == null) return;
 
                     // first do a quick check, and give up if the current position is at the end
                     // so that we don't do an unncessary pair of Interlocked.Increment / Decrement calls
-                    if (_FillBufferCurrentPosition >= _FillBufferSize)
+                    if (_fillBufferCurrentPosition >= _fillBufferSize)
                     {
                         return; // no elements in the buffer to copy from
                     }
@@ -659,13 +658,13 @@ namespace System.Collections.Concurrent
                     // that starts refilling the buffer right after our Interlocked.Add.
                     Interlocked.Increment(ref _activeCopiers);
 
-                    int endPos = Interlocked.Add(ref _FillBufferCurrentPosition, requestedChunkSize);
+                    int endPos = Interlocked.Add(ref _fillBufferCurrentPosition, requestedChunkSize);
                     int beginPos = endPos - requestedChunkSize;
 
-                    if (beginPos < _FillBufferSize)
+                    if (beginPos < _fillBufferSize)
                     {
                         // adjust index and do the actual copy
-                        actualNumElementsGrabbed = (endPos < _FillBufferSize) ? endPos : _FillBufferSize - beginPos;
+                        actualNumElementsGrabbed = (endPos < _fillBufferSize) ? endPos : _fillBufferSize - beginPos;
                         ArrayT<KeyValuePair<long, TSource>>.Copy(fillBufferLocalRef, beginPos, destArray, 0, actualNumElementsGrabbed);
                     }
 
@@ -772,7 +771,7 @@ namespace System.Collections.Concurrent
                         // looks like we both reached the end of the fill buffer, and the source was depleted previously
                         // this means no more work to do for any other worker
                         _hasNoElementsLeft.Value = true;
-                        _FillBuffer = null;
+                        _fillBuffer = null;
                         return (actualNumElementsGrabbed > 0);
                     }
 
@@ -821,12 +820,12 @@ namespace System.Collections.Concurrent
 
                             // taking a local snapshot of _FillBuffer in case some other thread decides to null out _FillBuffer 
                             // in the entry of this method after observing _sourceCompleted = true
-                            var localFillBufferRef = _FillBuffer;
+                            var localFillBufferRef = _fillBuffer;
 
                             // If the big buffer seems to be depleted, we will also fill that up while we are under the lock
                             // Note that this is the only place that _FillBufferCurrentPosition can be reset
                             if (_sourceDepleted.Value == false && localFillBufferRef != null &&
-                                _FillBufferCurrentPosition >= localFillBufferRef.Length)
+                                _fillBufferCurrentPosition >= localFillBufferRef.Length)
                             {
                                 for (int i = 0; i < localFillBufferRef.Length; i++)
                                 {
@@ -844,14 +843,14 @@ namespace System.Collections.Concurrent
                                         _sourceDepleted.Value = true;
 
                                         // also record the current count in _FillBufferSize
-                                        _FillBufferSize = i;
+                                        _fillBufferSize = i;
 
                                         // and exit the for loop so that we don't keep incrementing _FillBufferSize
                                         break;
                                     }
                                 }
 
-                                _FillBufferCurrentPosition = 0;
+                                _fillBufferCurrentPosition = 0;
                             }
                         }
                         catch
