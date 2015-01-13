@@ -408,13 +408,13 @@ namespace System.IO
 
             String fullDestDirName = PathHelpers.GetFullPathInternal(destDirName);
             if (fullDestDirName[fullDestDirName.Length - 1] != Path.DirectorySeparatorChar)
-                fullDestDirName = fullDestDirName + Path.DirectorySeparatorChar;
+                fullDestDirName = fullDestDirName + PathHelpers.DirectorySeparatorCharAsString;
 
             String fullSourcePath;
             if (FullPath.Length > 0 && FullPath[FullPath.Length - 1] == Path.DirectorySeparatorChar)
                 fullSourcePath = FullPath;
             else
-                fullSourcePath = FullPath + Path.DirectorySeparatorChar;
+                fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
             if (String.Compare(fullSourcePath, fullDestDirName, StringComparison.OrdinalIgnoreCase) == 0)
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
