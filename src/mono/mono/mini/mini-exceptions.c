@@ -54,6 +54,10 @@
 #include "debugger-agent.h"
 #include "seq-points.h"
 
+#ifdef ENABLE_EXTENSION_MODULE
+#include "../../../mono-extensions/mono/mini/mini-exceptions.c"
+#endif
+
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
 #endif
@@ -2339,6 +2343,8 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 	}
 #endif
  }
+#elif defined (ENABLE_EXTENSION_MODULE)
+	mono_extension_handle_native_sigsegv (ctx, info);
 #endif
 
 	/*
