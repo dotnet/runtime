@@ -9050,7 +9050,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->got_symbol_base);
 	if (acfg->llvm) {
 		acfg->llvm_got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->llvm_got_symbol_base);
-		acfg->llvm_eh_frame_symbol = g_strdup_printf ("mono_aot_%s_eh_frame", acfg->assembly_name_sym);
+		if (acfg->llvm_separate)
+			acfg->llvm_eh_frame_symbol = g_strdup_printf ("mono_aot_%s_eh_frame", acfg->assembly_name_sym);
+		else
+			acfg->llvm_eh_frame_symbol = g_strdup ("mono_eh_frame");
 	}
 
 	acfg->method_index = 1;
