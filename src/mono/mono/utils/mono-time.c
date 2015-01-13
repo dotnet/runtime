@@ -68,7 +68,7 @@ mono_100ns_datetime (void)
 #if defined (HAVE_SYS_PARAM_H)
 #include <sys/param.h>
 #endif
-#if defined(HAVE_SYS_IOCTL_H)
+#if defined(HAVE_SYS_SYSCTL_H)
 #include <sys/sysctl.h>
 #endif
 
