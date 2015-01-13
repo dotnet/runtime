@@ -26,7 +26,7 @@ namespace Test
                 cs.Push(2);
                 cs.Push(3);
                 cs.Push(4);
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             tks[1] = Task.Factory.StartNew(() =>
             {
@@ -39,13 +39,13 @@ namespace Test
                 // two item
                 if (ret2)
                 {
-                    Assert.Equal(item1 - 1, item2);
+                    Assert.True(item1 > item2, String.Format("{0} should greater than {1}", item1, item2));
                 }
                 else // one item
                 {
                     Assert.Equal(1, item1);
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             Task.WaitAll(tks);
         }

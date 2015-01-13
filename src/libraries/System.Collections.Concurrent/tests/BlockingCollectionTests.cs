@@ -26,11 +26,15 @@ namespace Test
             {
                 while (!bc.IsCompleted)
                 {
-                    int data = bc.Take();
-                    Assert.Equal(expect, data);
-                    expect++;
+                    try
+                    {
+                        int data = bc.Take();
+                        Assert.Equal(expect, data);
+                        expect++;
+                    }
+                    catch (InvalidOperationException) { } // throw when CompleteAdding called
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             // A simple blocking producer with no cancellation.
             tks[1] = Task.Factory.StartNew(() =>
@@ -40,7 +44,7 @@ namespace Test
                 bc.Add(3);
                 // Let consumer know we are done.
                 bc.CompleteAdding();
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             Task.WaitAll(tks);
         }

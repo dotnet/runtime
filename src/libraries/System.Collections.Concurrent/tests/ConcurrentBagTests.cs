@@ -24,7 +24,7 @@ namespace Test
                 cb.Add(4);
                 cb.Add(5);
                 cb.Add(6);
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             // Consume the items in the bag 
             tks[1] = Task.Factory.StartNew(() =>
@@ -40,7 +40,7 @@ namespace Test
                         Assert.False(true, "Expected: 4|5|6; actual: " + item.ToString());
                     }
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             Task.WaitAll(tks);
         }
