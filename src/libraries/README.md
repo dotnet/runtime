@@ -21,6 +21,9 @@ Today, the repository contains the following components:
 
 * **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
 
+* **System.Collections.Concurrent**.  Provides a set of thread-safe collection types, instances of which may be used 
+  concurrently from multiple threads.
+
 * **System.Collections.Immutable**. Provides a set of immutable collection types that make it easy to keep
   mutable state under control without sacrificing performance or memory
   footprint. You can read more about them on [MSDN][immutable-msdn].
