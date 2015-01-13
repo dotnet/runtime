@@ -1,9 +1,0 @@
-/.deps
-/.libs
-/Makefile
-/Makefile.in
-/monograph
-/*.o
-/*.lo
-/*.exe
-/TAGS

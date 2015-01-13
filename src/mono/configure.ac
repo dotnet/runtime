@@ -3820,7 +3820,6 @@ mono/tests/cas/threads/Makefile
 mono/tests/gc-descriptors/Makefile
 mono/unit-tests/Makefile
 mono/benchmark/Makefile
-mono/monograph/Makefile
 mono/io-layer/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
@@ -3862,6 +3861,7 @@ data/config
 tools/Makefile
 tools/locale-builder/Makefile
 tools/sgen/Makefile
+tools/monograph/Makefile
 runtime/Makefile
 msvc/Makefile
 po/Makefile

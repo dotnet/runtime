@@ -26,7 +26,7 @@ monotouch-do-clean:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
     done;
 else
-SUBDIRS = arch utils io-layer cil metadata mini dis monograph tests unit-tests benchmark profiler
+SUBDIRS = arch utils io-layer cil metadata mini dis tests unit-tests benchmark profiler
 endif
 endif
-DIST_SUBDIRS = arch utils io-layer cil metadata mini dis monograph tests unit-tests benchmark profiler
+DIST_SUBDIRS = arch utils io-layer cil metadata mini dis tests unit-tests benchmark profiler
