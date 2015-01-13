@@ -1,14 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Threading.Tasks;
-
 namespace System.Threading
 {
     /// <summary>
@@ -36,14 +28,6 @@ namespace System.Threading
 
                 return s_processorCount;
             }
-        }
-
-        /// <summary>
-        /// Gets whether the current machine has only a single processor.
-        /// </summary>
-        internal static bool IsSingleProcessor
-        {
-            get { return ProcessorCount == 1; }
         }
     }
 }
