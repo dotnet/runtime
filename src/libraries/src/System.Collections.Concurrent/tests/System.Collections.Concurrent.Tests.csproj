@@ -21,19 +21,11 @@
     <Compile Include="ConcurrentDictionaryTests.cs" />
     <Compile Include="ConcurrentQueueTests.cs" />
     <Compile Include="ConcurrentStackTests.cs" />
-<<<<<<< HEAD
     <Compile Include="IntRangePartitionerTests.cs" />
     <!--<Compile Include="LongRangePartitionerTests.cs" />
         <Compile Include="PartitionerStaticTests.cs" />
         <Compile Include="RangePartitionerNegativeTests.cs" />-->
     <Compile Include="PartitionerHelpers.cs" />
-=======
-    <!--<Compile Include="IntRangePartitionerTests.cs" />
-    <Compile Include="LongRangePartitionerTests.cs" />
-    <Compile Include="PartitionerHelpers.cs" />
-    <Compile Include="PartitionerStaticTests.cs" />
-    <Compile Include="RangePartitionerNegativeTests.cs" />-->
->>>>>>> d8bb8cddf5c4bddd7cc997f187df11e644c75017
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
