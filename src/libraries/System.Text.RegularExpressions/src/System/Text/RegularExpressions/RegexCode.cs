@@ -363,7 +363,7 @@ namespace System.Text.RegularExpressions
                     break;
             }
 
-            sb.Append(")");
+            sb.Append(')');
 
             return sb.ToString();
         }

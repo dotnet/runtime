@@ -9,10 +9,10 @@ public class GroupNamesAndNumber
 {
     /*
     Tested Methods:
-    
+
         public string[] GetGroupNames();
 
-        public int[] GetGroupNumbers();    
+        public int[] GetGroupNumbers();
 
         public string GroupNameFromNumber(int i);
 

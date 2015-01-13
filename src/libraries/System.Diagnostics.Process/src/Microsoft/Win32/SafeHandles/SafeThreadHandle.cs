@@ -17,10 +17,10 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeThreadHandle : SafeHandle
+    internal sealed partial class SafeThreadHandle : SafeHandle
     {
         internal SafeThreadHandle()
-            : base(IntPtr.Zero, true)
+            : base(new IntPtr(DefaultInvalidHandleValue), true)
         {
         }
 
@@ -28,18 +28,6 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(IsInvalid, "Safe handle should only be set once");
             base.SetHandle(h);
-        }
-
-        public override bool IsInvalid
-        {
-            [System.Security.SecurityCritical]
-            get
-            { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
-        }
-
-        override protected bool ReleaseHandle()
-        {
-            return Interop.mincore.CloseHandle(handle);
         }
     }
 }

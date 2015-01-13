@@ -118,7 +118,7 @@ namespace System.Text.RegularExpressions
             ValidateMatchTimeout(matchTimeout);
 
             // Try to look up this regex in the cache.  We do this regardless of whether useCache is true since there's
-            // really no reason not to. 
+            // really no reason not to.
             if ((options & RegexOptions.CultureInvariant) != 0)
                 cultureKey = CultureInfo.InvariantCulture.ToString(); // "English (United States)"
             else
@@ -169,7 +169,7 @@ namespace System.Text.RegularExpressions
         /// The valid range is <code>TimeSpan.Zero &lt; matchTimeout &lt;= Regex.MaximumMatchTimeout</code>.
         /// </summary>
         /// <param name="matchTimeout">The timeout value to validate.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">If the specified timeout is not within a valid range.        
+        /// <exception cref="System.ArgumentOutOfRangeException">If the specified timeout is not within a valid range.
         /// </exception>
         internal static void ValidateMatchTimeout(TimeSpan matchTimeout)
         {
@@ -280,7 +280,7 @@ namespace System.Text.RegularExpressions
          */
         /// <summary>
         /// Returns the GroupNameCollection for the regular expression. This collection contains the
-        /// set of strings used to name capturing groups in the expression. 
+        /// set of strings used to name capturing groups in the expression.
         /// </summary>
         public String[] GetGroupNames()
         {
@@ -313,7 +313,7 @@ namespace System.Text.RegularExpressions
          * but supplied for completeness.)
          */
         /// <summary>
-        /// Returns the integer group number corresponding to a group name. 
+        /// Returns the integer group number corresponding to a group name.
         /// </summary>
         public int[] GetGroupNumbers()
         {
@@ -440,7 +440,7 @@ namespace System.Text.RegularExpressions
          * Static version of simple IsMatch call
          */
         /// <summary>
-        /// Searches the input string for one or more occurrences of the text 
+        /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter with matching options supplied in the options
         /// parameter.
         /// </summary>
@@ -489,7 +489,7 @@ namespace System.Text.RegularExpressions
          * Static version of simple Match call
          */
         /// <summary>
-        /// Searches the input string for one or more occurrences of the text 
+        /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter.
         /// </summary>
         public static Match Match(String input, String pattern)
@@ -501,7 +501,7 @@ namespace System.Text.RegularExpressions
          * Static version of simple Match call
          */
         /// <summary>
-        /// Searches the input string for one or more occurrences of the text 
+        /// Searches the input string for one or more occurrences of the text
         /// supplied in the pattern parameter. Matching is modified with an option
         /// string.
         /// </summary>
@@ -621,7 +621,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Replaces all occurrences of the pattern with the <paramref name="replacement"/> pattern, starting at
-        /// the first character in the input string. 
+        /// the first character in the input string.
         /// </summary>
         public static String Replace(String input, String pattern, String replacement)
         {
@@ -629,9 +629,9 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Replaces all occurrences of 
+        /// Replaces all occurrences of
         /// the <paramref name="pattern "/>with the <paramref name="replacement "/>
-        /// pattern, starting at the first character in the input string. 
+        /// pattern, starting at the first character in the input string.
         /// </summary>
         public static String Replace(String input, String pattern, String replacement, RegexOptions options)
         {
@@ -657,9 +657,9 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Replaces all occurrences of the previously defined pattern with the 
+        /// Replaces all occurrences of the previously defined pattern with the
         /// <paramref name="replacement"/> pattern, starting at the first character in the
-        /// input string. 
+        /// input string.
         /// </summary>
         public String Replace(String input, String replacement, int count)
         {
@@ -671,7 +671,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Replaces all occurrences of the previously defined pattern with the
-        /// <paramref name="replacement"/> pattern, starting at the character position 
+        /// <paramref name="replacement"/> pattern, starting at the character position
         /// <paramref name="startat"/>.
         /// </summary>
         public String Replace(String input, String replacement, int count, int startat)
@@ -704,7 +704,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Replaces all occurrences of the <paramref name="pattern"/> with the recent 
+        /// Replaces all occurrences of the <paramref name="pattern"/> with the recent
         /// replacement pattern, starting at the first character.
         /// </summary>
         public static String Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options)
@@ -790,7 +790,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Splits the <paramref name="input"/> string at the position defined by a
-        /// previous pattern. 
+        /// previous pattern.
         /// </summary>
         public String[] Split(String input, int count)
         {
@@ -850,7 +850,7 @@ namespace System.Text.RegularExpressions
 
             try
             {
-                // Do the scan starting at the requested position            
+                // Do the scan starting at the requested position
                 match = runner.Scan(this, input, beginning, beginning + length, startat, prevlen, quick, _internalMatchTimeout);
             }
             finally
@@ -877,7 +877,7 @@ namespace System.Text.RegularExpressions
                 {
                     if (current.Value._key == key)
                     {
-                        // If we find an entry in the cache, move it to the head at the same time. 
+                        // If we find an entry in the cache, move it to the head at the same time.
                         s_livecode.Remove(current);
                         s_livecode.AddFirst(current);
                         return current.Value;

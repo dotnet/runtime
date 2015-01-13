@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Using beginning/end of string chars \A, \Z, ^ : Actual - "\\Aaaa\\w+zzz\\Z"
             "aaaasdfajsdlfjzzz"
 

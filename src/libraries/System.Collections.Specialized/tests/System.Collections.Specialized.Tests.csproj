@@ -1,0 +1,156 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Collections.Specialized.Tests</RootNamespace>
+    <AssemblyName>System.Collections.Specialized.Tests</AssemblyName>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BitVector32\CreateMaskIntTests.cs" />
+    <Compile Include="BitVector32\CreateMaskTests.cs" />
+    <Compile Include="BitVector32\CreateSectionShortSectionTests.cs" />
+    <Compile Include="BitVector32\CreateSectionShortTests.cs" />
+    <Compile Include="BitVector32\CtorBitvector32Tests.cs" />
+    <Compile Include="BitVector32\CtorIntTests.cs" />
+    <Compile Include="BitVector32\CtorTests.cs" />
+    <Compile Include="BitVector32\EqualsObjTests.cs" />
+    <Compile Include="BitVector32\GetDataTests.cs" />
+    <Compile Include="BitVector32\GetHashCodeTests.cs" />
+    <Compile Include="BitVector32\GetItemIntTests.cs" />
+    <Compile Include="BitVector32\GetItemSectionTests.cs" />
+    <Compile Include="BitVector32\SectionEqualsObjTests.cs" />
+    <Compile Include="BitVector32\SectionGetHashCodeTests.cs" />
+    <Compile Include="BitVector32\SetItemIntBoolTests.cs" />
+    <Compile Include="BitVector32\SetItemSectionIntTests.cs" />
+    <Compile Include="BitVector32\ToStringBvTests.cs" />
+    <Compile Include="BitVector32\ToStringTests.cs" />
+    <Compile Include="Common\CollectionTesting\ICollectionTest.cs" />
+    <Compile Include="Common\CollectionTesting\IEnumerableTest.cs" />
+    <Compile Include="Common\CollectionTesting\TestSupport.cs" />
+    <Compile Include="Common\GenStrings.cs" />
+    <Compile Include="HybridDictionary\AddObjObjTests.cs" />
+    <Compile Include="HybridDictionary\ClearTests.cs" />
+    <Compile Include="HybridDictionary\ContainsObjTests.cs" />
+    <Compile Include="HybridDictionary\CopyToArrayIntTests.cs" />
+    <Compile Include="HybridDictionary\CtorBoolTests.cs" />
+    <Compile Include="HybridDictionary\CtorIntBoolTests.cs" />
+    <Compile Include="HybridDictionary\CtorIntTests.cs" />
+    <Compile Include="HybridDictionary\CtorTests.cs" />
+    <Compile Include="HybridDictionary\GetCountTests.cs" />
+    <Compile Include="HybridDictionary\GetEnumeratorTests.cs" />
+    <Compile Include="HybridDictionary\GetIsFixedSizeTests.cs" />
+    <Compile Include="HybridDictionary\GetIsReadOnlyTests.cs" />
+    <Compile Include="HybridDictionary\GetIsSynchronizedTests.cs" />
+    <Compile Include="HybridDictionary\GetItemObjTests.cs" />
+    <Compile Include="HybridDictionary\GetKeysTests.cs" />
+    <Compile Include="HybridDictionary\GetSyncRootTests.cs" />
+    <Compile Include="HybridDictionary\GetValuesTests.cs" />
+    <Compile Include="HybridDictionary\IEnumerableGetEnumeratorTests.cs" />
+    <Compile Include="HybridDictionary\RemoveObjTests.cs" />
+    <Compile Include="HybridDictionary\SetItemObjObjTests.cs" />
+    <Compile Include="ListDictionary\AddObjObjTests.cs" />
+    <Compile Include="ListDictionary\ClearTests.cs" />
+    <Compile Include="ListDictionary\ContainsObjTests.cs" />
+    <Compile Include="ListDictionary\CopyToArrayIntTests.cs" />
+    <Compile Include="ListDictionary\CtorICompTests.cs" />
+    <Compile Include="ListDictionary\CtorTests.cs" />
+    <Compile Include="ListDictionary\GetCountTests.cs" />
+    <Compile Include="ListDictionary\GetEnumeratorTests.cs" />
+    <Compile Include="ListDictionary\GetIsFixedSizeTests.cs" />
+    <Compile Include="ListDictionary\GetIsReadOnlyTests.cs" />
+    <Compile Include="ListDictionary\GetIsSynchronizedTests.cs" />
+    <Compile Include="ListDictionary\GetItemObjTests.cs" />
+    <Compile Include="ListDictionary\GetKeysTests.cs" />
+    <Compile Include="ListDictionary\GetSyncRootTests.cs" />
+    <Compile Include="ListDictionary\GetValuesTests.cs" />
+    <Compile Include="ListDictionary\RemoveObjTests.cs" />
+    <Compile Include="ListDictionary\SetItemObjObjTests.cs" />
+    <Compile Include="NameObjectCollectionBase\CopyToTests.cs" />
+    <Compile Include="NameObjectCollectionBase\GetAllValuesTests.cs" />
+    <Compile Include="NameObjectCollectionBase\GetEnumeratorTests.cs" />
+    <Compile Include="NameObjectCollectionBase\GetSyncRootTests.cs" />
+    <Compile Include="NameObjectCollectionBase\IsReadOnlyTests.cs" />
+    <Compile Include="NameObjectCollectionBase\KeysCollectionCopyToTests.cs" />
+    <Compile Include="NameObjectCollectionBase\KeysCollectionTests.cs" />
+    <Compile Include="NameObjectCollectionBase\MyNameObjectCollection.cs" />
+    <Compile Include="NameObjectCollectionBase\RemoveAtTests.cs" />
+    <Compile Include="NameValueCollection\AddNVCTests.cs" />
+    <Compile Include="NameValueCollection\AddStrStrTests.cs" />
+    <Compile Include="NameValueCollection\ClearTests.cs" />
+    <Compile Include="NameValueCollection\CopyToArrayIntTests.cs" />
+    <Compile Include="NameValueCollection\CtorIKCTests.cs" />
+    <Compile Include="NameValueCollection\CtorIntIKCTests.cs" />
+    <Compile Include="NameValueCollection\CtorIntNvcTests.cs" />
+    <Compile Include="NameValueCollection\CtorIntTests.cs" />
+    <Compile Include="NameValueCollection\CtorNvcTests.cs" />
+    <Compile Include="NameValueCollection\CtorTests.cs" />
+    <Compile Include="NameValueCollection\GetAllKeysTests.cs" />
+    <Compile Include="NameValueCollection\GetIntTests.cs" />
+    <Compile Include="NameValueCollection\GetItemIntTests.cs" />
+    <Compile Include="NameValueCollection\GetItemStrTests.cs" />
+    <Compile Include="NameValueCollection\GetKeyIntTests.cs" />
+    <Compile Include="NameValueCollection\GetStrTests.cs" />
+    <Compile Include="NameValueCollection\GetValuesIntTests.cs" />
+    <Compile Include="NameValueCollection\GetValuesStrTests.cs" />
+    <Compile Include="NameValueCollection\HasKeysTests.cs" />
+    <Compile Include="NameValueCollection\RemoveStrTests.cs" />
+    <Compile Include="NameValueCollection\SetItemStrStrTests.cs" />
+    <Compile Include="NameValueCollection\SetStrStrTests.cs" />
+    <Compile Include="OrderedDictionary\CaseInsensitiveEqualityComparer.cs" />
+    <Compile Include="OrderedDictionary\OrderedDictionaryTests.cs" />
+    <Compile Include="StringCollection\AddRangeStrATests.cs" />
+    <Compile Include="StringCollection\AddStrTests.cs" />
+    <Compile Include="StringCollection\ClearTests.cs" />
+    <Compile Include="StringCollection\ContainsStrTests.cs" />
+    <Compile Include="StringCollection\CopyToStrAIntTests.cs" />
+    <Compile Include="StringCollection\CtorTests.cs" />
+    <Compile Include="StringCollection\GetCountTests.cs" />
+    <Compile Include="StringCollection\GetEnumeratorTests.cs" />
+    <Compile Include="StringCollection\GetIsReadOnlyTests.cs" />
+    <Compile Include="StringCollection\GetIsSynchronizedTests.cs" />
+    <Compile Include="StringCollection\GetItemTests.cs" />
+    <Compile Include="StringCollection\GetSyncRootTests.cs" />
+    <Compile Include="StringCollection\IndexOfStrTests.cs" />
+    <Compile Include="StringCollection\InsertIntStrTests.cs" />
+    <Compile Include="StringCollection\RemoveAtIntTests.cs" />
+    <Compile Include="StringCollection\RemoveStrTests.cs" />
+    <Compile Include="StringCollection\SetItemTests.cs" />
+    <Compile Include="StringDictionary\AddStrStrTests.cs" />
+    <Compile Include="StringDictionary\ClearTests.cs" />
+    <Compile Include="StringDictionary\ContainsKeyStrTests.cs" />
+    <Compile Include="StringDictionary\ContainsValueStrTests.cs" />
+    <Compile Include="StringDictionary\CopyToArrayIntTests.cs" />
+    <Compile Include="StringDictionary\CtorTests.cs" />
+    <Compile Include="StringDictionary\GetCountTests.cs" />
+    <Compile Include="StringDictionary\GetEnumeratorTests.cs" />
+    <Compile Include="StringDictionary\GetIsSynchronizedTests.cs" />
+    <Compile Include="StringDictionary\GetItemStrTests.cs" />
+    <Compile Include="StringDictionary\GetKeysTests.cs" />
+    <Compile Include="StringDictionary\GetSyncRootTests.cs" />
+    <Compile Include="StringDictionary\GetValuesTests.cs" />
+    <Compile Include="StringDictionary\RemoveStrTests.cs" />
+    <Compile Include="StringDictionary\SetItemStrStrTests.cs" />
+    <Compile Include="StringEnumerator\GetCurrentTests.cs" />
+    <Compile Include="StringEnumerator\MoveNextTests.cs" />
+    <Compile Include="StringEnumerator\ResetTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.Specialized.csproj">
+      <Project>{63634289-90d7-4947-8bf3-dbbe98d76c85}</Project>
+      <Name>System.Collections.Specialized</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

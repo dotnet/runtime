@@ -7,6 +7,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 namespace System.Text.RegularExpressions
 {
@@ -19,19 +20,14 @@ namespace System.Text.RegularExpressions
          */
         internal RegexReplacement(String rep, RegexNode concat, Dictionary<Int32, Int32> _caps)
         {
-            StringBuilder sb;
-            List<String> strings;
-            List<Int32> rules;
-            int slot;
-
             _rep = rep;
 
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
 
-            sb = new StringBuilder();
-            strings = new List<String>();
-            rules = new List<Int32>();
+            StringBuilder sb = StringBuilderCache.Acquire();
+            List<String> strings = new List<String>();
+            List<Int32> rules = new List<Int32>();
 
             for (int i = 0; i < concat.ChildCount(); i++)
             {
@@ -52,7 +48,7 @@ namespace System.Text.RegularExpressions
                             strings.Add(sb.ToString());
                             sb.Length = 0;
                         }
-                        slot = child._m;
+                        int slot = child._m;
 
                         if (_caps != null && slot >= 0)
                             slot = (int)_caps[slot];
@@ -70,6 +66,8 @@ namespace System.Text.RegularExpressions
                 strings.Add(sb.ToString());
             }
 
+            StringBuilderCache.Release(sb);
+
             _strings = strings;
             _rules = rules;
         }
@@ -86,7 +84,7 @@ namespace System.Text.RegularExpressions
         internal const int LastGroup = -3;
         internal const int WholeString = -4;
 
-        /*       
+        /*
          * Given a Match, emits into the StringBuilder the evaluated
          * substitution pattern.
          */
@@ -120,7 +118,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*       
+        /*
          * Given a Match, emits into the List<String> the evaluated
          * Right-to-Left substitution pattern.
          */
@@ -170,11 +168,11 @@ namespace System.Text.RegularExpressions
          */
         internal String Replacement(Match match)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = StringBuilderCache.Acquire();
 
             ReplacementImpl(sb, match);
 
-            return sb.ToString();
+            return StringBuilderCache.GetStringAndRelease(sb);
         }
 
         /*
@@ -211,11 +209,10 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                StringBuilder sb;
+                StringBuilder sb = StringBuilderCache.Acquire();
 
                 if (!regex.RightToLeft)
                 {
-                    sb = new StringBuilder();
                     int prevat = 0;
 
                     do
@@ -252,8 +249,6 @@ namespace System.Text.RegularExpressions
                         match = match.NextMatch();
                     } while (match.Success);
 
-                    sb = new StringBuilder();
-
                     if (prevat > 0)
                         sb.Append(input, 0, prevat);
 
@@ -263,7 +258,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                return sb.ToString();
+                return StringBuilderCache.GetStringAndRelease(sb);
             }
         }
 
@@ -299,11 +294,10 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                StringBuilder sb;
+                StringBuilder sb = StringBuilderCache.Acquire();
 
                 if (!regex.RightToLeft)
                 {
-                    sb = new StringBuilder();
                     int prevat = 0;
 
                     do
@@ -344,8 +338,6 @@ namespace System.Text.RegularExpressions
                         match = match.NextMatch();
                     } while (match.Success);
 
-                    sb = new StringBuilder();
-
                     if (prevat > 0)
                         sb.Append(input, 0, prevat);
 
@@ -355,7 +347,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                return sb.ToString();
+                return StringBuilderCache.GetStringAndRelease(sb);
             }
         }
 
