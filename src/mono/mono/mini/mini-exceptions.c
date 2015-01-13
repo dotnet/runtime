@@ -2123,7 +2123,7 @@ mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 		mono_mprotect ((char*)jit_tls->stack_ovf_guard_base + jit_tls->stack_ovf_guard_size - guard_size, guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 		if (ji) {
-			mono_arch_handle_altstack_exception (ctx, info, fault_addr, TRUE);
+			mono_arch_handle_altstack_exception (ctx, siginfo, fault_addr, TRUE);
 			handled = TRUE;
 		}
 #endif
