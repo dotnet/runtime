@@ -49,6 +49,9 @@ namespace System.Diagnostics
         private StringBuilder _sb;
         private bool _bLastCarriageReturn;
 
+        // Cache the last position scanned in sb when searching for lines.
+        private int _currentLinePos;
+
         internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding)
             : this(process, stream, callback, encoding, DefaultBufferSize)
         {
@@ -222,7 +225,7 @@ namespace System.Diagnostics
 
         private void GetLinesFromStringBuilder()
         {
-            int i = 0;
+            int currentIndex = _currentLinePos;
             int lineStart = 0;
             int len = _sb.Length;
 
@@ -230,25 +233,25 @@ namespace System.Diagnostics
             // with '\r'
             if (_bLastCarriageReturn && (len > 0) && _sb[0] == '\n')
             {
-                i = 1;
+                currentIndex = 1;
                 lineStart = 1;
                 _bLastCarriageReturn = false;
             }
 
-            while (i < len)
+            while (currentIndex < len)
             {
-                char ch = _sb[i];
+                char ch = _sb[currentIndex];
                 // Note the following common line feed chars:
                 // \n - UNIX   \r\n - DOS   \r - Mac
                 if (ch == '\r' || ch == '\n')
                 {
-                    string s = _sb.ToString(lineStart, i - lineStart);
-                    lineStart = i + 1;
+                    string s = _sb.ToString(lineStart, currentIndex - lineStart);
+                    lineStart = currentIndex + 1;
                     // skip the "\n" character following "\r" character
                     if ((ch == '\r') && (lineStart < len) && (_sb[lineStart] == '\n'))
                     {
                         lineStart++;
-                        i++;
+                        currentIndex++;
                     }
 
                     lock (_messageQueue)
@@ -256,7 +259,7 @@ namespace System.Diagnostics
                         _messageQueue.Enqueue(s);
                     }
                 }
-                i++;
+                currentIndex++;
             }
             if (_sb[len - 1] == '\r')
             {
@@ -265,11 +268,22 @@ namespace System.Diagnostics
             // Keep the rest characaters which can't form a new line in string builder.
             if (lineStart < len)
             {
-                _sb.Remove(0, lineStart);
+                if (lineStart == 0)
+                {
+                    // we found no breaklines, in this case we cache the position
+                    // so next time we don't have to restart from the beginning
+                    _currentLinePos = currentIndex;
+                }
+                else
+                {
+                    _sb.Remove(0, lineStart);
+                    _currentLinePos = 0;
+                }
             }
             else
             {
                 _sb.Length = 0;
+                _currentLinePos = 0;
             }
 
             FlushMessageQueue();
