@@ -34,7 +34,7 @@ namespace Test
                     ret = cd.TryUpdate(2, 22, 222);
                     Assert.True(ret);
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             tks[1] = Task.Factory.StartNew(() =>
             {
@@ -51,7 +51,7 @@ namespace Test
                     ret = cd.TryUpdate(1, 111, 11);
                     Assert.True(ret);
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
             Task.WaitAll(tks);
         }
