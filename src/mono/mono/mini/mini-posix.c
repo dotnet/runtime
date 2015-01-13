@@ -197,6 +197,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 {
 	MonoJitInfo *ji = NULL;
+	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	if (mono_thread_internal_current ())
@@ -204,7 +205,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	if (!ji) {
         if (mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
-		mono_handle_native_sigsegv (SIGABRT, ctx);
+		mono_handle_native_sigsegv (SIGABRT, ctx, info);
 	}
 }
 

@@ -2091,7 +2091,7 @@ mono_altstack_restore_prot (mgreg_t *regs, guint8 *code, gpointer *tramp_data, g
 }
 
 gboolean
-mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, guint8* fault_addr)
+mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, guint8* fault_addr)
 {
 	/* we got a stack overflow in the soft-guard pages
 	 * There are two cases:
@@ -2119,7 +2119,7 @@ mono_handle_soft_stack_ovf (MonoJitTlsData *jit_tls, MonoJitInfo *ji, void *ctx,
 		mono_mprotect ((char*)jit_tls->stack_ovf_guard_base + jit_tls->stack_ovf_guard_size - guard_size, guard_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 		if (ji) {
-			mono_arch_handle_altstack_exception (ctx, fault_addr, TRUE);
+			mono_arch_handle_altstack_exception (ctx, info, fault_addr, TRUE);
 			handled = TRUE;
 		}
 #endif
@@ -2263,7 +2263,7 @@ static gboolean handling_sigsegv = FALSE;
  * information and aborting.
  */
 void
-mono_handle_native_sigsegv (int signal, void *ctx)
+mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 #ifdef MONO_ARCH_USE_SIGACTION
 	struct sigaction sa;
