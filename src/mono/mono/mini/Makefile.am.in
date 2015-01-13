@@ -286,6 +286,7 @@ endif
 
 genmdesc_SOURCES = \
 	mini.h		\
+	seq-points.c	\
 	seq-points.h	\
 	genmdesc.c	\
 	helpers.c	\
