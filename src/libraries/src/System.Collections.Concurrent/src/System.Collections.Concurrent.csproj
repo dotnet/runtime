@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Collections.Concurrent</AssemblyName>
+    <RootNamespace>System.Collections.Concurrent</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Collections\Concurrent\BlockingCollection.cs" />
+    <Compile Include="System\Collections\Concurrent\CDSCollectionETWBCLProvider.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentBag.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentDictionary.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentQueue.cs" />
+    <Compile Include="System\Collections\Concurrent\ConcurrentStack.cs" />
+    <Compile Include="System\Collections\Concurrent\IProducerConsumerCollection.cs" />
+    <Compile Include="System\Collections\Concurrent\OrderablePartitioner.cs" />
+    <Compile Include="System\Collections\Concurrent\Partitioner.cs" />
+    <Compile Include="System\Collections\Concurrent\PartitionerStatic.cs" />
+    <Compile Include="System\Collections\Concurrent\PlatformHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\ArrayT.cs">
+      <Link>Common\System\ArrayT.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
