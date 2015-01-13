@@ -216,7 +216,7 @@ namespace System.IO
                 findData = new Interop.WIN32_FIND_DATA();
 
                 // Remove trialing slash since this can cause grief to FindFirstFile. You will get an invalid argument error
-                String tempPath = path.TrimEnd(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+                String tempPath = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
 
                 // For floppy drives, normally the OS will pop up a dialog saying
                 // there is no disk in drive A:, please insert one.  We don't want that.
@@ -507,7 +507,7 @@ namespace System.IO
                 Interop.WIN32_FIND_DATA data = new Interop.WIN32_FIND_DATA();
 
                 // Open a Find handle
-                using (SafeFindHandle hnd = Interop.mincore.FindFirstFile(fullPath + Path.DirectorySeparatorChar + "*", ref data))
+                using (SafeFindHandle hnd = Interop.mincore.FindFirstFile(fullPath + PathHelpers.DirectorySeparatorCharAsString + "*", ref data))
                 {
                     if (hnd.IsInvalid)
                         throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
@@ -546,7 +546,7 @@ namespace System.IO
                                 if (data.dwReserved0 == Interop.IO_REPARSE_TAG_MOUNT_POINT)
                                 {
                                     // Use full path plus a trailing '\'
-                                    String mountPoint = Path.Combine(fullPath, data.cFileName + Path.DirectorySeparatorChar);
+                                    String mountPoint = Path.Combine(fullPath, data.cFileName + PathHelpers.DirectorySeparatorCharAsString);
                                     r = Interop.mincore.DeleteVolumeMountPoint(mountPoint);
                                     if (!r)
                                     {
