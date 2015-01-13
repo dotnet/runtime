@@ -19,6 +19,13 @@ namespace System.IO
         internal static readonly char[] TrimEndChars = { (char)0x9, (char)0xA, (char)0xB, (char)0xC, (char)0xD, (char)0x20, (char)0x85, (char)0xA0 };
         internal static readonly char[] TrimStartChars = { ' ' };
 
+        // Array of the separator chars
+        internal static readonly char[] DirectorySeparatorChars = new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+
+        // String-representation of the directory-separator character, used when appending the character to another
+        // string so as to avoid the boxing of the character when calling String.Concat(..., object).
+        internal static readonly string DirectorySeparatorCharAsString = Path.DirectorySeparatorChar.ToString();
+
         // Gets the length of the root DirectoryInfo or whatever DirectoryInfo markers
         // are specified for the first part of the DirectoryInfo name.
         // 
@@ -37,7 +44,7 @@ namespace System.IO
                 {
                     i = 2;
                     int n = 2;
-                    while (i < length && ((path[i] != Path.DirectorySeparatorChar && path[i] != Path.AltDirectorySeparatorChar) || --n > 0)) i++;
+                    while (i < length && (!IsDirectorySeparator(path[i]) || --n > 0)) i++;
                 }
             }
             else if (length >= 2 && path[1] == Path.VolumeSeparatorChar)
@@ -62,8 +69,7 @@ namespace System.IO
                 if (index + 2 == searchPattern.Length) // Terminal ".." . Files names cannot end in ".."
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern);
 
-                if ((searchPattern[index + 2] == Path.DirectorySeparatorChar)
-                   || (searchPattern[index + 2] == Path.AltDirectorySeparatorChar))
+                if (IsDirectorySeparator(searchPattern[index + 2]))
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern);
 
                 searchPattern = searchPattern.Substring(index + 2);
