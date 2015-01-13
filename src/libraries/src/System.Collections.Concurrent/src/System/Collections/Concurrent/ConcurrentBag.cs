@@ -8,15 +8,11 @@
 // An unordered collection that allows duplicates and that provides add and get operations.
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Threading;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Collections.Concurrent
 {

@@ -11,9 +11,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -51,8 +49,8 @@ namespace System.Collections.Concurrent
         private SemaphoreSlim _freeNodes;
         private SemaphoreSlim _occupiedNodes;
         private bool _isDisposed;
-        private CancellationTokenSource _ConsumersCancellationTokenSource;
-        private CancellationTokenSource _ProducersCancellationTokenSource;
+        private CancellationTokenSource _consumersCancellationTokenSource;
+        private CancellationTokenSource _producersCancellationTokenSource;
 
         private volatile int _currentAdders;
         private const int COMPLETE_ADDING_ON_MASK = unchecked((int)0x80000000);
@@ -220,8 +218,8 @@ namespace System.Collections.Concurrent
             _collection = collection;
             _boundedCapacity = boundedCapacity; ;
             _isDisposed = false;
-            _ConsumersCancellationTokenSource = new CancellationTokenSource();
-            _ProducersCancellationTokenSource = new CancellationTokenSource();
+            _consumersCancellationTokenSource = new CancellationTokenSource();
+            _producersCancellationTokenSource = new CancellationTokenSource();
 
             if (boundedCapacity == NON_BOUNDED)
             {
@@ -422,7 +420,7 @@ namespace System.Collections.Concurrent
                     if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
                     {
                         linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
-                            cancellationToken, _ProducersCancellationTokenSource.Token);
+                            cancellationToken, _producersCancellationTokenSource.Token);
                         waitForSemaphoreWasSuccessful = _freeNodes.Wait(millisecondsTimeout, linkedTokenSource.Token);
                     }
                 }
@@ -699,7 +697,7 @@ namespace System.Collections.Concurrent
                     // create the linked token if it is not created yet
                     if (combinedTokenSource == null)
                         linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                                          _ConsumersCancellationTokenSource.Token);
+                                                                                          _consumersCancellationTokenSource.Token);
                     waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(millisecondsTimeout, linkedTokenSource.Token);
                 }
             }
@@ -1100,7 +1098,7 @@ namespace System.Collections.Concurrent
                     if (collections[i]._freeNodes != null)
                     {
                         handlesList.Add(collections[i]._freeNodes.AvailableWaitHandle);
-                        tokensList.Add(collections[i]._ProducersCancellationTokenSource.Token);
+                        tokensList.Add(collections[i]._producersCancellationTokenSource.Token);
                     }
                 }
             }
@@ -1112,7 +1110,7 @@ namespace System.Collections.Concurrent
                         continue;
 
                     handlesList.Add(collections[i]._occupiedNodes.AvailableWaitHandle);
-                    tokensList.Add(collections[i]._ConsumersCancellationTokenSource.Token);
+                    tokensList.Add(collections[i]._consumersCancellationTokenSource.Token);
                 }
             }
 
@@ -1515,12 +1513,12 @@ namespace System.Collections.Concurrent
         /// <summary>Cancels the semaphores.</summary>
         private void CancelWaitingConsumers()
         {
-            _ConsumersCancellationTokenSource.Cancel();
+            _consumersCancellationTokenSource.Cancel();
         }
 
         private void CancelWaitingProducers()
         {
-            _ProducersCancellationTokenSource.Cancel();
+            _producersCancellationTokenSource.Cancel();
         }
 
 
@@ -1658,7 +1656,7 @@ namespace System.Collections.Concurrent
             CancellationTokenSource linkedTokenSource = null;
             try
             {
-                linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _ConsumersCancellationTokenSource.Token);
+                linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
                 while (!IsCompleted)
                 {
                     T item;

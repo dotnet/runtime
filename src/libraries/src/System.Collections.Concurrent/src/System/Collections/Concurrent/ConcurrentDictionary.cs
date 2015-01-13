@@ -11,16 +11,12 @@
 **
 ===========================================================*/
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -82,7 +78,6 @@ namespace System.Collections.Concurrent
 
         // Whether TValue is a type that can be written atomically (i.e., with no danger of torn reads)
         private static readonly bool s_isValueWriteAtomic = IsValueWriteAtomic();
-
 
         /// <summary>
         /// Determines whether type TValue can be written atomically

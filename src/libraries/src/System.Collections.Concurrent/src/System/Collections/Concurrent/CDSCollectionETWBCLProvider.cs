@@ -52,7 +52,6 @@ namespace System.Collections.Concurrent
         private const int CONCURRENTBAG_TRYTAKESTEALS_ID = 4;
         private const int CONCURRENTBAG_TRYPEEKSTEALS_ID = 5;
 
-
         /////////////////////////////////////////////////////////////////////////////////////
         //
         // ConcurrentStack Events
@@ -76,7 +75,6 @@ namespace System.Collections.Concurrent
             }
         }
 
-
         /////////////////////////////////////////////////////////////////////////////////////
         //
         // ConcurrentDictionary Events
@@ -90,8 +88,6 @@ namespace System.Collections.Concurrent
                 WriteEvent(CONCURRENTDICTIONARY_ACQUIRINGALLLOCKS_ID, numOfBuckets);
             }
         }
-
-
 
         //
         // Events below this point are used by the CDS types in System.DLL
