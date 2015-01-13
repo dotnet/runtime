@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Collections.NonGeneric.Tests</RootNamespace>
+    <AssemblyName>System.Collections.NonGeneric.Tests</AssemblyName>
+    <ProjectGuid>{EE95AE39-845A-42D3-86D0-8065DBE56612}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_ctor.cs" />
+    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_CultureInfo.cs" />
+    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_Default.cs" />
+    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_DefaultInvariant.cs" />
+    <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_Object.cs" />
+    <Compile Include="CollectionBase\CollectionBase_AllMethods.cs" />
+    <Compile Include="CollectionBase\CollectionBase_Capacity.cs" />
+    <Compile Include="CollectionBase\CollectionBase_ctor.cs" />
+    <Compile Include="CollectionBase\CollectionBase_ctor_int.cs" />
+    <Compile Include="CollectionBase\CollectionBase_OnMethods.cs" />
+    <Compile Include="CollectionsUtil\CollectionsUtilTests.cs" />
+    <Compile Include="Comparer\Comparer_CaseInsensitive.cs" />
+    <Compile Include="Comparer\Comparer_DefaultInvariant.cs" />
+    <Compile Include="Comparer\Comparer_Objects.cs" />
+    <Compile Include="DictionaryBase\DictionaryBase_OnMethods.cs" />
+    <Compile Include="DictionaryBase\DictionaryBase_UnitTests.cs" />
+    <Compile Include="Queue\Queue_Clone.cs" />
+    <Compile Include="Queue\Queue_Contains.cs" />
+    <Compile Include="Queue\Queue_ctor.cs" />
+    <Compile Include="Queue\Queue_ctor_int.cs" />
+    <Compile Include="Queue\Queue_ctor_int_float.cs" />
+    <Compile Include="Queue\Queue_Dequeue.cs" />
+    <Compile Include="Queue\Queue_Enqueue.cs" />
+    <Compile Include="Queue\Queue_get_Count.cs" />
+    <Compile Include="Queue\Queue_get_SyncRoot.cs" />
+    <Compile Include="Queue\Queue_Peek.cs" />
+    <Compile Include="Queue\Queue_Synchronized.cs" />
+    <Compile Include="Queue\Queue_ToArray.cs" />
+    <Compile Include="Queue\Queue_TrimToSize.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Collections.NonGeneric.csproj">
+      <Name>System.Collections.NonGeneric</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
