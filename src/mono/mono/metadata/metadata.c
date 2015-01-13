@@ -5301,10 +5301,8 @@ mono_type_create_from_typespec (MonoImage *image, guint32 type_spec)
 {
 	MonoError error;
 	MonoType *type = mono_type_create_from_typespec_checked (image, type_spec, &error);
-	if (!type) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /* FIXME don't swallow error*/
-	}
+	if (!type)
+		 g_error ("Could not create typespec %x due to %s", type_spec, mono_error_get_message (&error));
 	return type;
 }
 
