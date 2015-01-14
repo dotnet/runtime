@@ -18,7 +18,6 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <None Include="packages.config" />
     <Compile Include="XmlAttributeTests\SpecifiedTests.cs" />
     <Compile Include="XmlCharacterDataTests\AppendDataTests.cs" />
     <Compile Include="XmlCharacterDataTests\DataTests.cs" />
