@@ -191,13 +191,6 @@ sgen_client_object_is_array_fill (GCObject *o)
 	return ((MonoObject*)o)->synchronisation == GINT_TO_POINTER (-1);
 }
 
-/* FIXME: Why do we even need this?  Can't we get it from the descriptor? */
-static gboolean G_GNUC_UNUSED
-sgen_client_vtable_has_references (GCVTable *vt)
-{
-	return ((MonoVTable*)vt)->klass->has_references;
-}
-
 static MONO_ALWAYS_INLINE void G_GNUC_UNUSED
 sgen_client_pre_copy_checks (char *destination, GCVTable *gc_vtable, void *obj, mword objsize)
 {
