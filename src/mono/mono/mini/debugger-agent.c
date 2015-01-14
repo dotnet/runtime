@@ -2335,7 +2335,7 @@ decode_typeid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domain,
 		char *s;
 
 		s = mono_type_full_name (&klass->byval_arg);
-		DEBUG_PRINTF (2, "[dbg]   recv class [%s]\n", s));
+		DEBUG_PRINTF (2, "[dbg]   recv class [%s]\n", s);
 		g_free (s);
 	}
 	return klass;
@@ -2363,7 +2363,7 @@ decode_methodid (guint8 *buf, guint8 **endbuf, guint8 *limit, MonoDomain **domai
 		char *s;
 
 		s = mono_method_full_name (m, TRUE);
-		DEBUG_PRINTF (2, "[dbg]   recv method [%s]\n", s));
+		DEBUG_PRINTF (2, "[dbg]   recv method [%s]\n", s);
 		g_free (s);
 	}
 	return m;
@@ -2396,9 +2396,9 @@ buffer_add_typeid (Buffer *buf, MonoDomain *domain, MonoClass *klass)
 
 		s = mono_type_full_name (&klass->byval_arg);
 		if (GetCurrentThreadId () == debugger_thread_id)
-			DEBUG_PRINTF (2, "[dbg]   send class [%s]\n", s));
+			DEBUG_PRINTF (2, "[dbg]   send class [%s]\n", s);
 		else
-			DEBUG_PRINTF (2, "[%p]   send class [%s]\n", (gpointer)GetCurrentThreadId (), s));
+			DEBUG_PRINTF (2, "[%p]   send class [%s]\n", (gpointer)GetCurrentThreadId (), s);
 		g_free (s);
 	}
 }
@@ -2411,7 +2411,7 @@ buffer_add_methodid (Buffer *buf, MonoDomain *domain, MonoMethod *method)
 		char *s;
 
 		s = mono_method_full_name (method, 1);
-		DEBUG_PRINTF (2, "[dbg]   send method [%s]\n", s));
+		DEBUG_PRINTF (2, "[dbg]   send method [%s]\n", s);
 		g_free (s);
 	}
 }
@@ -2423,7 +2423,7 @@ buffer_add_assemblyid (Buffer *buf, MonoDomain *domain, MonoAssembly *assembly)
 
 	id = buffer_add_ptr_id (buf, domain, ID_ASSEMBLY, assembly);
 	if (G_UNLIKELY (log_level >= 2) && assembly)
-		DEBUG_PRINTF (2, "[dbg]   send assembly [%s][%s][%d]\n", assembly->aname.name, domain->friendly_name, id));
+		DEBUG_PRINTF (2, "[dbg]   send assembly [%s][%s][%d]\n", assembly->aname.name, domain->friendly_name, id);
 }
 
 static inline void
@@ -2721,7 +2721,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	if (GetCurrentThreadId () == tid || tls->terminated)
 		return;
 
-	DEBUG_PRINTF (1, "[%p] Interrupting %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid));
+	DEBUG_PRINTF (1, "[%p] Interrupting %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid);
 
 	/*
 	 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
@@ -2748,7 +2748,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 		info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
 		if (!info) {
-			DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid));
+			DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid);
 			/* 
 			 * Attached thread which died without detaching.
 			 */
@@ -2767,7 +2767,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 #else
 		res = mono_thread_kill (thread, mono_thread_get_abort_signal ());
 		if (res) {
-			DEBUG_PRINTF (1, "[%p] mono_thread_kill () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res));
+			DEBUG_PRINTF (1, "[%p] mono_thread_kill () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res);
 			/* 
 			 * Attached thread which died without detaching.
 			 */
@@ -2800,7 +2800,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 	if (suspend_count - tls->resume_count > 0)
 		tls->suspending = TRUE;
 
-	DEBUG_PRINTF (1, "[%p] Received single step event for suspending.\n", (gpointer)GetCurrentThreadId ()));
+	DEBUG_PRINTF (1, "[%p] Received single step event for suspending.\n", (gpointer)GetCurrentThreadId ());
 
 	if (suspend_count - tls->resume_count == 0) {
 		/* 
@@ -2808,7 +2808,7 @@ process_suspend (DebuggerTlsData *tls, MonoContext *ctx)
 		 * suspending is still active.
 		 * FIXME: This slows down single threaded invokes.
 		 */
-		DEBUG_PRINTF (1, "[%p] Ignored during single threaded invoke.\n", (gpointer)GetCurrentThreadId ()));
+		DEBUG_PRINTF (1, "[%p] Ignored during single threaded invoke.\n", (gpointer)GetCurrentThreadId ());
 		return;
 	}
 
@@ -2839,7 +2839,7 @@ suspend_vm (void)
 
 	suspend_count ++;
 
-	DEBUG_PRINTF (1, "[%p] Suspending vm...\n", (gpointer)GetCurrentThreadId ()));
+	DEBUG_PRINTF (1, "[%p] Suspending vm...\n", (gpointer)GetCurrentThreadId ());
 
 	if (suspend_count == 1) {
 		// FIXME: Is it safe to call this inside the lock ?
@@ -2878,7 +2878,7 @@ resume_vm (void)
 	g_assert (suspend_count > 0);
 	suspend_count --;
 
-	DEBUG_PRINTF (1, "[%p] Resuming vm, suspend count=%d...\n", (gpointer)GetCurrentThreadId (), suspend_count));
+	DEBUG_PRINTF (1, "[%p] Resuming vm, suspend count=%d...\n", (gpointer)GetCurrentThreadId (), suspend_count);
 
 	if (suspend_count == 0) {
 		// FIXME: Is it safe to call this inside the lock ?
@@ -2921,7 +2921,7 @@ resume_thread (MonoInternalThread *thread)
 
 	g_assert (suspend_count > 0);
 
-	DEBUG_PRINTF (1, "[sdb] Resuming thread %p...\n", (gpointer)(gssize)thread->tid));
+	DEBUG_PRINTF (1, "[sdb] Resuming thread %p...\n", (gpointer)(gssize)thread->tid);
 
 	tls->resume_count += suspend_count;
 
@@ -2994,7 +2994,7 @@ suspend_current (void)
 		MONO_SEM_POST (&suspend_sem);
 	}
 
-	DEBUG_PRINTF (1, "[%p] Suspended.\n", (gpointer)GetCurrentThreadId ()));
+	DEBUG_PRINTF (1, "[%p] Suspended.\n", (gpointer)GetCurrentThreadId ());
 
 	while (suspend_count - tls->resume_count > 0) {
 #ifdef HOST_WIN32
@@ -3020,7 +3020,7 @@ suspend_current (void)
 
 	mono_mutex_unlock (&suspend_mutex);
 
-	DEBUG_PRINTF (1, "[%p] Resumed.\n", (gpointer)GetCurrentThreadId ()));
+	DEBUG_PRINTF (1, "[%p] Resumed.\n", (gpointer)GetCurrentThreadId ());
 
 	if (tls->pending_invoke) {
 		/* Save the original context */
@@ -3076,7 +3076,7 @@ wait_for_suspend (void)
 	while (TRUE) {
 		nwait = count_threads_to_wait_for ();
 		if (nwait) {
-			DEBUG_PRINTF (1, "Waiting for %d(%d) threads to suspend...\n", nwait, nthreads));
+			DEBUG_PRINTF (1, "Waiting for %d(%d) threads to suspend...\n", nwait, nthreads);
 			err = MONO_SEM_WAIT (&suspend_sem);
 			g_assert (err == 0);
 			waited = TRUE;
@@ -3086,7 +3086,7 @@ wait_for_suspend (void)
 	}
 
 	if (waited)
-		DEBUG_PRINTF (1, "%d threads suspended.\n", nthreads));
+		DEBUG_PRINTF (1, "%d threads suspended.\n", nthreads);
 }
 
 /*
@@ -3221,7 +3221,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls)
 	if (tls->frames && tls->frames_up_to_date)
 		return;
 
-	DEBUG_PRINTF (1, "Frames for %p(tid=%lx):\n", thread, (glong)thread->tid));
+	DEBUG_PRINTF (1, "Frames for %p(tid=%lx):\n", thread, (glong)thread->tid);
 
 	user_data.tls = tls;
 	user_data.frames = NULL;
@@ -4268,7 +4268,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 #endif
 	}
 
-	DEBUG_PRINTF (1, "[dbg] Inserted breakpoint at %s:0x%x [%p](%d).\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (int)it.seq_point.il_offset, inst->ip, count));
+	DEBUG_PRINTF (1, "[dbg] Inserted breakpoint at %s:0x%x [%p](%d).\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (int)it.seq_point.il_offset, inst->ip, count);
 }
 
 static void
@@ -4288,7 +4288,7 @@ remove_breakpoint (BreakpointInstance *inst)
 
 	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
 		mono_arch_clear_breakpoint (ji, ip);
-		DEBUG_PRINTF (1, "[dbg] Clear breakpoint at %s [%p].\n", mono_method_full_name (jinfo_get_method (ji), TRUE), ip));
+		DEBUG_PRINTF (1, "[dbg] Clear breakpoint at %s [%p].\n", mono_method_full_name (jinfo_get_method (ji), TRUE), ip);
 	}
 #else
 	NOT_IMPLEMENTED;
@@ -4439,7 +4439,7 @@ set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, MonoError
 	bp->req = req;
 	bp->children = g_ptr_array_new ();
 
-	DEBUG_PRINTF (1, "[dbg] Setting %sbreakpoint at %s:0x%x.\n", (req->event_kind == EVENT_KIND_STEP) ? "single step " : "", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset));
+	DEBUG_PRINTF (1, "[dbg] Setting %sbreakpoint at %s:0x%x.\n", (req->event_kind == EVENT_KIND_STEP) ? "single step " : "", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset);
 
 	mono_loader_lock ();
 
@@ -4615,9 +4615,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	if (!loc || (loc && method == ss_req->last_method && loc->row == ss_req->last_line)) {
 		/* Have to continue single stepping */
 		if (!loc)
-			DEBUG_PRINTF (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset));
+			DEBUG_PRINTF (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset);
 		else
-			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer)GetCurrentThreadId (), loc->row));
+			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer)GetCurrentThreadId (), loc->row);
 		hit = FALSE;
 	}
 				
@@ -4689,7 +4689,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 
 	g_assert (found_sp);
 
-	DEBUG_PRINTF (1, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), method->name, ip, native_offset, sp.il_offset));
+	DEBUG_PRINTF (1, "[%p] Breakpoint hit, method=%s, ip=%p, offset=0x%x, sp il offset=0x%x.\n", (gpointer)GetCurrentThreadId (), method->name, ip, native_offset, sp.il_offset);
 
 	bp = NULL;
 	for (i = 0; i < breakpoints->len; ++i) {
@@ -5897,7 +5897,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8
 	if (t && klass != mono_class_from_mono_type (t)) {
 		char *name = mono_type_full_name (t);
 		char *name2 = mono_type_full_name (&klass->byval_arg);
-		DEBUG_PRINTF (1, "[%p] Expected value of type %s, got %s.\n", (gpointer)GetCurrentThreadId (), name, name2));
+		DEBUG_PRINTF (1, "[%p] Expected value of type %s, got %s.\n", (gpointer)GetCurrentThreadId (), name, name2);
 		g_free (name);
 		g_free (name2);
 		return ERR_INVALID_ARGUMENT;
@@ -5932,7 +5932,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE)) {
 		char *name = mono_type_full_name (t);
-		DEBUG_PRINTF (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type));
+		DEBUG_PRINTF (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type);
 		g_free (name);
 		return ERR_INVALID_ARGUMENT;
 	}
@@ -6058,7 +6058,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				g_free (vtype_buf);
 			} else {
 				char *name = mono_type_full_name (t);
-				DEBUG_PRINTF (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type));
+				DEBUG_PRINTF (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer)GetCurrentThreadId (), name, type);
 				g_free (name);
 				return ERR_INVALID_ARGUMENT;
 			}
@@ -6833,7 +6833,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
 		protocol_version_set = TRUE;
-		DEBUG_PRINTF (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version));
+		DEBUG_PRINTF (1, "[dbg] Protocol version %d.%d, client protocol version %d.%d.\n", MAJOR_VERSION, MINOR_VERSION, major_version, minor_version);
 		break;
 	}
 	case CMD_VM_ALL_THREADS: {
@@ -6945,12 +6945,12 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			mono_environment_exitcode_set (exit_code);
 
 			/* Suspend all managed threads since the runtime is going away */
-			DEBUG_PRINTF (1, "Suspending all threads...\n"));
+			DEBUG_PRINTF (1, "Suspending all threads...\n");
 			mono_thread_suspend_all_other_threads ();
-			DEBUG_PRINTF (1, "Shutting down the runtime...\n"));
+			DEBUG_PRINTF (1, "Shutting down the runtime...\n");
 			mono_runtime_quit ();
 			transport_close2 ();
-			DEBUG_PRINTF (1, "Exiting...\n"));
+			DEBUG_PRINTF (1, "Exiting...\n");
 
 			exit (exit_code);
 		}
@@ -7294,7 +7294,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					req->modifiers [i].subclasses = decode_byte (p, &p, end);
 				else
 					req->modifiers [i].subclasses = TRUE;
-				DEBUG_PRINTF (1, "[dbg] \tEXCEPTION_ONLY filter (%s%s%s%s).\n", exc_class ? exc_class->name : "all", req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : "", req->modifiers [i].subclasses ? ", include-subclasses" : ""));
+				DEBUG_PRINTF (1, "[dbg] \tEXCEPTION_ONLY filter (%s%s%s%s).\n", exc_class ? exc_class->name : "all", req->modifiers [i].caught ? ", caught" : "", req->modifiers [i].uncaught ? ", uncaught" : "", req->modifiers [i].subclasses ? ", include-subclasses" : "");
 				if (exc_class) {
 					req->modifiers [i].data.exc_class = exc_class;
 
@@ -7355,7 +7355,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			req->info = set_breakpoint (method, location, req, &error);
 			if (!mono_error_ok (&error)) {
 				g_free (req);
-				DEBUG_PRINTF (1, "[dbg] Failed to set breakpoint: %s\n", mono_error_get_message (&error)));
+				DEBUG_PRINTF (1, "[dbg] Failed to set breakpoint: %s\n", mono_error_get_message (&error));
 				mono_error_cleanup (&error);
 				return ERR_NO_SEQ_POINT_AT_IL_OFFSET;
 			}
@@ -7736,7 +7736,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 
 			mono_reflection_create_custom_attr_data_args (image, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
 			if (!mono_error_ok (&error)) {
-				DEBUG_PRINTF (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (&error)));
+				DEBUG_PRINTF (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (&error));
 				mono_error_cleanup (&error);
 				return ERR_LOADER_ERROR;
 			}
