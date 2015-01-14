@@ -903,6 +903,11 @@ major_get_and_reset_num_major_objects_marked (void)
 #endif
 }
 
+#define PREFETCH_CARDS		1	/* BOOL FASTENABLE */
+#if !PREFETCH_CARDS
+#undef PREFETCH_CARDS
+#endif
+
 #ifdef HEAVY_STATISTICS
 static guint64 stat_optimized_copy;
 static guint64 stat_optimized_copy_nursery;
@@ -1663,18 +1668,15 @@ initial_skip_card (guint8 *card_data)
 #endif
 }
 
-
-static G_GNUC_UNUSED guint8*
-skip_card (guint8 *card_data, guint8 *card_data_end)
-{
-	while (card_data < card_data_end && !*card_data)
-		++card_data;
-	return card_data;
-}
-
 #define MS_BLOCK_OBJ_INDEX_FAST(o,b,os)	(((char*)(o) - ((b) + MS_BLOCK_SKIP)) / (os))
 #define MS_BLOCK_OBJ_FAST(b,os,i)			((b) + MS_BLOCK_SKIP + (os) * (i))
 #define MS_OBJ_ALLOCED_FAST(o,b)		(*(void**)(o) && (*(char**)(o) < (b) || *(char**)(o) >= (b) + MS_BLOCK_SIZE))
+
+static size_t
+card_offset (char *obj, char *base)
+{
+	return (obj - base) >> CARD_BITS;
+}
 
 static void
 major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
@@ -1687,145 +1689,134 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 		g_assert (!mod_union);
 
 	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
+		guint8 cards_copy [CARDS_PER_BLOCK];
+#endif
+		gboolean small_objects;
 		int block_obj_size;
 		char *block_start;
+		guint8 *card_data, *card_base;
+		guint8 *card_data_end;
+		char *scan_front = NULL;
+
+#ifdef PREFETCH_CARDS
+		int prefetch_index = __index + 6;
+		if (prefetch_index < allocated_blocks.next_slot) {
+			MSBlockInfo *prefetch_block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [prefetch_index]);
+			guint8 *prefetch_cards = sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (prefetch_block));
+			PREFETCH_READ (prefetch_block);
+			PREFETCH_WRITE (prefetch_cards);
+			PREFETCH_WRITE (prefetch_cards + 32);
+                }
+#endif
 
 		if (!has_references)
 			continue;
 
 		block_obj_size = block->obj_size;
+		small_objects = block_obj_size < CARD_SIZE_IN_BYTES;
+
 		block_start = MS_BLOCK_FOR_BLOCK_INFO (block);
 
-		if (block_obj_size >= CARD_SIZE_IN_BYTES) {
-			guint8 *cards;
-#ifndef SGEN_HAVE_OVERLAPPING_CARDS
-			guint8 cards_data [CARDS_PER_BLOCK];
-#endif
-			char *obj, *end, *base;
-
-			if (mod_union) {
-				cards = block->cardtable_mod_union;
-				/*
-				 * This happens when the nursery
-				 * collection that precedes finishing
-				 * the concurrent collection allocates
-				 * new major blocks.
-				 */
-				if (!cards)
-					continue;
-			} else {
-			/*We can avoid the extra copy since the remark cardtable was cleaned before */
+		/*
+		 * This is safe in face of card aliasing for the following reason:
+		 *
+		 * Major blocks are 16k aligned, or 32 cards aligned.
+		 * Cards aliasing happens in powers of two, so as long as major blocks are aligned to their
+		 * sizes, they won't overflow the cardtable overlap modulus.
+		 */
+		if (mod_union) {
+			card_data = card_base = block->cardtable_mod_union;
+			/*
+			 * This happens when the nursery collection that precedes finishing
+			 * the concurrent collection allocates new major blocks.
+			 */
+			if (!card_data)
+				continue;
+		} else {
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-				cards = sgen_card_table_get_card_scan_address ((mword)block_start);
+			card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
 #else
-				cards = cards_data;
-				if (!sgen_card_table_get_card_data (cards_data, (mword)block_start, CARDS_PER_BLOCK))
-					continue;
+			if (!sgen_card_table_get_card_data (cards_copy, (mword)block_start, CARDS_PER_BLOCK))
+				continue;
+			card_data = card_base = cards_copy;
 #endif
+		}
+		card_data_end = card_data + CARDS_PER_BLOCK;
+
+		card_data += MS_BLOCK_SKIP >> CARD_BITS;
+
+		card_data = initial_skip_card (card_data);
+		while (card_data < card_data_end) {
+			size_t card_index, first_object_index;
+			char *start;
+			char *end;
+			char *first_obj, *obj;
+
+			HEAVY_STAT (++scanned_cards);
+
+			if (!*card_data) {
+				++card_data;
+				continue;
 			}
 
-			obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, 0);
-			end = block_start + MS_BLOCK_SIZE;
-			base = sgen_card_table_align_pointer (obj);
+			card_index = card_data - card_base;
+			start = (char*)(block_start + card_index * CARD_SIZE_IN_BYTES);
+			end = start + CARD_SIZE_IN_BYTES;
 
-			cards += MS_BLOCK_SKIP >> CARD_BITS;
+			if (!block->swept)
+				sweep_block (block, FALSE);
+
+			HEAVY_STAT (++marked_cards);
+
+			if (small_objects)
+				sgen_card_table_prepare_card_for_scanning (card_data);
+
+			/*
+			 * If the card we're looking at starts at or in the block header, we
+			 * must start at the first object in the block, without calculating
+			 * the index of the object we're hypothetically starting at, because
+			 * it would be negative.
+			 */
+			if (card_index <= (MS_BLOCK_SKIP >> CARD_BITS))
+				first_object_index = 0;
+			else
+				first_object_index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
+
+			obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, first_object_index);
 
 			while (obj < end) {
-				size_t card_offset;
-
-				if (!block->swept)
-					sweep_block (block, FALSE);
-
-				if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
-					goto next_large;
+				if (obj < scan_front || !MS_OBJ_ALLOCED_FAST (obj, block_start))
+					goto next_object;
 
 				if (mod_union) {
 					/* FIXME: do this more efficiently */
 					int w, b;
 					MS_CALC_MARK_BIT (w, b, obj);
 					if (!MS_MARK_BIT (block, w, b))
-						goto next_large;
+						goto next_object;
 				}
 
-				card_offset = (obj - base) >> CARD_BITS;
-				sgen_cardtable_scan_object (obj, block_obj_size, cards + card_offset, mod_union, queue);
-
-			next_large:
-				obj += block_obj_size;
-			}
-		} else {
-			guint8 *card_data, *card_base;
-			guint8 *card_data_end;
-
-			/*
-			 * This is safe in face of card aliasing for the following reason:
-			 *
-			 * Major blocks are 16k aligned, or 32 cards aligned.
-			 * Cards aliasing happens in powers of two, so as long as major blocks are aligned to their
-			 * sizes, they won't overflow the cardtable overlap modulus.
-			 */
-			if (mod_union) {
-				card_data = card_base = block->cardtable_mod_union;
-				/*
-				 * This happens when the nursery
-				 * collection that precedes finishing
-				 * the concurrent collection allocates
-				 * new major blocks.
-				 */
-				if (!card_data)
-					continue;
-			} else {
-				card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
-			}
-			card_data_end = card_data + CARDS_PER_BLOCK;
-
-			card_data += MS_BLOCK_SKIP >> CARD_BITS;
-
-			for (card_data = initial_skip_card (card_data); card_data < card_data_end; ++card_data) { //card_data = skip_card (card_data + 1, card_data_end)) {
-				size_t index;
-				size_t idx = card_data - card_base;
-				char *start = (char*)(block_start + idx * CARD_SIZE_IN_BYTES);
-				char *end = start + CARD_SIZE_IN_BYTES;
-				char *first_obj, *obj;
-
-				HEAVY_STAT (++scanned_cards);
-
-				if (!*card_data)
-					continue;
-
-				if (!block->swept)
-					sweep_block (block, FALSE);
-
-				HEAVY_STAT (++marked_cards);
-
-				sgen_card_table_prepare_card_for_scanning (card_data);
-
-				if (idx == 0)
-					index = 0;
-				else
-					index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
-
-				obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, index);
-				while (obj < end) {
-					if (!MS_OBJ_ALLOCED_FAST (obj, block_start))
-						goto next_small;
-
-					if (mod_union) {
-						/* FIXME: do this more efficiently */
-						int w, b;
-						MS_CALC_MARK_BIT (w, b, obj);
-						if (!MS_MARK_BIT (block, w, b))
-							goto next_small;
-					}
-
+				if (small_objects) {
 					HEAVY_STAT (++scanned_objects);
 					scan_func (obj, sgen_obj_get_descriptor (obj), queue);
-				next_small:
-					obj += block_obj_size;
+				} else {
+					size_t offset = card_offset (obj, block_start);
+					sgen_cardtable_scan_object (obj, block_obj_size, card_base + offset, mod_union, queue);
 				}
-				HEAVY_STAT (if (*card_data) ++remarked_cards);
-				binary_protocol_card_scan (first_obj, obj - first_obj);
+			next_object:
+				obj += block_obj_size;
+				g_assert (scan_front <= obj);
+				scan_front = obj;
 			}
+
+			HEAVY_STAT (if (*card_data) ++remarked_cards);
+			binary_protocol_card_scan (first_obj, obj - first_obj);
+
+			if (small_objects)
+				++card_data;
+			else
+				card_data = card_base + card_offset (obj, block_start);
 		}
 	} END_FOREACH_BLOCK;
 }
@@ -1875,7 +1866,8 @@ static guint8*
 major_get_cardtable_mod_union_for_object (char *obj)
 {
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	return &block->cardtable_mod_union [(obj - (char*)sgen_card_table_align_pointer (MS_BLOCK_FOR_BLOCK_INFO (block))) >> CARD_BITS];
+	size_t offset = card_offset (obj, (char*)sgen_card_table_align_pointer (MS_BLOCK_FOR_BLOCK_INFO (block)));
+	return &block->cardtable_mod_union [offset];
 }
 
 static void
