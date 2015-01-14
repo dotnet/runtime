@@ -4,7 +4,7 @@
 namespace System.Threading
 {
     /// <summary>
-    /// A helper class to get the number of preocessors, it updates the numbers of processors every sampling interval
+    /// A helper class to get the number of processors, it updates the number of processors every sampling interval
     /// </summary>
     internal static class PlatformHelper
     {
