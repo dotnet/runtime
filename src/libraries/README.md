@@ -96,11 +96,11 @@ Looking for something to work on? The list of [up-for-grabs issues](https://gith
     * [Contributing Guide][Contributing Guide]
     * [Developer Guide]
 
+You are also encouraged to start a discussion by filing an issue or creating a
+gist. See the [contributing guides][Contributing Guide] for more details. 
+
 [Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
 [Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
-
-You are also encouraged to start a discussion by filing an issue or creating a
-gist. See the contributing guides for more details. 
 
 You can discuss .NET OSS more generally in the [.NET Foundation forums].
 
