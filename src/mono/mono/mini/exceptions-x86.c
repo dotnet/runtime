@@ -96,7 +96,7 @@ mono_win32_get_handle_stackoverflow (void)
 	x86_call_code (code, mono_domain_get);
 
 	/* get stack overflow exception from domain object */
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, MONO_STRUCT_OFFSET (MonoDomain, stack_overflow_ex), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, G_STRUCT_OFFSET (MonoDomain, stack_overflow_ex), 4);
 
 	/* call mono_arch_handle_exception (sctx, stack_overflow_exception_obj) */
 	x86_push_reg (code, X86_EAX);
