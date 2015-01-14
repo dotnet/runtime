@@ -69,7 +69,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
     </None>
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
