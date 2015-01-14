@@ -414,6 +414,25 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(passed, string.Format("{0}", passed ? "Passed" : "FAILED"));
         }
 
+        private class ControllableTaskScheduler : TaskScheduler
+        {
+            protected override IEnumerable<Task> GetScheduledTasks() { return null; }
+
+            protected override void QueueTask(Task task)
+            {
+                if (FailQueueing) throw new InvalidOperationException("FailQueueing == true");
+                else ThreadPool.QueueUserWorkItem(delegate { TryExecuteTask(task); });
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+            {
+                if (FailQueueing) throw new InvalidOperationException("FailQueueing == true");
+                else return TryExecuteTask(task);
+            }
+
+            public bool FailQueueing { get; set; }
+        }
+
         // Tests how a propagator block handles misbehaving targets.
         private static bool TestHardeningSource<TOutput>(Action<ISourceBlock<TOutput>, ThrowOn> postMessage, ISourceBlock<TOutput> source, HardeningScenario scenario)
         {
