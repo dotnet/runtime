@@ -83,6 +83,29 @@ More libraries are coming soon. Stay tuned!
 [simd-post-1]: http://blogs.msdn.com/b/dotnet/archive/2014/04/07/the-jit-finally-proposed-jit-and-simd-are-getting-married.aspx
 [simd-post-2]: http://blogs.msdn.com/b/dotnet/archive/2014/05/13/update-to-simd-support.aspx
 
+## How to Engage, Contribute and Provide Feedback
+
+Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
+
+Want to get more familiar with what's going on in the code?
+* [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
+
+Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
+
+* [How to Contribute][Contributing Guide]
+    * [Contributing Guide][Contributing Guide]
+    * [Developer Guide]
+
+[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
+[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
+
+You are also encouraged to start a discussion by filing an issue or creating a
+gist. See the contributing guides for more details. 
+
+You can discuss .NET OSS more generally in the [.NET Foundation forums].
+
+[.NET Foundation forums]: http://forums.dotnetfoundation.org/
+
 ## Related Projects
 
 For an overview of all the .NET related projects, have a look at the
@@ -94,24 +117,4 @@ This project is licensed under the [MIT license](LICENSE).
 
 ## .NET Foundation
 
-This project is a part of the [.NET Foundation].
-
-[.NET Foundation]: http://www.dotnetfoundation.org/projects
-
-## How to Engage, Contribute and Provide Feedback
-
-To contribute to .NET Core, see the [Contributing Guide].
-
-[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
-
-You are also encouraged to start a discussion by filing an issue or creating a
-gist. See the contributing guides for more details. You can discuss .NET OSS
-more generally in the [.NET Foundation forums].
-
-[.NET Foundation forums]: http://forums.dotnetfoundation.org/
-
-## Building and Testing
-
-To find out how you can build and test .NET Core, see the [Developer Guide].
-
-[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
+This project is part of the [.NET Foundation](http://www.dotnetfoundation.org/projects).
