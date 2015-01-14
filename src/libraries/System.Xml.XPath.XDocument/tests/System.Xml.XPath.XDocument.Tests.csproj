@@ -20,7 +20,6 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <None Include="packages.config" />
     <!-- XPath.XDocument navigator -->
     <Compile Include="XDocument\CreateNavigatorComparer.cs" />
     <Compile Include="XDocument\NavigatorComparer.cs" />
