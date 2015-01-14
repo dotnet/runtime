@@ -2386,7 +2386,7 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 #else
 
 void
-mono_handle_native_sigsegv (int signal, void *ctx)
+mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	g_assert_not_reached ();
 }
