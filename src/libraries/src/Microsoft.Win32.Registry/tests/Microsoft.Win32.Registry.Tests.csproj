@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{20a2ba2c-5517-483f-8ffe-643441a59852}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Microsoft.Win32.Registry.Tests</RootNamespace>
+    <AssemblyName>Microsoft.Win32.Registry.Tests</AssemblyName>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RegistryKey\RegistryKeyTypes.cs" />
+    <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc.cs" />
+    <Compile Include="RegistryKey\RegistryKey_DeleteSubKeyTree.cs" />
+    <Compile Include="RegistryKey\RegistryKey_DeleteSubKeyTree_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_DeleteSubKey_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_DeleteSubKey_Str_Bln.cs" />
+    <Compile Include="RegistryKey\RegistryKey_DeleteValue_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_DeleteValue_Str_Bln.cs" />
+    <Compile Include="RegistryKey\RegistryKey_Flush.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetSubKeyCount.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetSubKeyNames.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValueCount.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValueKind_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValueNames.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValue_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValue_str_obj.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValue_str_obj_b.cs" />
+    <Compile Include="RegistryKey\RegistryKey_GetValue_str_obj_regvalopt.cs" />
+    <Compile Include="RegistryKey\RegistryKey_Get_Name.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_b.cs" />
+    <Compile Include="RegistryKey\RegistryKey_OpenSubKey_str_rkpc.cs" />
+    <Compile Include="RegistryKey\RegistryKey_SetValueKind_str_obj_valueKind.cs" />
+    <Compile Include="RegistryKey\RegistryKey_SetValue_str_obj.cs" />
+    <Compile Include="RegistryKey\SafeRegistryHandle.cs" />
+    <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
+    <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
+    <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Win32.Registry.csproj">
+      <Project>{d3f18acc-d327-4abb-ba6c-e9c34a041b2f}</Project>
+      <Name>Microsoft.Win32.Registry</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
