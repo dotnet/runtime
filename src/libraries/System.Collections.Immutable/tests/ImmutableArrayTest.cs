@@ -368,7 +368,7 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void CastArrayUnleratedInterface()
+        public void CastArrayUnrelatedInterface()
         {
             var strArray = ImmutableArray.Create<string>("cat", "dog");
             var compArray = ImmutableArray<IComparable>.CastUp(strArray);
