@@ -12,7 +12,6 @@
 
 #define MONO_LLVM_IN_MINI 1
 #include <config.h>
-#include <signal.h>
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif

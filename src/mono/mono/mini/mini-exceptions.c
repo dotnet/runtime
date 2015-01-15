@@ -12,8 +12,11 @@
 
 #include <config.h>
 #include <glib.h>
-#include <signal.h>
 #include <string.h>
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
