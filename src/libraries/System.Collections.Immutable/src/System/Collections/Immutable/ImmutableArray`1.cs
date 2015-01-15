@@ -1029,6 +1029,33 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct based on the contents
+        /// of an existing instance, allowing a covariant static cast to efficiently reuse the existing array.
+        /// </summary>
+        /// <param name="items">The array to initialize the array with. No copy is made.</param>
+        /// <remarks>
+        /// Covariant upcasts from this method may be reversed by calling the
+        /// <see cref="ImmutableArray&lt;T&gt;.As&lt;TOther&gt;"/> instance method.
+        /// </remarks>
+        [Pure]
+        public static ImmutableArray<T> CastUp<TDerived>(ImmutableArray<TDerived> items)
+            where TDerived : class, T
+        {
+            return new ImmutableArray<T>(items.array);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct by casting the underlying
+        /// array to an array of type <typeparam name="TOther"/>.
+        /// </summary>
+        /// <exception cref="InvalidCastException">Thrown if the cast is illegal.</exception>
+        [Pure]
+        public ImmutableArray<TOther> CastArray<TOther>() where TOther : class
+        {
+            return new ImmutableArray<TOther>((TOther[])(object)array);
+        }
+
+        /// <summary>
         /// Creates an immutable array for this array, cast to a different element type.
         /// </summary>
         /// <typeparam name="TOther">The type of array element to return.</typeparam>
