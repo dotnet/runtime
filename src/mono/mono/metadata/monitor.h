@@ -17,14 +17,28 @@
 
 G_BEGIN_DECLS
 
+#define OWNER_MASK		0x0000ffff
+#define ENTRY_COUNT_MASK	0xffff0000
+#define ENTRY_COUNT_WAITERS	0x80000000
+#define ENTRY_COUNT_ZERO	0x7fff0000
+#define ENTRY_COUNT_SHIFT	16
+
 struct _MonoThreadsSync
 {
-	gsize owner;			/* thread ID */
+	/*
+	 * The entry count field can be negative, which would mean that the entry_sem is
+	 * signaled and nobody is waiting to acquire it. This can happen when the thread
+	 * that was waiting is either interrupted or timeouts, and the owner releases
+	 * the lock before the forementioned thread updates the entry count.
+	 *
+	 * The 0 entry_count value is encoded as ENTRY_COUNT_ZERO, positive numbers being
+	 * greater than it and negative numbers smaller than it.
+	 */
+	guint32 status;			/* entry_count (16) | owner_id (16) */
 	guint32 nest;
 #ifdef HAVE_MOVING_COLLECTOR
 	gint32 hash_code;
 #endif
-	volatile gint32 entry_count;
 	HANDLE entry_sem;
 	GSList *wait_list;
 	void *data;
@@ -38,11 +52,7 @@ void mono_monitor_cleanup (void) MONO_INTERNAL;
 
 void** mono_monitor_get_object_monitor_weak_link (MonoObject *object) MONO_INTERNAL;
 
-void mono_monitor_init_tls (void) MONO_INTERNAL;
-
-MonoMethod* mono_monitor_get_fast_path (MonoMethod *enter_or_exit) MONO_INTERNAL;
-
-void mono_monitor_threads_sync_members_offset (int *owner_offset, int *nest_offset, int *entry_count_offset) MONO_INTERNAL;
+void mono_monitor_threads_sync_members_offset (int *status_offset, int *nest_offset) MONO_INTERNAL;
 #define MONO_THREADS_SYNC_MEMBER_OFFSET(o)	((o)>>8)
 #define MONO_THREADS_SYNC_MEMBER_SIZE(o)	((o)&0xff)
 
@@ -53,9 +63,6 @@ extern void ves_icall_System_Threading_Monitor_Monitor_pulse(MonoObject *obj) MO
 extern void ves_icall_System_Threading_Monitor_Monitor_pulse_all(MonoObject *obj) MONO_INTERNAL;
 extern gboolean ves_icall_System_Threading_Monitor_Monitor_wait(MonoObject *obj, guint32 ms) MONO_INTERNAL;
 extern void ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject *obj, guint32 ms, char *lockTaken) MONO_INTERNAL;
-
-gboolean
-mono_monitor_is_il_fastpath_wrapper (MonoMethod *method) MONO_INTERNAL;
 
 G_END_DECLS
 

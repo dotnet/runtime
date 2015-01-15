@@ -586,13 +586,11 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	info = mono_thread_info_current ();
 	g_assert (info);
 	internal->thread_info = info;
-
+	internal->small_id = info->small_id;
 
 	tid=internal->tid;
 
 	SET_CURRENT_OBJECT (internal);
-
-	mono_monitor_init_tls ();
 
 	/* Every thread references the appdomain which created it */
 	mono_thread_push_appdomain_ref (domain);
@@ -927,6 +925,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	info = mono_thread_info_current ();
 	g_assert (info);
 	thread->thread_info = info;
+	thread->small_id = info->small_id;
 
 	current_thread = new_thread_with_internal (domain, thread);
 
@@ -940,8 +939,6 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 
 	SET_CURRENT_OBJECT (thread);
 	mono_domain_set (domain, TRUE);
-
-	mono_monitor_init_tls ();
 
 	thread_adjust_static_data (thread);
 

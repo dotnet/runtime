@@ -216,6 +216,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #if defined(__linux__) || defined (__APPLE__)
 #define MONO_ARCH_MONITOR_OBJECT_REG X86_EAX
+#define MONO_ARCH_MONITOR_LOCK_TAKEN_REG X86_EDX
 #endif
 #if !defined(__native_client_codegen__)
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
@@ -235,8 +236,6 @@ typedef struct {
 #ifndef TARGET_WIN32
 #define MONO_ARCH_AOT_SUPPORTED 1
 #endif
-
-#define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_HAVE_LLVM_IMT_TRAMPOLINE 1

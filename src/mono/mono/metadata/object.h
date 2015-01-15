@@ -196,6 +196,9 @@ mono_monitor_try_enter       (MonoObject *obj, uint32_t ms);
 MONO_API mono_bool
 mono_monitor_enter           (MonoObject *obj);
 
+MONO_API void
+mono_monitor_enter_v4        (MonoObject *obj, char *lock_taken);
+
 MONO_API unsigned int
 mono_object_get_size         (MonoObject *o);
 

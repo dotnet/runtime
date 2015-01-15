@@ -79,18 +79,9 @@ typedef struct MonoCompileArch {
 
 #ifndef __mono_ilp32__
 #define MONO_ARCH_HAVE_TLS_GET 1
-#define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
 #endif
 
 #else /* must be __mono_ppc__ */
-
-#if 0
-/* enabling this for PPC32 causes hangs in the thread/delegate tests.
-   So disable for now. */
-#if defined(__linux__)
-#define MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH 1
-#endif
-#endif
 
 #define MONO_ARCH_HAVE_TLS_GET 1
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1

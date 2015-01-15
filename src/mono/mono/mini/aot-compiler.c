@@ -1494,6 +1494,9 @@ arch_emit_specific_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size
 	/* We clobber ECX, since EAX is used as MONO_ARCH_MONITOR_OBJECT_REG */
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 	g_assert (MONO_ARCH_MONITOR_OBJECT_REG != X86_ECX);
+#ifdef MONO_ARCH_MONITOR_LOCK_TAKEN_REG
+	g_assert (MONO_ARCH_MONITOR_LOCK_TAKEN_REG != X86_ECX);
+#endif
 #endif
 
 	code = buf;
@@ -3047,6 +3050,7 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_LLVM_IMT_TRAMPOLINE:
 		return TRUE;
@@ -3453,8 +3457,6 @@ add_wrappers (MonoAotCompile *acfg)
  	}
 
 	if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
-		MonoMethodDesc *desc;
-		MonoMethod *orig_method;
 		int nallocators;
 
 		/* Runtime invoke wrappers */
@@ -3531,25 +3533,6 @@ add_wrappers (MonoAotCompile *acfg)
 				if (m)
 					add_method (acfg, m);
 			}
-
-			/* Monitor Enter/Exit */
-			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			/* This is a v4 method */
-			if (orig_method) {
-				method = mono_monitor_get_fast_path (orig_method);
-				if (method)
-					add_method (acfg, method);
-			}
-			mono_method_desc_free (desc);
-
-			desc = mono_method_desc_new ("Monitor:Exit(object)", FALSE);
-			orig_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			g_assert (orig_method);
-			mono_method_desc_free (desc);
-			method = mono_monitor_get_fast_path (orig_method);
-			if (method)
-				add_method (acfg, method);
 		}
 
 		/* Stelemref wrappers */
@@ -3567,22 +3550,6 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_castclass_with_cache ());
 		/* isinst_with_check wrapper */
 		add_method (acfg, mono_marshal_get_isinst_with_cache ());
-
-#if defined(MONO_ARCH_ENABLE_MONITOR_IL_FASTPATH)
-		{
-			MonoMethodDesc *desc;
-			MonoMethod *m;
-
-			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-			m = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-			mono_method_desc_free (desc);
-			if (m) {
-				m = mono_monitor_get_fast_path (m);
-				if (m)
-					add_method (acfg, m);
-			}
-		}
-#endif
 
 		/* JIT icall wrappers */
 		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall hash*/
@@ -5208,6 +5175,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	}
 	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 		break;
@@ -6113,8 +6081,12 @@ emit_trampolines (MonoAotCompile *acfg)
 		mono_arch_get_nullified_class_init_trampoline (&info);
 		emit_trampoline (acfg, acfg->got_offset, info);
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
-		mono_arch_create_monitor_enter_trampoline (&info, TRUE);
+		mono_arch_create_monitor_enter_trampoline (&info, FALSE, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+#if defined(MONO_ARCH_MONITOR_LOCK_TAKEN_REG)
+		mono_arch_create_monitor_enter_trampoline (&info, TRUE, TRUE);
+		emit_trampoline (acfg, acfg->got_offset, info);
+#endif
 		mono_arch_create_monitor_exit_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif

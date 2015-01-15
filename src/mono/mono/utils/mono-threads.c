@@ -8,6 +8,8 @@
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <config.h>
+
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-threads.h>
@@ -43,7 +45,12 @@ static MonoSemType global_suspend_semaphore;
 static size_t thread_info_size;
 static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
-static MonoNativeTlsKey thread_info_key, thread_exited_key, small_id_key;
+static MonoNativeTlsKey thread_info_key, thread_exited_key;
+#ifdef HAVE_KW_THREAD
+static __thread guint32 tls_small_id MONO_TLS_FAST;
+#else
+static MonoNativeTlsKey small_id_key;
+#endif
 static MonoLinkedListSet thread_list;
 static gboolean disable_new_interrupt = FALSE;
 static gboolean mono_threads_inited = FALSE;
@@ -122,7 +129,11 @@ int
 mono_thread_info_register_small_id (void)
 {
 	int small_id = mono_thread_small_id_alloc ();
+#ifdef HAVE_KW_THREAD
+	tls_small_id = small_id;
+#else
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (small_id + 1));
+#endif
 	return small_id;
 }
 
@@ -178,7 +189,9 @@ unregister_thread (void *arg)
 	 * TLS destruction order is not reliable so small_id might be cleaned up
 	 * before us.
 	 */
+#ifndef HAVE_KW_THREAD
 	mono_native_tls_set_value (small_id_key, GUINT_TO_POINTER (info->small_id + 1));
+#endif
 
 	info->thread_state = STATE_SHUTTING_DOWN;
 
@@ -275,10 +288,14 @@ mono_thread_info_current (void)
 int
 mono_thread_info_get_small_id (void)
 {
+#ifdef HAVE_KW_THREAD
+	return tls_small_id;
+#else
 	gpointer val = mono_native_tls_get_value (small_id_key);
 	if (!val)
 		return -1;
 	return GPOINTER_TO_INT (val) - 1;
+#endif
 }
 
 MonoLinkedListSet*
@@ -385,7 +402,9 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 #endif
 	g_assert (res);
 
+#ifndef HAVE_KW_THREAD
 	res = mono_native_tls_alloc (&small_id_key, NULL);
+#endif
 	g_assert (res);
 
 	MONO_SEM_INIT (&global_suspend_semaphore, 1);
