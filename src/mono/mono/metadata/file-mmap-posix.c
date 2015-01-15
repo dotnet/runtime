@@ -479,14 +479,14 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 	struct stat buf = { 0 };
 	fstat (fh->fd, &buf); //FIXME error handling
 
-	if (offset > buf.st_size)
+	if (offset > buf.st_size || ((eff_size + offset) > buf.st_size && !is_special_zero_size_file (&buf)))
 		goto error;
 	/**
 	  * We use the file size if one of the following conditions is true:
 	  *  -input size is zero
 	  *  -input size is bigger than the file and the file is not a magical zero size file such as /dev/mem.
 	  */
-	if (eff_size == 0 || ((eff_size + offset) > buf.st_size && !is_special_zero_size_file (&buf)))
+	if (eff_size == 0)
 		eff_size = buf.st_size - offset;
 	*size = eff_size;
 
