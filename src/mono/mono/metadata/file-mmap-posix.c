@@ -487,7 +487,7 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 	  *  -input size is bigger than the file and the file is not a magical zero size file such as /dev/mem.
 	  */
 	if (eff_size == 0)
-		eff_size = buf.st_size - offset;
+		eff_size = align_up_to_page_size (buf.st_size) - offset;
 	*size = eff_size;
 
 	mmap_offset = align_down_to_page_size (offset);
