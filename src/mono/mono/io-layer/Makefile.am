@@ -34,7 +34,8 @@ OTHER_H = \
 	uglify.h	\
 	versioninfo.h	\
 	wait.h		\
-	wapi.h
+	wapi.h		\
+	wapi-remap.h
 
 OTHER_SRC = \
 	access.h		\

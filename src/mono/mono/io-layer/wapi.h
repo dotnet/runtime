@@ -10,6 +10,7 @@
 #ifndef _WAPI_WAPI_H_
 #define _WAPI_WAPI_H_
 
+#include <mono/io-layer/wapi-remap.h>
 #include <mono/io-layer/types.h>
 #include <mono/io-layer/macros.h>
 #include <mono/io-layer/handles.h>
