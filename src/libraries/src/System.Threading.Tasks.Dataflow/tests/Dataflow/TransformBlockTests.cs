@@ -69,14 +69,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // ASYNC (a copy of the sync but with constructors returning Task<T> instead of T
             {
                 // without option
-                var block = new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()));
+                var block = new TransformBlock<int, string>(i => Task.Run(() => i.ToString()));
                 Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
                 //with not cancelled token and default scheduler
-                block = new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
+                block = new TransformBlock<int, string>(i => Task.Run(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
                 Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
                 //with a cancelled token and default scheduler
                 var token = new CancellationToken(true);
-                block = new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
+                block = new TransformBlock<int, string>(i => Task.Run(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
                 Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
             }
         }
@@ -87,7 +87,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>((Func<int, string>)null));
             Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>((Func<int, Task<string>>)null));
             Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>(i => i.ToString(), null));
-            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()), null));
+            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>(i => Task.Run(() => i.ToString()), null));
             Assert.True(ITargetBlockTestHelper.TestArgumentsExceptions<int>(new TransformBlock<int, string>(i => i.ToString())));
             Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<string>(new TransformBlock<int, string>(i => i.ToString())));
         }
@@ -346,7 +346,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     Func<DataflowBlockOptions, TargetProperties<int>> transformBlockFactory =
                         options =>
                         {
-                            TransformBlock<int, int> transformBlock = new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i), (ExecutionDataflowBlockOptions)options);
+                            TransformBlock<int, int> transformBlock = new TransformBlock<int, int>(i => Task.Run(() => i), (ExecutionDataflowBlockOptions)options);
                             ActionBlock<int> actionBlock = new ActionBlock<int>(i => TrackCaptures(i), (ExecutionDataflowBlockOptions)options);
 
                             transformBlock.LinkTo(actionBlock);
@@ -370,7 +370,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
+                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Run(() => i * 2)));
                     for (int i = 0; i < ITERS; i++)
                     {
                         network.Post(i);
@@ -384,7 +384,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
+                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Run(() => i * 2)));
                     for (int i = 0; i < ITERS; i++)
                     {
                         network.SendAsync(i);
@@ -398,7 +398,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
+                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Run(() => i * 2)));
                     for (int i = 0; i < ITERS; i++) localPassed &= network.Post(i) == true;
                     for (int i = 0; i < ITERS; i++) localPassed &= ((IReceivableSourceBlock<int>)network).Receive() == i * 16;
                     Console.WriteLine("{0}: Chained Post all then Receive", localPassed ? "Success" : "Failure");
@@ -409,7 +409,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
+                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Run(() => i * 2)));
                     var tasks = new Task[ITERS];
                     for (int i = 1; i <= ITERS; i++) tasks[i - 1] = network.SendAsync(i);
                     Task.WaitAll(tasks);
@@ -427,7 +427,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     var t = new TransformBlock<int, int>(i =>
                     {
                         if ((i % 2) == 0) throw new OperationCanceledException();
-                        return Task.Factory.StartNew(() => i);
+                        return Task.Run(() => i);
                     });
                     for (int i = 0; i < 2; i++) t.Post(i);
                     t.Complete();
@@ -447,7 +447,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     var t = new TransformBlock<int, int>(i =>
                     {
                         if ((i % 2) == 0) return null;
-                        return Task.Factory.StartNew(() => i);
+                        return Task.Run(() => i);
                     });
                     for (int i = 0; i < 2; i++) t.Post(i);
                     t.Complete();
@@ -471,7 +471,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                             Task.Delay(10).Wait();
                             return null;
                         }
-                        return Task.Factory.StartNew(() => i);
+                        return Task.Run(() => i);
                     }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2 });
                     t.Post(0);
                     t.Post(1);
@@ -508,7 +508,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Test faulting from the task
                 {
                     bool localPassed = true;
-                    var t = new TransformBlock<int, int>(new Func<int, Task<int>>(i => Task<int>.Factory.StartNew(() => { throw new InvalidOperationException(); })));
+                    var t = new TransformBlock<int, int>(new Func<int, Task<int>>(i => Task.Run(new Func<int>(() => { throw new InvalidOperationException(); }))));
                     t.Post(42);
                     t.Post(1);
                     t.Post(2);

@@ -38,7 +38,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             for (int i = 0; i < transforms.Length - 1; i++)
             {
                 transforms[i].LinkTo(transforms[i + 1]);
-                transforms[i].Completion.ContinueWith(delegate { transforms[i].Complete(); });
+                transforms[i].Completion.ContinueWith(delegate { transforms[i].Complete(); }, TaskScheduler.Default);
             }
             return DataflowBlock.Encapsulate(transforms[0], transforms[transforms.Length - 1]);
         }
@@ -236,7 +236,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         protected static Task TrackCapturesAsync(int i)
         {
-            return Task.Factory.StartNew(() => TrackCaptures(i));
+            return Task.Run(() => TrackCaptures(i));
         }
 
         /// <summary>
@@ -280,7 +280,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // Launch tasks
             for (int i = 0; i < Parallelism.ActualDegreeOfParallelism; i++)
             {
-                tasks[i] = Task<bool>.Factory.StartNew(() =>
+                tasks[i] = Task.Run(() =>
                                             {
                                                 ce.Signal();
                                                 ce.Wait();
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         internal static void LinkWithCompletion<T>(this ISourceBlock<T> source, ITargetBlock<T> target)
         {
             source.LinkTo(target);
-            source.Completion.ContinueWith(t => target.Complete());
+            source.Completion.ContinueWith(t => target.Complete(), TaskScheduler.Default);
         }
     }
 
@@ -420,7 +420,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // Reserve the message only if there is no other reservation in place
             if (ReservingTask == null)
             {
-                ReservingTask = Task<bool>.Factory.StartNew(() => { return source.ReserveMessage(messageHeader, this); });
+                ReservingTask = Task.Run(() => { return source.ReserveMessage(messageHeader, this); });
                 ReleasingTask = new Task(() => { source.ReleaseReservation(messageHeader, this); });
             }
 

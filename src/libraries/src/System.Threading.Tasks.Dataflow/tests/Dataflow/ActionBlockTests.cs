@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>((Func<int, Task>)null));
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>((Func<int, Task>)null));
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => { }, null));
-            Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => Task.Factory.StartNew(() => { }), null));
+            Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => Task.Run(() => { }), null));
         }
 
         [Fact]
@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var ab = new ActionBlock<int>(i =>
                     {
                         localPassed &= TaskScheduler.Current.Id == sts.Id;
-                        return Task.Factory.StartNew(() => { });
+                        return Task.Run(() => { });
                     }, new ExecutionDataflowBlockOptions { TaskScheduler = sts, MaxDegreeOfParallelism = -1, MaxMessagesPerTask = 10 });
                 for (int i = 0; i < 2; i++) ab.Post(i);
                 ab.Complete();
@@ -312,7 +312,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 bool localPassed = true;
                 var barrier1 = new Barrier(2);
                 var barrier2 = new Barrier(2);
-                var ab = new ActionBlock<int>(i => Task.Factory.StartNew(() =>
+                var ab = new ActionBlock<int>(i => Task.Run(() =>
                 {
                     barrier1.SignalAndWait();
                     barrier2.SignalAndWait();
@@ -336,7 +336,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 int prev = -1;
                 var ab = new ActionBlock<int>(i =>
                 {
-                    return Task.Factory.StartNew(() =>
+                    return Task.Run(() =>
                     {
                         if (prev + 1 != i) localPassed &= false;
                         prev = i;
@@ -354,7 +354,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var barrier = new Barrier(2);
                 var ab = new ActionBlock<int>(i =>
                 {
-                    return Task.Factory.StartNew(() =>
+                    return Task.Run(() =>
                     {
                         barrier.SignalAndWait();
                     });
@@ -369,7 +369,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 int total = 0;
                 ab = new ActionBlock<int>(i =>
                 {
-                    return Task.Factory.StartNew(() =>
+                    return Task.Run(() =>
                     {
                         Interlocked.Add(ref total, i);
                         Task.Delay(1).Wait();
@@ -389,7 +389,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var ab = new ActionBlock<int>(i =>
                 {
                     if ((i % 2) == 0) throw new OperationCanceledException();
-                    return Task.Factory.StartNew(() => { sumOfOdds += i; });
+                    return Task.Run(() => { sumOfOdds += i; });
                 });
                 for (int i = 0; i < 4; i++) ab.Post(i);
                 ab.Complete();
@@ -405,7 +405,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var ab = new ActionBlock<int>(i =>
                 {
                     if ((i % 2) == 0) return null;
-                    return Task.Factory.StartNew(() => { sumOfOdds += i; });
+                    return Task.Run(() => { sumOfOdds += i; });
                 });
                 for (int i = 0; i < 4; i++) ab.Post(i);
                 ab.Complete();
@@ -433,7 +433,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // Test faulting from the task
             {
                 bool localPassed = true;
-                var ab = new ActionBlock<int>(i => Task.Factory.StartNew(() => { throw new InvalidOperationException(); }));
+                var ab = new ActionBlock<int>(i => Task.Run(() => { throw new InvalidOperationException(); }));
                 ab.Post(42);
                 ab.Post(1);
                 ab.Post(2);
