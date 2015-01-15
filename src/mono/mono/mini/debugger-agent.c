@@ -258,7 +258,7 @@ typedef struct {
 	 * event. This is the same as the ctx at step/breakpoint site, but includes changes
 	 * to caller saved registers done by set_var ().
 	 */
-	MonoContext restore_ctx;
+	MonoThreadUnwindState restore_state;
 
 	/* The currently unloading appdomain */
 	MonoDomain *domain_unloading;
@@ -4648,7 +4648,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
 	GSList *bp_events = NULL, *ss_events = NULL, *enter_leave_events = NULL;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
-	MonoContext *ctx = &tls->restore_ctx;
+	MonoContext *ctx = &tls->restore_state.ctx;
 	MonoMethod *method;
 	MonoSeqPointInfo *info;
 	SeqPoint sp;
@@ -4763,18 +4763,19 @@ static void
 process_signal_event (void (*func) (DebuggerTlsData*))
 {
 	DebuggerTlsData *tls;
-	MonoContext orig_restore_ctx, ctx;
+	MonoThreadUnwindState orig_restore_state;
+	MonoContext ctx;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
-	memcpy (&orig_restore_ctx, &tls->restore_ctx, sizeof (MonoContext));
-	memcpy (&tls->restore_ctx, &tls->handler_ctx, sizeof (MonoContext));
+	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
+	mono_thread_state_init_from_monoctx (&tls->restore_state, &tls->handler_ctx);
 
 	func (tls);
 
 	/* This is called when resuming from a signal handler, so it shouldn't return */
-	memcpy (&ctx, &tls->restore_ctx, sizeof (MonoContext));
-	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
+	memcpy (&ctx, &tls->restore_state.ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
 	mono_restore_context (&ctx);
 	g_assert_not_reached ();
 }
@@ -4890,7 +4891,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 	int il_offset, suspend_policy;
 	MonoDomain *domain;
 	GSList *events;
-	MonoContext *ctx = &tls->restore_ctx;
+	MonoContext *ctx = &tls->restore_state.ctx;
 	MonoMethod *method;
 	SeqPoint sp;
 	MonoSeqPointInfo *info;
@@ -5012,36 +5013,36 @@ void
 debugger_agent_single_step_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
-	MonoContext orig_restore_ctx;
+	MonoThreadUnwindState orig_restore_state;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
 
 	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
-	memcpy (&orig_restore_ctx, &tls->restore_ctx, sizeof (MonoContext));
-	memcpy (&tls->restore_ctx, ctx, sizeof (MonoContext));
+	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
+	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 
 	process_single_step_inner (tls);
 
-	memcpy (ctx, &tls->restore_ctx, sizeof (MonoContext));
-	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
+	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
 }
 
 void
 debugger_agent_breakpoint_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
-	MonoContext orig_restore_ctx;
+	MonoThreadUnwindState orig_restore_state;
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
-	memcpy (&orig_restore_ctx, &tls->restore_ctx, sizeof (MonoContext));
-	memcpy (&tls->restore_ctx, ctx, sizeof (MonoContext));
+	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoContext));
+	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 
 	process_breakpoint_inner (tls);
 
-	memcpy (ctx, &tls->restore_ctx, sizeof (MonoContext));
-	memcpy (&tls->restore_ctx, &orig_restore_ctx, sizeof (MonoContext));
+	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
+	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
 }
 
 /*
@@ -8815,7 +8816,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// FIXME: Check that the ip change is safe
 
 		DEBUG_PRINTF (1, "[dbg] Setting IP to %s:0x%0x(0x%0x)\n", tls->frames [0]->actual_method->name, (int)sp.il_offset, (int)sp.native_offset);
-		MONO_CONTEXT_SET_IP (&tls->restore_ctx, (guint8*)tls->frames [0]->ji->code_start + sp.native_offset);
+		MONO_CONTEXT_SET_IP (&tls->restore_state.ctx, (guint8*)tls->frames [0]->ji->code_start + sp.native_offset);
 		break;
 	}
 	default:
@@ -8977,7 +8978,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (err)
 				return err;
 
-			set_var (t, var, &frame->ctx, frame->domain, val_buf, frame->reg_locations, &tls->restore_ctx);
+			set_var (t, var, &frame->ctx, frame->domain, val_buf, frame->reg_locations, &tls->restore_state.ctx);
 		}
 		mono_metadata_free_mh (header);
 		break;
