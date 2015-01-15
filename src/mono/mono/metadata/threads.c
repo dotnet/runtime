@@ -14,7 +14,6 @@
 #include <config.h>
 
 #include <glib.h>
-#include <signal.h>
 #include <string.h>
 
 #include <mono/metadata/object.h>
@@ -43,6 +42,10 @@
 #include <mono/utils/mono-memory-model.h>
 
 #include <mono/metadata/gc-internal.h>
+
+#ifndef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 
 #if defined(PLATFORM_ANDROID) && !defined(TARGET_ARM64)
 #define USE_TKILL_ON_ANDROID 1

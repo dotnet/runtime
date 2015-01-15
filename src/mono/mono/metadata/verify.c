@@ -29,7 +29,6 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/monobitset.h>
 #include <string.h>
-#include <signal.h>
 #include <ctype.h>
 
 static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
