@@ -230,7 +230,7 @@ namespace System.Collections.Concurrent
             {
                 if (pair.Key == null) throw new ArgumentNullException("key");
 
-                if (!TryAddInternal(pair.Key, pair.Value, false, false, out dummy))
+                if (!TryAddInternal(pair.Key, _comparer.GetHashCode(pair.Key), pair.Value, false, false, out dummy))
                 {
                     throw new ArgumentException(SR.ConcurrentDictionary_SourceContainsDuplicateKeys);
                 }
@@ -318,7 +318,7 @@ namespace System.Collections.Concurrent
         {
             if (key == null) throw new ArgumentNullException("key");
             TValue dummy;
-            return TryAddInternal(key, value, false, true, out dummy);
+            return TryAddInternal(key, _comparer.GetHashCode(key), value, false, true, out dummy);
         }
 
         /// <summary>
@@ -371,12 +371,13 @@ namespace System.Collections.Concurrent
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
         private bool TryRemoveInternal(TKey key, out TValue value, bool matchValue, TValue oldValue)
         {
+            int hashcode = _comparer.GetHashCode(key);
             while (true)
             {
                 Tables tables = _tables;
 
                 int bucketNo, lockNo;
-                GetBucketAndLockNo(_comparer.GetHashCode(key), out bucketNo, out lockNo, tables._buckets.Length, tables._locks.Length);
+                GetBucketAndLockNo(hashcode, out bucketNo, out lockNo, tables._buckets.Length, tables._locks.Length);
 
                 lock (tables._locks[lockNo])
                 {
@@ -443,13 +444,17 @@ namespace System.Collections.Concurrent
         public bool TryGetValue(TKey key, out TValue value)
         {
             if (key == null) throw new ArgumentNullException("key");
+            return TryGetValueInternal(key, _comparer.GetHashCode(key), out value);
+        }
 
-            int bucketNo, lockNoUnused;
-
+        private bool TryGetValueInternal(TKey key, int hashcode, out TValue value)
+        {
+            Assert(_comparer.GetHashCode(key) == hashcode);
+            
             // We must capture the _buckets field in a local variable. It is set to a new table on each table resize.
             Tables tables = _tables;
 
-            GetBucketAndLockNo(_comparer.GetHashCode(key), out bucketNo, out lockNoUnused, tables._buckets.Length, tables._locks.Length);
+            int bucketNo = GetBucket(hashcode, tables._buckets.Length);
 
             // We can get away w/out a lock here.
             // The Volatile.Read ensures that the load of the fields of 'n' doesn't move before the load from buckets[i].
@@ -488,10 +493,31 @@ namespace System.Collections.Concurrent
         public bool TryUpdate(TKey key, TValue newValue, TValue comparisonValue)
         {
             if (key == null) throw new ArgumentNullException("key");
+            return TryUpdateInternal(key, _comparer.GetHashCode(key), newValue, comparisonValue);
+        }
 
-            int hashcode = _comparer.GetHashCode(key);
+        /// <summary>
+        /// Compares the existing value for the specified key with a specified value, and if they're equal,
+        /// updates the key with a third value.
+        /// </summary>
+        /// <param name="key">The key whose value is compared with <paramref name="comparisonValue"/> and
+        /// possibly replaced.</param>
+        /// <param name="hashcode">The hashcode computed for <paramref name="key"/>.</param>
+        /// <param name="newValue">The value that replaces the value of the element with <paramref
+        /// name="key"/> if the comparison results in equality.</param>
+        /// <param name="comparisonValue">The value that is compared to the value of the element with
+        /// <paramref name="key"/>.</param>
+        /// <returns>true if the value with <paramref name="key"/> was equal to <paramref
+        /// name="comparisonValue"/> and replaced with <paramref name="newValue"/>; otherwise,
+        /// false.</returns>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null
+        /// reference.</exception>
+        private bool TryUpdateInternal(TKey key, int hashcode, TValue newValue, TValue comparisonValue)
+        {
+            Assert(_comparer.GetHashCode(key) == hashcode);
+
             IEqualityComparer<TValue> valueComparer = EqualityComparer<TValue>.Default;
-
+            
             while (true)
             {
                 int bucketNo;
@@ -742,9 +768,9 @@ namespace System.Collections.Concurrent
         /// If key doesn't exist, we always add value and return true;
         /// </summary>
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
-        private bool TryAddInternal(TKey key, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
+        private bool TryAddInternal(TKey key, int hashcode, TValue value, bool updateIfExists, bool acquireLock, out TValue resultingValue)
         {
-            int hashcode = _comparer.GetHashCode(key);
+            Assert(_comparer.GetHashCode(key) == hashcode);
 
             while (true)
             {
@@ -875,7 +901,7 @@ namespace System.Collections.Concurrent
             {
                 if (key == null) throw new ArgumentNullException("key");
                 TValue dummy;
-                TryAddInternal(key, value, true, true, out dummy);
+                TryAddInternal(key, _comparer.GetHashCode(key), value, true, true, out dummy);
             }
         }
 
@@ -939,12 +965,13 @@ namespace System.Collections.Concurrent
             if (key == null) throw new ArgumentNullException("key");
             if (valueFactory == null) throw new ArgumentNullException("valueFactory");
 
+            int hashcode = _comparer.GetHashCode(key);
+
             TValue resultingValue;
-            if (TryGetValue(key, out resultingValue))
+            if (!TryGetValueInternal(key, hashcode, out resultingValue))
             {
-                return resultingValue;
+                TryAddInternal(key, hashcode, valueFactory(key), false, true, out resultingValue);
             }
-            TryAddInternal(key, valueFactory(key), false, true, out resultingValue);
             return resultingValue;
         }
 
@@ -965,7 +992,7 @@ namespace System.Collections.Concurrent
             if (key == null) throw new ArgumentNullException("key");
 
             TValue resultingValue;
-            TryAddInternal(key, value, false, true, out resultingValue);
+            TryAddInternal(key, _comparer.GetHashCode(key), value, false, true, out resultingValue);
             return resultingValue;
         }
 
@@ -994,14 +1021,15 @@ namespace System.Collections.Concurrent
             if (addValueFactory == null) throw new ArgumentNullException("addValueFactory");
             if (updateValueFactory == null) throw new ArgumentNullException("updateValueFactory");
 
-            TValue newValue, resultingValue;
+            int hashcode = _comparer.GetHashCode(key);
+
             while (true)
             {
                 TValue oldValue;
-                if (TryGetValue(key, out oldValue))
+                if (TryGetValueInternal(key, hashcode, out oldValue))
                 //key exists, try to update
                 {
-                    newValue = updateValueFactory(key, oldValue);
+                    TValue newValue = updateValueFactory(key, oldValue);
                     if (TryUpdate(key, newValue, oldValue))
                     {
                         return newValue;
@@ -1009,8 +1037,8 @@ namespace System.Collections.Concurrent
                 }
                 else //try add
                 {
-                    newValue = addValueFactory(key);
-                    if (TryAddInternal(key, newValue, false, true, out resultingValue))
+                    TValue resultingValue;
+                    if (TryAddInternal(key, hashcode, addValueFactory(key), false, true, out resultingValue))
                     {
                         return resultingValue;
                     }
@@ -1039,14 +1067,16 @@ namespace System.Collections.Concurrent
         {
             if (key == null) throw new ArgumentNullException("key");
             if (updateValueFactory == null) throw new ArgumentNullException("updateValueFactory");
-            TValue newValue, resultingValue;
+
+            int hashcode = _comparer.GetHashCode(key);
+
             while (true)
             {
                 TValue oldValue;
-                if (TryGetValue(key, out oldValue))
+                if (TryGetValueInternal(key, hashcode, out oldValue))
                 //key exists, try to update
                 {
-                    newValue = updateValueFactory(key, oldValue);
+                    TValue newValue = updateValueFactory(key, oldValue);
                     if (TryUpdate(key, newValue, oldValue))
                     {
                         return newValue;
@@ -1054,15 +1084,14 @@ namespace System.Collections.Concurrent
                 }
                 else //try add
                 {
-                    if (TryAddInternal(key, addValue, false, true, out resultingValue))
+                    TValue resultingValue;
+                    if (TryAddInternal(key, hashcode, addValue, false, true, out resultingValue))
                     {
                         return resultingValue;
                     }
                 }
             }
         }
-
-
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="ConcurrentDictionary{TKey,TValue}"/> is empty.
@@ -1698,10 +1727,19 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
+        /// Computes the bucket for a particular key. 
+        /// </summary>
+        private static int GetBucket(int hashcode, int bucketCount)
+        {
+            int bucketNo = (hashcode & 0x7fffffff) % bucketCount;
+            Assert(bucketNo >= 0 && bucketNo < bucketCount);
+            return bucketNo;
+        }
+
+        /// <summary>
         /// Computes the bucket and lock number for a particular key. 
         /// </summary>
-        private void GetBucketAndLockNo(
-                int hashcode, out int bucketNo, out int lockNo, int bucketCount, int lockCount)
+        private static void GetBucketAndLockNo(int hashcode, out int bucketNo, out int lockNo, int bucketCount, int lockCount)
         {
             bucketNo = (hashcode & 0x7fffffff) % bucketCount;
             lockNo = bucketNo % lockCount;
@@ -1846,7 +1884,7 @@ namespace System.Collections.Concurrent
         /// A helper method for asserts.
         /// </summary>
         [Conditional("DEBUG")]
-        private void Assert(bool condition)
+        private static void Assert(bool condition)
         {
             Contract.Assert(condition);
         }
