@@ -4612,12 +4612,12 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	if (minfo)
 		loc = mono_debug_symfile_lookup_location (minfo, sp->il_offset);
 
-	if (!loc || (loc && method == ss_req->last_method && loc->row == ss_req->last_line)) {
-		/* Have to continue single stepping */
-		if (!loc)
-			DEBUG_PRINTF (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset);
-		else
-			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer)GetCurrentThreadId (), loc->row);
+	if (!loc) {
+		DEBUG_PRINTF (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer)GetCurrentThreadId (), sp->il_offset);
+		ss_req->last_method = method;
+		hit = FALSE;
+	} else if (loc && method == ss_req->last_method && loc->row == ss_req->last_line) {
+		DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer)GetCurrentThreadId (), loc->row);
 		hit = FALSE;
 	}
 				
