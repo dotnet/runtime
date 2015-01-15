@@ -37,11 +37,8 @@ namespace Mono.Tuner {
 
 		public override void ProcessField (FieldDefinition field)
 		{
-			var attribute = GetPreserveAttribute (field);
-			if (attribute == null)
-				return;
-
-			Mark (field, attribute);
+			foreach (var attribute in GetPreserveAttributes (field))
+				Mark (field, attribute);
 		}
 
 		public override void ProcessMethod (MethodDefinition method)
@@ -51,32 +48,25 @@ namespace Mono.Tuner {
 
 		public override void ProcessProperty (PropertyDefinition property)
 		{
-			var attribute = GetPreserveAttribute (property);
-			if (attribute == null)
-				return;
-
-			MarkMethod (property.GetMethod, attribute);
-			MarkMethod (property.SetMethod, attribute);
+			foreach (var attribute in GetPreserveAttributes (property)) {
+				MarkMethod (property.GetMethod, attribute);
+				MarkMethod (property.SetMethod, attribute);
+			}
 		}
 
 		public override void ProcessEvent (EventDefinition @event)
 		{
-			var attribute = GetPreserveAttribute (@event);
-			if (attribute == null)
-				return;
-
-			MarkMethod (@event.AddMethod, attribute);
-			MarkMethod (@event.InvokeMethod, attribute);
-			MarkMethod (@event.RemoveMethod, attribute);
+			foreach (var attribute in GetPreserveAttributes (@event)) {
+				MarkMethod (@event.AddMethod, attribute);
+				MarkMethod (@event.InvokeMethod, attribute);
+				MarkMethod (@event.RemoveMethod, attribute);
+			}
 		}
 
 		void MarkMethodIfPreserved (MethodDefinition method)
 		{
-			var attribute = GetPreserveAttribute (method);
-			if (attribute == null)
-				return;
-
-			MarkMethod (method, attribute);
+			foreach (var attribute in GetPreserveAttributes (method)) 
+				MarkMethod (method, attribute);
 		}
 
 		void MarkMethod (MethodDefinition method, CustomAttribute preserve_attribute)
@@ -135,40 +125,40 @@ namespace Mono.Tuner {
 
 		void TryApplyPreserveAttribute (TypeDefinition type)
 		{
-			var attribute = GetPreserveAttribute (type);
-			if (attribute == null)
-				return;
+			foreach (var attribute in GetPreserveAttributes (type)) {
+				Annotations.Mark (type);
 
-			Annotations.Mark (type);
-
-			if (!attribute.HasFields)
-				return;
-
-			foreach (var named_argument in attribute.Fields)
-				if (named_argument.Name == "AllMembers" && (bool) named_argument.Argument.Value)
-					Annotations.SetPreserve (type, TypePreserve.All);
+				if (!attribute.HasFields)
+					continue;
+ 
+				foreach (var named_argument in attribute.Fields)
+					if (named_argument.Name == "AllMembers" && (bool)named_argument.Argument.Value)
+						Annotations.SetPreserve (type, TypePreserve.All);
+			}
 		}
 
-		CustomAttribute GetPreserveAttribute (ICustomAttributeProvider provider)
+		List<CustomAttribute> GetPreserveAttributes (ICustomAttributeProvider provider)
 		{
+			List<CustomAttribute> attrs = new List<CustomAttribute> ();
+
 			if (!provider.HasCustomAttributes)
-				return null;
+				return attrs;
 
 			var attributes = provider.CustomAttributes;
 
-			for (int i = 0; i < attributes.Count; i++) {
+			for (int i = attributes.Count - 1; i >= 0; i--) {
 				var attribute = attributes [i];
 
 				bool remote_attribute;
 				if (!IsPreservedAttribute (provider, attribute, out remote_attribute))
 					continue;
 
+				attrs.Add (attribute);
 				if (remote_attribute)
 					attributes.RemoveAt (i);
-				return attribute;
 			}
 
-			return null;
+			return attrs;
 		}
 	}
 }
