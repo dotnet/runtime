@@ -413,12 +413,10 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 static void
 add_line (StatementMachine *stm, GPtrArray *il_offset_array, GPtrArray *line_number_array, GPtrArray *source_file_array, GPtrArray *hidden_array)
 {
-	if (stm->line > 0) {
-		g_ptr_array_add (il_offset_array, GUINT_TO_POINTER (stm->offset));
-		g_ptr_array_add (line_number_array, GUINT_TO_POINTER (stm->line));
-		g_ptr_array_add (source_file_array, GUINT_TO_POINTER (stm->file));
-		g_ptr_array_add (hidden_array, GUINT_TO_POINTER (stm->is_hidden));
-	}
+	g_ptr_array_add (il_offset_array, GUINT_TO_POINTER (stm->offset));
+	g_ptr_array_add (line_number_array, GUINT_TO_POINTER (stm->line));
+	g_ptr_array_add (source_file_array, GUINT_TO_POINTER (stm->file));
+	g_ptr_array_add (hidden_array, GUINT_TO_POINTER (stm->is_hidden || stm->line <= 0));
 
 	if (!stm->is_hidden && !stm->first_file)
 		stm->first_file = stm->file;
