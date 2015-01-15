@@ -47,6 +47,7 @@
     <ClCompile Include="..\mono\utils\mono-networkinterfaces.c" />
     <ClCompile Include="..\mono\utils\networking.c" />
     <ClCompile Include="..\mono\utils\networking-posix.c" />
+    <ClCompile Include="..\mono\utils\networking-missing.c" />
     <ClCompile Include="..\mono\utils\mono-path.c" />
     <ClCompile Include="..\mono\utils\mono-poll.c" />
     <ClCompile Include="..\mono\utils\mono-proclib.c" />
