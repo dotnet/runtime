@@ -6661,6 +6661,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	gpointer fault_addr = NULL;
 #ifdef HAVE_SIG_INFO
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
+#else
+	void *info = NULL;
 #endif
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
@@ -6674,13 +6676,12 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	}
 #endif
 
-#if !defined(HOST_WIN32) && defined(HAVE_SIG_INFO)
+#if defined(HAVE_SIG_INFO)
 	fault_addr = info->si_addr;
 	if (mono_aot_is_pagefault (info->si_addr)) {
 		mono_aot_handle_pagefault (info->si_addr);
 		return;
 	}
-#endif
 
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls) {
@@ -6692,6 +6693,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 			return;
 		}
 	}
+#endif
 
 	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
 
