@@ -50,14 +50,13 @@ namespace System.Collections.Immutable.Test
             int concurrencyLevel = Environment.ProcessorCount;
             int iterations = 500;
             Task[] tasks = new Task[concurrencyLevel];
-            var countdown = new CountdownEvent(tasks.Length);
+            var barrier = new Barrier(tasks.Length);
             for (int i = 0; i < tasks.Length; i++)
             {
                 tasks[i] = Task.Run(delegate
                 {
                     // Maximize concurrency by blocking this thread until all the other threads are ready to go as well.
-                    countdown.Signal();
-                    countdown.Wait();
+                    barrier.SignalAndWait();
 
                     for (int j = 0; j < iterations; j++)
                     {
