@@ -77,7 +77,6 @@ namespace System.Collections.Immutable.Test
         public void ApplyChange_CarefullyScheduled()
         {
             var set = ImmutableHashSet.Create<int>();
-            var task1TransformEntered = new AutoResetEvent(false);
             var task2TransformEntered = new AutoResetEvent(false);
             var task1TransformExited = new AutoResetEvent(false);
 
@@ -89,7 +88,6 @@ namespace System.Collections.Immutable.Test
                     s =>
                     {
                         Assert.Equal(1, ++transform1ExecutionCounter);
-                        task1TransformEntered.Set();
                         task2TransformEntered.WaitOne();
                         return s.Add(1);
                     });
