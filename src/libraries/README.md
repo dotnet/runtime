@@ -48,6 +48,9 @@ Today, the repository contains the following components:
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
   file system objects and for reading and writing files via streams.
 
+* **System.IO.MemoryMappedFiles**. Provides access to memory-mapped files, enabling code to read and write files by
+  reading and writing memory.
+
 * **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
   and/or named pipes.
 
@@ -63,7 +66,8 @@ Today, the repository contains the following components:
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
 
-* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation across common cultural standards, as well as support to create custom Encoding Providers.
+* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
+  across common cultural standards, as well as support to create custom Encoding Providers.
 
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
