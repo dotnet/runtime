@@ -18,7 +18,7 @@ namespace Microsoft.Win32.RegistryTests
 
         public void TestInitialize()
         {
-            _rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+            _rk = Registry.CurrentUser.OpenSubKey("Software", true);
             if (_rk.OpenSubKey(_testKeyName) != null)
                 _rk.DeleteSubKeyTree(_testKeyName);
             if (_rk.OpenSubKey(_testVolatileKeyName) != null)
@@ -192,7 +192,7 @@ namespace Microsoft.Win32.RegistryTests
         public void Dispose()
         {
             // cleanup
-            _rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+            _rk = Registry.CurrentUser.OpenSubKey("Software", true);
             if (_rk.OpenSubKey(_testKeyName) != null)
                 _rk.DeleteSubKeyTree(_testKeyName);
             if (_rk.OpenSubKey(_testVolatileKeyName) != null)
