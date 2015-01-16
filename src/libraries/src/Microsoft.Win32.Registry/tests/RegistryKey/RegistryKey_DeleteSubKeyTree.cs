@@ -20,7 +20,7 @@ namespace Microsoft.Win32.RegistryTests
         {
             var counter = Interlocked.Increment(ref s_keyCount);
             _madeUpKey = _madeUpKey + counter.ToString();
-            _rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+            _rk = Registry.CurrentUser.OpenSubKey("Software", true);
             if (_rk.OpenSubKey(_madeUpKey) != null)
                 _rk.DeleteSubKeyTree(_madeUpKey);
             if (_rk.OpenSubKey(_subKeyExists) != null)
@@ -85,7 +85,7 @@ namespace Microsoft.Win32.RegistryTests
         public void Dispose()
         {
             // Clean up
-            _rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+            _rk = Registry.CurrentUser.OpenSubKey("SOFTWARE", true);
             if (_rk.OpenSubKey(_madeUpKey) != null)
                 _rk.DeleteSubKeyTree(_madeUpKey);
             if (_rk.OpenSubKey(_subKeyExists) != null)
