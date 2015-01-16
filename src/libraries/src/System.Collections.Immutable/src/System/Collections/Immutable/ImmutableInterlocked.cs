@@ -18,34 +18,34 @@ namespace System.Collections.Immutable
         /// The transformation is retried as many times as necessary to win the optimistic locking race.
         /// </summary>
         /// <typeparam name="T">The type of data.</typeparam>
-        /// <param name="hotLocation">
+        /// <param name="location">
         /// The variable or field to be changed, which may be accessed by multiple threads.
         /// </param>
-        /// <param name="transformation">
+        /// <param name="transformer">
         /// A function that mutates the value. This function should be side-effect free, 
         /// as it may run multiple times when races occur with other threads.</param>
         /// <returns>
         /// <c>true</c> if the location's value is changed by applying the result of the 
-        /// <paramref name="transformation"/> function;
+        /// <paramref name="transformer"/> function;
         /// <c>false</c> if the location's value remained the same because the last 
-        /// invocation of <paramref name="transformation"/> returned the existing value.
+        /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
-        public static bool ApplyChange<T>(ref T hotLocation, Func<T, T> transformation) where T : class
+        public static bool ApplyChange<T>(ref T location, Func<T, T> transformer) where T : class
         {
-            Requires.NotNull(transformation, "applyChange");
+            Requires.NotNull(transformer, "applyChange");
 
             bool successful;
-            T oldValue = Volatile.Read(ref hotLocation);
+            T oldValue = Volatile.Read(ref location);
             do
             {
-                T newValue = transformation(oldValue);
+                T newValue = transformer(oldValue);
                 if (ReferenceEquals(oldValue, newValue))
                 {
                     // No change was actually required.
                     return false;
                 }
 
-                T interlockedResult = Interlocked.CompareExchange(ref hotLocation, newValue, oldValue);
+                T interlockedResult = Interlocked.CompareExchange(ref location, newValue, oldValue);
                 successful = ReferenceEquals(oldValue, interlockedResult);
                 oldValue = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
