@@ -32,7 +32,7 @@ namespace Microsoft.Win32.RegistryTests
             Action a = () =>
             {
                 RegistryView view = (RegistryView)(-1);
-                RegistryKey rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software", true);
                 rk = rk.CreateSubKey("TestKeyThatExists");
                 SafeRegistryHandle handle = rk.Handle;
                 RegistryKey rk2 = RegistryKey.FromHandle(handle, view);
@@ -44,7 +44,7 @@ namespace Microsoft.Win32.RegistryTests
             Action a1 = () =>
             {
                 RegistryView view = (RegistryView)3;
-                RegistryKey rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software", true);
                 rk = rk.CreateSubKey("TestKeyThatExists");
                 SafeRegistryHandle handle = rk.Handle;
                 RegistryKey rk2 = RegistryKey.FromHandle(handle, view);
@@ -59,7 +59,7 @@ namespace Microsoft.Win32.RegistryTests
             //Try getting handle on disposed key.
             Action a1 = () =>
             {
-                RegistryKey rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software", true);
                 rk = rk.CreateSubKey("TestKeyThatExists");
                 rk.Dispose();
                 SafeRegistryHandle handle = rk.Handle;
@@ -74,7 +74,7 @@ namespace Microsoft.Win32.RegistryTests
             //Try getting registrykey from handle for key that has been deleted.
             Action a1 = () =>
             {
-                RegistryKey rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software", true);
                 RegistryKey rk2 = rk.CreateSubKey("TestKeyThatWillBeDeleted");
                 SafeRegistryHandle handle = rk2.Handle;
                 rk.DeleteSubKey("TestKeyThatWillBeDeleted");
@@ -87,7 +87,7 @@ namespace Microsoft.Win32.RegistryTests
             //Try getting handle on deleted key.
             Action a2 = () =>
             {
-                RegistryKey rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+                RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software", true);
                 RegistryKey rk2 = rk.CreateSubKey("TestKeyThatWillBeDeleted");
                 rk.DeleteSubKey("TestKeyThatWillBeDeleted");
                 SafeRegistryHandle handle = rk2.Handle;
@@ -100,7 +100,7 @@ namespace Microsoft.Win32.RegistryTests
 
         public void Dispose()
         {
-            RegistryKey rk = Registry.LocalMachine.OpenSubKey("SOFTWARE", true);
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("Software", true);
             if (rk.OpenSubKey("TestKeyThatExists") != null)
                 rk.DeleteSubKeyTree("TestKeyThatExists");
             if (rk.OpenSubKey("TestKeyThatWillBeDeleted") != null)
