@@ -25,8 +25,16 @@ set _buildprefix=
 set _buildpostfix=
 call :build %*
 
-goto :eof
+goto :AfterBuild
 
 :build
 %_buildprefix% %_msbuildexe% "%~dp0build.proj" /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%~dp0msbuild.log";Append %* %_buildpostfix%
 goto :eof
+
+:AfterBuild
+
+echo.
+:: Pull the build summary from the log file
+findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" %~dp0msbuild.log
+
+endlocal
