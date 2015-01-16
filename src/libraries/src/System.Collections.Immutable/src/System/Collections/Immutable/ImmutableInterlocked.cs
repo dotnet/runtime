@@ -32,7 +32,7 @@ namespace System.Collections.Immutable
         /// </returns>
         public static bool ApplyChange<T>(ref T location, Func<T, T> transformer) where T : class
         {
-            Requires.NotNull(transformer, "applyChange");
+            Requires.NotNull(transformer, "transformer");
 
             bool successful;
             T oldValue = Volatile.Read(ref location);
@@ -76,7 +76,7 @@ namespace System.Collections.Immutable
         /// </returns>
         public static bool ApplyChange<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class
         {
-            Requires.NotNull(transformer, "applyChange");
+            Requires.NotNull(transformer, "transformer");
 
             bool successful;
             T oldValue = Volatile.Read(ref location);
