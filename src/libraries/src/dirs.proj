@@ -41,7 +41,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <DisabledTestAssembly Include="System.Threading.Tasks.Dataflow.Tests" />
     <DisabledTestAssembly Include="System.Linq.Parallel.Tests" />
     <SkipTestAssemblies Include="@(DisabledTestAssembly->'$(TestWorkingDir)**\%(Identity).dll')" />
   </ItemGroup>
