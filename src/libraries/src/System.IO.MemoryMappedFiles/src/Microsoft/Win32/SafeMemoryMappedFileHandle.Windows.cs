@@ -7,18 +7,22 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    [SecurityCritical]
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandle
     {
-        internal SafeMemoryMappedFileHandle()
-            : base(new IntPtr(DefaultInvalidHandleValue), true)
+        private const int DefaultInvalidHandleValue = 0;
+
+        protected override bool ReleaseHandle()
         {
+            return Interop.mincore.CloseHandle(handle);
         }
 
-        internal SafeMemoryMappedFileHandle(IntPtr handle, bool ownsHandle)
-            : base(new IntPtr(DefaultInvalidHandleValue), ownsHandle)
+        public override bool IsInvalid
         {
-            SetHandle(handle);
+            [SecurityCritical]
+            get
+            {
+                return handle == IntPtr.Zero || handle == new IntPtr(-1);
+            }
         }
     }
 }
