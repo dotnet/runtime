@@ -124,6 +124,7 @@ monoutils_sources = \
 	networking-posix.c	\
 	networking-fallback.c	\
 	networking-missing.c	\
+	networking-windows.c	\
 	networking.h
 
 arch_sources = 
