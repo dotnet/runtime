@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
-namespace OutOfTheBoxPartitionerTests
+namespace Test
 {
     public class LongRangePartitionerTests
     {
@@ -52,6 +52,7 @@ namespace OutOfTheBoxPartitionerTests
         /// <param name="count"></param>
         /// <param name="dop"></param>
         [Fact]
+        [OuterLoop]
         public static void CheckGetPartitions()
         {
             CheckGetPartitions(0, 1, 1);
@@ -62,6 +63,7 @@ namespace OutOfTheBoxPartitionerTests
             CheckGetPartitions(-1999, 5000, 63);
             CheckGetPartitions(9223372036854774807, 999, 13); // close to Int64.Max
         }
+
         public static void CheckGetPartitions(long from, long count, int dop)
         {
             long to = from + count;
@@ -119,6 +121,7 @@ namespace OutOfTheBoxPartitionerTests
         /// <param name="count"></param>
         /// <param name="dop"></param>
         [Fact]
+        [OuterLoop]
         public static void CheckGetOrderablePartitions()
         {
             CheckGetOrderablePartitions(0, 1, 1);
@@ -207,6 +210,7 @@ namespace OutOfTheBoxPartitionerTests
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void CheckGetPartitionsWithRange()
         {
             CheckGetPartitionsWithRange(1999, 1000, 20, 1);
@@ -249,6 +253,7 @@ namespace OutOfTheBoxPartitionerTests
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void CheckGetDynamicPartitionsWithRange()
         {
             CheckGetDynamicPartitionsWithRange(1999, 1000, 20);
@@ -291,6 +296,7 @@ namespace OutOfTheBoxPartitionerTests
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void CheckGetOrderablePartitionsWithRange()
         {
             CheckGetOrderablePartitionsWithRange(1999, 1000, 20, 1);
@@ -344,6 +350,7 @@ namespace OutOfTheBoxPartitionerTests
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void GetOrderableDynamicPartitionsWithRange()
         {
             GetOrderableDynamicPartitionsWithRange(1999, 1000, 20);
@@ -424,6 +431,7 @@ namespace OutOfTheBoxPartitionerTests
         /// Ensure that the range partitioner doesn't chunk up elements i.e. uses chunk size = 1
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void RangePartitionerChunking()
         {
             RangePartitionerChunking(2147473647, 9999, 4);
@@ -497,6 +505,7 @@ namespace OutOfTheBoxPartitionerTests
         /// Ensure that the range partitioner doesnt chunk up elements i.e. uses chunk size = 1
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void RangePartitionerDynamicChunking()
         {
             RangePartitionerDynamicChunking(2147473647, 9999, 4);

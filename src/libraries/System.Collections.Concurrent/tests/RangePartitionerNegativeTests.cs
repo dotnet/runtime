@@ -17,7 +17,7 @@ using System;
 using System.Collections.Concurrent;
 using Xunit;
 
-namespace OutOfTheBoxPartitionerTests
+namespace Test
 {
     public class RangePartitionerNegativeTests
     {
@@ -25,12 +25,14 @@ namespace OutOfTheBoxPartitionerTests
         /// Test passing invalid range, 'to' is smaller or equal than 'from'
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void IntFromNotGreaterThanTo()
         {
             IntFromNotGreaterThanTo(1000, 0, 100);
             IntFromNotGreaterThanTo(899, 899, 100);
             IntFromNotGreaterThanTo(-19999, -299999, 100);
         }
+
         public static void IntFromNotGreaterThanTo(int from, int to, int rangesize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(from, to));
@@ -40,12 +42,14 @@ namespace OutOfTheBoxPartitionerTests
         /// <summary>
         /// Test passing invalid range, 'to' is smaller or equal than 'from', on long overload
         [Fact]
+        [OuterLoop]
         public static void LongFromNotGreaterThanTo()
         {
             LongFromNotGreaterThanTo(1000, 0, 100);
             LongFromNotGreaterThanTo(899, 899, 100);
             LongFromNotGreaterThanTo(-19999, -299999, 100);
         }
+
         public static void LongFromNotGreaterThanTo(long from, long to, int rangesize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(from, to));
@@ -56,11 +60,13 @@ namespace OutOfTheBoxPartitionerTests
         /// Test passing invalid range size, less than or equal to 0
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void InvalidIntRangeSize()
         {
             InvalidIntRangeSize(0, 1000, 0);
             InvalidIntRangeSize(899, 9000, -10);
         }
+
         public static void InvalidIntRangeSize(int from, int to, int rangesize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(from, to, rangesize));
@@ -70,6 +76,7 @@ namespace OutOfTheBoxPartitionerTests
         /// Test passing invalid range size, less than or equal to 0, on long overload
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void ATestMethod()
         {
             InvalidLongRangeSize(0, 1000, 0);

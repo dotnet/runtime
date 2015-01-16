@@ -16,56 +16,41 @@ namespace Test
         [Fact]
         public static void RunPartitionerStaticTest_StaticPartitioningIList()
         {
-            RunPartitionerStaticTest_StaticPartitioningIList(11, 8);
-            RunPartitionerStaticTest_StaticPartitioningIList(8, 11);
-            RunPartitionerStaticTest_StaticPartitioningIList(10, 10);
-            RunPartitionerStaticTest_StaticPartitioningIList(10000, 1);
-            RunPartitionerStaticTest_StaticPartitioningIList(10000, 4);
-            RunPartitionerStaticTest_StaticPartitioningIList(10000, 357);
+            RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 0);
+            RunTestWithAlgorithm(dataSize: 999, partitionCount: 1, algorithm: 0);
+            RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 0);
         }
 
         [Fact]
         public static void RunPartitionerStaticTest_StaticPartitioningArray()
         {
-            RunPartitionerStaticTest_StaticPartitioningArray(11, 8);
-            RunPartitionerStaticTest_StaticPartitioningArray(8, 11);
-            RunPartitionerStaticTest_StaticPartitioningArray(10, 10);
-            RunPartitionerStaticTest_StaticPartitioningArray(10000, 1);
-            RunPartitionerStaticTest_StaticPartitioningArray(10000, 4);
-            RunPartitionerStaticTest_StaticPartitioningArray(10000, 357);
+            RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 1);
+            RunTestWithAlgorithm(dataSize: 123, partitionCount: 1, algorithm: 1);
+            RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 1);
         }
 
         [Fact]
         public static void RunPartitionerStaticTest_LoadBalanceIList()
         {
-            RunPartitionerStaticTest_LoadBalanceIList(11, 8);
-            RunPartitionerStaticTest_LoadBalanceIList(8, 11);
-            RunPartitionerStaticTest_LoadBalanceIList(11, 11);
-            RunPartitionerStaticTest_LoadBalanceIList(10000, 1);
-            RunPartitionerStaticTest_LoadBalanceIList(10000, 4);
-            RunPartitionerStaticTest_LoadBalanceIList(10000, 23);
+            RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 2);
+            RunTestWithAlgorithm(dataSize: 123, partitionCount: 1, algorithm: 2);
+            RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 2);
         }
 
         [Fact]
         public static void RunPartitionerStaticTest_LoadBalanceArray()
         {
-            RunPartitionerStaticTest_LoadBalanceArray(11, 8);
-            RunPartitionerStaticTest_LoadBalanceArray(8, 11);
-            RunPartitionerStaticTest_LoadBalanceArray(11, 11);
-            RunPartitionerStaticTest_LoadBalanceArray(10000, 1);
-            RunPartitionerStaticTest_LoadBalanceArray(10000, 4);
-            RunPartitionerStaticTest_LoadBalanceArray(10000, 23);
+            RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 3);
+            RunTestWithAlgorithm(dataSize: 999, partitionCount: 1, algorithm: 3);
+            RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 3);
         }
 
         [Fact]
         public static void RunPartitionerStaticTest_LoadBalanceEnumerator()
         {
-            RunPartitionerStaticTest_LoadBalanceEnumerator(11, 8);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(8, 11);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10, 10);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10000, 1);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10000, 4);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10000, 37);
+            RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 4);
+            RunTestWithAlgorithm(dataSize: 123, partitionCount: 1, algorithm: 4);
+            RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 4);
         }
 
         #region Dispose tests. The dispose logic of PartitionerStatic
@@ -127,11 +112,10 @@ namespace Test
             }
         }
 
-
         #endregion
 
-
         [Fact]
+        [OuterLoop]
         public static void RunPartitionerStaticTest_Exceptions()
         {
             // Testing ArgumentNullException with data==null
@@ -185,6 +169,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop]
         public static void RunPartitionerStaticTest_EmptyPartitions()
         {
             int[] data = new int[0];
@@ -220,31 +205,6 @@ namespace Test
                     }
                 }
             }
-        }
-
-        private static void RunPartitionerStaticTest_StaticPartitioningIList(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 0);
-        }
-
-        private static void RunPartitionerStaticTest_StaticPartitioningArray(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 1);
-        }
-
-        private static void RunPartitionerStaticTest_LoadBalanceIList(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 2);
-        }
-
-        private static void RunPartitionerStaticTest_LoadBalanceArray(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 3);
-        }
-
-        private static void RunPartitionerStaticTest_LoadBalanceEnumerator(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 4);
         }
 
         private static void RunTestWithAlgorithm(int dataSize, int partitionCount, int algorithm)
@@ -335,7 +295,7 @@ namespace Test
             for (int i = 0; i < partitionCount; i++)
             {
                 int my_i = i;
-                threadArray[i] = new Task(() =>
+                threadArray[i] = Task.Run(() =>
                 {
                     int localOffset = 0;
                     int lastElement = -1;
@@ -391,7 +351,7 @@ namespace Test
                     }
                 }
                 );
-                threadArray[i].Start();
+                // threadArray[i].Start();
             }
 
             for (int i = 0; i < threadArray.Length; i++)
@@ -430,6 +390,7 @@ namespace Test
         // Try calling MoveNext on a Partitioner enumerator after that enumerator has already returned false.
         //
         [Fact]
+        [OuterLoop]
         public static void RunPartitionerStaticTest_ExtraMoveNext()
         {
             Partitioner<int>[] partitioners = new[] 
@@ -565,6 +526,6 @@ namespace Test
             return algorithm < 2;
         }
 
-#endregion
+        #endregion
     }
 }

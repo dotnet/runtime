@@ -14,19 +14,19 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace OutOfTheBoxPartitionerTests
+namespace Test
 {
     public static class RangePartitionerHelpers
-    {       
+    {
         /// <summary>
         /// Helpers to extract individual elements from Long range partitioner
         /// </summary>
         /// <param name="tuple"></param>
         /// <returns></returns>
         public static IEnumerable<long> UnRoll(this Tuple<long, long> tuple)
-        { 
-            for (long i = tuple.Item1; i < tuple.Item2; i++) 
-                yield return i; 
+        {
+            for (long i = tuple.Item1; i < tuple.Item2; i++)
+                yield return i;
         }
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace OutOfTheBoxPartitionerTests
             while (tupleEnumerator.MoveNext())
             {
                 for (long i = tupleEnumerator.Current.Item1; i < tupleEnumerator.Current.Item2; i++)
-                    yield return i;                
+                    yield return i;
             }
         }
 
@@ -75,7 +75,7 @@ namespace OutOfTheBoxPartitionerTests
                     yield return i;
             }
         }
-        
+
         /// <summary>
         /// Helper to extract individual indices from Long range partitioner
         /// </summary>
@@ -133,7 +133,7 @@ namespace OutOfTheBoxPartitionerTests
         {
             while (tupleEnumerator.MoveNext())
             {
-                yield return GetRangeSize(tupleEnumerator.Current);                
+                yield return GetRangeSize(tupleEnumerator.Current);
             }
         }
 
@@ -146,7 +146,7 @@ namespace OutOfTheBoxPartitionerTests
         {
             while (pairEnumerator.MoveNext())
             {
-                yield return GetRangeSize(pairEnumerator.Current.Value);                
+                yield return GetRangeSize(pairEnumerator.Current.Value);
             }
         }
 
@@ -298,13 +298,13 @@ namespace OutOfTheBoxPartitionerTests
                 while (e1.MoveNext())
                 {
                     // 'actual' ran out of elements before expected.
-                    if(!e2.MoveNext())
+                    if (!e2.MoveNext())
                     {
                         Console.WriteLine("Partitioner returned fewer elements. Next element expected: {0}", e1.Current);
                         return false;
                     }
-                    
-                    if(!e1.Current.Equals(e2.Current))
+
+                    if (!e1.Current.Equals(e2.Current))
                     {
                         Console.WriteLine("Mismatching elements. Expected: {0}, Actual: {1}", e1.Current, e2.Current);
                         return false;
@@ -312,7 +312,7 @@ namespace OutOfTheBoxPartitionerTests
                 }
 
                 // 'actual' still has elements
-                if(e2.MoveNext())
+                if (e2.MoveNext())
                 {
                     Console.WriteLine("Partitioner returned more elements. Next element returned by partitioner: {0}", e2.Current);
                     return false;

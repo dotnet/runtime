@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
-namespace OutOfTheBoxPartitionerTests
+namespace Test
 {
     public class IntRangePartitionerTests
     {
@@ -155,6 +155,7 @@ namespace OutOfTheBoxPartitionerTests
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void GetOrderableDynamicPartitions()
         {
             GetOrderableDynamicPartitions(0, 1);
@@ -240,6 +241,7 @@ namespace OutOfTheBoxPartitionerTests
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void CheckGetDynamicPartitionsWithRange()
         {
             CheckGetDynamicPartitionsWithRange(1999, 1000, 20);
@@ -284,6 +286,7 @@ namespace OutOfTheBoxPartitionerTests
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static void CheckGetOrderablePartitionsWithRange()
         {
             CheckGetOrderablePartitionsWithRange(1999, 1000, 20, 1);
@@ -341,6 +344,7 @@ namespace OutOfTheBoxPartitionerTests
         /// <param name="desiredRangeSize"></param>
 
         [Fact]
+        [OuterLoop]
         public static void GetOrderableDynamicPartitionsWithRange()
         {
             GetOrderableDynamicPartitionsWithRange(1999, 1000, 20);
@@ -423,6 +427,7 @@ namespace OutOfTheBoxPartitionerTests
         /// <param name="rangeSize"></param>
 
         [Fact]
+        [OuterLoop]
         public static void RangePartitionerChunking()
         {
             RangePartitionerChunking(1999, 1000, 10);
@@ -500,6 +505,7 @@ namespace OutOfTheBoxPartitionerTests
         /// <param name="rangeSize"></param>
 
         [Fact]
+        [OuterLoop]
         public static void RangePartitionerDynamicChunking()
         {
             RangePartitionerDynamicChunking(1999, 1000, 10);

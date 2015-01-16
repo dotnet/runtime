@@ -15,16 +15,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <!--<Compile Include="BlockingCollectionCancellationTests.cs" />-->
+    <Compile Include="BlockingCollectionCancellationTests.cs" />
     <Compile Include="BlockingCollectionTests.cs" />
     <Compile Include="ConcurrentBagTests.cs" />
     <Compile Include="ConcurrentDictionaryTests.cs" />
     <Compile Include="ConcurrentQueueTests.cs" />
     <Compile Include="ConcurrentStackTests.cs" />
     <Compile Include="IntRangePartitionerTests.cs" />
-    <!--<Compile Include="LongRangePartitionerTests.cs" />
-        <Compile Include="PartitionerStaticTests.cs" />
-        <Compile Include="RangePartitionerNegativeTests.cs" />-->
+    <Compile Include="LongRangePartitionerTests.cs" />
+    <Compile Include="PartitionerStaticTests.cs" />
+    <Compile Include="RangePartitionerNegativeTests.cs" />
     <Compile Include="PartitionerHelpers.cs" />
   </ItemGroup>
   <!-- References are resolved from packages.config -->
@@ -34,8 +34,8 @@
       <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Collections.Concurrent.csproj">
-      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
-      <Name>System.Linq.Parallel</Name>
+      <Project>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</Project>
+      <Name>System.Collections.Concurrent</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
