@@ -18,7 +18,10 @@
   </ItemGroup>
   
   <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
-  <Target Name="RestoreAllPackages" DependsOnTargets="EnsureDependencies" />
+  <Target Name="RestoreAllPackages">
+    <Message Importance="High" Text="Restoring all package dependencies..." />
+    <CallTarget Targets="EnsureDependencies" />
+  </Target>
 
   <ItemGroup>
     <Project Include="*\src\*.csproj" />
@@ -48,7 +51,7 @@
 
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Target Name="RunDirTests" DependsOnTargets="RunTests">
-    <Error Text="One or more tests failed" Condition="'@(XUnitExitCodes)' != '' and '%(XUnitExitCodes.Identity)' != '0'" />
+    <Error Text="One or more tests failed. See the log file for more details." Condition="'@(XUnitExitCodes)' != '' and '%(XUnitExitCodes.Identity)' != '0'" />
   </Target>
   <PropertyGroup Condition="Exists('$(ToolsDir)tests.targets')">
     <TraversalBuildDependsOn>
