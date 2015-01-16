@@ -525,8 +525,24 @@ namespace System
                 /// <returns>The string if it's in the database; otherwise, null.</returns>
                 public string GetString(int stringTableIndex)
                 {
+                    Contract.Assert(stringTableIndex >= 0);
+
+                    if (stringTableIndex >= _stringSectionNumOffsets)
+                    {
+                        // Some terminfo files may not contain enough entries to actually 
+                        // have the requested one.
+                        return null;
+                    }
+
                     int tableIndex = ReadInt16(_data, StringOffsetsOffset + (stringTableIndex * 2));
-                    return tableIndex == -1 ? null : ReadString(_data, StringsTableOffset + tableIndex);
+                    if (tableIndex == -1)
+                    {
+                        // Some terminfo files may have enough entries, but may not actually
+                        // have it filled in for this particular string.
+                        return null;
+                    }
+
+                    return ReadString(_data, StringsTableOffset + tableIndex);
                 }
 
                 /// <summary>Gets a number from the numbers section by the number's well-known index.</summary>
@@ -534,9 +550,16 @@ namespace System
                 /// <returns>The number if it's in the database; otherwise, -1.</returns>
                 public int GetNumber(int numberIndex)
                 {
-                    return (numberIndex < _numberSectionNumShorts) ?
-                        ReadInt16(_data, NumbersOffset + (numberIndex * 2)) :
-                        -1;
+                    Contract.Assert(numberIndex >= 0);
+
+                    if (numberIndex >= _numberSectionNumShorts)
+                    {
+                        // Some terminfo files may not contain enough entries to actually
+                        // have the requested one.
+                        return -1;
+                    }
+
+                    return ReadInt16(_data, NumbersOffset + (numberIndex * 2));
                 }
 
                 /// <summary>The well-known index of the max_colors numbers entry.</summary>
