@@ -392,7 +392,7 @@ public class CollectionBase_AllMethods
             Console.WriteLine("Fail! Error Err_main! Uncaught Exception in main(), exc_main==" + exc_main);
         }
 
-        Assert.Equal(true, bResult);
+        Assert.True(bResult);
     }
 
     //CollectionBase is provided to be used as the base class for strongly typed collections. Lets use one of our own here
