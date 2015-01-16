@@ -259,6 +259,9 @@ typedef struct {
 	 * to caller saved registers done by set_var ().
 	 */
 	MonoThreadUnwindState restore_state;
+	/* Frames computed from restore_state */
+	int restore_frame_count;
+	StackFrame **restore_frames;
 
 	/* The currently unloading appdomain */
 	MonoDomain *domain_unloading;
@@ -796,7 +799,8 @@ static void ids_cleanup (void);
 
 static void suspend_init (void);
 
-static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch);
+static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch,
+					  StackFrame **frames, int nframes);
 static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
 static void ss_destroy (SingleStepReq *req);
 
@@ -2939,22 +2943,32 @@ resume_thread (MonoInternalThread *thread)
 }
 
 static void
-invalidate_frames (DebuggerTlsData *tls)
+free_frames (StackFrame **frames, int nframes)
 {
 	int i;
 
+	for (i = 0; i < nframes; ++i) {
+		if (frames [i]->jit)
+			mono_debug_free_method_jit_info (frames [i]->jit);
+		g_free (frames [i]);
+	}
+	g_free (frames);
+}
+
+static void
+invalidate_frames (DebuggerTlsData *tls)
+{
 	if (!tls)
 		tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
 
-	for (i = 0; i < tls->frame_count; ++i) {
-		if (tls->frames [i]->jit)
-			mono_debug_free_method_jit_info (tls->frames [i]->jit);
-		g_free (tls->frames [i]);
-	}
-	g_free (tls->frames);
+	free_frames (tls->frames, tls->frame_count);
 	tls->frame_count = 0;
 	tls->frames = NULL;
+
+	free_frames (tls->restore_frames, tls->restore_frame_count);
+	tls->restore_frame_count = 0;
+	tls->restore_frames = NULL;
 }
 
 /*
@@ -3206,6 +3220,35 @@ process_filter_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data
 		return TRUE;
 
 	return process_frame (info, ctx, user_data);
+}
+
+/*
+ * Return a malloc-ed list of StackFrame structures.
+ */
+static StackFrame**
+compute_frame_info_from (MonoInternalThread *thread, DebuggerTlsData *tls, MonoThreadUnwindState *state, int *out_nframes)
+{
+	ComputeFramesUserData user_data;
+	MonoUnwindOptions opts = MONO_UNWIND_DEFAULT|MONO_UNWIND_REG_LOCATIONS;
+	StackFrame **res;
+	int i, nframes;
+	GSList *l;
+
+	user_data.tls = tls;
+	user_data.frames = NULL;
+
+	mono_walk_stack_with_state (process_frame, state, opts, &user_data);
+
+	nframes = g_slist_length (user_data.frames);
+	res = g_new0 (StackFrame*, nframes);
+	l = user_data.frames;
+	for (i = 0; i < nframes; ++i) {
+		res [i] = l->data;
+		l = l->next;
+	}
+	*out_nframes = nframes;
+
+	return res;
 }
 
 static void
@@ -4731,7 +4774,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 			g_ptr_array_add (ss_reqs, req);
 
 		/* Start single stepping again from the current sequence point */
-		ss_start (ss_req, method, &sp, info, ctx, tls, FALSE);
+		ss_start (ss_req, method, &sp, info, ctx, tls, FALSE, NULL, 0);
 	}
 	
 	if (ss_reqs->len > 0)
@@ -4948,7 +4991,7 @@ process_single_step_inner (DebuggerTlsData *tls)
 		return;
 
 	/* Start single stepping again from the current sequence point */
-	ss_start (ss_req, method, &sp, info, ctx, tls, FALSE);
+	ss_start (ss_req, method, &sp, info, ctx, tls, FALSE, NULL, 0);
 
 	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR) &&
 		(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
@@ -5120,9 +5163,11 @@ ss_stop (SingleStepReq *ss_req)
  *   Start the single stepping operation given by SS_REQ from the sequence point SP.
  * If CTX is not set, then this can target any thread. If CTX is set, then TLS should
  * belong to the same thread as CTX.
+ * If FRAMES is not-null, use that instead of tls->frames for placing breakpoints etc.
  */
 static void
-ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls, gboolean step_to_catch)
+ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointInfo *info, MonoContext *ctx, DebuggerTlsData *tls,
+		  gboolean step_to_catch, StackFrame **frames, int nframes)
 {
 	int i, j, frame_index;
 	SeqPoint *next_sp, *parent_sp = NULL;
@@ -5145,11 +5190,13 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 	} else {
 		frame_index = 1;
 
-		if (ctx) {
+		if (ctx && !frames) {
 			/* Need parent frames */
 			if (!tls->context.valid)
 				mono_thread_state_init_from_monoctx (&tls->context, ctx);
 			compute_frame_info (tls->thread, tls);
+			frames = tls->frames;
+			nframes = tls->frame_count;
 		}
 
 		/*
@@ -5158,8 +5205,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		 */
 		if (ss_req->depth == STEP_DEPTH_OUT) {
 			/* Ignore seq points in current method */
-			while (frame_index < tls->frame_count) {
-				StackFrame *frame = tls->frames [frame_index];
+			while (frame_index < nframes) {
+				StackFrame *frame = frames [frame_index];
 
 				method = frame->method;
 				found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
@@ -5173,8 +5220,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		} else {
 			if (sp && sp->next_len == 0) {
 				sp = NULL;
-				while (frame_index < tls->frame_count) {
-					StackFrame *frame = tls->frames [frame_index];
+				while (frame_index < nframes) {
+					StackFrame *frame = frames [frame_index];
 
 					method = frame->method;
 					found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
@@ -5186,8 +5233,8 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				}
 			} else {
 				/* Have to put a breakpoint into a parent frame since the seq points might not cover all control flow out of the method */
-				while (frame_index < tls->frame_count) {
-					StackFrame *frame = tls->frames [frame_index];
+				while (frame_index < nframes) {
+					StackFrame *frame = frames [frame_index];
 
 					parent_sp_method = frame->method;
 					found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
@@ -5227,11 +5274,11 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		}
 
 		if (ss_req->nframes == 0)
-			ss_req->nframes = tls->frame_count;
+			ss_req->nframes = nframes;
 		if (ss_req->depth == STEP_DEPTH_OVER) {
 			/* Need to stop in catch clauses as well */
-			for (i = 0; i < tls->frame_count; ++i) {
-				StackFrame *frame = tls->frames [i];
+			for (i = 0; i < nframes; ++i) {
+				StackFrame *frame = frames [i];
 
 				if (frame->ji) {
 					MonoJitInfo *jinfo = frame->ji;
@@ -5289,6 +5336,9 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 	MonoMethod *method = NULL;
 	MonoDebugMethodInfo *minfo;
 	gboolean step_to_catch = FALSE;
+	gboolean set_ip = FALSE;
+	StackFrame **frames = NULL;
+	int nframes = 0;
 
 	if (suspend_count == 0)
 		return ERR_NOT_SUSPENDED;
@@ -5316,6 +5366,15 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 	mono_loader_unlock ();
 	g_assert (tls);
 	g_assert (tls->context.valid);
+
+	if (tls->restore_state.valid && MONO_CONTEXT_GET_IP (&tls->context.ctx) != MONO_CONTEXT_GET_IP (&tls->restore_state.ctx)) {
+		/*
+		 * Need to start single stepping from restore_state and not from the current state
+		 */
+		set_ip = TRUE;
+		frames = compute_frame_info_from (thread, tls, &tls->restore_state, &nframes);
+	}
+
 	ss_req->start_sp = ss_req->last_sp = MONO_CONTEXT_GET_SP (&tls->context.ctx);
 
 	if (tls->catch_state.valid) {
@@ -5350,38 +5409,37 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 		ss_req->last_sp = NULL;
 	}
 
-	if (!step_to_catch && ss_req->size == STEP_SIZE_LINE) {
-		StackFrame *frame;
+	if (!step_to_catch) {
+		StackFrame *frame = NULL;
 
-		/* Compute the initial line info */
-		compute_frame_info (thread, tls);
+		if (set_ip) {
+			if (frames && nframes)
+				frame = frames [0];
+		} else {
+			compute_frame_info (thread, tls);
 
-		if (tls->frame_count) {
-			frame = tls->frames [0];
+			if (tls->frame_count)
+				frame = tls->frames [0];
+		}
 
-			ss_req->last_method = frame->method;
-			ss_req->last_line = -1;
+		if (ss_req->size == STEP_SIZE_LINE) {
+			if (frame) {
+				ss_req->last_method = frame->method;
+				ss_req->last_line = -1;
 
-			minfo = mono_debug_lookup_method (frame->method);
-			if (minfo && frame->il_offset != -1) {
-				MonoDebugSourceLocation *loc = mono_debug_symfile_lookup_location (minfo, frame->il_offset);
+				minfo = mono_debug_lookup_method (frame->method);
+				if (minfo && frame->il_offset != -1) {
+					MonoDebugSourceLocation *loc = mono_debug_symfile_lookup_location (minfo, frame->il_offset);
 
-				if (loc) {
-					ss_req->last_line = loc->row;
-					g_free (loc);
+					if (loc) {
+						ss_req->last_line = loc->row;
+						g_free (loc);
+					}
 				}
 			}
 		}
-	}
 
-	if (!step_to_catch) {
-		StackFrame *frame;
-
-		compute_frame_info (thread, tls);
-
-		if (tls->frame_count) {
-			frame = tls->frames [0];
-
+		if (frame) {
 			if (!method && frame->il_offset != -1) {
 				/* FIXME: Sort the table and use a binary search */
 				found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
@@ -5391,13 +5449,15 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 				g_assert (sp);
 				method = frame->method;
 			}
-			ss_req->start_method = method;
 		}
 	}
 
 	ss_req->start_method = method;
 
-	ss_start (ss_req, method, sp, info, &tls->context.ctx, tls, step_to_catch);
+	ss_start (ss_req, method, sp, info, set_ip ? &tls->restore_state.ctx : &tls->context.ctx, tls, step_to_catch, frames, nframes);
+
+	if (frames)
+		free_frames (frames, nframes);
 
 	return 0;
 }
