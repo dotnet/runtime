@@ -6,8 +6,6 @@ namespace System.IO.MemoryMappedFiles
     [Flags]
     public enum MemoryMappedFileRights
     {
-        // These correspond to win32 FILE_MAP_XXX constants
-
         // No None field - An ACE with the value 0 cannot grant nor deny.
         CopyOnWrite = 0x000001,
         Write = 0x000002,
