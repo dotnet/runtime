@@ -61,7 +61,6 @@ public class MMVA_get_SafeMemoryMappedViewHandle
 
             if (_iCountErrors == 0)
             {
-                Console.WriteLine("Pass. iCountTestcases==" + _iCountTestcases);
                 return true;
             }
             else
