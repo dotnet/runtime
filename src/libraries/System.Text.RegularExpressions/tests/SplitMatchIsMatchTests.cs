@@ -176,16 +176,6 @@ public class SplitMatchIsMatchTests
                             iCountErrors++;
                             Console.WriteLine("Err_3976dffd! unexpected return result");
                         }
-
-                        for (int i = 0; i < match.Groups.Count; i++)
-                        {
-                            Console.WriteLine("\r\n    match.Groups[" + i + "].Value =  " + match.Groups[i].Value + ", Index = " + match.Groups[i].Index + ", Length = " + match.Groups[i].Length);
-                            Console.WriteLine("    match.Groups[" + i + "].Captures.Count =  " + match.Groups[i].Captures.Count);
-                            for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                            {
-                                Console.WriteLine("        match.Groups[" + i + "].Captures[" + j + "].Value =  " + match.Groups[i].Captures[j].Value + ", Index = " + match.Groups[i].Captures[j].Index + ", Length = " + match.Groups[i].Captures[j].Length);
-                            }
-                        }
                     }
                 }
                 //-----------------------------------------------------------------
