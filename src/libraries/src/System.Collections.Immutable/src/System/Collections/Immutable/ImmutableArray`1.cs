@@ -1035,7 +1035,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The array to initialize the array with. No copy is made.</param>
         /// <remarks>
         /// Covariant upcasts from this method may be reversed by calling the
-        /// <see cref="ImmutableArray&lt;T&gt;.As&lt;TOther&gt;"/> instance method.
+        /// <see cref="ImmutableArray{T}.As{TOther};"/>  or <see cref="ImmutableArray{T}.CastArray{TOther}"/>method.
         /// </remarks>
         [Pure]
         public static ImmutableArray<T> CastUp<TDerived>(ImmutableArray<TDerived> items)

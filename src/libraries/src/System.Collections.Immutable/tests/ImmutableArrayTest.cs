@@ -381,8 +381,8 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void CastArrayBadInterface()
         {
-            var formatableArray = ImmutableArray.Create<IFormattable>(1, 2);
-            Assert.Throws(typeof(InvalidCastException), () => formatableArray.CastArray<IComparable>());
+            var formattableArray = ImmutableArray.Create<IFormattable>(1, 2);
+            Assert.Throws(typeof(InvalidCastException), () => formattableArray.CastArray<IComparable>());
         }
 
         [Fact]
