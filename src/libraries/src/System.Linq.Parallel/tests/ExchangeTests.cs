@@ -107,6 +107,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop]
         public static void PartitioningTest_LongRunning()
         {
             PartitioningTestCore(true, 2, 0, 900);
