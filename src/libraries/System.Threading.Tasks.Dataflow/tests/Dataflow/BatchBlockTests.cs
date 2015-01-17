@@ -625,7 +625,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 // Queue up batchSize-1 input items
                 for (int i = 0; i < batchSize - 1; i++) sendAsyncTasks[i] = batch.SendAsync(i);
-                var racer = Task.Factory.StartNew(() =>
+                var racer = Task.Run(() =>
                                     {
                                         racerReady.Set();
                                         lastSendAsyncTask = batch.SendAsync(batchSize - 1);
@@ -716,7 +716,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 // Queue up batchSize-1 input items
                 for (int i = 0; i < batchSize - 1; i++) sendAsyncTasks[i] = batch.SendAsync(i);
-                var racer = Task.Factory.StartNew(() =>
+                var racer = Task.Run(() =>
                 {
                     racerReady.Set();
                     batch.Complete();

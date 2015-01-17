@@ -104,7 +104,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Test receiving then posting
                 localPassed = true;
                 var wob = new WriteOnceBlock<int>(i => i);
-                Task.Factory.StartNew(() =>
+                Task.Run(() =>
                 {
                     Task.Delay(1000).Wait();
                     wob.Post(42);
