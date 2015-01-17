@@ -5,8 +5,6 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
-using System.Threading;
 
 internal static partial class Interop
 {
