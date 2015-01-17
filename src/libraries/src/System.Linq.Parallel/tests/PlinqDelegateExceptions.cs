@@ -67,6 +67,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop]
         public static void OrderBy()
         {
             // the orderby was a particular problem for the June 2008 CTP.
@@ -104,7 +105,9 @@ namespace Test
                 Assert.NotNull(caughtAggregateException);
             }
         }
+
         [Fact]
+        [OuterLoop]
         public static void OrderBy_OnlyOneException()
         {
             // and try situations where only one user delegate exception occurs
@@ -150,6 +153,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop]
         public static void ZipAndOrdering()
         {
             // zip and ordering was also broken in June 2008 CTP, but this was due to the ordering component.
