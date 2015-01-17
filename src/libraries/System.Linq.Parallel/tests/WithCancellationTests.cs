@@ -309,7 +309,7 @@ namespace Test
                 .Select(x => x);
             var enumerator1 = query1.GetEnumerator();
             enumerator1.MoveNext();
-            Task.Delay(1000);
+            Task.Delay(1000).Wait();
             //Thread.Sleep(1000); // give the pipelining time to fill up some buffers.
             enumerator1.MoveNext();
             enumerator1.Dispose(); //can potentially hang
@@ -410,7 +410,7 @@ namespace Test
 
             var q = src.AsParallel().WithCancellation(tokenSrc.Token).Where(x => false).TakeWhile(x => true);
 
-            Task task = Task.Factory.StartNew(
+            Task task = Task.Run(
                 () =>
                 {
                     try
@@ -432,7 +432,7 @@ namespace Test
             // We wait for 100 ms. If we canceled the token source immediately, the cancellation
             // would occur at the query opening time. The goal of this test is to test cancellation
             // at query execution time.
-            Task.Delay(100);
+            Task.Delay(100).Wait();
             //Thread.Sleep(100);
 
             tokenSrc.Cancel();
@@ -445,7 +445,7 @@ namespace Test
             IEnumerable<int> src = Enumerable.Repeat(0, int.MaxValue);
             CancellationTokenSource tokenSrc = new CancellationTokenSource();
 
-            Task task = Task.Factory.StartNew(
+            Task task = Task.Run(
                 () =>
                 {
                     try
@@ -468,7 +468,7 @@ namespace Test
             // We wait for 100 ms. If we canceled the token source immediately, the cancellation
             // would occur at the query opening time. The goal of this test is to test cancellation
             // at query execution time.
-            Task.WaitAll(Task.Delay(100));
+            Task.Delay(100).Wait();
             //Thread.Sleep(100);
 
             tokenSrc.Cancel();
@@ -481,7 +481,7 @@ namespace Test
             IEnumerable<int> src = Enumerable.Repeat(0, int.MaxValue);
             CancellationTokenSource tokenSrc = new CancellationTokenSource();
 
-            Task task = Task.Factory.StartNew(
+            Task task = Task.Run(
                 () =>
                 {
                     try
@@ -505,7 +505,7 @@ namespace Test
             // We wait for 100 ms. If we canceled the token source immediately, the cancellation
             // would occur at the query opening time. The goal of this test is to test cancellation
             // at query execution time.
-            Task.Delay(100);
+            Task.Delay(100).Wait();
             //Thread.Sleep(100);
 
             tokenSrc.Cancel();
@@ -545,7 +545,7 @@ namespace Test
 
                 var walker = plinq.GetEnumerator();
 
-                t = Task.Factory.StartNew(() =>
+                t = Task.Run(() =>
                 {
                     mre.WaitOne();
                     cs.Cancel();
