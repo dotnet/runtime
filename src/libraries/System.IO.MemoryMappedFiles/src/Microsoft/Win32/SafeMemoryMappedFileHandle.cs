@@ -32,7 +32,7 @@ namespace Microsoft.Win32.SafeHandles
             [SecurityCritical]
             get
             {
-                return handle == new IntPtr(0) || handle == new IntPtr(-1);
+                return handle == IntPtr.Zero || handle == new IntPtr(-1);
             }
         }
     }
