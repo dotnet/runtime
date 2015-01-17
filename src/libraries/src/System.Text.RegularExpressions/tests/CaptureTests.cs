@@ -35,8 +35,6 @@ namespace Test
             Assert.Equal(match.Captures[0].Index, iMatch1[0]);
             Assert.Equal(match.Captures[0].Length, iMatch1[1]);
 
-            Console.WriteLine(match.Captures[0].ToString());
-
             Assert.Equal(match.Groups.Count, 2);
 
             //Group 0 always is the Match
