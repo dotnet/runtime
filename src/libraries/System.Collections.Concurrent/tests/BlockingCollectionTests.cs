@@ -86,10 +86,7 @@ namespace Test
             bc.CompleteAdding();
         }
 
-        // as part of the bugfix for 626345, this code was suffering occassional ObjectDisposedExceptions due
-        // to the expected race between cts.Dispose and the cts.Cancel coming from the linking sources.
-        // ML: update - since the change to wait as part of CTS.Dispose, the ODE no longer occurs
-        // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled to prevent 
+        // This test shows how to cleanup of linkedCTS must be carefully handled to prevent 
         // users of the source CTS mistakenly calling methods on disposed targets.
         [Fact]
         [OuterLoop]
@@ -144,26 +141,12 @@ namespace Test
             //Wait for the producers to finish.
             //It is possible for some of the tasks in the array to be null, because the
             //test was cancelled before all the tasks were creates, so we filter out the null values
-            foreach (Task t in producers)
-            {
-                if (t != null)
-                {
-                    t.Wait();
-                    //t.Join();
-                }
-            }
+            Task.WaitAll(producers);
 
             m_BlockingQueueUnderTest.CompleteAdding(); //signal all producers are done adding items
 
             //Wait for the consumers to finish.
-            foreach (Task t in consumers)
-            {
-                if (t != null)
-                {
-                    t.Wait();
-                    //t.Join();
-                }
-            }
+            Task.WaitAll(consumers);
 
             // success is not suffering exceptions.
         }
