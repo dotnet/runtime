@@ -59,7 +59,6 @@ public class MMVA_Flush
 
             if (_iCountErrors == 0)
             {
-                Console.WriteLine("Pass. iCountTestcases==" + _iCountTestcases);
                 return true;
             }
             else
@@ -85,9 +84,9 @@ public class MMVA_Flush
             _iCountErrors++;
             Console.WriteLine("ERROR, {0}: No exception thrown, expected {1}", strLoc, typeof(EXCTYPE));
         }
-        catch (EXCTYPE ex)
+        catch (EXCTYPE)
         {
-            Console.WriteLine("{0}: Expected, {1}: {2}", strLoc, ex.GetType(), ex.Message);
+            // Expected
         }
         catch (Exception ex)
         {
