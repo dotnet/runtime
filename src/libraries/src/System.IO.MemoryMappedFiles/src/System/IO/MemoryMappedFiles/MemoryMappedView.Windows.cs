@@ -140,7 +140,7 @@ namespace System.IO.MemoryMappedFiles
                         for (Int32 w = 0; canRetry && w < MaxFlushWaits; w++)
                         {
                             Int32 pause = (1 << w);  // MaxFlushRetries should never be over 30
-                            Task.Delay(pause).Wait();
+                            MemoryMappedFile.ThreadSleep(pause);
 
                             for (Int32 r = 0; canRetry && r < MaxFlushRetriesPerWait; r++)
                             {
