@@ -5,14 +5,14 @@ using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.IO.MemoryMappedFiles
 {
     public partial class MemoryMappedFile
     {
         /// <summary>
-        /// Used by the 2 Create factory method groups.  A -1 fileHandle specifies that the 
+        /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
         /// memory mapped file should not be associated with an exsiting file on disk (ie start
         /// out empty).
         /// </summary>
@@ -21,21 +21,24 @@ namespace System.IO.MemoryMappedFiles
             SafeFileHandle fileHandle, String mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, Int64 capacity)
         {
-            SafeMemoryMappedFileHandle handle = null;
             Interop.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
             // split the long into two ints
             int capacityLow = unchecked((int)(capacity & 0x00000000FFFFFFFFL));
             int capacityHigh = unchecked((int)(capacity >> 32));
 
-            handle = Interop.mincore.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options,
-                capacityHigh, capacityLow, mapName);
+            SafeMemoryMappedFileHandle handle = fileHandle != null ?
+                Interop.mincore.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacityHigh, capacityLow, mapName) :
+                Interop.mincore.CreateFileMapping(Interop.INVALID_HANDLE_VALUE, ref secAttrs, GetPageAccess(access) | (int)options, capacityHigh, capacityLow, mapName);
 
             Int32 errorCode = Marshal.GetLastWin32Error();
-            if (!handle.IsInvalid && errorCode == Interop.ERROR_ALREADY_EXISTS)
+            if (!handle.IsInvalid)
             {
-                handle.Dispose();
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                if (errorCode == Interop.ERROR_ALREADY_EXISTS)
+                {
+                    handle.Dispose();
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                }
             }
             else if (handle.IsInvalid)
             {
@@ -68,26 +71,23 @@ namespace System.IO.MemoryMappedFiles
         }
 
         /// <summary>
-        /// Used by the CreateOrOpen factory method groups.  A -1 fileHandle specifies that the 
-        /// memory mapped file should not be associated with an existing file on disk (ie start
-        /// out empty).
-        ///
-        /// Try to open the file if it exists -- this requires a bit more work. Loop until we can
-        /// either create or open a memory mapped file up to a timeout. CreateFileMapping may fail
-        /// if the file exists and we have non-null security attributes, in which case we need to
-        /// use OpenFileMapping.  But, there exists a race condition because the memory mapped file
-        /// may have closed inbetween the two calls -- hence the loop. 
-        /// 
-        /// This uses similar retry/timeout logic as in performance counter. It increases the wait
-        /// time each pass through the loop and times out in approximately 1.4 minutes. If after 
-        /// retrying, a MMF handle still hasn't been opened, throw an InvalidOperationException.
+        /// Used by the CreateOrOpen factory method groups.
         /// </summary>
         [SecurityCritical]
-        private static SafeMemoryMappedFileHandle CreateOrOpenCore(SafeFileHandle fileHandle, String mapName,
-                                                                HandleInheritability inheritability,
-                                                                MemoryMappedFileAccess access, MemoryMappedFileOptions options,
-                                                                Int64 capacity)
+        private static SafeMemoryMappedFileHandle CreateOrOpenCore(
+            String mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, 
+            MemoryMappedFileOptions options, Int64 capacity)
         {
+            /// Try to open the file if it exists -- this requires a bit more work. Loop until we can
+            /// either create or open a memory mapped file up to a timeout. CreateFileMapping may fail
+            /// if the file exists and we have non-null security attributes, in which case we need to
+            /// use OpenFileMapping.  But, there exists a race condition because the memory mapped file
+            /// may have closed inbetween the two calls -- hence the loop. 
+            /// 
+            /// The retry/timeout logic increases the wait time each pass through the loop and times 
+            /// out in approximately 1.4 minutes. If after retrying, a MMF handle still hasn't been opened, 
+            /// throw an InvalidOperationException.
+
             Debug.Assert(access != MemoryMappedFileAccess.Write, "Callers requesting write access shouldn't try to create a mmf");
 
             SafeMemoryMappedFileHandle handle = null;
@@ -104,31 +104,25 @@ namespace System.IO.MemoryMappedFiles
             while (waitRetries > 0)
             {
                 // try to create
-                handle = Interop.mincore.CreateFileMapping(fileHandle, ref secAttrs,
+                handle = Interop.mincore.CreateFileMapping(Interop.INVALID_HANDLE_VALUE, ref secAttrs,
                     GetPageAccess(access) | (int)options, capacityHigh, capacityLow, mapName);
 
-                Int32 createErrorCode = Marshal.GetLastWin32Error();
                 if (!handle.IsInvalid)
                 {
                     break;
                 }
                 else
                 {
+                    Int32 createErrorCode = Marshal.GetLastWin32Error();
                     if (createErrorCode != Interop.ERROR_ACCESS_DENIED)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(createErrorCode);
                     }
-
-                    // the mapname exists but our ACL is preventing us from opening it with CreateFileMapping.  
-                    // Let's try to open it with OpenFileMapping.
-                    handle.SetHandleAsInvalid();
                 }
 
                 // try to open
                 handle = Interop.mincore.OpenFileMapping(GetFileMapAccess(access), (inheritability &
-                        HandleInheritability.Inheritable) != 0, mapName);
-
-                Int32 openErrorCode = Marshal.GetLastWin32Error();
+                    HandleInheritability.Inheritable) != 0, mapName);
 
                 // valid handle
                 if (!handle.IsInvalid)
@@ -138,6 +132,7 @@ namespace System.IO.MemoryMappedFiles
                 // didn't get valid handle; have to retry
                 else
                 {
+                    Int32 openErrorCode = Marshal.GetLastWin32Error();
                     if (openErrorCode != Interop.ERROR_FILE_NOT_FOUND)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(openErrorCode);
@@ -151,7 +146,7 @@ namespace System.IO.MemoryMappedFiles
                     }
                     else
                     {
-                        Task.Delay(waitSleep).Wait();
+                        ThreadSleep(waitSleep);
                         waitSleep *= 2;
                     }
                 }
@@ -257,6 +252,14 @@ namespace System.IO.MemoryMappedFiles
                 secAttrs.bInheritHandle = true;
             }
             return secAttrs;
+        }
+
+        /// <summary>
+        /// Replacement for Thread.Sleep(milliseconds), which isn't available.
+        /// </summary>
+        internal static void ThreadSleep(int milliseconds)
+        {
+            new ManualResetEventSlim(initialState: false).Wait(milliseconds);
         }
     }
 }

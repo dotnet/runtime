@@ -129,6 +129,7 @@ internal static partial class Interop
 
     // From WinBase.h
     internal const int SEM_FAILCRITICALERRORS = 1;
+    internal static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct SYSTEM_INFO
@@ -206,6 +207,12 @@ internal static partial class Interop
         [DllImport(MEMORYDLL, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
         [SecurityCritical]
         internal static extern SafeMemoryMappedFileHandle CreateFileMapping(SafeFileHandle hFile,
+            ref SECURITY_ATTRIBUTES lpFileMappingAttributes, int flProtect,
+            int dwMaximumSizeHigh, int dwMaximumSizeLow, string lpName);
+
+        [DllImport(MEMORYDLL, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [SecurityCritical]
+        internal static extern SafeMemoryMappedFileHandle CreateFileMapping(IntPtr hFile,
             ref SECURITY_ATTRIBUTES lpFileMappingAttributes, int flProtect,
             int dwMaximumSizeHigh, int dwMaximumSizeLow, string lpName);
 

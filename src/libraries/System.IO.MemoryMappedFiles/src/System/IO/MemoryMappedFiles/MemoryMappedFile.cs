@@ -305,9 +305,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException("inheritability");
             }
 
-            SafeMemoryMappedFileHandle handle = CreateCore(new SafeFileHandle(new IntPtr(-1), true), mapName, inheritability,
-                access, options, capacity);
-
+            SafeMemoryMappedFileHandle handle = CreateCore(null, mapName, inheritability, access, options, capacity);
             return new MemoryMappedFile(handle);
         }
 
@@ -376,7 +374,7 @@ namespace System.IO.MemoryMappedFiles
             }
             else
             {
-                handle = CreateOrOpenCore(new SafeFileHandle(new IntPtr(-1), true), mapName, inheritability, access, options, capacity);
+                handle = CreateOrOpenCore(mapName, inheritability, access, options, capacity);
             }
             return new MemoryMappedFile(handle);
         }
