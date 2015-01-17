@@ -2734,16 +2734,25 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 
 	TV_GETTIME (btv);
 	time_major_scan_big_objects += TV_ELAPSED (atv, btv);
+}
 
-	if (concurrent_collection_in_progress) {
-		/* prepare the pin queue for the next collection */
-		sgen_finish_pinning ();
+static void
+major_finish_copy_or_mark (void)
+{
+	if (!concurrent_collection_in_progress)
+		return;
 
-		sgen_pin_stats_reset ();
+	/*
+	 * Prepare the pin queue for the next collection.  Since pinning runs on the worker
+	 * threads we must wait for the jobs to finish before we can reset it.
+	 */
+	sgen_workers_wait_for_jobs_finished ();
+	sgen_finish_pinning ();
 
-		if (do_concurrent_checks)
-			check_nursery_is_clean ();
-	}
+	sgen_pin_stats_reset ();
+
+	if (do_concurrent_checks)
+		check_nursery_is_clean ();
 }
 
 static void
@@ -2787,6 +2796,7 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 		major_collector.start_major_collection ();
 
 	major_copy_or_mark_from_roots (old_next_pin_slot, concurrent, FALSE, FALSE, FALSE);
+	major_finish_copy_or_mark ();
 }
 
 static void
@@ -2814,6 +2824,8 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, scan_mod_union, scan_whole_nursery);
 
 		sgen_workers_signal_finish_nursery_collection ();
+
+		major_finish_copy_or_mark ();
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 		sgen_workers_join ();
@@ -3033,7 +3045,6 @@ major_start_concurrent_collection (const char *reason)
 	major_start_collection (TRUE, NULL);
 
 	gray_queue_redirect (&gray_queue);
-	sgen_workers_wait_for_jobs_finished ();
 
 	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
 	MONO_GC_CONCURRENT_START_END (GENERATION_OLD, num_objects_marked);
