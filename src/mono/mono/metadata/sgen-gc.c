@@ -2975,6 +2975,10 @@ sgen_gc_init (void)
 
 	SGEN_TV_GETTIME (sgen_init_timestamp);
 
+#ifdef SGEN_WITHOUT_MONO
+	mono_thread_smr_init ();
+#endif
+
 	LOCK_INIT (gc_mutex);
 
 	gc_debug_file = stderr;

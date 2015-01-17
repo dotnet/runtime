@@ -16,9 +16,16 @@
  * entry data, and then sets the state to USED or FREE.
  */
 
+#include <string.h>
+
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-membar.h>
+#ifdef SGEN_WITHOUT_MONO
+#include <mono/metadata/sgen-gc.h>
+#include <mono/metadata/sgen-client.h>
+#else
 #include <mono/utils/mono-mmap.h>
+#endif
 
 #include <mono/utils/lock-free-array-queue.h>
 

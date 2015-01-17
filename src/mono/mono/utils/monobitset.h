@@ -2,7 +2,12 @@
 #define __MONO_BITSET_H__
 
 #include <glib.h>
+#ifdef SGEN_WITHOUT_MONO
+#include "mono/utils/mono-compiler.h"
+#define MONO_API
+#else
 #include <mono/utils/mono-publib.h>
+#endif
 
 /*
  * When embedding, you have to define MONO_ZERO_LEN_ARRAY before including any

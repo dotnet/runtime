@@ -273,3 +273,8 @@ void sgen_client_print_gc_debug_usage (void);
 #undef TYPE_SIZE
 #undef TYPE_POINTER
 #undef TYPE_BOOL
+
+#ifdef SGEN_WITHOUT_MONO
+SgenThreadInfo* mono_thread_info_current (void);
+int mono_thread_info_get_small_id (void);
+#endif
