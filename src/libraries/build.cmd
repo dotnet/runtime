@@ -35,6 +35,6 @@ goto :eof
 
 echo.
 :: Pull the build summary from the log file
-findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" %~dp0msbuild.log
+findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%~dp0msbuild.log"
 
 endlocal
