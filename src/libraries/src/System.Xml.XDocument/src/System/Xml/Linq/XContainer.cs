@@ -729,7 +729,7 @@ namespace System.Xml.Linq
         internal void ConvertTextToNode()
         {
             string s = content as string;
-            if (s != null && s.Length > 0)
+            if (!string.IsNullOrEmpty(s))
             {
                 XText t = new XText(s);
                 t.parent = this;
