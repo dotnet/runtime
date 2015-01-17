@@ -96,7 +96,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Test receiving then posting
                 localPassed = true;
                 var bb = new BroadcastBlock<int>(i => i);
-                Task.Factory.StartNew(() =>
+                Task.Run(() =>
                 {
                     Task.Delay(1).Wait();
                     bb.Post(42);
