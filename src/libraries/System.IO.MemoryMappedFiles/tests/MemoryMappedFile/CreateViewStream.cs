@@ -324,7 +324,6 @@ public class CreateViewStream : MMFTestBase
 
             if (iCountErrors == 0)
             {
-                Console.WriteLine("paSs. iCountTestcases==" + iCountTestcases);
                 return true;
             }
             else
@@ -404,7 +403,7 @@ public class CreateViewStream : MMFTestBase
                     }
                     else
                     {
-                        Console.WriteLine("Got expected {0}", aore.GetType().ToString());
+                        // Got expected ArgumentOutOfRangeException
                     }
                 }
                 catch (IOException ioex)
@@ -420,7 +419,7 @@ public class CreateViewStream : MMFTestBase
                     }
                     else
                     {
-                        Console.WriteLine("Got expected {0}", ioex.GetType().ToString());
+                        // Got expected IOException
                     }
                 }
             }
