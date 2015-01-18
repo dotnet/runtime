@@ -45,6 +45,18 @@ class Tests
 		}
 	}
 
+	class Foo2<T> {
+		public static T Get_T (double d, T t) {
+			return t;
+		}
+	}
+
+	class Foo3<T> {
+		public static T Get_T (double d, T t) {
+			return Foo2<T>.Get_T (d, t);
+		}
+	}
+
 	static int test_0_arm64_dyncall_double () {
 		double arg1 = 1.0f;
 		double s = 2.0f;
@@ -81,6 +93,23 @@ class Tests
 		s.a = 1.0f;
 		s.b = 2.0f;
 		var s_res = (Struct2)typeof (Foo<Struct2>).GetMethod ("Get_T").Invoke (null, new object [] { arg1, s });
+		if (s_res.a != 1.0f || s_res.b != 2.0f)
+			return 1;
+		return 0;
+	}
+
+	static int test_0_arm64_dyncall_gsharedvt_out_hfa_double () {
+		/* gsharedvt out trampoline with double hfa argument */
+		double arg1 = 1.0f;
+
+		var s = new Struct1 ();
+		s.a = 1.0f;
+		s.b = 2.0f;
+		// Call Foo2.Get_T directly, so its gets an instance
+		Foo2<Struct1>.Get_T (arg1, s);
+		Type t = typeof (Foo3<>).MakeGenericType (new Type [] { typeof (Struct1) });
+		// Call Foo3.Get_T, this will call the gsharedvt instance, which will call the non-gsharedvt instance
+		var s_res = (Struct1)t.GetMethod ("Get_T").Invoke (null, new object [] { arg1, s });
 		if (s_res.a != 1.0f || s_res.b != 2.0f)
 			return 1;
 		return 0;
