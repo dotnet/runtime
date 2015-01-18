@@ -10,123 +10,143 @@ namespace System.Collections.Immutable.Test
 {
     public class ImmutableInterlockedTests
     {
+        private delegate bool ApplyChangeDelegate<T>(ref T location, Func<T, T> transformer);
+
         [Fact]
         public void ApplyChange_StartWithNull()
         {
-            ImmutableList<int> list = null;
-            Assert.True(ImmutableInterlocked.ApplyChange(ref list, l => { Assert.Null(l); return ImmutableList.Create(1); }));
-            Assert.Equal(1, list.Count);
-            Assert.Equal(1, list[0]);
+            ApplyChangeHelper<ImmutableList<int>>(func =>
+            {
+                ImmutableList<int> list = null;
+                Assert.True(func(ref list, l => { Assert.Null(l); return ImmutableList.Create(1); }));
+                Assert.Equal(1, list.Count);
+                Assert.Equal(1, list[0]);
+            });
         }
 
         [Fact]
         public void ApplyChange_IncrementalUpdate()
         {
-            ImmutableList<int> list = ImmutableList.Create(1);
-            Assert.True(ImmutableInterlocked.ApplyChange(ref list, l => l.Add(2)));
-            Assert.Equal(2, list.Count);
-            Assert.Equal(1, list[0]);
-            Assert.Equal(2, list[1]);
+            ApplyChangeHelper<ImmutableList<int>>(func =>
+            {
+                ImmutableList<int> list = ImmutableList.Create(1);
+                Assert.True(func(ref list, l => l.Add(2)));
+                Assert.Equal(2, list.Count);
+                Assert.Equal(1, list[0]);
+                Assert.Equal(2, list[1]);
+            });
         }
 
         [Fact]
         public void ApplyChange_FuncThrowsThrough()
         {
-            ImmutableList<int> list = ImmutableList.Create(1);
-            Assert.Throws<InvalidOperationException>(() => ImmutableInterlocked.ApplyChange(ref list, l => { throw new InvalidOperationException(); }));
+            ApplyChangeHelper<ImmutableList<int>>(func =>
+            {
+                ImmutableList<int> list = ImmutableList.Create(1);
+                Assert.Throws<InvalidOperationException>(() => func(ref list, l => { throw new InvalidOperationException(); }));
+            });
         }
 
         [Fact]
         public void ApplyChange_NoEffectualChange()
         {
-            ImmutableList<int> list = ImmutableList.Create<int>(1);
-            Assert.False(ImmutableInterlocked.ApplyChange(ref list, l => l));
+            ApplyChangeHelper<ImmutableList<int>>(func =>
+            {
+                ImmutableList<int> list = ImmutableList.Create<int>(1);
+                Assert.False(func(ref list, l => l));
+            });
         }
 
         [Fact]
         public void ApplyChange_HighConcurrency()
         {
-            ImmutableList<int> list = ImmutableList.Create<int>();
-            int concurrencyLevel = Environment.ProcessorCount;
-            int iterations = 500;
-            Task[] tasks = new Task[concurrencyLevel];
-            var barrier = new Barrier(tasks.Length);
-            for (int i = 0; i < tasks.Length; i++)
+            ApplyChangeHelper<ImmutableList<int>>(func =>
             {
-                tasks[i] = Task.Run(delegate
+                ImmutableList<int> list = ImmutableList.Create<int>();
+                int concurrencyLevel = Environment.ProcessorCount;
+                int iterations = 500;
+                Task[] tasks = new Task[concurrencyLevel];
+                var barrier = new Barrier(tasks.Length);
+                for (int i = 0; i < tasks.Length; i++)
                 {
-                    // Maximize concurrency by blocking this thread until all the other threads are ready to go as well.
-                    barrier.SignalAndWait();
-
-                    for (int j = 0; j < iterations; j++)
+                    tasks[i] = Task.Run(delegate
                     {
-                        Assert.True(ImmutableInterlocked.ApplyChange(ref list, l => l.Add(l.Count)));
-                    }
-                });
-            }
+                        // Maximize concurrency by blocking this thread until all the other threads are ready to go as well.
+                        barrier.SignalAndWait();
 
-            Task.WaitAll(tasks);
-            Assert.Equal(concurrencyLevel * iterations, list.Count);
-            for (int i = 0; i < list.Count; i++)
-            {
-                Assert.Equal(i, list[i]);
-            }
+                        for (int j = 0; j < iterations; j++)
+                        {
+                            Assert.True(func(ref list, l => l.Add(l.Count)));
+                        }
+                    });
+                }
+
+                Task.WaitAll(tasks);
+                Assert.Equal(concurrencyLevel * iterations, list.Count);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    Assert.Equal(i, list[i]);
+                }
+            });
         }
 
         [Fact]
         public void ApplyChange_CarefullyScheduled()
         {
-            var set = ImmutableHashSet.Create<int>();
-            var task2TransformEntered = new AutoResetEvent(false);
-            var task1TransformExited = new AutoResetEvent(false);
-
-            var task1 = Task.Run(delegate
+            ApplyChangeHelper<ImmutableHashSet<int>>(func =>
             {
-                int transform1ExecutionCounter = 0;
-                ImmutableInterlocked.ApplyChange(
-                    ref set,
-                    s =>
-                    {
-                        Assert.Equal(1, ++transform1ExecutionCounter);
-                        task2TransformEntered.WaitOne();
-                        return s.Add(1);
-                    });
-                task1TransformExited.Set();
-                Assert.Equal(1, transform1ExecutionCounter);
-            });
+                var set = ImmutableHashSet.Create<int>();
+                var task2TransformEntered = new AutoResetEvent(false);
+                var task1TransformExited = new AutoResetEvent(false);
 
-            var task2 = Task.Run(delegate
-            {
-                int transform2ExecutionCounter = 0;
-                ImmutableInterlocked.ApplyChange(
-                    ref set,
-                    s =>
-                    {
-                        switch (++transform2ExecutionCounter)
+                var task1 = Task.Run(delegate
+                {
+                    int transform1ExecutionCounter = 0;
+                    func(
+                        ref set,
+                        s =>
                         {
-                            case 1:
-                                task2TransformEntered.Set();
-                                task1TransformExited.WaitOne();
-                                Assert.True(s.IsEmpty);
-                                break;
-                            case 2:
-                                Assert.True(s.Contains(1));
-                                Assert.Equal(1, s.Count);
-                                break;
-                        }
+                            Assert.Equal(1, ++transform1ExecutionCounter);
+                            task2TransformEntered.WaitOne();
+                            return s.Add(1);
+                        });
+                    task1TransformExited.Set();
+                    Assert.Equal(1, transform1ExecutionCounter);
+                });
 
-                        return s.Add(2);
-                    });
+                var task2 = Task.Run(delegate
+                {
+                    int transform2ExecutionCounter = 0;
+                    func(
+                        ref set,
+                        s =>
+                        {
+                            switch (++transform2ExecutionCounter)
+                            {
+                                case 1:
+                                    task2TransformEntered.Set();
+                                    task1TransformExited.WaitOne();
+                                    Assert.True(s.IsEmpty);
+                                    break;
+                                case 2:
+                                    Assert.True(s.Contains(1));
+                                    Assert.Equal(1, s.Count);
+                                    break;
+                            }
 
-                // Verify that this transform had to execute twice.
-                Assert.Equal(2, transform2ExecutionCounter);
+                            return s.Add(2);
+                        });
+
+                    // Verify that this transform had to execute twice.
+                    Assert.Equal(2, transform2ExecutionCounter);
+                });
+
+                // Wait for all tasks and rethrow any exceptions.
+                Task.WaitAll(task1, task2);
+                Assert.Equal(2, set.Count);
+                Assert.True(set.Contains(1));
+                Assert.True(set.Contains(2));
             });
-
-            // Wait for all tasks and rethrow any exceptions.
-            Task.WaitAll(task1, task2);
-            Assert.Equal(2, set.Count);
-            Assert.True(set.Contains(1));
-            Assert.True(set.Contains(2));
         }
 
         [Fact]
@@ -371,6 +391,43 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(1, queue.Peek());
             Assert.Equal(2, queue.Dequeue().Peek());
             Assert.True(queue.Dequeue().Dequeue().IsEmpty);
+        }
+
+        /// <summary>
+        /// Executes a test against both <see cref="ImmutableInterlocked.ApplyChange{T}(ref T, Func{T, T})"/>
+        /// and <see cref="ImmutableInterlocked.ApplyChange{T, TArg}(ref T, Func{T, TArg, T}, TArg)"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of value under test.</typeparam>
+        /// <param name="test">
+        /// The test to execute. Invoke the parameter instead of calling
+        /// the ImmutableInterlocked method so that the delegate can test both overloads
+        /// by being executed twice.
+        /// </param>
+        private static void ApplyChangeHelper<T>(Action<ApplyChangeDelegate<T>> test)
+            where T : class
+        {
+            test(ImmutableInterlocked.ApplyChange<T>);
+            test(ApplyChangeWrapper<T>);
+        }
+
+        /// <summary>
+        /// A wrapper that makes one overload look like another so the same test delegate can execute against both.
+        /// </summary>
+        /// <typeparam name="T">The type of value being changed.</typeparam>
+        /// <param name="location">The variable or field to be changed.</param>
+        /// <param name="transformer">The function that transforms the value.</param>
+        /// <returns>The result of the replacement function.</returns>
+        private static bool ApplyChangeWrapper<T>(ref T location, Func<T, T> transformer)
+            where T : class
+        {
+            return ImmutableInterlocked.ApplyChange<T, int>(
+                ref location,
+                (t, arg) =>
+                {
+                    Assert.Equal(1, arg);
+                    return transformer(t);
+                },
+                1);
         }
     }
 }
