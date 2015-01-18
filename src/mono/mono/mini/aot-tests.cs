@@ -39,7 +39,7 @@ class Tests
 	}
 
 	class Foo<T> {
-		/* The 'd' argument is used to shift the register indexes so 't' doesn't start at the first reg
+		/* The 'd' argument is used to shift the register indexes so 't' doesn't start at the first reg */
 		public static T Get_T (double d, T t) {
 			return t;
 		}
