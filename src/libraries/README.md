@@ -36,6 +36,9 @@ Today, the repository contains the following components:
   a linked list dictionary, a bit vector, and collections that contain only strings. These collections exist in 
   .NET Core primarily for backwards compatibility and generally should be avoided when writing new code.
 
+* **System.ComponentModel**. Provides types used to implement the run-time and design-time behavior of components 
+  and controls.
+
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
 
