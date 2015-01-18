@@ -46,5 +46,38 @@
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
   
   <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
+  
+  <PropertyGroup>
+    <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)'=='' And !$([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">False</IsTestProject>
+    <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
+  </PropertyGroup>
 
+  <Target Name="RunTestsForProject"
+          AfterTargets="PrepareForRun"
+          Condition="'$(RunTestsForProject)'=='True'">
+
+    <!-- xUnit Traits -->
+    <PropertyGroup>
+      <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
+    </PropertyGroup>
+    <ItemGroup>
+      <IncludeTraitsItems Include="$(IncludeTraits)" />
+      <ExcludeTraitsItems Include="$(ExcludeTraits)" />
+    </ItemGroup>
+    
+    <!-- Construct and invoke xunit console runner via corerun.exe -->
+    <PropertyGroup>
+      <XunitCommandLine>corerun.exe xunit.console.netcore.exe</XunitCommandLine>
+      
+      <XunitOptions>$(XunitOptions) $(TargetFileName)</XunitOptions>
+      <XunitOptions Condition="'@(IncludeTraitsItems)'!=''">$(XunitOptions) -trait @(IncludeTraitsItems, ' -trait ')</XunitOptions>
+      <XunitOptions Condition="'@(ExcludeTraitsItems)'!=''">$(XunitOptions) -notrait @(ExcludeTraitsItems, ' -notrait ')</XunitOptions>
+    </PropertyGroup>
+
+    <Exec
+      Command="$(XunitCommandLine) $(XunitOptions)"
+      WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)" />
+
+  </Target>
 </Project>
