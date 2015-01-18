@@ -43,20 +43,4 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- <DisabledTestAssembly Include="TestAssemblyName" /> -->
-    <SkipTestAssemblies Include="@(DisabledTestAssembly->'$(TestWorkingDir)**\%(Identity).dll')" />
-  </ItemGroup>
-
-  <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
-  <Target Name="RunDirTests" DependsOnTargets="RunTests">
-    <Error Text="One or more tests failed. See the log file for more details." Condition="'@(XUnitExitCodes)' != '' and '%(XUnitExitCodes.Identity)' != '0'" />
-  </Target>
-  <PropertyGroup Condition="Exists('$(ToolsDir)tests.targets')">
-    <TraversalBuildDependsOn>
-      $(TraversalBuildDependsOn);
-      RunDirTests;
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
-
 </Project>
