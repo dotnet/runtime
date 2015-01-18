@@ -114,4 +114,21 @@ class Tests
 			return 1;
 		return 0;
 	}
+
+	static int test_0_arm64_dyncall_gsharedvt_out_hfa_float () {
+		/* gsharedvt out trampoline with double hfa argument */
+		double arg1 = 1.0f;
+
+		var s = new Struct2 ();
+		s.a = 1.0f;
+		s.b = 2.0f;
+		// Call Foo2.Get_T directly, so its gets an instance
+		Foo2<Struct2>.Get_T (arg1, s);
+		Type t = typeof (Foo3<>).MakeGenericType (new Type [] { typeof (Struct2) });
+		// Call Foo3.Get_T, this will call the gsharedvt instance, which will call the non-gsharedvt instance
+		var s_res = (Struct2)t.GetMethod ("Get_T").Invoke (null, new object [] { arg1, s });
+		if (s_res.a != 1.0f || s_res.b != 2.0f)
+			return 1;
+		return 0;
+	}
 }
