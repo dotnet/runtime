@@ -57,8 +57,6 @@ public class MMVS_ReadWrite : TestBase
                     // Default ViewStream size - whole MMF
                     using (MemoryMappedViewStream view = mmf.CreateViewStream())
                     {
-                        Console.WriteLine("View Capacity: " + view.Capacity);
-
                         BinaryReader reader = new BinaryReader(view);
                         BinaryWriter writer = new BinaryWriter(view);
 
@@ -149,19 +147,17 @@ public class MMVS_ReadWrite : TestBase
                         VerifyReadDouble("Loc074", reader2, BitConverter.ToDouble(byteArray1, 7));
                         reader2.BaseStream.Seek(0, SeekOrigin.Begin);
                         VerifyReadDecimal("Loc075", reader2, new Decimal(new Int32[] { BitConverter.ToInt32(byteArray1, 0), BitConverter.ToInt32(byteArray1, 4), BitConverter.ToInt32(byteArray1, 8), BitConverter.ToInt32(byteArray1, 12) }));
-                        Console.WriteLine(reader2.BaseStream.Seek(2161, SeekOrigin.Begin));
+                        reader2.BaseStream.Seek(2161, SeekOrigin.Begin);
                         VerifyReadDecimal("Loc076", reader2, dec);
                         VerifyReadBoolean("Loc077", reader2, true);
                         VerifyReadInt32("Loc078", reader2, 211209802);
-                        Console.WriteLine(reader2.BaseStream.Seek(-1, SeekOrigin.End));
+                        reader2.BaseStream.Seek(-1, SeekOrigin.End);
                         VerifyReadBoolean("Loc079", reader2, true);
                     }
 
                     // ViewStream starts at nonzero offset, spans remainder of MMF
                     using (MemoryMappedViewStream view = mmf.CreateViewStream(1000, 0))
                     {
-                        Console.WriteLine(view.Capacity);
-
                         BinaryReader reader = new BinaryReader(view);
                         BinaryWriter writer = new BinaryWriter(view);
 
@@ -253,8 +249,6 @@ public class MMVS_ReadWrite : TestBase
                     // ViewStream starts at nonzero offset, with size shorter than MMF
                     using (MemoryMappedViewStream view = mmf.CreateViewStream(2000, 10000))
                     {
-                        Console.WriteLine(view.Capacity);
-
                         BinaryReader reader = new BinaryReader(view);
                         BinaryWriter writer = new BinaryWriter(view);
 
@@ -350,8 +344,6 @@ public class MMVS_ReadWrite : TestBase
             {
                 using (MemoryMappedViewStream view = mmf.CreateViewStream())
                 {
-                    Console.WriteLine(view.Capacity);
-
                     BinaryReader reader = new BinaryReader(view);
                     BinaryWriter writer = new BinaryWriter(view);
 
@@ -434,8 +426,6 @@ public class MMVS_ReadWrite : TestBase
 
                 using (MemoryMappedViewStream view = mmf.CreateViewStream(0, 10000, MemoryMappedFileAccess.CopyOnWrite))
                 {
-                    Console.WriteLine(view.Capacity);
-
                     BinaryReader reader = new BinaryReader(view);
                     BinaryWriter writer = new BinaryWriter(view);
 
@@ -463,8 +453,6 @@ public class MMVS_ReadWrite : TestBase
 
                 using (MemoryMappedViewStream view = mmf.CreateViewStream(0, 10000, MemoryMappedFileAccess.Read))
                 {
-                    Console.WriteLine(view.Capacity);
-
                     BinaryReader reader = new BinaryReader(view);
 
                     // Read existing values
@@ -492,7 +480,6 @@ public class MMVS_ReadWrite : TestBase
 
             if (iCountErrors == 0)
             {
-                Console.WriteLine("Pass. iCountTestcases==" + iCountTestcases);
                 return true;
             }
             else

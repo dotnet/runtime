@@ -80,14 +80,12 @@ public class EncodingTest
         EnsureInitialization();
 
         Encoding encoding = Encoding.GetEncoding(0);
-        Console.WriteLine("System default non-unicode code page: {0} ({1})", encoding.WebName, encoding.CodePage);
         Assert.True(encoding.CodePage != 0);
         Assert.True(encoding.WebName != Encoding.UTF8.WebName);
     }
 
     private static void TestRoundtrippingCodepageEncoding(string encodingName, byte[] bytes, string s)
     {
-        Console.WriteLine("Testing codepage: {0}", encodingName);
         Encoding enc = Encoding.GetEncoding(encodingName);
         string resultString = enc.GetString(bytes, 0, bytes.Length);
         Assert.True(s.Equals(resultString));
@@ -96,7 +94,7 @@ public class EncodingTest
         Assert.Equal(bytes.Length, resultBytes.Length);
         for (int i = 0; i < bytes.Length; i++)
         {
-            Assert.Equal<byte>(bytes[i], resultBytes[i]);
+            Assert.True(bytes[i] == resultBytes[i], "encodingName: " + encodingName);
         }
     }
 
@@ -183,11 +181,6 @@ public class EncodingTest
             int charCount = jpDecoder.GetChars(japaneseEncodedBuffer, byteIndex, 1, buffer, charIndex);
             if (charCount > 0)
             {
-                for (int i = 0; i < charCount; i++)
-                {
-                    Console.Write("0x{0:X}, ", (int)buffer[charIndex + i]);
-                }
-                Console.WriteLine();
                 charIndex += charCount;
             }
             byteIndex++;
@@ -228,11 +221,6 @@ public class EncodingTest
             int charCount = chineseDecoder.GetChars(chineseBuffer, byteIndex, 1, buffer, charIndex);
             if (charCount > 0)
             {
-                for (int i = 0; i < charCount; i++)
-                {
-                    Console.Write("0x{0:X}, ", (int)buffer[charIndex + i]);
-                }
-                Console.WriteLine();
                 charIndex += charCount;
             }
             byteIndex++;
@@ -271,11 +259,6 @@ public class EncodingTest
             int charCount = jpDecoder.GetChars(shiftJapaneseBuffer, byteIndex, 1, buffer, charIndex);
             if (charCount > 0)
             {
-                for (int i = 0; i < charCount; i++)
-                {
-                    Console.Write("0x{0:X}, ", (int)buffer[charIndex + i]);
-                }
-                Console.WriteLine();
                 charIndex += charCount;
             }
             byteIndex++;
@@ -313,11 +296,6 @@ public class EncodingTest
             int charCount = krDecoder.GetChars(koreanEncodedBuffer, byteIndex, 1, buffer, charIndex);
             if (charCount > 0)
             {
-                for (int i = 0; i < charCount; i++)
-                {
-                    Console.Write("0x{0:X}, ", (int)buffer[charIndex + i]);
-                }
-                Console.WriteLine();
                 charIndex += charCount;
             }
             byteIndex++;
@@ -356,11 +334,6 @@ public class EncodingTest
             int charCount = krDecoder.GetChars(hzEncodedBuffer, byteIndex, 1, buffer, charIndex);
             if (charCount > 0)
             {
-                for (int i = 0; i < charCount; i++)
-                {
-                    Console.Write("0x{0:X}, ", (int)buffer[charIndex + i]);
-                }
-                Console.WriteLine();
                 charIndex += charCount;
             }
             byteIndex++;
