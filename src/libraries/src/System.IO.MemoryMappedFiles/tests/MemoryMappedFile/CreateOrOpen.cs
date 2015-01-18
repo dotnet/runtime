@@ -370,7 +370,6 @@ public class CreateOrOpen : MMFTestBase
 
             if (iCountErrors == 0)
             {
-                Console.WriteLine("paSs. iCountTestcases==" + iCountTestcases);
                 return true;
             }
             else

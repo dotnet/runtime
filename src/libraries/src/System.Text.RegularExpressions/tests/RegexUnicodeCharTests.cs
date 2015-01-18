@@ -53,9 +53,6 @@ public class RegexUnicodeCharTests
             //[\p{L1}\p{Lu}\p{Lt}\p{Lo}\p{Nd}\p{Pc}]
             iCountTestcases++;
 
-
-            Console.WriteLine("MaxUnicodeRange, " + MaxUnicodeRange);
-
             alstValidChars = new List<Char>();
             alstInvalidChars = new List<Char>();
             for (int i = 0; i < MaxUnicodeRange; i++)

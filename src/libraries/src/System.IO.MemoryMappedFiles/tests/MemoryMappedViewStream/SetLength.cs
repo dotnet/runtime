@@ -52,9 +52,9 @@ public class MMVS_SetLength
                         _iCountErrors++;
                         Console.WriteLine("ERROR, No exception thrown, expected NotSupportedException");
                     }
-                    catch (NotSupportedException ex)
+                    catch (NotSupportedException)
                     {
-                        Console.WriteLine("Expected, {0}: {1}", ex.GetType(), ex.Message);
+                        // Expected
                     }
                     catch (Exception ex)
                     {
@@ -77,7 +77,6 @@ public class MMVS_SetLength
 
             if (_iCountErrors == 0)
             {
-                Console.WriteLine("Pass. iCountTestcases==" + _iCountTestcases);
                 return true;
             }
             else

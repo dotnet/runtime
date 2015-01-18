@@ -116,7 +116,6 @@ public class MMF_Dispose
 
             if (_iCountErrors == 0)
             {
-                Console.WriteLine("Pass. iCountTestcases==" + _iCountTestcases);
                 return true;
             }
             else
