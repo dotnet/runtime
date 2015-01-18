@@ -54,8 +54,6 @@ public class MMVA_WriteX : TestBase
                 // Default ViewAccessor size - whole MMF
                 using (MemoryMappedViewAccessor view = mmf.CreateViewAccessor())
                 {
-                    Console.WriteLine(view.Capacity);
-
                     // position = 0
                     VerifyWrite<Boolean>("Loc011a", view, 0, true);
                     VerifyWrite<Byte>("Loc011b", view, 0, 234);
@@ -155,8 +153,6 @@ public class MMVA_WriteX : TestBase
                     // ViewAccessor starts at nonzero offset, spans remainder of MMF
                     using (MemoryMappedViewAccessor view2 = mmf.CreateViewAccessor(1000, 0))
                     {
-                        Console.WriteLine(view2.Capacity);
-
                         // position = 0
                         VerifyWrite<Boolean>("Loc111a", view2, 0, true);
                         VerifyWrite<Byte>("Loc111b", view2, 0, 1);
@@ -203,8 +199,6 @@ public class MMVA_WriteX : TestBase
                 // ViewAccessor starts at nonzero offset, with size shorter than MMF
                 using (MemoryMappedViewAccessor view = mmf.CreateViewAccessor(2000, 10000))
                 {
-                    Console.WriteLine(view.Capacity);
-
                     // position is last possible for type
                     VerifyWrite<Boolean>("Loc214a", view, view.Capacity - 1, true);
                     VerifyWrite<Byte>("Loc214b", view, view.Capacity - 1, (byte)251);
@@ -263,7 +257,6 @@ public class MMVA_WriteX : TestBase
 
             if (iCountErrors == 0)
             {
-                Console.WriteLine("Pass. iCountTestcases==" + iCountTestcases);
                 return true;
             }
             else

@@ -218,7 +218,6 @@ public class CreateNew : MMFTestBase
 
             if (iCountErrors == 0)
             {
-                Console.WriteLine("Pass: iCountTestcases==" + iCountTestcases);
                 return true;
             }
             else
