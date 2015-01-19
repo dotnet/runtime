@@ -10,7 +10,7 @@
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)bin\</BinDir>
     <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
-    <PackagesDir>$(SourceDir)packages\</PackagesDir>
+    <PackagesDir>$(ProjectDir)packages\</PackagesDir>
     <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
   </PropertyGroup>
 
