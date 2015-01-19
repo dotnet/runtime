@@ -176,7 +176,7 @@ namespace System.Text.RegularExpressions
         // replace (evaluator), and split.
 
         /// <summary>
-        /// Replaces all ocurrances of the regex in the string with the
+        /// Replaces all occurrences of the regex in the string with the
         /// replacement pattern.
         ///
         /// Note that the special case of no matches is handled on its own:
@@ -255,7 +255,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Replaces all ocurrances of the regex in the string with the
+        /// Replaces all occurrences of the regex in the string with the
         /// replacement evaluator.
         ///
         /// Note that the special case of no matches is handled on its own:

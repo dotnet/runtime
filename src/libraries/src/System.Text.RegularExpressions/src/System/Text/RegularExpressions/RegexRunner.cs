@@ -339,7 +339,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Called by the implemenation of Go() to increase the size of storage
+        /// Called by the implementation of Go() to increase the size of storage
         /// </summary>
         protected void EnsureStorage()
         {
@@ -350,7 +350,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Called by the implemenation of Go() to decide whether the pos
+        /// Called by the implementation of Go() to decide whether the pos
         /// at the specified index is a boundary or not. It's just not worth
         /// emitting inline code for this logic.
         /// </summary>
@@ -378,7 +378,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Called by the implemenation of Go() to increase the size of the
+        /// Called by the implementation of Go() to increase the size of the
         /// backtracking stack.
         /// </summary>
         protected void DoubleTrack()
@@ -393,7 +393,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Called by the implemenation of Go() to increase the size of the
+        /// Called by the implementation of Go() to increase the size of the
         /// grouping stack.
         /// </summary>
         protected void DoubleStack()

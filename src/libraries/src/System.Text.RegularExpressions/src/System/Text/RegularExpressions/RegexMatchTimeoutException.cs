@@ -21,9 +21,9 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs a new RegexMatchTimeoutException.
         /// </summary>
-        /// <param name="regexInput">Matching timeout occured during mathing within the specified input.</param>
-        /// <param name="regexPattern">Matching timeout occured during mathing to the specified pattern.</param>
-        /// <param name="matchTimeout">Matching timeout occured becasue matching took longer than the specified timeout.</param>
+        /// <param name="regexInput">Matching timeout occurred during matching within the specified input.</param>
+        /// <param name="regexPattern">Matching timeout occurred during matching to the specified pattern.</param>
+        /// <param name="matchTimeout">Matching timeout occurred because matching took longer than the specified timeout.</param>
         public RegexMatchTimeoutException(string regexInput, string regexPattern, TimeSpan matchTimeout) :
             base(SR.RegexMatchTimeoutException_Occurred)
         {

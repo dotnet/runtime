@@ -491,7 +491,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Adds a set (specified by its string represenation) to the class.
+        /// Adds a set (specified by its string representation) to the class.
         /// </summary>
         private void AddSet(String set)
         {

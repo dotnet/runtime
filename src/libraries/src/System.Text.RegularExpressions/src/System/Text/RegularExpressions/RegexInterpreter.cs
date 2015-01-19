@@ -618,7 +618,7 @@ namespace System.Text.RegularExpressions
                             // with each iteration of the loop, and therefore with every attempted
                             // match of the inner expression.  We'll try to match the inner expression,
                             // then go back to Lazybranchmark if successful.  If the inner expression
-                            // failes, we go to Lazybranchmark | RegexCode.Back2
+                            // fails, we go to Lazybranchmark | RegexCode.Back2
                             int pos;
 
                             TrackPop(2);
