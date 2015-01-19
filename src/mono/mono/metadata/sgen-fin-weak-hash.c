@@ -756,21 +756,23 @@ sgen_null_links_for_domain (MonoDomain *domain, int generation)
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
-		if (*link && object && !((MonoObject*)object)->vtable) {
-			gboolean free = TRUE;
 
-			if (*link) {
-				*link = NULL;
-				binary_protocol_dislink_update (link, NULL, 0, 0);
-				free = FALSE;
-				/*
-				 * This can happen if finalizers are not ran, i.e. Environment.Exit ()
-				 * is called from finalizer like in finalizer-abort.cs.
-				 */
-				SGEN_LOG (5, "Disappearing link %p not freed", link);
-			}
+		if (object)
+			SGEN_ASSERT (0, ((MonoObject*)object)->vtable, "Can't have objects without vtables.");
 
-			SGEN_HASH_TABLE_FOREACH_REMOVE (free);
+		if (*link && object && ((MonoObject*)object)->vtable->domain == domain) {
+			*link = NULL;
+			binary_protocol_dislink_update (link, NULL, 0, 0);
+			/*
+			 * This can happen if finalizers are not ran, i.e. Environment.Exit ()
+			 * is called from finalizer like in finalizer-abort.cs.
+			 */
+			SGEN_LOG (5, "Disappearing link %p not freed", link);
+
+			/*
+			 * FIXME: Why don't we free the entry here?
+			 */
+			SGEN_HASH_TABLE_FOREACH_REMOVE (FALSE);
 
 			continue;
 		}

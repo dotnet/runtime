@@ -3491,7 +3491,10 @@ null_ephemerons_for_domain (MonoDomain *domain)
 	while (current) {
 		MonoObject *object = (MonoObject*)current->array;
 
-		if (object && !object->vtable) {
+		if (object)
+			SGEN_ASSERT (0, object->vtable, "Can't have objects without vtables.");
+
+		if (object && object->vtable->domain == domain) {
 			EphemeronLinkNode *tmp = current;
 
 			if (prev)
