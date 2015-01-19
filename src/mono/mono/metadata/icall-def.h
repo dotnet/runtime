@@ -137,10 +137,6 @@ ICALL(CONSOLE_3, "SetBreak", ves_icall_System_ConsoleDriver_SetBreak )
 ICALL(CONSOLE_4, "SetEcho", ves_icall_System_ConsoleDriver_SetEcho )
 ICALL(CONSOLE_5, "TtySetup", ves_icall_System_ConsoleDriver_TtySetup )
 
-ICALL_TYPE(CONVERT, "System.Convert", CONVERT_1)
-ICALL(CONVERT_1, "InternalFromBase64CharArray", InternalFromBase64CharArray )
-ICALL(CONVERT_2, "InternalFromBase64String", InternalFromBase64String )
-
 ICALL_TYPE(TZONE, "System.CurrentSystemTimeZone", TZONE_1)
 ICALL(TZONE_1, "GetTimeZoneData", ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData)
 
