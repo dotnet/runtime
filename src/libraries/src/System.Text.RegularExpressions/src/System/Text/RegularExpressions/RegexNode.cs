@@ -76,7 +76,7 @@ namespace System.Text.RegularExpressions
         internal const int EndZ = RegexCode.EndZ;                       //          \Z
         internal const int End = RegexCode.End;                         //          \z
 
-        // Interior nodes do not correpond to primitive operations, but
+        // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
 
         // Concat and alternate take n children, and can run forward or backwards

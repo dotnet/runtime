@@ -3,7 +3,7 @@
 
 // The RegexBoyerMoore object precomputes the Boyer-Moore
 // tables for fast string scanning. These tables allow
-// you to scan for the first occurance of a string within
+// you to scan for the first occurrence of a string within
 // a large body of text without examining every character.
 // The performance of the heuristic depends on the actual
 // string and the text being searched, but usually, the longer
@@ -141,7 +141,7 @@ namespace System.Text.RegularExpressions
 
             // The inside of the if statement used to say
             // "_positive[match] = last - beforefirst;"
-            // This is slightly less agressive in how much we skip, but at worst it
+            // This is slightly less aggressive in how much we skip, but at worst it
             // should mean a little more work rather than skipping a potential match.
             while (match != beforefirst)
             {
@@ -266,7 +266,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Scan uses the Boyer-Moore algorithm to find the first occurrance
+        /// Scan uses the Boyer-Moore algorithm to find the first occurrence
         /// of the specified string within text, beginning at index, and
         /// constrained within beglimit and endlimit.
         ///

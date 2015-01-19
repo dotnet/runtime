@@ -341,7 +341,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Given a group number, maps it to a group name. Note that nubmered
+         * Given a group number, maps it to a group name. Note that numbered
          * groups automatically get a group name that is the decimal string
          * equivalent of its number.
          *
@@ -377,7 +377,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Given a group name, maps it to a group number. Note that nubmered
+         * Given a group name, maps it to a group number. Note that numbered
          * groups automatically get a group name that is the decimal string
          * equivalent of its number.
          *
