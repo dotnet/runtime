@@ -44,7 +44,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <DisabledTestAssembly Include="System.Linq.Parallel.Tests" />
+    <!-- <DisabledTestAssembly Include="TestAssemblyName" /> -->
     <SkipTestAssemblies Include="@(DisabledTestAssembly->'$(TestWorkingDir)**\%(Identity).dll')" />
   </ItemGroup>
 
