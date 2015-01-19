@@ -11,7 +11,6 @@
 #include <sys/socket.h>
 #include <net/if.h>
 #include <net/if_dl.h>
-#include <net/route.h>
 #include <netinet/in.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
