@@ -45,6 +45,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/file-io.h>
 #include <mono/metadata/console-io.h>
+#include <mono/metadata/mono-route.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tokentype.h>
