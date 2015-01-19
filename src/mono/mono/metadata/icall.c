@@ -7412,9 +7412,9 @@ get_category_data (int version,
 #endif
 }
 
-/* These parameters are "readonly" in corlib/System/Char.cs */
+/* These parameters are "readonly" in corlib/System/Globalization/CharUnicodeInfo.cs */
 ICALL_EXPORT void
-ves_icall_System_Char_GetDataTablePointers (int category_data_version,
+ves_icall_System_Globalization_CharUnicodeInfo_GetDataTablePointers (int category_data_version,
 					    guint8 const **category_data,
 					    guint16 const **category_astral_index,
 					    guint8 const **numeric_data,

@@ -115,9 +115,6 @@ ICALL(BUFFER_2, "ByteLengthInternal", ves_icall_System_Buffer_ByteLengthInternal
 ICALL(BUFFER_3, "GetByteInternal", ves_icall_System_Buffer_GetByteInternal)
 ICALL(BUFFER_4, "SetByteInternal", ves_icall_System_Buffer_SetByteInternal)
 
-ICALL_TYPE(CHAR, "System.Char", CHAR_1)
-ICALL(CHAR_1, "GetDataTablePointers", ves_icall_System_Char_GetDataTablePointers)
-
 ICALL_TYPE (COMPO_W, "System.ComponentModel.Win32Exception", COMPO_W_1)
 ICALL (COMPO_W_1, "W32ErrorMessage", ves_icall_System_ComponentModel_Win32Exception_W32ErrorMessage)
 
@@ -271,6 +268,9 @@ ICALL(GC_6, "WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinali
 ICALL(GC_7, "get_MaxGeneration", mono_gc_max_generation)
 ICALL(GC_9, "get_ephemeron_tombstone", ves_icall_System_GC_get_ephemeron_tombstone)
 ICALL(GC_8, "register_ephemeron_array", ves_icall_System_GC_register_ephemeron_array)
+
+ICALL_TYPE(CHARINFO, "System.Globalization.CharUnicodeInfo", CHARINFO_1)
+ICALL(CHARINFO_1, "GetDataTablePointers", ves_icall_System_Globalization_CharUnicodeInfo_GetDataTablePointers)
 
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 ICALL(COMPINF_1, "assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey)
