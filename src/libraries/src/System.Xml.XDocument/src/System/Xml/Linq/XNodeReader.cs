@@ -1136,7 +1136,7 @@ namespace System.Xml.Linq
 
         static void GetNameInAttributeScope(string qualifiedName, XElement e, out string localName, out string namespaceName)
         {
-            if (qualifiedName != null && qualifiedName.Length != 0)
+            if (!string.IsNullOrEmpty(qualifiedName))
             {
                 int i = qualifiedName.IndexOf(':');
                 if (i != 0 && i != qualifiedName.Length - 1)

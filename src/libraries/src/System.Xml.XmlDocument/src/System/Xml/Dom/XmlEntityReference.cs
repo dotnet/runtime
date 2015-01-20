@@ -200,7 +200,7 @@ namespace System.Xml
                 XmlEntity ent = OwnerDocument.GetEntityNode(_name);
                 if (ent != null)
                 {
-                    if (ent.SystemId != null && ent.SystemId.Length > 0)
+                    if (!string.IsNullOrEmpty(ent.SystemId))
                         return ConstructBaseURI(ent.BaseURI, ent.SystemId);
                     else
                         return ent.BaseURI;
