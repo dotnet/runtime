@@ -48,6 +48,8 @@ Today, the repository contains the following components:
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
   file system objects and for reading and writing files via streams.
 
+* **System.IO.FileSystem.DriveInfo**. Provides the System.IO.DriveInfo class, which enables developers to query local drive    information.
+
 * **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
   and/or named pipes.
 
