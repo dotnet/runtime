@@ -17,7 +17,7 @@ using System;
 using System.Collections.Concurrent;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public class RangePartitionerNegativeTests
     {
@@ -25,7 +25,6 @@ namespace Test
         /// Test passing invalid range, 'to' is smaller or equal than 'from'
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void IntFromNotGreaterThanTo()
         {
             IntFromNotGreaterThanTo(1000, 0, 100);
@@ -42,7 +41,6 @@ namespace Test
         /// <summary>
         /// Test passing invalid range, 'to' is smaller or equal than 'from', on long overload
         [Fact]
-        [OuterLoop]
         public static void LongFromNotGreaterThanTo()
         {
             LongFromNotGreaterThanTo(1000, 0, 100);
@@ -60,7 +58,6 @@ namespace Test
         /// Test passing invalid range size, less than or equal to 0
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void InvalidIntRangeSize()
         {
             InvalidIntRangeSize(0, 1000, 0);
@@ -76,7 +73,6 @@ namespace Test
         /// Test passing invalid range size, less than or equal to 0, on long overload
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void ATestMethod()
         {
             InvalidLongRangeSize(0, 1000, 0);

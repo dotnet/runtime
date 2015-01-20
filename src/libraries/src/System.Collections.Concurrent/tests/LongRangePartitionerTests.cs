@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public class LongRangePartitionerTests
     {
@@ -48,11 +48,7 @@ namespace Test
         /// We unroll the tuples and flatten them to a single sequence
         /// The single sequence is compared to the original range for verification
         /// </summary>
-        /// <param name="from"></param>
-        /// <param name="count"></param>
-        /// <param name="dop"></param>
         [Fact]
-        [OuterLoop]
         public static void CheckGetPartitions()
         {
             CheckGetPartitions(0, 1, 1);
@@ -117,11 +113,7 @@ namespace Test
         /// The single sequence is compared to the original range for verification
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// </summary>
-        /// <param name="from"></param>
-        /// <param name="count"></param>
-        /// <param name="dop"></param>
         [Fact]
-        [OuterLoop]
         public static void CheckGetOrderablePartitions()
         {
             CheckGetOrderablePartitions(0, 1, 1);
@@ -210,7 +202,6 @@ namespace Test
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void CheckGetPartitionsWithRange()
         {
             CheckGetPartitionsWithRange(1999, 1000, 20, 1);
@@ -253,7 +244,6 @@ namespace Test
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void CheckGetDynamicPartitionsWithRange()
         {
             CheckGetDynamicPartitionsWithRange(1999, 1000, 20);
@@ -296,7 +286,6 @@ namespace Test
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void CheckGetOrderablePartitionsWithRange()
         {
             CheckGetOrderablePartitionsWithRange(1999, 1000, 20, 1);
@@ -350,7 +339,6 @@ namespace Test
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void GetOrderableDynamicPartitionsWithRange()
         {
             GetOrderableDynamicPartitionsWithRange(1999, 1000, 20);
@@ -423,15 +411,13 @@ namespace Test
             }
 
             var lastRange = rangeSizes[rangeSizes.Count - 1];
-            if (lastRange > desiredRangeSize)
-                Assert.False(true, String.Format("Last range has invalid size: {0}", lastRange));
+            Assert.True(desiredRangeSize >= lastRange, String.Format("Expect={0}, Actual={1}", desiredRangeSize, lastRange));
         }
 
         /// <summary>
         /// Ensure that the range partitioner doesn't chunk up elements i.e. uses chunk size = 1
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void RangePartitionerChunking()
         {
             RangePartitionerChunking(2147473647, 9999, 4);
@@ -498,14 +484,13 @@ namespace Test
             }
 
             // Verifying that all items are there
-            Assert.True(count == actualCount, "Must be equal.");
+            Assert.Equal(count, actualCount);
         }
 
         /// <summary>
         /// Ensure that the range partitioner doesnt chunk up elements i.e. uses chunk size = 1
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void RangePartitionerDynamicChunking()
         {
             RangePartitionerDynamicChunking(2147473647, 9999, 4);
@@ -574,7 +559,7 @@ namespace Test
             }
 
             // Verifying that all items are there
-            Assert.True(count == actualCount, "Must be equal.");
+            Assert.Equal(count, actualCount);
         }
     }
 }

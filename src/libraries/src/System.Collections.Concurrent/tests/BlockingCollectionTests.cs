@@ -10,13 +10,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     /// <summary>The class that contains the unit tests of the BlockingCollection.</summary>
     public class BlockingCollectionTests
     {
         [Fact]
-        public static void TestBlockingCollectionBasic()
+        public static void TestBasicScenarios()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(3);
             Task[] tks = new Task[2];
@@ -50,12 +50,11 @@ namespace Test
         }
 
         /// <summary>
-        /// Bug description: BlockingCollection throws  InvalidOperationException when calling CompleteAdding even after adding and taking all elements
+        /// BlockingCollection throws InvalidOperationException when calling CompleteAdding even after adding and taking all elements
         /// </summary>
         /// <returns></returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest_BugFix544259()
+        public static void TestBugFix544259()
         {
             int count = 8;
             CountdownEvent cde = new CountdownEvent(count);
@@ -64,7 +63,6 @@ namespace Test
             //creates 8 consumers, each calling take to block itself
             for (int i = 0; i < count; i++)
             {
-                int myi = i;
                 Task.Run(() =>
                 {
                     bc.Take();
@@ -74,7 +72,6 @@ namespace Test
             //create 8 producers, each calling add to unblock a consumer
             for (int i = 0; i < count; i++)
             {
-                int myi = i;
                 Task.Run(() =>
                 {
                     bc.Add(new object());
@@ -86,15 +83,17 @@ namespace Test
             bc.CompleteAdding();
         }
 
-        // This test shows how to cleanup of linkedCTS must be carefully handled to prevent 
-        // users of the source CTS mistakenly calling methods on disposed targets.
+        // This code was suffering occassional ObjectDisposedExceptions due to
+        // the expected race between cts.Dispose and the cts.Cancel coming from the linking sources.
+        // Since the change to wait as part of CTS.Dispose, the ODE no longer occurs
+        // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled
+        // to prevent users of the source CTS mistakenly calling methods on disposed targets.
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest_Bug626345()
+        public static void TestBugFix626345()
         {
             const int noOfProducers = 1;
-            const int noOfConsumers = 50;
-            const int noOfItemsToProduce = 2;
+            const int noOfConsumers = 7;
+            const int noOfItemsToProduce = 3;
             //Console.WriteLine("Producer: {0}, Consumer: {1}, Items: {2}", noOfProducers, noOfConsumers, noOfItemsToProduce);
 
             BlockingCollection<long> m_BlockingQueueUnderTest = new BlockingCollection<long>(new ConcurrentQueue<long>());
@@ -106,13 +105,14 @@ namespace Test
                 {
                     for (int dummyItem = 0; dummyItem < noOfItemsToProduce; dummyItem++)
                     {
+                        // dummy code for doing something
                         int i = 0;
                         for (int j = 0; j < 5; j++)
                         {
                             i += j;
                         }
-                        m_BlockingQueueUnderTest.Add(dummyItem);
 
+                        m_BlockingQueueUnderTest.Add(dummyItem);
                     }
                 });
             }
@@ -128,6 +128,7 @@ namespace Test
                         long item;
                         if (m_BlockingQueueUnderTest.TryTake(out item, 1))
                         {
+                            // dummy code for doing something
                             int i = 0;
                             for (int j = 0; j < 5; j++)
                             {
@@ -138,9 +139,6 @@ namespace Test
                 });
             }
 
-            //Wait for the producers to finish.
-            //It is possible for some of the tasks in the array to be null, because the
-            //test was cancelled before all the tasks were creates, so we filter out the null values
             Task.WaitAll(producers);
 
             m_BlockingQueueUnderTest.CompleteAdding(); //signal all producers are done adding items
@@ -152,16 +150,10 @@ namespace Test
         }
 
         /// <summary>
-        /// Verify the bug fix by making sure TryTakeFromAny succeeds and returns the correct index, the bug reason is
-        /// TryTakeFromAny construct a copy list of BCs and  another list for the wait handles, and calls WaitAny using these handles
-        /// If it fails (one or more of the collections completed) it removes the completed BC wait handles from the handles list and retry again
-        /// We don’t remove the correspondent BC from the list!
-        /// 
-        /// Now er update the BC list copy as well
+        /// Making sure if TryTakeFromAny succeeds, it returns the correct index
         /// </summary>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest_Bug914998()
+        public static void TestBugFix914998()
         {
             var producer1 = new BlockingCollection<int>();
             var producer2 = new BlockingCollection<int>();
@@ -178,41 +170,43 @@ namespace Test
             index = BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, timeout);
             if (index != 1)
             {
-                Assert.False(true, String.Format("RunBlockingCollectionTest_Bug914998:  >Failed, TryTakeFromAny failed and returned {0} expected 1", index));
+                Assert.False(true, String.Format("Test_Bug914998:  >Failed, TryTakeFromAny failed and returned {0} expected 1", index));
             }
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTestConstruction()
+        public static void TestConstruction()
         {
-            RunBlockingCollectionTest0_Construction(-1);
-            RunBlockingCollectionTest0_Construction(10);
+            Test0_Construction(-1);
+            Test0_Construction(10);
+        }
+
+        [Fact]
+        public static void TestAddTake()
+        {
+            Test1_AddTake(1, 1, -1);
+            Test1_AddTake(5, 3, 1);
         }
 
         [Fact]
         [OuterLoop]
-        public static void RunBlockingCollectionTestAddTake()
+        public static void TestAddTake01()
         {
-            RunBlockingCollectionTest1_AddTake(1, 1, -1);
-            RunBlockingCollectionTest1_AddTake(10, 9, -1);
-            RunBlockingCollectionTest1_AddTake(10, 10, 10);
-            RunBlockingCollectionTest1_AddTake(10, 10, 9);
+            Test1_AddTake(10, 10, 10);
+            Test1_AddTake(10, 10, 9);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTestConcurrentAdd()
+        public static void TestConcurrentAdd()
         {
-            RunBlockingCollectionTest2_ConcurrentAdd(2, 10240);
-            RunBlockingCollectionTest2_ConcurrentAdd(16, 1024);
+            Test2_ConcurrentAdd(2, 1024);
+            Test2_ConcurrentAdd(8, 512);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTestConcurrentAddTake()
+        public static void TestConcurrentAddTake()
         {
-            RunBlockingCollectionTest3_ConcurrentAddTake(16, 1024);
+            Test3_ConcurrentAddTake(8, 1024);
         }
 
         /// <summary>
@@ -220,7 +214,7 @@ namespace Test
         /// </summary>
         /// <param name="boundedCapacity"></param>
         /// <returns></returns>
-        private static void RunBlockingCollectionTest0_Construction(int boundedCapacity)
+        private static void Test0_Construction(int boundedCapacity)
         {
             BlockingCollection<int> blockingQueue;
             if (boundedCapacity != -1)
@@ -232,10 +226,7 @@ namespace Test
                 blockingQueue = new BlockingCollection<int>();
             }
 
-            if (blockingQueue.BoundedCapacity != boundedCapacity)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest0_Constructor(boundedCapacity={0}:  > test failed - Bounded cpacitities do not match", boundedCapacity));
-            }
+            Assert.Equal(boundedCapacity, blockingQueue.BoundedCapacity);
 
             // Test for queue properties, Taked item should be i nthe same order of the insertion
             int count = boundedCapacity != -1 ? boundedCapacity : 10;
@@ -244,12 +235,10 @@ namespace Test
             {
                 blockingQueue.Add(i);
             }
+
             for (int i = 0; i < count; i++)
             {
-                if (blockingQueue.Take() != i)
-                {
-                    Assert.False(true, String.Format("RunBlockingCollectionTest0_Constructor: > test failed - the default underlying collection is not a queue"));
-                }
+                Assert.Equal(i, blockingQueue.Take());
             }
         }
 
@@ -260,7 +249,7 @@ namespace Test
         /// <param name="numOfTakes">The number of elements to Take from the BlockingCollection.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection, -1 is unbounded.</param>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void RunBlockingCollectionTest1_AddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
+        private static void Test1_AddTake(int numOfAdds, int numOfTakes, int boundedCapacity)
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(boundedCapacity);
             AddAnyTakeAny(numOfAdds, numOfTakes, boundedCapacity, blockingCollection, null, -1);
@@ -271,7 +260,7 @@ namespace Test
         /// <param name="numOfThreads">Number of producer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements added per thread.</param>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void RunBlockingCollectionTest2_ConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
+        private static void Test2_ConcurrentAdd(int numOfThreads, int numOfElementsPerThread)
         {
             ManualResetEvent mre = new ManualResetEvent(false);
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -290,7 +279,7 @@ namespace Test
                     {
                         if (!blockingCollection.TryAdd(j))
                             Assert.False(true,
-                                String.Format("RunBlockingCollectionTest2_ConcurrentAdd(numOfThreads={0}, numOfElementsPerThread={1}): > test failed - TryAdd returned false unexpectedly", numOfThreads, numOfElementsPerThread));
+                                String.Format("Test2_ConcurrentAdd(numOfThreads={0}, numOfElementsPerThread={1}): > test failed - TryAdd returned false unexpectedly", numOfThreads, numOfElementsPerThread));
                     }
                 }, i, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
@@ -301,7 +290,7 @@ namespace Test
             int expectedCount = numOfThreads * numOfElementsPerThread;
             if (blockingCollection.Count != expectedCount)
             {
-                Assert.False(true, String.Format("RunBlockingCollectionTest2_ConcurrentAdd: > test failed - expected count = {0}, actual = {1}", expectedCount, blockingCollection.Count));
+                Assert.False(true, String.Format("Test2_ConcurrentAdd: > test failed - expected count = {0}, actual = {1}", expectedCount, blockingCollection.Count));
             }
             List<int> sortedElementsInCollection = new List<int>(blockingCollection);
             sortedElementsInCollection.Sort();
@@ -313,7 +302,7 @@ namespace Test
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void RunBlockingCollectionTest3_ConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
+        private static void Test3_ConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
         {
             //If numOfThreads is not an even number, make it even.
             if ((numOfThreads % 2) != 0)
@@ -336,8 +325,8 @@ namespace Test
                         mre.WaitOne();
                         for (int j = startOfSequence; j < endOfSequence; ++j)
                         {
-                            if (!blockingCollection.TryAdd(j))
-                                Assert.False(true, String.Format("RunBlockingCollectionTest3_ConcurrentAddTake(numOfThreads={0}, numOfElementsPerThread={1}): > test failed - TryAdd returned false unexpectedly", numOfThreads, numOfElementsPerThread));
+                            Assert.True(blockingCollection.TryAdd(j), 
+                                String.Format("Test3_ConcurrentAddTake(numOfThreads={0}, numOfElementsPerThread={1}): > test failed - TryAdd returned false unexpectedly", numOfThreads, numOfElementsPerThread));
                         }
                     }, i, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
                 }
@@ -368,111 +357,30 @@ namespace Test
 
             mre.Set();
             Task.WaitAll(threads);
+            Assert.Equal(0, blockingCollection.Count);
 
-            int expectedCount = 0;
-            if (blockingCollection.Count != expectedCount)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest3_ConcurrentAddTake: > test failed - expected count = {0}, actual = {1}", expectedCount, blockingCollection.Count));
-            }
             int[] arrayOfRemovedElementsFromAllThreads = (int[])(removedElementsFromAllThreads.ToArray());
             List<int> sortedElementsInCollection = new List<int>(arrayOfRemovedElementsFromAllThreads);
             sortedElementsInCollection.Sort();
             VerifyElementsAreMembersOfSequence(sortedElementsInCollection, 0, (numOfThreads / 2 * numOfElementsPerThread) - 1);
         }
 
-        /// <summary>Validates the Dispose() method.</summary>
-        /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest4_Dispose()
+        public static void Test4_Dispose()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
-
             blockingCollection.Dispose();
-            bool testSuceeded = false;
-            int numOfExceptionsThrown = 0;
-            int numOfTests = 0;
 
-            try
-            {
-                numOfTests++;
-                blockingCollection.Add(default(int));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.TryAdd(default(int));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.TryAdd(default(int), 1);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.TryAdd(default(int), new TimeSpan(1));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
+            int value = 0;
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.Add(value++));
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.TryAdd(value++));
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.TryAdd(value++, 1));
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.TryAdd(value++, new TimeSpan(1)));
             int item;
-            try
-            {
-                numOfTests++;
-                blockingCollection.Take();
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.TryTake(out item);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.TryTake(out item, 1);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.TryTake(out item, new TimeSpan(1));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.Take());
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.TryTake(out item));
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.TryTake(out item, 2));
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.TryTake(out item, new TimeSpan(2)));
 
             const int NUM_OF_COLLECTIONS = 10;
             BlockingCollection<int>[] blockingCollections = new BlockingCollection<int>[NUM_OF_COLLECTIONS];
@@ -482,232 +390,57 @@ namespace Test
             }
 
             blockingCollections[NUM_OF_COLLECTIONS - 1] = blockingCollection;
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.AddToAny(blockingCollections, default(int));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
 
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TryAddToAny(blockingCollections, default(int));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.AddToAny(blockingCollections, value++));
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TryAddToAny(blockingCollections, value++));
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TryAddToAny(blockingCollections, value++, 3));
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TryAddToAny(blockingCollections, value++, new TimeSpan(3)));
 
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TryAddToAny(blockingCollections, default(int), 1);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TakeFromAny(blockingCollections, out item));
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item));
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, 4));
+            Assert.Throws<ObjectDisposedException>(() => BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, new TimeSpan(4)));
 
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TryAddToAny(blockingCollections, default(int), new TimeSpan(1));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TakeFromAny(blockingCollections, out item);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, 1);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, new TimeSpan(1));
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.CompleteAdding();
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.ToArray();
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
-                blockingCollection.CopyTo(new int[1], 0);
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.CompleteAdding());
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.ToArray());
+            Assert.Throws<ObjectDisposedException>(() => blockingCollection.CopyTo(new int[1], 0));
 
             int? boundedCapacity = 0;
-            try
-            {
-                numOfTests++;
-                boundedCapacity = blockingCollection.BoundedCapacity;
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
+            Assert.Throws<ObjectDisposedException>(() => { boundedCapacity = blockingCollection.BoundedCapacity; });
             bool isCompleted = false;
-            try
-            {
-                numOfTests++;
-                isCompleted = blockingCollection.IsCompleted;
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
+            Assert.Throws<ObjectDisposedException>(() => { isCompleted = blockingCollection.IsCompleted; });
             bool addingIsCompleted = false;
-            try
-            {
-                numOfTests++;
-                addingIsCompleted = blockingCollection.IsAddingCompleted;
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
+            Assert.Throws<ObjectDisposedException>(() => { addingIsCompleted = blockingCollection.IsAddingCompleted; });
             int count = 0;
-            try
-            {
-                numOfTests++;
-                count = blockingCollection.Count;
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
+            Assert.Throws<ObjectDisposedException>(() => { count = blockingCollection.Count; });
             object syncRoot = null;
-            try
-            {
-                numOfTests++;
-                syncRoot = ((ICollection)blockingCollection).SyncRoot;
-            }
-            catch (NotSupportedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
+            Assert.Throws<NotSupportedException>(() => { syncRoot = ((ICollection)blockingCollection).SyncRoot; });
             bool isSynchronized = false;
-            try
-            {
-                numOfTests++;
-                isSynchronized = ((ICollection)blockingCollection).IsSynchronized;
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
+            Assert.Throws<ObjectDisposedException>(() => { isSynchronized = ((ICollection)blockingCollection).IsSynchronized; });
 
-            try
+            blockingCollection.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
             {
-                blockingCollection.Dispose();
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-            try
-            {
-                numOfTests++;
                 foreach (int element in blockingCollection)
                 {
                     int temp = element;
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
+                };
+            } );
 
-            try
+            Assert.Throws<ObjectDisposedException>(() =>
             {
-                numOfTests++;
                 foreach (int element in blockingCollection.GetConsumingEnumerable())
                 {
                     int temp = element;
                 }
-            }
-            catch (ObjectDisposedException)
-            {
-                numOfExceptionsThrown++;
-            }
-
-
-            testSuceeded = (numOfExceptionsThrown == numOfTests);
-
-            if (!testSuceeded)
-            {
-                Assert.False(true, "RunBlockingCollectionTest4_Dispose: > test failed - Not all methods threw ObjectDisposedExpection");
-            }
+            });
         }
 
         /// <summary>Validates GetEnumerator and makes sure that BlockingCollection.GetEnumerator() produces the 
         /// same results as IConcurrentCollection.GetEnumerator().</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest5_GetEnumerator()
+        public static void Test5_GetEnumerator()
         {
             ConcurrentStackCollection<int> concurrentCollection = new ConcurrentStackCollection<int>();
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -730,22 +463,11 @@ namespace Test
             {
                 resultOfEnumOfConcurrentCollection.Add(i);
             }
-
-            if (resultOfEnumOfBlockingCollection.Count != resultOfEnumOfConcurrentCollection.Count)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest5_GetEnumerator: > test failed - number of elements returned from enumerators mismatch: ConcurrentCollection={0}, BlockingCollection={1}",
-                                    resultOfEnumOfConcurrentCollection.Count,
-                                    resultOfEnumOfBlockingCollection.Count));
-            }
+            Assert.Equal(resultOfEnumOfBlockingCollection.Count, resultOfEnumOfConcurrentCollection.Count);
 
             for (int i = 0; i < resultOfEnumOfBlockingCollection.Count; ++i)
             {
-                if ((int)resultOfEnumOfBlockingCollection[i] != (int)resultOfEnumOfConcurrentCollection[i])
-                {
-                    Assert.False(true, String.Format("RunBlockingCollectionTest5_GetEnumerator: > test failed - elements returned from enumerators mismatch: ConcurrentCollection={0}, BlockingCollection={1}",
-                                    (int)resultOfEnumOfConcurrentCollection[i],
-                                    (int)resultOfEnumOfBlockingCollection[i]));
-                }
+                Assert.Equal<int>(resultOfEnumOfBlockingCollection[i], resultOfEnumOfConcurrentCollection[i]);
             }
         }
 
@@ -753,8 +475,7 @@ namespace Test
         /// produces the same results as if call Take in a loop.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest6_GetConsumingEnumerable()
+        public static void Test6_GetConsumingEnumerable()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
             BlockingCollection<int> blockingCollectionMirror = ConstructBlockingCollection<int>();
@@ -766,10 +487,7 @@ namespace Test
                 blockingCollectionMirror.Add(i);
             }
 
-            if (blockingCollection.Count != MAX_NUM_TO_ADD)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest6_GetConsumingEnumerable: > test failed - unexpcted count: actual={0}, expected={1}", blockingCollection.Count, MAX_NUM_TO_ADD));
-            }
+            Assert.Equal(MAX_NUM_TO_ADD, blockingCollection.Count);
 
             List<int> resultOfEnumOfBlockingCollection = new List<int>();
 
@@ -781,10 +499,7 @@ namespace Test
                 resultOfEnumOfBlockingCollection.Add(i);
             }
 
-            if (blockingCollection.Count != 0)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest6_GetConsumingEnumerable: > test failed - unexpcted count: actual={0}, expected=0", blockingCollection.Count));
-            }
+            Assert.Equal(0, blockingCollection.Count);
 
             List<int> resultOfEnumOfBlockingCollectionMirror = new List<int>();
             while (blockingCollectionMirror.Count != 0)
@@ -792,22 +507,11 @@ namespace Test
                 resultOfEnumOfBlockingCollectionMirror.Add(blockingCollectionMirror.Take());
             }
 
-            if (resultOfEnumOfBlockingCollection.Count != resultOfEnumOfBlockingCollectionMirror.Count)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest6_GetConsumingEnumerable: > test failed - number of elements mismatch: BlockingCollectionMirror={0}, BlockingCollection={1}",
-                                    resultOfEnumOfBlockingCollectionMirror.Count,
-                                    resultOfEnumOfBlockingCollection.Count));
-            }
+            Assert.Equal(resultOfEnumOfBlockingCollection.Count, resultOfEnumOfBlockingCollectionMirror.Count);
 
             for (int i = 0; i < resultOfEnumOfBlockingCollection.Count; ++i)
             {
-                if ((int)resultOfEnumOfBlockingCollection[i] != (int)resultOfEnumOfBlockingCollectionMirror[i])
-                {
-                    Assert.False(true, String.Format("RunBlockingCollectionTest6_GetConsumingEnumerable: > test failed - elements mismatch: BlockingCollectionMirror={0}, BlockingCollection={1}",
-                                    (int)resultOfEnumOfBlockingCollectionMirror[i],
-                                    (int)resultOfEnumOfBlockingCollection[i]));
-
-                }
+                Assert.Equal<int>(resultOfEnumOfBlockingCollection[i], resultOfEnumOfBlockingCollectionMirror[i]);
             }
         }
 
@@ -816,46 +520,20 @@ namespace Test
         /// on the enumerable returned from GetConsumingEnumerable will return false when the collection’s count reaches 0.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest7_CompleteAdding()
+        public static void Test7_CompleteAdding()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
-
             blockingCollection.Add(0);
-
             blockingCollection.CompleteAdding();
 
-            try
-            {
-                blockingCollection.Add(1);
-                Assert.False(true, "RunBlockingCollectionTest7_CompleteAdding: > test failed - Add should have thrown InvalidOperationException");
-            }
-            catch (InvalidOperationException)
-            {
-            }
-
-            if (blockingCollection.Count != 1)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest7_CompleteAdding: > test failed - Unexpected count: Actual={0}, Expected=1", blockingCollection.Count));
-            }
+            Assert.Throws<InvalidOperationException>(() => blockingCollection.Add(1));
+            Assert.Equal(1, blockingCollection.Count);
 
             blockingCollection.Take();
-
-            try
-            {
-                blockingCollection.Take();
-                Assert.False(true, "RunBlockingCollectionTest7_CompleteAdding: > test failed - Take should have thrown OperationCanceledException");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => blockingCollection.Take());
 
             int item = 0;
-
-            if (blockingCollection.TryTake(out item))
-            {
-                Assert.False(true, "RunBlockingCollectionTest7_CompleteAdding: > test failed - TryTake should have return false");
-            }
+            Assert.False(blockingCollection.TryTake(out item));
 
             int counter = 0;
             foreach (int i in blockingCollection.GetConsumingEnumerable())
@@ -863,24 +541,20 @@ namespace Test
                 counter++;
             }
 
-            if (counter > 0)
-            {
-                Assert.False(true, "RunBlockingCollectionTest7_CompleteAdding: > test failed - the enumerable returned from GetConsumingEnumerable() should not have enumerated through the collection");
-            }
+            Assert.Equal(0, counter);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest7_ConcurrentAdd_CompleteAdding()
+        public static void Test7_ConcurrentAdd_CompleteAdding()
         {
-            BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
+            BlockingCollection<ushort> blockingCollection = ConstructBlockingCollection<ushort>();
             Task[] threads = new Task[4];
             int succeededAdd = 0;
             for (int i = 0; i < threads.Length; i++)
             {
                 threads[i] = Task.Run(() =>
                 {
-                    for (int j = 0; j < 1000; j++)
+                    for (ushort j = 0; j < 512; j++)
                     {
                         try
                         {
@@ -898,71 +572,51 @@ namespace Test
 
             blockingCollection.CompleteAdding();
             int count1 = blockingCollection.Count;
-            Task.WaitAll(Task.Delay(100));
+            Task.WaitAll(threads);
+
             int count2 = blockingCollection.Count;
-
-            if (count1 != count2)
-            {
-                Assert.False(true, "RunBlockingCollectionTest7_CompleteAdding: > test failed - The count has been changed after returning from CompleteAdding");
-            }
-
-            if (count1 != succeededAdd)
-            {
-                Assert.False(true, "RunBlockingCollectionTest7_CompleteAdding: > test failed - The collection count doesn't match the read count succeededCount = " + succeededAdd + " read count = " + count1);
-            }
+            Assert.Equal(count1, count2);
+            Assert.Equal(count1, succeededAdd);
         }
 
         /// <summary>Validates that BlockingCollection.ToArray() produces same results as 
         /// IConcurrentCollection.ToArray().</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest8_ToArray()
+        public static void Test8_ToArray()
         {
-            ConcurrentStackCollection<int> concurrentCollection = new ConcurrentStackCollection<int>();
-            BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
+            ConcurrentStackCollection<byte> concurrentCollection = new ConcurrentStackCollection<byte>();
+            BlockingCollection<byte> blockingCollection = ConstructBlockingCollection<byte>();
 
-            const int MAX_NUM_TO_ADD = 100;
-            for (int i = 0; i < MAX_NUM_TO_ADD; ++i)
+            const byte MAX_NUM_TO_ADD = 100;
+            for (byte i = 0; i < MAX_NUM_TO_ADD; ++i)
             {
                 blockingCollection.Add(i);
                 concurrentCollection.TryAdd(i);
             }
 
-            int[] arrBlockingCollection = blockingCollection.ToArray();
-            int[] arrConcurrentCollection = concurrentCollection.ToArray();
+            byte[] arrBlockingCollection = blockingCollection.ToArray();
+            byte[] arrConcurrentCollection = concurrentCollection.ToArray();
 
-            if (arrBlockingCollection.Length != arrConcurrentCollection.Length)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest8_ToArray: > test failed - Arrays length mismatch: arrBlockingCollection={0}, arrConcurrentCollection={1}",
-                                    arrBlockingCollection.Length,
-                                    arrConcurrentCollection.Length));
-            }
+            Assert.Equal(arrBlockingCollection.Length, arrConcurrentCollection.Length);
 
-            for (int i = 0; i < arrBlockingCollection.Length; ++i)
+            for (byte i = 0; i < arrBlockingCollection.Length; ++i)
             {
-                if (arrBlockingCollection[i] != arrConcurrentCollection[i])
-                {
-                    Assert.False(true, String.Format("RunBlockingCollectionTest8_ToArray: > test failed - Array elements mismatch: arrBlockingCollection[{2}]={0}, arrConcurrentCollection[{2}]={1}",
-                                        arrBlockingCollection[i],
-                                        arrConcurrentCollection[i],
-                                        i));
-                }
+                Assert.Equal(arrBlockingCollection[i], arrConcurrentCollection[i]);
             }
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTestCopyTo()
+        public static void TestCopyTo()
         {
-            RunBlockingCollectionTest9_CopyTo(0);
-            RunBlockingCollectionTest9_CopyTo(8);
+            Test9_CopyTo(0);
+            Test9_CopyTo(8);
         }
 
-        /// <summary>Validates that BlockingCollection.CopyTo() produces same results as IConcurrentCollection.CopyTo().</summary>        
+        /// <summary>Validates that BlockingCollection.CopyTo() produces same results as IConcurrentCollection.CopyTo().</summary>
         /// <param name="indexOfInsertion">The zero-based index in the array at which copying begins.</param>
-        /// <returns>True if test succeeded, false otherwise.</returns>    
-        private static void RunBlockingCollectionTest9_CopyTo(int indexOfInsertion)
+        /// <returns>True if test succeeded, false otherwise.</returns>
+        private static void Test9_CopyTo(int indexOfInsertion)
         {
             ConcurrentStackCollection<int> concurrentCollection = new ConcurrentStackCollection<int>();
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
@@ -985,7 +639,7 @@ namespace Test
             {
                 if (arrBlockingCollection[i] != arrConcurrentCollection[i])
                 {
-                    Assert.False(true, String.Format("RunBlockingCollectionTest9_CopyTo(indexOfInsertion={3}): > test failed - Array elements mismatch: arrBlockingCollection[{2}]={0}, arrConcurrentCollection[{2}]={1}",
+                    Assert.False(true, String.Format("Test9_CopyTo(indexOfInsertion={3}): > test failed - Array elements mismatch: arrBlockingCollection[{2}]={0}, arrConcurrentCollection[{2}]={1}",
                                         arrBlockingCollection[i],
                                         arrConcurrentCollection[i],
                                         i,
@@ -994,151 +648,99 @@ namespace Test
             }
         }
 
-        /// <summary>Validates BlockingCollection.Count.</summary>        
-        /// <returns>True if test succeeded, false otherwise.</returns>    
+        /// <summary>Validates BlockingCollection.Count.</summary>
+        /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest10_Count()
+        public static void Test10_Count()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(1);
-
-            if (blockingCollection.Count != 0)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest10_Count: > test failed - Unexpected count: Actual={0}, Expected=0", blockingCollection.Count));
-            }
+            Assert.Equal(0, blockingCollection.Count);
 
             blockingCollection.Add(1);
-
-            if (blockingCollection.Count != 1)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest10_Count: > test failed - Unexpected count: Actual={0}, Expected=1", blockingCollection.Count));
-            }
+            Assert.Equal(1, blockingCollection.Count);
 
             blockingCollection.TryAdd(1);
-
-            if (blockingCollection.Count != 1)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest10_Count: > test failed - Unexpected count: Actual={0}, Expected=1", blockingCollection.Count));
-            }
+            Assert.Equal(1, blockingCollection.Count);
 
             blockingCollection.Take();
-
-            if (blockingCollection.Count != 0)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest10_Count: > test failed - Unexpected count: Actual={0}, Expected=0", blockingCollection.Count));
-            }
+            Assert.Equal(0, blockingCollection.Count);
         }
 
-        /// <summary>Validates BlockingCollection.BoundedCapacity.</summary>        
-        /// <returns>True if test succeeded, false otherwise.</returns>    
+        /// <summary>Validates BlockingCollection.BoundedCapacity.</summary>
+        /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest11_BoundedCapacity()
+        public static void Test11_BoundedCapacity()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(1);
-
-            if (blockingCollection.BoundedCapacity != 1)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest11_BoundedCapacity: > test failed - Unexpected boundedCapacity: Actual={0}, Expected=1", blockingCollection.BoundedCapacity));
-            }
+            Assert.Equal(1, blockingCollection.BoundedCapacity);
 
             blockingCollection = ConstructBlockingCollection<int>();
-
-            if (blockingCollection.BoundedCapacity != -1)
-            {
-                Assert.False(true, String.Format("RunBlockingCollectionTest11_BoundedCapacity: > test failed - Unexpected boundedCapacity: Actual={0}, Expected=-1", blockingCollection.BoundedCapacity));
-            }
+            Assert.Equal(-1, blockingCollection.BoundedCapacity);
         }
 
-        /// <summary>Validates BlockingCollection.IsCompleted and BlockingCollection.AddingIsCompleted.</summary>        
-        /// <returns>True if test succeeded, false otherwise.</returns>    
+        /// <summary>Validates BlockingCollection.IsCompleted and BlockingCollection.AddingIsCompleted.</summary>
+        /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted()
+        public static void Test12_IsCompleted_AddingIsCompleted()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
-            if (blockingCollection.IsAddingCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - AddingIsCompleted should be false");
-            }
+            Assert.False(blockingCollection.IsAddingCompleted, 
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - AddingIsCompleted should be false");
 
-            if (blockingCollection.IsCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - IsCompleted should be false");
-            }
+            Assert.False(blockingCollection.IsCompleted,
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - IsCompleted should be false");
 
             blockingCollection.CompleteAdding();
 
-            if (!blockingCollection.IsAddingCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - AddingIsCompleted should be true");
-            }
+            Assert.True(blockingCollection.IsAddingCompleted,
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - AddingIsCompleted should be true");
 
-            if (!blockingCollection.IsCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - IsCompleted should be true");
-            }
+            Assert.True(blockingCollection.IsCompleted,
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (Empty Collection) - IsCompleted should be true");
 
             blockingCollection = ConstructBlockingCollection<int>();
             blockingCollection.Add(0);
             blockingCollection.CompleteAdding();
 
-            if (!blockingCollection.IsAddingCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (NonEmpty Collection) - AddingIsCompleted should be true");
-            }
+            Assert.True(blockingCollection.IsAddingCompleted,
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (NonEmpty Collection) - AddingIsCompleted should be true");
 
-            if (blockingCollection.IsCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (NonEmpty Collection) - IsCompleted should be false");
-            }
+            Assert.False(blockingCollection.IsCompleted,
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (NonEmpty Collection) - IsCompleted should be false");
 
             blockingCollection.Take();
 
-            if (!blockingCollection.IsCompleted)
-            {
-                Assert.False(true, "RunBlockingCollectionTest12_IsCompleted_AddingIsCompleted: > test failed (NonEmpty Collection) - IsCompleted should be true");
-            }
+            Assert.True(blockingCollection.IsCompleted,
+                "Test12_IsCompleted_AddingIsCompleted: > test failed (NonEmpty Collection) - IsCompleted should be true");
         }
 
-        /// <summary>Validates BlockingCollection.IsSynchronized and BlockingCollection.SyncRoot.</summary>        
-        /// <returns>True if test succeeded, false otherwise.</returns>    
+        /// <summary>Validates BlockingCollection.IsSynchronized and BlockingCollection.SyncRoot.</summary>
+        /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest13_IsSynchronized_SyncRoot()
+        public static void Test13_IsSynchronized_SyncRoot()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
-            bool exceptionThrown = false;
-            try
-            {
-                var dummy = ((ICollection)blockingCollection).SyncRoot;
+            Assert.Throws<NotSupportedException>(() => { var dummy = ((ICollection)blockingCollection).SyncRoot; });
 
-            }
-            catch (NotSupportedException)
-            {
-                exceptionThrown = true;
-            }
-            if (!exceptionThrown)
-            {
-                Assert.False(true, "RunBlockingCollectionTest13_IsSynchronized_SyncRoot: > test failed - SyncRoot should throw NotSupportException");
-            }
+            Assert.False(((ICollection)blockingCollection).IsSynchronized,
+                "Test13_IsSynchronized_SyncRoot: > test failed - IsSynchronized should be false");
+        }
 
-            if (((ICollection)blockingCollection).IsSynchronized)
-            {
-                Assert.False(true, "RunBlockingCollectionTest13_IsSynchronized_SyncRoot: > test failed - IsSynchronized should be false");
-            }
+        [Fact]
+        public static void TestAddAnyTakeAny()
+        {
+            Test14_AddAnyTakeAny(1, 1, 16, 0, -1);
+            Test14_AddAnyTakeAny(10, 10, 16, 14, 10);
         }
 
         [Fact]
         [OuterLoop]
-        public static void RunBlockingCollectionTestAddAnyTakeAny()
+        public static void TestAddAnyTakeAny01()
         {
-            RunBlockingCollectionTest14_AddAnyTakeAny(1, 1, 16, 0, -1);
-            RunBlockingCollectionTest14_AddAnyTakeAny(10, 9, 16, 15, -1);
-            RunBlockingCollectionTest14_AddAnyTakeAny(10, 10, 16, 14, 10);
-            RunBlockingCollectionTest14_AddAnyTakeAny(10, 10, 16, 1, 9);
+            Test14_AddAnyTakeAny(10, 9, 16, 15, -1);
+            Test14_AddAnyTakeAny(10, 10, 16, 1, 9);
         }
 
         /// <summary>Initializes an array of blocking collections such that all are full except one in case of adds and
@@ -1152,11 +754,11 @@ namespace Test
         /// <param name="indexOfBlockingCollectionUnderTest">Index of the BlockingCollection that will accept the operations.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection under test.</param>
         /// <returns>True if test succeeds, false otherwise.</returns>
-        private static void RunBlockingCollectionTest14_AddAnyTakeAny(int numOfAdds,
-                                                                        int numOfTakes,
-                                                                        int numOfBlockingCollections,
-                                                                        int indexOfBlockingCollectionUnderTest,
-                                                                        int boundedCapacity)
+        private static void Test14_AddAnyTakeAny(int numOfAdds,
+                                                 int numOfTakes,
+                                                 int numOfBlockingCollections,
+                                                 int indexOfBlockingCollectionUnderTest,
+                                                 int boundedCapacity)
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>(boundedCapacity);
             BlockingCollection<int>[] blockingCollections = new BlockingCollection<int>[numOfBlockingCollections];
@@ -1166,9 +768,9 @@ namespace Test
 
         [Fact]
         [OuterLoop]
-        public static void RunBlockingCollectionTestConcurrentAddAnyTakeAny()
+        public static void TestConcurrentAddAnyTakeAny()
         {
-            RunBlockingCollectionTest15_ConcurrentAddAnyTakeAny(4, 4096, 2, 64);
+            Test15_ConcurrentAddAnyTakeAny(4, 2048, 2, 64);
         }
 
         /// <summary>Launch threads/2 producers and threads/2 consumers then makes sure that all elements produced
@@ -1176,7 +778,7 @@ namespace Test
         /// <param name="threads">Total number of producer and consumer threads.</param>
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
         /// <returns>True if test succeeded, false otherwise.</returns>
-        private static void RunBlockingCollectionTest15_ConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)
+        private static void Test15_ConcurrentAddAnyTakeAny(int numOfThreads, int numOfElementsPerThread, int numOfCollections, int boundOfCollections)
         {
             //If numOfThreads is not an even number, make it even.
             if ((numOfThreads % 2) != 0)
@@ -1210,7 +812,7 @@ namespace Test
                             int indexOfCollection = BlockingCollection<int>.AddToAny(blockingCollections, j);
                             if (indexOfCollection < 0)
                             {
-                                Console.WriteLine("RunBlockingCollectionTest15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
+                                Console.WriteLine("Test15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
                                     numOfThreads,
                                     numOfElementsPerThread,
                                     numOfCollections,
@@ -1232,7 +834,7 @@ namespace Test
                             int indexOfCollection = BlockingCollection<int>.TakeFromAny(blockingCollections, out item);
                             if (indexOfCollection < 0)
                             {
-                                Console.WriteLine("RunBlockingCollectionTest15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
+                                Console.WriteLine("Test15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
                                     numOfThreads,
                                     numOfElementsPerThread,
                                     numOfCollections,
@@ -1268,7 +870,7 @@ namespace Test
             {
                 if (blockingCollection.Count != expectedCount)
                 {
-                    Console.WriteLine("* RunBlockingCollectionTest15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
+                    Console.WriteLine("* Test15_ConcurrentAddAnyTakeAny(numOfThreads={0}, numOfElementsPerThread={1},numOfCollections={2},boundOfCollections={3})",
                                     numOfThreads,
                                     numOfElementsPerThread,
                                     numOfCollections,
@@ -1277,6 +879,7 @@ namespace Test
                 }
                 blockingCollectionIndex++;
             }
+
             int[] arrayOfRemovedElementsFromAllThreads = (int[])(removedElementsFromAllThreads.ToArray());
             List<int> sortedElementsInCollection = new List<int>(arrayOfRemovedElementsFromAllThreads);
             sortedElementsInCollection.Sort();
@@ -1286,151 +889,68 @@ namespace Test
         /// <summary>Validates the constructor of BlockingCollection.</summary>
         /// <returns>True if test succeeded, false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest16_Ctor()
+        public static void Test16_Ctor()
         {
             BlockingCollection<int> blockingCollection = null;
 
-            try
-            {
-                blockingCollection = new BlockingCollection<int>(null);
-                Assert.False(true, "RunBlockingCollectionTest16_Ctor: > test failed - expected ArgumentNullException");
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentNullException>( () => { blockingCollection = new BlockingCollection<int>(null); } );
+            Assert.Throws<ArgumentNullException>(() => { blockingCollection = new BlockingCollection<int>(null, 1); });
 
-            try
-            {
-                blockingCollection = new BlockingCollection<int>(null, 1);
-                Assert.False(true, "RunBlockingCollectionTest16_Ctor: > test failed - expected ArgumentNullException");
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => { blockingCollection = new BlockingCollection<int>(new ConcurrentStackCollection<int>(), 0); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { blockingCollection = new BlockingCollection<int>(new ConcurrentStackCollection<int>(), -1); });
 
-            try
-            {
-                blockingCollection = new BlockingCollection<int>(new ConcurrentStackCollection<int>(), 0);
-                Assert.False(true, "RunBlockingCollectionTest16_Ctor: > test failed - expected ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
-
-            try
-            {
-                blockingCollection = new BlockingCollection<int>(new ConcurrentStackCollection<int>(), -1);
-                Assert.False(true, "RunBlockingCollectionTest16_Ctor: > test failed - expected ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
-
-            try
+            Assert.Throws<ArgumentException>(() => 
             {
                 ConcurrentStackCollection<int> concurrentStack = new ConcurrentStackCollection<int>();
                 concurrentStack.TryAdd(1);
                 concurrentStack.TryAdd(2);
                 blockingCollection = new BlockingCollection<int>(concurrentStack, 1);
-                Assert.False(true, "RunBlockingCollectionTest16_Ctor: > test failed - expected ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
+            });
         }
 
         /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest17_AddExceptions()
+        public static void Test17_AddExceptions()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
-            try
-            {
-                blockingCollection.TryAdd(0, new TimeSpan(0, 0, 0, 1, 2147483647));
-                Assert.False(true, "RunBlockingCollectionTest17_AddExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.TryAdd(0, new TimeSpan(0, 0, 0, 1, 2147483647)) );
+            Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.TryAdd(0, -2) );
 
-            try
-            {
-                blockingCollection.TryAdd(0, -2);
-                Assert.False(true, "RunBlockingCollectionTest17_AddExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
-
-            try
-            {
-                blockingCollection.CompleteAdding();
-                blockingCollection.TryAdd(0);
-                Assert.False(true, "RunBlockingCollectionTest17_AddExceptions: > test failed - expected exception InvalidOperationException");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() =>
+                {
+                    blockingCollection.CompleteAdding();
+                    blockingCollection.TryAdd(0);
+                });
 
             // test if the underlyingcollection.TryAdd returned flse
             BlockingCollection<int> bc = new BlockingCollection<int>(new QueueProxy1<int>());
-            try
-            {
-                bc.Add(1);
-                Assert.False(true, "RunBlockingCollectionTest17_AddExceptions: > test failed - expected exception InvalidOperationException");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => bc.Add(1));
         }
 
         /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest18_TakeExceptions()
+        public static void Test18_TakeExceptions()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
 
             int item;
-            try
-            {
-                blockingCollection.TryTake(out item, new TimeSpan(0, 0, 0, 1, 2147483647));
-                Assert.False(true, "RunBlockingCollectionTest18_TakeExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.TryTake(out item, new TimeSpan(0, 0, 0, 1, 2147483647)) );
+            Assert.Throws<ArgumentOutOfRangeException>(() =>  blockingCollection.TryTake(out item, -2) );
 
-            try
-            {
-                blockingCollection.TryTake(out item, -2);
-                Assert.False(true, "RunBlockingCollectionTest18_TakeExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
-
-            try
-            {
-                blockingCollection.CompleteAdding();
-                blockingCollection.Take();
-                Assert.False(true, "RunBlockingCollectionTest18_TakeExceptions: > test failed - expected exception OperationCanceledException");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => 
+                {
+                    blockingCollection.CompleteAdding();
+                    blockingCollection.Take();
+                });
         }
 
         /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest19_AddAnyExceptions()
+        public static void Test19_AddAnyExceptions()
         {
             const int NUM_OF_COLLECTIONS = 2;
             BlockingCollection<int>[] blockingCollections = new BlockingCollection<int>[NUM_OF_COLLECTIONS];
@@ -1439,78 +959,29 @@ namespace Test
                 blockingCollections[i] = ConstructBlockingCollection<int>();
             }
 
-            try
-            {
-                BlockingCollection<int>.TryAddToAny(blockingCollections, 0, new TimeSpan(0, 0, 0, 1, 2147483647));
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(blockingCollections, 0, new TimeSpan(0, 0, 0, 1, 2147483647)) );
+            Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryAddToAny(blockingCollections, 0, -2) );
 
-            try
-            {
-                BlockingCollection<int>.TryAddToAny(blockingCollections, 0, -2);
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TryAddToAny(new BlockingCollection<int>[NUM_OF_COLLECTIONS], 0));
+            Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TryAddToAny(new BlockingCollection<int>[0], 0));
 
-            try
-            {
-                BlockingCollection<int>.TryAddToAny(new BlockingCollection<int>[NUM_OF_COLLECTIONS], 0);
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-
-            try
-            {
-                BlockingCollection<int>.TryAddToAny(new BlockingCollection<int>[0], 0);
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-
-            try
+            Assert.Throws<ArgumentException>(() =>
             {
                 blockingCollections[NUM_OF_COLLECTIONS - 1].CompleteAdding();
                 BlockingCollection<int>.TryAddToAny(blockingCollections, 0);
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
+            });
 
-            try
-            {
-                BlockingCollection<int>.TryAddToAny(null, 0);
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception ArgumentNullException");
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentNullException>(() => BlockingCollection<int>.TryAddToAny(null, 0));
 
             // test if the underlyingcollection.TryAdd returned flse
             BlockingCollection<int> collection = new BlockingCollection<int>(new QueueProxy1<int>());
-            try
-            {
-                BlockingCollection<int>.AddToAny(new BlockingCollection<int>[] { collection }, 1);
-                Assert.False(true, "RunBlockingCollectionTest19_AddAnyExceptions: > test failed - expected exception InvalidOperationException");
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            Assert.Throws<InvalidOperationException>(() => BlockingCollection<int>.AddToAny(new BlockingCollection<int>[] { collection }, 1) );
         }
 
         /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest20_TakeAnyExceptions()
+        public static void Test20_TakeAnyExceptions()
         {
             const int NUM_OF_COLLECTIONS = 2;
             BlockingCollection<int>[] blockingCollections = new BlockingCollection<int>[NUM_OF_COLLECTIONS];
@@ -1520,50 +991,12 @@ namespace Test
             }
 
             int item;
-            try
-            {
-                BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, new TimeSpan(0, 0, 0, 1, 2147483647));
-                Assert.False(true, "RunBlockingCollectionTest20_TakeAnyExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, new TimeSpan(0, 0, 0, 1, 2147483647)) );
+            Assert.Throws<ArgumentOutOfRangeException>(() => BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, -2) );
 
-            try
-            {
-                BlockingCollection<int>.TryTakeFromAny(blockingCollections, out item, -2);
-                Assert.False(true, "RunBlockingCollectionTest20_TakeAnyExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
-
-            try
-            {
-                BlockingCollection<int>.TryTakeFromAny(new BlockingCollection<int>[NUM_OF_COLLECTIONS], out item);
-                Assert.False(true, "RunBlockingCollectionTest20_TakeAnyExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-
-            try
-            {
-                BlockingCollection<int>.TryTakeFromAny(new BlockingCollection<int>[0], out item);
-                Assert.False(true, "RunBlockingCollectionTest20_TakeAnyExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-
-            try
-            {
-                BlockingCollection<int>.TryTakeFromAny(null, out item);
-                Assert.False(true, "RunBlockingCollectionTest20_TakeAnyExceptions: > test failed - expected exception ArgumentNullException");
-            }
-            catch (ArgumentNullException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TryTakeFromAny(new BlockingCollection<int>[NUM_OF_COLLECTIONS], out item) );
+            Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TryTakeFromAny(new BlockingCollection<int>[0], out item) );
+            Assert.Throws<ArgumentNullException>(() => BlockingCollection<int>.TryTakeFromAny(null, out item) );
 
             // new behaviour for TakeFromAny after Dev10, to throw argumenexception if all the collections are completed, 
             // however TryTakeFromAny will return false
@@ -1571,72 +1004,33 @@ namespace Test
             {
                 blockingCollections[i].CompleteAdding();
             }
-            try
-            {
-                BlockingCollection<int>.TakeFromAny(blockingCollections, out item);
-                Assert.False(true, "RunBlockingCollectionTest20_TakeAnyExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
+            Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TakeFromAny(blockingCollections, out item) );
         }
 
         /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunBlockingCollectionTest21_CopyToExceptions()
+        public static void Test21_CopyToExceptions()
         {
             BlockingCollection<int> blockingCollection = ConstructBlockingCollection<int>();
             blockingCollection.Add(0);
             blockingCollection.Add(0);
             int[] arr = new int[2];
-            try
-            {
-                blockingCollection.CopyTo(null, 0);
-                Assert.False(true, "RunBlockingCollectionTest22_CopyToExceptions: > test failed - expected exception ArgumentNullException");
-            }
-            catch (ArgumentNullException)
-            {
-            }
 
-            try
-            {
-                blockingCollection.CopyTo(arr, -1);
-                Assert.False(true, "RunBlockingCollectionTest22_CopyToExceptions: > test failed - expected exception ArgumentOutOfRangeException");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-            }
+            Assert.Throws<ArgumentNullException>(() => blockingCollection.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => blockingCollection.CopyTo(arr, -1));
+            Assert.Throws<ArgumentException>(() =>  blockingCollection.CopyTo(arr, 2));
+            Assert.Throws<ArgumentException>(() => 
+                {
+                    int[,] twoDArray = new int[2, 2];
+                    ((ICollection)blockingCollection).CopyTo(twoDArray, 0);
+                });
 
-            try
-            {
-                blockingCollection.CopyTo(arr, 2);
-                Assert.False(true, "RunBlockingCollectionTest22_CopyToExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-
-            try
-            {
-                int[,] twoDArray = new int[2, 2];
-                ((ICollection)blockingCollection).CopyTo(twoDArray, 0);
-                Assert.False(true, "RunBlockingCollectionTest22_CopyToExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
-
-            try
+            Assert.Throws<ArgumentException>(() =>
             {
                 float[,] twoDArray = new float[2, 2];
                 ((ICollection)blockingCollection).CopyTo(twoDArray, 0);
-                Assert.False(true, "RunBlockingCollectionTest22_CopyToExceptions: > test failed - expected exception ArgumentException");
-            }
-            catch (ArgumentException)
-            {
-            }
+            });
         }
 
         #region Helper Methods / Classes

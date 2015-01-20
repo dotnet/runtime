@@ -9,13 +9,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     /// <summary>The class that contains the unit tests of the LazyInit.</summary>
     public class ConcurrentBagTests
     {
         [Fact]
-        public static void TestConcurrentBagBasic()
+        public static void TestBasicScenarios()
         {
             ConcurrentBag<int> cb = new ConcurrentBag<int>();
             Task[] tks = new Task[2];
@@ -46,113 +46,84 @@ namespace Test
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest1_Ctor()
+        public static void RTest1_Ctor()
         {
-            RunConcurrentBagTest1_Ctor(new int[] { 1, 2, 3 }, null);
-            RunConcurrentBagTest1_Ctor(null, typeof(ArgumentNullException));
+            ConcurrentBag<int> bag = new ConcurrentBag<int>(new int[] { 1, 2, 3 });
+            Assert.False(bag.IsEmpty);
+            Assert.Equal(3, bag.Count);
+
+            Assert.Throws<ArgumentNullException>( () => {bag = new ConcurrentBag<int>(null);} );
+        }
+
+        [Fact]
+        public static void RTest2_Add()
+        {
+            RTest2_Add(1, 10);
+            RTest2_Add(3, 100);
         }
 
         [Fact]
         [OuterLoop]
-        public static void RunConcurrentBagTest2_Add()
+        public static void RTest2_Add01()
         {
-            RunConcurrentBagTest2_Add(1, 10);
-            RunConcurrentBagTest2_Add(64, 100);
-            RunConcurrentBagTest2_Add(128, 1000);
+            RTest2_Add(8, 1000);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest3_TakeOrPeek()
+        public static void RTest3_TakeOrPeek()
         {
             ConcurrentBag<int> bag = CreateBag(100);
-            RunConcurrentBagTest3_TakeOrPeek(bag, 1, 100, true);
+            RTest3_TakeOrPeek(bag, 1, 100, true);
 
             bag = CreateBag(100);
-            RunConcurrentBagTest3_TakeOrPeek(bag, 64, 10, false);
+            RTest3_TakeOrPeek(bag, 4, 10, false);
 
             bag = CreateBag(1000);
-            RunConcurrentBagTest3_TakeOrPeek(bag, 128, 100, true);
+            RTest3_TakeOrPeek(bag, 11, 100, true);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest4_AddAndTake()
+        public static void RTest4_AddAndTake()
         {
-            RunConcurrentBagTest4_AddAndTake(64);
-            RunConcurrentBagTest4_AddAndTake(128);
-            RunConcurrentBagTest4_AddAndTake(256);
+            RTest4_AddAndTake(8);
+            RTest4_AddAndTake(16);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest5_CopyTo()
+        public static void RTest5_CopyTo()
         {
-            ConcurrentBag<int> bag = CreateBag(10);
+            const int SIZE = 10;
+            Array array = new int[SIZE];
+            int index = 0;
 
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], 0, null, true);
+            ConcurrentBag<int> bag = CreateBag(SIZE);
+            bag.CopyTo((int[])array, index);
 
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], 0, null, false);
+            Assert.Throws<ArgumentNullException>(() => bag.CopyTo(null, index));
+            Assert.Throws<ArgumentOutOfRangeException>(() => bag.CopyTo((int[]) array, -1));
+            Assert.Throws<ArgumentException>(() => bag.CopyTo((int[])array, SIZE));
+            Assert.Throws<ArgumentException>(() => bag.CopyTo((int[])array, SIZE-2));
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest5_CopyToExceptions()
+        public static void RTest5_ICollectionCopyTo()
         {
-            ConcurrentBag<int> bag = CreateBag(10);
-            RunConcurrentBagTest5_CopyTo(bag, null, 0, typeof(ArgumentNullException), true);
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], -1, typeof(ArgumentOutOfRangeException), true);
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], 10, typeof(ArgumentException), true);
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], 8, typeof(ArgumentException), true);
+            const int SIZE = 10;
+            Array array = new int[SIZE];
+            int index = 0;
 
-            RunConcurrentBagTest5_CopyTo(bag, null, 0, typeof(ArgumentNullException), false);
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], -1, typeof(ArgumentOutOfRangeException), false);
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], 10, typeof(ArgumentException), false);
-            RunConcurrentBagTest5_CopyTo(bag, new int[10], 8, typeof(ArgumentException), false);
+            ConcurrentBag<int> bag = CreateBag(SIZE);
+            ICollection collection = bag as ICollection;
+            Assert.NotNull(collection);
+            collection.CopyTo(array, index);
 
-            RunConcurrentBagTest5_CopyTo(bag, new int[10, 5], 8, typeof(ArgumentException), true);
-        }
+            Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, index));
+            Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo((int[])array, -1));
+            Assert.Throws<ArgumentException>(() => collection.CopyTo((int[])array, SIZE));
+            Assert.Throws<ArgumentException>(() => collection.CopyTo((int[])array, SIZE - 2));
 
-        /// <summary>
-        /// Test bag constructor
-        /// </summary>
-        /// <param name="collection"></param>
-        /// <param name="exceptionType"></param>
-        /// <param name="shouldThrow"></param>
-        /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunConcurrentBagTest1_Ctor(int[] collection, Type exceptionType)
-        {
-            bool thrown = false;
-            try
-            {
-                ConcurrentBag<int> bag = new ConcurrentBag<int>(collection);
-                if (bag.IsEmpty != (collection.Length == 0))
-                {
-                    Assert.False(true, "RunConcurrentBagTest1_Ctor:  Constructor failed, IsEmpty doesn't match the given collection count.");
-                }
-
-                if (bag.Count != collection.Length)
-                {
-                    Assert.False(true, "RunConcurrentBagTest1_Ctor:  Constructor failed, the bag count doesn't match the given collection count.");
-                }
-            }
-            catch (Exception e)
-            {
-                if (exceptionType != null && !e.GetType().Equals(exceptionType))
-                {
-                    Assert.False(true, "RunConcurrentBagTest1_Ctor:  Constructor failed, exceptions type do not match");
-                }
-                else if (exceptionType == null)
-                {
-                    Assert.False(true, "RunConcurrentBagTest1_Ctor:  Constructor failed, it threw un expected exception");
-                }
-                thrown = true;
-            }
-            if (exceptionType != null && !thrown)
-            {
-                Assert.False(true, "RunConcurrentBagTest1_Ctor:  Constructor failed, it didn't throw the expected exception");
-            }
+            Array array2 = new int[SIZE, 5];
+            Assert.Throws<ArgumentException>(() => collection.CopyTo(array2, 0));
         }
 
         /// <summary>
@@ -161,7 +132,7 @@ namespace Test
         /// <param name="threadsCount"></param>
         /// <param name="itemsPerThread"></param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunConcurrentBagTest2_Add(int threadsCount, int itemsPerThread)
+        private static void RTest2_Add(int threadsCount, int itemsPerThread)
         {
             int failures = 0;
             ConcurrentBag<int> bag = new ConcurrentBag<int>();
@@ -192,16 +163,8 @@ namespace Test
 
             Task.WaitAll(threads);
 
-            if (failures > 0)
-            {
-                Console.WriteLine("* RunConcurrentBagTest1_Add(" + threadsCount + "," + itemsPerThread + ")");
-                Assert.False(true, "Add failed, " + failures + " threads threw  unexpected exceptions");
-            }
-            if (bag.Count != itemsPerThread * threadsCount)
-            {
-                Console.WriteLine("* RunConcurrentBagTest1_Add(" + threadsCount + "," + itemsPerThread + ")");
-                Assert.False(true, "Add failed, the bag count doesn't match the expected count");
-            }
+            Assert.Equal(0, failures);
+            Assert.Equal(itemsPerThread * threadsCount, bag.Count);
         }
 
         /// <summary>
@@ -212,7 +175,7 @@ namespace Test
         /// <param name="itemsPerThread"></param>
         /// <param name="take"></param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunConcurrentBagTest3_TakeOrPeek(ConcurrentBag<int> bag, int threadsCount, int itemsPerThread, bool take)
+        private static void RTest3_TakeOrPeek(ConcurrentBag<int> bag, int threadsCount, int itemsPerThread, bool take)
         {
             int bagCount = bag.Count;
             int succeeded = 0;
@@ -224,29 +187,22 @@ namespace Test
                 {
                     for (int j = 0; j < itemsPerThread; j++)
                     {
-                        try
+                        int data;
+                        bool result = false;
+                        if (take)
                         {
-                            int data;
-                            bool result = false;
-                            if (take)
-                            {
-                                result = bag.TryTake(out data);
-                            }
-                            else
-                            {
-                                result = bag.TryPeek(out data);
-                            }
-                            if (result)
-                            {
-                                Interlocked.Increment(ref succeeded);
-                            }
-                            else
-                            {
-                                Interlocked.Increment(ref failures);
-                            }
-
+                            result = bag.TryTake(out data);
                         }
-                        catch
+                        else
+                        {
+                            result = bag.TryPeek(out data);
+                        }
+
+                        if (result)
+                        {
+                            Interlocked.Increment(ref succeeded);
+                        }
+                        else
                         {
                             Interlocked.Increment(ref failures);
                         }
@@ -260,14 +216,13 @@ namespace Test
             {
                 if (bag.Count != bagCount - succeeded)
                 {
-                    Console.WriteLine("* RunConcurrentBagTest3_TakeOrPeek(" + threadsCount + "," + itemsPerThread + ")");
+                    Console.WriteLine("* RTest3_TakeOrPeek(" + threadsCount + "," + itemsPerThread + ")");
                     Assert.False(true, "TryTake failed, the remaining count doesn't match the expected count");
                 }
             }
-            else if (failures > 0)
+            else
             {
-                Console.WriteLine("* RunConcurrentBagTest3_TakeOrPeek(" + threadsCount + "," + itemsPerThread + ")");
-                Assert.False(true, "TryPeek failed, Unexpected exceptions has been thrown");
+                Assert.Equal(0, failures);
             }
         }
 
@@ -276,7 +231,7 @@ namespace Test
         /// </summary>
         /// <param name="threadsCount"></param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunConcurrentBagTest4_AddAndTake(int threadsCount)
+        private static void RTest4_AddAndTake(int threadsCount)
         {
             ConcurrentBag<int> bag = new ConcurrentBag<int>();
 
@@ -311,83 +266,25 @@ namespace Test
             {
                 if (validation[i] > 1)
                 {
-                    Console.WriteLine("* RunConcurrentBagTest4_AddAndTake(" + threadsCount + " )");
-                    Assert.False(true, "Add/Take failed, item " + i + " has been taken more than one");
+                    Console.WriteLine("* RTest4_AddAndTake(" + threadsCount + " )");
+                    Assert.False(true, "Add/Take failed, item " + i + " has been taken more than once");
                 }
                 else if (validation[i] == 0)
                 {
-                    if (!bag.TryTake(out valu))
-                    {
-                        Console.WriteLine("* RunConcurrentBagTest4_AddAndTake(" + threadsCount + " )");
-                        Assert.False(true, "Add/Take failed, the list is not empty and TryTake returned false");
-                    }
-
+                    Assert.True(bag.TryTake(out valu), String.Format("Add/Take failed, the list is not empty and TryTake returned false; thread count={0}", threadsCount));
                 }
             }
 
-            if (bag.Count > 0 || bag.TryTake(out valu))
-            {
-                Console.WriteLine("* RunConcurrentBagTest4_AddAndTake(" + threadsCount + " )");
-                Assert.False(true, "Add/Take failed, this list is not empty after all remove operations");
-            }
+            Assert.False(bag.Count > 0 || bag.TryTake(out valu), String.Format("Add/Take failed, this list is not empty after all remove operations; thread count={0}", threadsCount));
         }
 
-        /// <summary>
-        /// Test copyTo method
-        /// </summary>
-        /// <param name="bag"></param>
-        /// <param name="array"></param>
-        /// <param name="index"></param>
-        /// <param name="exceptionType"></param>
-        /// <param name="shouldThrow"></param>
-        /// <returns>True if succeeded, false otherwise</returns>
-        private static void RunConcurrentBagTest5_CopyTo(ConcurrentBag<int> bag, Array array, int index, Type exceptionType, bool useICollection)
-        {
-            bool thrown = false;
-            try
-            {
-                if (useICollection)
-                {
-                    ICollection collection = bag as ICollection;
-                    collection.CopyTo(array, index);
-                }
-                else
-                    bag.CopyTo((int[])array, index);
-            }
-            catch (Exception e)
-            {
-                if (exceptionType != null && !e.GetType().Equals(exceptionType))
-                {
-                    Console.WriteLine("* RunConcurrentBagTest5_CopyTo(" + array + " )");
-                    Assert.False(true, "CopyTo failed, exceptions types do not match.");
-                }
-                else if (exceptionType == null)
-                {
-                    Console.WriteLine("* RunConcurrentBagTest5_CopyTo(" + array + " )");
-                    Assert.False(true, "CopyTo failed, it threw unexpected exception." + e);
-                }
-                thrown = true;
-            }
-
-            if (exceptionType != null && !thrown)
-            {
-                Console.WriteLine("* RunConcurrentBagTest5_CopyTo(" + array + " )");
-                Assert.False(true, "CopyTo failed, it didn't throw the expected exception.");
-            }
-        }
-
-        /// <summary>
-        /// Test enumeration
-        /// </summary>
-        /// <returns>True if succeeded, false otherwise</returns>
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest6_GetEnumerator()
+        public static void RTest6_GetEnumerator()
         {
             ConcurrentBag<int> bag = new ConcurrentBag<int>();
             foreach (int x in bag)
             {
-                Assert.False(true, "RunConcurrentBagTest6_GetEnumerator:  GetEnumeration failed, returned items when the bag is empty");
+                Assert.False(true, "RTest6_GetEnumerator:  GetEnumeration failed, returned items when the bag is empty");
             }
 
             for (int i = 0; i < 100; i++)
@@ -395,27 +292,17 @@ namespace Test
                 bag.Add(i);
             }
 
-            try
+            int count = 0;
+            foreach (int x in bag)
             {
-                int count = 0;
-                foreach (int x in bag)
-                {
-                    count++;
-                }
-                if (count != bag.Count)
-                {
-                    Assert.False(true, "RunConcurrentBagTest6_GetEnumerator:  GetEnumeration failed, the enumeration count doesn't match the bag count");
-                }
+                count++;
             }
-            catch
-            {
-                Assert.False(true, "RunConcurrentBagTest6_GetEnumerator:  GetEnumeration failed, it threw unexpected exception");
-            }
+
+            Assert.Equal(count, bag.Count);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest7_BugFix575975()
+        public static void RTest7_BugFix575975()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>(new ConcurrentBag<int>());
             bool succeeded = true;
@@ -452,67 +339,55 @@ namespace Test
             }
 
             Task.WaitAll(threads);
-
-            if (!succeeded)
-                Assert.False(true, String.Format("RunConcurrentBagTest7_BugFix575975: {0}", succeeded ? "succeeded" : "failed"));
+            Assert.True(succeeded);
         }
 
-        /// <summary>
-        /// Test IPCC implementation
-        /// </summary>
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest8_Interfaces()
+        public static void RTest8_Interfaces()
         {
             ConcurrentBag<int> bag = new ConcurrentBag<int>();
             //IPCC
             IProducerConsumerCollection<int> ipcc = bag as IProducerConsumerCollection<int>;
-            Assert.False(ipcc == null, "RunConcurrentBagTest8_Interfaces:  ConcurrentBag<T> doesn't implement IPCC<T>");
-            Assert.True(ipcc.TryAdd(1), "RunConcurrentBagTest8_Interfaces:  IPCC<T>.TryAdd failed");
-            Assert.True(1 == bag.Count, String.Format("RunConcurrentBagTest8_Interfaces:  The count doesn't match, expected 1, actual {0}", bag.Count));
+            Assert.False(ipcc == null, "RTest8_Interfaces:  ConcurrentBag<T> doesn't implement IPCC<T>");
+            Assert.True(ipcc.TryAdd(1), "RTest8_Interfaces:  IPCC<T>.TryAdd failed");
+            Assert.Equal(1, bag.Count);
 
             int result = -1;
-            Assert.True(ipcc.TryTake(out result), "RunConcurrentBagTest8_Interfaces:  IPCC<T>.TryTake failed");
-            Assert.True(1 == result, "RunConcurrentBagTest8_Interfaces:  IPCC<T>.TryTake failed");
-            Assert.True(0 == bag.Count, String.Format("RunConcurrentBagTest8_Interfaces:  The count doesn't match, expected 1, actual {0}", bag.Count));
+            Assert.True(ipcc.TryTake(out result), "RTest8_Interfaces:  IPCC<T>.TryTake failed");
+            Assert.True(1 == result, "RTest8_Interfaces:  IPCC<T>.TryTake failed");
+            Assert.Equal(0, bag.Count);
 
             //ICollection
             ICollection collection = bag as ICollection;
-            Assert.False(collection == null, "RunConcurrentBagTest8_Interfaces:  ConcurrentBag<T> doesn't implement ICollection");
-            Assert.False(collection.IsSynchronized, "RunConcurrentBagTest8_Interfaces:  IsSynchronized returned true");
+            Assert.False(collection == null, "RTest8_Interfaces:  ConcurrentBag<T> doesn't implement ICollection");
+            Assert.False(collection.IsSynchronized, "RTest8_Interfaces:  IsSynchronized returned true");
 
             //IEnumerable
             IEnumerable enumerable = bag as IEnumerable;
-            Assert.False(enumerable == null, "RunConcurrentBagTest8_Interfaces:  ConcurrentBag<T> doesn't implement IEnumerable");
+            Assert.False(enumerable == null, "RTest8_Interfaces:  ConcurrentBag<T> doesn't implement IEnumerable");
             foreach (object o in enumerable)
             {
-                Assert.True(false, "RunConcurrentBagTest8_Interfaces:  Enumerable returned items when the bag is empty");
+                Assert.True(false, "RTest8_Interfaces:  Enumerable returned items when the bag is empty");
             }
         }
 
-        /// <summary>
-        /// Test IPCC implementation
-        /// </summary>
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest8_Interfaces_Negative()
+        public static void RTest8_Interfaces_Negative()
         {
             ConcurrentBag<int> bag = new ConcurrentBag<int>();
             //IPCC
             IProducerConsumerCollection<int> ipcc = bag as IProducerConsumerCollection<int>;
             ICollection collection = bag as ICollection;
-            Assert.Throws<NotSupportedException>(
-               () => { object obj = collection.SyncRoot; });
-            // "RunConcurrentBagTest8_Interfaces:  SyncRoot didn't throw NotSupportedException");
+            Assert.Throws<NotSupportedException>(() => { object obj = collection.SyncRoot; });
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentBagTest9_ToArray()
+        public static void RTest9_ToArray()
         {
             var bag = new ConcurrentBag<int>();
-            Assert.False(bag.ToArray() == null, "RunConcurrentBagTest9_ToArray:  Empty bag returned a null array");
-            Assert.True(0 == bag.ToArray().Length, "RunConcurrentBagTest9_ToArray:  Empty bag returned a non empty array");
+
+            Assert.NotNull(bag.ToArray());
+            Assert.Equal(0, bag.ToArray().Length);
 
             int[] allItems = new int[10000];
             for (int i = 0; i < allItems.Length; i++)
@@ -532,7 +407,7 @@ namespace Test
             }
 
             Task.WaitAll(tasks);
-            Assert.True(0 == failCount, "RunConcurrentBagTest9_ToArray:  One or more thread failed to get the correct bag items from ToArray");
+            Assert.True(0 == failCount, "RTest9_ToArray:  One or more thread failed to get the correct bag items from ToArray");
         }
 
         #region Helper Methods / Classes

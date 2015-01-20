@@ -10,12 +10,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentStackTests
     {
         [Fact]
-        public static void TestConcurrentStackBasic()
+        public static void TestBasicScenarios()
         {
             ConcurrentStack<int> cs = new ConcurrentStack<int>();
             cs.Push(1);
@@ -50,104 +50,111 @@ namespace Test
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest0_Empty()
-        {
-            RunConcurrentStackTest0_Empty(0);
-            RunConcurrentStackTest0_Empty(16);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest1_PushAndPop()
-        {
-            RunConcurrentStackTest1_PushAndPop(0, 0);
-            RunConcurrentStackTest1_PushAndPop(5, 0);
-            RunConcurrentStackTest1_PushAndPop(5, 2);
-            RunConcurrentStackTest1_PushAndPop(5, 5);
-            RunConcurrentStackTest1_PushAndPop(1024, 512);
-            RunConcurrentStackTest1_PushAndPop(1024, 1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest2_ConcPushAndPop()
-        {
-            RunConcurrentStackTest2_ConcPushAndPop(8, 1024 * 1024, 0);
-            RunConcurrentStackTest2_ConcPushAndPop(8, 1024 * 1024, 1024 * 512);
-            RunConcurrentStackTest2_ConcPushAndPop(8, 1024 * 1024, 1024 * 1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest3_Clear()
-        {
-            RunConcurrentStackTest3_Clear(0);
-            RunConcurrentStackTest3_Clear(16);
-            RunConcurrentStackTest3_Clear(1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest4_Enumerator()
-        {
-            RunConcurrentStackTest4_Enumerator(0);
-            RunConcurrentStackTest4_Enumerator(16);
-            RunConcurrentStackTest4_Enumerator(1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest5_CtorAndCopyToAndToArray()
-        {
-            RunConcurrentStackTest5_CtorAndCopyToAndToArray(0);
-            RunConcurrentStackTest5_CtorAndCopyToAndToArray(16);
-            RunConcurrentStackTest5_CtorAndCopyToAndToArray(1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest6_PushRange()
-        {
-            RunConcurrentStackTest6_PushRange(8, 10);
-            RunConcurrentStackTest6_PushRange(16, 100);
-            RunConcurrentStackTest6_PushRange(128, 100);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest7_PopRange()
-        {
-            RunConcurrentStackTest7_PopRange(8, 10);
-            RunConcurrentStackTest7_PopRange(16, 100);
-            RunConcurrentStackTest7_PopRange(128, 100);
-        }
-
-        // Just validates the stack correctly reports that it's empty.
-        private static void RunConcurrentStackTest0_Empty(int count)
+        public static void Test0_Empty()
         {
             ConcurrentStack<int> s = new ConcurrentStack<int>();
             int item;
-            Assert.False(s.TryPop(out item), "RunConcurrentStackTest0_Empty:  TryPop returned true when the stack is empty");
-            Assert.False(s.TryPeek(out item), "RunConcurrentStackTest0_Empty:  TryPeek returned true when the stack is empty");
-            Assert.True(s.TryPopRange(new int[1]) == 0, "RunConcurrentStackTest0_Empty:  TryPopRange returned non zero when the stack is empty");
+            Assert.False(s.TryPop(out item), "Test0_Empty:  TryPop returned true when the stack is empty");
+            Assert.False(s.TryPeek(out item), "Test0_Empty:  TryPeek returned true when the stack is empty");
+            Assert.True(s.TryPopRange(new int[1]) == 0, "Test0_Empty:  TryPopRange returned non zero when the stack is empty");
 
+            int count = 15;
             for (int i = 0; i < count; i++)
                 s.Push(i);
 
-            bool isEmpty = s.IsEmpty;
-            int sawCount = s.Count;
+            Assert.Equal(count, s.Count);
+            Assert.False(s.IsEmpty);
+        }
 
-            bool result = (isEmpty == (count == 0) && sawCount == count);
-            if (!result)
-                Assert.False(true, String.Format(
-                    "RunConcurrentStackTest0_Empty:  FAILED. IsEmpty={0} (expect {1}), Count={2} (expect {3})", isEmpty, count == 0, sawCount, count));
+        [Fact]
+        public static void Test1_PushAndPop()
+        {
+            Test1_PushAndPop(0, 0);
+            Test1_PushAndPop(9, 9);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test1_PushAndPop01()
+        {
+            Test1_PushAndPop(3, 0);
+            Test1_PushAndPop(1024, 512);
+        }
+
+        [Fact]
+        public static void Test2_ConcPushAndPop()
+        {
+            Test2_ConcPushAndPop(3, 1024, 0);
+        }
+
+        [Fact]
+        public static void Test2_ConcPushAndPop01()
+        {
+            Test2_ConcPushAndPop(8, 1024, 512);
+        }
+
+        [Fact]
+        public static void Test3_Clear()
+        {
+            Test3_Clear(0);
+            Test3_Clear(16);
+            Test3_Clear(1024);
+        }
+
+        [Fact]
+        public static void Test4_Enumerator()
+        {
+            Test4_Enumerator(0);
+            Test4_Enumerator(16);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test4_Enumerator01()
+        {
+            Test4_Enumerator(1024);
+        }
+
+        [Fact]
+        public static void Test5_CtorAndCopyToAndToArray()
+        {
+            Test5_CtorAndCopyToAndToArray(0);
+            Test5_CtorAndCopyToAndToArray(16);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test5_CtorAndCopyToAndToArray01()
+        {
+            Test5_CtorAndCopyToAndToArray(1024);
+        }
+
+        [Fact]
+        public static void Test6_PushRange()
+        {
+            Test6_PushRange(8, 10);
+            Test6_PushRange(16, 100);
+        }
+
+        [Fact]
+        public static void Test7_PopRange()
+        {
+            Test7_PopRange(8, 10);
+            Test7_PopRange(16, 100);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test_PushPopRange()
+        {
+            Test6_PushRange(128, 100);
+            Test7_PopRange(128, 100);
         }
 
         // Pushes and pops a certain number of times, and validates the resulting count.
         // These operations happen sequentially in a somewhat-interleaved fashion. We use
         // a BCL stack on the side to validate contents are correctly maintained.
-        private static void RunConcurrentStackTest1_PushAndPop(int pushes, int pops)
+        private static void Test1_PushAndPop(int pushes, int pops)
         {
             // It utilised a random generator to do x number of pushes and
             // y number of pops where x = random, y = random.  Removed it
@@ -169,13 +176,9 @@ namespace Test
                     s2.Push(val);
                     donePushes++;
 
-                    int sc = s.Count, s2c = s2.Count;
-                    if (sc != s2c)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest1_PushAndPop(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > test failed - stack counts differ: s = {0}, s2 = {1}", sc, s2c));
-                    }
+                    Assert.Equal(s.Count, s2.Count);
                 }
+
                 for (int i = 0; i < 6; i++)
                 {
                     if (donePops == pops)
@@ -189,39 +192,21 @@ namespace Test
                     e2 = s2.Pop();
                     donePops++;
 
-                    if (!b0 || !b1)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest1_PushAndPop(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > stack was unexpectedly empty, wanted #{0}  (peek={1}, pop={2})", e2, b0, b1));
-                    }
+                    Assert.True(b0);
+                    Assert.True(b1);
 
-                    if (e0 != e1 || e1 != e2)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest1_PushAndPop(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > stack contents differ, got #{0} (peek)/{1} (pop) but expected #{2}", e0, e1, e2));
-                    }
-
-                    int sc = s.Count, s2c = s2.Count;
-                    if (sc != s2c)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest1_PushAndPop(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > test failed - stack counts differ: s = {0}, s2 = {1}", sc, s2c));
-                    }
+                    Assert.Equal(e0, e1);
+                    Assert.Equal(e1, e2);
+                    Assert.Equal(s.Count, s2.Count);
                 }
             }
 
-            int expected = pushes - pops;
-            int endCount = s.Count;
-            if (expected != endCount)
-            {
-                Console.WriteLine("* RunConcurrentStackTest1_PushAndPop(pushes={0}, pops={1})", pushes, pops);
-                Assert.False(true, String.Format("  > FAILED: expected = {0}, real = {1}", expected, endCount));
-            }
+            Assert.Equal(pushes - pops, s.Count);
         }
 
         // Pushes and pops a certain number of times, and validates the resulting count.
         // These operations happen sconcurrently.
-        private static void RunConcurrentStackTest2_ConcPushAndPop(int threads, int pushes, int pops)
+        private static void Test2_ConcPushAndPop(int threads, int pushes, int pops)
         {
             // It utilised a random generator to do x number of pushes and
             // y number of pops where x = random, y = random.  Removed it
@@ -269,17 +254,11 @@ namespace Test
             Task.WaitAll(tt);
 
             // Validate the count.
-            int expected = threads * (pushes - pops);
-            int endCount = s.Count;
-            if (expected != endCount)
-            {
-                Console.WriteLine("* RunConcurrentStackTest2_ConcPushAndPop(threads={0}, pushes={1}, pops={2})", threads, pushes, pops);
-                Assert.False(true, String.Format("  > expected = {0}, real = {1}", expected, endCount));
-            }
+            Assert.Equal(threads * (pushes - pops), s.Count);
         }
 
         // Just validates clearing the stack's contents.
-        private static void RunConcurrentStackTest3_Clear(int count)
+        private static void Test3_Clear(int count)
         {
             ConcurrentStack<int> s = new ConcurrentStack<int>();
             for (int i = 0; i < count; i++)
@@ -287,16 +266,12 @@ namespace Test
 
             s.Clear();
 
-            bool isEmpty = s.IsEmpty;
-            int sawCount = s.Count;
-
-            bool passed = isEmpty && sawCount == 0;
-            if (!passed)
-                Assert.False(true, String.Format("RunConcurrentStackTest3_Clear:  > IsEmpty={0}, Count={1}", isEmpty, sawCount));
+            Assert.True(s.IsEmpty);
+            Assert.Equal(0, s.Count);
         }
 
         // Just validates enumerating the stack.
-        private static void RunConcurrentStackTest4_Enumerator(int count)
+        private static void Test4_Enumerator(int count)
         {
             ConcurrentStack<int> s = new ConcurrentStack<int>();
             for (int i = 0; i < count; i++)
@@ -312,21 +287,16 @@ namespace Test
                     int e;
                     while (s.TryPop(out e)) ;
                 }
-                if (x != j)
-                {
-                    Assert.False(true, String.Format("RunConcurrentStackTest4_Enumerator:  > expected #{0}, but saw #{1}", j, x));
-                }
+
+                Assert.Equal(j, x);
                 j--;
             }
 
-            if (j > 0)
-            {
-                Assert.False(true, "RunConcurrentStackTest4_Enumerator:  > did not enumerate all elements in the stack");
-            }
+            Assert.True(j <= 0, " > did not enumerate all elements in the stack");
         }
 
         // Instantiates the stack w/ the enumerator ctor and validates the resulting copyto & toarray.
-        private static void RunConcurrentStackTest5_CtorAndCopyToAndToArray(int count)
+        private static void Test5_CtorAndCopyToAndToArray(int count)
         {
             int[] arr = new int[count];
             for (int i = 0; i < count; i++) arr[i] = i;
@@ -334,61 +304,34 @@ namespace Test
 
             // try toarray.
             int[] sa1 = s.ToArray();
-            if (sa1.Length != arr.Length)
-            {
-                Assert.False(true, String.Format(
-                    "RunConcurrentStackTest5_CtorAndCopyToAndToArray:  > ToArray resulting array is diff length: got {0}, wanted {1}",
-                    sa1.Length, arr.Length));
-            }
+            Assert.Equal(arr.Length, sa1.Length);
+
             for (int i = 0; i < sa1.Length; i++)
             {
-                if (sa1[i] != arr[count - i - 1])
-                {
-                    Assert.False(true, String.Format(
-                        "RunConcurrentStackTest5_CtorAndCopyToAndToArray:  > ToArray returned an array w/ diff contents: got {0}, wanted {1}",
-                        sa1[i], arr[count - i - 1]));
-                }
+                Assert.Equal(arr[count - i - 1], sa1[i]);
             }
 
             int[] sa2 = new int[count];
             s.CopyTo(sa2, 0);
-            if (sa2.Length != arr.Length)
-            {
-                Assert.False(true, String.Format(
-                    "RunConcurrentStackTest5_CtorAndCopyToAndToArray:  > CopyTo(int[]) resulting array is diff length: got {0}, wanted {1}",
-                    sa2.Length, arr.Length));
-            }
+            Assert.Equal(arr.Length, sa2.Length);
+
             for (int i = 0; i < sa2.Length; i++)
             {
-                if (sa2[i] != arr[count - i - 1])
-                {
-                    Assert.False(true, String.Format(
-                        "RunConcurrentStackTest5_CtorAndCopyToAndToArray:  > CopyTo(int[]) returned an array w/ diff contents: got {0}, wanted {1}",
-                        sa2[i], arr[count - i - 1]));
-                }
+                Assert.Equal(arr[count - i - 1], sa2[i]);
             }
 
             object[] sa3 = new object[count]; // test array variance.
             ((System.Collections.ICollection)s).CopyTo(sa3, 0);
-            if (sa3.Length != arr.Length)
-            {
-                Assert.False(true, String.Format(
-                    "RunConcurrentStackTest5_CtorAndCopyToAndToArray:  > CopyTo(object[]) resulting array is diff length: got {0}, wanted {1}",
-                    sa3.Length, arr.Length));
-            }
+            Assert.Equal(arr.Length, sa3.Length);
+
             for (int i = 0; i < sa3.Length; i++)
             {
-                if ((int)sa3[i] != arr[count - i - 1])
-                {
-                    Assert.False(true, String.Format(
-                        "RunConcurrentStackTest5_CtorAndCopyToAndToArray:  > CopyTo(object[]) returned an array w/ diff contents: got {0}, wanted {1}",
-                        sa3[i], arr[count - i - 1]));
-                }
+                Assert.Equal(arr[count - i - 1], (int)sa3[i]);
             }
         }
 
         //Tests COncurrentSTack.PushRange
-        private static void RunConcurrentStackTest6_PushRange(int NumOfThreads, int localArraySize)
+        private static void Test6_PushRange(int NumOfThreads, int localArraySize)
         {
             ConcurrentStack<int> stack = new ConcurrentStack<int>();
 
@@ -417,26 +360,21 @@ namespace Test
                 for (int j = 0; j < localArraySize; j++)
                 {
                     int currentItem = 0;
-                    if (!stack.TryPop(out currentItem))
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest6_PushRange({0},{1})", NumOfThreads, localArraySize);
-                        Assert.False(true, " > Failed, TryPop returned false");
-                    }
-                    if (lastItem > -1 && lastItem - currentItem != 1)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest6_PushRange({0},{1})", NumOfThreads, localArraySize);
-                        Assert.False(true, String.Format(" > Failed {0} - {1} shouldn't be consecutive", lastItem, currentItem));
-                    }
+
+                    Assert.True(stack.TryPop(out currentItem),
+                        String.Format("* Test6_PushRange({0},{1})L TryPop returned false.", NumOfThreads, localArraySize));
+
+                    Assert.True((lastItem <= -1) || lastItem - currentItem == 1,
+                        String.Format("* Test6_PushRange({0},{1}): Failed {2} - {3} shouldn't be consecutive", NumOfThreads, localArraySize, lastItem, currentItem));
 
                     lastItem = currentItem;
-
                 }
             }
         }
 
         //Tests ConcurrentStack.PopRange by pushing consecutove numbers and run n threads each thread tries to pop m itmes
         // the popped m items should be consecutive
-        private static void RunConcurrentStackTest7_PopRange(int NumOfThreads, int elementsPerThread)
+        private static void Test7_PopRange(int NumOfThreads, int elementsPerThread)
         {
             int lastValue = NumOfThreads * elementsPerThread;
             List<int> allValues = new List<int>();
@@ -454,12 +392,8 @@ namespace Test
                 {
                     int index = (int)obj;
 
-                    int res;
-                    if ((res = stack.TryPopRange(array, index, elementsPerThread)) != elementsPerThread)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest7_PopRange({0},{1})", NumOfThreads, elementsPerThread);
-                        Assert.False(true, " > Failed TryPopRange didn't return the full range ");
-                    }
+                    int res = stack.TryPopRange(array, index, elementsPerThread);
+                    Assert.Equal(elementsPerThread, res);
                 }, i * elementsPerThread, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
 
@@ -471,71 +405,65 @@ namespace Test
                 for (int j = 1; j < elementsPerThread; j++)
                 {
                     int currentIndex = i * elementsPerThread + j;
-                    if (array[currentIndex - 1] - array[currentIndex] != 1)
-                    {
-                        Console.WriteLine("* RunConcurrentStackTest7_PopRange({0},{1})", NumOfThreads, elementsPerThread);
-                        Assert.False(true, String.Format(" > Failed {0} - {1} shouldn't be consecutive", array[currentIndex - 1], array[currentIndex]));
-                    }
+                    Assert.Equal(array[currentIndex - 1], array[currentIndex] + 1);
                 }
             }
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest8_Exceptions()
+        public static void Test8_Exceptions()
         {
             ConcurrentStack<int> stack = null;
             Assert.Throws<ArgumentNullException>(
                () => stack = new ConcurrentStack<int>((IEnumerable<int>)null));
-               // "RunConcurrentStackTest8_Exceptions:  The constructor didn't throw ANE when null collection passed");
+               // "Test8_Exceptions:  The constructor didn't throw ANE when null collection passed");
 
             stack = new ConcurrentStack<int>();
             //CopyTo
             Assert.Throws<ArgumentNullException>(
                () => stack.CopyTo(null, 0));
-               // "RunConcurrentStackTest8_Exceptions:  CopyTo didn't throw ANE when null array passed");
+               // "Test8_Exceptions:  CopyTo didn't throw ANE when null array passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.CopyTo(new int[1], -1));
-               // "RunConcurrentStackTest8_Exceptions:  CopyTo didn't throw AORE when negative array index passed");
+               // "Test8_Exceptions:  CopyTo didn't throw AORE when negative array index passed");
 
             //PushRange
             Assert.Throws<ArgumentNullException>(
                () => stack.PushRange(null));
-               // "RunConcurrentStackTest8_Exceptions:  PushRange didn't throw ANE when null array passed");
+               // "Test8_Exceptions:  PushRange didn't throw ANE when null array passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.PushRange(new int[1], 0, -1));
-               // "RunConcurrentStackTest8_Exceptions:  PushRange didn't throw AORE when negative count passed");
+               // "Test8_Exceptions:  PushRange didn't throw AORE when negative count passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.PushRange(new int[1], -1, 1));
-               // "RunConcurrentStackTest8_Exceptions:  PushRange didn't throw AORE when negative index passed");
+               // "Test8_Exceptions:  PushRange didn't throw AORE when negative index passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.PushRange(new int[1], 2, 1));
-               // "RunConcurrentStackTest8_Exceptions:  PushRange didn't throw AORE when start index > array length");
+               // "Test8_Exceptions:  PushRange didn't throw AORE when start index > array length");
             Assert.Throws<ArgumentException>(
                () => stack.PushRange(new int[1], 0, 10));
-               // "RunConcurrentStackTest8_Exceptions:  PushRange didn't throw AE when count + index > array length");
+               // "Test8_Exceptions:  PushRange didn't throw AE when count + index > array length");
 
             //PopRange
             Assert.Throws<ArgumentNullException>(
                () => stack.TryPopRange(null));
-               // "RunConcurrentStackTest8_Exceptions:  TryPopRange didn't throw ANE when null array passed");
+               // "Test8_Exceptions:  TryPopRange didn't throw ANE when null array passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.TryPopRange(new int[1], 0, -1));
-               // "RunConcurrentStackTest8_Exceptions:  TryPopRange didn't throw AORE when negative count passed");
+               // "Test8_Exceptions:  TryPopRange didn't throw AORE when negative count passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.TryPopRange(new int[1], -1, 1));
-               // "RunConcurrentStackTest8_Exceptions:  TryPopRange didn't throw AORE when negative index passed");
+               // "Test8_Exceptions:  TryPopRange didn't throw AORE when negative index passed");
             Assert.Throws<ArgumentOutOfRangeException>(
                () => stack.TryPopRange(new int[1], 2, 1));
-               // "RunConcurrentStackTest8_Exceptions:  TryPopRange didn't throw AORE when start index > array length");
+               // "Test8_Exceptions:  TryPopRange didn't throw AORE when start index > array length");
             Assert.Throws<ArgumentException>(
                () => stack.TryPopRange(new int[1], 0, 10));
-               // "RunConcurrentStackTest8_Exceptions:  TryPopRange didn't throw AE when count + index > array length");
+               // "Test8_Exceptions:  TryPopRange didn't throw AE when count + index > array length");
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest9_Interfaces_Negative()
+        public static void Test9_Interfaces_Negative()
         {
             ConcurrentStack<int> stack = new ConcurrentStack<int>();
 
@@ -549,30 +477,26 @@ namespace Test
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentStackTest9_Interfaces()
+        public static void Test9_Interfaces()
         {
             ConcurrentStack<int> stack = new ConcurrentStack<int>();
-            string collectionName = "ConcurrentStack";
-            int item;
-
             IProducerConsumerCollection<int> ipcc = stack;
-            
-            Assert.True(ipcc.Count == 0,
-               "TestIPCC:  The collection is not empty, this test expects an empty IPCC for collection type: " + collectionName);
-            Assert.False(ipcc.TryTake(out item),
-               "TestIPCC:  IPCC.TryTake returned true when the collection is empty for collection type: " + collectionName);
-            Assert.True(ipcc.TryAdd(1),
-               "TestIPCC:  IPCC.TryAdd returned false! for collection type: " + collectionName);
+
+            Assert.Equal(0, ipcc.Count);
+            int item;
+            Assert.False(ipcc.TryTake(out item));
+            Assert.True(ipcc.TryAdd(1));
+
             ICollection collection = stack;
-            Assert.False(collection.IsSynchronized,
-               "ICollection.IsSynchronized returned true! for collection type: " + collectionName);
+            Assert.False(collection.IsSynchronized);
+
             stack.Push(1);
             int count = stack.Count;
             IEnumerable enumerable = stack;
             foreach (object o in enumerable)
                 count--;
-            Assert.True(count == 0, "IEnumerable.GetEnumerator didn't return all items! for collection type: " + collectionName);
+
+            Assert.Equal(0, count);
         }
     }
 }

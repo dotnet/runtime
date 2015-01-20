@@ -14,7 +14,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public static class RangePartitionerHelpers
     {
