@@ -1028,17 +1028,12 @@ mono_monitor_exit (MonoObject *obj)
 
 	lw.sync = obj->synchronisation;
 
-	if (G_UNLIKELY (lock_word_is_inflated (lw))) {
-		if (G_UNLIKELY (mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) != mono_thread_info_get_small_id ())) {
-			return;
-		}
+	mono_monitor_ensure_owned (lw, mono_thread_info_get_small_id ());
+
+	if (G_UNLIKELY (lock_word_is_inflated (lw)))
 		mono_monitor_exit_inflated (obj);
-	} else {
-		if (G_UNLIKELY (lock_word_get_owner (lw) != mono_thread_info_get_small_id ())) {
-			return;
-		}
+	else
 		mono_monitor_exit_flat (obj, lw);
-	}
 }
 
 void**

@@ -54,10 +54,11 @@ class main {
 			b.test_exception ();
 		}
 		catch (SynchronizationLockException ex) {
-			return 1;
+			// OK
 		}
 		catch (Exception ex) {
-			// OK
+			// The other exception should be overwritten by the lock one
+			return 1;
 		}
 
 		Console.WriteLine ("Test4...");
@@ -81,10 +82,10 @@ class main {
 			d ();
 		}
 		catch (SynchronizationLockException ex) {
-			return 2;
+			// OK
 		}
 		catch (Exception ex) {
-			// OK
+			return 2;
 		}
 
 		return 0;
