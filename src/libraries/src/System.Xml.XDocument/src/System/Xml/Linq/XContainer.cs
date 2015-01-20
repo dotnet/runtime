@@ -653,7 +653,7 @@ namespace System.Xml.Linq
             }
         }
 
-        string GetTextOnly()
+        private string GetTextOnly()
         {
             if (content == null) return null;
             string s = content as string;
@@ -670,7 +670,7 @@ namespace System.Xml.Linq
             return s;
         }
 
-        string CollectText(ref XNode n)
+        private string CollectText(ref XNode n)
         {
             string s = "";
             while (n != null && n.NodeType == XmlNodeType.Text)
@@ -789,7 +789,7 @@ namespace System.Xml.Linq
             }
         }
 
-        IEnumerable<XElement> GetElements(XName name)
+        private IEnumerable<XElement> GetElements(XName name)
         {
             XNode n = content as XNode;
             if (n != null)
@@ -1059,7 +1059,7 @@ namespace System.Xml.Linq
             if (notify) NotifyChanged(n, XObjectChangeEventArgs.Remove);
         }
 
-        void RemoveNodesSkipNotify()
+        private void RemoveNodesSkipNotify()
         {
             XNode n = content as XNode;
             if (n != null)
@@ -1113,7 +1113,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static void AddContentToList(List<object> list, object content)
+        private static void AddContentToList(List<object> list, object content)
         {
             IEnumerable e = content is string ? null : content as IEnumerable;
             if (e == null)

@@ -194,7 +194,7 @@ namespace System.Xml.Linq
             new StreamingElementWriter(writer).WriteStreamingElement(this);
         }
 
-        string GetXmlString(SaveOptions o)
+        private string GetXmlString(SaveOptions o)
         {
             using (StringWriter sw = new StringWriter(CultureInfo.InvariantCulture))
             {

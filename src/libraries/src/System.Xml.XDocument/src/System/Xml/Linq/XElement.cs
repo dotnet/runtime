@@ -1622,7 +1622,7 @@ namespace System.Xml.Linq
             lastAttr = a;
         }
 
-        bool AttributesEqual(XElement e)
+        private bool AttributesEqual(XElement e)
         {
             XAttribute a1 = lastAttr;
             XAttribute a2 = e.lastAttr;
@@ -1650,7 +1650,7 @@ namespace System.Xml.Linq
             return e != null && name == e.name && ContentsEqual(e) && AttributesEqual(e);
         }
 
-        IEnumerable<XAttribute> GetAttributes(XName name)
+        private IEnumerable<XAttribute> GetAttributes(XName name)
         {
             XAttribute a = lastAttr;
             if (a != null)
@@ -1663,7 +1663,7 @@ namespace System.Xml.Linq
             }
         }
 
-        string GetNamespaceOfPrefixInScope(string prefix, XElement outOfScope)
+        private string GetNamespaceOfPrefixInScope(string prefix, XElement outOfScope)
         {
             XElement e = this;
             while (e != outOfScope)
@@ -1699,7 +1699,7 @@ namespace System.Xml.Linq
             return h;
         }
 
-        void ReadElementFrom(XmlReader r, LoadOptions o)
+        private void ReadElementFrom(XmlReader r, LoadOptions o)
         {
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             name = XNamespace.Get(r.NamespaceURI).GetName(r.LocalName);
@@ -1761,7 +1761,7 @@ namespace System.Xml.Linq
             if (notify) NotifyChanged(a, XObjectChangeEventArgs.Remove);
         }
 
-        void RemoveAttributesSkipNotify()
+        private void RemoveAttributesSkipNotify()
         {
             if (lastAttr != null)
             {
