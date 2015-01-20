@@ -17,8 +17,8 @@ namespace System.Xml.Linq
         private object _parent;
         private ReadState _state;
         private XNode _root;
-        private XmlNameTable _nameTable;
-        private bool _omitDuplicateNamespaces;
+        private readonly XmlNameTable _nameTable;
+        private readonly bool _omitDuplicateNamespaces;
 
         internal XNodeReader(XNode node, XmlNameTable nameTable, ReaderOptions options)
         {
