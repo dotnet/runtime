@@ -49,7 +49,6 @@
   
   <PropertyGroup>
     <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
-    <IsTestProject Condition="'$(IsTestProject)'=='' And !$([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">False</IsTestProject>
     <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
   </PropertyGroup>
 
@@ -75,9 +74,12 @@
       <XunitOptions Condition="'@(ExcludeTraitsItems)'!=''">$(XunitOptions) -notrait @(ExcludeTraitsItems, ' -notrait ')</XunitOptions>
     </PropertyGroup>
 
-    <Exec
-      Command="$(XunitCommandLine) $(XunitOptions)"
-      WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)" />
+    <Exec Command="$(XunitCommandLine) $(XunitOptions)"
+          WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)"
+          ContinueOnError="True">
+      <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
+    </Exec>
 
+    <Error Condition="'$(TestRunExitCode)' != '0'" Text="One or more tests failed while running tests from '$(MSBuildProjectName)' please check log for details!" />
   </Target>
 </Project>
