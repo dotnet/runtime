@@ -275,7 +275,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Removes each <see cref="XAttribute"/> represented in this <see cref="IEnumerable"/> of
         /// <see cref="XAttribute"/>.  Note that this method uses snapshot semantics (copies the
-        /// attributes to a <see cref="List&lt;T>"/> before deleting each).
+        /// attributes to a <see cref="List{T}"/> before deleting each).
         /// </summary>
         public static void Remove(this IEnumerable<XAttribute> source)
         {
