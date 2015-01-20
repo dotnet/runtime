@@ -374,9 +374,10 @@ namespace System.Xml.Linq
                     XContainer c = root;
                     while (true)
                     {
-                        if (c != null && c.content is XNode)
+                        XNode content = c != null ? c.content as XNode : null;
+                        if (content != null)
                         {
-                            n = ((XNode)c.content).next;
+                            n = content.next;
                         }
                         else
                         {
