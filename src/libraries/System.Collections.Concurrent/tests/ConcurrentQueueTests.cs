@@ -9,12 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public class ConcurrentQueueTests
     {
         [Fact]
-        public static void TestConcurrentQueueBasic()
+        public static void TestBasicScenarios()
         {
             ConcurrentQueue<int> cq = new ConcurrentQueue<int>();
             cq.Enqueue(1);
@@ -50,44 +50,34 @@ namespace Test
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest7_Exceptions()
+        public static void Test7_Exceptions()
         {
             ConcurrentQueue<int> queue = null;
             Assert.Throws<ArgumentNullException>(
                () => queue = new ConcurrentQueue<int>((IEnumerable<int>)null));
-            // "RunConcurrentQueueTest7_Exceptions:  The constructor didn't throw ANE when null collection passed");
+            // "Test7_Exceptions:  The constructor didn't throw ANE when null collection passed");
 
             queue = new ConcurrentQueue<int>();
             //CopyTo
-            Assert.Throws<ArgumentNullException>(
-               () => queue.CopyTo(null, 0));
-            // "RunConcurrentQueueTest7_Exceptions:  CopyTo didn't throw ANE when null array passed");
-            Assert.Throws<ArgumentOutOfRangeException>(
-               () => queue.CopyTo(new int[1], -1));
-            // "RunConcurrentQueueTest7_Exceptions:  CopyTo didn't throw AORE when negative array index passed");
+            Assert.Throws<ArgumentNullException>( () => queue.CopyTo(null, 0));
+            // "Test7_Exceptions:  CopyTo didn't throw ANE when null array passed");
+            Assert.Throws<ArgumentOutOfRangeException>( () => queue.CopyTo(new int[1], -1));
+            // "Test7_Exceptions:  CopyTo didn't throw AORE when negative array index passed");
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest6_Interfaces()
+        public static void Test6_Interfaces()
         {
             ConcurrentQueue<int> queue = new ConcurrentQueue<int>();
-            string collectionName = "ConcurrentQueue";
-
             int item;
 
             IProducerConsumerCollection<int> ipcc = queue;
-            Assert.True(ipcc.Count == 0,
-               "TestIPCC:  The collection is not empty, this test expects an empty IPCC for collection type: " + collectionName);
-            Assert.False(ipcc.TryTake(out item),
-               "TestIPCC:  IPCC.TryTake returned true when the collection is empty for collection type: " + collectionName);
-            Assert.True(ipcc.TryAdd(1),
-               "TestIPCC:  IPCC.TryAdd returned false! for collection type: " + collectionName);
+            Assert.Equal(0, ipcc.Count);
+            Assert.False(ipcc.TryTake(out item), "TestIPCC:  IPCC.TryTake returned true when the collection is empty");
+            Assert.True(ipcc.TryAdd(1));
 
             ICollection collection = queue;
-            Assert.False(collection.IsSynchronized,
-               "ICollection.IsSynchronized returned true! for collection type: " + collectionName);
+            Assert.False(collection.IsSynchronized);
 
             queue.Enqueue(1);
             int count = queue.Count;
@@ -95,12 +85,11 @@ namespace Test
             foreach (object o in enumerable)
                 count--;
 
-            Assert.True(count == 0, "IEnumerable.GetEnumerator didn't return all items! for collection type: " + collectionName);
+            Assert.Equal(0, count);
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest6_Interfaces_Negative()
+        public static void Test6_Interfaces_Negative()
         {
             ConcurrentQueue<int> queue = new ConcurrentQueue<int>();
             ICollection collection = queue;
@@ -114,8 +103,7 @@ namespace Test
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunBigFix792038()
+        public static void TestBigFix792038()
         {
             List<int> allItems = new List<int>();
             for (int i = 0; i < 10; i++)
@@ -133,21 +121,20 @@ namespace Test
 
             if (count != 10)
             {
-                Console.WriteLine("* RunBugFix792038: GetEnumerator should take snapshot at time of invoke not when MoveNext() is called");
+                Console.WriteLine("* GetEnumerator should take snapshot at time of invoke not when MoveNext() is called");
                 Assert.False(true, "Failed! GetEnumerator should take snapshot at the time of invoke ");
             }
         }
 
         /// <summary>
-        /// Bug fix 570046: Enumerating a ConcurrentQueue while simultaneously enqueueing and dequeueing somteimes returns a null value
+        /// Enumerating a ConcurrentQueue while simultaneously enqueueing and dequeueing somteimes returns a null value
         /// enumerator sometimes returns null
         /// </summary>
         /// <returns></returns>
         /// <remarks>to stress test this bug fix: wrap task t1 and t2 with while (true), but DO NOT CHECKIN!
         /// </remarks>
         [Fact]
-        [OuterLoop]
-        public static void RunBugFix570046()
+        public static void TestBugFix570046()
         {
             var q = new ConcurrentQueue<int?>();
 
@@ -158,11 +145,8 @@ namespace Test
                  {
                      q.Enqueue(i);
                      int? o;
-                     if (!q.TryDequeue(out o))
-                     {
-                         Console.WriteLine("* RunBugFix570046:  Enumerating a ConcurrentQueue while simultaneously enqueueing and dequeueing somteimes returns a null value");
-                         Assert.False(true, "Failed! TryDequeue should never return false in this test");
-                     }
+                     
+                     Assert.True(q.TryDequeue(out o), "TryDequeue should never return false in this test");
                  }
              }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
@@ -171,11 +155,7 @@ namespace Test
              {
                  foreach (var item in q)
                  {
-                     if (item == null)
-                     {
-                         Console.WriteLine("* RunBugFix570046:  Enumerating a ConcurrentQueue while simultaneously enqueueing and dequeueing somteimes returns a null value");
-                         Assert.False(true, "Failed! Enumerating should never return null value");
-                     }
+                     Assert.NotNull(item);
                  }
              }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
@@ -184,12 +164,11 @@ namespace Test
 
         public static readonly ConcurrentQueue<object> m_queue = new ConcurrentQueue<object>();
         /// <summary>
-        /// Regression test for bug 484295
-        /// Compat: Bug in ConcurrentQueue in .NET 4.5 (.TryPeek returns true but no real object returned)
-        /// http://vstfdevdiv:8080/DevDiv2/DevDiv/_workItems#id=484295
+        /// .TryPeek returns true but no real object returned
         /// </summary>
-        // [Fact] Task too long
-        public static void RunBugFix484295()
+        // [Fact]
+        [OuterLoop]
+        public static void TestBugFix484295()
         {
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             Task<InvalidPeekException> peepTask = Task.Factory
@@ -268,8 +247,7 @@ namespace Test
         /// Memory leak bug
         /// </summary>
         [Fact]
-        [OuterLoop]
-        public static void RunBugFix891778()
+        public static void TestBugFix891778()
         {
             int iterations = 31; //any number <32 will do
             ConcurrentQueue<Finalizable> s_queue = new ConcurrentQueue<Finalizable>();
@@ -291,87 +269,89 @@ namespace Test
             GC.WaitForPendingFinalizers();
             //we have to keep the queue object alive in order to catch daggling objects.
             GC.KeepAlive(s_queue);
-            if (!Finalizable.finalized)
-            {
-                Console.WriteLine("RunBugFix891778: Memory leak in ConcurrentQueue.");
-                Assert.False(true, "  > test failed : stale entry is not finalized");
-            }
+            Assert.True(Finalizable.finalized, "Memory leak in ConcurrentQueue: stale entry is not finalized.");
         }
 
         [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest0_Empty()
-        {
-            RunConcurrentQueueTest0_Empty(0);
-            RunConcurrentQueueTest0_Empty(16);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest1_EnqAndDeq()
-        {
-            RunConcurrentQueueTest1_EnqAndDeq(0, 0);
-            RunConcurrentQueueTest1_EnqAndDeq(5, 0);
-            RunConcurrentQueueTest1_EnqAndDeq(5, 2);
-            RunConcurrentQueueTest1_EnqAndDeq(5, 5);
-            RunConcurrentQueueTest1_EnqAndDeq(1024, 512);
-            RunConcurrentQueueTest1_EnqAndDeq(1024, 1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest1b_TryPeek()
-        {
-            RunConcurrentQueueTest1b_TryPeek(512);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest2_ConcEnqAndDeq()
-        {
-            RunConcurrentQueueTest2_ConcEnqAndDeq(8, 1024 * 1024, 0);
-            RunConcurrentQueueTest2_ConcEnqAndDeq(8, 1024 * 1024, 1024 * 512);
-            RunConcurrentQueueTest2_ConcEnqAndDeq(8, 1024 * 1024, 1024 * 1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest4_Enumerator()
-        {
-            RunConcurrentQueueTest4_Enumerator(0);
-            RunConcurrentQueueTest4_Enumerator(16);
-            RunConcurrentQueueTest4_Enumerator(1024);
-        }
-
-        [Fact]
-        [OuterLoop]
-        public static void RunConcurrentQueueTest5_CtorAndCopyToAndToArray()
-        {
-            RunConcurrentQueueTest5_CtorAndCopyToAndToArray(0);
-            RunConcurrentQueueTest5_CtorAndCopyToAndToArray(16);
-            RunConcurrentQueueTest5_CtorAndCopyToAndToArray(1024);
-        }
-
-        // Just validates the queue correctly reports that it's empty.
-        public static void RunConcurrentQueueTest0_Empty(int count)
+        public static void Test0_Empty()
         {
             ConcurrentQueue<int> q = new ConcurrentQueue<int>();
+            Assert.Equal(0, q.Count);
+            Assert.True(q.IsEmpty);
+
+            int count = 16;
             for (int i = 0; i < count; i++)
                 q.Enqueue(i);
 
-            bool isEmpty = q.IsEmpty;
-            int sawCount = q.Count;
+            Assert.Equal(count, q.Count);
+            Assert.False(q.IsEmpty);
+        }
 
-            bool passed = isEmpty == (count == 0) && sawCount == count;
-            if (!passed)
-                Assert.False(true, String.Format(
-                    "RunConcurrentQueueTest0_Empty:  > IsEmpty={0} (expect {1}), Count={2} (expect {3})", isEmpty, count == 0, sawCount, count));
+        [Fact]
+        public static void Test1_EnqAndDeq()
+        {
+            Test1_EnqAndDeq(0, 0);
+            Test1_EnqAndDeq(7, 7);
+        }
+
+        [Fact]
+        public static void Test1_EnqAndDeq01()
+        {
+            Test1_EnqAndDeq(5, 0);
+            Test1_EnqAndDeq(512, 256);
+        }
+
+        [Fact]
+        public static void Test1b_TryPeek()
+        {
+            Test1b_TryPeek(256);
+        }
+
+        [Fact]
+        public static void Test2_ConcEnqAndDeq()
+        {
+            Test2_ConcEnqAndDeq(4, 1024, 0);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test2_ConcEnqAndDeq01()
+        {
+            Test2_ConcEnqAndDeq(6, 1024, 512);
+        }
+
+        [Fact]
+        public static void Test4_Enumerator()
+        {
+            Test4_Enumerator(0);
+            Test4_Enumerator(16);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test4_Enumerator01()
+        {
+            Test4_Enumerator(1024);
+        }
+
+        [Fact]
+        public static void Test5_CtorAndCopyToAndToArray()
+        {
+            Test5_CtorAndCopyToAndToArray(0);
+            Test5_CtorAndCopyToAndToArray(8);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void Test5_CtorAndCopyToAndToArray01()
+        {
+            Test5_CtorAndCopyToAndToArray(512);
         }
 
         // Pushes and pops a certain number of times, and validates the resulting count.
         // These operations happen sequentially in a somewhat-interleaved fashion. We use
         // a BCL queue on the side to validate contents are correctly maintained.
-        private static void RunConcurrentQueueTest1_EnqAndDeq(int pushes, int pops)
+        private static void Test1_EnqAndDeq(int pushes, int pops)
         {
             // It utilised a random generator to do x number of queues and enqueues.
             // Removed because it used System.Runtime.Extensions.
@@ -391,13 +371,9 @@ namespace Test
                     s2.Enqueue(val);
                     donePushes++;
 
-                    int sc = s.Count, s2c = s2.Count;
-                    if (sc != s2c)
-                    {
-                        Console.WriteLine("* RunConcurrentQueueTest1_EnqAndDeq(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > test failed - stack counts differ: s = {0}, s2 = {1}", sc, s2c));
-                    }
+                    Assert.Equal(s.Count, s2.Count);
                 }
+
                 for (int i = 0; i < 10; i++)
                 {
                     if (donePops == pops)
@@ -410,38 +386,19 @@ namespace Test
                     e2 = s2.Dequeue();
                     donePops++;
 
-                    if (!b1)
-                    {
-                        Console.WriteLine("* RunConcurrentQueueTest1_EnqAndDeq(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > queue was unexpectedly empty, wanted #{0}  (pop={1})", e2, b1));
-                    }
+                    Assert.True(b1,
+                        String.Format("* Test1_EnqAndDeq(pushes={0}, pops={1}): queue was unexpectedly empty, wanted #{2} ", pushes, pops, e2));
 
-                    if (e1 != e2)
-                    {
-                        Console.WriteLine("* RunConcurrentQueueTest1_EnqAndDeq(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > queue contents differ, got #{0} but expected #{1}", e1, e2));
-                    }
-
-                    int sc = s.Count, s2c = s2.Count;
-                    if (sc != s2c)
-                    {
-                        Console.WriteLine("* RunConcurrentQueueTest1_EnqAndDeq(pushes={0}, pops={1})", pushes, pops);
-                        Assert.False(true, String.Format("  > test failed - stack counts differ: s = {0}, s2 = {1}", sc, s2c));
-                    }
+                    Assert.Equal(e1, e2);
+                    Assert.Equal(s.Count, s2.Count);
                 }
             }
 
-            int expected = pushes - pops;
-            int endCount = s.Count;
-            if (endCount != expected)
-            {
-                Console.WriteLine("* RunConcurrentQueueTest1_EnqAndDeq(pushes={0}, pops={1})", pushes, pops);
-                Assert.False(true, String.Format("  > expected = {0}, real = {1}: passed? {2}", expected, endCount));
-            }
+            Assert.Equal(pushes - pops, s.Count);
         }
 
         // Just pushes and pops, ensuring try peek is always accurate.
-        public static void RunConcurrentQueueTest1b_TryPeek(int pushes)
+        private static void Test1b_TryPeek(int pushes)
         {
             ConcurrentQueue<int> s = new ConcurrentQueue<int>();
             int[] arr = new int[pushes];
@@ -450,11 +407,7 @@ namespace Test
 
             // should be empty.
             int y;
-            if (s.TryPeek(out y))
-            {
-                Console.WriteLine("* RunConcurrentQueueTest1b_TryPeek(pushes={0})", pushes);
-                Assert.False(true, String.Format("    > queue should be empty!  TryPeek returned true {0}", y));
-            }
+            Assert.False(s.TryPeek(out y), String.Format("* Test1b_TryPeek(pushes={0}): queue should be empty! TryPeek returned true with value {0}", pushes, y));
 
             for (int i = 0; i < arr.Length; i++)
             {
@@ -464,11 +417,8 @@ namespace Test
                 int x;
                 for (int j = 0; j < 5; j++)
                 {
-                    if (!s.TryPeek(out x) || x != arr[0])
-                    {
-                        Console.WriteLine("* RunConcurrentQueueTest1b_TryPeek(pushes={0})", pushes);
-                        Assert.False(true, String.Format("    > peek after enqueue didn't return expected element: {0} instead of {1}", x, arr[0]));
-                    }
+                    Assert.True(s.TryPeek(out x));
+                    Assert.Equal(arr[0], x);
                 }
             }
 
@@ -478,11 +428,8 @@ namespace Test
                 int x;
                 for (int j = 0; j < 5; j++)
                 {
-                    if (!s.TryPeek(out x) || x != arr[i])
-                    {
-                        Console.WriteLine("* RunConcurrentQueueTest1b_TryPeek(pushes={0})", pushes);
-                        Assert.False(true, String.Format("    > peek after enqueue didn't return expected element: {0} instead of {1}", x, arr[i]));
-                    }
+                    Assert.True(s.TryPeek(out x));
+                    Assert.Equal(arr[i], x);
                 }
 
                 s.TryDequeue(out x);
@@ -490,16 +437,12 @@ namespace Test
 
             // should be empty.
             int z;
-            if (s.TryPeek(out z))
-            {
-                Console.WriteLine("* RunConcurrentQueueTest1b_TryPeek(pushes={0})", pushes);
-                Assert.False(true, String.Format("    > queue should be empty!  TryPeek returned true {0}", y));
-            }
+            Assert.False(s.TryPeek(out z), String.Format("* Test1b_TryPeek(pushes={0}): queue should be empty! TryPeek returned true with value {0}", pushes, z));
         }
 
         // Pushes and pops a certain number of times, and validates the resulting count.
         // These operations happen concurrently.
-        public static void RunConcurrentQueueTest2_ConcEnqAndDeq(int threads, int pushes, int pops)
+        private static void Test2_ConcEnqAndDeq(int threads, int pushes, int pops)
         {
             ConcurrentQueue<int> s = new ConcurrentQueue<int>();
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -545,18 +488,11 @@ namespace Test
             Task.WaitAll(tt);
 
             // Validate the count.
-            int expected = threads * (pushes - pops);
-            int endCount = s.Count;
-
-            if (expected != endCount)
-            {
-                Console.WriteLine("* RunConcurrentQueueTest2_ConcEnqAndDeq(threads={0}, pushes={1}, pops={2})", threads, pushes, pops);
-                Assert.False(true, String.Format("  > FAILED: expected = {0}, real = {1}", expected, endCount));
-            }
+            Assert.Equal(threads * (pushes - pops), s.Count);
         }
 
         // Just validates enumerating the stack.
-        public static void RunConcurrentQueueTest4_Enumerator(int count)
+        private static void Test4_Enumerator(int count)
         {
             ConcurrentQueue<int> s = new ConcurrentQueue<int>();
             for (int i = 0; i < count; i++)
@@ -572,22 +508,17 @@ namespace Test
                     int e;
                     while (s.TryDequeue(out e)) ;
                 }
-                if (x != j)
-                {
-                    Assert.False(true, String.Format("RunConcurrentQueueTest4_Enumerator:  FAILED  > expected #{0}, but saw #{1}", j, x));
-                }
+
+                Assert.Equal(x, j);
+
                 j++;
             }
 
-            if (j != count)
-            {
-                Assert.False(true, "RunConcurrentQueueTest4_Enumerator:  FAILED  > did not enumerate all elements in the stack");
-            }
-
+            Assert.Equal(count, j);
         }
 
         // Instantiates the queue w/ the enumerator ctor and validates the resulting copyto & toarray.
-        public static void RunConcurrentQueueTest5_CtorAndCopyToAndToArray(int count)
+        public static void Test5_CtorAndCopyToAndToArray(int count)
         {
             int[] arr = new int[count];
             for (int i = 0; i < count; i++) arr[i] = i;
@@ -595,63 +526,36 @@ namespace Test
 
             // try toarray.
             int[] sa1 = s.ToArray();
-            if (sa1.Length != arr.Length)
-            {
-                Assert.False(true, String.Format(
-                    "RunConcurrentQueueTest5_CtorAndCopyToAndToArray: FAILED  > ToArray resulting array is diff length: got {0}, wanted {1}",
-                    sa1.Length, arr.Length));
-            }
+            Assert.Equal(arr.Length, sa1.Length);
+
             for (int i = 0; i < sa1.Length; i++)
             {
-                if (sa1[i] != arr[i])
-                {
-                    Assert.False(true, String.Format(
-                        "RunConcurrentQueueTest5_CtorAndCopyToAndToArray: FAILED  > ToArray returned an array w/ diff contents: got {0}, wanted {1}",
-                        sa1[i], arr[i]));
-                }
+                Assert.Equal(arr[i], sa1[i]);
             }
 
             int[] sa2 = new int[count];
             s.CopyTo(sa2, 0);
-            if (sa2.Length != arr.Length)
-            {
-                Assert.False(true, String.Format(
-                    "RunConcurrentQueueTest5_CtorAndCopyToAndToArray: FAILED  > CopyTo(int[]) resulting array is diff length: got {0}, wanted {1}",
-                    sa2.Length, arr.Length));
-            }
+            Assert.Equal(arr.Length, sa2.Length);
+
             for (int i = 0; i < sa2.Length; i++)
             {
-                if (sa2[i] != arr[i])
-                {
-                    Assert.False(true, String.Format(
-                        "RunConcurrentQueueTest5_CtorAndCopyToAndToArray: FAILED  > CopyTo(int[]) returned an array w/ diff contents: got {0}, wanted {1}",
-                        sa2[i], arr[i]));
-                }
+                Assert.Equal(arr[i], sa2[i]);
             }
 
             object[] sa3 = new object[count]; // test array variance.
             ((System.Collections.ICollection)s).CopyTo(sa3, 0);
-            if (sa3.Length != arr.Length)
-            {
-                Assert.False(true, String.Format(
-                    "RunConcurrentQueueTest5_CtorAndCopyToAndToArray: FAILED  > CopyTo(object[]) resulting array is diff length: got {0}, wanted {1}",
-                    sa3.Length, arr.Length));
-            }
+            Assert.Equal(arr.Length, sa3.Length);
+
             for (int i = 0; i < sa3.Length; i++)
             {
-                if ((int)sa3[i] != arr[i])
-                {
-                    Assert.False(true, String.Format(
-                        "RunConcurrentQueueTest5_CtorAndCopyToAndToArray: FAILED  > CopyTo(object[]) returned an array w/ diff contents: got {0}, wanted {1}",
-                        sa3[i], arr[i]));
-                }
+                Assert.Equal(arr[i], (int)sa3[i]);
             }
         }
 
         #region Helper Methods
 
         /// <summary>
-        /// Bug 891778: memory leak in ConcurrentQueue due to ConcurrentQueue.Segment.TryRemove() method
+        /// Memory leak in ConcurrentQueue due to ConcurrentQueue.Segment.TryRemove() method
         /// didn't set the removed entries to be null. This only happens when the queue is only enqueued 
         /// no more than 31 times (since segment size is 32). 
         /// This test construct such a scenario: a queue is enqueued 31 times then dequeued 31 times. The

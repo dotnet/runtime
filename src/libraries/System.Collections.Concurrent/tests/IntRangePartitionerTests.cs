@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public class IntRangePartitionerTests
     {
@@ -155,7 +155,6 @@ namespace Test
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void GetOrderableDynamicPartitions()
         {
             GetOrderableDynamicPartitions(0, 1);
@@ -165,7 +164,7 @@ namespace Test
             GetOrderableDynamicPartitions(-2147483648, 5000);
         }
 
-        public static void GetOrderableDynamicPartitions(int from, int count)
+        private static void GetOrderableDynamicPartitions(int from, int count)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to);
@@ -241,7 +240,6 @@ namespace Test
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void CheckGetDynamicPartitionsWithRange()
         {
             CheckGetDynamicPartitionsWithRange(1999, 1000, 20);
@@ -286,7 +284,6 @@ namespace Test
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
         [Fact]
-        [OuterLoop]
         public static void CheckGetOrderablePartitionsWithRange()
         {
             CheckGetOrderablePartitionsWithRange(1999, 1000, 20, 1);
@@ -296,7 +293,7 @@ namespace Test
             CheckGetOrderablePartitionsWithRange(-2147483648, 1000, 19, 63);
         }
 
-        public static void CheckGetOrderablePartitionsWithRange(int from, int count, int desiredRangeSize, int dop)
+        private static void CheckGetOrderablePartitionsWithRange(int from, int count, int desiredRangeSize, int dop)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to, desiredRangeSize);
@@ -339,12 +336,7 @@ namespace Test
         /// The range sizes for individual ranges are checked to see if they are equal to 
         /// desiredRangeSize. The last range may have less than or equal to desiredRangeSize.
         /// </summary>
-        /// <param name="from"></param>
-        /// <param name="count"></param>
-        /// <param name="desiredRangeSize"></param>
-
         [Fact]
-        [OuterLoop]
         public static void GetOrderableDynamicPartitionsWithRange()
         {
             GetOrderableDynamicPartitionsWithRange(1999, 1000, 20);
@@ -354,7 +346,7 @@ namespace Test
             GetOrderableDynamicPartitionsWithRange(-2147483648, 1000, 19);
         }
 
-        public static void GetOrderableDynamicPartitionsWithRange(int from, int count, int desiredRangeSize)
+        private static void GetOrderableDynamicPartitionsWithRange(int from, int count, int desiredRangeSize)
         {
             int to = from + count;
             var partitioner = Partitioner.Create(from, to, desiredRangeSize);
@@ -391,7 +383,6 @@ namespace Test
         /// </summary>
         /// <param name="desiredRangeSize"></param>
         /// <param name="rangeSizes"></param>
-
         public static void ValidateRangeSize(int desiredRangeSize, IList<int> rangeSizes)
         {
             //var rangesWithDifferentRangeSize = rangeSizes.Take(rangeSizes.Length - 1).Where(r => r != desiredRangeSize).ToArray();
@@ -407,16 +398,24 @@ namespace Test
 
             if (rangesWithDifferentRangeSize.Count != 0)
             {
+                Console.Write("Invalid Range size: ");
                 foreach (var r in rangesWithDifferentRangeSize)
-                    Console.WriteLine("Invalid Range size: {0}", r);
+                    Console.Write("{0} ", r);
+                Console.WriteLine();
 
                 Assert.False(true, 
                     String.Format("Expected all ranges (except last) to have size {0}. {1} ranges has different size", desiredRangeSize, rangesWithDifferentRangeSize));
             }
 
             var lastRange = rangeSizes[rangeSizes.Count - 1];
-            if (lastRange > desiredRangeSize)
-                Assert.False(true, String.Format("Last range has invalid size: {0}", lastRange));
+            Assert.True(desiredRangeSize >= lastRange, String.Format("Expect={0}, Actual={1}", desiredRangeSize, lastRange));
+        }
+
+        [Fact]
+        public static void RangePartitionerChunking()
+        {
+            RangePartitionerChunking(1999, 1000, 10);
+            RangePartitionerChunking(89, 17823, -1);
         }
 
         /// <summary>
@@ -425,15 +424,6 @@ namespace Test
         /// <param name="from"></param>
         /// <param name="count"></param>
         /// <param name="rangeSize"></param>
-
-        [Fact]
-        [OuterLoop]
-        public static void RangePartitionerChunking()
-        {
-            RangePartitionerChunking(1999, 1000, 10);
-            RangePartitionerChunking(89, 17823, -1);
-        }
-
         public static void RangePartitionerChunking(int from, int count, int rangeSize)
         {
             int to = from + count;
@@ -445,7 +435,7 @@ namespace Test
 
             // Initialize the from / to values from the first element
             if (!partitions[0].MoveNext()) return;
-            Assert.True(from == partitions[0].Current.Item1, "Expected them to be equal.");
+            Assert.Equal(from, partitions[0].Current.Item1);
             if (rangeSize == -1)
             {
                 rangeSize = partitions[0].Current.Item2 - partitions[0].Current.Item1;
@@ -462,39 +452,50 @@ namespace Test
             {
                 if (!partitions[0].MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partitions[0].Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partitions[0].Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partitions[0].Current.Item1);
+                Assert.Equal(nextExpectedTo, partitions[0].Current.Item2);
+
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partitions[0].Current.Item2 - partitions[0].Current.Item1;
 
                 if (!partitions[1].MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partitions[1].Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partitions[1].Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partitions[1].Current.Item1);
+                Assert.Equal(nextExpectedTo, partitions[1].Current.Item2);
+
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partitions[1].Current.Item2 - partitions[1].Current.Item1;
 
                 if (!partitions[1].MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partitions[1].Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partitions[1].Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partitions[1].Current.Item1);
+                Assert.Equal(nextExpectedTo, partitions[1].Current.Item2);
+
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partitions[1].Current.Item2 - partitions[1].Current.Item1;
 
                 if (!partitions[0].MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partitions[0].Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partitions[0].Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partitions[0].Current.Item1);
+                Assert.Equal(nextExpectedTo, partitions[0].Current.Item2);
+
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partitions[0].Current.Item2 - partitions[0].Current.Item1;
             }
 
             // Verifying that all items are there
-            Assert.True(count == actualCount, "Expected them to be equal.");
+            Assert.Equal(count, actualCount);
+        }
+
+        [Fact]
+        public static void RangePartitionerDynamicChunking()
+        {
+            RangePartitionerDynamicChunking(1999, 1000, 10);
+            RangePartitionerDynamicChunking(1, 884354, -1);
         }
 
         /// <summary>
@@ -503,15 +504,6 @@ namespace Test
         /// <param name="from"></param>
         /// <param name="count"></param>
         /// <param name="rangeSize"></param>
-
-        [Fact]
-        [OuterLoop]
-        public static void RangePartitionerDynamicChunking()
-        {
-            RangePartitionerDynamicChunking(1999, 1000, 10);
-            RangePartitionerDynamicChunking(1, 884354, -1);
-        }
-
         public static void RangePartitionerDynamicChunking(int from, int count, int rangeSize)
         {
             int to = from + count;
@@ -525,7 +517,7 @@ namespace Test
 
             // Initialize the from / to values from the first element
             if (!partition1.MoveNext()) return;
-            Assert.True(from == partition1.Current.Item1, "Expected them to be equal.");
+            Assert.True(from == partition1.Current.Item1);
             if (rangeSize == -1)
             {
                 rangeSize = partition1.Current.Item2 - partition1.Current.Item1;
@@ -542,39 +534,39 @@ namespace Test
             {
                 if (!partition1.MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partition1.Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partition1.Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partition1.Current.Item1);
+                Assert.Equal(nextExpectedTo, partition1.Current.Item2);
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partition1.Current.Item2 - partition1.Current.Item1;
 
                 if (!partition2.MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partition2.Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partition2.Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partition2.Current.Item1);
+                Assert.Equal(nextExpectedTo, partition2.Current.Item2);
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partition2.Current.Item2 - partition2.Current.Item1;
 
                 if (!partition2.MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partition2.Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partition2.Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partition2.Current.Item1);
+                Assert.Equal(nextExpectedTo, partition2.Current.Item2);
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partition2.Current.Item2 - partition2.Current.Item1;
 
                 if (!partition1.MoveNext()) break;
 
-                Assert.True(nextExpectedFrom == partition1.Current.Item1, "Expected them to be equal.");
-                Assert.True(nextExpectedTo == partition1.Current.Item2, "Expected them to be equal.");
+                Assert.Equal(nextExpectedFrom, partition1.Current.Item1);
+                Assert.Equal(nextExpectedTo, partition1.Current.Item2);
                 nextExpectedFrom = (nextExpectedFrom + rangeSize) > to ? to : (nextExpectedFrom + rangeSize);
                 nextExpectedTo = (nextExpectedTo + rangeSize) > to ? to : (nextExpectedTo + rangeSize);
                 actualCount += partition1.Current.Item2 - partition1.Current.Item1;
             }
 
             // Verifying that all items are there
-            Assert.True(count == actualCount, "Expected them to be equal.");
+            Assert.Equal(count, actualCount);
         }
     }
 }
