@@ -588,9 +588,10 @@ namespace System.Xml.Linq
             }
             else if (s.Length > 0)
             {
-                if (content is string)
+                string stringContent = content as string;
+                if (stringContent != null)
                 {
-                    content = (string)content + s;
+                    content = stringContent + s;
                 }
                 else
                 {
@@ -803,10 +804,10 @@ namespace System.Xml.Linq
 
         internal static string GetStringValue(object value)
         {
-            string s;
-            if (value is string)
+            string s = value as string;
+            if (s != null)
             {
-                s = (string)value;
+                return s;
             }
             else if (value is double)
             {
@@ -1087,15 +1088,16 @@ namespace System.Xml.Linq
         {
             if (content != null)
             {
-                if (content is string)
+                string stringContent = content as string;
+                if (stringContent != null)
                 {
                     if (this is XDocument)
                     {
-                        writer.WriteWhitespace((string)content);
+                        writer.WriteWhitespace(stringContent);
                     }
                     else
                     {
-                        writer.WriteString((string)content);
+                        writer.WriteString(stringContent);
                     }
                 }
                 else

@@ -1285,11 +1285,12 @@ namespace System.Xml.Linq
                 IsEndElement = true;
                 return true;
             }
-            if (_parent is XAttribute)
+
+            XAttribute parent = _parent as XAttribute;
+            if (parent != null)
             {
-                XAttribute a = (XAttribute)_parent;
                 _parent = null;
-                return ReadOverAttribute(a, skipContent);
+                return ReadOverAttribute(parent, skipContent);
             }
             return ReadToEnd();
         }

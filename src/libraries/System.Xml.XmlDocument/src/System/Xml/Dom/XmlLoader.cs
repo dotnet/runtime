@@ -547,10 +547,11 @@ namespace System.Xml
             // Process all xmlns, xmlns:prefix, xml:space and xml:lang attributes
             while (node != null && node != _doc)
             {
-                if (node is XmlElement && ((XmlElement)node).HasAttributes)
+                XmlElement element = node as XmlElement;
+                if (element != null && element.HasAttributes)
                 {
                     mgr.PushScope();
-                    foreach (XmlAttribute attr in ((XmlElement)node).Attributes)
+                    foreach (XmlAttribute attr in element.Attributes)
                     {
                         if (attr.Prefix == _doc.strXmlns && !prefixes.Contains(attr.LocalName))
                         {
