@@ -140,10 +140,10 @@ namespace System.Xml.Linq
         /// </remarks>
         private sealed class XHashtableState
         {
-            private int[] _buckets;                  // Buckets contain indexes into entries array (bucket values are SHARED STATE)
+            private readonly int[] _buckets;                  // Buckets contain indexes into entries array (bucket values are SHARED STATE)
             private Entry[] _entries;                // Entries contain linked lists of buckets (next pointers are SHARED STATE)
             private int _numEntries;                 // SHARED STATE: Current number of entries (including orphaned entries)
-            private ExtractKeyDelegate _extractKey;  // Delegate called in order to extract string key embedded in hashed TValue
+            private readonly ExtractKeyDelegate _extractKey;  // Delegate called in order to extract string key embedded in hashed TValue
 
             private const int EndOfList = 0;        // End of linked list marker
             private const int FullList = -1;        // Indicates entries should not be added to end of linked list

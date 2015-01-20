@@ -33,7 +33,7 @@ namespace System.Xml.Linq
         }
 
         internal XAttribute next;
-        internal XName name;
+        internal readonly XName name;
         internal string value;
 
         /// <overloads>
