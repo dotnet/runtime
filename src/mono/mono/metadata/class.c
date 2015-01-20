@@ -2247,7 +2247,6 @@ mono_class_setup_methods (MonoClass *class)
 			int idx = mono_metadata_translate_token_index (class->image, MONO_TABLE_METHOD, class->method.first + i + 1);
 			methods [i] = mono_get_method_checked (class->image, MONO_TOKEN_METHOD_DEF | idx, class, NULL, &error);
 			if (!methods [i]) {
-				printf ("FUU %s\n", class->name);
 				mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, g_strdup_printf ("Could not load method %d due to %s", i, mono_error_get_message (&error)));
 				mono_error_cleanup (&error);
 			}
