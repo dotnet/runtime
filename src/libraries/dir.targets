@@ -50,6 +50,7 @@
   <PropertyGroup>
     <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
     <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
+    <RunTestsForProject Condition="'$(SkipTests)'=='True'">False</RunTestsForProject>
   </PropertyGroup>
 
   <Target Name="RunTestsForProject"
