@@ -1710,7 +1710,7 @@ namespace System.Xml.Linq
             if ((o & LoadOptions.SetBaseUri) != 0)
             {
                 string baseUri = r.BaseURI;
-                if (baseUri != null && baseUri.Length != 0)
+                if (!string.IsNullOrEmpty(baseUri))
                 {
                     SetBaseUri(baseUri);
                 }
