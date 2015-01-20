@@ -118,7 +118,7 @@ namespace System.Xml.Linq
 
                     // Replacing with Interlocked.CompareExchange for now (with no effect)
                     //   which will do a very similar thing to MemoryBarrier (it's just slower)
-                    System.Threading.Interlocked.CompareExchange<XHashtableState>(ref _state, null, null);
+                    Interlocked.CompareExchange<XHashtableState>(ref _state, null, null);
 #endif // SILVERLIGHT
                     _state = newState;
                 }
@@ -310,7 +310,7 @@ namespace System.Xml.Linq
 
                 // Replacing with Interlocked.CompareExchange for now (with no effect)
                 //   which will do a very similar thing to MemoryBarrier (it's just slower)
-                System.Threading.Interlocked.CompareExchange<Entry[]>(ref _entries, null, null);
+                Interlocked.CompareExchange<Entry[]>(ref _entries, null, null);
 #endif // SILVERLIGHT
 
                 // Loop until a matching entry is found, a new entry is added, or linked list is found to be full

@@ -430,7 +430,7 @@ namespace System.Xml.Linq
                                 _rover = d;
                                 return d.prefix;
                             }
-                            else if (d.prefix.Length > 0)
+                            if (d.prefix.Length > 0)
                             {
                                 return d.prefix;
                             }

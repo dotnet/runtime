@@ -78,10 +78,7 @@ namespace System.Xml.Linq
                 if (i <= 1 || i == expandedName.Length - 1) throw new ArgumentException(SR.Format(SR.Argument_InvalidExpandedName, expandedName));
                 return XNamespace.Get(expandedName, 1, i - 1).GetName(expandedName, i + 1, expandedName.Length - i - 1);
             }
-            else
-            {
-                return XNamespace.None.GetName(expandedName);
-            }
+            return XNamespace.None.GetName(expandedName);
         }
 
         /// <summary>

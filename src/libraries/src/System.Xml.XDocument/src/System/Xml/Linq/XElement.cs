@@ -34,11 +34,7 @@ namespace System.Xml.Linq
         /// </summary>
         public static IEnumerable<XElement> EmptySequence
         {
-            get
-            {
-                if (s_emptySequence == null) s_emptySequence = new XElement[0];
-                return s_emptySequence;
-            }
+            get { return s_emptySequence ?? (s_emptySequence = new XElement[0]); }
         }
 
         internal XName name;
