@@ -858,9 +858,10 @@ namespace System.Xml.XPath
         {
             XPathNavigator navigator = node.CreateNavigator();
             object result = navigator.Evaluate(expression, resolver);
-            if (result is XPathNodeIterator)
+            XPathNodeIterator iterator = result as XPathNodeIterator;
+            if (iterator != null)
             {
-                return EvaluateIterator<T>((XPathNodeIterator)result);
+                return EvaluateIterator<T>(iterator);
             }
             if (!(result is T)) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnexpectedEvaluation, result.GetType()));
             return (T)result;
