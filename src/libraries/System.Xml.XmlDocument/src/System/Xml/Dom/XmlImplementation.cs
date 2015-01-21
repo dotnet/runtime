@@ -7,7 +7,7 @@ namespace System.Xml
     // particular instance of the document object model.
     public class XmlImplementation
     {
-        private XmlNameTable _nameTable;
+        private readonly XmlNameTable _nameTable;
 
         // Initializes a new instance of the XmlImplementation class.
         public XmlImplementation() : this(new NameTable())

@@ -12,8 +12,8 @@ namespace System.Xml
     // Represents an entire document. An XmlDocument contains XML data.
     public class XmlDocument : XmlNode
     {
-        private XmlImplementation _implementation;
-        private DomNameTable _domNameTable; // hash table of XmlName
+        private readonly XmlImplementation _implementation;
+        private readonly DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode _lastChild;
         private XmlNamedNodeMap _entities;
         private Dictionary<string, List<WeakReference<XmlElement>>> _htElementIdMap;
@@ -37,29 +37,29 @@ namespace System.Xml
         private bool _isLoading;
 
         // special name strings for
-        internal string strDocumentName;
-        internal string strDocumentFragmentName;
-        internal string strCommentName;
-        internal string strTextName;
-        internal string strCDataSectionName;
+        internal readonly string strDocumentName;
+        internal readonly string strDocumentFragmentName;
+        internal readonly string strCommentName;
+        internal readonly string strTextName;
+        internal readonly string strCDataSectionName;
         internal string strEntityName;
         internal string strID;
-        internal string strXmlns;
-        internal string strXml;
-        internal string strSpace;
-        internal string strLang;
-        internal string strEmpty;
+        internal readonly string strXmlns;
+        internal readonly string strXml;
+        internal readonly string strSpace;
+        internal readonly string strLang;
+        internal readonly string strEmpty;
 
-        internal string strNonSignificantWhitespaceName;
-        internal string strSignificantWhitespaceName;
-        internal string strReservedXmlns;
-        internal string strReservedXml;
+        internal readonly string strNonSignificantWhitespaceName;
+        internal readonly string strSignificantWhitespaceName;
+        internal readonly string strReservedXmlns;
+        internal readonly string strReservedXml;
 
-        internal String baseURI;
+        internal string baseURI;
 
-        internal object objLock;
+        internal readonly object objLock;
 
-        static internal EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
+        static internal readonly EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
 
         // Initializes a new instance of the XmlDocument class.
         public XmlDocument() : this(new XmlImplementation())

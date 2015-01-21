@@ -7,7 +7,7 @@ namespace System.Xml
     {
         byte[] leftOverBytes;
         int leftOverBytesCount;
-        char[] charsLine;
+        readonly char[] charsLine;
 
         internal const int Base64LineSize = 76;
         internal const int LineSizeInBytes = Base64LineSize / 4 * 3;

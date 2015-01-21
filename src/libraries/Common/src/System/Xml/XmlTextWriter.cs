@@ -126,9 +126,9 @@ namespace System.Xml
         // Fields
         //
         // output
-        TextWriter textWriter;
-        XmlTextEncoder xmlEncoder;
-        Encoding encoding;
+        readonly TextWriter textWriter;
+        readonly XmlTextEncoder xmlEncoder;
+        readonly Encoding encoding;
 
         // formatting
         Formatting formatting;
@@ -175,7 +175,7 @@ namespace System.Xml
         const int MaxNamespacesWalkCount = 16;
 #endif
 
-        static string[] stateName = {
+        static readonly string[] stateName = {
             "Start",
             "Prolog",
             "PostDTD",
@@ -188,7 +188,7 @@ namespace System.Xml
             "Closed",
         };
 
-        static string[] tokenName = {
+        static readonly string[] tokenName = {
             "PI",
             "Doctype",
             "Comment",

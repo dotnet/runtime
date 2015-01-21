@@ -11,7 +11,7 @@ namespace System.Xml
     // The SecureStringHasher implements IEqualityComparer for strings and therefore can be used in generic IDictionary.
     internal class SecureStringHasher : IEqualityComparer<String>
     {
-        int hashCodeRandomizer;
+        readonly int hashCodeRandomizer;
 
         public SecureStringHasher()
         {
