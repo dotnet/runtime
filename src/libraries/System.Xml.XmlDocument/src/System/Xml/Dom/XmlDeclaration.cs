@@ -20,7 +20,7 @@ namespace System.Xml
         {
             if (!IsValidXmlVersion(version))
                 throw new ArgumentException(SR.Xdom_Version);
-            if ((standalone != null) && (standalone.Length > 0))
+            if (!string.IsNullOrEmpty(standalone))
                 if ((standalone != YES) && (standalone != NO))
                     throw new ArgumentException(SR.Format(SR.Xdom_standalone, standalone));
             this.Encoding = encoding;
