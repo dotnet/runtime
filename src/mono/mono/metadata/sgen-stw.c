@@ -36,6 +36,8 @@
 #include "utils/mono-counters.h"
 #include "utils/mono-threads.h"
 
+static gboolean world_is_stopped = FALSE;
+
 #define TV_DECLARE SGEN_TV_DECLARE
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
@@ -216,6 +218,8 @@ sgen_stop_world (int generation)
 	TV_DECLARE (end_handshake);
 	int count, dead;
 
+	SGEN_ASSERT (0, !world_is_stopped, "Why are we stopping a stopped world?");
+
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
 	MONO_GC_WORLD_STOP_BEGIN ();
 	binary_protocol_world_stopping (sgen_timestamp ());
@@ -239,6 +243,8 @@ sgen_stop_world (int generation)
 			g_error ("More threads have died (%d) that been initialy suspended %d", dead, count);
 		count -= dead;
 	}
+
+	world_is_stopped = TRUE;
 
 	SGEN_LOG (3, "world stopped %d thread(s)", count);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
@@ -270,6 +276,8 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	TV_DECLARE (start_handshake);
 	TV_DECLARE (end_bridge);
 	unsigned long usec, bridge_usec;
+
+	SGEN_ASSERT (0, world_is_stopped, "Why are we restarting a running world?");
 
 	if (binary_protocol_is_enabled ()) {
 		long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
@@ -305,6 +313,9 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	time_restart_world += TV_ELAPSED (start_handshake, end_sw);
 	usec = TV_ELAPSED (stop_world_time, end_sw);
 	max_pause_usec = MAX (usec, max_pause_usec);
+
+	world_is_stopped = FALSE;
+
 	SGEN_LOG (2, "restarted %d thread(s) (pause time: %d usec, max: %d)", count, (int)usec, (int)max_pause_usec);
 	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 	MONO_GC_WORLD_RESTART_END (generation);
@@ -338,6 +349,12 @@ sgen_restart_world (int generation, GGTimingInfo *timing)
 	sgen_memgov_collection_end (generation, timing, timing ? 2 : 0);
 
 	return count;
+}
+
+gboolean
+sgen_is_world_stopped (void)
+{
+	return world_is_stopped;
 }
 
 void
