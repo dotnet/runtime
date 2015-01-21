@@ -77,16 +77,16 @@ namespace System.Xml
         // Retrieves a substring of the full string from the specified range.
         public virtual String Substring(int offset, int count)
         {
-            int len = _data != null ? _data.Length : 0;
-            if (len > 0)
+            if (!string.IsNullOrEmpty(_data))
             {
+                int len = _data.Length;
                 if (len < (offset + count))
                 {
                     count = len - offset;
                 }
                 return _data.Substring(offset, count);
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         // Appends the specified string to the end of the character
@@ -130,9 +130,9 @@ namespace System.Xml
         {
             //Debug.Assert(offset >= 0 && offset <= Length);
 
-            int len = _data != null ? _data.Length : 0;
-            if (len > 0)
+            if (!string.IsNullOrEmpty(_data))
             {
+                int len = _data.Length;
                 if (len < (offset + count))
                 {
                     count = Math.Max(len - offset, 0);
@@ -156,9 +156,9 @@ namespace System.Xml
         // specified string.
         public virtual void ReplaceData(int offset, int count, String strData)
         {
-            int len = _data != null ? _data.Length : 0;
-            if (len > 0)
+            if (!string.IsNullOrEmpty(_data))
             {
+                int len = _data.Length;
                 if (len < (offset + count))
                 {
                     count = Math.Max(len - offset, 0);

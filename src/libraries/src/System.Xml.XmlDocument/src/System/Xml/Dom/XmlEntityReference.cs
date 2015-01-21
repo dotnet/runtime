@@ -192,12 +192,13 @@ namespace System.Xml
                 XmlEntity ent = OwnerDocument.GetEntityNode(_name);
                 if (ent != null)
                 {
-                    if (!string.IsNullOrEmpty(ent.SystemId))
-                        return ConstructBaseURI(ent.BaseURI, ent.SystemId);
-                    else
+                    if (string.IsNullOrEmpty(ent.SystemId))
+                    {
                         return ent.BaseURI;
+                    }
+                    return ConstructBaseURI(ent.BaseURI, ent.SystemId);
                 }
-                return String.Empty;
+                return string.Empty;
             }
         }
     }
