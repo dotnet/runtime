@@ -247,13 +247,7 @@ namespace System.Xml
         // has any attributes.
         public virtual bool HasAttributes
         {
-            get
-            {
-                if (_attributes == null)
-                    return false;
-                else
-                    return _attributes.Count > 0;
-            }
+            get { return _attributes != null && _attributes.Count > 0; }
         }
 
         // Returns the value for the attribute with the specified name.
@@ -292,9 +286,7 @@ namespace System.Xml
         // Returns the XmlAttribute with the specified name.
         public virtual XmlAttribute GetAttributeNode(string name)
         {
-            if (HasAttributes)
-                return Attributes[name];
-            return null;
+            return HasAttributes ? Attributes[name] : null;
         }
 
         // Adds the specified XmlAttribute.
@@ -308,9 +300,7 @@ namespace System.Xml
         // Removes the specified XmlAttribute.
         public virtual XmlAttribute RemoveAttributeNode(XmlAttribute oldAttr)
         {
-            if (HasAttributes)
-                return (XmlAttribute)Attributes.Remove(oldAttr);
-            return null;
+            return HasAttributes ? (XmlAttribute) Attributes.Remove(oldAttr) : null;
         }
 
         // Returns a XmlNodeList containing
@@ -361,9 +351,7 @@ namespace System.Xml
         // Returns the XmlAttribute with the specified LocalName and NamespaceURI.
         public virtual XmlAttribute GetAttributeNode(string localName, string namespaceURI)
         {
-            if (HasAttributes)
-                return Attributes[localName, namespaceURI];
-            return null;
+            return HasAttributes ? Attributes[localName, namespaceURI] : null;
         }
 
         // Adds the specified XmlAttribute.
@@ -514,9 +502,7 @@ namespace System.Xml
         // Removes the attribute node with the specified index from the attribute collection.
         public virtual XmlNode RemoveAttributeAt(int i)
         {
-            if (HasAttributes)
-                return _attributes.RemoveAt(i);
-            return null;
+            return HasAttributes ? _attributes.RemoveAt(i) : null;
         }
 
         // Removes all attributes from the element.
@@ -606,9 +592,7 @@ namespace System.Xml
             if (ns == OwnerDocument.strReservedXmlns)
                 return null;
             XmlAttribute attr = GetAttributeNode(localName, ns);
-            if (attr != null)
-                return attr.Value;
-            return string.Empty;
+            return attr != null ? attr.Value : string.Empty;
         }
     }
 }

@@ -503,11 +503,7 @@ namespace System.Xml
         // Adds the specified node to the end of the list of children of this node.
         public virtual XmlNode AppendChild(XmlNode newChild)
         {
-            XmlDocument thisDoc = OwnerDocument;
-            if (thisDoc == null)
-            {
-                thisDoc = this as XmlDocument;
-            }
+            XmlDocument thisDoc = OwnerDocument ?? this as XmlDocument;
             if (!IsContainer)
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Contain);
 
@@ -977,7 +973,7 @@ namespace System.Xml
         public virtual string GetNamespaceOfPrefix(string prefix)
         {
             string namespaceName = GetNamespaceOfPrefixStrict(prefix);
-            return namespaceName != null ? namespaceName : string.Empty;
+            return namespaceName ?? string.Empty;
         }
 
         internal string GetNamespaceOfPrefixStrict(string prefix)
@@ -1064,7 +1060,7 @@ namespace System.Xml
         public virtual string GetPrefixOfNamespace(string namespaceURI)
         {
             string prefix = GetPrefixOfNamespaceStrict(namespaceURI);
-            return prefix != null ? prefix : string.Empty;
+            return prefix ?? string.Empty;
         }
 
         internal string GetPrefixOfNamespaceStrict(string namespaceURI)
@@ -1168,14 +1164,7 @@ namespace System.Xml
 
         internal virtual void SetParent(XmlNode node)
         {
-            if (node == null)
-            {
-                this.parentNode = OwnerDocument;
-            }
-            else
-            {
-                this.parentNode = node;
-            }
+            this.parentNode = node ?? OwnerDocument;
         }
 
         internal virtual void SetParentForLoad(XmlNode node)

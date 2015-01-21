@@ -721,12 +721,7 @@ namespace System.Xml
 
         internal XmlNamedNodeMap Entities
         {
-            get
-            {
-                if (_entities == null)
-                    _entities = new XmlNamedNodeMap(this);
-                return _entities;
-            }
+            get { return _entities ?? (_entities = new XmlNamedNodeMap(this)); }
         }
 
         internal bool IsLoading { get; set; }
