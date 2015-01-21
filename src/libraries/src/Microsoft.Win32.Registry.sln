@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{FBCF7C
 		.nuget\packages.config = .nuget\packages.config
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry.Tests", "Microsoft.Win32.Registry\tests\Microsoft.Win32.Registry.Tests.csproj", "{20A2BA2C-5517-483F-8FFE-643441A59852}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

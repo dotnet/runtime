@@ -69,26 +69,18 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its 
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-#if PRENET45
-            m_source.Completion.ContinueWith(completed =>
-            {
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                (this as IDataflowBlock).Fault(completed.Exception);
-            }, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#else
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BufferBlock<T>)state) as IDataflowBlock;
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#endif
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, _source.Completion, owningSource => ((BufferBlock<T>)owningSource).Complete(), this);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -264,14 +256,14 @@ namespace System.Threading.Tasks.Dataflow
                 _boundingState.PostponedMessages.Count > 0 &&
                 _boundingState.CountIsLessThanBound)
             {
-                // Create task and store into m_taskForInputProcessing prior to scheduling the task
-                // so that m_taskForInputProcessing will be visibly set in the task loop.
+                // Create task and store into _taskForInputProcessing prior to scheduling the task
+                // so that _taskForInputProcessing will be visibly set in the task loop.
                 _boundingState.TaskForInputProcessing =
                     new Task(state => ((BufferBlock<T>)state).ConsumeMessagesLoopCore(), this,
                         Common.GetCreationOptionsForTask(isReplacementReplica));
 
 #if FEATURE_TRACING
-                var etwLog = DataflowEtwProvider.Log;
+                DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
@@ -281,7 +273,7 @@ namespace System.Threading.Tasks.Dataflow
 #endif
 
                 // Start the task handling scheduling exceptions
-                var exception = Common.StartTaskSafe(_boundingState.TaskForInputProcessing, _source.DataflowBlockOptions.TaskScheduler);
+                Exception exception = Common.StartTaskSafe(_boundingState.TaskForInputProcessing, _source.DataflowBlockOptions.TaskScheduler);
                 if (exception != null)
                 {
                     // Get out from under currently held locks. CompleteCore re-acquires the locks it needs.
@@ -304,7 +296,7 @@ namespace System.Threading.Tasks.Dataflow
 
             try
             {
-                var maxMessagesPerTask = _source.DataflowBlockOptions.ActualMaxMessagesPerTask;
+                int maxMessagesPerTask = _source.DataflowBlockOptions.ActualMaxMessagesPerTask;
                 for (int i = 0;
                     i < maxMessagesPerTask && ConsumeAndStoreOneMessageIfAvailable();
                     i++)
@@ -367,7 +359,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool consumed = false;
                 try
                 {
-                    var consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
+                    T consumedValue = sourceAndMessage.Key.ConsumeMessage(sourceAndMessage.Value, this, out consumed);
                     if (consumed)
                     {
                         _source.AddMessage(consumedValue);

@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.IO.FileSystem</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' == 'Unix'">
+    <NoWarn>$(NoWarn);414</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT' AND '$(EnableWinRT)' != 'true'">
+    <!-- We don't yet have an Overlapped contract that works in UAP -->
+    <DefineConstants>$(DefineConstants);USE_OVERLAPPED</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="System\IO\__Error.cs" />
+    <Compile Include="System\IO\Directory.cs" />
+    <Compile Include="System\IO\DirectoryInfo.cs" />
+    <Compile Include="System\IO\File.cs" />
+    <Compile Include="System\IO\FileInfo.cs" />
+    <Compile Include="System\IO\FileOptions.cs" />
+    <Compile Include="System\IO\FileStream.cs" />
+    <Compile Include="System\IO\FileStreamBase.cs" />
+    <Compile Include="System\IO\FileSystem.cs" />
+    <Compile Include="System\IO\FileSystemInfo.cs" />
+    <Compile Include="System\IO\IFileSystemObject.cs" />
+    <Compile Include="System\IO\Iterator.cs" />
+    <Compile Include="System\IO\PathHelpers.cs" />
+    <Compile Include="System\IO\ReadLinesIterator.cs" />
+    <Compile Include="System\IO\SearchOption.cs" />
+    <Compile Include="System\IO\SearchTarget.cs" />
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>Common\System\IO\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StreamAsyncHelper.cs">
+      <Link>Common\System\IO\StreamAsyncHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Windows -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <Compile Include="Interop\Interop.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="System\IO\FileStream.Handle.Win32.cs" />
+    <Compile Include="System\IO\Win32FileStream.cs" />
+    <Compile Include="System\IO\Win32FileStreamAsyncResult.cs" />
+    <Compile Include="System\IO\Win32FileSystem.cs" />
+    <Compile Include="System\IO\Win32FileSystemEnumerable.cs" />
+    <Compile Include="System\IO\Win32FileSystemObject.cs" />
+    <Compile Include="$(CommonPath)\System\__HResults.cs">
+      <Link>Common\System\__HResults.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
+      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Windows : Win32 only -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' AND '$(EnableWinRT)' != 'true'">
+    <Compile Include="Interop\Interop.Win7.cs" />
+    <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
+  </ItemGroup>
+  <!-- Windows : Win32 + WinRT -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' AND '$(EnableWinRT)' == 'true'">
+    <Compile Include="Interop\Interop.Win8.cs" />
+    <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
+    <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
+    <Compile Include="System\IO\WinRTIOExtensions.cs" />
+    <Compile Include="System\IO\WinRTFileStream.cs" />
+    <Compile Include="System\IO\WinRTFileSystem.cs" />
+    <Compile Include="System\IO\WinRTFileSystemObject.cs" />
+  </ItemGroup>
+  <!-- Unix -->
+  <ItemGroup Condition="'$(OS)' == 'Unix'">
+    <Compile Include="Interop\Interop.Linux.cs" />
+    <Compile Include="Interop\Interop.Unix.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
+    <Compile Include="System\IO\FileStream.Handle.Unix.cs" />
+    <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
+    <Compile Include="System\IO\UnixFileStream.cs" />
+    <Compile Include="System\IO\UnixFileSystem.cs" />
+    <Compile Include="System\IO\UnixFileSystemObject.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.CoreFileIO.Unix.cs">
+      <Link>Common\Interop\Interop.CoreFileIO.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Interop.Errors.Unix.cs">
+      <Link>Common\Interop\Interop.Errors.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Interop.strerror.Unix.cs">
+      <Link>Common\Interop\Interop.strerror.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\src\System.IO.FileSystem.Primitives.csproj">
+      <Project>{6c05678e-394c-4cff-b453-a18e28c8f2c3}</Project>
+      <Name>System.IO.FileSystem.Primitives</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

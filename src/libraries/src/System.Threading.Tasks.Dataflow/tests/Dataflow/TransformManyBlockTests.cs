@@ -53,7 +53,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformManyBlock.");
 
             // Task without option
-            block = new TransformManyBlock<int, string>(i => Task.Factory.StartNew(() => (IEnumerable<string>)new string[10]));
+            block = new TransformManyBlock<int, string>(i => Task.Run(() => (IEnumerable<string>)new string[10]));
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformManyBlock.");
 
             // IEnumerable with not cancelled token and default scheduler
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformManyBlock.");
 
             // Task with not cancelled token and default scheduler
-            block = new TransformManyBlock<int, string>(i => Task.Factory.StartNew(() => (IEnumerable<string>)new string[10]), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
+            block = new TransformManyBlock<int, string>(i => Task.Run(() => (IEnumerable<string>)new string[10]), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformManyBlock.");
 
             // IEnumerable with a cancelled token and default scheduler
@@ -71,7 +71,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
             // Task with a cancelled token and default scheduler
             token = new CancellationToken(true);
-            block = new TransformManyBlock<int, string>(i => Task.Factory.StartNew(() => (IEnumerable<string>)new string[10]), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
+            block = new TransformManyBlock<int, string>(i => Task.Run(() => (IEnumerable<string>)new string[10]), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
             Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformManyBlock.");
         }
 
@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => new TransformManyBlock<int, string>((Func<int, IEnumerable<string>>)null));
             Assert.Throws<ArgumentNullException>(() => new TransformManyBlock<int, string>((Func<int, Task<IEnumerable<string>>>)null));
             Assert.Throws<ArgumentNullException>(() => new TransformManyBlock<int, string>(i => new[] { i.ToString() }, null));
-            Assert.Throws<ArgumentNullException>(() => new TransformManyBlock<int, string>(i => Task.Factory.StartNew(() => (IEnumerable<string>)new[] { i.ToString() }), null));
+            Assert.Throws<ArgumentNullException>(() => new TransformManyBlock<int, string>(i => Task.Run(() => (IEnumerable<string>)new[] { i.ToString() }), null));
 
             passed &= ITargetBlockTestHelper.TestArgumentsExceptions<int>(new TransformManyBlock<int, int>(i => new int[] { i }));
             passed &= ISourceBlockTestHelper.TestArgumentsExceptions<int>(new TransformManyBlock<int, int>(i => new int[] { i }));
@@ -375,7 +375,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     Func<DataflowBlockOptions, TargetProperties<int>> transformManyBlockFactory =
                         options =>
                         {
-                            TransformManyBlock<int, int> transformManyBlock = new TransformManyBlock<int, int>(i => Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i }), (ExecutionDataflowBlockOptions)options);
+                            TransformManyBlock<int, int> transformManyBlock = new TransformManyBlock<int, int>(i => Task.Run(() => (IEnumerable<int>)new[] { i }), (ExecutionDataflowBlockOptions)options);
                             ActionBlock<int> actionBlock = new ActionBlock<int>(i => TrackCaptures(i), (ExecutionDataflowBlockOptions)options);
 
                             transformManyBlock.LinkTo(actionBlock);
@@ -400,7 +400,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i * 2 })));
+                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Run(() => (IEnumerable<int>)new[] { i * 2 })));
                     for (int i = 0; i < ITERS; i++)
                     {
                         network.Post(i);
@@ -414,7 +414,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i * 2 })));
+                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Run(() => (IEnumerable<int>)new[] { i * 2 })));
                     for (int i = 0; i < ITERS; i++)
                     {
                         network.SendAsync(i);
@@ -428,7 +428,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i * 2 })));
+                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Run(() => (IEnumerable<int>)new[] { i * 2 })));
                     for (int i = 0; i < ITERS; i++) localPassed &= network.Post(i) == true;
                     for (int i = 0; i < ITERS; i++) localPassed &= ((IReceivableSourceBlock<int>)network).Receive() == i * 16;
                     Console.WriteLine("{0}: Chained Post all then Receive", localPassed ? "Success" : "Failure");
@@ -439,7 +439,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
                     const int ITERS = 2;
-                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i * 2 })));
+                    var network = Chain<TransformManyBlock<int, int>, int>(4, () => new TransformManyBlock<int, int>(i => Task.Run(() => (IEnumerable<int>)new[] { i * 2 })));
                     var tasks = new Task[ITERS];
                     for (int i = 1; i <= ITERS; i++) tasks[i - 1] = network.SendAsync(i);
                     Task.WaitAll(tasks);
@@ -454,7 +454,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     bool localPassed = true;
 
-                    var t = new TransformManyBlock<int, int>(i => Task.Factory.StartNew(() => (IEnumerable<int>)Enumerable.Range(0, 10).ToArray()));
+                    var t = new TransformManyBlock<int, int>(i => Task.Run(() => (IEnumerable<int>)Enumerable.Range(0, 10).ToArray()));
                     t.Post(42);
                     t.Complete();
                     for (int i = 0; i < 10; i++)
@@ -493,7 +493,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     var t = new TransformManyBlock<int, int>(i =>
                     {
                         if ((i % 2) == 0) return null;
-                        return Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i });
+                        return Task.Run(() => (IEnumerable<int>)new[] { i });
                     });
                     for (int i = 0; i < 10; i++) t.Post(i);
                     t.Complete();
@@ -517,7 +517,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                             Task.Delay(1000).Wait();
                             return null;
                         }
-                        return Task.Factory.StartNew(() => (IEnumerable<int>)new[] { i });
+                        return Task.Run(() => (IEnumerable<int>)new[] { i });
                     }), new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2 });
                     t.Post(0);
                     t.Post(1);
@@ -554,7 +554,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Test faulting from the task
                 {
                     bool localPassed = true;
-                    var t = new TransformManyBlock<int, int>(new Func<int, Task<IEnumerable<int>>>(i => Task<IEnumerable<int>>.Factory.StartNew(() => { throw new InvalidOperationException(); })));
+                    var t = new TransformManyBlock<int, int>(new Func<int, Task<IEnumerable<int>>>(i => Task.Run<IEnumerable<int>>(new Func<IEnumerable<int>>(() => { throw new InvalidOperationException(); }))));
                     t.Post(42);
                     t.Post(1);
                     t.Post(2);
@@ -590,7 +590,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                                 TransformManyBlock<int, int> tmb1 = null;
                                 tmb1 = new TransformManyBlock<int, int>(i =>
                                 {
-                                    return Task.Factory.StartNew(() =>
+                                    return Task.Run(() =>
                                     {
                                         if (i == 1000)
                                         {
@@ -652,7 +652,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                                 var tmb = new TransformManyBlock<int, int>(i =>
                                 {
                                     var cts = new CancellationTokenSource();
-                                    return Task.Factory.StartNew(() =>
+                                    return Task.Run(() =>
                                     {
                                         if (i < ITERS - 1)
                                         {

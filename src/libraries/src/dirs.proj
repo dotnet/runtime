@@ -1,23 +1,31 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="RestoreAllPackages;VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
   <Target Name="VerifyBuildTools" 
     Inputs="$(BuildToolsTargetInputs)"
     Outputs="$(BuildToolsTargetOutputs)"
     >
-    <Error Condition="!Exists('$(BuildToolsInstallSempahore)')" 
+    <Error Condition="!Exists('$(BuildToolsInstallSemaphore)')" 
       Text="The build tools have not been installed. Please run build.cmd from the root of the repo at least once to get the tools installed." />
 
     <!-- If we enter this target at all then the inputs are newer then the outputs so give a warning. -->
     <Warning Text="Looks like there may be an update to the build tools. Please run build.cmd from the root of the repo to refresh the build tools." /> 
   </Target>
 
+  <ItemGroup>
+    <!-- Include test runtime when restoring packages in EnsureDependencies -->
+    <PackageConfigs Include="$(ToolsDir)test-runtime\packages.config" />
+  </ItemGroup>
+  
   <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
-  <Target Name="RestoreAllPackages" BeforeTargets="Build" DependsOnTargets="EnsureDependencies" />
+  <Target Name="RestoreAllPackages">
+    <Message Importance="High" Text="Restoring all package dependencies..." />
+    <CallTarget Targets="EnsureDependencies" />
+  </Target>
 
   <ItemGroup>
     <Project Include="*\src\*.csproj" />
-    <Project Include="*\tests\*.csproj" />
+    <Project Include="*\tests\**\*.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.traversal.targets" />
@@ -26,18 +34,29 @@
     <!-- Explicity set the OutDir as it is used by the packaging targets -->
     <OutDir>$(BaseOutputPathWithConfig)</OutDir>
   </PropertyGroup>
-
+  
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
-  <Target Name="BuidDirPackages" AfterTargets="Build" DependsOnTargets="BuildPackages" />
+  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets')">
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependsOn);
+      BuildPackages;
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
   <ItemGroup>
-    <DisabledTestAssembly Include="System.Threading.Tasks.Dataflow.Tests" />
-    <DisabledTestAssembly Include="System.Linq.Parallel.Tests" />
-
-    <_SkipTestAssemblies Include="@(DisabledTestAssembly)" />
+    <!-- <DisabledTestAssembly Include="TestAssemblyName" /> -->
+    <SkipTestAssemblies Include="@(DisabledTestAssembly->'$(TestWorkingDir)**\%(Identity).dll')" />
   </ItemGroup>
-  
+
   <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
-  <Target Name="RunDirTests" AfterTargets="Build" DependsOnTargets="RunTests" />
+  <Target Name="RunDirTests" DependsOnTargets="RunTests">
+    <Error Text="One or more tests failed. See the log file for more details." Condition="'@(XUnitExitCodes)' != '' and '%(XUnitExitCodes.Identity)' != '0'" />
+  </Target>
+  <PropertyGroup Condition="Exists('$(ToolsDir)tests.targets')">
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependsOn);
+      RunDirTests;
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
 </Project>

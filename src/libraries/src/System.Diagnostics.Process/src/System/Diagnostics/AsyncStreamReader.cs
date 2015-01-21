@@ -11,19 +11,15 @@
 **
 ===========================================================*/
 
-using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
-    internal delegate void UserCallBack(String data);
-
-    internal class AsyncStreamReader : IDisposable
+    internal sealed class AsyncStreamReader : IDisposable
     {
         internal const int DefaultBufferSize = 1024;  // Byte buffer size
         private const int MinBufferSize = 128;
@@ -44,7 +40,7 @@ namespace System.Diagnostics
         private Process _process;
 
         // Delegate to call user function.
-        private UserCallBack _userCallBack;
+        private Action<string> _userCallBack;
 
         // Internal Cancel operation
         private bool _cancelOperation;
@@ -53,7 +49,10 @@ namespace System.Diagnostics
         private StringBuilder _sb;
         private bool _bLastCarriageReturn;
 
-        internal AsyncStreamReader(Process process, Stream stream, UserCallBack callback, Encoding encoding)
+        // Cache the last position scanned in sb when searching for lines.
+        private int _currentLinePos;
+
+        internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding)
             : this(process, stream, callback, encoding, DefaultBufferSize)
         {
         }
@@ -63,7 +62,7 @@ namespace System.Diagnostics
         // character encoding is set by encoding and the buffer size, 
         // in number of 16-bit characters, is set by bufferSize.  
         // 
-        internal AsyncStreamReader(Process process, Stream stream, UserCallBack callback, Encoding encoding, int bufferSize)
+        internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
         {
             Debug.Assert(process != null && stream != null && encoding != null && callback != null, "Invalid arguments!");
             Debug.Assert(stream.CanRead, "Stream must be readable!");
@@ -73,7 +72,7 @@ namespace System.Diagnostics
             _messageQueue = new Queue<string>();
         }
 
-        private void Init(Process process, Stream stream, UserCallBack callback, Encoding encoding, int bufferSize)
+        private void Init(Process process, Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
         {
             _process = process;
             _stream = stream;
@@ -90,7 +89,7 @@ namespace System.Diagnostics
             _bLastCarriageReturn = false;
         }
 
-        public virtual void Close()
+        public void Close()
         {
             Dispose(true);
         }
@@ -101,7 +100,7 @@ namespace System.Diagnostics
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -124,12 +123,12 @@ namespace System.Diagnostics
             }
         }
 
-        public virtual Encoding CurrentEncoding
+        public Encoding CurrentEncoding
         {
             get { return _encoding; }
         }
 
-        public virtual Stream BaseStream
+        public Stream BaseStream
         {
             get { return _stream; }
         }
@@ -145,7 +144,7 @@ namespace System.Diagnostics
             if (_sb == null)
             {
                 _sb = new StringBuilder(DefaultBufferSize);
-                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer);
+                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
             else
             {
@@ -211,7 +210,7 @@ namespace System.Diagnostics
                 int charLen = _decoder.GetChars(_byteBuffer, 0, byteLen, _charBuffer, 0);
                 _sb.Append(_charBuffer, 0, charLen);
                 GetLinesFromStringBuilder();
-                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer);
+                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
         }
 
@@ -226,7 +225,7 @@ namespace System.Diagnostics
 
         private void GetLinesFromStringBuilder()
         {
-            int i = 0;
+            int currentIndex = _currentLinePos;
             int lineStart = 0;
             int len = _sb.Length;
 
@@ -234,25 +233,25 @@ namespace System.Diagnostics
             // with '\r'
             if (_bLastCarriageReturn && (len > 0) && _sb[0] == '\n')
             {
-                i = 1;
+                currentIndex = 1;
                 lineStart = 1;
                 _bLastCarriageReturn = false;
             }
 
-            while (i < len)
+            while (currentIndex < len)
             {
-                char ch = _sb[i];
+                char ch = _sb[currentIndex];
                 // Note the following common line feed chars:
                 // \n - UNIX   \r\n - DOS   \r - Mac
                 if (ch == '\r' || ch == '\n')
                 {
-                    string s = _sb.ToString(lineStart, i - lineStart);
-                    lineStart = i + 1;
+                    string s = _sb.ToString(lineStart, currentIndex - lineStart);
+                    lineStart = currentIndex + 1;
                     // skip the "\n" character following "\r" character
                     if ((ch == '\r') && (lineStart < len) && (_sb[lineStart] == '\n'))
                     {
                         lineStart++;
-                        i++;
+                        currentIndex++;
                     }
 
                     lock (_messageQueue)
@@ -260,7 +259,7 @@ namespace System.Diagnostics
                         _messageQueue.Enqueue(s);
                     }
                 }
-                i++;
+                currentIndex++;
             }
             if (_sb[len - 1] == '\r')
             {
@@ -269,11 +268,22 @@ namespace System.Diagnostics
             // Keep the rest characaters which can't form a new line in string builder.
             if (lineStart < len)
             {
-                _sb.Remove(0, lineStart);
+                if (lineStart == 0)
+                {
+                    // we found no breaklines, in this case we cache the position
+                    // so next time we don't have to restart from the beginning
+                    _currentLinePos = currentIndex;
+                }
+                else
+                {
+                    _sb.Remove(0, lineStart);
+                    _currentLinePos = 0;
+                }
             }
             else
             {
                 _sb.Length = 0;
+                _currentLinePos = 0;
             }
 
             FlushMessageQueue();

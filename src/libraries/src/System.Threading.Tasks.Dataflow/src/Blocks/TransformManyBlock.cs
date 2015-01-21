@@ -147,45 +147,29 @@ namespace System.Threading.Tasks.Dataflow
             // As the target has completed, and as the target synchronously pushes work
             // through the reordering buffer when async processing completes, 
             // we know for certain that no more messages will need to be sent to the source.
-#if PRENET45
-            m_target.Completion.ContinueWith(completed =>
-            {
-                if (completed.IsFaulted) m_source.AddAndUnwrapAggregateException(completed.Exception);
-                m_source.Complete();
-            }, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
-#else
             _target.Completion.ContinueWith((completed, state) =>
             {
                 var sourceCore = (SourceCore<TOutput>)state;
                 if (completed.IsFaulted) sourceCore.AddAndUnwrapAggregateException(completed.Exception);
                 sourceCore.Complete();
             }, _source, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
-#endif
 
             // It is possible that the source half may fault on its own, e.g. due to a task scheduler exception.
             // In those cases we need to fault the target half to drop its buffered messages and to release its 
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-#if PRENET45
-            m_source.Completion.ContinueWith(completed =>
-            {
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
-                (this as IDataflowBlock).Fault(completed.Exception);
-            }, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#else
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((TransformManyBlock<TInput, TOutput>)state) as IDataflowBlock;
                 Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-#endif
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
                 dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state).Complete(exception: null, dropPendingMessages: true), _target);
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
@@ -204,7 +188,7 @@ namespace System.Threading.Tasks.Dataflow
             try
             {
                 // Run the user transform and store the results.
-                var outputItems = transformFunction(messageWithId.Key);
+                IEnumerable<TOutput> outputItems = transformFunction(messageWithId.Key);
                 userDelegateSucceeded = true;
                 StoreOutputItems(messageWithId, outputItems);
             }
@@ -272,15 +256,6 @@ namespace System.Threading.Tasks.Dataflow
             // We got back a task.  Now wait for it to complete and store its results.
             // Unlike with TransformBlock and ActionBlock, We run the continuation on the user-provided 
             // scheduler as we'll be running user code through enumerating the returned enumerable.
-#if PRENET45
-            task.ContinueWith(completed =>
-            {
-                this.AsyncCompleteProcessMessageWithTask(completed, messageWithId);
-            },
-            CancellationToken.None,
-            Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously),
-            m_source.DataflowBlockOptions.TaskScheduler);
-#else
             task.ContinueWith((completed, state) =>
             {
                 var tuple = (Tuple<TransformManyBlock<TInput, TOutput>, KeyValuePair<TInput, long>>)state;
@@ -289,7 +264,6 @@ namespace System.Threading.Tasks.Dataflow
             CancellationToken.None,
             Common.GetContinuationOptions(TaskContinuationOptions.ExecuteSynchronously),
             _source.DataflowBlockOptions.TaskScheduler);
-#endif
         }
 
         /// <summary>Completes the processing of an asynchronous message.</summary>
@@ -305,7 +279,7 @@ namespace System.Threading.Tasks.Dataflow
             switch (completed.Status)
             {
                 case TaskStatus.RanToCompletion:
-                    var outputItems = completed.Result;
+                    IEnumerable<TOutput> outputItems = completed.Result;
                     try
                     {
                         // Get the resulting enumerable and persist it.
@@ -397,7 +371,7 @@ namespace System.Threading.Tasks.Dataflow
             Contract.Requires(id != Common.INVALID_REORDERING_ID, "This ID should never have been handed out.");
 
             // Grab info about the transform
-            var target = _target;
+            TargetCore<TInput> target = _target;
             bool isBounded = target.IsBounded;
 
             // Handle invalid items (null enumerables) by delegating to the base
@@ -506,7 +480,7 @@ namespace System.Threading.Tasks.Dataflow
                 bool outputFirstItem = false;
                 try
                 {
-                    foreach (var item in outputItems)
+                    foreach (TOutput item in outputItems)
                     {
                         if (outputFirstItem) _target.ChangeBoundingCount(count: 1);
                         else outputFirstItem = true;
@@ -521,7 +495,7 @@ namespace System.Threading.Tasks.Dataflow
             // If we're not bounding, just output each individual item.
             else
             {
-                foreach (var item in outputItems) _source.AddMessage(item);
+                foreach (TOutput item in outputItems) _source.AddMessage(item);
             }
         }
 

@@ -42,13 +42,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>The cached completed TaskCompletionSource{VoidResult}.</summary>
         internal static readonly TaskCompletionSource<VoidResult> CompletedVoidResultTaskCompletionSource = CreateCachedTaskCompletionSource<VoidResult>();
 
-#if PRENET45
-#if DEBUG
-        /// <summary>Determines whether ContractAssertMonitorStatus checks monitor status.</summary>
-        internal readonly static bool ShouldCheckMonitorStatus = false;
-#endif
-#endif
-
         /// <summary>Asserts that a given synchronization object is either held or not held.</summary>
         /// <param name="syncObj">The monitor to check.</param>
         /// <param name="held">Whether we want to assert that it's currently held or not held.</param>
@@ -56,25 +49,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
             Contract.Requires(syncObj != null, "The monitor object to check must be provided.");
-#if PRENET45
-#if DEBUG
-            // PRENET45 CHK PERF WARNING: This implementation adds a huge amount of runtime cost for checked builds,
-            // which is why it's protected by ShouldCheckMonitorStatus and controlled by an environment variable DEBUGSYNC.
-            if (ShouldCheckMonitorStatus)
-            {
-                bool exceptionThrown;
-                try
-                {
-                    Monitor.Pulse(syncObj); // throws a SynchronizationLockException if the monitor isn't held by this thread
-                    exceptionThrown = false;
-                }
-                catch (SynchronizationLockException) { exceptionThrown = true; }
-                Contract.Assert(held == !exceptionThrown, "The locking scheme was not correctly followed.");
-            }
-#endif
-#else
             Contract.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
-#endif
         }
 
         /// <summary>Keeping alive processing tasks: maximum number of processed messages.</summary>
@@ -113,56 +88,16 @@ namespace System.Threading.Tasks.Dataflow.Internal
             return false;
         }
 
-        /// <summary>
-        /// Disposes of the provided CancellationTokenRegistration in a manner 
-        /// that's safe from ObjectDisposedException.
-        /// </summary>
-        /// <param name="registration">The token registraiton to dispose.</param>
-        internal static void SafeDisposeTokenRegistration(CancellationTokenRegistration registration)
-        {
-#if PRENET45
-            try { registration.Dispose(); }
-            catch (ObjectDisposedException) { } // This handling is built-in post-.NET 4
-#else
-            registration.Dispose();
-#endif
-        }
-
         /// <summary>Unwraps an instance T from object state that is a WeakReference to that instance.</summary>
         /// <typeparam name="T">The type of the data to be unwrapped.</typeparam>
         /// <param name="state">The weak reference.</param>
         /// <returns>The T instance.</returns>
         internal static T UnwrapWeakReference<T>(object state) where T : class
         {
-#if PRENET45
-            var wr = state as WeakReference;
-            Contract.Assert(wr != null, "Expected a WeakReference to a T as the state argument");
-            return wr.Target as T;
-#else
             var wr = state as WeakReference<T>;
             Contract.Assert(wr != null, "Expected a WeakReference<T> as the state argument");
             T item;
             return wr.TryGetTarget(out item) ? item : null;
-#endif
-        }
-
-        /// <summary>Wraps an instance of T in a WeakReference.</summary>
-        /// <typeparam name="T">The type of the data to be wrapped.</typeparam>
-        /// <param name="state">The state to wrap.</param>
-        /// <returns>The weak reference to the instance.</returns>
-        internal static
-#if PRENET45
-            WeakReference
-#else
-            WeakReference<T>
-#endif
-            WrapWeakReference<T>(T state) where T : class
-        {
-#if PRENET45
-            return new WeakReference(state);
-#else
-            return new WeakReference<T>(state);
-#endif
         }
 
         /// <summary>Gets an ID for the dataflow block.</summary>
@@ -260,15 +195,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // leak into a long-living cancellation token.
             else if (cancellationToken.CanBeCanceled)
             {
-                var reg = cancellationToken.Register(completeAction, completeState);
-#if PRENET45
-                completionTask.ContinueWith((completed) => SafeDisposeTokenRegistration(reg),
-                    // try/catch needed due to .NET 4 design (changed post-.NET 4)
-                    cancellationToken, Common.GetContinuationOptions(), TaskScheduler.Default);
-#else
-                completionTask.ContinueWith((completed, state) => SafeDisposeTokenRegistration((CancellationTokenRegistration)state),
+                CancellationTokenRegistration reg = cancellationToken.Register(completeAction, completeState);
+                completionTask.ContinueWith((completed, state) => ((CancellationTokenRegistration)state).Dispose(),
                     reg, cancellationToken, Common.GetContinuationOptions(), TaskScheduler.Default);
-#endif
             }
         }
 
@@ -319,7 +248,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 var aggregate = exc as AggregateException;
                 if (aggregate != null)
                 {
-                    foreach (var innerException in aggregate.InnerExceptions)
+                    foreach (Exception innerException in aggregate.InnerExceptions)
                     {
                         StoreStringIntoExceptionData(innerException, Common.EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE, strValue);
                     }
@@ -340,7 +269,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void StoreStringIntoExceptionData(Exception exception, string key, string value)
         {
-#if !PRENET45
             Contract.Requires(exception != null, "An exception is needed to store the data into.");
             Contract.Requires(key != null, "A key into the exception's data collection is needed.");
             Contract.Requires(value != null, "The value to store must be provided.");
@@ -357,7 +285,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // It's ok to eat all exceptions here.  This could throw if an Exception type 
                 // has overridden Data to behave differently than we expect.
             }
-#endif
         }
 
         /// <summary>Throws an exception asynchronously on the thread pool.</summary>
@@ -370,12 +297,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// </remarks>
         internal static void ThrowAsync(Exception error)
         {
-#if PRENET45
-            ThreadPool.QueueUserWorkItem(state => { throw (Exception)state; }, error);
-#else
-            var edi = ExceptionDispatchInfo.Capture(error);
+            ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(error);
             ThreadPool.QueueUserWorkItem(state => { ((ExceptionDispatchInfo)state).Throw(); }, edi);
-#endif
         }
 
         /// <summary>Adds the exception to the list, first initializing the list if the list is null.</summary>
@@ -410,29 +333,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>A task that never completes.</summary>
         internal static readonly Task NeverCompletingTask = new TaskCompletionSource<VoidResult>().Task;
 
-        /// <summary>Creates a task completed with the specified result.</summary>
-        /// <typeparam name="TResult">Specifies the type of the result for this task.</typeparam>
-        /// <param name="result">The result with which to complete the task.</param>
-        /// <returns>The completed task.</returns>
-        internal static Task<TResult> CreateTaskFromResult<TResult>(TResult result)
-        {
-#if PRENET45
-            var tcs = new TaskCompletionSource<TResult>();
-            tcs.TrySetResult(result);
-            return tcs.Task;
-#else
-            return Task.FromResult(result);
-#endif
-        }
-
         /// <summary>Creates a task we can cache for the desired Boolean result.</summary>
         /// <param name="value">The value of the Boolean.</param>
         /// <returns>A task that may be cached.</returns>
         private static Task<Boolean> CreateCachedBooleanTask(bool value)
         {
-#if PRENET45
-            return CreateTaskFromResult<bool>(value);
-#else
             // AsyncTaskMethodBuilder<Boolean> caches tasks that are non-disposable.
             // By using these same tasks, we're a bit more robust against disposals,
             // in that such a disposed task's ((IAsyncResult)task).AsyncWaitHandle
@@ -440,7 +345,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             var atmb = System.Runtime.CompilerServices.AsyncTaskMethodBuilder<Boolean>.Create();
             atmb.SetResult(value);
             return atmb.Task; // must be accesseed after SetResult to get the cached task
-#endif
         }
 
         /// <summary>Creates a TaskCompletionSource{T} completed with a value of default(T) that we can cache.</summary>
@@ -458,15 +362,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>The faulted task.</returns>
         internal static Task<TResult> CreateTaskFromException<TResult>(Exception exception)
         {
-#if PRENET45
-            var tcs = new TaskCompletionSource<TResult>();
-            tcs.TrySetException(exception);
-            return tcs.Task;
-#else
             var atmb = System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>.Create();
             atmb.SetException(exception);
             return atmb.Task;
-#endif
         }
 
         /// <summary>Creates a task canceled with the specified cancellation token.</summary>
@@ -516,12 +414,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>An infinite TimeSpan.</summary>
-        internal static readonly TimeSpan InfiniteTimeSpan =
-#if PRENET45
-            new TimeSpan(0, 0, 0, 0, -1);
-#else
-            Timeout.InfiniteTimeSpan;
-#endif
+        internal static readonly TimeSpan InfiniteTimeSpan = Timeout.InfiniteTimeSpan;
 
         /// <summary>Validates that a timeout either is -1 or is non-negative and within the range of an Int32.</summary>
         /// <param name="timeout">The timeout to validate.</param>
@@ -537,11 +430,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>The options to use.</returns>
         internal static TaskContinuationOptions GetContinuationOptions(TaskContinuationOptions toInclude = TaskContinuationOptions.None)
         {
-#if PRENET45
-            return toInclude;
-#else
             return toInclude | TaskContinuationOptions.DenyChildAttach;
-#endif
         }
 
         /// <summary>Gets the options to use for tasks.</summary>
@@ -553,12 +442,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <returns>The options to use.</returns>
         internal static TaskCreationOptions GetCreationOptionsForTask(bool isReplacementReplica = false)
         {
-            TaskCreationOptions options =
-#if PRENET45
-                TaskCreationOptions.None;
-#else
-                TaskCreationOptions.DenyChildAttach;
-#endif
+            TaskCreationOptions options = TaskCreationOptions.DenyChildAttach;
             if (isReplacementReplica) options |= TaskCreationOptions.PreferFairness;
             return options;
         }
@@ -604,7 +488,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Contract.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
 
                 // Observe the task's exception
-                var ignoredTaskException = task.Exception;
+                AggregateException ignoredTaskException = task.Exception;
 
                 schedulingException = caughtException;
             }
@@ -670,7 +554,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
             Contract.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
 
-            var exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
+            AggregateException exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
 
             try
             {
@@ -691,13 +575,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
-#if PRENET45
-            sourceCompletionTask.ContinueWith(task => Common.PropagateCompletion(task, target, AsyncExceptionHandler),
-                CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
-#else
             sourceCompletionTask.ContinueWith((task, state) => Common.PropagateCompletion(task, (IDataflowBlock)state, AsyncExceptionHandler),
                 target, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
-#endif
         }
 
         /// <summary>

@@ -67,9 +67,7 @@ public class FileVersionInfoTest
 
     private static void VerifyVersionInfo(String filePath, MyFVI expected)
     {
-        Console.WriteLine("Testing binary: " + filePath);
         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(filePath);
-        Console.WriteLine("Got the fvi: " + fvi);
         TestStringProperty("Comments", fvi.Comments, expected.Comments);
         TestStringProperty("CompanyName", fvi.Comments, expected.Comments);
         TestProperty<int>("FileBuildPart", fvi.FileBuildPart, expected.FileBuildPart);
@@ -134,7 +132,6 @@ public class FileVersionInfoTest
 
     private static void TestStringProperty(String propertyName, String actual, String expected, String alternate, bool testOnNonEnglishPlatform)
     {
-        Console.WriteLine("{0}:  {1}", propertyName, actual);
         if (testOnNonEnglishPlatform || CultureInfo.CurrentCulture.Name == "en-US")
         {
             if ((actual == null && expected != null) ||
@@ -148,8 +145,6 @@ public class FileVersionInfoTest
 
     private static void TestProperty<T>(String propertyName, T actual, T expected)
     {
-        Console.WriteLine("{0}:  {1}", propertyName, actual);
-
         Assert.Equal(expected, actual);
     }
 

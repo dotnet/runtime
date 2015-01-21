@@ -11,9 +11,9 @@ namespace System.Xml.Linq
     [SuppressMessage("Microsoft.Usage", "CA2229:ImplementSerializationConstructors", Justification = "Deserialization handled by NameSerializer.")]
     public sealed class XName : IEquatable<XName>
     {
-        private XNamespace _ns;
-        private string _localName;
-        private int _hashCode;
+        private readonly XNamespace _ns;
+        private readonly string _localName;
+        private readonly int _hashCode;
 
         /// <summary>
         /// Constructor, internal so that external users must go through the Get() method to create an XName.
@@ -78,10 +78,7 @@ namespace System.Xml.Linq
                 if (i <= 1 || i == expandedName.Length - 1) throw new ArgumentException(SR.Format(SR.Argument_InvalidExpandedName, expandedName));
                 return XNamespace.Get(expandedName, 1, i - 1).GetName(expandedName, i + 1, expandedName.Length - i - 1);
             }
-            else
-            {
-                return XNamespace.None.GetName(expandedName);
-            }
+            return XNamespace.None.GetName(expandedName);
         }
 
         /// <summary>

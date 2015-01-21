@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                 if (_headIndex == TERMINATOR_INDEX)
                 {
-                    // Point m_headIndex to newIndex if the queue was empty
+                    // Point _headIndex to newIndex if the queue was empty
                     Contract.Assert(_tailIndex == TERMINATOR_INDEX, "If head indicates empty, so too should tail.");
                     _headIndex = newIndex;
                 }

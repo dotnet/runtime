@@ -9,7 +9,7 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input);     Backreferences : Actual - "(\\w)\\1"
             "aa"
 

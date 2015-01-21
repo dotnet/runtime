@@ -9,10 +9,10 @@ public class EscapeUnescapeTests
 {
     /*
     Tested Methods:
-    
+
         public static String Escape(String str);     round tripping "#$^*+(){}<>\\|. "
 
-        public static String Unescape(string str); 
+        public static String Unescape(string str);
 
     */
 
@@ -32,7 +32,7 @@ public class EscapeUnescapeTests
             /////////////////////////  START TESTS ////////////////////////////
             ///////////////////////////////////////////////////////////////////
             // [] public static String Escape(String str);     round tripping "#$^*+(){}<>\\|. "
-            //    public static String Unescape(string str); 
+            //    public static String Unescape(string str);
             //-----------------------------------------------------------------
             strLoc = "Loc_498yg";
             iCountTestcases++;

@@ -92,7 +92,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Store the offered message into the queue.
             _messages.Enqueue(messageValue);
 
-            Interlocked.MemoryBarrier(); // ensure the read of m_activeConsumer doesn't move up before the writes in Enqueue
+            Interlocked.MemoryBarrier(); // ensure the read of _activeConsumer doesn't move up before the writes in Enqueue
 
             // Make sure there's an active task available to handle processing this message.  If we find the task
             // is null, we'll try to schedule one using an interlocked operation.  If we find the task is non-null,
@@ -148,7 +148,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
             // See the "fast path" comments in Post
             _messages.Enqueue(messageValue);
-            Interlocked.MemoryBarrier(); // ensure the read of m_activeConsumer doesn't move up before the writes in Enqueue
+            Interlocked.MemoryBarrier(); // ensure the read of _activeConsumer doesn't move up before the writes in Enqueue
             if (_activeConsumer == null)
             {
                 ScheduleConsumerIfNecessary(isReplica: false);
@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // We won the race.  This task is now the consumer.
 
 #if FEATURE_TRACING
-                    var etwLog = DataflowEtwProvider.Log;
+                    DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.TaskLaunchedForMessageHandling(
@@ -217,7 +217,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         messagesProcessed < maxMessagesToProcess &&
                         _messages.TryDequeue(out nextMessage))
                     {
-                        messagesProcessed++; // done before m_action invoked in case it throws exception
+                        messagesProcessed++; // done before _action invoked in case it throws exception
                         _action(nextMessage);
                     }
                 }
@@ -257,7 +257,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                         else
                         {
                             // Mark that we're exiting.
-                            var previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
+                            Task previousConsumer = Interlocked.Exchange(ref _activeConsumer, null);
                             Contract.Assert(previousConsumer != null && previousConsumer.Id == Task.CurrentId,
                                 "The running task should have been denoted as the active task.");
 
@@ -308,7 +308,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="exception">The exception to store.</param>
         private void StoreException(Exception exception)
         {
-            // Ensure that the m_exceptions field has been initialized.
+            // Ensure that the _exceptions field has been initialized.
             // We need to synchronize the initialization and storing of
             // the exception because this method could be accessed concurrently
             // by the producer and consumer, a producer calling Fault and the 
@@ -343,9 +343,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 result = CompletionSource.TrySetResult(default(VoidResult));
             }
             Contract.Assert(result, "Expected completion task to not yet be completed");
-            // We explicitly do not set the m_activeTask to null here, as that would
+            // We explicitly do not set the _activeTask to null here, as that would
             // allow for races where a producer calling OfferMessage could end up
-            // seeing m_activeTask as null and queueing a new consumer task even
+            // seeing _activeTask as null and queueing a new consumer task even
             // though the block has completed.
 
 #if FEATURE_TRACING

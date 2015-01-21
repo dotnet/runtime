@@ -9,12 +9,12 @@ public partial class RegexMatchTests
 {
     /*
     Tested Methods:
-    
+
         public static Match Match(string input, string pattern);     Testing \B special character escape
             "adfadsfSUCCESSadsfadsf", ".*\\B(SUCCESS)\\B.*"
 
         public static Match Match(string input, string pattern);     Testing octal sequence matches
-            "011", "\\060(\\061)?\\061" 
+            "011", "\\060(\\061)?\\061"
 
         public static Match Match(string input, string pattern);     Testing hexadecimal sequence matches
             "012", "(\\x30\\x31\\x32)"
@@ -148,26 +148,6 @@ public partial class RegexMatchTests
                 iCountErrors++;
                 Console.WriteLine("Err_576trffg! Do not found octal sequence match");
             }
-            else
-            {
-                Console.WriteLine("\r\nmatch.Value =  " + match.Value + ", Index = " + match.Index + ", Length = " + match.Length);
-                Console.WriteLine("\r\nmatch.Captures.Count =  " + match.Captures.Count);
-                for (int i = 0; i < match.Captures.Count; i++)
-                {
-                    Console.WriteLine("\tmatch.Captures[" + i + "].Value =  " + match.Captures[i].Value + ", Index = " + match.Captures[i].Index + ", Length = " + match.Captures[i].Length);
-                }
-
-                Console.WriteLine("\r\nmatch.Groups.Count =  " + match.Groups.Count);
-                for (int i = 0; i < match.Groups.Count; i++)
-                {
-                    Console.WriteLine("\r\n\tmatch.Groups[" + i + "].Value =  " + match.Groups[i].Value + ", Index = " + match.Groups[i].Index + ", Length = " + match.Groups[i].Length);
-                    Console.WriteLine("\tmatch.Groups[" + i + "].Captures.Count =  " + match.Groups[i].Captures.Count);
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                    {
-                        Console.WriteLine("\t\tmatch.Groups[" + i + "].Captures[" + j + "].Value =  " + match.Groups[i].Captures[j].Value + ", Index = " + match.Groups[i].Captures[j].Index + ", Length = " + match.Groups[i].Captures[j].Length);
-                    }
-                }
-            }
 
             // [] public static Match Match(string input, string pattern);     Testing hexadecimal sequence matches
             //"012", "(\\x30\\x31\\x32)"
@@ -180,26 +160,6 @@ public partial class RegexMatchTests
             {
                 iCountErrors++;
                 Console.WriteLine("Err_674tgdg! Do not found hexadecimal sequence match");
-            }
-            else
-            {
-                Console.WriteLine("\r\nmatch.Value =  " + match.Value + ", Index = " + match.Index + ", Length = " + match.Length);
-                Console.WriteLine("\r\nmatch.Captures.Count =  " + match.Captures.Count);
-                for (int i = 0; i < match.Captures.Count; i++)
-                {
-                    Console.WriteLine("\tmatch.Captures[" + i + "].Value =  " + match.Captures[i].Value + ", Index = " + match.Captures[i].Index + ", Length = " + match.Captures[i].Length);
-                }
-
-                Console.WriteLine("\r\nmatch.Groups.Count =  " + match.Groups.Count);
-                for (int i = 0; i < match.Groups.Count; i++)
-                {
-                    Console.WriteLine("\r\n\tmatch.Groups[" + i + "].Value =  " + match.Groups[i].Value + ", Index = " + match.Groups[i].Index + ", Length = " + match.Groups[i].Length);
-                    Console.WriteLine("\tmatch.Groups[" + i + "].Captures.Count =  " + match.Groups[i].Captures.Count);
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                    {
-                        Console.WriteLine("\t\tmatch.Groups[" + i + "].Captures[" + j + "].Value =  " + match.Groups[i].Captures[j].Value + ", Index = " + match.Groups[i].Captures[j].Index + ", Length = " + match.Groups[i].Captures[j].Length);
-                    }
-                }
             }
 
             // [] public static Match Match(string input, string pattern);     Testing control character escapes???
@@ -214,26 +174,7 @@ public partial class RegexMatchTests
                 iCountErrors++;
                 Console.WriteLine("Err_4532gvfs! Do not found unicode character match");
             }
-            else
-            {
-                Console.WriteLine("\r\nmatch.Value =  " + match.Value + ", Index = " + match.Index + ", Length = " + match.Length);
-                Console.WriteLine("\r\nmatch.Captures.Count =  " + match.Captures.Count);
-                for (int i = 0; i < match.Captures.Count; i++)
-                {
-                    Console.WriteLine("\tmatch.Captures[" + i + "].Value =  " + match.Captures[i].Value + ", Index = " + match.Captures[i].Index + ", Length = " + match.Captures[i].Length);
-                }
 
-                Console.WriteLine("\r\nmatch.Groups.Count =  " + match.Groups.Count);
-                for (int i = 0; i < match.Groups.Count; i++)
-                {
-                    Console.WriteLine("\r\n\tmatch.Groups[" + i + "].Value =  " + match.Groups[i].Value + ", Index = " + match.Groups[i].Index + ", Length = " + match.Groups[i].Length);
-                    Console.WriteLine("\tmatch.Groups[" + i + "].Captures.Count =  " + match.Groups[i].Captures.Count);
-                    for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                    {
-                        Console.WriteLine("\t\tmatch.Groups[" + i + "].Captures[" + j + "].Value =  " + match.Groups[i].Captures[j].Value + ", Index = " + match.Groups[i].Captures[j].Index + ", Length = " + match.Groups[i].Captures[j].Length);
-                    }
-                }
-            }
             ///////////////////////////////////////////////////////////////////
             /////////////////////////// END TESTS /////////////////////////////
         }

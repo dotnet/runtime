@@ -24,10 +24,11 @@
   </UsingTask>
 
   <Target Name="_RestoreBuildTools"
-    BeforeTargets="Build"
+    BeforeTargets="BuildAllProjects"
     Inputs="$(BuildToolsTargetInputs)"
     Outputs="$(BuildToolsTargetOutputs)"
     >
+    <Message Importance="High" Text="Restoring build tools..." />
 
     <!-- Download latest nuget.exe -->
     <DownloadFile
@@ -40,7 +41,7 @@
       StandardOutputImportance="Low"
       Command="&quot;$(NuGetToolPath)&quot; install &quot; $(SourceDir).nuget\packages.config &quot;  -o &quot; $(PackagesDir) &quot; $(NuGetConfigCommandLine)" />
 
-    <Touch Files="$(BuildToolsInstallSempahore)" AlwaysCreate="true" />
+    <Touch Files="$(BuildToolsInstallSemaphore)" AlwaysCreate="true" />
   </Target>
 
   <ItemGroup>
