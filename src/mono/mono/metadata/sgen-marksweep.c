@@ -157,15 +157,22 @@ static gboolean concurrent_mark;
 
 /* all allocated blocks in the system */
 static SgenPointerQueue allocated_blocks;
+static mono_mutex_t allocated_blocks_lock;
+
+#define LOCK_ALLOCATED_BLOCKS	mono_mutex_lock (&allocated_blocks_lock)
+#define UNLOCK_ALLOCATED_BLOCKS	mono_mutex_unlock (&allocated_blocks_lock)
 
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
-#define FOREACH_BLOCK(bl)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
-#define FOREACH_BLOCK_HAS_REFERENCES(bl,hr)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
-#define END_FOREACH_BLOCK	} }
-#define DELETE_BLOCK_IN_FOREACH()	(allocated_blocks.data [__index] = NULL)
+#define FOREACH_BLOCK(bl)	{ size_t __index; LOCK_ALLOCATED_BLOCKS; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
+#define FOREACH_BLOCK_HAS_REFERENCES(bl,hr)	{ size_t __index; LOCK_ALLOCATED_BLOCKS; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
+#define END_FOREACH_BLOCK	} UNLOCK_ALLOCATED_BLOCKS; }
+
+#define FOREACH_BLOCK_NO_LOCK(bl)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
+#define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped (), "Can't iterate blocks without lock when world is running."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
+#define END_FOREACH_BLOCK_NO_LOCK	} }
 
 static size_t num_major_sections = 0;
 /* one free block list for each block object size */
@@ -368,7 +375,7 @@ consistency_check (void)
 	int i;
 
 	/* check all blocks */
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int num_free = 0;
 		void **free;
@@ -395,7 +402,7 @@ consistency_check (void)
 			for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 				g_assert (block->mark_words [i] == 0);
 		}
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	/* check free blocks */
 	for (i = 0; i < num_block_obj_sizes; ++i) {
@@ -457,7 +464,9 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->next_free = free_blocks [size_index];
 	free_blocks [size_index] = info;
 
+	LOCK_ALLOCATED_BLOCKS;
 	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
+	UNLOCK_ALLOCATED_BLOCKS;
 
 	++num_major_sections;
 	return TRUE;
@@ -468,10 +477,10 @@ obj_is_from_pinned_alloc (char *ptr)
 {
 	MSBlockInfo *block;
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE)
 			return block->pinned;
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 	return FALSE;
 }
 
@@ -640,7 +649,7 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 {
 	MSBlockInfo *block;
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) {
 			int count = MS_BLOCK_FREE / block->obj_size;
 			int i;
@@ -654,7 +663,7 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 			}
 			return !block->pinned;
 		}
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 	return FALSE;
 }
 
@@ -698,7 +707,7 @@ major_is_valid_object (char *object)
 {
 	MSBlockInfo *block;
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int idx;
 		char *obj;
 
@@ -710,7 +719,7 @@ major_is_valid_object (char *object)
 		if (obj != object)
 			return FALSE;
 		return MS_OBJ_ALLOCED (obj, block);
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	return FALSE;
 }
@@ -721,7 +730,7 @@ major_describe_pointer (char *ptr)
 {
 	MSBlockInfo *block;
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int idx;
 		char *obj;
 		gboolean live;
@@ -759,7 +768,7 @@ major_describe_pointer (char *ptr)
 		SGEN_LOG (0, " marked %d)\n", marked ? 1 : 0);
 
 		return vtable;
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	return NULL;
 }
@@ -1137,17 +1146,28 @@ sweep_start (void)
 static mono_native_thread_return_t
 sweep_loop_thread_func (void *dummy)
 {
-	int i;
-	MSBlockInfo *block;
+	int block_index;
 
 	/* traverse all blocks, free and zero unmarked objects */
-	FOREACH_BLOCK (block) {
+	block_index = 0;
+
+	for (;;) {
+		MSBlockInfo *block;
 		int count;
 		gboolean have_live = FALSE;
 		gboolean has_pinned;
 		gboolean have_free = FALSE;
 		int obj_size_index;
 		int nused = 0;
+		int i;
+
+		LOCK_ALLOCATED_BLOCKS;
+		if (block_index >= allocated_blocks.next_slot) {
+			UNLOCK_ALLOCATED_BLOCKS;
+			break;
+		}
+		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
+		UNLOCK_ALLOCATED_BLOCKS;
 
 		obj_size_index = block->obj_size_index;
 
@@ -1201,15 +1221,24 @@ sweep_loop_thread_func (void *dummy)
 			 * Blocks without live objects are removed from the
 			 * block list and freed.
 			 */
-			DELETE_BLOCK_IN_FOREACH ();
+			LOCK_ALLOCATED_BLOCKS;
+			SGEN_ASSERT (0, block_index < allocated_blocks.next_slot, "How did the number of blocks shrink?");
+			SGEN_ASSERT (0, BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]) == block, "How did the block move?");
+			allocated_blocks.data [block_index] = NULL;
+			UNLOCK_ALLOCATED_BLOCKS;
 
 			binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
 			ms_free_block (block);
 
 			--num_major_sections;
 		}
-	} END_FOREACH_BLOCK;
+
+		++block_index;
+	}
+
+	LOCK_ALLOCATED_BLOCKS;
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
+	UNLOCK_ALLOCATED_BLOCKS;
 
 	return NULL;
 }
@@ -1735,7 +1764,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 	if (!concurrent_mark)
 		g_assert (!mod_union);
 
-	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
+	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 #ifndef SGEN_HAVE_OVERLAPPING_CARDS
 		guint8 cards_copy [CARDS_PER_BLOCK];
 #endif
@@ -1865,7 +1894,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			else
 				card_data = card_base + card_offset (obj, block_start);
 		}
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 static void
@@ -2061,6 +2090,8 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fill_failures);
 #endif
 #endif
+
+	mono_mutex_init (&allocated_blocks_lock);
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 	mono_mutex_init (&scanned_objects_list_lock);
