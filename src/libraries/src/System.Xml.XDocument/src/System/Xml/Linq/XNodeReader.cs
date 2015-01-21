@@ -7,7 +7,7 @@ namespace System.Xml.Linq
 {
     internal class XNodeReader : XmlReader, IXmlLineInfo
     {
-        private static readonly char[] s_WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
+        private static readonly char[] s_WhitespaceChars = { ' ', '\t', '\n', '\r' };
 
         // The reader position is encoded by the tuple (source, parent).
         // Lazy text uses (instance, parent element). Attribute value
@@ -17,14 +17,14 @@ namespace System.Xml.Linq
         private object _parent;
         private ReadState _state;
         private XNode _root;
-        private XmlNameTable _nameTable;
-        private bool _omitDuplicateNamespaces;
+        private readonly XmlNameTable _nameTable;
+        private readonly bool _omitDuplicateNamespaces;
 
         internal XNodeReader(XNode node, XmlNameTable nameTable, ReaderOptions options)
         {
             _source = node;
             _root = node;
-            _nameTable = nameTable != null ? nameTable : CreateNameTable();
+            _nameTable = nameTable ?? CreateNameTable();
             _omitDuplicateNamespaces = (options & ReaderOptions.OmitDuplicateNamespaces) != 0 ? true : false;
         }
 
@@ -139,15 +139,9 @@ namespace System.Xml.Linq
                     {
                         return GetFirstNonDuplicateNamespaceAttribute(e.lastAttr.next) != null;
                     }
-                    else
-                    {
-                        return true;
-                    }
+                    return true;
                 }
-                else
-                {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -436,8 +430,6 @@ namespace System.Xml.Linq
                                     return XmlSpace.Preserve;
                                 case "default":
                                     return XmlSpace.Default;
-                                default:
-                                    break;
                             }
                         }
                         e = e.parent as XElement;
@@ -486,10 +478,7 @@ namespace System.Xml.Linq
                             {
                                 return null;
                             }
-                            else
-                            {
-                                return a.Value;
-                            }
+                            return a.Value;
                         }
                     } while (a != e.lastAttr);
                 }
@@ -541,10 +530,7 @@ namespace System.Xml.Linq
                             {
                                 return null;
                             }
-                            else
-                            {
-                                return a.Value;
-                            }
+                            return a.Value;
                         }
                     } while (a != e.lastAttr);
                 }
@@ -631,12 +617,9 @@ namespace System.Xml.Linq
                                 // If it's a duplicate namespace attribute just act as if it doesn't exist
                                 return false;
                             }
-                            else
-                            {
-                                _source = a;
-                                _parent = null;
-                                return true;
-                            }
+                            _source = a;
+                            _parent = null;
+                            return true;
                         }
                     } while (a != e.lastAttr);
                 }
@@ -678,12 +661,9 @@ namespace System.Xml.Linq
                                 // If it's a duplicate namespace attribute just act as if it doesn't exist
                                 return false;
                             }
-                            else
-                            {
-                                _source = a;
-                                _parent = null;
-                                return true;
-                            }
+                            _source = a;
+                            _parent = null;
+                            return true;
                         }
                     } while (a != e.lastAttr);
                 }
@@ -1285,11 +1265,12 @@ namespace System.Xml.Linq
                 IsEndElement = true;
                 return true;
             }
-            if (_parent is XAttribute)
+
+            XAttribute parent = _parent as XAttribute;
+            if (parent != null)
             {
-                XAttribute a = (XAttribute)_parent;
                 _parent = null;
-                return ReadOverAttribute(a, skipContent);
+                return ReadOverAttribute(parent, skipContent);
             }
             return ReadToEnd();
         }
@@ -1312,11 +1293,9 @@ namespace System.Xml.Linq
             {
                 return false;
             }
-            else
-            {
-                // Split the method in two to enable inlining of this piece (Which will work for 95% of cases)
-                return IsDuplicateNamespaceAttributeInner(candidateAttribute);
-            }
+
+            // Split the method in two to enable inlining of this piece (Which will work for 95% of cases)
+            return IsDuplicateNamespaceAttributeInner(candidateAttribute);
         }
 
         bool IsDuplicateNamespaceAttributeInner(XAttribute candidateAttribute)
@@ -1359,12 +1338,10 @@ namespace System.Xml.Linq
                                 // And it's for the same namespace URI as well - so ours is a duplicate
                                 return true;
                             }
-                            else
-                            {
-                                // It's not for the same namespace URI - which means we have to keep ours
-                                //   (no need to continue the search as this one overrides anything above it)
-                                return false;
-                            }
+
+                            // It's not for the same namespace URI - which means we have to keep ours
+                            //   (no need to continue the search as this one overrides anything above it)
+                            return false;
                         }
                         a = a.next;
                     } while (a != element.lastAttr);

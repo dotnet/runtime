@@ -40,10 +40,10 @@ namespace System.Linq
 
     internal class OrderedEnumerable<TElement, TKey> : OrderedEnumerable<TElement>
     {
-        internal OrderedEnumerable<TElement> parent;
-        internal Func<TElement, TKey> keySelector;
-        internal IComparer<TKey> comparer;
-        internal bool descending;
+        internal readonly OrderedEnumerable<TElement> parent;
+        internal readonly Func<TElement, TKey> keySelector;
+        internal readonly IComparer<TKey> comparer;
+        internal readonly bool descending;
 
         internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending)
         {
@@ -116,10 +116,10 @@ namespace System.Linq
 
     internal class EnumerableSorter<TElement, TKey> : EnumerableSorter<TElement>
     {
-        internal Func<TElement, TKey> keySelector;
-        internal IComparer<TKey> comparer;
-        internal bool descending;
-        internal EnumerableSorter<TElement> next;
+        internal readonly Func<TElement, TKey> keySelector;
+        internal readonly IComparer<TKey> comparer;
+        internal readonly bool descending;
+        internal readonly EnumerableSorter<TElement> next;
         internal TKey[] keys;
 
         internal EnumerableSorter(Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, EnumerableSorter<TElement> next)
@@ -151,8 +151,8 @@ namespace System.Linq
 
     struct Buffer<TElement>
     {
-        internal TElement[] items;
-        internal int count;
+        internal readonly TElement[] items;
+        internal readonly int count;
 
         internal Buffer(IEnumerable<TElement> source)
         {
