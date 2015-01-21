@@ -97,10 +97,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
             _targetInformation.Add(target, node);
 
             // Increment the optimization counter if needed
-            Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
+            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             if (node.RemainingMessages > 0) _linksWithRemainingMessages++;
 #if FEATURE_TRACING
-            var etwLog = DataflowEtwProvider.Log;
+            DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockLinking(_owningSource, target);
@@ -126,7 +126,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(target != null, "Target to remove is required.");
 
             // If we are implicitly unlinking and there is nothing to be unlinked implicitly, bail
-            Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
+            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             if (onlyIfReachedMaxMessages && _linksWithRemainingMessages == 0) return;
 
             // Otherwise take the slow path
@@ -143,7 +143,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(target != null, "Target to remove is required.");
 
             // Make sure we've intended to go the slow route
-            Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
+            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             Contract.Assert(!onlyIfReachedMaxMessages || _linksWithRemainingMessages > 0, "We shouldn't have ended on the slow path.");
 
             // If the target is registered...
@@ -161,9 +161,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     // Decrement the optimization counter if needed
                     if (node.RemainingMessages == 0) _linksWithRemainingMessages--;
-                    Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
+                    Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
 #if FEATURE_TRACING
-                    var etwLog = DataflowEtwProvider.Log;
+                    DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.DataflowBlockUnlinking(_owningSource, target);
@@ -182,13 +182,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Clears the target registry entry points while allowing subsequent traversals of the linked list.</summary>
         internal LinkedTargetInfo ClearEntryPoints()
         {
-            // Save m_firstTarget so we can return it
-            var firstTarget = _firstTarget;
+            // Save _firstTarget so we can return it
+            LinkedTargetInfo firstTarget = _firstTarget;
 
             // Clear out the entry points
             _firstTarget = _lastTarget = null;
             _targetInformation.Clear();
-            Contract.Assert(_linksWithRemainingMessages >= 0, "m_linksWithRemainingMessages must be non-negative at any time.");
+            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             _linksWithRemainingMessages = 0;
 
             return firstTarget;
@@ -201,10 +201,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Assert(_owningSource.Completion.IsCompleted, "The owning source must have completed before propagating completion.");
 
             // Cache the owning source's completion task to avoid calling the getter many times
-            var owningSourceCompletion = _owningSource.Completion;
+            Task owningSourceCompletion = _owningSource.Completion;
 
             // Propagate completion to those targets that have requested it
-            for (var node = firstTarget; node != null; node = node.Next)
+            for (LinkedTargetInfo node = firstTarget; node != null; node = node.Next)
             {
                 if (node.PropagateCompletion) Common.PropagateCompletion(owningSourceCompletion, node.Target, Common.AsyncExceptionHandler);
             }
@@ -257,8 +257,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(node != null, "Node to remove is required.");
             Contract.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null before RemoveFromList.");
 
-            var previous = node.Previous;
-            var next = node.Next;
+            LinkedTargetInfo previous = node.Previous;
+            LinkedTargetInfo next = node.Next;
 
             // Remove the node by linking the adjacent nodes
             if (node.Previous != null)
@@ -290,7 +290,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 var targets = new ITargetBlock<T>[Count];
                 int i = 0;
-                for (var node = _firstTarget; node != null; node = node.Next)
+                for (LinkedTargetInfo node = _firstTarget; node != null; node = node.Next)
                 {
                     targets[i++] = node.Target;
                 }

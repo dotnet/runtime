@@ -12,6 +12,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 namespace System.Text.RegularExpressions
 {
@@ -104,7 +105,7 @@ namespace System.Text.RegularExpressions
             {
                 if (IsMetachar(input[i]))
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = StringBuilderCache.Acquire();
                     char ch = input[i];
                     int lastpos;
 
@@ -143,7 +144,7 @@ namespace System.Text.RegularExpressions
                         sb.Append(input, lastpos, i - lastpos);
                     } while (i < input.Length);
 
-                    return sb.ToString();
+                    return StringBuilderCache.GetStringAndRelease(sb);
                 }
             }
 
@@ -159,7 +160,7 @@ namespace System.Text.RegularExpressions
             {
                 if (input[i] == '\\')
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = StringBuilderCache.Acquire();
                     RegexParser p = new RegexParser(CultureInfo.InvariantCulture);
                     int lastpos;
                     p.SetPattern(input);
@@ -178,7 +179,7 @@ namespace System.Text.RegularExpressions
                         sb.Append(input, lastpos, i - lastpos);
                     } while (i < input.Length);
 
-                    return sb.ToString();
+                    return StringBuilderCache.GetStringAndRelease(sb);
                 }
             }
 
@@ -241,8 +242,8 @@ namespace System.Text.RegularExpressions
 
                 int startpos = Textpos();
 
-                // move past all of the normal characters.  We'll stop when we hit some kind of control character, 
-                // or if IgnorePatternWhiteSpace is on, we'll stop when we see some whitespace. 
+                // move past all of the normal characters.  We'll stop when we hit some kind of control character,
+                // or if IgnorePatternWhiteSpace is on, we'll stop when we see some whitespace.
                 if (UseOptionX())
                     while (CharsRight() > 0 && (!IsStopperX(ch = RightChar()) || ch == '{' && !IsTrueQuantifier()))
                         MoveRight();
@@ -618,9 +619,9 @@ namespace System.Text.RegularExpressions
                     {
                         if (ch == '[' && !fTranslatedChar && !firstChar)
                         {
-                            // We thought we were in a range, but we're actually starting a subtraction. 
+                            // We thought we were in a range, but we're actually starting a subtraction.
                             // In that case, we'll add chPrev to our char class, skip the opening [, and
-                            // scan the new character class recursively. 
+                            // scan the new character class recursively.
                             cc.AddChar(chPrev);
                             cc.AddSubtraction(ScanCharClass(caseInsensitive, false));
 
@@ -1174,7 +1175,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Scans $ patterns recognized within replacment patterns
+         * Scans $ patterns recognized within replacement patterns
          */
         internal RegexNode ScanDollar()
         {
@@ -1343,7 +1344,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Octal codes only go up to 255.  Any larger and the behavior that Perl follows
-            // is simply to truncate the high bits. 
+            // is simply to truncate the high bits.
             i &= 0xFF;
 
             return (char)i;
@@ -1684,7 +1685,7 @@ namespace System.Text.RegularExpressions
 
                                     if (ch != '0' && RegexCharClass.IsWordChar(ch))
                                     {
-                                        //if (_ignoreNextParen) 
+                                        //if (_ignoreNextParen)
                                         //    throw MakeException(SR.AlternationCantCapture);
                                         if (ch >= '1' && ch <= '9')
                                             NoteCaptureSlot(ScanDecimal(), pos);
@@ -1946,13 +1947,13 @@ namespace System.Text.RegularExpressions
          * For categorizing ascii characters.
         */
         internal static readonly byte[] _category = new byte[] {
-            // 0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F 
+            // 0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
                0,0,0,0,0,0,0,0,0,X,X,0,X,X,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            //   ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? 
+            //   ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
                X,0,0,Z,S,0,0,0,S,S,Q,Q,0,0,S,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Q,
             // @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _
                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,S,S,0,S,0,
-            // ' a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~ 
+            // ' a b c d e f g h i j k l m n o p q r s t u v w x y z { | } ~
                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Q,S,0,0,0};
 
         /*
@@ -2035,12 +2036,12 @@ namespace System.Text.RegularExpressions
                 {
                     // We do the ToLower character by character for consistency.  With surrogate chars, doing
                     // a ToLower on the entire string could actually change the surrogate pair.  This is more correct
-                    // linguistically, but since Regex doesn't support surrogates, it's more important to be 
-                    // consistent. 
-                    StringBuilder sb = new StringBuilder(str.Length);
+                    // linguistically, but since Regex doesn't support surrogates, it's more important to be
+                    // consistent.
+                    StringBuilder sb = StringBuilderCache.Acquire(str.Length);
                     for (int i = 0; i < str.Length; i++)
                         sb.Append(_culture.TextInfo.ToLower(str[i]));
-                    str = sb.ToString();
+                    str = StringBuilderCache.GetStringAndRelease(sb);
                 }
 
                 node = new RegexNode(RegexNode.Multi, _options, str);
@@ -2288,7 +2289,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Moves the current position to the right. 
+         * Moves the current position to the right.
          */
         internal void MoveRight()
         {

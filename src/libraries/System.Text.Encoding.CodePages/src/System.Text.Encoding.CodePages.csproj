@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{16EE6633-F557-5C9E-9EF3-B5334B044F47}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Text.Encoding.CodePages</RootNamespace>
+    <AssemblyName>System.Text.Encoding.CodePages</AssemblyName>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <PropertyGroup>
+    <ResInputPath>$(MSBuildThisFileDirectory)Resources</ResInputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\SR.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Text\BaseCodePageEncoding.cs" />
+    <Compile Include="System\Text\CodePagesEncodingProvider.cs" />
+    <Compile Include="System\Text\DBCSCodePageEncoding.cs" />
+    <Compile Include="System\Text\DecoderBestFitFallback.cs" />
+    <Compile Include="System\Text\DecoderFallbackBufferHelper.cs" />
+    <Compile Include="System\Text\DecoderNLS.cs" />
+    <Compile Include="System\Text\EncoderBestFitFallback.cs" />
+    <Compile Include="System\Text\EncoderFallbackBufferHelper.cs" />
+    <Compile Include="System\Text\EncoderNLS.cs" />
+    <Compile Include="System\Text\EncodingByteBuffer.cs" />
+    <Compile Include="System\Text\EncodingCharBuffer.cs" />
+    <Compile Include="System\Text\EncodingNLS.cs" />
+    <Compile Include="System\Text\EncodingTable.cs" />
+    <Compile Include="System\Text\EncodingTable.Data.cs" />
+    <Compile Include="System\Text\EUCJPEncoding.cs" />
+    <Compile Include="System\Text\GB18030Encoding.cs" />
+    <Compile Include="System\Text\ISO2022Encoding.cs" />
+    <Compile Include="System\Text\ISCIIEncoding.cs" />
+    <Compile Include="System\Text\SBCSCodePageEncoding.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <Compile Include="Interop\Interop.Windows.cs" />
+    <Compile Include="System\Text\CodePagesEncodingProvider.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+    <Compile Include="System\Text\CodePagesEncodingProvider.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\codepages.nlp">
+      <LogicalName>codepages.nlp</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

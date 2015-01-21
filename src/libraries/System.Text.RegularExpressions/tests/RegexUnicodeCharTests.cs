@@ -53,9 +53,6 @@ public class RegexUnicodeCharTests
             //[\p{L1}\p{Lu}\p{Lt}\p{Lo}\p{Nd}\p{Pc}]
             iCountTestcases++;
 
-
-            Console.WriteLine("MaxUnicodeRange, " + MaxUnicodeRange);
-
             alstValidChars = new List<Char>();
             alstInvalidChars = new List<Char>();
             for (int i = 0; i < MaxUnicodeRange; i++)
@@ -214,7 +211,7 @@ public class RegexUnicodeCharTests
                 }
             }
 
-            //[]\d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.            
+            //[]\d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.
             //[]Build a random string with valid characters and then again invalid
             iCountTestcases++;
 

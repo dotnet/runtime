@@ -18,7 +18,6 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <None Include="packages.config" />
     <Compile Include="Common\HelperExtensionMethods.cs" />
     <Compile Include="axes\AxisOrderValidation.cs" />
     <Compile Include="axes\TestData.cs" />

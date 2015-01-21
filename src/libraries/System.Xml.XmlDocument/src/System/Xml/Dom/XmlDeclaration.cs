@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Xml
 {
@@ -72,7 +73,7 @@ namespace System.Xml
         {
             get
             {
-                StringBuilder strb = new StringBuilder("version=\"");
+                StringBuilder strb = StringBuilderCache.Acquire("version=\"");
                 strb.Append(Version);
                 strb.Append('"');
                 if (Encoding.Length > 0)
@@ -87,7 +88,7 @@ namespace System.Xml
                     strb.Append(Standalone);
                     strb.Append('"');
                 }
-                return strb.ToString();
+                return StringBuilderCache.GetStringAndRelease(strb);
             }
 
             set

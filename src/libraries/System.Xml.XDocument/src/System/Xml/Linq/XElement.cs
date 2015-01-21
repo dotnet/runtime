@@ -34,11 +34,7 @@ namespace System.Xml.Linq
         /// </summary>
         public static IEnumerable<XElement> EmptySequence
         {
-            get
-            {
-                if (s_emptySequence == null) s_emptySequence = new XElement[0];
-                return s_emptySequence;
-            }
+            get { return s_emptySequence ?? (s_emptySequence = new XElement[0]); }
         }
 
         internal XName name;
@@ -239,9 +235,9 @@ namespace System.Xml.Linq
                 if (content == null) return string.Empty;
                 string s = content as string;
                 if (s != null) return s;
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = StringBuilderCache.Acquire();
                 AppendText(sb);
-                return sb.ToString();
+                return StringBuilderCache.GetStringAndRelease(sb);
             }
             set
             {
@@ -1710,7 +1706,7 @@ namespace System.Xml.Linq
             if ((o & LoadOptions.SetBaseUri) != 0)
             {
                 string baseUri = r.BaseURI;
-                if (baseUri != null && baseUri.Length != 0)
+                if (!string.IsNullOrEmpty(baseUri))
                 {
                     SetBaseUri(baseUri);
                 }

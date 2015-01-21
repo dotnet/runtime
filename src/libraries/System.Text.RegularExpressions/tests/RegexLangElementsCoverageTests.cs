@@ -16,9 +16,6 @@ public class RegexLangElementsCoverageTests
         String strLoc = "Loc_000oo";
         int iCountErrors = 0;
         int iCountTestcases = 0;
-        long startWorkingSet = 0, endWorkingSet;
-        double percentDifference;
-        double maxAcceptablePercentDifference = .3;
 
         try
         {
@@ -37,12 +34,6 @@ public class RegexLangElementsCoverageTests
                         Console.WriteLine("Err_79872asnko! Test {0} FAILED Pattern={1}, Input={2}\n", i, s_regexTests[i].Pattern, s_regexTests[i].Input);
                         iCountErrors++;
                     }
-
-                    if (i == 0)
-                    {
-                        startWorkingSet = GC.GetTotalMemory(true);
-                        Console.WriteLine("GC.GetTotalMemory={0}", startWorkingSet);
-                    }
                 }
                 catch (Exception e)
                 {
@@ -52,20 +43,6 @@ public class RegexLangElementsCoverageTests
                 }
             }
 
-            endWorkingSet = GC.GetTotalMemory(true);
-            Console.WriteLine("GC.GetTotalMemory={0}", endWorkingSet);//This should be relatively close to the previous value printed out.
-            //On my machine in Whidbey the difference was of about 3%
-            //In Everett the difference was over 100%
-
-            percentDifference = ((double)Math.Abs(startWorkingSet - endWorkingSet)) / startWorkingSet;
-
-            if (maxAcceptablePercentDifference < percentDifference)
-            {
-                Console.WriteLine("Err_004888anied Total memory increased significantly there may be a memory leak");
-                Console.WriteLine("Percent Difference={0}, Max Acceptable Percent Difference={1}, Start Working Set={2}, End Working Set={3}",
-                    percentDifference, maxAcceptablePercentDifference, startWorkingSet, endWorkingSet);
-                iCountErrors++;
-            }
             ///////////////////////////////////////////////////////////////////
             /////////////////////////// END TESTS /////////////////////////////
         }
@@ -274,7 +251,7 @@ public class RegexLangElementsCoverageTests
        new RegexTestCase(@"cat(?(?afdcat)dog)", typeof(ArgumentException)),
 
         /*********************************************************
-        Use IgnorePatternWhitespace 
+        Use IgnorePatternWhitespace
         *********************************************************/
        new RegexTestCase(@"(cat) #cat
                             \s+ #followed by 1 or more whitespace
@@ -289,7 +266,7 @@ public class RegexLangElementsCoverageTests
            RegexOptions.IgnorePatternWhitespace, typeof(ArgumentException)),
 
         /*********************************************************
-        Without IgnorePatternWhitespace 
+        Without IgnorePatternWhitespace
         *********************************************************/
        new RegexTestCase(@"(cat) (?#cat)    \s+ (?#followed by 1 or more whitespace", typeof(ArgumentException)),
 
@@ -510,18 +487,18 @@ public class RegexLangElementsCoverageTests
 
 
         /*********************************************************
-Use special unicode characters        
+Use special unicode characters
         *********************************************************/
         /*        new RegexTest(@"AE", "\u00C4", new string[] {"Hello World", "Hello", "World"}, GERMAN_PHONEBOOK),
                 new RegexTest(@"oe", "\u00F6", new string[] {"Hello World", "Hello", "World"}, GERMAN_PHONEBOOK),
 
                 new RegexTest("\u00D1", "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
-                new RegexTest("\u00D1", "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),        
+                new RegexTest("\u00D1", "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),
                 new RegexTest("\u00D1", RegexOptions.IgnoreCase, "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
-                new RegexTest("\u00D1", RegexOptions.IgnoreCase, "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),    
+                new RegexTest("\u00D1", RegexOptions.IgnoreCase, "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),
 
                 new RegexTest("\u00F1", RegexOptions.IgnoreCase, "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
-                new RegexTest("\u00F1", RegexOptions.IgnoreCase, "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),        
+                new RegexTest("\u00F1", RegexOptions.IgnoreCase, "\u004E\u0303", new string[] {"Hello World", "Hello", "World"}, INVARIANT),
                 new RegexTest("\u00F1", "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
                 new RegexTest("\u00F1", "\u006E\u0303", new string[] {"Hello World", "Hello", "World"}, ENGLISH_US),
         */

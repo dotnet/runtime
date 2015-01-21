@@ -5,7 +5,7 @@
 // It is built into a parsed tree for a regular expression.
 
 // Implementation notes:
-// 
+//
 // Since the node tree is a temporary data structure only used
 // during compilation of the regexp to integer codes, it's
 // designed for clarity and convenience rather than
@@ -38,7 +38,6 @@
 // _operands, an an object (either a string or a set)
 // is stored in _data
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -47,70 +46,59 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexNode
     {
-        /*
-         * RegexNode types
-         */
+        // RegexNode types
 
-        // the following are leaves, and correspond to primitive operations
+        // The following are leaves, and correspond to primitive operations
 
-        //    static final int Onerep     = RegexCode.Onerep;     // c,n      a {n}
-        //    static final int Notonerep  = RegexCode.Notonerep;  // c,n      .{n}
-        //    static final int Setrep     = RegexCode.Setrep;     // set,n    \d {n}
+        internal const int Oneloop = RegexCode.Oneloop;                 // c,n      a*
+        internal const int Notoneloop = RegexCode.Notoneloop;           // c,n      .*
+        internal const int Setloop = RegexCode.Setloop;                 // set,n    \d*
 
-        internal const int Oneloop = RegexCode.Oneloop;    // c,n      a*
-        internal const int Notoneloop = RegexCode.Notoneloop; // c,n      .*
-        internal const int Setloop = RegexCode.Setloop;    // set,n    \d*
+        internal const int Onelazy = RegexCode.Onelazy;                 // c,n      a*?
+        internal const int Notonelazy = RegexCode.Notonelazy;           // c,n      .*?
+        internal const int Setlazy = RegexCode.Setlazy;                 // set,n    \d*?
 
-        internal const int Onelazy = RegexCode.Onelazy;    // c,n      a*?
-        internal const int Notonelazy = RegexCode.Notonelazy; // c,n      .*?
-        internal const int Setlazy = RegexCode.Setlazy;    // set,n    \d*?
+        internal const int One = RegexCode.One;                         // char     a
+        internal const int Notone = RegexCode.Notone;                   // char     . [^a]
+        internal const int Set = RegexCode.Set;                         // set      [a-z] \w \s \d
 
-        internal const int One = RegexCode.One;        // char     a
-        internal const int Notone = RegexCode.Notone;     // char     . [^a]
-        internal const int Set = RegexCode.Set;        // set      [a-z] \w \s \d
+        internal const int Multi = RegexCode.Multi;                     // string   abcdef
+        internal const int Ref = RegexCode.Ref;                         // index    \1
 
-        internal const int Multi = RegexCode.Multi;      // string   abcdef
-        internal const int Ref = RegexCode.Ref;        // index    \1
-
-        internal const int Bol = RegexCode.Bol;        //          ^
-        internal const int Eol = RegexCode.Eol;        //          $
-        internal const int Boundary = RegexCode.Boundary;   //          \b
-        internal const int Nonboundary = RegexCode.Nonboundary;//          \B
-        internal const int ECMABoundary = RegexCode.ECMABoundary;    // \b
+        internal const int Bol = RegexCode.Bol;                         //          ^
+        internal const int Eol = RegexCode.Eol;                         //          $
+        internal const int Boundary = RegexCode.Boundary;               //          \b
+        internal const int Nonboundary = RegexCode.Nonboundary;         //          \B
+        internal const int ECMABoundary = RegexCode.ECMABoundary;       // \b
         internal const int NonECMABoundary = RegexCode.NonECMABoundary; // \B
-        internal const int Beginning = RegexCode.Beginning;  //          \A
-        internal const int Start = RegexCode.Start;      //          \G
-        internal const int EndZ = RegexCode.EndZ;       //          \Z
-        internal const int End = RegexCode.End;        //          \z
+        internal const int Beginning = RegexCode.Beginning;             //          \A
+        internal const int Start = RegexCode.Start;                     //          \G
+        internal const int EndZ = RegexCode.EndZ;                       //          \Z
+        internal const int End = RegexCode.End;                         //          \z
 
-        // (note: End               = 21;)
-
-        // interior nodes do not correpond to primitive operations, but
+        // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
 
-        // concat and alternate take n children, and can run forward or backwards
+        // Concat and alternate take n children, and can run forward or backwards
 
-        internal const int Nothing = 22;                   //          []
-        internal const int Empty = 23;                   //          ()
+        internal const int Nothing = 22;                                //          []
+        internal const int Empty = 23;                                  //          ()
 
-        internal const int Alternate = 24;                   //          a|b
-        internal const int Concatenate = 25;                   //          ab
+        internal const int Alternate = 24;                              //          a|b
+        internal const int Concatenate = 25;                            //          ab
 
-        internal const int Loop = 26;                   // m,x      * + ? {,}
-        internal const int Lazyloop = 27;                   // m,x      *? +? ?? {,}?
+        internal const int Loop = 26;                                   // m,x      * + ? {,}
+        internal const int Lazyloop = 27;                               // m,x      *? +? ?? {,}?
 
-        internal const int Capture = 28;                   // n        ()
-        internal const int Group = 29;                   //          (?:)
-        internal const int Require = 30;                   //          (?=) (?<=)
-        internal const int Prevent = 31;                   //          (?!) (?<!)
-        internal const int Greedy = 32;                   //          (?>) (?<)
-        internal const int Testref = 33;                   //          (?(n) | )
-        internal const int Testgroup = 34;                   //          (?(...) | )
+        internal const int Capture = 28;                                // n        ()
+        internal const int Group = 29;                                  //          (?:)
+        internal const int Require = 30;                                //          (?=) (?<=)
+        internal const int Prevent = 31;                                //          (?!) (?<!)
+        internal const int Greedy = 32;                                 //          (?>) (?<)
+        internal const int Testref = 33;                                //          (?(n) | )
+        internal const int Testgroup = 34;                              //          (?(...) | )
 
-        /*
-         * RegexNode data members
-         * 
-         */
+        // RegexNode data members
 
         internal int _type;
 
@@ -120,7 +108,7 @@ namespace System.Text.RegularExpressions
         internal char _ch;
         internal int _m;
         internal int _n;
-        internal RegexOptions _options;
+        internal readonly RegexOptions _options;
 
         internal RegexNode _next;
 
@@ -174,8 +162,9 @@ namespace System.Text.RegularExpressions
             return this;
         }
 
-
-        // Pass type as OneLazy or OneLoop
+        /// <summary>
+        /// Pass type as OneLazy or OneLoop
+        /// </summary>
         internal void MakeRep(int type, int min, int max)
         {
             _type += (type - One);
@@ -183,11 +172,9 @@ namespace System.Text.RegularExpressions
             _n = max;
         }
 
-        /*
-         * Reduce
-         *
-         * Removes redundant nodes from the subtree, and returns a reduced subtree.
-         */
+        /// <summary>
+        /// Removes redundant nodes from the subtree, and returns a reduced subtree.
+        /// </summary>
         internal RegexNode Reduce()
         {
             RegexNode n;
@@ -224,16 +211,11 @@ namespace System.Text.RegularExpressions
             return n;
         }
 
-
-        /*
-         * StripEnation:
-         *
-         * Simple optimization. If a concatenation or alternation has only
-         * one child strip out the intermediate node. If it has zero children,
-         * turn it into an empty.
-         * 
-         */
-
+        /// <summary>
+        /// Simple optimization. If a concatenation or alternation has only
+        /// one child strip out the intermediate node. If it has zero children,
+        /// turn it into an empty.
+        /// </summary>
         internal RegexNode StripEnation(int emptyType)
         {
             switch (ChildCount())
@@ -247,13 +229,10 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /*
-         * ReduceGroup:
-         *
-         * Simple optimization. Once parsed into a tree, noncapturing groups
-         * serve no function, so strip them out.
-         */
-
+        /// <summary>
+        /// Simple optimization. Once parsed into a tree, noncapturing groups
+        /// serve no function, so strip them out.
+        /// </summary>
         internal RegexNode ReduceGroup()
         {
             RegexNode u;
@@ -264,13 +243,10 @@ namespace System.Text.RegularExpressions
             return u;
         }
 
-        /*
-         * ReduceRep:
-         *
-         * Nested repeaters just get multiplied with each other if they're not
-         * too lumpy
-         */
-
+        /// <summary>
+        /// Nested repeaters just get multiplied with each other if they're not
+        /// too lumpy
+        /// </summary>
         internal RegexNode ReduceRep()
         {
             RegexNode u;
@@ -316,13 +292,10 @@ namespace System.Text.RegularExpressions
             return min == Int32.MaxValue ? new RegexNode(Nothing, _options) : u;
         }
 
-        /*
-         * ReduceSet:
-         *
-         * Simple optimization. If a set is a singleton, an inverse singleton,
-         * or empty, it's transformed accordingly.
-         */
-
+        /// <summary>
+        /// Simple optimization. If a set is a singleton, an inverse singleton,
+        /// or empty, it's transformed accordingly.
+        /// </summary>
         internal RegexNode ReduceSet()
         {
             // Extract empty-set, one and not-one case as special
@@ -348,17 +321,14 @@ namespace System.Text.RegularExpressions
             return this;
         }
 
-        /*
-         * ReduceAlternation:
-         *
-         * Basic optimization. Single-letter alternations can be replaced
-         * by faster set specifications, and nested alternations with no
-         * intervening operators can be flattened:
-         *
-         * a|b|c|def|g|h -> [a-c]|def|[gh]
-         * apple|(?:orange|pear)|grape -> apple|orange|pear|grape
-         */
-
+        /// <summary>
+        /// Basic optimization. Single-letter alternations can be replaced
+        /// by faster set specifications, and nested alternations with no
+        /// intervening operators can be flattened:
+        ///
+        /// a|b|c|def|g|h -> [a-c]|def|[gh]
+        /// apple|(?:orange|pear)|grape -> apple|orange|pear|grape
+        /// </summary>
         internal RegexNode ReduceAlternation()
         {
             // Combine adjacent sets/chars
@@ -469,14 +439,11 @@ namespace System.Text.RegularExpressions
             return StripEnation(RegexNode.Nothing);
         }
 
-        /*
-         * ReduceConcatenation:
-         *
-         * Basic optimization. Adjacent strings can be concatenated.
-         *
-         * (?:abc)(?:def) -> abcdef
-         */
-
+        /// <summary>
+        /// Basic optimization. Adjacent strings can be concatenated.
+        ///
+        /// (?:abc)(?:def) -> abcdef
+        /// </summary>
         internal RegexNode ReduceConcatenation()
         {
             // Eliminate empties and concat adjacent strings/chars

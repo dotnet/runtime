@@ -70,7 +70,7 @@ namespace MS.Internal.Xml.XPath
             }
             if (NameTest)
             {
-                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ':' + Name : Name);
+                w.WriteAttributeString("name", Prefix.Length != 0 ? Prefix + ":" + Name : Name);
             }
             if (TypeTest != XPathNodeType.Element)
             {

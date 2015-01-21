@@ -588,9 +588,10 @@ namespace System.Xml.Linq
             }
             else if (s.Length > 0)
             {
-                if (content is string)
+                string stringContent = content as string;
+                if (stringContent != null)
                 {
-                    content = (string)content + s;
+                    content = stringContent + s;
                 }
                 else
                 {
@@ -729,7 +730,7 @@ namespace System.Xml.Linq
         internal void ConvertTextToNode()
         {
             string s = content as string;
-            if (s != null && s.Length > 0)
+            if (!string.IsNullOrEmpty(s))
             {
                 XText t = new XText(s);
                 t.parent = this;
@@ -771,9 +772,10 @@ namespace System.Xml.Linq
             XContainer c = this;
             while (true)
             {
-                if (c != null && c.content is XNode)
+                XNode content = c != null ? c.content as XNode : null;
+                if (content != null)
                 {
-                    n = ((XNode)c.content).next;
+                    n = content.next;
                 }
                 else
                 {
@@ -803,12 +805,12 @@ namespace System.Xml.Linq
 
         internal static string GetStringValue(object value)
         {
-            string s;
-            if (value is string)
+            string s = value as string;
+            if (s != null)
             {
-                s = (string)value;
+                return s;
             }
-            else if (value is double)
+            if (value is double)
             {
                 s = XmlConvert.ToString((double)value);
             }
@@ -1087,15 +1089,16 @@ namespace System.Xml.Linq
         {
             if (content != null)
             {
-                if (content is string)
+                string stringContent = content as string;
+                if (stringContent != null)
                 {
                     if (this is XDocument)
                     {
-                        writer.WriteWhitespace((string)content);
+                        writer.WriteWhitespace(stringContent);
                     }
                     else
                     {
-                        writer.WriteString((string)content);
+                        writer.WriteString(stringContent);
                     }
                 }
                 else

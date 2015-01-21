@@ -6,11 +6,10 @@
 // the regex for optimization purposes.
 
 // Implementation notes:
-// 
+//
 // This step is as simple as walking the tree and emitting
 // sequences of codes.
 
-using System.Collections;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -22,7 +21,7 @@ namespace System.Text.RegularExpressions
         private RegexFC[] _fcStack;
         private int _fcDepth;
         private bool _skipAllChildren;      // don't process any more children at the current level
-        private bool _skipchild;            // don't process the current child. 
+        private bool _skipchild;            // don't process the current child.
         private bool _failed = false;
 
         private const int BeforeChild = 64;
@@ -334,7 +333,7 @@ namespace System.Text.RegularExpressions
                     if (!_skipchild)
                     {
                         curNode = (RegexNode)curNode._children[curChild];
-                        // this stack is how we get a depth first walk of the tree. 
+                        // this stack is how we get a depth first walk of the tree.
                         PushInt(curChild);
                         curChild = 0;
                     }
@@ -347,7 +346,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // This is an interior node where we've finished analyzing all the children, or
-                // the end of a leaf node. 
+                // the end of a leaf node.
                 _skipAllChildren = false;
 
                 if (IntIsEmpty())

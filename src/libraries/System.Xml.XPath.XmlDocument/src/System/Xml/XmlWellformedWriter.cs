@@ -432,7 +432,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
+                if (string.IsNullOrEmpty(localName))
                 {
                     throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
@@ -459,7 +459,7 @@ namespace System.Xml
                     {
                         ns = LookupNamespace(prefix);
                     }
-                    if (ns == null || (ns != null && ns.Length == 0))
+                    if (string.IsNullOrEmpty(ns))
                     {
                         throw new ArgumentException(SR.Xml_PrefixForEmptyNs);
                     }
@@ -648,7 +648,7 @@ namespace System.Xml
                 }
                 if (namespaceName == null)
                 {
-                    if (prefix != null && prefix.Length > 0)
+                    if (!string.IsNullOrEmpty(prefix))
                     {
                         namespaceName = LookupNamespace(prefix);
                     }
@@ -1351,7 +1351,7 @@ namespace System.Xml
         {
             try
             {
-                if (localName == null || localName.Length == 0)
+                if (string.IsNullOrEmpty(localName))
                 {
                     throw new ArgumentException(SR.Xml_EmptyLocalName);
                 }
@@ -1359,7 +1359,7 @@ namespace System.Xml
 
                 AdvanceState(Token.Text);
                 string prefix = String.Empty;
-                if (ns != null && ns.Length != 0)
+                if (!string.IsNullOrEmpty(ns))
                 {
                     prefix = LookupPrefix(ns);
                     if (prefix == null)
@@ -2118,7 +2118,7 @@ namespace System.Xml
 #endif
         private unsafe void CheckNCName(string ncname)
         {
-            Debug.Assert(ncname != null && ncname.Length > 0);
+            Debug.Assert(!string.IsNullOrEmpty(ncname));
 
             int i;
             int endPos = ncname.Length;
@@ -2179,7 +2179,7 @@ namespace System.Xml
                 case State.Start:
                     if (_conformanceLevel == ConformanceLevel.Document)
                     {
-                        throw new InvalidOperationException(wrongTokenMessage + ' ' + SR.Xml_ConformanceLevelFragment);
+                        throw new InvalidOperationException(wrongTokenMessage + " " + SR.Xml_ConformanceLevelFragment);
                     }
                     break;
             }

@@ -67,12 +67,12 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(TestHardeningTarget(new BufferBlock<ThrowOn>(), ThrowOn.ConsumeMessage, greedy: true));
             Assert.True(TestHardeningTarget(new BroadcastBlock<ThrowOn>(x => x), ThrowOn.ConsumeMessage, greedy: true));
             Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { }), ThrowOn.ConsumeMessage, greedy: true));
-            Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { return Task.Factory.StartNew(() => { }); }), ThrowOn.ConsumeMessage, greedy: true));
+            Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { return Task.Run(() => { }); }), ThrowOn.ConsumeMessage, greedy: true));
 
             // ConsumeMessage (non-greedy): Batch, Join, TargetCore sync (~Action), TargetCore async (~Action), bounded Buffer
             var nonGreedyGroupingOptions = new GroupingDataflowBlockOptions { Greedy = false }; // Sequential, non-greedy
             var nonGreedyExecutionOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1 }; // Sequential, non-greedy
-            Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { return Task.Factory.StartNew(() => { Task.Delay(1000).Wait(); }); }, nonGreedyExecutionOptions), ThrowOn.ConsumeMessage, greedy: false));
+            Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { return Task.Run(() => { Task.Delay(1000).Wait(); }); }, nonGreedyExecutionOptions), ThrowOn.ConsumeMessage, greedy: false));
             Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { Task.Delay(1000).Wait(); }, nonGreedyExecutionOptions), ThrowOn.ConsumeMessage, greedy: false));
             Assert.True(TestHardeningTarget(new BufferBlock<ThrowOn>(new DataflowBlockOptions { BoundedCapacity = BUFFER_BOUNDED_CAPACITY_10 }), ThrowOn.ConsumeMessage, greedy: false));
 
@@ -93,9 +93,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => new ThrowerEnumerable(ThrowOn.GetEnumerator)), "GetEnumerator"));
             Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => new ThrowerEnumerable(ThrowOn.MoveNext)), "MoveNext"));
             Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => new ThrowerEnumerable(ThrowOn.Current)), "Current"));
-            Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => Task.Factory.StartNew(() => (IEnumerable<int>)new ThrowerEnumerable(ThrowOn.GetEnumerator))), "GetEnumerator"));
-            Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => Task.Factory.StartNew(() => (IEnumerable<int>)new ThrowerEnumerable(ThrowOn.MoveNext))), "MoveNext"));
-            Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => Task.Factory.StartNew(() => (IEnumerable<int>)new ThrowerEnumerable(ThrowOn.Current))), "Current"));
+            Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => Task.Run(() => (IEnumerable<int>)new ThrowerEnumerable(ThrowOn.GetEnumerator))), "GetEnumerator"));
+            Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => Task.Run(() => (IEnumerable<int>)new ThrowerEnumerable(ThrowOn.MoveNext))), "MoveNext"));
+            Assert.True(TestHardeningTransformMany(new TransformManyBlock<int, int>(x => Task.Run(() => (IEnumerable<int>)new ThrowerEnumerable(ThrowOn.Current))), "Current"));
 
             // Extensions: SendAsync, Receive (Sync), Receive (Async), ReceiveAsync (Sync), ReceiveAsync (Async)
             Assert.True(TestHardeningExtensionsReceive(HardeningScenario.Async));
@@ -224,7 +224,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return passed;
         }
 
-#if !PRENET45
         // Test to make sure we appropriately store data into exceptions for debugging purposes
         [Fact]
         [OuterLoop]
@@ -323,7 +322,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.True(localPassed, string.Format("Handle faulty Exception.Data property: {0}", localPassed ? "Passed" : "FAILED"));
             }
         }
-#endif
+
         private class ThrowFromToString
         {
             public override string ToString() { throw new InvalidOperationException(); }
@@ -413,6 +412,25 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
 
             Assert.True(passed, string.Format("{0}", passed ? "Passed" : "FAILED"));
+        }
+
+        private class ControllableTaskScheduler : TaskScheduler
+        {
+            protected override IEnumerable<Task> GetScheduledTasks() { return null; }
+
+            protected override void QueueTask(Task task)
+            {
+                if (FailQueueing) throw new InvalidOperationException("FailQueueing == true");
+                else ThreadPool.QueueUserWorkItem(delegate { TryExecuteTask(task); });
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+            {
+                if (FailQueueing) throw new InvalidOperationException("FailQueueing == true");
+                else return TryExecuteTask(task);
+            }
+
+            public bool FailQueueing { get; set; }
         }
 
         // Tests how a propagator block handles misbehaving targets.
@@ -748,7 +766,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     // In this scenario the source must not have messages prior to the receive attempt.
                     // Therefore delay the post.
                     message = ThrowOn.ConsumeMessage;
-                    Task.Factory.StartNew(() => { Task.Delay(5).Wait(); source.Post(message); });
+                    Task.Run(() => { Task.Delay(5).Wait(); source.Post(message); });
                     break;
             }
 
@@ -795,7 +813,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     // In this scenario the source must not have messages prior to the receive attempt.
                     // Therefore delay the post.
                     message = ThrowOn.ConsumeMessage;
-                    Task.Factory.StartNew(() => { Task.Delay(5).Wait(); source.Post(message); });
+                    Task.Run(() => { Task.Delay(5).Wait(); source.Post(message); });
                     break;
             }
 

@@ -11,13 +11,13 @@ public class SplitMatchIsMatchTests
         Class: Regex
         Tested Methods:
 
-            public static string[] Split(string input, string pattern); 
+            public static string[] Split(string input, string pattern);
                 very simple
-    
-            public static bool IsMatch(string input, string pattern, string options); 
+
+            public static bool IsMatch(string input, string pattern, string options);
                 "m" option with 5 patterns
 
-            public static bool IsMatch(string input, string pattern); 
+            public static bool IsMatch(string input, string pattern);
                 "abc", "^b"
 
             public static Match Match(string input, string pattern);     ???
@@ -111,7 +111,7 @@ public class SplitMatchIsMatchTests
             ///////////////////////////////////////////////////////////////////
             try
             {
-                // []     public static string[] Split(string input, string pattern); 
+                // []     public static string[] Split(string input, string pattern);
                 //    very simple
                 //-----------------------------------------------------------------
                 strLoc = "Loc_498yg";
@@ -134,7 +134,7 @@ public class SplitMatchIsMatchTests
 
             try
             {
-                // [] public static bool IsMatch(string input, string pattern, string options); 
+                // [] public static bool IsMatch(string input, string pattern, string options);
                 //"m" option with 5 patterns
                 //-----------------------------------------------------------------
                 strLoc = "Loc_298vy";
@@ -176,16 +176,6 @@ public class SplitMatchIsMatchTests
                             iCountErrors++;
                             Console.WriteLine("Err_3976dffd! unexpected return result");
                         }
-
-                        for (int i = 0; i < match.Groups.Count; i++)
-                        {
-                            Console.WriteLine("\r\n    match.Groups[" + i + "].Value =  " + match.Groups[i].Value + ", Index = " + match.Groups[i].Index + ", Length = " + match.Groups[i].Length);
-                            Console.WriteLine("    match.Groups[" + i + "].Captures.Count =  " + match.Groups[i].Captures.Count);
-                            for (int j = 0; j < match.Groups[i].Captures.Count; j++)
-                            {
-                                Console.WriteLine("        match.Groups[" + i + "].Captures[" + j + "].Value =  " + match.Groups[i].Captures[j].Value + ", Index = " + match.Groups[i].Captures[j].Index + ", Length = " + match.Groups[i].Captures[j].Length);
-                            }
-                        }
                     }
                 }
                 //-----------------------------------------------------------------
@@ -197,7 +187,7 @@ public class SplitMatchIsMatchTests
 
             try
             {
-                // [] public static bool IsMatch(string input, string pattern); 
+                // [] public static bool IsMatch(string input, string pattern);
                 //"abc", "^b"
                 //-----------------------------------------------------------------
                 strLoc = "Loc_75rfds";

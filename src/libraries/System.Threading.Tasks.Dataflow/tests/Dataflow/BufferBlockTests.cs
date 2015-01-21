@@ -218,7 +218,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
 
-                    var p = Task.Factory.StartNew(() =>
+                    var p = Task.Run(() =>
                     {
                         Assert.True(b.Count == 0, "Nothing should be in the buffer yet");
                         for (int i = 0; i < ITERS; i++)
@@ -231,7 +231,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                         }
                     });
 
-                    var c = Task.Factory.StartNew(() =>
+                    var c = Task.Run(() =>
                     {
                         for (int i = 0; i < ITERS; i++)
                         {
@@ -353,7 +353,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     Enumerable.Repeat(-1, 1000)
                         .Select(_ => GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()));
             var timeoutTask = Task.Delay(100);
-            var completedTask = await Task.WhenAny(multipleConcurrentTestsTask, timeoutTask);
+            var completedTask = await Task.WhenAny(multipleConcurrentTestsTask, timeoutTask).ConfigureAwait(false);
 
             Assert.True(completedTask != timeoutTask);
         }
