@@ -37,7 +37,7 @@ namespace System.Xml
         public string Encoding
         {
             get { return _encoding; }
-            set { _encoding = ((value == null) ? String.Empty : value); }
+            set { _encoding = value ?? String.Empty; }
         }
 
         // Specifies the value of the standalone attribute.

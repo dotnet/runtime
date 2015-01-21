@@ -36,16 +36,8 @@ namespace System.Xml
         {
             get
             {
-                if (_data != null)
-                {
-                    return _data;
-                }
-                else
-                {
-                    return String.Empty;
-                }
+                return _data ?? String.Empty;
             }
-
             set
             {
                 XmlNode parent = ParentNode;
@@ -66,11 +58,7 @@ namespace System.Xml
         {
             get
             {
-                if (_data != null)
-                {
-                    return _data.Length;
-                }
-                return 0;
+                return _data != null ? _data.Length : 0;
             }
         }
 

@@ -23,9 +23,7 @@ namespace System.Xml
         {
             get
             {
-                if (_target != null)
-                    return _target;
-                return String.Empty;
+                return _target ?? string.Empty;
             }
         }
 
