@@ -91,7 +91,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 //We will add a random file to these drives and see if that changes anythig - should not at all!
                 if ((long)win32Values[drives[i].Name] != -1)
                 {
-                    String tempFileName = "Laks_";
+                    String tempFileName = "TotalFreeSpaceTests_";
                     int fileCount = -1;
                     while (fileCount++ < 1000 && File.Exists(drives[i].Name + tempFileName + fileCount)) ;
                     if (fileCount >= 1000)
