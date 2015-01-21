@@ -30,7 +30,6 @@ namespace System.Xml
     internal class XmlEntityReference : XmlLinkedNode
     {
         private readonly string _name;
-        private XmlLinkedNode _lastChild;
 
         protected internal XmlEntityReference(string name, XmlDocument doc) : base(doc)
         {
@@ -119,14 +118,7 @@ namespace System.Xml
             this.SetParent(node);
         }
 
-        internal override XmlLinkedNode LastNode
-        {
-            get
-            {
-                return _lastChild;
-            }
-            set { _lastChild = value; }
-        }
+        internal override XmlLinkedNode LastNode { get; set; }
 
         internal override bool IsValidChildType(XmlNodeType type)
         {
