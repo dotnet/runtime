@@ -5,7 +5,7 @@ namespace System.Xml
 {
     internal partial class XmlTextWriterBase64Encoder : Base64Encoder
     {
-        readonly XmlTextEncoder xmlTextEncoder;
+        private readonly XmlTextEncoder xmlTextEncoder;
 
         internal XmlTextWriterBase64Encoder(XmlTextEncoder xmlTextEncoder)
         {
