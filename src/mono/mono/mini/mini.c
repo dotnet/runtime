@@ -6689,11 +6689,13 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 #endif
 
 #if defined(HAVE_SIG_INFO)
+#if !defined(HOST_WIN32)
 	fault_addr = info->si_addr;
 	if (mono_aot_is_pagefault (info->si_addr)) {
 		mono_aot_handle_pagefault (info->si_addr);
 		return;
 	}
+#endif
 
 	/* The thread might no be registered with the runtime */
 	if (!mono_domain_get () || !jit_tls) {
