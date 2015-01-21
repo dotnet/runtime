@@ -176,7 +176,7 @@ static size_t num_empty_blocks = 0;
 
 static size_t num_major_sections = 0;
 /* one free block list for each block object size */
-static MSBlockInfo **free_block_lists [MS_BLOCK_TYPE_MAX];
+static MSBlockInfo * volatile *free_block_lists [MS_BLOCK_TYPE_MAX];
 
 static guint64 stat_major_blocks_alloced = 0;
 static guint64 stat_major_blocks_freed = 0;
@@ -415,13 +415,22 @@ consistency_check (void)
 }
 #endif
 
+static void
+add_free_block (MSBlockInfo * volatile *free_blocks, int size_index, MSBlockInfo *block)
+{
+	MSBlockInfo *old;
+	do {
+		block->next_free = old = free_blocks [size_index];
+	} while (SGEN_CAS_PTR ((gpointer)&free_blocks [size_index], block, old) != old);
+}
+
 static gboolean
 ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
 	int size = block_obj_sizes [size_index];
 	int count = MS_BLOCK_FREE / size;
 	MSBlockInfo *info;
-	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
+	MSBlockInfo * volatile * free_blocks = FREE_BLOCKS (pinned, has_references);
 	char *obj_start;
 	int i;
 
@@ -461,8 +470,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	/* the last one */
 	*(void**)obj_start = NULL;
 
-	info->next_free = free_blocks [size_index];
-	free_blocks [size_index] = info;
+	add_free_block (free_blocks, size_index, info);
 
 	LOCK_ALLOCATED_BLOCKS;
 	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
@@ -485,11 +493,12 @@ obj_is_from_pinned_alloc (char *ptr)
 }
 
 static void*
-unlink_slot_from_free_list_uncontested (MSBlockInfo **free_blocks, int size_index)
+unlink_slot_from_free_list_uncontested (MSBlockInfo * volatile *free_blocks, int size_index)
 {
-	MSBlockInfo *block;
-	void *obj;
+	MSBlockInfo *block, *next_free_block;
+	void *obj, *next_free_slot;
 
+ retry:
 	block = free_blocks [size_index];
 	SGEN_ASSERT (9, block, "no free block to unlink from free_blocks %p size_index %d", free_blocks, size_index);
 
@@ -501,11 +510,18 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo **free_blocks, int size_inde
 	obj = block->free_list;
 	SGEN_ASSERT (9, obj, "block %p in free list had no available object to alloc from", block);
 
-	block->free_list = *(void**)obj;
-	if (!block->free_list) {
-		free_blocks [size_index] = block->next_free;
-		block->next_free = NULL;
+	next_free_slot = *(void**)obj;
+	if (next_free_slot) {
+		block->free_list = next_free_slot;
+		return obj;
 	}
+
+	next_free_block = block->next_free;
+	if (SGEN_CAS_PTR ((gpointer)&free_blocks [size_index], next_free_block, block) != block)
+		goto retry;
+
+	block->free_list = NULL;
+	block->next_free = NULL;
 
 	return obj;
 }
@@ -514,7 +530,7 @@ static void*
 alloc_obj (MonoVTable *vtable, size_t size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
-	MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, has_references);
+	MSBlockInfo * volatile * free_blocks = FREE_BLOCKS (pinned, has_references);
 	void *obj;
 
 	if (!free_blocks [size_index]) {
@@ -547,6 +563,7 @@ free_object (char *obj, size_t size, gboolean pinned)
 {
 	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
 	int word, bit;
+	gboolean in_free_list;
 
 	if (!block->swept)
 		sweep_block (block, FALSE);
@@ -554,16 +571,19 @@ free_object (char *obj, size_t size, gboolean pinned)
 	SGEN_ASSERT (9, MS_OBJ_ALLOCED (obj, block), "object %p is already free", obj);
 	MS_CALC_MARK_BIT (word, bit, obj);
 	SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p has mark bit set");
-	if (!block->free_list) {
-		MSBlockInfo **free_blocks = FREE_BLOCKS (pinned, block->has_references);
-		int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
-		SGEN_ASSERT (9, !block->next_free, "block %p doesn't have a free-list of object but belongs to a free-list of blocks");
-		block->next_free = free_blocks [size_index];
-		free_blocks [size_index] = block;
-	}
+
 	memset (obj, 0, size);
+
+	in_free_list = !!block->free_list;
 	*(void**)obj = block->free_list;
 	block->free_list = (void**)obj;
+
+	if (!in_free_list) {
+		MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (pinned, block->has_references);
+		int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
+		SGEN_ASSERT (9, !block->next_free, "block %p doesn't have a free-list of object but belongs to a free-list of blocks");
+		add_free_block (free_blocks, size_index, block);
+	}
 }
 
 static void
@@ -1136,7 +1156,7 @@ sweep_start (void)
 
 	/* clear all the free lists */
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i) {
-		MSBlockInfo **free_blocks = free_block_lists [i];
+		MSBlockInfo * volatile *free_blocks = free_block_lists [i];
 		int j;
 		for (j = 0; j < num_block_obj_sizes; ++j)
 			free_blocks [j] = NULL;
@@ -1209,10 +1229,9 @@ sweep_loop_thread_func (void *dummy)
 			 * the block to the corresponding free list.
 			 */
 			if (have_free) {
-				MSBlockInfo **free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
+				MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
 				int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
-				block->next_free = free_blocks [index];
-				free_blocks [index] = block;
+				add_free_block (free_blocks, index, block);
 			}
 
 			update_heap_boundaries_for_block (block);
@@ -1946,14 +1965,6 @@ major_get_cardtable_mod_union_for_object (char *obj)
 	return &block->cardtable_mod_union [offset];
 }
 
-static void
-alloc_free_block_lists (MSBlockInfo ***lists)
-{
-	int i;
-	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i)
-		lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
-}
-
 #undef pthread_create
 
 static void
@@ -1990,7 +2001,8 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	}
 	*/
 
-	alloc_free_block_lists (free_block_lists);
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; ++i)
+		free_block_lists [i] = sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES; ++i)
 		fast_block_obj_size_indexes [i] = ms_find_block_obj_size_index (i * 8);
