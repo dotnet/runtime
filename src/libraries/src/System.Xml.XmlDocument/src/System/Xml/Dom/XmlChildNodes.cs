@@ -46,10 +46,7 @@ namespace System.Xml
             {
                 return XmlDocument.EmptyEnumerator;
             }
-            else
-            {
-                return new XmlChildEnumerator(_container);
-            }
+            return new XmlChildEnumerator(_container);
         }
     }
 }
