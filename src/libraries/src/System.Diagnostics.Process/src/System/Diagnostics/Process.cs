@@ -314,6 +314,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._poolNonpagedBytes;
             }
         }
@@ -323,6 +324,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._pageFileBytes;
             }
         }
@@ -332,6 +334,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._poolPagedBytes;
             }
         }
@@ -341,6 +344,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._pageFileBytesPeak;
             }
         }
@@ -350,6 +354,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._workingSetPeak;
             }
         }
@@ -359,6 +364,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._virtualBytesPeak;
             }
         }
@@ -424,6 +430,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._privateBytes;
             }
         }
@@ -472,6 +479,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._sessionId;
             }
         }
@@ -533,6 +541,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._virtualBytes;
             }
         }
@@ -643,6 +652,7 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveProcessInfo);
                 return _processInfo._workingSet;
             }
         }
