@@ -131,4 +131,32 @@ class Tests
 			return 1;
 		return 0;
 	}
+
+	interface IFaceFoo4<T> {
+		T Get_T (double d, T t);
+	}
+
+	class Foo4<T> : IFaceFoo4<T> {
+		public T Get_T (double d, T t) {
+			return Foo2<T>.Get_T (d, t);
+		}
+	}
+
+	struct VTypeByRefStruct {
+		public long o1, o2, o3;
+	}
+
+	public static int test_0_arm64_gsharedvt_out_vtypebyref () {
+		/* gsharedvt out trampoline with vtypebyref argument */
+		var s = new VTypeByRefStruct () { o1 = 1, o2 = 2, o3 = 3 };
+
+		// Call Foo2.Get_T directly, so its gets an instance
+		Foo2<VTypeByRefStruct>.Get_T (1.0f, s);
+		var o = (IFaceFoo4<VTypeByRefStruct>)Activator.CreateInstance (typeof (Foo4<>).MakeGenericType (new Type [] { typeof (VTypeByRefStruct) }));
+		// Call Foo4.Get_T, this will call the gsharedvt instance, which will call the non-gsharedvt instance
+		var s_res = o.Get_T (1.0f, s);
+		if (s_res.o1 != 1 || s_res.o2 != 2 || s_res.o3 != 3)
+			return 1;
+		return 0;
+	}
 }
