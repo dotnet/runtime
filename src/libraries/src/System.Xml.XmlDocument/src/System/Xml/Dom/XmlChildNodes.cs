@@ -7,7 +7,7 @@ namespace System.Xml
 {
     internal class XmlChildNodes : XmlNodeList
     {
-        private XmlNode _container;
+        private readonly XmlNode _container;
 
         public XmlChildNodes(XmlNode container)
         {

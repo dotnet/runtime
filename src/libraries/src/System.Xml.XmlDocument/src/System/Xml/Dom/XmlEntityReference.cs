@@ -29,7 +29,7 @@ namespace System.Xml
     // are assumed to trigger the evaluation.
     internal class XmlEntityReference : XmlLinkedNode
     {
-        private string _name;
+        private readonly string _name;
         private XmlLinkedNode _lastChild;
 
         protected internal XmlEntityReference(string name, XmlDocument doc) : base(doc)

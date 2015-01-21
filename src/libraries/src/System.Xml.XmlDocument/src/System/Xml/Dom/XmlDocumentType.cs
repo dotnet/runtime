@@ -8,10 +8,10 @@ namespace System.Xml
     // Contains information associated with the document type declaration.
     internal class XmlDocumentType : XmlLinkedNode
     {
-        private string _name;
-        private string _publicId;
-        private string _systemId;
-        private string _internalSubset;
+        private readonly string _name;
+        private readonly string _publicId;
+        private readonly string _systemId;
+        private readonly string _internalSubset;
         private XmlNamedNodeMap _entities;
         private XmlNamedNodeMap _notations;
 

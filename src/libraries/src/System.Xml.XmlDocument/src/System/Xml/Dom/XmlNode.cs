@@ -1328,7 +1328,7 @@ namespace System.Xml
     [DebuggerDisplay("{ToString()}")]
     internal struct DebuggerDisplayXmlNodeProxy
     {
-        private XmlNode _node;
+        private readonly XmlNode _node;
 
         public DebuggerDisplayXmlNodeProxy(XmlNode node)
         {

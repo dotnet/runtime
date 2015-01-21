@@ -7,12 +7,12 @@ namespace System.Xml
 {
     internal class XmlName
     {
-        private string _prefix;
-        private string _localName;
-        private string _ns;
+        private readonly string _prefix;
+        private readonly string _localName;
+        private readonly string _ns;
         private string _name;
-        private int _hashCode;
-        internal XmlDocument ownerDoc;
+        private readonly int _hashCode;
+        internal readonly XmlDocument ownerDoc;
         internal XmlName next;
 
         public static XmlName Create(string prefix, string localName, string ns, int hashCode, XmlDocument ownerDoc, XmlName next)
