@@ -510,7 +510,7 @@ workers_thread_func (void *data_untyped)
 			/* FIXME: maybe distribute the gray queue here? */
 		}
 
-		if (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data)) {
+		if (!did_work && (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data))) {
 			SgenObjectOperations *ops = sgen_concurrent_collection_in_progress ()
 				? &major->major_concurrent_ops
 				: &major->major_ops;
