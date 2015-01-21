@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.ComponentModel.Annotations.Tests</RootNamespace>
+    <AssemblyName>System.ComponentModel.Annotations.Tests</AssemblyName>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssertEx.cs" />
+    <Compile Include="AssociationAttributeTests.cs" />
+    <Compile Include="CompareAttributeTests.cs" />
+    <Compile Include="CreditCardAttributeTests.cs" />
+    <Compile Include="CustomValidationAttributeTests.cs" />
+    <Compile Include="DataTypeAttributeTests.cs" />
+    <Compile Include="EmailAddressAttributeTests.cs" />
+    <Compile Include="EnumDataTypeAttributeTests.cs" />
+    <Compile Include="FileExtensionsAttributeTests.cs" />
+    <Compile Include="MaxLengthAttributeTests.cs" />
+    <Compile Include="MinLengthAttributeTests.cs" />
+    <Compile Include="PhoneAttributeTests.cs" />
+    <Compile Include="RangeAttributeTests.cs" />
+    <Compile Include="RegularExpressionAttributeTests.cs" />
+    <Compile Include="RequiredAttributeTests.cs" />
+    <Compile Include="Schema\ColumnAttributeTests.cs" />
+    <Compile Include="Schema\DatabaseGeneratedAttributeTests.cs" />
+    <Compile Include="Schema\ForeignKeyAttributeTests.cs" />
+    <Compile Include="Schema\InversePropertyAttributeTests.cs" />
+    <Compile Include="Schema\TableAttributeTests.cs" />
+    <Compile Include="StringLengthAttributeTests.cs" />
+    <Compile Include="UrlAttributeTests.cs" />
+    <Compile Include="ValidationAttributeTests.cs" />
+    <Compile Include="ValidationContextTests.cs" />
+    <Compile Include="ValidationResultTests.cs" />
+    <Compile Include="ValidatorTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ComponentModel.Annotations.csproj">
+      <Name>System.ComponentModel.Annotations</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
