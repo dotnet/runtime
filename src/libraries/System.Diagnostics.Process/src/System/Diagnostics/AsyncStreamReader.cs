@@ -144,7 +144,7 @@ namespace System.Diagnostics
             if (_sb == null)
             {
                 _sb = new StringBuilder(DefaultBufferSize);
-                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer);
+                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
             else
             {
@@ -210,7 +210,7 @@ namespace System.Diagnostics
                 int charLen = _decoder.GetChars(_byteBuffer, 0, byteLen, _charBuffer, 0);
                 _sb.Append(_charBuffer, 0, charLen);
                 GetLinesFromStringBuilder();
-                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer);
+                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
         }
 

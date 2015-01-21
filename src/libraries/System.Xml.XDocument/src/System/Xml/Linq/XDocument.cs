@@ -354,7 +354,7 @@ namespace System.Xml.Linq
             if ((options & LoadOptions.SetBaseUri) != 0)
             {
                 string baseUri = reader.BaseURI;
-                if (baseUri != null && baseUri.Length != 0)
+                if (!string.IsNullOrEmpty(baseUri))
                 {
                     d.SetBaseUri(baseUri);
                 }

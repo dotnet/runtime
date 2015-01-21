@@ -33,7 +33,6 @@
 **
 ===========================================================*/
 
-using System.Threading;
 using System.Text;
 
 namespace System.IO
@@ -50,14 +49,14 @@ namespace System.IO
         {
             if (capacity <= MAX_BUILDER_SIZE)
             {
-                StringBuilder sb = StringBuilderCache.t_cachedInstance;
+                StringBuilder sb = t_cachedInstance;
                 if (sb != null)
                 {
                     // Avoid stringbuilder block fragmentation by getting a new StringBuilder
                     // when the requested size is larger than the current capacity
                     if (capacity <= sb.Capacity)
                     {
-                        StringBuilderCache.t_cachedInstance = null;
+                        t_cachedInstance = null;
                         sb.Clear();
                         return sb;
                     }
@@ -77,7 +76,7 @@ namespace System.IO
         {
             if (sb.Capacity <= MAX_BUILDER_SIZE)
             {
-                StringBuilderCache.t_cachedInstance = sb;
+                t_cachedInstance = sb;
             }
         }
 
