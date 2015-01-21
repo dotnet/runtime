@@ -134,7 +134,6 @@ namespace System.Xml
         Formatting formatting;
         bool indented; // perf - faster to check a boolean.
         int indentation;
-        char indentChar;
 
         // element stack
         TagInfo[] stack;
@@ -249,7 +248,7 @@ namespace System.Xml
             namespaces = true;
             formatting = Formatting.None;
             indentation = 2;
-            indentChar = ' ';
+            IndentChar = ' ';
             // namespaces
             nsStack = new Namespace[NamespaceStackInitialSize];
             nsTop = -1;
@@ -332,11 +331,7 @@ namespace System.Xml
         }
 
         // Gets or sets which character to use for indenting when Formatting is set to "Indented".
-        public char IndentChar
-        {
-            get { return this.indentChar; }
-            set { this.indentChar = value; }
-        }
+        public char IndentChar { get; set; }
 
         // Gets or sets which character to use to quote attribute values.
         public char QuoteChar
@@ -1390,7 +1385,7 @@ namespace System.Xml
                 int i = beforeEndElement ? top - 1 : top;
                 for (i *= this.indentation; i > 0; i--)
                 {
-                    textWriter.Write(this.indentChar);
+                    textWriter.Write(this.IndentChar);
                 }
             }
         }

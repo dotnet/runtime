@@ -13,7 +13,6 @@ namespace System.Xml
         private const string YES = "yes";
         private const string NO = "no";
 
-        private string _version;
         private string _encoding;
         private string _standalone;
 
@@ -31,11 +30,7 @@ namespace System.Xml
 
 
         // The version attribute for <?xml version= '1.0' ... ?>
-        public string Version
-        {
-            get { return _version; }
-            internal set { _version = value; }
-        }
+        public string Version { get; internal set; }
 
         // Specifies the value of the encoding attribute, as for
         // <?xml version= '1.0' encoding= 'UTF-8' ?>

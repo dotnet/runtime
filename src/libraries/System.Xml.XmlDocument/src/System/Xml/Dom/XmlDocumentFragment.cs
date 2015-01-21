@@ -43,8 +43,6 @@ namespace System.Xml
     // such as <code>insertBefore()</code> and  <code>appendChild()</code>.  
     public class XmlDocumentFragment : XmlNode
     {
-        private XmlLinkedNode _lastChild;
-
         protected internal XmlDocumentFragment(XmlDocument ownerDocument) : base()
         {
             if (ownerDocument == null)
@@ -118,11 +116,7 @@ namespace System.Xml
             get { return true; }
         }
 
-        internal override XmlLinkedNode LastNode
-        {
-            get { return _lastChild; }
-            set { _lastChild = value; }
-        }
+        internal override XmlLinkedNode LastNode { get; set; }
 
         internal override bool IsValidChildType(XmlNodeType type)
         {

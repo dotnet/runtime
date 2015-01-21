@@ -33,9 +33,6 @@ namespace System.Xml
         internal bool fEntRefNodesPresent;
         internal bool fCDataNodesPresent;
 
-        private bool _preserveWhitespace;
-        private bool _isLoading;
-
         // special name strings for
         internal readonly string strDocumentName;
         internal readonly string strDocumentFragmentName;
@@ -714,11 +711,7 @@ namespace System.Xml
         }
 
         // Gets or sets a value indicating whether to preserve whitespace.
-        public bool PreserveWhitespace
-        {
-            get { return _preserveWhitespace; }
-            set { _preserveWhitespace = value; }
-        }
+        public bool PreserveWhitespace { get; set; }
 
         // Gets a value indicating whether the node is read-only.
         public override bool IsReadOnly
@@ -736,11 +729,7 @@ namespace System.Xml
             }
         }
 
-        internal bool IsLoading
-        {
-            get { return _isLoading; }
-            set { _isLoading = value; }
-        }
+        internal bool IsLoading { get; set; }
 
         internal bool ActualLoadingStatus
         {
@@ -935,7 +924,7 @@ namespace System.Xml
                 fCDataNodesPresent = false;
 
                 XmlLoader loader = new XmlLoader();
-                loader.Load(this, reader, _preserveWhitespace);
+                loader.Load(this, reader, PreserveWhitespace);
             }
             finally
             {
@@ -999,7 +988,7 @@ namespace System.Xml
         public virtual void Save(Stream outStream)
         {
             XmlDOMTextWriter xw = new XmlDOMTextWriter(outStream, TextEncoding);
-            if (_preserveWhitespace == false)
+            if (PreserveWhitespace == false)
                 xw.Formatting = Formatting.Indented;
             WriteTo(xw);
             xw.Flush();
@@ -1012,7 +1001,7 @@ namespace System.Xml
         public virtual void Save(TextWriter writer)
         {
             XmlDOMTextWriter xw = new XmlDOMTextWriter(writer);
-            if (_preserveWhitespace == false)
+            if (PreserveWhitespace == false)
                 xw.Formatting = Formatting.Indented;
             Save(xw);
         }
