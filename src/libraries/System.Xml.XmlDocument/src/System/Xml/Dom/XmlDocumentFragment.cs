@@ -135,14 +135,13 @@ namespace System.Xml
                 case XmlNodeType.XmlDeclaration:
                     //if there is an XmlDeclaration node, it has to be the first node;
                     XmlNode firstNode = FirstChild;
-                    if (firstNode == null || firstNode.NodeType != XmlNodeType.XmlDeclaration)
-                        return true;
-                    else
-                        return false; //not allowed to insert a second XmlDeclaration node
+                    //not allowed to insert a second XmlDeclaration node
+                    return firstNode == null || firstNode.NodeType != XmlNodeType.XmlDeclaration;
                 default:
                     return false;
             }
         }
+
         internal override bool CanInsertAfter(XmlNode newChild, XmlNode refChild)
         {
             Debug.Assert(newChild != null); //should be checked that newChild is not null before this function call
@@ -153,8 +152,7 @@ namespace System.Xml
                     //append at the end
                     return (LastNode == null);
                 }
-                else
-                    return false;
+                return false;
             }
             return true;
         }

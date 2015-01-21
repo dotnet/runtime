@@ -47,10 +47,9 @@ namespace System.Xml
             get
             {
                 XmlNode parent = ParentNode;
-                if (parent != null)
+                if (parent != null && next != parent.FirstChild)
                 {
-                    if (next != parent.FirstChild)
-                        return next;
+                    return next;
                 }
                 return null;
             }
