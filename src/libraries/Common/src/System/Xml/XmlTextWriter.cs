@@ -32,7 +32,7 @@ namespace System.Xml
         //
         // Private types
         //
-        enum NamespaceState
+        private enum NamespaceState
         {
             Uninitialized,
             NotDeclaredButInScope,
@@ -40,7 +40,7 @@ namespace System.Xml
             DeclaredAndWrittenOut
         }
 
-        struct TagInfo
+        private struct TagInfo
         {
             internal string name;
             internal string prefix;
@@ -65,7 +65,7 @@ namespace System.Xml
             }
         }
 
-        struct Namespace
+        private struct Namespace
         {
             internal string prefix;
             internal string ns;
@@ -81,7 +81,7 @@ namespace System.Xml
             }
         }
 
-        enum SpecialAttr
+        private enum SpecialAttr
         {
             None,
             XmlSpace,
@@ -126,55 +126,55 @@ namespace System.Xml
         // Fields
         //
         // output
-        readonly TextWriter textWriter;
-        readonly XmlTextEncoder xmlEncoder;
-        readonly Encoding encoding;
+        private readonly TextWriter textWriter;
+        private readonly XmlTextEncoder xmlEncoder;
+        private readonly Encoding encoding;
 
         // formatting
-        Formatting formatting;
-        bool indented; // perf - faster to check a boolean.
-        int indentation;
+        private Formatting formatting;
+        private bool indented; // perf - faster to check a boolean.
+        private int indentation;
 
         // element stack
-        TagInfo[] stack;
-        int top;
+        private TagInfo[] stack;
+        private int top;
 
         // state machine for AutoComplete
-        State[] stateTable;
-        State currentState;
-        Token lastToken;
+        private State[] stateTable;
+        private State currentState;
+        private Token lastToken;
 
         // Base64 content
-        XmlTextWriterBase64Encoder base64Encoder;
+        private XmlTextWriterBase64Encoder base64Encoder;
 
         // misc
-        char quoteChar;
-        char curQuoteChar;
-        bool namespaces;
-        SpecialAttr specialAttr;
-        string prefixForXmlNs;
-        bool flush;
+        private char quoteChar;
+        private char curQuoteChar;
+        private bool namespaces;
+        private SpecialAttr specialAttr;
+        private string prefixForXmlNs;
+        private bool flush;
 
         // namespaces
-        Namespace[] nsStack;
-        int nsTop;
-        Dictionary<string, int> nsHashtable;
-        bool useNsHashtable;
+        private Namespace[] nsStack;
+        private int nsTop;
+        private Dictionary<string, int> nsHashtable;
+        private bool useNsHashtable;
 
         // char types
-        XmlCharType xmlCharType = XmlCharType.Instance;
+        private XmlCharType xmlCharType = XmlCharType.Instance;
 
         //
         // Constants and constant tables
         //
-        const int NamespaceStackInitialSize = 8;
+        private const int NamespaceStackInitialSize = 8;
 #if DEBUG
-        const int MaxNamespacesWalkCount = 3;
+        private const int MaxNamespacesWalkCount = 3;
 #else
-        const int MaxNamespacesWalkCount = 16;
+        private const int MaxNamespacesWalkCount = 16;
 #endif
 
-        static readonly string[] stateName = {
+        private static readonly string[] stateName = {
             "Start",
             "Prolog",
             "PostDTD",
@@ -187,7 +187,7 @@ namespace System.Xml
             "Closed",
         };
 
-        static readonly string[] tokenName = {
+        private static readonly string[] tokenName = {
             "PI",
             "Doctype",
             "Comment",
@@ -204,7 +204,7 @@ namespace System.Xml
             "Empty"
         };
 
-        static readonly State[] stateTableDefault = {
+        private static readonly State[] stateTableDefault = {
             //                          State.Start      State.Prolog     State.PostDTD    State.Element    State.Attribute  State.Content   State.AttrOnly   State.Epilog
             //
             /* Token.PI             */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Content,   State.Content,  State.Error,     State.Epilog,
@@ -222,7 +222,7 @@ namespace System.Xml
             /* Token.Whitespace     */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
         };
 
-        static readonly State[] stateTableDocument = {
+        private static readonly State[] stateTableDocument = {
             //                          State.Start      State.Prolog     State.PostDTD    State.Element    State.Attribute  State.Content   State.AttrOnly   State.Epilog
             //
             /* Token.PI             */ State.Error,     State.Prolog,    State.PostDTD,   State.Content,   State.Content,   State.Content,  State.Error,     State.Epilog,
