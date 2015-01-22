@@ -318,9 +318,25 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 
 LLVMValueRef 
 mono_llvm_build_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
-					  const char *Name, gboolean is_volatile)
+					  const char *Name, gboolean is_volatile, BarrierKind barrier)
 {
-	return wrap(unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name));
+	LoadInst *ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
+
+	switch (barrier) {
+	case LLVM_BARRIER_NONE:
+		break;
+	case LLVM_BARRIER_ACQ:
+		ins->setOrdering(Acquire);
+		break;
+	case LLVM_BARRIER_SEQ:
+		ins->setOrdering(SequentiallyConsistent);
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	return wrap(ins);
 }
 
 LLVMValueRef 
@@ -337,9 +353,25 @@ mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 
 LLVMValueRef 
 mono_llvm_build_store (LLVMBuilderRef builder, LLVMValueRef Val, LLVMValueRef PointerVal,
-					  gboolean is_volatile)
+					  gboolean is_volatile, BarrierKind barrier)
 {
-	return wrap(unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile));
+	StoreInst *ins = unwrap(builder)->CreateStore(unwrap(Val), unwrap(PointerVal), is_volatile);
+
+	switch (barrier) {
+	case LLVM_BARRIER_NONE:
+		break;
+	case LLVM_BARRIER_REL:
+		ins->setOrdering(Release);
+		break;
+	case LLVM_BARRIER_SEQ:
+		ins->setOrdering(SequentiallyConsistent);
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	return wrap(ins);
 }
 
 LLVMValueRef 
