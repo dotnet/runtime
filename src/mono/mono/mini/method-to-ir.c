@@ -5727,7 +5727,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 		if (strcmp (cmethod->name, "Exchange") == 0) {
 			guint32 opcode;
-			gboolean is_ref = fsig->params [0]->type == MONO_TYPE_OBJECT;
+			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
 
 			if (fsig->params [0]->type == MONO_TYPE_I4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
