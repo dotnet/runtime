@@ -921,6 +921,7 @@ typedef struct {
 #define s390_nill(c, r, v)		S390_RI(c, 0xa57, r, v)
 #define s390_niy(c, b, d, v)		S390_SIY(c, 0xeb54, b, d, v) 
 #define s390_nop(c)  			S390_RR(c, 0x07, 0x0, 0)
+#define s390_mem(c)  			S390_RR(c, 0x07, 0xe, 0)
 #define s390_nr(c, r1, r2)		S390_RR(c, 0x14, r1, r2)
 #define s390_nrk(c, r1, r2)		S390_RRF_1(c, 0xb9f4, r1, r2)
 #define s390_ny(c, r, x, b, d)		S390_RRY(c, 0xe354, r1, r2)

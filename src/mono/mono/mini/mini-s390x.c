@@ -4580,8 +4580,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 		}
 			break;	
-		case OP_MEMORY_BARRIER: {
-		}
+		case OP_MEMORY_BARRIER:
+			s390_mem (code);
 			break;
 		case OP_GC_LIVENESS_DEF:
 		case OP_GC_LIVENESS_USE:
