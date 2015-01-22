@@ -417,7 +417,7 @@ mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef
 		break;
 	}
 
-	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), AcquireRelease);
+	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), SequentiallyConsistent);
 	return wrap (ins);
 }
 
