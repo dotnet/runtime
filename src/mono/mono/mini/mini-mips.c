@@ -3434,9 +3434,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_mfhi (code, ins->dreg+1);
 			break;
 		case OP_MEMORY_BARRIER:
-#if 0
-			ppc_sync (code);
-#endif
+			mips_sync (code, 0);
 			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			mips_load_const (code, mips_temp, ins->inst_imm);
