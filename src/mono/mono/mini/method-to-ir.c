@@ -5566,7 +5566,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		} else if (strcmp (cmethod->name, "MemoryBarrier") == 0) {
-			return emit_memory_barrier (cfg, FullBarrier);
+			return emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
@@ -5630,7 +5630,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
 			MonoInst *load_ins;
 
-			emit_memory_barrier (cfg, FullBarrier);
+			emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
 			/* 64 bit reads are already atomic */
 			MONO_INST_NEW (cfg, load_ins, OP_LOADI8_MEMBASE);
@@ -5639,7 +5639,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			load_ins->inst_offset = 0;
 			MONO_ADD_INS (cfg->cbb, load_ins);
 
-			emit_memory_barrier (cfg, FullBarrier);
+			emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
 			ins = load_ins;
 		}
@@ -5813,7 +5813,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 
 		if (strcmp (cmethod->name, "MemoryBarrier") == 0)
-			ins = emit_memory_barrier (cfg, FullBarrier);
+			ins = emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
 		if (ins)
 			return ins;
@@ -9299,8 +9299,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			*sp++ = ins;
 			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-				emit_memory_barrier (cfg, FullBarrier);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 			}
 			ins_flag = 0;
 			++ip;
@@ -9318,8 +9317,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-				emit_memory_barrier (cfg, FullBarrier);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
 
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (*ip), sp [0]->dreg, 0, sp [1]->dreg);
@@ -9585,8 +9583,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += stloc_len;
 				if (ins_flag & MONO_INST_VOLATILE) {
 					/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-					/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-					emit_memory_barrier (cfg, FullBarrier);
+					emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 				}
 				ins_flag = 0;
 				break;
@@ -9613,8 +9610,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-				emit_memory_barrier (cfg, FullBarrier);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 			}
 
 			ip += 5;
@@ -10563,8 +10559,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if ((op == CEE_STFLD || op == CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-				emit_memory_barrier (cfg, FullBarrier);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
 
 			if (op == CEE_LDSFLDA) {
@@ -10675,8 +10670,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if ((op == CEE_LDFLD || op == CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-				emit_memory_barrier (cfg, FullBarrier);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 			}
 
 			ins_flag = 0;
@@ -10692,8 +10686,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-				/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-				emit_memory_barrier (cfg, FullBarrier);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
 			/* FIXME: should check item at sp [1] is compatible with the type of the store. */
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, &klass->byval_arg, sp [0]->dreg, 0, sp [1]->dreg);
@@ -11613,9 +11606,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			}
 			case CEE_MONO_MEMORY_BARRIER: {
-				CHECK_OPSIZE (5);
-				emit_memory_barrier (cfg, (int)read32 (ip + 1));
-				ip += 5;
+				CHECK_OPSIZE (6);
+				emit_memory_barrier (cfg, (int)read32 (ip + 2));
+				ip += 6;
 				break;
 			}
 			case CEE_MONO_JIT_ATTACH: {
@@ -12101,26 +12094,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						 * FIXME: It's unclear whether we should be emitting both the acquire
 						 * and release barriers for cpblk. It is technically both a load and
 						 * store operation, so it seems like that's the sensible thing to do.
+						 *
+						 * FIXME: We emit full barriers on both sides of the operation for
+						 * simplicity. We should have a separate atomic memcpy method instead.
 						 */
 						MonoMethod *memcpy_method = get_memcpy_method ();
-						if (ins_flag & MONO_INST_VOLATILE) {
-							/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-							/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-							emit_memory_barrier (cfg, FullBarrier);
-						}
+
+						if (ins_flag & MONO_INST_VOLATILE)
+							emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+
 						call = mono_emit_method_call (cfg, memcpy_method, iargs, NULL);
 						call->flags |= ins_flag;
-						if (ins_flag & MONO_INST_VOLATILE) {
-							/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
-							/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-							emit_memory_barrier (cfg, FullBarrier);
-						}
+
+						if (ins_flag & MONO_INST_VOLATILE)
+							emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 					} else {
 						MonoMethod *memset_method = get_memset_method ();
 						if (ins_flag & MONO_INST_VOLATILE) {
 							/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
-							/* FIXME it's questionable if acquire semantics require full barrier or just LoadLoad*/
-							emit_memory_barrier (cfg, FullBarrier);
+							emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 						}
 						call = mono_emit_method_call (cfg, memset_method, iargs, NULL);
 						call->flags |= ins_flag;

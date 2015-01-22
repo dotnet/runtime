@@ -4213,14 +4213,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			/* x86 only needs barrier for StoreLoad and FullBarrier */
-			switch (ins->backend.memory_barrier_kind) {
-			case StoreLoadBarrier:
-			case FullBarrier:
-				/* http://blogs.sun.com/dave/resource/NHM-Pipeline-Blog-V2.txt */
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ) {
 				x86_prefix (code, X86_LOCK_PREFIX);
 				x86_alu_membase_imm (code, X86_ADD, X86_ESP, 0, 0);
-				break;
 			}
 			break;
 		}

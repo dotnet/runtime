@@ -17,6 +17,16 @@
 
 G_BEGIN_DECLS
 
+/*
+ * Keep in sync with the enum in utils/mono-memory-model.h.
+ */
+typedef enum {
+	LLVM_BARRIER_NONE = 0,
+	LLVM_BARRIER_ACQ = 1,
+	LLVM_BARRIER_REL = 2,
+	LLVM_BARRIER_SEQ = 3,
+} BarrierKind;
+
 typedef enum {
 	LLVM_ATOMICRMW_OP_XCHG = 0,
 	LLVM_ATOMICRMW_OP_ADD = 1,
@@ -66,7 +76,7 @@ LLVMValueRef
 mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef ptr, LLVMValueRef val);
 
 LLVMValueRef
-mono_llvm_build_fence (LLVMBuilderRef builder);
+mono_llvm_build_fence (LLVMBuilderRef builder, BarrierKind kind);
 
 void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v);

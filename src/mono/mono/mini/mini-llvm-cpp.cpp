@@ -390,11 +390,29 @@ mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef
 }
 
 LLVMValueRef
-mono_llvm_build_fence (LLVMBuilderRef builder)
+mono_llvm_build_fence (LLVMBuilderRef builder, BarrierKind kind)
 {
 	FenceInst *ins;
+	AtomicOrdering ordering;
 
-	ins = unwrap (builder)->CreateFence (AcquireRelease);
+	g_assert (kind != LLVM_BARRIER_NONE);
+
+	switch (kind) {
+	case LLVM_BARRIER_ACQ:
+		ordering = Acquire;
+		break;
+	case LLVM_BARRIER_REL:
+		ordering = Release;
+		break;
+	case LLVM_BARRIER_SEQ:
+		ordering = SequentiallyConsistent;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	ins = unwrap (builder)->CreateFence (ordering);
 	return wrap (ins);
 }
 

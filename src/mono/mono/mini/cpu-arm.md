@@ -48,7 +48,6 @@
 #
 # See the code in mini-x86.c for more details on how the specifiers are used.
 #
-memory_barrier: len:8 clob:a
 nop: len:4
 relaxed_nop: len:4
 break: len:4
@@ -351,3 +350,4 @@ gc_param_slot_liveness_def: len:0
 atomic_add_i4: dest:i src1:i src2:i len:64
 atomic_exchange_i4: dest:i src1:i src2:i len:64
 atomic_cas_i4: dest:i src1:i src2:i src3:i len:64
+memory_barrier: len:8 clob:a

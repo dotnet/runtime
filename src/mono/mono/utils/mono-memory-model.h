@@ -34,17 +34,19 @@ TODO: if we find places where a data depencency could replace barriers, add macr
 TODO: some arch with strong consistency, such as x86, support weaker access. We might need to expose more kinds of barriers once we exploit this.
 */
 
+/*
+ * Keep in sync with the enum in mini/mini-llvm-cpp.h.
+ */
+enum {
+    MONO_MEMORY_BARRIER_NONE = 0,
+    MONO_MEMORY_BARRIER_ACQ = 1,
+    MONO_MEMORY_BARRIER_REL = 2,
+    MONO_MEMORY_BARRIER_SEQ = 3,
+};
+
 #define MEMORY_BARRIER mono_memory_barrier ()
 #define LOAD_BARRIER mono_memory_read_barrier ()
 #define STORE_BARRIER mono_memory_write_barrier ()
-
-enum {
-	StoreStoreBarrier,
-	LoadLoadBarrier,
-	StoreLoadBarrier,
-	LoadStoreBarrier,
-	FullBarrier
-};
 
 #if defined(__i386__) || defined(__x86_64__)
 /*

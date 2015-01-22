@@ -522,6 +522,14 @@ typedef union {
 
 #endif /* __native_client_codegen__ */
 
+#define x86_mfence(inst) \
+	do {	\
+		x86_codegen_pre(&(inst), 3); \
+		*(inst)++ = 0x0f;	\
+		*(inst)++ = 0xae;	\
+		*(inst)++ = 0xf0;	\
+	} while (0)
+
 #define x86_rdtsc(inst) \
 	do {	\
 		x86_codegen_pre(&(inst), 2); \

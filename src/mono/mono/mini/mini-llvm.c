@@ -3412,7 +3412,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			mono_llvm_build_fence (builder);
+			mono_llvm_build_fence (builder, (BarrierKind) ins->backend.memory_barrier_kind);
 			break;
 		}
 		case OP_RELAXED_NOP: {

@@ -5525,14 +5525,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			switch (ins->backend.memory_barrier_kind) {
-			case StoreLoadBarrier:
-			case FullBarrier:
-				/* http://blogs.sun.com/dave/resource/NHM-Pipeline-Blog-V2.txt */
-				x86_prefix (code, X86_LOCK_PREFIX);
-				amd64_alu_membase_imm (code, X86_ADD, AMD64_RSP, 0, 0);
-				break;
-			}
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				x86_mfence (code);
 			break;
 		}
 		case OP_ATOMIC_ADD_I4:
