@@ -18,6 +18,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap-arm.h>
+#include <mono/utils/mono-memory-model.h>
 
 #include "mini-arm.h"
 #include "cpu-arm.h"
@@ -4231,7 +4232,68 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ARM_MOV_REG_REG (code, ins->dreg, ARMREG_LR);
 			break;
 		}
+		case OP_ATOMIC_LOAD_I1:
+		case OP_ATOMIC_LOAD_U1:
+		case OP_ATOMIC_LOAD_I2:
+		case OP_ATOMIC_LOAD_U2:
+		case OP_ATOMIC_LOAD_I4:
+		case OP_ATOMIC_LOAD_U4: {
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				ARM_DMB (code, ARM_DMB_SY);
 
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+
+			switch (ins->opcode) {
+			case OP_ATOMIC_LOAD_I1:
+				ARM_LDRSB_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_LOAD_U1:
+				ARM_LDRB_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_LOAD_I2:
+				ARM_LDRSH_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_LOAD_U2:
+				ARM_LDRH_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_LOAD_I4:
+			case OP_ATOMIC_LOAD_U4:
+				ARM_LDR_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
+				break;
+			}
+
+			ARM_DMB (code, ARM_DMB_SY);
+			break;
+		}
+		case OP_ATOMIC_STORE_I1:
+		case OP_ATOMIC_STORE_U1:
+		case OP_ATOMIC_STORE_I2:
+		case OP_ATOMIC_STORE_U2:
+		case OP_ATOMIC_STORE_I4:
+		case OP_ATOMIC_STORE_U4: {
+			ARM_DMB (code, ARM_DMB_SY);
+
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
+
+			switch (ins->opcode) {
+			case OP_ATOMIC_STORE_I1:
+			case OP_ATOMIC_STORE_U1:
+				ARM_STRB_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_STORE_I2:
+			case OP_ATOMIC_STORE_U2:
+				ARM_STRH_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_STORE_I4:
+			case OP_ATOMIC_STORE_U4:
+				ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
+				break;
+			}
+
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				ARM_DMB (code, ARM_DMB_SY);
+			break;
+		}
 		/*case OP_BIGMUL:
 			ppc_mullw (code, ppc_r4, ins->sreg1, ins->sreg2);
 			ppc_mulhw (code, ppc_r3, ins->sreg1, ins->sreg2);
@@ -7236,6 +7298,18 @@ mono_arch_opcode_supported (int opcode)
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_CAS_I4:
+	case OP_ATOMIC_LOAD_I1:
+	case OP_ATOMIC_LOAD_I2:
+	case OP_ATOMIC_LOAD_I4:
+	case OP_ATOMIC_LOAD_U1:
+	case OP_ATOMIC_LOAD_U2:
+	case OP_ATOMIC_LOAD_U4:
+	case OP_ATOMIC_STORE_I1:
+	case OP_ATOMIC_STORE_I2:
+	case OP_ATOMIC_STORE_I4:
+	case OP_ATOMIC_STORE_U1:
+	case OP_ATOMIC_STORE_U2:
+	case OP_ATOMIC_STORE_U4:
 		return v7_supported;
 	default:
 		return FALSE;

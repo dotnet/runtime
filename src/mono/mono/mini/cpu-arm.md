@@ -351,3 +351,15 @@ atomic_add_i4: dest:i src1:i src2:i len:64
 atomic_exchange_i4: dest:i src1:i src2:i len:64
 atomic_cas_i4: dest:i src1:i src2:i src3:i len:64
 memory_barrier: len:8 clob:a
+atomic_load_i1: dest:i src1:b len:32
+atomic_load_u1: dest:i src1:b len:32
+atomic_load_i2: dest:i src1:b len:32
+atomic_load_u2: dest:i src1:b len:32
+atomic_load_i4: dest:i src1:b len:32
+atomic_load_u4: dest:i src1:b len:32
+atomic_store_i1: dest:b src1:i len:32
+atomic_store_u1: dest:b src1:i len:32
+atomic_store_i2: dest:b src1:i len:32
+atomic_store_u2: dest:b src1:i len:32
+atomic_store_i4: dest:b src1:i len:32
+atomic_store_u4: dest:b src1:i len:32
