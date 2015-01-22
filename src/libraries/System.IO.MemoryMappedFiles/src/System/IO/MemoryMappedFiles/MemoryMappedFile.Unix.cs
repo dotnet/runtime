@@ -50,8 +50,8 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
-            SafeFileHandle fileHandle, String mapName, HandleInheritability inheritability, 
-            MemoryMappedFileAccess access, MemoryMappedFileOptions options, Int64 capacity)
+            String mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, 
+            MemoryMappedFileOptions options, Int64 capacity)
         {
             throw NotImplemented.ByDesign; // TODO: Implement this
         }
