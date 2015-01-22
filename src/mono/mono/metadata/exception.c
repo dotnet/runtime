@@ -775,12 +775,25 @@ mono_get_exception_reflection_type_load (MonoArray *types, MonoArray *exceptions
 MonoException *
 mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 {
-	MonoRuntimeWrappedException *ex = (MonoRuntimeWrappedException*)
-		mono_exception_from_name (mono_get_corlib (), "System.Runtime.CompilerServices",
-								  "RuntimeWrappedException");
+	MonoClass *klass;
+	MonoObject *o;
+	MonoMethod *method;
+	MonoDomain *domain = mono_domain_get ();
+	gpointer params [16];
 
-   MONO_OBJECT_SETREF (ex, wrapped_exception, wrapped_exception);
-   return (MonoException*)ex;
+	klass = mono_class_from_name (mono_get_corlib (), "System.Runtime.CompilerServices", "RuntimeWrappedException");
+	g_assert (klass);
+
+	o = mono_object_new (domain, klass);
+	g_assert (o != NULL);
+
+	method = mono_class_get_method_from_name (klass, ".ctor", 1);
+	g_assert (method);
+
+	params [0] = wrapped_exception;
+	mono_runtime_invoke (method, o, params, NULL);
+
+	return (MonoException *)o;
 }	
 
 static gboolean
