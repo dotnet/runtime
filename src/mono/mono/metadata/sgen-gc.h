@@ -169,6 +169,7 @@ extern LOCK_DECLARE (sgen_interruption_mutex);
 #define UNLOCK_INTERRUPTION mono_mutex_unlock (&sgen_interruption_mutex)
 
 /* FIXME: Use InterlockedAdd & InterlockedAdd64 to reduce the CAS cost. */
+#define SGEN_CAS	InterlockedCompareExchange
 #define SGEN_CAS_PTR	InterlockedCompareExchangePointer
 #define SGEN_ATOMIC_ADD(x,i)	do {					\
 		int __old_x;						\

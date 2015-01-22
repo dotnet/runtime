@@ -71,6 +71,36 @@
 
 #define MS_NUM_MARK_WORDS	((MS_BLOCK_SIZE / SGEN_ALLOC_ALIGN + sizeof (mword) * 8 - 1) / (sizeof (mword) * 8))
 
+/*
+ * Blocks progress from one state to the next:
+ *
+ * SWEPT           The block is fully swept.  It might or might not be in
+ *                 a free list.
+ *
+ * NOT_SWEPT       The block might or might not contain live objects.  If
+ *                 we're in between an initial collection pause and the
+ *                 finishing pause, the block might or might not be in a
+ *                 free list.
+ *
+ * CHECKING        The sweep thread is investigating the block to determine
+ *                 whether or not it contains live objects.  The block is
+ *                 not in a free list.
+ *
+ * NEED_SWEEPING   The block contains live objects but has not yet been
+ *                 swept.  It also contains free slots.  It is in a block
+ *                 free list.
+ *
+ * SWEEPING        The block is being swept.  It might be in a free list.
+ */
+
+enum {
+	BLOCK_STATE_SWEPT,
+	BLOCK_STATE_MARKING,
+	BLOCK_STATE_CHECKING,
+	BLOCK_STATE_NEED_SWEEPING,
+	BLOCK_STATE_SWEEPING
+};
+
 typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
 	guint16 obj_size;
@@ -79,6 +109,8 @@ struct _MSBlockInfo {
 	 * recalculating to save the space.
 	 */
 	guint16 obj_size_index;
+	/* FIXME: reduce this */
+	volatile gint32 state;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
@@ -353,12 +385,13 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 
 	SGEN_ASSERT (0, sweep_state != SWEEP_STATE_SWEEPING, "Can't examine allocated blocks during sweep");
 	for (; block; block = block->next_free) {
+		SGEN_ASSERT (0, block->state != BLOCK_STATE_CHECKING, "Can't have a block we're checking in a free list.");
 		g_assert (block->obj_size == size);
 		g_assert ((pinned && block->pinned) || (!pinned && !block->pinned));
 
 		/* blocks in the free lists must have at least
 		   one free slot */
-		if (block->swept)
+		if (block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING)
 			g_assert (block->free_list);
 
 		/* the block must be in the allocated_blocks array */
@@ -407,7 +440,7 @@ consistency_check (void)
 		g_assert (num_free == 0);
 
 		/* check all mark words are zero */
-		if (block->swept) {
+		if (block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING) {
 			for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 				g_assert (block->mark_words [i] == 0);
 		}
@@ -463,6 +496,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	 */
 	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
 	info->swept = 1;
+	info->state = info->is_to_space ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
 	info->cardtable_mod_union = NULL;
 
 	update_heap_boundaries_for_block (info);
@@ -502,6 +536,42 @@ obj_is_from_pinned_alloc (char *ptr)
 	return FALSE;
 }
 
+static void
+assert_block_state_is_consistent (MSBlockInfo *info)
+{
+	int swept = info->state == BLOCK_STATE_SWEPT || info->state == BLOCK_STATE_MARKING;
+	SGEN_ASSERT (0, swept == info->swept, "Block state inconsistent.");
+}
+
+static void
+ensure_can_access_block_free_list (MSBlockInfo *block)
+{
+	assert_block_state_is_consistent (block);
+
+ retry:
+	for (;;) {
+		switch (block->state) {
+		case BLOCK_STATE_SWEPT:
+		case BLOCK_STATE_MARKING:
+			return;
+		case BLOCK_STATE_CHECKING:
+			SGEN_ASSERT (0, FALSE, "How did we get a block that's being checked from a free list?");
+			break;
+		case BLOCK_STATE_NEED_SWEEPING:
+			stat_major_blocks_lazy_swept ++;
+			sweep_block (block, FALSE);
+			break;
+		case BLOCK_STATE_SWEEPING:
+			/* FIXME: do this more elegantly */
+			g_usleep (100);
+			goto retry;
+		default:
+			SGEN_ASSERT (0, FALSE, "Illegal block state");
+			break;
+		}
+	}
+}
+
 static void*
 unlink_slot_from_free_list_uncontested (MSBlockInfo * volatile *free_blocks, int size_index)
 {
@@ -512,10 +582,7 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo * volatile *free_blocks, int
 	block = free_blocks [size_index];
 	SGEN_ASSERT (9, block, "no free block to unlink from free_blocks %p size_index %d", free_blocks, size_index);
 
-	if (G_UNLIKELY (!block->swept)) {
-		stat_major_blocks_lazy_swept ++;
-		sweep_block (block, FALSE);
-	}
+	ensure_can_access_block_free_list (block);
 
 	obj = block->free_list;
 	SGEN_ASSERT (9, obj, "block %p in free list had no available object to alloc from", block);
@@ -575,8 +642,9 @@ free_object (char *obj, size_t size, gboolean pinned)
 	int word, bit;
 	gboolean in_free_list;
 
-	if (!block->swept)
-		sweep_block (block, FALSE);
+	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Should have waited for sweep to free objects.");
+
+	ensure_can_access_block_free_list (block);
 	SGEN_ASSERT (9, (pinned && block->pinned) || (!pinned && !block->pinned), "free-object pinning mixup object %p pinned %d block %p pinned %d", obj, pinned, block, block->pinned);
 	SGEN_ASSERT (9, MS_OBJ_ALLOCED (obj, block), "object %p is already free", obj);
 	MS_CALC_MARK_BIT (word, bit, obj);
@@ -703,18 +771,22 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
 
+		assert_block_state_is_consistent (block);
+
 		if (block->pinned && !pinned)
 			continue;
 		if (!block->pinned && !non_pinned)
 			continue;
 		if (sweep && lazy_sweep) {
+			/* FIXME: We can't just call `sweep_block` willy-nilly. */
 			sweep_block (block, FALSE);
-			SGEN_ASSERT (0, block->swept, "Block must be swept after sweeping");
+			SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "Block must be swept after sweeping");
 		}
 
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
-			if (!block->swept) {
+			/* FIXME: This condition is probably incorrect. */
+			if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING) {
 				int word, bit;
 				MS_CALC_MARK_BIT (word, bit, obj);
 				if (!MS_MARK_BIT (block, word, bit))
@@ -1080,6 +1152,24 @@ sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 	}
 }
 
+static gboolean
+try_set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
+{
+	gint32 old_state = SGEN_CAS (&block->state, new_state, expected_state);
+	return old_state == expected_state;
+}
+
+/*
+ * FIXME: This only CASes to catch errors.  It's not needed for correctness.
+ */
+static void
+set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
+{
+	gboolean success = try_set_block_state (block, new_state, expected_state);
+	SGEN_ASSERT (0, success, "Couldn't set block state");
+	SGEN_ASSERT (0, block->state == new_state, "Block state incorrect after set");
+}
+
 /*
  * sweep_block:
  *
@@ -1094,8 +1184,29 @@ sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 	if (!during_major_collection)
 		g_assert (!sgen_concurrent_collection_in_progress ());
 
-	if (block->swept)
+ retry:
+	assert_block_state_is_consistent (block);
+
+	switch (block->state) {
+	case BLOCK_STATE_SWEPT:
 		return;
+	case BLOCK_STATE_MARKING:
+	case BLOCK_STATE_CHECKING:
+		SGEN_ASSERT (0, FALSE, "How did we get to sweep a block that's being marked or being checked?");
+		goto retry;
+	case BLOCK_STATE_SWEEPING:
+		/* FIXME: Pick another block or whatever */
+		g_usleep (100);
+		goto retry;
+	case BLOCK_STATE_NEED_SWEEPING:
+		if (!try_set_block_state (block, BLOCK_STATE_SWEEPING, BLOCK_STATE_NEED_SWEEPING))
+			goto retry;
+		break;
+	default:
+		SGEN_ASSERT (0, FALSE, "Illegal block state");
+	}
+
+	SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEEPING, "How did we get here without setting state to sweeping?");
 
 	count = MS_BLOCK_FREE / block->obj_size;
 
@@ -1126,6 +1237,10 @@ sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 	block->free_list = reversed;
 
 	block->swept = 1;
+
+	mono_memory_write_barrier ();
+
+	set_block_state (block, BLOCK_STATE_SWEPT, BLOCK_STATE_SWEEPING);
 }
 
 static inline int
@@ -1209,7 +1324,14 @@ sweep_loop_thread_func (void *dummy)
 		block->has_pinned = block->pinned;
 
 		block->is_to_space = FALSE;
+
+		assert_block_state_is_consistent (block);
+
 		block->swept = 0;
+		SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
+		set_block_state (block, BLOCK_STATE_CHECKING, BLOCK_STATE_MARKING);
+
+		assert_block_state_is_consistent (block);
 
 		count = MS_BLOCK_FREE / block->obj_size;
 
@@ -1228,10 +1350,17 @@ sweep_loop_thread_func (void *dummy)
 		if (nused < count)
 			have_free = TRUE;
 
-		if (!lazy_sweep)
-			sweep_block (block, TRUE);
-
 		if (have_live) {
+			set_block_state (block, BLOCK_STATE_NEED_SWEEPING, BLOCK_STATE_CHECKING);
+
+			/*
+			 * FIXME: Go straight to SWEPT if there are no free slots.  We need
+			 * to set the free slot list to NULL, though, and maybe update some
+			 * statistics.
+			 */
+			if (!lazy_sweep)
+				sweep_block (block, TRUE);
+
 			if (!has_pinned) {
 				++sweep_num_blocks [obj_size_index];
 				sweep_slots_used [obj_size_index] += nused;
@@ -1438,6 +1567,7 @@ major_finish_nursery_collection (void)
 static void
 major_start_major_collection (void)
 {
+	MSBlockInfo *block;
 	int i;
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Major collection on unswept heap");
@@ -1453,8 +1583,6 @@ major_start_major_collection (void)
 
 	// Sweep all unswept blocks
 	if (lazy_sweep) {
-		MSBlockInfo *block;
-
 		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
 
 		FOREACH_BLOCK (block) {
@@ -1463,6 +1591,16 @@ major_start_major_collection (void)
 
 		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 	}
+
+	/* FIXME: Just do one iteration over the blocks in this function. */
+	FOREACH_BLOCK (block) {
+		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
+		/*
+		 * FIXME: We don't need CAS here because there's still only one thread doing
+		 * stuff.
+		 */
+		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
+	} END_FOREACH_BLOCK;
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Cannot start major collection without having finished sweeping");
 	sweep_state = SWEEP_STATE_NEED_SWEEPING;
@@ -1660,7 +1798,7 @@ major_pin_objects (SgenGrayQueue *queue)
 	SGEN_ASSERT (0, sweep_state != SWEEP_STATE_SWEEPING, "Cannot iterate blocks during sweep");
 	FOREACH_BLOCK (block) {
 		size_t first_entry, last_entry;
-		SGEN_ASSERT (0, block->swept, "All blocks must be swept when we're pinning.");
+		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING, "All blocks must be swept when we're pinning.");
 		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
 				&first_entry, &last_entry);
 		mark_pinned_objects_in_block (block, first_entry, last_entry, queue);
@@ -1899,7 +2037,8 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			start = (char*)(block_start + card_index * CARD_SIZE_IN_BYTES);
 			end = start + CARD_SIZE_IN_BYTES;
 
-			if (!block->swept)
+			assert_block_state_is_consistent (block);
+			if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING)
 				sweep_block (block, FALSE);
 
 			HEAVY_STAT (++marked_cards);
