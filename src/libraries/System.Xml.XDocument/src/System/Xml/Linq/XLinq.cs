@@ -72,7 +72,7 @@ namespace System.Xml.Linq
             }
         }
 
-        void AddContent(object content)
+        private void AddContent(object content)
         {
             if (content == null) return;
             XNode n = content as XNode;
@@ -109,7 +109,7 @@ namespace System.Xml.Linq
             AddString(XContainer.GetStringValue(content));
         }
 
-        void AddNode(XNode n)
+        private void AddNode(XNode n)
         {
             _parent.ValidateNode(n, _previous);
             if (n.parent != null)
@@ -142,14 +142,14 @@ namespace System.Xml.Linq
             InsertNode(n);
         }
 
-        void AddString(string s)
+        private void AddString(string s)
         {
             _parent.ValidateString(s);
             _text += s;
         }
 
         // Prepends if previous == null, otherwise inserts after previous
-        void InsertNode(XNode n)
+        private void InsertNode(XNode n)
         {
             bool notify = _parent.NotifyChanging(n, XObjectChangeEventArgs.Add);
             if (n.parent != null) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
@@ -245,7 +245,7 @@ namespace System.Xml.Linq
             }
         }
 
-        string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        private string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
@@ -256,7 +256,7 @@ namespace System.Xml.Linq
             return null;
         }
 
-        void PushAncestors(XElement e)
+        private void PushAncestors(XElement e)
         {
             while (true)
             {
@@ -277,7 +277,7 @@ namespace System.Xml.Linq
             }
         }
 
-        void PushElement(XElement e)
+        private void PushElement(XElement e)
         {
             _resolver.PushScope();
             XAttribute a = e.lastAttr;
@@ -294,19 +294,19 @@ namespace System.Xml.Linq
             }
         }
 
-        void WriteEndElement()
+        private void WriteEndElement()
         {
             _writer.WriteEndElement();
             _resolver.PopScope();
         }
 
-        void WriteFullEndElement()
+        private void WriteFullEndElement()
         {
             _writer.WriteFullEndElement();
             _resolver.PopScope();
         }
 
-        void WriteStartElement(XElement e)
+        private void WriteStartElement(XElement e)
         {
             PushElement(e);
             XNamespace ns = e.Name.Namespace;
@@ -457,7 +457,7 @@ namespace System.Xml.Linq
             _resolver = new NamespaceResolver();
         }
 
-        void FlushElement()
+        private void FlushElement()
         {
             if (_element != null)
             {
@@ -476,7 +476,7 @@ namespace System.Xml.Linq
             }
         }
 
-        string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
+        private string GetPrefixOfNamespace(XNamespace ns, bool allowDefaultNamespace)
         {
             string namespaceName = ns.NamespaceName;
             if (namespaceName.Length == 0) return string.Empty;
@@ -487,7 +487,7 @@ namespace System.Xml.Linq
             return null;
         }
 
-        void PushElement()
+        private void PushElement()
         {
             _resolver.PushScope();
             foreach (XAttribute a in _attributes)
@@ -499,7 +499,7 @@ namespace System.Xml.Linq
             }
         }
 
-        void Write(object content)
+        private void Write(object content)
         {
             if (content == null) return;
             XNode n = content as XNode;
@@ -541,13 +541,13 @@ namespace System.Xml.Linq
             WriteString(XContainer.GetStringValue(content));
         }
 
-        void WriteAttribute(XAttribute a)
+        private void WriteAttribute(XAttribute a)
         {
             if (_element == null) throw new InvalidOperationException(SR.InvalidOperation_WriteAttribute);
             _attributes.Add(a);
         }
 
-        void WriteNode(XNode n)
+        private void WriteNode(XNode n)
         {
             FlushElement();
             n.WriteTo(_writer);
@@ -571,7 +571,7 @@ namespace System.Xml.Linq
             _resolver.PopScope();
         }
 
-        void WriteString(string s)
+        private void WriteString(string s)
         {
             FlushElement();
             _writer.WriteString(s);

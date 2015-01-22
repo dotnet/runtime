@@ -104,7 +104,7 @@ namespace System.Xml.Linq
             }
         }
 
-        static int GetDepth(XObject o)
+        private static int GetDepth(XObject o)
         {
             int depth = 0;
             while (o.parent != null)
@@ -191,7 +191,7 @@ namespace System.Xml.Linq
             get { return _nameTable.Add(GetLocalName()); }
         }
 
-        string GetLocalName()
+        private string GetLocalName()
         {
             if (!IsInteractive)
             {
@@ -238,7 +238,7 @@ namespace System.Xml.Linq
             get { return _nameTable.Add(GetNamespaceURI()); }
         }
 
-        string GetNamespaceURI()
+        private string GetNamespaceURI()
         {
             if (!IsInteractive)
             {
@@ -306,7 +306,7 @@ namespace System.Xml.Linq
             get { return _nameTable.Add(GetPrefix()); }
         }
 
-        string GetPrefix()
+        private string GetPrefix()
         {
             if (!IsInteractive)
             {
@@ -1040,18 +1040,18 @@ namespace System.Xml.Linq
             }
         }
 
-        bool IsEndElement
+        private bool IsEndElement
         {
             get { return _parent == _source; }
             set { _parent = value ? _source : null; }
         }
 
-        bool IsInteractive
+        private bool IsInteractive
         {
             get { return _state == ReadState.Interactive; }
         }
 
-        static XmlNameTable CreateNameTable()
+        private static XmlNameTable CreateNameTable()
         {
             XmlNameTable nameTable = new NameTable();
             nameTable.Add(string.Empty);
@@ -1060,7 +1060,7 @@ namespace System.Xml.Linq
             return nameTable;
         }
 
-        XElement GetElementInAttributeScope()
+        private XElement GetElementInAttributeScope()
         {
             XElement e = _source as XElement;
             if (e != null)
@@ -1084,7 +1084,7 @@ namespace System.Xml.Linq
             return null;
         }
 
-        XElement GetElementInScope()
+        private XElement GetElementInScope()
         {
             XElement e = _source as XElement;
             if (e != null)
@@ -1114,7 +1114,7 @@ namespace System.Xml.Linq
             return null;
         }
 
-        static void GetNameInAttributeScope(string qualifiedName, XElement e, out string localName, out string namespaceName)
+        private static void GetNameInAttributeScope(string qualifiedName, XElement e, out string localName, out string namespaceName)
         {
             if (!string.IsNullOrEmpty(qualifiedName))
             {
@@ -1140,7 +1140,7 @@ namespace System.Xml.Linq
             namespaceName = null;
         }
 
-        bool Read(bool skipContent)
+        private bool Read(bool skipContent)
         {
             XElement e = _source as XElement;
             if (e != null)
@@ -1164,7 +1164,7 @@ namespace System.Xml.Linq
             return ReadOverText(skipContent);
         }
 
-        bool ReadIntoDocument(XDocument d)
+        private bool ReadIntoDocument(XDocument d)
         {
             XNode n = d.content as XNode;
             if (n != null)
@@ -1185,7 +1185,7 @@ namespace System.Xml.Linq
             return ReadToEnd();
         }
 
-        bool ReadIntoElement(XElement e)
+        private bool ReadIntoElement(XElement e)
         {
             XNode n = e.content as XNode;
             if (n != null)
@@ -1211,14 +1211,14 @@ namespace System.Xml.Linq
             return ReadToEnd();
         }
 
-        bool ReadIntoAttribute(XAttribute a)
+        private bool ReadIntoAttribute(XAttribute a)
         {
             _source = a.value;
             _parent = a;
             return true;
         }
 
-        bool ReadOverAttribute(XAttribute a, bool skipContent)
+        private bool ReadOverAttribute(XAttribute a, bool skipContent)
         {
             XElement e = (XElement)a.parent;
             if (e != null)
@@ -1232,7 +1232,7 @@ namespace System.Xml.Linq
             return ReadToEnd();
         }
 
-        bool ReadOverNode(XNode n)
+        private bool ReadOverNode(XNode n)
         {
             if (n == _root)
             {
@@ -1256,7 +1256,7 @@ namespace System.Xml.Linq
             return true;
         }
 
-        bool ReadOverText(bool skipContent)
+        private bool ReadOverText(bool skipContent)
         {
             if (_parent is XElement)
             {
@@ -1275,7 +1275,7 @@ namespace System.Xml.Linq
             return ReadToEnd();
         }
 
-        bool ReadToEnd()
+        private bool ReadToEnd()
         {
             _state = ReadState.EndOfFile;
             return false;
@@ -1287,7 +1287,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="candidateAttribute">The attribute to test.</param>
         /// <returns>true if the attribute is a duplicate namespace declaration attribute</returns>
-        bool IsDuplicateNamespaceAttribute(XAttribute candidateAttribute)
+        private bool IsDuplicateNamespaceAttribute(XAttribute candidateAttribute)
         {
             if (!candidateAttribute.IsNamespaceDeclaration)
             {
@@ -1298,7 +1298,7 @@ namespace System.Xml.Linq
             return IsDuplicateNamespaceAttributeInner(candidateAttribute);
         }
 
-        bool IsDuplicateNamespaceAttributeInner(XAttribute candidateAttribute)
+        private bool IsDuplicateNamespaceAttributeInner(XAttribute candidateAttribute)
         {
             // First of all - if this is an xmlns:xml declaration then it's a duplicate
             //   since xml prefix can't be redeclared and it's declared by default always.
@@ -1360,7 +1360,7 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="candidate">The attribute to start with</param>
         /// <returns>The first attribute which is not a namespace attribute or null if the end of attributes has bean reached</returns>
-        XAttribute GetFirstNonDuplicateNamespaceAttribute(XAttribute candidate)
+        private XAttribute GetFirstNonDuplicateNamespaceAttribute(XAttribute candidate)
         {
             Debug.Assert(_omitDuplicateNamespaces, "This method should only be called if we're omitting duplicate namespace attribute." +
                                                   "For perf reason it's better to test this flag in the caller method.");

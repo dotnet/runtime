@@ -197,7 +197,7 @@ namespace System.Xml.Linq
             return AnnotationsIterator(type);
         }
 
-        IEnumerable<object> AnnotationsIterator(Type type)
+        private IEnumerable<object> AnnotationsIterator(Type type)
         {
             if (annotations != null)
             {

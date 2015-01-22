@@ -670,7 +670,7 @@ namespace System.Xml.Linq
             return null;
         }
 
-        static void ValidateAttribute(XName name, string value)
+        private static void ValidateAttribute(XName name, string value)
         {
             // The following constraints apply for namespace declarations:
             string namespaceName = name.NamespaceName;

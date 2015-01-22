@@ -134,7 +134,7 @@ namespace System.Xml.Linq
             return target.GetHashCode() ^ data.GetHashCode();
         }
 
-        static void ValidateName(string name)
+        private static void ValidateName(string name)
         {
             XmlConvert.VerifyNCName(name);
             if (string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase)) throw new ArgumentException(SR.Format(SR.Argument_InvalidPIName, name));
