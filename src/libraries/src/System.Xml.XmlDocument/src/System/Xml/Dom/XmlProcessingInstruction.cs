@@ -9,7 +9,7 @@ namespace System.Xml
     // processor-specific information in the text of the document.
     public class XmlProcessingInstruction : XmlLinkedNode
     {
-        private string _target;
+        private readonly string _target;
         private string _data;
 
         protected internal XmlProcessingInstruction(string target, string data, XmlDocument doc) : base(doc)
@@ -23,9 +23,7 @@ namespace System.Xml
         {
             get
             {
-                if (_target != null)
-                    return _target;
-                return String.Empty;
+                return _target ?? string.Empty;
             }
         }
 

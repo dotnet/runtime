@@ -8,10 +8,10 @@ namespace System.Xml
     // Contains information associated with the document type declaration.
     internal class XmlDocumentType : XmlLinkedNode
     {
-        private string _name;
-        private string _publicId;
-        private string _systemId;
-        private string _internalSubset;
+        private readonly string _name;
+        private readonly string _publicId;
+        private readonly string _systemId;
+        private readonly string _internalSubset;
         private XmlNamedNodeMap _entities;
         private XmlNamedNodeMap _notations;
 
@@ -71,25 +71,13 @@ namespace System.Xml
         // Gets the collection of XmlEntity nodes declared in the document type declaration.
         public XmlNamedNodeMap Entities
         {
-            get
-            {
-                if (_entities == null)
-                    _entities = new XmlNamedNodeMap(this);
-
-                return _entities;
-            }
+            get { return _entities ?? (_entities = new XmlNamedNodeMap(this)); }
         }
 
         // Gets the collection of XmlNotation nodes present in the document type declaration.
         public XmlNamedNodeMap Notations
         {
-            get
-            {
-                if (_notations == null)
-                    _notations = new XmlNamedNodeMap(this);
-
-                return _notations;
-            }
+            get { return _notations ?? (_notations = new XmlNamedNodeMap(this)); }
         }
 
         //

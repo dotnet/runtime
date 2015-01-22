@@ -72,7 +72,6 @@ namespace System
             T t = default(T);
             while (length-- != 0)
                 array[index++] = t;
-            return;
         }
     }
 }

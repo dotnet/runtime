@@ -310,11 +310,9 @@ namespace System.Xml
                 // The error character is a valid name character, but is not a valid start name character
                 throw new XmlException(SR.Format(SR.Xml_BadStartNameChar, XmlExceptionHelper.BuildCharExceptionArgs(s, offsetBadChar)));
             }
-            else
-            {
-                // The error character is an invalid name character
-                throw new XmlException(SR.Format(SR.Xml_BadNameChar, XmlExceptionHelper.BuildCharExceptionArgs(s, offsetBadChar)));
-            }
+
+            // The error character is an invalid name character
+            throw new XmlException(SR.Format(SR.Xml_BadNameChar, XmlExceptionHelper.BuildCharExceptionArgs(s, offsetBadChar)));
         }
 
         /// <summary>

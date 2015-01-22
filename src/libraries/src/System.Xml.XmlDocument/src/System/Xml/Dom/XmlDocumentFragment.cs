@@ -43,8 +43,6 @@ namespace System.Xml
     // such as <code>insertBefore()</code> and  <code>appendChild()</code>.  
     public class XmlDocumentFragment : XmlNode
     {
-        private XmlLinkedNode _lastChild;
-
         protected internal XmlDocumentFragment(XmlDocument ownerDocument) : base()
         {
             if (ownerDocument == null)
@@ -118,11 +116,7 @@ namespace System.Xml
             get { return true; }
         }
 
-        internal override XmlLinkedNode LastNode
-        {
-            get { return _lastChild; }
-            set { _lastChild = value; }
-        }
+        internal override XmlLinkedNode LastNode { get; set; }
 
         internal override bool IsValidChildType(XmlNodeType type)
         {
@@ -141,14 +135,13 @@ namespace System.Xml
                 case XmlNodeType.XmlDeclaration:
                     //if there is an XmlDeclaration node, it has to be the first node;
                     XmlNode firstNode = FirstChild;
-                    if (firstNode == null || firstNode.NodeType != XmlNodeType.XmlDeclaration)
-                        return true;
-                    else
-                        return false; //not allowed to insert a second XmlDeclaration node
+                    //not allowed to insert a second XmlDeclaration node
+                    return firstNode == null || firstNode.NodeType != XmlNodeType.XmlDeclaration;
                 default:
                     return false;
             }
         }
+
         internal override bool CanInsertAfter(XmlNode newChild, XmlNode refChild)
         {
             Debug.Assert(newChild != null); //should be checked that newChild is not null before this function call
@@ -159,8 +152,7 @@ namespace System.Xml
                     //append at the end
                     return (LastNode == null);
                 }
-                else
-                    return false;
+                return false;
             }
             return true;
         }

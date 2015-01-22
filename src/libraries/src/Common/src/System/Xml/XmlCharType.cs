@@ -111,7 +111,7 @@ namespace System.Xml
             "\u2070\u218f\u2c00\u2fef\u3001\ud7ff\uf900\ufdcf" +
             "\ufdf0\ufffd";
 #else
-        const string s_NCStartName =
+        private const string s_NCStartName =
             "\u0041\u005a\u005f\u005f\u0061\u007a" +
             "\u00c0\u00d6\u00d8\u00f6\u00f8\u0131\u0134\u013e" +
             "\u0141\u0148\u014a\u017e\u0180\u01c3\u01cd\u01f0" +
@@ -165,7 +165,7 @@ namespace System.Xml
             "\u3021\u3029\u3041\u3094\u30a1\u30fa\u3105\u312c" +
             "\u4e00\u9fa5\uac00\ud7a3";
 
-        const string s_NCName =
+        private const string s_NCName =
             "\u002d\u002e\u0030\u0039\u0041\u005a\u005f\u005f" +
             "\u0061\u007a\u00b7\u00b7\u00c0\u00d6\u00d8\u00f6" +
             "\u00f8\u0131\u0134\u013e\u0141\u0148\u014a\u017e" +
@@ -240,24 +240,24 @@ namespace System.Xml
             "\u3105\u312c\u4e00\u9fa5\uac00\ud7a3";
 #endif
 
-        const string s_CharData =
+        private const string s_CharData =
             "\u0009\u000a\u000d\u000d\u0020\ud7ff\ue000\ufffd";
 
-        const string s_PublicID =
+        private const string s_PublicID =
             "\u000a\u000a\u000d\u000d\u0020\u0021\u0023\u0025" +
             "\u0027\u003b\u003d\u003d\u003f\u005a\u005f\u005f" +
             "\u0061\u007a";
 
-        const string s_Text = // TextChar = CharData - { 0xA | 0xD | '<' | '&' | 0x9 | ']' | 0xDC00 - 0xDFFF }
+        private const string s_Text = // TextChar = CharData - { 0xA | 0xD | '<' | '&' | 0x9 | ']' | 0xDC00 - 0xDFFF }
             "\u0020\u0025\u0027\u003b\u003d\u005c\u005e\ud7ff\ue000\ufffd";
 
-        const string s_AttrValue = // AttrValueChar = CharData - { 0xA | 0xD | 0x9 | '<' | '>' | '&' | '\'' | '"' | 0xDC00 - 0xDFFF }
+        private const string s_AttrValue = // AttrValueChar = CharData - { 0xA | 0xD | 0x9 | '<' | '>' | '&' | '\'' | '"' | 0xDC00 - 0xDFFF }
             "\u0020\u0021\u0023\u0025\u0028\u003b\u003d\u003d\u003f\ud7ff\ue000\ufffd";
 
         //
         // XML 1.0 Fourth Edition definitions for name characters 
         //
-        const string s_LetterXml4e =
+        private const string s_LetterXml4e =
             "\u0041\u005a\u0061\u007a\u00c0\u00d6\u00d8\u00f6" +
             "\u00f8\u0131\u0134\u013e\u0141\u0148\u014a\u017e" +
             "\u0180\u01c3\u01cd\u01f0\u01f4\u01f5\u01fa\u0217" +
@@ -310,7 +310,7 @@ namespace System.Xml
             "\u2180\u2182\u3007\u3007\u3021\u3029\u3041\u3094" +
             "\u30a1\u30fa\u3105\u312c\u4e00\u9fa5\uac00\ud7a3";
 
-        const string s_NCNameXml4e =
+        private const string s_NCNameXml4e =
             "\u002d\u002e\u0030\u0039\u0041\u005a\u005f\u005f" +
             "\u0061\u007a\u00b7\u00b7\u00c0\u00d6\u00d8\u00f6" +
             "\u00f8\u0131\u0134\u013e\u0141\u0148\u014a\u017e" +

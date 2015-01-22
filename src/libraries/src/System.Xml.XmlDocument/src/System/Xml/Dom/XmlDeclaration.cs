@@ -13,7 +13,6 @@ namespace System.Xml
         private const string YES = "yes";
         private const string NO = "no";
 
-        private string _version;
         private string _encoding;
         private string _standalone;
 
@@ -21,7 +20,7 @@ namespace System.Xml
         {
             if (!IsValidXmlVersion(version))
                 throw new ArgumentException(SR.Xdom_Version);
-            if ((standalone != null) && (standalone.Length > 0))
+            if (!string.IsNullOrEmpty(standalone))
                 if ((standalone != YES) && (standalone != NO))
                     throw new ArgumentException(SR.Format(SR.Xdom_standalone, standalone));
             this.Encoding = encoding;
@@ -31,18 +30,14 @@ namespace System.Xml
 
 
         // The version attribute for <?xml version= '1.0' ... ?>
-        public string Version
-        {
-            get { return _version; }
-            internal set { _version = value; }
-        }
+        public string Version { get; internal set; }
 
         // Specifies the value of the encoding attribute, as for
         // <?xml version= '1.0' encoding= 'UTF-8' ?>
         public string Encoding
         {
             get { return _encoding; }
-            set { _encoding = ((value == null) ? String.Empty : value); }
+            set { _encoding = value ?? String.Empty; }
         }
 
         // Specifies the value of the standalone attribute.
