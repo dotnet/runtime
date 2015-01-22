@@ -1760,6 +1760,11 @@ gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *locati
 	return InterlockedCompareExchange(location, value, comparand);
 }
 
+gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, gboolean *success)
+{
+	return InterlockedCompareExchange(location, value, comparand) == comparand;
+}
+
 MonoObject * ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject **location, MonoObject *value, MonoObject *comparand)
 {
 	MonoObject *res;
