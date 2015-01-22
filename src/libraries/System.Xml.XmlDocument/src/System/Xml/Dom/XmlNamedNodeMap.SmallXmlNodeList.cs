@@ -59,8 +59,7 @@ namespace System.Xml
                     {
                         // If a single null value needs to be stored, then
                         // upgrade to an ArrayList
-                        List<object> temp = new List<object>();
-                        temp.Add(null);
+                        List<object> temp = new List<object> {null};
                         _field = temp;
                     }
                     else
@@ -76,9 +75,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    list = new List<object>();
-                    list.Add(_field);
-                    list.Add(value);
+                    list = new List<object> {_field, value};
                     _field = list;
                 }
             }
@@ -120,16 +117,12 @@ namespace System.Xml
 
                 if (index == 0)
                 {
-                    list = new List<object>();
-                    list.Add(value);
-                    list.Add(_field);
+                    list = new List<object> {value, _field};
                     _field = list;
                 }
                 else if (index == 1)
                 {
-                    list = new List<object>();
-                    list.Add(_field);
-                    list.Add(value);
+                    list = new List<object> {_field, value};
                     _field = list;
                 }
                 else
@@ -140,7 +133,7 @@ namespace System.Xml
 
             class SingleObjectEnumerator : IEnumerator
             {
-                private object _loneValue;
+                private readonly object _loneValue;
                 private int _position = -1;
 
                 public SingleObjectEnumerator(object value)
