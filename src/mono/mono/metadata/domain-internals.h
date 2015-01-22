@@ -219,13 +219,11 @@ struct _MonoJitInfo {
 	gboolean    has_arch_eh_info:1;
 	gboolean    from_aot:1;
 	gboolean    from_llvm:1;
-	gboolean    dbg_hidden_inited:1;
+	gboolean    dbg_attrs_inited:1;
 	gboolean    dbg_hidden:1;
 	/* Whenever this jit info was loaded in async context */
 	gboolean    async:1;
-	gboolean    dbg_step_through_inited:1;
 	gboolean    dbg_step_through:1;
-	gboolean    dbg_non_user_code_inited:1;
 	gboolean    dbg_non_user_code:1;
 
 	/* FIXME: Embed this after the structure later*/

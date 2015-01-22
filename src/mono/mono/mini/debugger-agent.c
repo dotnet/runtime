@@ -3386,6 +3386,52 @@ strdup_tolower (char *s)
 	return s2;
 }
 
+static void
+init_jit_info_dbg_attrs (MonoJitInfo *ji)
+{
+	static MonoClass *hidden_klass, *step_through_klass, *non_user_klass;
+	MonoCustomAttrInfo *ainfo;
+
+	if (ji->dbg_attrs_inited)
+		return;
+
+	if (!hidden_klass) {
+		hidden_klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
+		g_assert (hidden_klass);
+	}
+	if (!step_through_klass) {
+		step_through_klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
+		g_assert (step_through_klass);
+	}
+	if (!non_user_klass) {
+		non_user_klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
+		g_assert (non_user_klass);
+	}
+
+	ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
+	if (ainfo) {
+		if (mono_custom_attrs_has_attr (ainfo, hidden_klass))
+			ji->dbg_hidden = TRUE;
+		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
+			ji->dbg_step_through = TRUE;
+		if (mono_custom_attrs_has_attr (ainfo, non_user_klass))
+			ji->dbg_non_user_code = TRUE;
+		mono_custom_attrs_free (ainfo);
+	}
+
+	ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
+	if (ainfo) {
+		if (mono_custom_attrs_has_attr (ainfo, step_through_klass))
+			ji->dbg_step_through = TRUE;
+		if (mono_custom_attrs_has_attr (ainfo, non_user_klass))
+			ji->dbg_non_user_code = TRUE;
+		mono_custom_attrs_free (ainfo);
+	}
+
+	mono_memory_barrier ();
+	ji->dbg_attrs_inited = TRUE;
+}
+
 /*
  * EVENT HANDLING
  */
@@ -3509,74 +3555,17 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 						(jinfo_get_method (ji) != ((SingleStepReq*)req->info)->start_method))
 						filtered = TRUE;
 					if ((mod->data.filter & STEP_FILTER_DEBUGGER_HIDDEN) && ji) {
-						MonoCustomAttrInfo *ainfo;
-						static MonoClass *klass;
-
-						if (!klass) {
-							klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerHiddenAttribute");
-							g_assert (klass);
-						}
-						if (!ji->dbg_hidden_inited) {
-							ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
-							if (ainfo) {
-								if (mono_custom_attrs_has_attr (ainfo, klass))
-									ji->dbg_hidden = TRUE;
-								mono_custom_attrs_free (ainfo);
-							}
-							ji->dbg_hidden_inited = TRUE;
-						}
+						init_jit_info_dbg_attrs (ji);
 						if (ji->dbg_hidden)
 							filtered = TRUE;
 					}
 					if ((mod->data.filter & STEP_FILTER_DEBUGGER_STEP_THROUGH) && ji) {
-						MonoCustomAttrInfo *ainfo;
-						static MonoClass *klass;
-
-						if (!klass) {
-							klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerStepThroughAttribute");
-							g_assert (klass);
-						}
-						if (!ji->dbg_step_through_inited) {
-							ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
-							if (ainfo) {
-								if (mono_custom_attrs_has_attr (ainfo, klass))
-									ji->dbg_step_through = TRUE;
-								mono_custom_attrs_free (ainfo);
-							}
-							ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
-							if (ainfo) {
-								if (mono_custom_attrs_has_attr (ainfo, klass))
-									ji->dbg_step_through = TRUE;
-								mono_custom_attrs_free (ainfo);
-							}
-							ji->dbg_step_through_inited = TRUE;
-						}
+						init_jit_info_dbg_attrs (ji);
 						if (ji->dbg_step_through)
 							filtered = TRUE;
 					}
 					if ((mod->data.filter & STEP_FILTER_DEBUGGER_NON_USER_CODE) && ji) {
-						MonoCustomAttrInfo *ainfo;
-						static MonoClass *klass;
-
-						if (!klass) {
-							klass = mono_class_from_name (mono_defaults.corlib, "System.Diagnostics", "DebuggerNonUserCodeAttribute");
-							g_assert (klass);
-						}
-						if (!ji->dbg_non_user_code_inited) {
-							ainfo = mono_custom_attrs_from_method (jinfo_get_method (ji));
-							if (ainfo) {
-								if (mono_custom_attrs_has_attr (ainfo, klass))
-									ji->dbg_non_user_code = TRUE;
-								mono_custom_attrs_free (ainfo);
-							}
-							ainfo = mono_custom_attrs_from_class (jinfo_get_method (ji)->klass);
-							if (ainfo) {
-								if (mono_custom_attrs_has_attr (ainfo, klass))
-									ji->dbg_non_user_code = TRUE;
-								mono_custom_attrs_free (ainfo);
-							}
-							ji->dbg_non_user_code_inited = TRUE;
-						}
+						init_jit_info_dbg_attrs (ji);
 						if (ji->dbg_non_user_code)
 							filtered = TRUE;
 					}
