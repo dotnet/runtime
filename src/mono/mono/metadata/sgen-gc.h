@@ -682,7 +682,7 @@ struct _SgenMajorCollector {
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
-	gboolean (*have_finished_sweeping) (void);
+	gboolean (*have_swept) (void);
 	void (*free_swept_blocks) (void);
 	void (*check_scan_starts) (void);
 	void (*dump_heap) (FILE *heap_dump_file);
@@ -696,6 +696,7 @@ struct _SgenMajorCollector {
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
 	size_t (*get_num_major_sections) (void);
+	size_t (*get_num_major_unswept_old_sections) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	gboolean (*is_worker_thread) (MonoNativeThreadId thread);

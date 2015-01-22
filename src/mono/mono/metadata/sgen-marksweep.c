@@ -631,17 +631,10 @@ free_pinned_object (char *obj, size_t size)
 static void*
 major_alloc_degraded (MonoVTable *vtable, size_t size)
 {
-	void *obj;
-	size_t old_num_sections;
-
-	old_num_sections = num_major_sections;
-
-	obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
+	void *obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
 		HEAVY_STAT (++stat_objects_alloced_degraded);
 		HEAVY_STAT (stat_bytes_alloced_degraded += size);
-		g_assert (num_major_sections >= old_num_sections);
-		sgen_register_major_sections_alloced (num_major_sections - old_num_sections);
 	}
 	return obj;
 }
@@ -1159,6 +1152,9 @@ static size_t *sweep_slots_available;
 static size_t *sweep_slots_used;
 static size_t *sweep_num_blocks;
 
+static size_t num_major_sections_before_sweep; /* GUARD */
+static size_t num_major_sections_freed_in_sweep; /* GUARD */
+
 static void
 sweep_start (void)
 {
@@ -1182,6 +1178,9 @@ sweep_loop_thread_func (void *dummy)
 	int block_index;
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEEPING, "Sweep thread called with wrong state");
+
+	num_major_sections_before_sweep = num_major_sections;
+	num_major_sections_freed_in_sweep = 0;
 
 	/* traverse all blocks, free and zero unmarked objects */
 	block_index = 0;
@@ -1265,6 +1264,7 @@ sweep_loop_thread_func (void *dummy)
 			ms_free_block (block);
 
 			--num_major_sections;
+			++num_major_sections_freed_in_sweep;
 		}
 
 		++block_index;
@@ -1320,7 +1320,7 @@ major_sweep (void)
 }
 
 static gboolean
-major_have_finished_sweeping (void)
+major_have_swept (void)
 {
 	return sweep_state == SWEEP_STATE_SWEPT;
 }
@@ -1433,7 +1433,6 @@ major_finish_nursery_collection (void)
 #ifdef MARKSWEEP_CONSISTENCY_CHECK
 	consistency_check ();
 #endif
-	sgen_register_major_sections_alloced (num_major_sections - old_num_major_sections);
 }
 
 static void
@@ -1701,6 +1700,17 @@ static size_t
 get_num_major_sections (void)
 {
 	return num_major_sections;
+}
+
+/*
+ * Returns the number of major sections that were present when the last sweep was initiated,
+ * and were not freed during the sweep.  They are the basis for calculating the allowance.
+ */
+static size_t
+get_num_major_unswept_old_sections (void)
+{
+	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Can only query unswept sections after sweep");
+	return num_major_sections_before_sweep - num_major_sections_freed_in_sweep;
 }
 
 static gboolean
@@ -2083,7 +2093,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	}
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
-	collector->have_finished_sweeping = major_have_finished_sweeping;
+	collector->have_swept = major_have_swept;
 	collector->free_swept_blocks = major_free_swept_blocks;
 	collector->check_scan_starts = major_check_scan_starts;
 	collector->dump_heap = major_dump_heap;
@@ -2096,6 +2106,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
+	collector->get_num_major_unswept_old_sections = get_num_major_unswept_old_sections;
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;
 	collector->post_param_init = post_param_init;

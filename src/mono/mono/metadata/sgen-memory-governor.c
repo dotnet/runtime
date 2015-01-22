@@ -58,7 +58,6 @@ static gboolean debug_print_allowance = FALSE;
 /* use this to tune when to do a major/minor collection */
 static mword memory_pressure = 0;
 static mword minor_collection_allowance;
-static mword minor_collection_sections_alloced = 0;
 
 static mword last_major_num_sections = 0;
 static mword last_los_memory_usage = 0;
@@ -76,26 +75,20 @@ static mword sgen_memgov_available_free_space (void);
 /* GC trigger heuristics. */
 
 static void
-sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
+sgen_memgov_calculate_minor_collection_allowance (void)
 {
 	size_t num_major_sections;
 	mword new_major, new_heap_size, allowance_target;
 
-	if (overwrite)
-		g_assert (need_calculate_minor_collection_allowance);
-
 	if (!need_calculate_minor_collection_allowance)
 		return;
 
-	if (!major_collector.have_finished_sweeping ()) {
-		if (overwrite)
-			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
-		return;
-	}
+	SGEN_ASSERT (0, major_collector.have_swept (), "Can only calculate allowance if heap is swept");
 
-	num_major_sections = major_collector.get_num_major_sections ();
+	num_major_sections = major_collector.get_num_major_unswept_old_sections ();
 
 	new_major = num_major_sections * major_collector.section_size;
+	/* FIXME: We're using the current major heap size, but the previous LOS size. */
 	new_heap_size = new_major + last_collection_los_memory_usage;
 
 	/*
@@ -133,9 +126,24 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 gboolean
 sgen_need_major_collection (mword space_needed)
 {
-	mword los_alloced;
+	size_t los_alloced;
+	size_t num_sections;
+	size_t num_unswept_old_sections;
+	size_t minor_collection_sections_alloced;
+
 	if (sgen_concurrent_collection_in_progress ())
 		return FALSE;
+
+	SGEN_ASSERT (0, major_collector.have_swept (), "Must have finished sweeping to calculate allowance");
+
+	num_sections = major_collector.get_num_major_sections ();
+	num_unswept_old_sections = major_collector.get_num_major_unswept_old_sections ();
+	SGEN_ASSERT (0, num_sections >= num_unswept_old_sections, "Number of sections should not shrink after sweep");
+	minor_collection_sections_alloced = num_sections - num_unswept_old_sections;
+
+	if (need_calculate_minor_collection_allowance)
+		sgen_memgov_calculate_minor_collection_allowance ();
+
 	los_alloced = los_memory_usage - MIN (last_collection_los_memory_usage, los_memory_usage);
 	return (space_needed > sgen_memgov_available_free_space ()) ||
 		minor_collection_sections_alloced * major_collector.section_size + los_alloced > minor_collection_allowance;
@@ -144,7 +152,6 @@ sgen_need_major_collection (mword space_needed)
 void
 sgen_memgov_minor_collection_start (void)
 {
-	sgen_memgov_try_calculate_minor_collection_allowance (FALSE);
 }
 
 void
@@ -170,9 +177,6 @@ sgen_memgov_major_collection_start (void)
 void
 sgen_memgov_major_collection_end (void)
 {
-	sgen_memgov_try_calculate_minor_collection_allowance (TRUE);
-
-	minor_collection_sections_alloced = 0;
 	last_collection_los_memory_usage = los_memory_usage;
 }
 
@@ -222,12 +226,6 @@ sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count)
 		if (info[i].generation != -1)
 			log_timming (&info [i]);
 	}
-}
-
-void
-sgen_register_major_sections_alloced (size_t num_sections)
-{
-	minor_collection_sections_alloced += num_sections;
 }
 
 mword
