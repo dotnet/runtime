@@ -134,7 +134,9 @@ sgen_need_major_collection (mword space_needed)
 	if (sgen_concurrent_collection_in_progress ())
 		return FALSE;
 
-	SGEN_ASSERT (0, major_collector.have_swept (), "Must have finished sweeping to calculate allowance");
+	/* FIXME: This is a cop-out.  We should have some way of figuring this out. */
+	if (!major_collector.have_swept ())
+		return FALSE;
 
 	num_sections = major_collector.get_num_major_sections ();
 	num_unswept_old_sections = major_collector.get_num_major_unswept_old_sections ();
@@ -179,8 +181,10 @@ sgen_memgov_major_collection_end (gboolean forced)
 {
 	last_collection_los_memory_usage = los_memory_usage;
 
-	if (forced)
+	if (forced) {
+		sgen_get_major_collector ()->finish_sweeping ();
 		sgen_memgov_calculate_minor_collection_allowance ();
+	}
 }
 
 void

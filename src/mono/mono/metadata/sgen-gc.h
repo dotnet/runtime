@@ -674,7 +674,13 @@ struct _SgenMajorCollector {
 
 	void* (*alloc_object) (MonoVTable *vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
+
+	/*
+	 * This is used for domain unloading, heap walking from the logging profiler, and
+	 * debugging.  Can assume the world is stopped.
+	 */
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
+
 	void (*free_non_pinned_object) (char *obj, size_t size);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
@@ -684,6 +690,7 @@ struct _SgenMajorCollector {
 	void (*init_to_space) (void);
 	void (*sweep) (void);
 	gboolean (*have_swept) (void);
+	void (*finish_sweeping) (void);
 	void (*free_swept_blocks) (void);
 	void (*check_scan_starts) (void);
 	void (*dump_heap) (FILE *heap_dump_file);

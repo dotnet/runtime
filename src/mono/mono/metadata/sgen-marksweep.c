@@ -292,6 +292,9 @@ update_heap_boundaries_for_block (MSBlockInfo *block)
 	sgen_update_heap_boundaries ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), (mword)MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE);
 }
 
+/*
+ * Thread safe
+ */
 static void*
 ms_get_empty_block (void)
 {
@@ -585,7 +588,7 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo * volatile *free_blocks, int
 	ensure_can_access_block_free_list (block);
 
 	obj = block->free_list;
-	SGEN_ASSERT (9, obj, "block %p in free list had no available object to alloc from", block);
+	SGEN_ASSERT (0, obj, "block %p in free list had no available object to alloc from", block);
 
 	next_free_slot = *(void**)obj;
 	if (next_free_slot) {
@@ -760,6 +763,23 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 }
 
 static void
+major_finish_sweeping (void)
+{
+	SGEN_TV_DECLARE (tv_begin);
+	SGEN_TV_DECLARE (tv_end);
+
+	if (sweep_state != SWEEP_STATE_SWEEPING)
+		return;
+
+	SGEN_TV_GETTIME (tv_begin);
+	while (sweep_state == SWEEP_STATE_SWEEPING)
+		g_usleep (100);
+	SGEN_TV_GETTIME (tv_end);
+
+	g_print ("**** waited for sweep: %d ms\n", SGEN_TV_ELAPSED_MS (tv_begin, tv_end));
+}
+
+static void
 major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data)
 {
 	gboolean sweep = flags & ITERATE_OBJECTS_SWEEP;
@@ -767,6 +787,7 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 	gboolean pinned = flags & ITERATE_OBJECTS_PINNED;
 	MSBlockInfo *block;
 
+	major_finish_sweeping ();
 	FOREACH_BLOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
@@ -1287,10 +1308,13 @@ sweep_start (void)
 	}
 }
 
+static void sweep_finish (void);
+
 static mono_native_thread_return_t
 sweep_loop_thread_func (void *dummy)
 {
 	int block_index;
+	int small_id = mono_thread_info_register_small_id ();
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEEPING, "Sweep thread called with wrong state");
 
@@ -1326,6 +1350,16 @@ sweep_loop_thread_func (void *dummy)
 		block->is_to_space = FALSE;
 
 		assert_block_state_is_consistent (block);
+
+		if (block->state == BLOCK_STATE_SWEPT) {
+			LOCK_ALLOCATED_BLOCKS;
+			for (; block_index < allocated_blocks.next_slot; ++block_index) {
+				block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
+				SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "Swept blocks must be at the end of the list.");
+			}
+			UNLOCK_ALLOCATED_BLOCKS;
+			break;
+		}
 
 		block->swept = 0;
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
@@ -1403,6 +1437,10 @@ sweep_loop_thread_func (void *dummy)
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
 	UNLOCK_ALLOCATED_BLOCKS;
 
+	sweep_finish ();
+
+	mono_thread_small_id_free (small_id);
+
 	return NULL;
 }
 
@@ -1437,6 +1475,8 @@ sweep_finish (void)
 	sweep_state = SWEEP_STATE_SWEPT;
 }
 
+static MonoNativeThreadId sweep_loop_thread;
+
 static void
 major_sweep (void)
 {
@@ -1444,8 +1484,16 @@ major_sweep (void)
 	sweep_state = SWEEP_STATE_SWEEPING;
 
 	sweep_start ();
-	sweep_loop_thread_func (NULL);
-	sweep_finish ();
+
+	if (TRUE /*concurrent_mark*/) {
+		/*
+		 * FIXME: We can't create a thread while the world is stopped because it
+		 * might deadlock.  `finalizer-wait.exe` exposes this.
+		 */
+		mono_native_thread_create (&sweep_loop_thread, sweep_loop_thread_func, NULL);
+	} else {
+		sweep_loop_thread_func (NULL);
+	}
 }
 
 static gboolean
@@ -1790,6 +1838,7 @@ major_free_swept_blocks (void)
 	}
 }
 
+/* FIXME: Unify `major_find_pin_queue_start_ends` and `major_pin_objects`. */
 static void
 major_pin_objects (SgenGrayQueue *queue)
 {
@@ -1884,12 +1933,16 @@ major_print_gc_param_usage (void)
 			);
 }
 
+/*
+ * This callback is used to clear cards, move cards to the shadow table and do counting.
+ */
 static void
 major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	MSBlockInfo *block;
 	gboolean has_references;
 
+	major_finish_sweeping ();
 	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
@@ -1956,7 +2009,11 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 	gboolean has_references;
 	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
 
-	SGEN_ASSERT (0, sweep_state != SWEEP_STATE_SWEEPING, "Can't scan card table during sweep");
+	/*
+	 * FIXME: Don't wait for sweep, just iterate the blocks and sweep them individually
+	 * if necessary.
+	 */
+	major_finish_sweeping ();
 
 	if (!concurrent_mark)
 		g_assert (!mod_union);
@@ -2103,6 +2160,11 @@ major_count_cards (long long *num_total_cards, long long *num_marked_cards)
 	long long total_cards = 0;
 	long long marked_cards = 0;
 
+	if (sweep_state == SWEEP_STATE_SWEEPING) {
+		*num_total_cards = -1;
+		*num_marked_cards = -1;
+	}
+
 	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
 		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) MS_BLOCK_FOR_BLOCK_INFO (block));
 		int i;
@@ -2233,6 +2295,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
 	collector->have_swept = major_have_swept;
+	collector->finish_sweeping = major_finish_sweeping;
 	collector->free_swept_blocks = major_free_swept_blocks;
 	collector->check_scan_starts = major_check_scan_starts;
 	collector->dump_heap = major_dump_heap;

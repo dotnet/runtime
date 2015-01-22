@@ -748,6 +748,8 @@ mono_gc_clear_domain (MonoDomain * domain)
 		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE);
 	g_assert (!concurrent_collection_in_progress);
 
+	major_collector.finish_sweeping ();
+
 	sgen_process_fin_stage_entries ();
 	sgen_process_dislink_stage_entries ();
 
@@ -3092,7 +3094,6 @@ sgen_ensure_free_space (size_t size)
 {
 	int generation_to_collect = -1;
 	const char *reason = NULL;
-
 
 	if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
 		if (sgen_need_major_collection (size)) {
