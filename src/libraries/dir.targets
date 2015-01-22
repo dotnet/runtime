@@ -51,31 +51,35 @@
     <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
     <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
     <RunTestsForProject Condition="'$(SkipTests)'=='True'">False</RunTestsForProject>
+    
+    <!-- Don't run unit tests as post-build in VS, use F5 on test project instead (see below). -->
+    <RunTestsForProject Condition="'$(BuildingInsideVisualStudio)' == 'True'">False</RunTestsForProject>
   </PropertyGroup>
 
+  <!-- xUnit command line -->
+  <PropertyGroup>
+    <XunitHost>corerun.exe</XunitHost>
+    <XunitCommandLine>xunit.console.netcore.exe $(TargetFileName)</XunitCommandLine>
+    <XunitOptions>$(XunitOptions) -notrait category=outerloop</XunitOptions>
+    <XunitOptions>$(XunitOptions) -notrait category=failing</XunitOptions>
+  </PropertyGroup>
+  
+  <!-- In VS: Debug to run unit tests on CoreCLR. -->
+  <PropertyGroup Condition="'$(IsTestProject)'=='True'">
+    <DebugTestFrameworkFolder>aspnetcore50</DebugTestFrameworkFolder>
+    <StartWorkingDirectory Condition="'$(StartWorkingDirectory)' == ''">$(TestPath)$(DebugTestFrameworkFolder)</StartWorkingDirectory>
+    <StartAction Condition="'$(StartAction)' == ''">Program</StartAction>
+    <StartProgram Condition="'$(StartProgram)' == ''">$(StartWorkingDirectory)\$(XunitHost)</StartProgram>
+    <StartArguments Condition="'$(StartArguments)' == ''">$(XunitCommandLine) $(XunitOptions)</StartArguments>
+    <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
+  </PropertyGroup>
+
+  <!-- On command line: run unit tests on CoreCLR as post-build step. -->
   <Target Name="RunTestsForProject"
           AfterTargets="PrepareForRun"
           Condition="'$(RunTestsForProject)'=='True'">
 
-    <!-- xUnit Traits -->
-    <PropertyGroup>
-      <ExcludeTraits Condition="'$(ExcludeTraits)'==''">category=outerloop;category=failing</ExcludeTraits>
-    </PropertyGroup>
-    <ItemGroup>
-      <IncludeTraitsItems Include="$(IncludeTraits)" />
-      <ExcludeTraitsItems Include="$(ExcludeTraits)" />
-    </ItemGroup>
-    
-    <!-- Construct and invoke xunit console runner via corerun.exe -->
-    <PropertyGroup>
-      <XunitCommandLine>corerun.exe xunit.console.netcore.exe</XunitCommandLine>
-      
-      <XunitOptions>$(XunitOptions) $(TargetFileName)</XunitOptions>
-      <XunitOptions Condition="'@(IncludeTraitsItems)'!=''">$(XunitOptions) -trait @(IncludeTraitsItems, ' -trait ')</XunitOptions>
-      <XunitOptions Condition="'@(ExcludeTraitsItems)'!=''">$(XunitOptions) -notrait @(ExcludeTraitsItems, ' -notrait ')</XunitOptions>
-    </PropertyGroup>
-
-    <Exec Command="$(XunitCommandLine) $(XunitOptions)"
+    <Exec Command="$(XunitHost) $(XunitCommandLine) $(XunitOptions)"
           WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)"
           ContinueOnError="True">
       <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />
