@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{4266D58F-EB60-46C2-BA81-3ABDE759A7D5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.ComponentModel.Annotations</RootNamespace>
+    <AssemblyName>System.ComponentModel.Annotations</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Strings.Designer.cs">
+      <DependentUpon>Strings.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CompareAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ConcurrencyCheckAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CreditCardAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\CustomValidationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DataType.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EditableAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EmailAddressAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FileExtensionsAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\IValidatableObject.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\KeyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LocalizableString.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ColumnAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ComplexTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\DatabaseGeneratedAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\DatabaseGeneratedOption.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\ForeignKeyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\InversePropertyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\NotMappedAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Schema\TableAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\StringLengthAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\TimestampAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\UrlAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationAttributeStore.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationContext.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationException.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\ValidationResult.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\Validator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
