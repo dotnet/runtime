@@ -278,6 +278,9 @@ static gboolean conservative_stack_mark = FALSE;
 /* If set, do a plausibility check on the scan_starts before and after
    each collection */
 static gboolean do_scan_starts_check = FALSE;
+/* If set, do not run finalizers. */
+static gboolean do_not_finalize = FALSE;
+
 /*
  * If the major collector is concurrent and this is FALSE, we will
  * never initiate a synchronous major collection, unless requested via
@@ -3689,7 +3692,8 @@ mono_gc_invoke_finalizers (void)
 		count++;
 		/* the object is on the stack so it is pinned */
 		/*g_print ("Calling finalizer for object: %p (%s)\n", entry->object, safe_name (entry->object));*/
-		mono_gc_run_finalize (obj, NULL);
+		if (!do_not_finalize)
+			mono_gc_run_finalize (obj, NULL);
 	}
 	g_assert (!entry);
 	return count;
@@ -5061,6 +5065,8 @@ mono_gc_base_init (void)
 				do_verify_nursery = TRUE;
 				sgen_set_use_managed_allocator (FALSE);
 				enable_nursery_canaries = TRUE;
+			} else if (!strcmp (opt, "do-not-finalize")) {
+				do_not_finalize = TRUE;
 			} else if (!sgen_bridge_handle_gc_debug (opt)) {
 				sgen_env_var_error (MONO_GC_DEBUG_NAME, "Ignoring.", "Unknown option `%s`.", opt);
 
@@ -5091,6 +5097,7 @@ mono_gc_base_init (void)
 				fprintf (stderr, "  heap-dump=<filename>\n");
 				fprintf (stderr, "  binary-protocol=<filename>[:<file-size-limit>]\n");
 				fprintf (stderr, "  nursery-canaries\n");
+				fprintf (stderr, "  do-not-finalize\n");
 				sgen_bridge_print_gc_debug_usage ();
 				fprintf (stderr, "\n");
 
