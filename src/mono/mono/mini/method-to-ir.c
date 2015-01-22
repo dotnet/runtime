@@ -5628,20 +5628,28 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #if SIZEOF_REGISTER == 8
 		if (strcmp (cmethod->name, "Read") == 0 && (fsig->params [0]->type == MONO_TYPE_I8)) {
-			MonoInst *load_ins;
+			if (mono_arch_opcode_supported (OP_ATOMIC_LOAD_I8)) {
+				MONO_INST_NEW (cfg, ins, OP_ATOMIC_LOAD_I8);
+				ins->dreg = mono_alloc_preg (cfg);
+				ins->sreg1 = args [0]->dreg;
+				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_SEQ;
+				MONO_ADD_INS (cfg->cbb, ins);
+			} else {
+				MonoInst *load_ins;
 
-			emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
-			/* 64 bit reads are already atomic */
-			MONO_INST_NEW (cfg, load_ins, OP_LOADI8_MEMBASE);
-			load_ins->dreg = mono_alloc_preg (cfg);
-			load_ins->inst_basereg = args [0]->dreg;
-			load_ins->inst_offset = 0;
-			MONO_ADD_INS (cfg->cbb, load_ins);
+				/* 64 bit reads are already atomic */
+				MONO_INST_NEW (cfg, load_ins, OP_LOADI8_MEMBASE);
+				load_ins->dreg = mono_alloc_preg (cfg);
+				load_ins->inst_basereg = args [0]->dreg;
+				load_ins->inst_offset = 0;
+				MONO_ADD_INS (cfg->cbb, load_ins);
 
-			emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 
-			ins = load_ins;
+				ins = load_ins;
+			}
 		}
 #endif
 
@@ -5724,8 +5732,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 		}
-
-		if (strcmp (cmethod->name, "Exchange") == 0) {
+		else if (strcmp (cmethod->name, "Exchange") == 0) {
 			guint32 opcode;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
 
@@ -5774,8 +5781,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (cfg->gen_write_barriers && is_ref)
 				emit_write_barrier (cfg, args [0], args [1]);
 		}
-
-		if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
+		else if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
 			int size = 0;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [1]);
 			if (fsig->params [1]->type == MONO_TYPE_I4)
@@ -5811,9 +5817,98 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (cfg->gen_write_barriers && is_ref)
 				emit_write_barrier (cfg, args [0], args [1]);
 		}
-
-		if (strcmp (cmethod->name, "MemoryBarrier") == 0)
+		else if (strcmp (cmethod->name, "MemoryBarrier") == 0)
 			ins = emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+
+		if (ins)
+			return ins;
+	} else if (cmethod->klass->image == mono_defaults.corlib &&
+			   (strcmp (cmethod->klass->name_space, "System.Threading") == 0) &&
+			   (strcmp (cmethod->klass->name, "Volatile") == 0)) {
+		ins = NULL;
+
+		if (!strcmp (cmethod->name, "Read")) {
+			guint32 opcode = 0;
+			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
+
+			if (fsig->params [0]->type == MONO_TYPE_I1)
+				opcode = OP_ATOMIC_LOAD_I1;
+			else if (fsig->params [0]->type == MONO_TYPE_U1 || fsig->params [0]->type == MONO_TYPE_BOOLEAN)
+				opcode = OP_ATOMIC_LOAD_U1;
+			else if (fsig->params [0]->type == MONO_TYPE_I2)
+				opcode = OP_ATOMIC_LOAD_I2;
+			else if (fsig->params [0]->type == MONO_TYPE_U2)
+				opcode = OP_ATOMIC_LOAD_U2;
+			else if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_LOAD_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_U4)
+				opcode = OP_ATOMIC_LOAD_U4;
+#if SIZEOF_REGISTER == 8
+			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_I)
+				opcode = OP_ATOMIC_LOAD_I8;
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U8 || fsig->params [0]->type == MONO_TYPE_U)
+				opcode = OP_ATOMIC_LOAD_U8;
+#else
+			else if (fsig->params [0]->type == MONO_TYPE_I)
+				opcode = OP_ATOMIC_LOAD_I4;
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U)
+				opcode = OP_ATOMIC_LOAD_U4;
+#endif
+
+			if (opcode) {
+				if (!mono_arch_opcode_supported (opcode))
+					return NULL;
+
+				MONO_INST_NEW (cfg, ins, opcode);
+				ins->dreg = mono_alloc_ireg (cfg);
+				ins->sreg1 = args [0]->dreg;
+				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_ACQ;
+				MONO_ADD_INS (cfg->cbb, ins);
+			}
+		}
+
+		if (!strcmp (cmethod->name, "Write")) {
+			guint32 opcode = 0;
+			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
+
+			if (fsig->params [0]->type == MONO_TYPE_I1)
+				opcode = OP_ATOMIC_STORE_I1;
+			else if (fsig->params [0]->type == MONO_TYPE_U1 || fsig->params [0]->type == MONO_TYPE_BOOLEAN)
+				opcode = OP_ATOMIC_STORE_U1;
+			else if (fsig->params [0]->type == MONO_TYPE_I2)
+				opcode = OP_ATOMIC_STORE_I2;
+			else if (fsig->params [0]->type == MONO_TYPE_U2)
+				opcode = OP_ATOMIC_STORE_U2;
+			else if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_ATOMIC_STORE_I4;
+			else if (fsig->params [0]->type == MONO_TYPE_U4)
+				opcode = OP_ATOMIC_STORE_U4;
+#if SIZEOF_REGISTER == 8
+			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_I)
+				opcode = OP_ATOMIC_STORE_I8;
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U8 || fsig->params [0]->type == MONO_TYPE_U)
+				opcode = OP_ATOMIC_STORE_U8;
+#else
+			else if (fsig->params [0]->type == MONO_TYPE_I)
+				opcode = OP_ATOMIC_STORE_I4;
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_U)
+				opcode = OP_ATOMIC_STORE_U4;
+#endif
+
+			if (opcode) {
+				if (!mono_arch_opcode_supported (opcode))
+					return NULL;
+
+				MONO_INST_NEW (cfg, ins, opcode);
+				ins->dreg = args [0]->dreg;
+				ins->sreg1 = args [1]->dreg;
+				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_REL;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				if (cfg->gen_write_barriers && is_ref)
+					emit_write_barrier (cfg, args [0], args [1]);
+			}
+		}
 
 		if (ins)
 			return ins;
