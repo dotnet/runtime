@@ -25,232 +25,114 @@
 
 #include "sgen-gc.h"
 
+#define PROTOCOL_ID(method) method ## _id
+#define PROTOCOL_STRUCT(method) method ## _struct
+
+#define TYPE_INT int
+#define TYPE_LONGLONG long long
+#define TYPE_SIZE size_t
+#define TYPE_POINTER gpointer
+
 enum {
-	SGEN_PROTOCOL_COLLECTION_FORCE,
-	SGEN_PROTOCOL_COLLECTION_BEGIN,
-	SGEN_PROTOCOL_COLLECTION_END,
-	SGEN_PROTOCOL_CONCURRENT_START,
-	SGEN_PROTOCOL_CONCURRENT_UPDATE,
-	SGEN_PROTOCOL_CONCURRENT_FINISH,
-	SGEN_PROTOCOL_WORLD_STOPPING,
-	SGEN_PROTOCOL_WORLD_STOPPED,
-	SGEN_PROTOCOL_WORLD_RESTARTING,
-	SGEN_PROTOCOL_WORLD_RESTARTED,
-	SGEN_PROTOCOL_ALLOC,
-	SGEN_PROTOCOL_COPY,
-	SGEN_PROTOCOL_PIN_STAGE,
-	SGEN_PROTOCOL_PIN,
-	SGEN_PROTOCOL_MARK,
-	SGEN_PROTOCOL_SCAN_BEGIN,
-	SGEN_PROTOCOL_SCAN_VTYPE_BEGIN,
-	SGEN_PROTOCOL_SCAN_PROCESS_REFERENCE,
-	SGEN_PROTOCOL_WBARRIER,
-	SGEN_PROTOCOL_GLOBAL_REMSET,
-	SGEN_PROTOCOL_PTR_UPDATE,
-	SGEN_PROTOCOL_CLEANUP,
-	SGEN_PROTOCOL_EMPTY,
-	SGEN_PROTOCOL_THREAD_SUSPEND,
-	SGEN_PROTOCOL_THREAD_RESTART,
-	SGEN_PROTOCOL_THREAD_REGISTER,
-	SGEN_PROTOCOL_THREAD_UNREGISTER,
-	SGEN_PROTOCOL_MISSING_REMSET,
-	SGEN_PROTOCOL_ALLOC_PINNED,
-	SGEN_PROTOCOL_ALLOC_DEGRADED,
-	SGEN_PROTOCOL_CARD_SCAN,
-	SGEN_PROTOCOL_CEMENT,
-	SGEN_PROTOCOL_CEMENT_RESET,
-	SGEN_PROTOCOL_DISLINK_UPDATE,
-	SGEN_PROTOCOL_DISLINK_UPDATE_STAGED,
-	SGEN_PROTOCOL_DISLINK_PROCESS_STAGED,
-	SGEN_PROTOCOL_DOMAIN_UNLOAD_BEGIN,
-	SGEN_PROTOCOL_DOMAIN_UNLOAD_END,
-	SGEN_PROTOCOL_GRAY_ENQUEUE,
-	SGEN_PROTOCOL_GRAY_DEQUEUE,
+#define BEGIN_PROTOCOL_ENTRY0(method) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) PROTOCOL_ID(method),
+#define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) PROTOCOL_ID(method),
+
+#define FLUSH()
+
+#define DEFAULT_PRINT()
+#define CUSTOM_PRINT(_)
+
+#define IS_ALWAYS_MATCH(_)
+#define IS_MATCH(_)
+#define IS_VTABLE_MATCH(_)
+
+#define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_HEAVY
+
+#include "sgen-protocol-def.h"
 };
 
-typedef struct {
-	int generation;
-} SGenProtocolCollectionForce;
+#define BEGIN_PROTOCOL_ENTRY0(method)
+#define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
+	typedef struct { \
+		t1 f1; \
+	} PROTOCOL_STRUCT(method);
+#define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
+	typedef struct { \
+		t1 f1; \
+		t2 f2; \
+	} PROTOCOL_STRUCT(method);
+#define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
+	typedef struct { \
+		t1 f1; \
+		t2 f2; \
+		t3 f3; \
+	} PROTOCOL_STRUCT(method);
+#define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	typedef struct { \
+		t1 f1; \
+		t2 f2; \
+		t3 f3; \
+		t4 f4; \
+	} PROTOCOL_STRUCT(method);
+#define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	typedef struct { \
+		t1 f1; \
+		t2 f2; \
+		t3 f3; \
+		t4 f4; \
+		t5 f5; \
+	} PROTOCOL_STRUCT(method);
+#define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	typedef struct { \
+		t1 f1; \
+		t2 f2; \
+		t3 f3; \
+		t4 f4; \
+		t5 f5; \
+		t6 f6; \
+	} PROTOCOL_STRUCT(method);
 
-typedef struct {
-	int index, generation;
-} SGenProtocolCollectionBegin;
+#define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
+	BEGIN_PROTOCOL_ENTRY0 (method)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) \
+	BEGIN_PROTOCOL_ENTRY1 (method,t1,f1)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) \
+	BEGIN_PROTOCOL_ENTRY2 (method,t1,f1,t2,f2)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) \
+	BEGIN_PROTOCOL_ENTRY3 (method,t1,f1,t2,f2,t3,f3)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	BEGIN_PROTOCOL_ENTRY4 (method,t1,f1,t2,f2,t3,f3,t4,f4)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	BEGIN_PROTOCOL_ENTRY5 (method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	BEGIN_PROTOCOL_ENTRY6 (method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6)
 
-typedef struct {
-	int index, generation;
-	long long num_scanned_objects;
-	long long num_unique_scanned_objects;
-} SGenProtocolCollectionEnd;
+#define FLUSH()
 
-typedef struct {
-	long long timestamp;
-} SGenProtocolWorldStopping;
+#define DEFAULT_PRINT()
+#define CUSTOM_PRINT(_)
 
-typedef struct {
-	long long timestamp;
-	long long total_major_cards;
-	long long marked_major_cards;
-	long long total_los_cards;
-	long long marked_los_cards;
-} SGenProtocolWorldStopped;
+#define IS_ALWAYS_MATCH(_)
+#define IS_MATCH(_)
+#define IS_VTABLE_MATCH(_)
 
-typedef struct {
-	int generation;
-	long long timestamp;
-	long long total_major_cards;
-	long long marked_major_cards;
-	long long total_los_cards;
-	long long marked_los_cards;
-} SGenProtocolWorldRestarting;
+#define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_HEAVY
 
-typedef struct {
-	int generation;
-	long long timestamp;
-} SGenProtocolWorldRestarted;
-
-typedef struct {
-	gpointer obj;
-	gpointer vtable;
-	int size;
-} SGenProtocolAlloc;
-
-typedef struct {
-	gpointer from;
-	gpointer to;
-	gpointer vtable;
-	int size;
-} SGenProtocolCopy;
-
-typedef struct {
-	gpointer addr_ptr;
-	gpointer addr;
-} SGenProtocolPinStage;
-
-typedef struct {
-	gpointer obj;
-	gpointer vtable;
-	int size;
-} SGenProtocolPin;
-
-typedef struct {
-	gpointer obj;
-	gpointer vtable;
-	int size;
-} SGenProtocolMark;
-
-typedef struct {
-	gpointer obj;
-	gpointer vtable;
-	int size;
-} SGenProtocolScanBegin;
-
-typedef struct {
-	gpointer obj;
-	int size;
-} SGenProtocolScanVTypeBegin;
-
-typedef struct {
-	gpointer obj;
-	gpointer ptr;
-	gpointer value;
-} SGenProtocolScanProcessReference;
-
-typedef struct {
-	gpointer ptr;
-	gpointer value;
-	gpointer value_vtable;
-} SGenProtocolWBarrier;
-
-typedef struct {
-	gpointer ptr;
-	gpointer value;
-	gpointer value_vtable;
-} SGenProtocolGlobalRemset;
-
-typedef struct {
-	gpointer ptr;
-	gpointer old_value;
-	gpointer new_value;
-	gpointer vtable;
-	int size;
-} SGenProtocolPtrUpdate;
-
-typedef struct {
-	gpointer ptr;
-	gpointer vtable;
-	int size;
-} SGenProtocolCleanup;
-
-typedef struct {
-	gpointer start;
-	int size;
-} SGenProtocolEmpty;
-
-typedef struct {
-	gpointer thread, stopped_ip;
-} SGenProtocolThreadSuspend;
-
-typedef struct {
-	gpointer thread;
-} SGenProtocolThreadRestart;
-
-typedef struct {
-	gpointer thread;
-} SGenProtocolThreadRegister;
-
-typedef struct {
-	gpointer thread;
-} SGenProtocolThreadUnregister;
-
-typedef struct {
-	gpointer obj;
-	gpointer obj_vtable;
-	int offset;
-	gpointer value;
-	gpointer value_vtable;
-	int value_pinned;
-} SGenProtocolMissingRemset;
-
-typedef struct {
-	gpointer start;
-	int size;
-} SGenProtocolCardScan;
-
-typedef struct {
-	gpointer obj;
-	gpointer vtable;
-	int size;
-} SGenProtocolCement;
-
-typedef struct {
-	gpointer link;
-	gpointer obj;
-	int track;
-	int staged;
-} SGenProtocolDislinkUpdate;
-
-typedef struct {
-	gpointer link;
-	gpointer obj;
-	int track;
-	int index;
-} SGenProtocolDislinkUpdateStaged;
-
-typedef struct {
-	gpointer link;
-	gpointer obj;
-	int index;
-} SGenProtocolDislinkProcessStaged;
-
-typedef struct {
-	gpointer domain;
-} SGenProtocolDomainUnload;
-
-typedef struct {
-	gpointer queue;
-	gpointer cursor;
-	gpointer value;
-} SGenProtocolGrayQueue;
+#include "sgen-protocol-def.h"
 
 /* missing: finalizers, roots, non-store wbarriers */
 
@@ -259,84 +141,74 @@ gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
 
 void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 
-void binary_protocol_collection_force (int generation) MONO_INTERNAL;
-void binary_protocol_collection_begin (int index, int generation) MONO_INTERNAL;
-void binary_protocol_collection_end (int index, int generation, long long num_objects_scanned, long long num_unique_objects_scanned) MONO_INTERNAL;
-void binary_protocol_concurrent_start (void) MONO_INTERNAL;
-void binary_protocol_concurrent_update (void) MONO_INTERNAL;
-void binary_protocol_concurrent_finish (void) MONO_INTERNAL;
-void binary_protocol_world_stopping (long long timestamp) MONO_INTERNAL;
-void binary_protocol_world_stopped (long long timestamp, long long total_major_cards,
-		long long marked_major_cards, long long total_los_cards, long long marked_los_cards) MONO_INTERNAL;
-void binary_protocol_world_restarting (int generation, long long timestamp,
-		long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards) MONO_INTERNAL;
-void binary_protocol_world_restarted (int generation, long long timestamp) MONO_INTERNAL;
-
-void binary_protocol_thread_suspend (gpointer thread, gpointer stopped_ip) MONO_INTERNAL;
-void binary_protocol_thread_restart (gpointer thread) MONO_INTERNAL;
-void binary_protocol_thread_register (gpointer thread) MONO_INTERNAL;
-void binary_protocol_thread_unregister (gpointer thread) MONO_INTERNAL;
-void binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset,
-		gpointer value, gpointer value_vtable, int value_pinned) MONO_INTERNAL;
-
-void binary_protocol_cement (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_cement_reset (void) MONO_INTERNAL;
-
-void binary_protocol_domain_unload_begin (gpointer domain) MONO_INTERNAL;
-void binary_protocol_domain_unload_end (gpointer domain) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY0(method) \
+	void method (void) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
+	void method (t1 f1) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
+	void method (t1 f1, t2 f2) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
+	void method (t1 f1, t2 f2, t3 f3) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	void method (t1 f1, t2 f2, t3 f3, t4 f4) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) MONO_INTERNAL;
+#define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) MONO_INTERNAL;
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-
 #define binary_protocol_is_heavy_enabled()	binary_protocol_is_enabled ()
 
-void binary_protocol_alloc (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_copy (gpointer from, gpointer to, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr) MONO_INTERNAL;
-void binary_protocol_pin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_mark (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_scan_begin (gpointer obj, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_scan_vtype_begin (gpointer start, int size) MONO_INTERNAL;
-void binary_protocol_scan_process_reference (gpointer obj, gpointer ptr, gpointer value) MONO_INTERNAL;
-void binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable) MONO_INTERNAL;
-void binary_protocol_global_remset (gpointer ptr, gpointer value, gpointer value_vtable) MONO_INTERNAL;
-void binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_cleanup (gpointer ptr, gpointer vtable, int size) MONO_INTERNAL;
-void binary_protocol_empty (gpointer start, int size) MONO_INTERNAL;
-void binary_protocol_card_scan (gpointer start, int size) MONO_INTERNAL;
-void binary_protocol_dislink_update (gpointer link, gpointer obj, int track, int staged) MONO_INTERNAL;
-void binary_protocol_dislink_update_staged (gpointer link, gpointer obj, int track, int index) MONO_INTERNAL;
-void binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index) MONO_INTERNAL;
-void binary_protocol_gray_enqueue (gpointer queue, gpointer cursor, gpointer value) MONO_INTERNAL;
-void binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpointer value) MONO_INTERNAL;
-
+#define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
+	BEGIN_PROTOCOL_ENTRY0 (method)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) \
+	BEGIN_PROTOCOL_ENTRY1 (method,t1,f1)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) \
+	BEGIN_PROTOCOL_ENTRY2 (method,t1,f1,t2,f2)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) \
+	BEGIN_PROTOCOL_ENTRY3 (method,t1,f1,t2,f2,t3,f3)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	BEGIN_PROTOCOL_ENTRY4 (method,t1,f1,t2,f2,t3,f3,t4,f4)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	BEGIN_PROTOCOL_ENTRY5 (method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5)
+#define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	BEGIN_PROTOCOL_ENTRY6 (method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6)
 #else
-
 #define binary_protocol_is_heavy_enabled()	FALSE
 
-#define binary_protocol_alloc(obj, vtable, size)
-#define binary_protocol_alloc_pinned(obj, vtable, size)
-#define binary_protocol_alloc_degraded(obj, vtable, size)
-#define binary_protocol_copy(from, to, vtable, size)
-#define binary_protocol_pin_stage(addr_ptr, addr)
-#define binary_protocol_pin(obj, vtable, size)
-#define binary_protocol_mark(obj, vtable, size)
-#define binary_protocol_scan_begin(obj, vtable, size)
-#define binary_protocol_scan_vtype_begin(obj, size)
-#define binary_protocol_scan_process_reference(obj, ptr, value)
-#define binary_protocol_wbarrier(ptr, value, value_vtable)
-#define binary_protocol_global_remset(ptr, value, value_vtable)
-#define binary_protocol_ptr_update(ptr, old_value, new_value, vtable, size)
-#define binary_protocol_cleanup(ptr, vtable, size)
-#define binary_protocol_empty(start, size)
-#define binary_protocol_card_scan(start, size)
-#define binary_protocol_dislink_update(link,obj,track,staged)
-#define binary_protocol_dislink_update_staged(link,obj,track,index)
-#define binary_protocol_dislink_process_staged(link,obj,index)
-#define binary_protocol_gray_enqueue(queue,cursor,value)
-#define binary_protocol_gray_dequeue(queue,cursor,value)
-
+#define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
+	static inline void method (void) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) \
+	static inline void method (t1 f1) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) \
+	static inline void method (t1 f1, t2 f2) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) \
+	static inline void method (t1 f1, t2 f2, t3 f3) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
+	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
+	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) {}
+#define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
+	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) {}
 #endif
+
+#define FLUSH()
+
+#define DEFAULT_PRINT()
+#define CUSTOM_PRINT(_)
+
+#define IS_ALWAYS_MATCH(_)
+#define IS_MATCH(_)
+#define IS_VTABLE_MATCH(_)
+
+#define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_HEAVY
+
+#include "sgen-protocol-def.h"
+
+#undef TYPE_INT
+#undef TYPE_LONGLONG
+#undef TYPE_SIZE
+#undef TYPE_POINTER
 
 #endif
