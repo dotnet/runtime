@@ -64,7 +64,7 @@
     <XunitOptions>$(XunitOptions) -notrait category=failing</XunitOptions>
   </PropertyGroup>
   
-  <!-- In VS: Debug to run unit tests on CoreCLR. -->
+  <!-- In VS (2015 Preview or later currently required): Debug to run unit tests on CoreCLR. -->
   <PropertyGroup Condition="'$(IsTestProject)'=='True'">
     <DebugTestFrameworkFolder>aspnetcore50</DebugTestFrameworkFolder>
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)' == ''">$(TestPath)$(DebugTestFrameworkFolder)</StartWorkingDirectory>
