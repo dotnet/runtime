@@ -13,8 +13,8 @@ namespace System.Xml.Linq
     /// </summary>
     class LineInfoAnnotation
     {
-        internal readonly int lineNumber;
-        internal readonly int linePosition;
+        internal int lineNumber;
+        internal int linePosition;
 
         public LineInfoAnnotation(int lineNumber, int linePosition)
         {

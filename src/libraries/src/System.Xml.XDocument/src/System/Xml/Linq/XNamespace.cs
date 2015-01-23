@@ -20,9 +20,9 @@ namespace System.Xml.Linq
         private static WeakReference s_refXml;
         private static WeakReference s_refXmlns;
 
-        private readonly string _namespaceName;
-        private readonly int _hashCode;
-        private readonly XHashtable<XName> _names;
+        private string _namespaceName;
+        private int _hashCode;
+        private XHashtable<XName> _names;
 
         private const int NamesCapacity = 8;           // Starting capacity of XName table, which must be power of 2
         private const int NamespacesCapacity = 32;     // Starting capacity of XNamespace table, which must be power of 2

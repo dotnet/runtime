@@ -10,7 +10,7 @@ namespace System.Xml.Linq
 {
     internal struct Inserter
     {
-        private readonly XContainer _parent;
+        private XContainer _parent;
         private XNode _previous;
         private string _text;
 
@@ -58,10 +58,9 @@ namespace System.Xml.Linq
                 }
                 else if (_text.Length > 0)
                 {
-                    XText prevXText = _previous as XText;
-                    if (prevXText != null && !(_previous is XCData))
+                    if (_previous is XText && !(_previous is XCData))
                     {
-                        prevXText.Value += _text;
+                        ((XText)_previous).Value += _text;
                     }
                     else
                     {
@@ -127,10 +126,9 @@ namespace System.Xml.Linq
             {
                 if (_text.Length > 0)
                 {
-                    XText prevXText = _previous as XText;
-                    if (prevXText != null && !(_previous is XCData))
+                    if (_previous is XText && !(_previous is XCData))
                     {
-                        prevXText.Value += _text;
+                        ((XText)_previous).Value += _text;
                     }
                     else
                     {
@@ -192,7 +190,7 @@ namespace System.Xml.Linq
 
     internal struct ElementWriter
     {
-        private readonly XmlWriter _writer;
+        private XmlWriter _writer;
         private NamespaceResolver _resolver;
 
         public ElementWriter(XmlWriter writer)
@@ -430,7 +428,7 @@ namespace System.Xml.Linq
                                 _rover = d;
                                 return d.prefix;
                             }
-                            if (d.prefix.Length > 0)
+                            else if (d.prefix.Length > 0)
                             {
                                 return d.prefix;
                             }
@@ -444,9 +442,9 @@ namespace System.Xml.Linq
 
     internal struct StreamingElementWriter
     {
-        private readonly XmlWriter _writer;
+        private XmlWriter _writer;
         private XStreamingElement _element;
-        private readonly List<XAttribute> _attributes;
+        private List<XAttribute> _attributes;
         private NamespaceResolver _resolver;
 
         public StreamingElementWriter(XmlWriter w)

@@ -5,7 +5,7 @@ namespace System.Xml.Linq
 {
     class BaseUriAnnotation
     {
-        internal readonly string baseUri;
+        internal string baseUri;
 
         public BaseUriAnnotation(string baseUri)
         {
