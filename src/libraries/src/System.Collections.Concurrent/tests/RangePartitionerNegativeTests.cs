@@ -17,7 +17,7 @@ using System;
 using System.Collections.Concurrent;
 using Xunit;
 
-namespace OutOfTheBoxPartitionerTests
+namespace System.Collections.Concurrent.Tests
 {
     public class RangePartitionerNegativeTests
     {
@@ -31,6 +31,7 @@ namespace OutOfTheBoxPartitionerTests
             IntFromNotGreaterThanTo(899, 899, 100);
             IntFromNotGreaterThanTo(-19999, -299999, 100);
         }
+
         public static void IntFromNotGreaterThanTo(int from, int to, int rangesize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(from, to));
@@ -46,6 +47,7 @@ namespace OutOfTheBoxPartitionerTests
             LongFromNotGreaterThanTo(899, 899, 100);
             LongFromNotGreaterThanTo(-19999, -299999, 100);
         }
+
         public static void LongFromNotGreaterThanTo(long from, long to, int rangesize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(from, to));
@@ -61,6 +63,7 @@ namespace OutOfTheBoxPartitionerTests
             InvalidIntRangeSize(0, 1000, 0);
             InvalidIntRangeSize(899, 9000, -10);
         }
+
         public static void InvalidIntRangeSize(int from, int to, int rangesize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Partitioner.Create(from, to, rangesize));

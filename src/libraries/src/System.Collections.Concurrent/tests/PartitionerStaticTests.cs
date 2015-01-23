@@ -9,63 +9,48 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Test
+namespace System.Collections.Concurrent.Tests
 {
     public class PartitionerStaticTests
     {
         [Fact]
-        public static void RunPartitionerStaticTest_StaticPartitioningIList()
+        public static void TestStaticPartitioningIList()
         {
-            RunPartitionerStaticTest_StaticPartitioningIList(11, 8);
-            RunPartitionerStaticTest_StaticPartitioningIList(8, 11);
-            RunPartitionerStaticTest_StaticPartitioningIList(10, 10);
-            RunPartitionerStaticTest_StaticPartitioningIList(10000, 1);
-            RunPartitionerStaticTest_StaticPartitioningIList(10000, 4);
-            RunPartitionerStaticTest_StaticPartitioningIList(10000, 357);
+            RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 0);
+            RunTestWithAlgorithm(dataSize: 999, partitionCount: 1, algorithm: 0);
+            RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 0);
         }
 
         [Fact]
-        public static void RunPartitionerStaticTest_StaticPartitioningArray()
+        public static void TestStaticPartitioningArray()
         {
-            RunPartitionerStaticTest_StaticPartitioningArray(11, 8);
-            RunPartitionerStaticTest_StaticPartitioningArray(8, 11);
-            RunPartitionerStaticTest_StaticPartitioningArray(10, 10);
-            RunPartitionerStaticTest_StaticPartitioningArray(10000, 1);
-            RunPartitionerStaticTest_StaticPartitioningArray(10000, 4);
-            RunPartitionerStaticTest_StaticPartitioningArray(10000, 357);
+            RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 1);
+            RunTestWithAlgorithm(dataSize: 123, partitionCount: 1, algorithm: 1);
+            RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 1);
         }
 
         [Fact]
-        public static void RunPartitionerStaticTest_LoadBalanceIList()
+        public static void TestLoadBalanceIList()
         {
-            RunPartitionerStaticTest_LoadBalanceIList(11, 8);
-            RunPartitionerStaticTest_LoadBalanceIList(8, 11);
-            RunPartitionerStaticTest_LoadBalanceIList(11, 11);
-            RunPartitionerStaticTest_LoadBalanceIList(10000, 1);
-            RunPartitionerStaticTest_LoadBalanceIList(10000, 4);
-            RunPartitionerStaticTest_LoadBalanceIList(10000, 23);
+            RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 2);
+            RunTestWithAlgorithm(dataSize: 123, partitionCount: 1, algorithm: 2);
+            RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 2);
         }
 
         [Fact]
-        public static void RunPartitionerStaticTest_LoadBalanceArray()
+        public static void TestLoadBalanceArray()
         {
-            RunPartitionerStaticTest_LoadBalanceArray(11, 8);
-            RunPartitionerStaticTest_LoadBalanceArray(8, 11);
-            RunPartitionerStaticTest_LoadBalanceArray(11, 11);
-            RunPartitionerStaticTest_LoadBalanceArray(10000, 1);
-            RunPartitionerStaticTest_LoadBalanceArray(10000, 4);
-            RunPartitionerStaticTest_LoadBalanceArray(10000, 23);
+            RunTestWithAlgorithm(dataSize: 11, partitionCount: 8, algorithm: 3);
+            RunTestWithAlgorithm(dataSize: 999, partitionCount: 1, algorithm: 3);
+            RunTestWithAlgorithm(dataSize: 10000, partitionCount: 11, algorithm: 3);
         }
 
         [Fact]
-        public static void RunPartitionerStaticTest_LoadBalanceEnumerator()
+        public static void TestLoadBalanceEnumerator()
         {
-            RunPartitionerStaticTest_LoadBalanceEnumerator(11, 8);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(8, 11);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10, 10);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10000, 1);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10000, 4);
-            RunPartitionerStaticTest_LoadBalanceEnumerator(10000, 37);
+            RunTestWithAlgorithm(dataSize: 7, partitionCount: 4, algorithm: 4);
+            RunTestWithAlgorithm(dataSize: 123, partitionCount: 1, algorithm: 4);
+            RunTestWithAlgorithm(dataSize: 1000, partitionCount: 7, algorithm: 4);
         }
 
         #region Dispose tests. The dispose logic of PartitionerStatic
@@ -75,33 +60,21 @@ namespace Test
         // source data, and we need to make sure that whenever the object returned by GetDynmaicPartitions is disposed,
         // the "reader enumerator" is also disposed.
         [Fact]
-        public static void RunPartitionerStaticTest_DisposeException()
+        public static void TestDisposeException()
         {
             var data = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
             var enumerable = new DisposeTrackingEnumerable<int>(data);
             var partitioner = Partitioner.Create(enumerable);
             var partition = partitioner.GetDynamicPartitions();
             IDisposable d = partition as IDisposable;
-            if (d == null)
-            {
-                Assert.False(true, "RunPartitionerStaticTest_DisposeException: failed casting to IDisposable");
-            }
-            else
-            {
-                d.Dispose();
-            }
+            Assert.NotNull(d);
 
-            try
-            {
-                var enum1 = partition.GetEnumerator();
-                Assert.False(true, "RunPartitionerStaticTest_DisposeException: failed. Expecting ObjectDisposedException to be thrown");
-            }
-            catch (ObjectDisposedException)
-            { }
+            d.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => { var enum1 = partition.GetEnumerator(); });
         }
 
         /// <summary>
-        /// BugFix 835284: Race in Partitioner's dynamic partitioning Dispose logic
+        /// Race in Partitioner's dynamic partitioning Dispose logic
         /// After the fix, the partitioner created through Partitioner.Create(IEnumerable) has the following behavior:
         ///     1. reference counting in static partitioning. All partitions need to be disposed explicitly
         ///     2. no reference counting in dynamic partitioning. The partitioner need to be disposed explicity
@@ -117,43 +90,21 @@ namespace Test
                 while (e.MoveNext()) { }
             }
 
-            try
-            {
-                using (var e = d.GetEnumerator()) { }
-            }
-            catch (System.ObjectDisposedException)
-            {
-                Assert.False(true, "RunDynamicPartitioningDispose:  FAILED! ObjectDisposedException thrown by test");
-            }
+            // should not throw
+            using (var e = d.GetEnumerator()) { }; 
         }
-
 
         #endregion
 
-
         [Fact]
-        public static void RunPartitionerStaticTest_Exceptions()
+        public static void TestExceptions()
         {
             // Testing ArgumentNullException with data==null
-            bool gotException;
             // Test ArgumentNullException of source data
             OrderablePartitioner<int> partitioner;
             for (int algorithm = 0; algorithm < 5; algorithm++)
             {
-                gotException = false;
-                try
-                {
-                    partitioner = PartitioningWithAlgorithm<int>(null, algorithm);
-                }
-                catch (ArgumentNullException)
-                {
-                    gotException = true;
-                }
-                if (!gotException)
-                {
-                    Assert.False(true, String.Format(
-                        "RunPartitionerStaticTest_Exceptions: Failure in partitioning algorithm {0}, didn't catch ArgumentNullException", algorithm));
-                }
+                Assert.Throws<ArgumentNullException>(() => { partitioner = PartitioningWithAlgorithm<int>(null, algorithm); });
             }
             // Test NotSupportedException of Reset: already tested in RunTestWithAlgorithm
             // Test InvalidOperationException: already tested in TestPartitioningCore
@@ -167,25 +118,13 @@ namespace Test
             for (int algorithm = 0; algorithm < 5; algorithm++)
             {
                 partitioner = PartitioningWithAlgorithm<int>(data, algorithm);
-                gotException = false;
-                try
-                {
-                    var partitions1 = partitioner.GetOrderablePartitions(0);
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    gotException = true;
-                }
-                if (!gotException)
-                {
-                    Assert.False(true, String.Format(
-                        "RunPartitionerStaticTest_Exceptions:  Failure in GetOrderablePartitions of algorithm {0}, didn't catch ArgumentOutOfRangeException", algorithm));
-                }
+
+                Assert.Throws<ArgumentOutOfRangeException>(() => { var partitions1 = partitioner.GetOrderablePartitions(0); });
             }
         }
 
         [Fact]
-        public static void RunPartitionerStaticTest_EmptyPartitions()
+        public static void TestEmptyPartitions()
         {
             int[] data = new int[0];
 
@@ -214,37 +153,9 @@ namespace Test
                 }
                 catch (NotSupportedException)
                 {
-                    if (!IsStaticPartition(algorithm))
-                    {
-                        Assert.False(true, "RunPartitionerStaticTest_EmptyPartitions:  IsStaticPartition(algorithm) should have been true.");
-                    }
+                    Assert.True(IsStaticPartition(algorithm), "TestEmptyPartitions:  IsStaticPartition(algorithm) should have been true.");
                 }
             }
-        }
-
-        private static void RunPartitionerStaticTest_StaticPartitioningIList(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 0);
-        }
-
-        private static void RunPartitionerStaticTest_StaticPartitioningArray(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 1);
-        }
-
-        private static void RunPartitionerStaticTest_LoadBalanceIList(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 2);
-        }
-
-        private static void RunPartitionerStaticTest_LoadBalanceArray(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 3);
-        }
-
-        private static void RunPartitionerStaticTest_LoadBalanceEnumerator(int dataSize, int partitionCount)
-        {
-            RunTestWithAlgorithm(dataSize, partitionCount, 4);
         }
 
         private static void RunTestWithAlgorithm(int dataSize, int partitionCount, int algorithm)
@@ -266,11 +177,7 @@ namespace Test
             for (int i = 0; i < partitionCount; i++)
                 partitionsUnderTest[i] = partitions1[i];
 
-            if (partitions1.Count != partitionCount)
-            {
-                Assert.False(true, String.Format(
-                    "RunPartitionerStaticTest_LoadBalanceIList:  FAILED.  partitions1.count: {0} != partitioncount: {1}", partitions1.Count, partitionCount));
-            }
+            Assert.Equal(partitionCount, partitions1.Count);
 
             TestPartitioningCore(dataSize, partitionCount, data, IsStaticPartition(algorithm), partitionsUnderTest);
 
@@ -281,6 +188,7 @@ namespace Test
                 var partitions2 = partitioner.GetOrderableDynamicPartitions();
                 for (int i = 0; i < partitionCount; i++)
                     partitionsUnderTest[i] = partitions2.GetEnumerator();
+
                 TestPartitioningCore(dataSize, partitionCount, data, IsStaticPartition(algorithm), partitionsUnderTest);
             }
             catch (NotSupportedException)
@@ -289,10 +197,7 @@ namespace Test
                 gotException = true;
             }
 
-            if (IsStaticPartition(algorithm) && !gotException)
-            {
-                Assert.False(true, "RunPartitionerStaticTest_LoadBalanceIList: Failure: didn't catch \"NotSupportedException\" for static partitioning");
-            }
+            Assert.False(IsStaticPartition(algorithm) && !gotException, "TestLoadBalanceIList: Failure: didn't catch \"NotSupportedException\" for static partitioning");
         }
 
         private static OrderablePartitioner<T> PartitioningWithAlgorithm<T>(T[] data, int algorithm)
@@ -335,7 +240,7 @@ namespace Test
             for (int i = 0; i < partitionCount; i++)
             {
                 int my_i = i;
-                threadArray[i] = new Task(() =>
+                threadArray[i] = Task.Run(() =>
                 {
                     int localOffset = 0;
                     int lastElement = -1;
@@ -344,31 +249,15 @@ namespace Test
                     int quotient, remainder;
                     quotient = dataSize / partitionCount;
                     remainder = dataSize % partitionCount;
-
-                    bool gotException = false;
-                    //call Current before MoveNext, should throw an exception
-                    try
-                    {
-                        var temp = partitions[my_i].Current;
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        gotException = true;
-                    }
-                    if (!gotException)
-                    {
-                        Assert.False(true, "TestPartitioningCore:  Failure: didn't catch the InvalidOperationException when call Current before MoveNext");
-                    }
+                    Assert.Throws<InvalidOperationException>(() => { var temp = partitions[my_i].Current; });
 
                     while (partitions[my_i].MoveNext())
                     {
                         int key = (int)partitions[my_i].Current.Key,
                             value = partitions[my_i].Current.Value;
 
-                        if (key != value)
-                        {
-                            Assert.False(true, String.Format("TestPartitioningCore:  TestPartitioningCore: FAILED.  key {0} does not equal value {1}", key, value));
-                        }
+                        Assert.Equal(key, value);
+
                         boolarray[key] = true;
                         Interlocked.Increment(ref enumCount);
 
@@ -391,38 +280,24 @@ namespace Test
                     }
                 }
                 );
-                threadArray[i].Start();
             }
 
-            for (int i = 0; i < threadArray.Length; i++)
-            {
-                threadArray[i].Wait();
-            }
+            Task.WaitAll(threadArray);
 
             if (keysOrderedWithinPartition)
                 Console.WriteLine("TestPartitioningCore:  Keys are not strictly ordered within each partition");
 
-
             // Only check this with static partitioning
             //check keys are ordered across the partitions 
-            if (staticPartitioning && !keysOrderedAcrossPartitions)
-            {
-                Assert.False(true, "TestPartitioningCore:  Keys are not strictly ordered across partitions");
-            }
+            Assert.False(staticPartitioning && !keysOrderedAcrossPartitions, "TestPartitioningCore:  Keys are not strictly ordered across partitions");
 
             //check data count
-            if (enumCount != dataSize)
-            {
-                Assert.False(true, String.Format("TestPartitioningCore:  inconsistent count, requested {0}, added {1}", dataSize, enumCount));
-            }
+            Assert.Equal(enumCount, dataSize);
 
             //check if any elements are missing
             foreach (var item in boolarray)
             {
-                if (!item)
-                {
-                    Assert.False(true, "TestPartitioningCore:  inconsistent data: some elements are missing");
-                }
+                Assert.True(item);
             }
         }
 
@@ -430,7 +305,7 @@ namespace Test
         // Try calling MoveNext on a Partitioner enumerator after that enumerator has already returned false.
         //
         [Fact]
-        public static void RunPartitionerStaticTest_ExtraMoveNext()
+        public static void TestExtraMoveNext()
         {
             Partitioner<int>[] partitioners = new[] 
             {
@@ -444,20 +319,13 @@ namespace Test
 
             for (int i = 0; i < partitioners.Length; i++)
             {
-                try
+                using (var ee = partitioners[i].GetPartitions(1)[0])
                 {
-                    using (var ee = partitioners[i].GetPartitions(1)[0])
-                    {
-                        while (ee.MoveNext()) { }
+                    while (ee.MoveNext()) { }
 
-                        Assert.False(ee.MoveNext(), "RunPartitionerStaticTest_ExtraMoveNext:  FAILED.  Partitioner " + i + ": First extra MoveNext expected to return false.");
-                        Assert.False(ee.MoveNext(), "RunPartitionerStaticTest_ExtraMoveNext:  FAILED.  Partitioner " + i + ": Second extra MoveNext expected to return false.");
-                        Assert.False(ee.MoveNext(), "RunPartitionerStaticTest_ExtraMoveNext:  FAILED.  Partitioner " + i + ": Third extra MoveNext expected to return false.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Assert.False(true, "RunPartitionerStaticTest_ExtraMoveNext:  FAILURE.  Partitioner " + i + " threw an exception: " + ex.ToString());
+                    Assert.False(ee.MoveNext(), "TestExtraMoveNext:  FAILED.  Partitioner " + i + ": First extra MoveNext expected to return false.");
+                    Assert.False(ee.MoveNext(), "TestExtraMoveNext:  FAILED.  Partitioner " + i + ": Second extra MoveNext expected to return false.");
+                    Assert.False(ee.MoveNext(), "TestExtraMoveNext:  FAILED.  Partitioner " + i + ": Third extra MoveNext expected to return false.");
                 }
             }
         }
@@ -498,11 +366,8 @@ namespace Test
             {
                 for (int i = 0; i < s_enumerators.Count; i++)
                 {
-                    if (!s_enumerators[i].IsDisposed())
-                    {
-                        Assert.False(true, String.Format(
-                            "PartitionerStaticTests - AreEnumeratorsDisposed:  FAILED.  enumerator {0} was not disposed for SCENARIO: {1}.", i, scenario));
-                    }
+                    Assert.True(s_enumerators[i].IsDisposed(), 
+                        String.Format("AreEnumeratorsDisposed:  FAILED.  enumerator {0} was not disposed for SCENARIO: {1}.", i, scenario));
                 }
             }
         }
@@ -565,6 +430,6 @@ namespace Test
             return algorithm < 2;
         }
 
-#endregion
+        #endregion
     }
 }
