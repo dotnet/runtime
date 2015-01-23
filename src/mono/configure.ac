@@ -2688,7 +2688,9 @@ if test "x$enable_llvm" = "xyes"; then
          -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMExecutionEngine -lLLVMMC -lLLVMCore \
          -lLLVMSupport -lstdc++"
        LLVM_LIBS="$LLVM_LIBS $LLVM_SYSTEM_LIBS"
-       llvm_api_version=1
+
+       llvm_config_path=$with_llvm/include/llvm/Config/llvm-config.h
+       llvm_api_version=`awk '/MONO_API_VERSION/ { print $3 }' $llvm_config_path`
    fi  
 
    if test "x$llvm_api_version" = "x"; then
