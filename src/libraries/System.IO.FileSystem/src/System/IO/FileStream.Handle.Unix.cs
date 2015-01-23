@@ -14,7 +14,7 @@ namespace System.IO
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
-            this._innerStream = new UnixFileStream(handle, access, bufferSize, isAsync);
+            this._innerStream = new UnixFileStream(handle, access, bufferSize, isAsync, this);
         }
     }
 }
