@@ -3530,7 +3530,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			else if (zext)
 				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
 #else
-			LLVM_FAILURE ("atomic mono.load intrinsic");
+			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
 #endif
 			break;
 		}
@@ -3562,7 +3562,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			emit_store_general (ctx, bb, &builder, size, value, addr, is_volatile, barrier);
 			break;
 #else
-			LLVM_FAILURE ("atomic mono.store intrinsic");
+			LLVM_FAILURE (ctx, "atomic mono.store intrinsic");
 #endif
 			break;
 		}
