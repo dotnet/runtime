@@ -16,6 +16,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         internal static extern int GetLogicalDrives();
 
         [Fact]
+        [ActiveIssue(514)]
         public void Test01()
         {
             String[] driveLetterCombinaions =
