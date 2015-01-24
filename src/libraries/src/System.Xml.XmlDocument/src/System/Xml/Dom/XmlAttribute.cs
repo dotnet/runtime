@@ -354,7 +354,9 @@ namespace System.Xml
         {
             get
             {
-                return OwnerElement != null ? OwnerElement.XmlSpace : XmlSpace.None;
+                if (OwnerElement != null)
+                    return OwnerElement.XmlSpace;
+                return XmlSpace.None;
             }
         }
 
@@ -362,7 +364,9 @@ namespace System.Xml
         {
             get
             {
-                return OwnerElement != null ? OwnerElement.XmlLang : String.Empty;
+                if (OwnerElement != null)
+                    return OwnerElement.XmlLang;
+                return String.Empty;
             }
         }
     }

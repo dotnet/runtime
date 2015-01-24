@@ -14,6 +14,11 @@ namespace System.Xml
         private XmlReader _reader;
         private bool _preserveWhitespace;
 
+
+        public XmlLoader()
+        {
+        }
+
         internal void Load(XmlDocument doc, XmlReader reader, bool preserveWhitespace)
         {
             _doc = doc;
@@ -24,9 +29,10 @@ namespace System.Xml
             if (reader == null)
                 throw new ArgumentException(SR.Xdom_Load_NoReader);
             doc.SetBaseURI(reader.BaseURI);
-            if (_reader.ReadState != ReadState.Interactive && !_reader.Read())
+            if (_reader.ReadState != ReadState.Interactive)
             {
-                return;
+                if (!_reader.Read())
+                    return;
             }
             LoadDocSequence(doc);
         }
@@ -110,8 +116,11 @@ namespace System.Xml
                             parent = element;
                             continue;
                         }
-                        node = element;
-                        break;
+                        else
+                        {
+                            node = element;
+                            break;
+                        }
 
                     case XmlNodeType.EndElement:
                         if (parent == null)
@@ -152,13 +161,15 @@ namespace System.Xml
                             node = _doc.CreateWhitespace(r.Value);
                             break;
                         }
-                        if (parent == null && !skipOverWhitespace)
+                        else if (parent == null && !skipOverWhitespace)
                         {
                             // if called from LoadEntityReferenceNode, just return null
                             return null;
                         }
-                        continue;
-
+                        else
+                        {
+                            continue;
+                        }
                     case XmlNodeType.CDATA:
                         node = _doc.CreateCDataSection(r.Value);
                         break;
@@ -300,6 +311,7 @@ namespace System.Xml
                 Debug.Assert(node != null);
                 parent.AppendChildForLoad(node, _doc);
             }
+            return;
         }
 
         private XmlEntityReference LoadEntityReferenceNode(bool direct)
@@ -424,8 +436,11 @@ namespace System.Xml
                             parent = element;
                             continue;
                         }
-                        node = element;
-                        break;
+                        else
+                        {
+                            node = element;
+                            break;
+                        }
 
                     case XmlNodeType.EndElement:
                         Debug.Assert(parent.NodeType == XmlNodeType.Element);
@@ -508,9 +523,12 @@ namespace System.Xml
                 defattr.SetSpecified(false);
                 return defattr;
             }
-            attr = new XmlAttribute(r.Prefix, r.LocalName, r.NamespaceURI, _doc);
-            LoadAttributeValue(attr, true);
-            return attr;
+            else
+            {
+                attr = new XmlAttribute(r.Prefix, r.LocalName, r.NamespaceURI, _doc);
+                LoadAttributeValue(attr, true);
+                return attr;
+            }
         }
 #pragma warning restore 618
 
@@ -529,11 +547,10 @@ namespace System.Xml
             // Process all xmlns, xmlns:prefix, xml:space and xml:lang attributes
             while (node != null && node != _doc)
             {
-                XmlElement e = node as XmlElement;
-                if (e != null && e.HasAttributes)
+                if (node is XmlElement && ((XmlElement)node).HasAttributes)
                 {
                     mgr.PushScope();
-                    foreach (XmlAttribute attr in e.Attributes)
+                    foreach (XmlAttribute attr in ((XmlElement)node).Attributes)
                     {
                         if (attr.Prefix == _doc.strXmlns && !prefixes.Contains(attr.LocalName))
                         {
@@ -624,7 +641,7 @@ namespace System.Xml
             XmlNamespaceManager mgr = ParsePartialContent(node, innerxmltext, XmlNodeType.Element);
             //remove the duplicate namesapce
             if (node.ChildNodes.Count > 0)
-                RemoveDuplicateNamespace(node, mgr, false);
+                RemoveDuplicateNamespace((XmlElement)node, mgr, false);
         }
 
         internal void LoadInnerXmlAttribute(XmlAttribute node, string innerxmltext)

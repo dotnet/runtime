@@ -7,7 +7,7 @@ namespace System.Xml
 {
     internal class XmlChildNodes : XmlNodeList
     {
-        private readonly XmlNode _container;
+        private XmlNode _container;
 
         public XmlChildNodes(XmlNode container)
         {
@@ -46,7 +46,10 @@ namespace System.Xml
             {
                 return XmlDocument.EmptyEnumerator;
             }
-            return new XmlChildEnumerator(_container);
+            else
+            {
+                return new XmlChildEnumerator(_container);
+            }
         }
     }
 }

@@ -8,13 +8,13 @@ namespace System.Xml
 {
     internal class XmlElementList : XmlNodeList
     {
-        private readonly string _asterisk;
+        private string _asterisk;
         private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
         //the member vars below are saved for further reconstruction        
-        private readonly string _name;         //only one of 2 string groups will be initialized depends on which constructor is called.
+        private string _name;         //only one of 2 string groups will be initialized depends on which constructor is called.
         private string _localName;
         private string _namespaceURI;
-        private readonly XmlNode _rootNode;
+        private XmlNode _rootNode;
         // the member vars below serves the optimization of accessing of the elements in the list
         private int _curInd;       // -1 means the starting point for a new search round
         private XmlNode _curElem;      // if sets to rootNode, means the starting point for a new search round
@@ -204,7 +204,7 @@ namespace System.Xml
         {
             if (_empty == true)
                 return null;
-            XmlNode node = n ?? _rootNode;
+            XmlNode node = (n == null) ? _rootNode : n;
             return GetMatchingNode(node, true);
         }
 
@@ -285,7 +285,7 @@ namespace System.Xml
 
     internal class XmlElementListEnumerator : IEnumerator
     {
-        private readonly XmlElementList _list;
+        private XmlElementList _list;
         private XmlNode _curElem;
         private int _changeCount; //save the total number that the dom tree has been changed ( insertion and deletion ) when this enumerator is created
 
@@ -347,8 +347,8 @@ namespace System.Xml
     internal class XmlElementListListener
     {
         private WeakReference _elemList;
-        private readonly XmlDocument _doc;
-        private readonly XmlNodeChangedEventHandler _nodeChangeHandler;
+        private XmlDocument _doc;
+        private XmlNodeChangedEventHandler _nodeChangeHandler = null;
 
         internal XmlElementListListener(XmlDocument doc, XmlElementList elemList)
         {
