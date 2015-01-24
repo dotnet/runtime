@@ -5771,11 +5771,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			case MONO_TYPE_I:
 				ins->type = STACK_I8;
 				break;
-			case MONO_TYPE_OBJECT:
+			default:
+				g_assert (mini_type_is_reference (cfg, fsig->params [0]));
 				ins->type = STACK_OBJ;
 				break;
-			default:
-				g_assert_not_reached ();
 			}
 
 			if (cfg->gen_write_barriers && is_ref)
@@ -5784,12 +5783,16 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0)) {
 			int size = 0;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [1]);
+
 			if (fsig->params [1]->type == MONO_TYPE_I4)
 				size = 4;
 			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I)
 				size = sizeof (gpointer);
-			else if (sizeof (gpointer) == 8 && fsig->params [1]->type == MONO_TYPE_I8)
+#if SIZEOF_REGISTER == 8
+			else if (fsig->params [1]->type == MONO_TYPE_I8)
 				size = 8;
+#endif
+
 			if (size == 4) {
 				if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I4))
 					return NULL;
@@ -5798,7 +5801,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->sreg3 = args [2]->dreg;
-				ins->type = STACK_I4;
 				MONO_ADD_INS (cfg->cbb, ins);
 				cfg->has_atomic_cas_i4 = TRUE;
 			} else if (size == 8) {
@@ -5809,11 +5811,27 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->sreg1 = args [0]->dreg;
 				ins->sreg2 = args [1]->dreg;
 				ins->sreg3 = args [2]->dreg;
-				ins->type = STACK_I8;
 				MONO_ADD_INS (cfg->cbb, ins);
 			} else {
 				/* g_assert_not_reached (); */
 			}
+
+			if (ins) {
+				switch (fsig->params [0]->type) {
+				case MONO_TYPE_I4:
+					ins->type = STACK_I4;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_I:
+					ins->type = STACK_I8;
+					break;
+				default:
+					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
+					ins->type = STACK_OBJ;
+					break;
+				}
+			}
+
 			if (cfg->gen_write_barriers && is_ref)
 				emit_write_barrier (cfg, args [0], args [1]);
 		}
