@@ -11,7 +11,7 @@ namespace System.Xml.Linq
         private XContainer _parent;
         private XName _attrName;
         private string _attrValue;
-        private readonly XContainer _root;
+        private XContainer _root;
 
         public XNodeBuilder(XContainer container)
         {

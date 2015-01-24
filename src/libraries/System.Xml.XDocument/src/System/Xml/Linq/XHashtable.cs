@@ -118,7 +118,7 @@ namespace System.Xml.Linq
 
                     // Replacing with Interlocked.CompareExchange for now (with no effect)
                     //   which will do a very similar thing to MemoryBarrier (it's just slower)
-                    Interlocked.CompareExchange<XHashtableState>(ref _state, null, null);
+                    System.Threading.Interlocked.CompareExchange<XHashtableState>(ref _state, null, null);
 #endif // SILVERLIGHT
                     _state = newState;
                 }
@@ -140,10 +140,10 @@ namespace System.Xml.Linq
         /// </remarks>
         private sealed class XHashtableState
         {
-            private readonly int[] _buckets;                  // Buckets contain indexes into entries array (bucket values are SHARED STATE)
+            private int[] _buckets;                  // Buckets contain indexes into entries array (bucket values are SHARED STATE)
             private Entry[] _entries;                // Entries contain linked lists of buckets (next pointers are SHARED STATE)
             private int _numEntries;                 // SHARED STATE: Current number of entries (including orphaned entries)
-            private readonly ExtractKeyDelegate _extractKey;  // Delegate called in order to extract string key embedded in hashed TValue
+            private ExtractKeyDelegate _extractKey;  // Delegate called in order to extract string key embedded in hashed TValue
 
             private const int EndOfList = 0;        // End of linked list marker
             private const int FullList = -1;        // Indicates entries should not be added to end of linked list
@@ -310,7 +310,7 @@ namespace System.Xml.Linq
 
                 // Replacing with Interlocked.CompareExchange for now (with no effect)
                 //   which will do a very similar thing to MemoryBarrier (it's just slower)
-                Interlocked.CompareExchange<Entry[]>(ref _entries, null, null);
+                System.Threading.Interlocked.CompareExchange<Entry[]>(ref _entries, null, null);
 #endif // SILVERLIGHT
 
                 // Loop until a matching entry is found, a new entry is added, or linked list is found to be full

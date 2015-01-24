@@ -76,7 +76,11 @@ namespace System.Xml.Linq
         /// </summary>
         public static XNodeDocumentOrderComparer DocumentOrderComparer
         {
-            get { return s_documentOrderComparer ?? (s_documentOrderComparer = new XNodeDocumentOrderComparer()); }
+            get
+            {
+                if (s_documentOrderComparer == null) s_documentOrderComparer = new XNodeDocumentOrderComparer();
+                return s_documentOrderComparer;
+            }
         }
 
         /// <summary>
@@ -84,7 +88,11 @@ namespace System.Xml.Linq
         /// </summary>
         public static XNodeEqualityComparer EqualityComparer
         {
-            get { return s_equalityComparer ?? (s_equalityComparer = new XNodeEqualityComparer()); }
+            get
+            {
+                if (s_equalityComparer == null) s_equalityComparer = new XNodeEqualityComparer();
+                return s_equalityComparer;
+            }
         }
 
         /// <overloads>
