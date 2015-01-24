@@ -5,9 +5,9 @@ namespace System.Xml
 {
     internal abstract partial class Base64Encoder
     {
-        private byte[] leftOverBytes;
-        private int leftOverBytesCount;
-        private readonly char[] charsLine;
+        byte[] leftOverBytes;
+        int leftOverBytesCount;
+        char[] charsLine;
 
         internal const int Base64LineSize = 76;
         internal const int LineSizeInBytes = Base64LineSize / 4 * 3;

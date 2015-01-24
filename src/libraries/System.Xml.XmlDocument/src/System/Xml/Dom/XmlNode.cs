@@ -70,7 +70,8 @@ namespace System.Xml
                         }
                         node = node.next;
                     }
-                    while (node != null && node != firstChild);
+                    while (node != null
+                           && node != firstChild);
                 }
                 return null;
             }
@@ -161,7 +162,7 @@ namespace System.Xml
         internal bool IsConnected()
         {
             XmlNode parent = ParentNode;
-            while (parent != null && parent.NodeType != XmlNodeType.Document)
+            while (parent != null && !(parent.NodeType == XmlNodeType.Document))
                 parent = parent.ParentNode;
             return parent != null;
         }
@@ -228,9 +229,12 @@ namespace System.Xml
                 LastNode.next = newNode;
                 newNode.SetParent(this);
 
-                if (newNode.IsText && refNode.IsText)
+                if (newNode.IsText)
                 {
-                    NestTextNodes(newNode, refNode);
+                    if (refNode.IsText)
+                    {
+                        NestTextNodes(newNode, refNode);
+                    }
                 }
             }
             else
@@ -261,9 +265,12 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (newNode.IsText && refNode.IsText)
+                    if (newNode.IsText)
                     {
-                        NestTextNodes(newNode, refNode);
+                        if (refNode.IsText)
+                        {
+                            NestTextNodes(newNode, refNode);
+                        }
                     }
                 }
             }
@@ -339,9 +346,12 @@ namespace System.Xml
                 LastNode = newNode;
                 newNode.SetParent(this);
 
-                if (refNode.IsText && newNode.IsText)
+                if (refNode.IsText)
                 {
-                    NestTextNodes(refNode, newNode);
+                    if (newNode.IsText)
+                    {
+                        NestTextNodes(refNode, newNode);
+                    }
                 }
             }
             else
@@ -372,9 +382,12 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (newNode.IsText && nextNode.IsText)
+                    if (newNode.IsText)
                     {
-                        NestTextNodes(newNode, nextNode);
+                        if (nextNode.IsText)
+                        {
+                            NestTextNodes(newNode, nextNode);
+                        }
                     }
                 }
             }
@@ -426,9 +439,12 @@ namespace System.Xml
                 {
                     XmlLinkedNode nextNode = oldNode.next;
 
-                    if (nextNode.IsText && oldNode.IsText)
+                    if (nextNode.IsText)
                     {
-                        UnnestTextNodes(oldNode, nextNode);
+                        if (oldNode.IsText)
+                        {
+                            UnnestTextNodes(oldNode, nextNode);
+                        }
                     }
 
                     lastNode.next = nextNode;
@@ -487,7 +503,11 @@ namespace System.Xml
         // Adds the specified node to the end of the list of children of this node.
         public virtual XmlNode AppendChild(XmlNode newChild)
         {
-            XmlDocument thisDoc = OwnerDocument ?? this as XmlDocument;
+            XmlDocument thisDoc = OwnerDocument;
+            if (thisDoc == null)
+            {
+                thisDoc = this as XmlDocument;
+            }
             if (!IsContainer)
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Contain);
 
@@ -545,9 +565,12 @@ namespace System.Xml
                 LastNode = newNode;
                 newNode.SetParent(this);
 
-                if (refNode.IsText && newNode.IsText)
+                if (refNode.IsText)
                 {
-                    NestTextNodes(refNode, newNode);
+                    if (newNode.IsText)
+                    {
+                        NestTextNodes(refNode, newNode);
+                    }
                 }
             }
 
@@ -579,7 +602,8 @@ namespace System.Xml
                 newNode.next = refNode.next;
                 refNode.next = newNode;
                 LastNode = newNode;
-                if (refNode.IsText && newNode.IsText)
+                if (refNode.IsText
+                    && newNode.IsText)
                 {
                     NestTextNodes(refNode, newNode);
                 }
@@ -715,7 +739,7 @@ namespace System.Xml
         // Test if the DOM implementation implements a specific feature.
         public virtual bool Supports(string feature, string version)
         {
-            if (string.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
+            if (String.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
             {
                 if (version == null || version == "1.0" || version == "2.0")
                     return true;
@@ -927,10 +951,11 @@ namespace System.Xml
         public virtual void RemoveAll()
         {
             XmlNode child = FirstChild;
+            XmlNode sibling = null;
 
             while (child != null)
             {
-                XmlNode sibling = child.NextSibling;
+                sibling = child.NextSibling;
                 RemoveChild(child);
                 child = sibling;
             }
@@ -952,7 +977,7 @@ namespace System.Xml
         public virtual string GetNamespaceOfPrefix(string prefix)
         {
             string namespaceName = GetNamespaceOfPrefixStrict(prefix);
-            return namespaceName ?? string.Empty;
+            return namespaceName != null ? namespaceName : string.Empty;
         }
 
         internal string GetNamespaceOfPrefixStrict(string prefix)
@@ -978,9 +1003,12 @@ namespace System.Xml
                                 for (int iAttr = 0; iAttr < attrs.Count; iAttr++)
                                 {
                                     XmlAttribute attr = attrs[iAttr];
-                                    if (attr.Prefix.Length == 0 && Ref.Equal(attr.LocalName, doc.strXmlns))
+                                    if (attr.Prefix.Length == 0)
                                     {
-                                        return attr.Value; // found xmlns
+                                        if (Ref.Equal(attr.LocalName, doc.strXmlns))
+                                        {
+                                            return attr.Value; // found xmlns
+                                        }
                                     }
                                 }
                             }
@@ -1022,7 +1050,7 @@ namespace System.Xml
                 { // xmlns:xml
                     return doc.strReservedXml;
                 }
-                if (Ref.Equal(doc.strXmlns, prefix))
+                else if (Ref.Equal(doc.strXmlns, prefix))
                 { // xmlns:xmlns
                     return doc.strReservedXmlns;
                 }
@@ -1036,7 +1064,7 @@ namespace System.Xml
         public virtual string GetPrefixOfNamespace(string namespaceURI)
         {
             string prefix = GetPrefixOfNamespaceStrict(namespaceURI);
-            return prefix ?? string.Empty;
+            return prefix != null ? prefix : string.Empty;
         }
 
         internal string GetPrefixOfNamespaceStrict(string namespaceURI)
@@ -1060,9 +1088,12 @@ namespace System.Xml
                                 XmlAttribute attr = attrs[iAttr];
                                 if (attr.Prefix.Length == 0)
                                 {
-                                    if (Ref.Equal(attr.LocalName, doc.strXmlns) && attr.Value == namespaceURI)
+                                    if (Ref.Equal(attr.LocalName, doc.strXmlns))
                                     {
-                                        return string.Empty; // found xmlns="namespaceURI"
+                                        if (attr.Value == namespaceURI)
+                                        {
+                                            return string.Empty; // found xmlns="namespaceURI"
+                                        }
                                     }
                                 }
                                 else if (Ref.Equal(attr.Prefix, doc.strXmlns))
@@ -1098,7 +1129,7 @@ namespace System.Xml
                 { // xmlns:xml
                     return doc.strXml;
                 }
-                if (Ref.Equal(doc.strReservedXmlns, namespaceURI))
+                else if (Ref.Equal(doc.strReservedXmlns, namespaceURI))
                 { // xmlns:xmlns
                     return doc.strXmlns;
                 }
@@ -1137,7 +1168,14 @@ namespace System.Xml
 
         internal virtual void SetParent(XmlNode node)
         {
-            this.parentNode = node ?? OwnerDocument;
+            if (node == null)
+            {
+                this.parentNode = OwnerDocument;
+            }
+            else
+            {
+                this.parentNode = node;
+            }
         }
 
         internal virtual void SetParentForLoad(XmlNode node)
@@ -1204,9 +1242,10 @@ namespace System.Xml
             get
             {
                 XmlNode node = this;
+                XmlElement elem = null;
                 do
                 {
-                    XmlElement elem = node as XmlElement;
+                    elem = node as XmlElement;
                     if (elem != null && elem.HasAttribute("xml:space"))
                     {
                         switch (XmlConvertEx.TrimString(elem.GetAttribute("xml:space")))
@@ -1215,8 +1254,9 @@ namespace System.Xml
                                 return XmlSpace.Default;
                             case "preserve":
                                 return XmlSpace.Preserve;
-
-                            //should we throw exception if value is otherwise?
+                            default:
+                                //should we throw exception if value is otherwise?
+                                break;
                         }
                     }
                     node = node.ParentNode;
@@ -1231,12 +1271,14 @@ namespace System.Xml
             get
             {
                 XmlNode node = this;
+                XmlElement elem = null;
                 do
                 {
-                    XmlElement elem = node as XmlElement;
-                    if (elem != null && elem.HasAttribute("xml:lang"))
+                    elem = node as XmlElement;
+                    if (elem != null)
                     {
-                        return elem.GetAttribute("xml:lang");
+                        if (elem.HasAttribute("xml:lang"))
+                            return elem.GetAttribute("xml:lang");
                     }
                     node = node.ParentNode;
                 } while (node != null);
@@ -1286,7 +1328,7 @@ namespace System.Xml
     [DebuggerDisplay("{ToString()}")]
     internal struct DebuggerDisplayXmlNodeProxy
     {
-        private readonly XmlNode _node;
+        private XmlNode _node;
 
         public DebuggerDisplayXmlNodeProxy(XmlNode node)
         {
@@ -1318,6 +1360,8 @@ namespace System.Xml
                 case XmlNodeType.DocumentType:
                     XmlDocumentType documentType = (XmlDocumentType)_node;
                     result += ", Name=\"" + documentType.Name + "\", SYSTEM=\"" + documentType.SystemId + "\", PUBLIC=\"" + documentType.PublicId + "\", Value=\"" + XmlConvertEx.EscapeValueForDebuggerDisplay(documentType.InternalSubset) + "\"";
+                    break;
+                default:
                     break;
             }
             return result;
