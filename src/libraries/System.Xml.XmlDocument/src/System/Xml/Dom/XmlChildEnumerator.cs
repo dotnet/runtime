@@ -7,7 +7,7 @@ namespace System.Xml
 {
     internal sealed class XmlChildEnumerator : IEnumerator
     {
-        internal readonly XmlNode container;
+        internal XmlNode container;
         internal XmlNode child;
         internal bool isFirst;
 

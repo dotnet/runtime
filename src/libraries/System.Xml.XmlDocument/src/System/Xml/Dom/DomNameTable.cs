@@ -10,8 +10,8 @@ namespace System.Xml
         private XmlName[] _entries;
         private int _count;
         private int _mask;
-        private readonly XmlDocument _ownerDocument;
-        private readonly XmlNameTable _nameTable;
+        private XmlDocument _ownerDocument;
+        private XmlNameTable _nameTable;
 
         private const int InitialSize = 64; // must be a power of two
 

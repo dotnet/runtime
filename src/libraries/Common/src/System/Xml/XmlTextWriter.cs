@@ -32,7 +32,7 @@ namespace System.Xml
         //
         // Private types
         //
-        private enum NamespaceState
+        enum NamespaceState
         {
             Uninitialized,
             NotDeclaredButInScope,
@@ -40,7 +40,7 @@ namespace System.Xml
             DeclaredAndWrittenOut
         }
 
-        private struct TagInfo
+        struct TagInfo
         {
             internal string name;
             internal string prefix;
@@ -65,7 +65,7 @@ namespace System.Xml
             }
         }
 
-        private struct Namespace
+        struct Namespace
         {
             internal string prefix;
             internal string ns;
@@ -81,7 +81,7 @@ namespace System.Xml
             }
         }
 
-        private enum SpecialAttr
+        enum SpecialAttr
         {
             None,
             XmlSpace,
@@ -126,55 +126,56 @@ namespace System.Xml
         // Fields
         //
         // output
-        private readonly TextWriter textWriter;
-        private readonly XmlTextEncoder xmlEncoder;
-        private readonly Encoding encoding;
+        TextWriter textWriter;
+        XmlTextEncoder xmlEncoder;
+        Encoding encoding;
 
         // formatting
-        private Formatting formatting;
-        private bool indented; // perf - faster to check a boolean.
-        private int indentation;
+        Formatting formatting;
+        bool indented; // perf - faster to check a boolean.
+        int indentation;
+        char indentChar;
 
         // element stack
-        private TagInfo[] stack;
-        private int top;
+        TagInfo[] stack;
+        int top;
 
         // state machine for AutoComplete
-        private State[] stateTable;
-        private State currentState;
-        private Token lastToken;
+        State[] stateTable;
+        State currentState;
+        Token lastToken;
 
         // Base64 content
-        private XmlTextWriterBase64Encoder base64Encoder;
+        XmlTextWriterBase64Encoder base64Encoder;
 
         // misc
-        private char quoteChar;
-        private char curQuoteChar;
-        private bool namespaces;
-        private SpecialAttr specialAttr;
-        private string prefixForXmlNs;
-        private bool flush;
+        char quoteChar;
+        char curQuoteChar;
+        bool namespaces;
+        SpecialAttr specialAttr;
+        string prefixForXmlNs;
+        bool flush;
 
         // namespaces
-        private Namespace[] nsStack;
-        private int nsTop;
-        private Dictionary<string, int> nsHashtable;
-        private bool useNsHashtable;
+        Namespace[] nsStack;
+        int nsTop;
+        Dictionary<string, int> nsHashtable;
+        bool useNsHashtable;
 
         // char types
-        private XmlCharType xmlCharType = XmlCharType.Instance;
+        XmlCharType xmlCharType = XmlCharType.Instance;
 
         //
         // Constants and constant tables
         //
-        private const int NamespaceStackInitialSize = 8;
+        const int NamespaceStackInitialSize = 8;
 #if DEBUG
-        private const int MaxNamespacesWalkCount = 3;
+        const int MaxNamespacesWalkCount = 3;
 #else
-        private const int MaxNamespacesWalkCount = 16;
+        const int MaxNamespacesWalkCount = 16;
 #endif
 
-        private static readonly string[] stateName = {
+        static string[] stateName = {
             "Start",
             "Prolog",
             "PostDTD",
@@ -187,7 +188,7 @@ namespace System.Xml
             "Closed",
         };
 
-        private static readonly string[] tokenName = {
+        static string[] tokenName = {
             "PI",
             "Doctype",
             "Comment",
@@ -204,7 +205,7 @@ namespace System.Xml
             "Empty"
         };
 
-        private static readonly State[] stateTableDefault = {
+        static readonly State[] stateTableDefault = {
             //                          State.Start      State.Prolog     State.PostDTD    State.Element    State.Attribute  State.Content   State.AttrOnly   State.Epilog
             //
             /* Token.PI             */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Content,   State.Content,  State.Error,     State.Epilog,
@@ -222,7 +223,7 @@ namespace System.Xml
             /* Token.Whitespace     */ State.Prolog,    State.Prolog,    State.PostDTD,   State.Content,   State.Attribute, State.Content,  State.Attribute, State.Epilog,
         };
 
-        private static readonly State[] stateTableDocument = {
+        static readonly State[] stateTableDocument = {
             //                          State.Start      State.Prolog     State.PostDTD    State.Element    State.Attribute  State.Content   State.AttrOnly   State.Epilog
             //
             /* Token.PI             */ State.Error,     State.Prolog,    State.PostDTD,   State.Content,   State.Content,   State.Content,  State.Error,     State.Epilog,
@@ -248,7 +249,7 @@ namespace System.Xml
             namespaces = true;
             formatting = Formatting.None;
             indentation = 2;
-            IndentChar = ' ';
+            indentChar = ' ';
             // namespaces
             nsStack = new Namespace[NamespaceStackInitialSize];
             nsTop = -1;
@@ -331,7 +332,11 @@ namespace System.Xml
         }
 
         // Gets or sets which character to use for indenting when Formatting is set to "Indented".
-        public char IndentChar { get; set; }
+        public char IndentChar
+        {
+            get { return this.indentChar; }
+            set { this.indentChar = value; }
+        }
 
         // Gets or sets which character to use to quote attribute values.
         public char QuoteChar
@@ -805,7 +810,7 @@ namespace System.Xml
         {
             try
             {
-                if (!string.IsNullOrEmpty(text))
+                if (null != text && text.Length != 0)
                 {
                     AutoComplete(Token.Content);
                     xmlEncoder.Write(text);
@@ -1385,7 +1390,7 @@ namespace System.Xml
                 int i = beforeEndElement ? top - 1 : top;
                 for (i *= this.indentation; i > 0; i--)
                 {
-                    textWriter.Write(this.IndentChar);
+                    textWriter.Write(this.indentChar);
                 }
             }
         }

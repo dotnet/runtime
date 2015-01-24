@@ -36,8 +36,16 @@ namespace System.Xml
         {
             get
             {
-                return _data ?? String.Empty;
+                if (_data != null)
+                {
+                    return _data;
+                }
+                else
+                {
+                    return String.Empty;
+                }
             }
+
             set
             {
                 XmlNode parent = ParentNode;
@@ -58,23 +66,27 @@ namespace System.Xml
         {
             get
             {
-                return _data != null ? _data.Length : 0;
+                if (_data != null)
+                {
+                    return _data.Length;
+                }
+                return 0;
             }
         }
 
         // Retrieves a substring of the full string from the specified range.
         public virtual String Substring(int offset, int count)
         {
-            if (!string.IsNullOrEmpty(_data))
+            int len = _data != null ? _data.Length : 0;
+            if (len > 0)
             {
-                int len = _data.Length;
                 if (len < (offset + count))
                 {
                     count = len - offset;
                 }
                 return _data.Substring(offset, count);
             }
-            return string.Empty;
+            return String.Empty;
         }
 
         // Appends the specified string to the end of the character
@@ -118,9 +130,9 @@ namespace System.Xml
         {
             //Debug.Assert(offset >= 0 && offset <= Length);
 
-            if (!string.IsNullOrEmpty(_data))
+            int len = _data != null ? _data.Length : 0;
+            if (len > 0)
             {
-                int len = _data.Length;
                 if (len < (offset + count))
                 {
                     count = Math.Max(len - offset, 0);
@@ -144,9 +156,9 @@ namespace System.Xml
         // specified string.
         public virtual void ReplaceData(int offset, int count, String strData)
         {
-            if (!string.IsNullOrEmpty(_data))
+            int len = _data != null ? _data.Length : 0;
+            if (len > 0)
             {
-                int len = _data.Length;
                 if (len < (offset + count))
                 {
                     count = Math.Max(len - offset, 0);

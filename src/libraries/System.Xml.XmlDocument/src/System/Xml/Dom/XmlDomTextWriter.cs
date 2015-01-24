@@ -23,7 +23,7 @@ namespace System.Xml
         // do not fail if namespace is not specified.
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
-            if (ns.Length == 0 && prefix.Length != 0)
+            if ((ns.Length == 0) && (prefix.Length != 0))
                 prefix = "";
 
             base.WriteStartElement(prefix, localName, ns);
@@ -33,7 +33,7 @@ namespace System.Xml
         // do not fail if namespace is not specified.
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
-            if (ns.Length == 0 && prefix.Length != 0)
+            if ((ns.Length == 0) && (prefix.Length != 0))
                 prefix = "";
 
             base.WriteStartAttribute(prefix, localName, ns);

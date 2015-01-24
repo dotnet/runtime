@@ -18,7 +18,7 @@ namespace System.Xml
         // Fields
         //
         // output text writer
-        private readonly TextWriter _textWriter;
+        private TextWriter _textWriter;
 
         // true when writing out the content of attribute value
         private bool _inAttribute;
