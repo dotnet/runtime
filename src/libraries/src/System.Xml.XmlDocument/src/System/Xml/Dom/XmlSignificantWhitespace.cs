@@ -112,7 +112,11 @@ namespace System.Xml
         {
             get
             {
-                return parentNode.IsText ? parentNode : null;
+                if (parentNode.IsText)
+                {
+                    return parentNode;
+                }
+                return null;
             }
         }
     }

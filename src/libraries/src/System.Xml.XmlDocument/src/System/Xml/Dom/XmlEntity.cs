@@ -7,9 +7,9 @@ namespace System.Xml
     internal class XmlEntity : XmlNode
     {
         private string _publicId;
-        private readonly string _systemId;
+        private string _systemId;
         private String _notationName;
-        private readonly String _name;
+        private String _name;
         private String _unparsedReplacementStr;
         private String _baseURI;
         private XmlLinkedNode _lastChild;

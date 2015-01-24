@@ -29,7 +29,8 @@ namespace System.Xml
     // are assumed to trigger the evaluation.
     internal class XmlEntityReference : XmlLinkedNode
     {
-        private readonly string _name;
+        private string _name;
+        private XmlLinkedNode _lastChild;
 
         protected internal XmlEntityReference(string name, XmlDocument doc) : base(doc)
         {
@@ -118,7 +119,14 @@ namespace System.Xml
             this.SetParent(node);
         }
 
-        internal override XmlLinkedNode LastNode { get; set; }
+        internal override XmlLinkedNode LastNode
+        {
+            get
+            {
+                return _lastChild;
+            }
+            set { _lastChild = value; }
+        }
 
         internal override bool IsValidChildType(XmlNodeType type)
         {
@@ -192,13 +200,12 @@ namespace System.Xml
                 XmlEntity ent = OwnerDocument.GetEntityNode(_name);
                 if (ent != null)
                 {
-                    if (string.IsNullOrEmpty(ent.SystemId))
-                    {
+                    if (!string.IsNullOrEmpty(ent.SystemId))
+                        return ConstructBaseURI(ent.BaseURI, ent.SystemId);
+                    else
                         return ent.BaseURI;
-                    }
-                    return ConstructBaseURI(ent.BaseURI, ent.SystemId);
                 }
-                return string.Empty;
+                return String.Empty;
             }
         }
     }

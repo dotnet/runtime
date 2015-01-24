@@ -12,8 +12,8 @@ namespace System.Xml
     // Represents an entire document. An XmlDocument contains XML data.
     public class XmlDocument : XmlNode
     {
-        private readonly XmlImplementation _implementation;
-        private readonly DomNameTable _domNameTable; // hash table of XmlName
+        private XmlImplementation _implementation;
+        private DomNameTable _domNameTable; // hash table of XmlName
         private XmlLinkedNode _lastChild;
         private XmlNamedNodeMap _entities;
         private Dictionary<string, List<WeakReference<XmlElement>>> _htElementIdMap;
@@ -33,30 +33,33 @@ namespace System.Xml
         internal bool fEntRefNodesPresent;
         internal bool fCDataNodesPresent;
 
+        private bool _preserveWhitespace;
+        private bool _isLoading;
+
         // special name strings for
-        internal readonly string strDocumentName;
-        internal readonly string strDocumentFragmentName;
-        internal readonly string strCommentName;
-        internal readonly string strTextName;
-        internal readonly string strCDataSectionName;
+        internal string strDocumentName;
+        internal string strDocumentFragmentName;
+        internal string strCommentName;
+        internal string strTextName;
+        internal string strCDataSectionName;
         internal string strEntityName;
         internal string strID;
-        internal readonly string strXmlns;
-        internal readonly string strXml;
-        internal readonly string strSpace;
-        internal readonly string strLang;
-        internal readonly string strEmpty;
+        internal string strXmlns;
+        internal string strXml;
+        internal string strSpace;
+        internal string strLang;
+        internal string strEmpty;
 
-        internal readonly string strNonSignificantWhitespaceName;
-        internal readonly string strSignificantWhitespaceName;
-        internal readonly string strReservedXmlns;
-        internal readonly string strReservedXml;
+        internal string strNonSignificantWhitespaceName;
+        internal string strSignificantWhitespaceName;
+        internal string strReservedXmlns;
+        internal string strReservedXml;
 
-        internal string baseURI;
+        internal String baseURI;
 
-        internal readonly object objLock;
+        internal object objLock;
 
-        static internal readonly EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
+        static internal EmptyEnumerator EmptyEnumerator = new EmptyEnumerator();
 
         // Initializes a new instance of the XmlDocument class.
         public XmlDocument() : this(new XmlImplementation())
@@ -575,7 +578,8 @@ namespace System.Xml
                         XmlElement elem;
                         if (elemRef.TryGetTarget(out elem))
                         {
-                            if (elem != null && elem.IsConnected())
+                            if (elem != null
+                                && elem.IsConnected())
                                 return elem;
                         }
                     }
@@ -598,63 +602,66 @@ namespace System.Xml
             {
                 throw new InvalidOperationException(SR.Xdom_Import_NullNode);
             }
-            switch (node.NodeType)
+            else
             {
-                case XmlNodeType.Element:
-                    newNode = CreateElement(node.Prefix, node.LocalName, node.NamespaceURI);
-                    ImportAttributes(node, newNode);
-                    if (deep)
-                        ImportChildren(node, newNode, deep);
-                    break;
+                switch (node.NodeType)
+                {
+                    case XmlNodeType.Element:
+                        newNode = CreateElement(node.Prefix, node.LocalName, node.NamespaceURI);
+                        ImportAttributes(node, newNode);
+                        if (deep)
+                            ImportChildren(node, newNode, deep);
+                        break;
 
-                case XmlNodeType.Attribute:
-                    Debug.Assert(((XmlAttribute)node).Specified);
-                    newNode = CreateAttribute(node.Prefix, node.LocalName, node.NamespaceURI);
-                    ImportChildren(node, newNode, true);
-                    break;
+                    case XmlNodeType.Attribute:
+                        Debug.Assert(((XmlAttribute)node).Specified);
+                        newNode = CreateAttribute(node.Prefix, node.LocalName, node.NamespaceURI);
+                        ImportChildren(node, newNode, true);
+                        break;
 
-                case XmlNodeType.Text:
-                    newNode = CreateTextNode(node.Value);
-                    break;
-                case XmlNodeType.Comment:
-                    newNode = CreateComment(node.Value);
-                    break;
-                case XmlNodeType.ProcessingInstruction:
-                    newNode = CreateProcessingInstruction(node.Name, node.Value);
-                    break;
-                case XmlNodeType.XmlDeclaration:
-                    XmlDeclaration decl = (XmlDeclaration)node;
-                    newNode = CreateXmlDeclaration(decl.Version, decl.Encoding, decl.Standalone);
-                    break;
-                case XmlNodeType.CDATA:
-                    newNode = CreateCDataSection(node.Value);
-                    break;
-                case XmlNodeType.DocumentType:
-                    XmlDocumentType docType = (XmlDocumentType)node;
-                    newNode = CreateDocumentType(docType.Name, docType.PublicId, docType.SystemId, docType.InternalSubset);
-                    break;
-                case XmlNodeType.DocumentFragment:
-                    newNode = CreateDocumentFragment();
-                    if (deep)
-                        ImportChildren(node, newNode, deep);
-                    break;
+                    case XmlNodeType.Text:
+                        newNode = CreateTextNode(node.Value);
+                        break;
+                    case XmlNodeType.Comment:
+                        newNode = CreateComment(node.Value);
+                        break;
+                    case XmlNodeType.ProcessingInstruction:
+                        newNode = CreateProcessingInstruction(node.Name, node.Value);
+                        break;
+                    case XmlNodeType.XmlDeclaration:
+                        XmlDeclaration decl = (XmlDeclaration)node;
+                        newNode = CreateXmlDeclaration(decl.Version, decl.Encoding, decl.Standalone);
+                        break;
+                    case XmlNodeType.CDATA:
+                        newNode = CreateCDataSection(node.Value);
+                        break;
+                    case XmlNodeType.DocumentType:
+                        XmlDocumentType docType = (XmlDocumentType)node;
+                        newNode = CreateDocumentType(docType.Name, docType.PublicId, docType.SystemId, docType.InternalSubset);
+                        break;
+                    case XmlNodeType.DocumentFragment:
+                        newNode = CreateDocumentFragment();
+                        if (deep)
+                            ImportChildren(node, newNode, deep);
+                        break;
 
-                case XmlNodeType.EntityReference:
-                    newNode = CreateEntityReference(node.Name);
-                    // we don't import the children of entity reference because they might result in different
-                    // children nodes given different namespace context in the new document.
-                    break;
+                    case XmlNodeType.EntityReference:
+                        newNode = CreateEntityReference(node.Name);
+                        // we don't import the children of entity reference because they might result in different
+                        // children nodes given different namespace context in the new document.
+                        break;
 
-                case XmlNodeType.Whitespace:
-                    newNode = CreateWhitespace(node.Value);
-                    break;
+                    case XmlNodeType.Whitespace:
+                        newNode = CreateWhitespace(node.Value);
+                        break;
 
-                case XmlNodeType.SignificantWhitespace:
-                    newNode = CreateSignificantWhitespace(node.Value);
-                    break;
+                    case XmlNodeType.SignificantWhitespace:
+                        newNode = CreateSignificantWhitespace(node.Value);
+                        break;
 
-                default:
-                    throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType.ToString()));
+                    default:
+                        throw new InvalidOperationException(String.Format(CultureInfo.InvariantCulture, SR.Xdom_Import, node.NodeType.ToString()));
+                }
             }
 
             return newNode;
@@ -707,7 +714,11 @@ namespace System.Xml
         }
 
         // Gets or sets a value indicating whether to preserve whitespace.
-        public bool PreserveWhitespace { get; set; }
+        public bool PreserveWhitespace
+        {
+            get { return _preserveWhitespace; }
+            set { _preserveWhitespace = value; }
+        }
 
         // Gets a value indicating whether the node is read-only.
         public override bool IsReadOnly
@@ -717,10 +728,19 @@ namespace System.Xml
 
         internal XmlNamedNodeMap Entities
         {
-            get { return _entities ?? (_entities = new XmlNamedNodeMap(this)); }
+            get
+            {
+                if (_entities == null)
+                    _entities = new XmlNamedNodeMap(this);
+                return _entities;
+            }
         }
 
-        internal bool IsLoading { get; set; }
+        internal bool IsLoading
+        {
+            get { return _isLoading; }
+            set { _isLoading = value; }
+        }
 
         internal bool ActualLoadingStatus
         {
@@ -736,12 +756,14 @@ namespace System.Xml
                 case XmlNodeType.Element:
                     if (prefix != null)
                         return CreateElement(prefix, name, namespaceURI);
-                    return CreateElement(name, namespaceURI);
+                    else
+                        return CreateElement(name, namespaceURI);
 
                 case XmlNodeType.Attribute:
                     if (prefix != null)
                         return CreateAttribute(prefix, name, namespaceURI);
-                    return CreateAttribute(name, namespaceURI);
+                    else
+                        return CreateAttribute(name, namespaceURI);
 
                 case XmlNodeType.Text:
                     return CreateTextNode(string.Empty);
@@ -815,39 +837,63 @@ namespace System.Xml
 
         internal XmlNodeType ConvertToNodeType(string nodeTypeString)
         {
-            switch (nodeTypeString)
+            if (nodeTypeString == "element")
             {
-                case "element":
-                    return XmlNodeType.Element;
-                case "attribute":
-                    return XmlNodeType.Attribute;
-                case "text":
-                   return XmlNodeType.Text;
-                case "cdatasection":
-                    return XmlNodeType.CDATA;
-                case "entityreference":
-                   return XmlNodeType.EntityReference;
-                case "entity":
-                    return XmlNodeType.Entity;
-                case "processinginstruction":
-                    return XmlNodeType.ProcessingInstruction;
-                case "comment":
-                    return XmlNodeType.Comment;
-                case "document":
-                    return XmlNodeType.Document;
-                case "documenttype":
-                    return XmlNodeType.DocumentType;
-                case "documentfragment":
-                    return XmlNodeType.DocumentFragment;
-                case "notation":
-                    return XmlNodeType.Notation;
-                case "significantwhitespace":
-                    return XmlNodeType.SignificantWhitespace;
-                case "whitespace":
-                   return XmlNodeType.Whitespace;
-                default:
-                   throw new ArgumentException(SR.Format(SR.Xdom_Invalid_NT_String, nodeTypeString));
+                return XmlNodeType.Element;
             }
+            else if (nodeTypeString == "attribute")
+            {
+                return XmlNodeType.Attribute;
+            }
+            else if (nodeTypeString == "text")
+            {
+                return XmlNodeType.Text;
+            }
+            else if (nodeTypeString == "cdatasection")
+            {
+                return XmlNodeType.CDATA;
+            }
+            else if (nodeTypeString == "entityreference")
+            {
+                return XmlNodeType.EntityReference;
+            }
+            else if (nodeTypeString == "entity")
+            {
+                return XmlNodeType.Entity;
+            }
+            else if (nodeTypeString == "processinginstruction")
+            {
+                return XmlNodeType.ProcessingInstruction;
+            }
+            else if (nodeTypeString == "comment")
+            {
+                return XmlNodeType.Comment;
+            }
+            else if (nodeTypeString == "document")
+            {
+                return XmlNodeType.Document;
+            }
+            else if (nodeTypeString == "documenttype")
+            {
+                return XmlNodeType.DocumentType;
+            }
+            else if (nodeTypeString == "documentfragment")
+            {
+                return XmlNodeType.DocumentFragment;
+            }
+            else if (nodeTypeString == "notation")
+            {
+                return XmlNodeType.Notation;
+            }
+            else if (nodeTypeString == "significantwhitespace")
+            {
+                return XmlNodeType.SignificantWhitespace;
+            }
+            else if (nodeTypeString == "whitespace")
+            {
+                return XmlNodeType.Whitespace;
+            }
+            throw new ArgumentException(SR.Format(SR.Xdom_Invalid_NT_String, nodeTypeString));
         }
 
         public virtual void Load(Stream inStream)
@@ -889,7 +935,7 @@ namespace System.Xml
                 fCDataNodesPresent = false;
 
                 XmlLoader loader = new XmlLoader();
-                loader.Load(this, reader, PreserveWhitespace);
+                loader.Load(this, reader, _preserveWhitespace);
             }
             finally
             {
@@ -922,7 +968,7 @@ namespace System.Xml
                     string value = Declaration.Encoding;
                     if (value.Length > 0)
                     {
-                        return Encoding.GetEncoding(value);
+                        return System.Text.Encoding.GetEncoding(value);
                     }
                 }
                 return null;
@@ -953,7 +999,7 @@ namespace System.Xml
         public virtual void Save(Stream outStream)
         {
             XmlDOMTextWriter xw = new XmlDOMTextWriter(outStream, TextEncoding);
-            if (PreserveWhitespace == false)
+            if (_preserveWhitespace == false)
                 xw.Formatting = Formatting.Indented;
             WriteTo(xw);
             xw.Flush();
@@ -966,7 +1012,7 @@ namespace System.Xml
         public virtual void Save(TextWriter writer)
         {
             XmlDOMTextWriter xw = new XmlDOMTextWriter(writer);
-            if (PreserveWhitespace == false)
+            if (_preserveWhitespace == false)
                 xw.Formatting = Formatting.Indented;
             Save(xw);
         }

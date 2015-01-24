@@ -8,7 +8,7 @@ namespace System.Xml
     // Represents a collection of nodes that can be accessed by name or index.
     public partial class XmlNamedNodeMap : IEnumerable
     {
-        internal readonly XmlNode parent;
+        internal XmlNode parent;
         internal SmallXmlNodeList nodes;
 
         internal XmlNamedNodeMap(XmlNode parent)
