@@ -588,10 +588,9 @@ namespace System.Xml.Linq
             }
             else if (s.Length > 0)
             {
-                string stringContent = content as string;
-                if (stringContent != null)
+                if (content is string)
                 {
-                    content = stringContent + s;
+                    content = (string)content + s;
                 }
                 else
                 {
@@ -772,10 +771,9 @@ namespace System.Xml.Linq
             XContainer c = this;
             while (true)
             {
-                XNode content = c != null ? c.content as XNode : null;
-                if (content != null)
+                if (c != null && c.content is XNode)
                 {
-                    n = content.next;
+                    n = ((XNode)c.content).next;
                 }
                 else
                 {
@@ -805,12 +803,12 @@ namespace System.Xml.Linq
 
         internal static string GetStringValue(object value)
         {
-            string s = value as string;
-            if (s != null)
+            string s;
+            if (value is string)
             {
-                return s;
+                s = (string)value;
             }
-            if (value is double)
+            else if (value is double)
             {
                 s = XmlConvert.ToString((double)value);
             }
@@ -1089,16 +1087,15 @@ namespace System.Xml.Linq
         {
             if (content != null)
             {
-                string stringContent = content as string;
-                if (stringContent != null)
+                if (content is string)
                 {
                     if (this is XDocument)
                     {
-                        writer.WriteWhitespace(stringContent);
+                        writer.WriteWhitespace((string)content);
                     }
                     else
                     {
-                        writer.WriteString(stringContent);
+                        writer.WriteString((string)content);
                     }
                 }
                 else

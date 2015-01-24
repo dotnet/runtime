@@ -33,7 +33,7 @@ namespace System.Xml.Linq
         }
 
         internal XAttribute next;
-        internal readonly XName name;
+        internal XName name;
         internal string value;
 
         /// <overloads>
@@ -682,7 +682,7 @@ namespace System.Xml.Linq
                     // the default namespace declaration
                     throw new ArgumentException(SR.Format(SR.Argument_NamespaceDeclarationPrefixed, name.LocalName));
                 }
-                if (value == XNamespace.xmlPrefixNamespace)
+                else if (value == XNamespace.xmlPrefixNamespace)
                 {
                     // 'http://www.w3.org/XML/1998/namespace' can only
                     // be declared by the 'xml' prefix namespace declaration.
@@ -703,7 +703,7 @@ namespace System.Xml.Linq
                         // prefix namespace declaration. 
                         throw new ArgumentException(SR.Argument_NamespaceDeclarationXml);
                     }
-                    if (localName == "xmlns")
+                    else if (localName == "xmlns")
                     {
                         // The 'xmlns' prefix must not be declared. 
                         throw new ArgumentException(SR.Argument_NamespaceDeclarationXmlns);
@@ -718,7 +718,7 @@ namespace System.Xml.Linq
                     // be declared by the 'xml' prefix namespace declaration.
                     throw new ArgumentException(SR.Argument_NamespaceDeclarationXml);
                 }
-                if (value == XNamespace.xmlnsPrefixNamespace)
+                else if (value == XNamespace.xmlnsPrefixNamespace)
                 {
                     // 'http://www.w3.org/2000/xmlns/' must not be declared
                     // by any namespace declaration.
