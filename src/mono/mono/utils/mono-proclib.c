@@ -61,17 +61,19 @@ mono_process_list (int *size)
 	struct kinfo_proc2 *processes = malloc (data_len);
 #else
 	int mib [4];
-	size_t data_len = sizeof (struct kinfo_proc) * 400;
-	struct kinfo_proc *processes = malloc (data_len);
+	size_t data_len = sizeof (struct kinfo_proc) * 16;
+	struct kinfo_proc *processes;
+	int limit = 8;
 #endif /* KERN_PROC2 */
 	void **buf = NULL;
 
 	if (size)
 		*size = 0;
+
+#ifdef KERN_PROC2
 	if (!processes)
 		return NULL;
 
-#ifdef KERN_PROC2
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC2;
 	mib [2] = KERN_PROC_ALL;
@@ -80,19 +82,34 @@ mono_process_list (int *size)
 	mib [5] = 400; /* XXX */
 
 	res = sysctl (mib, 6, processes, &data_len, NULL, 0);
-#else
-	mib [0] = CTL_KERN;
-	mib [1] = KERN_PROC;
-	mib [2] = KERN_PROC_ALL;
-	mib [3] = 0;
-	
-	res = sysctl (mib, 4, processes, &data_len, NULL, 0);
-#endif /* KERN_PROC2 */
-
 	if (res < 0) {
 		free (processes);
 		return NULL;
 	}
+#else
+	processes = NULL;
+	while (limit) {
+		mib [0] = CTL_KERN;
+		mib [1] = KERN_PROC;
+		mib [2] = KERN_PROC_ALL;
+		mib [3] = 0;
+
+		res = sysctl (mib, 4, NULL, &data_len, NULL, 0);
+		if (res)
+			return NULL;
+		processes = malloc (data_len);
+		res = sysctl (mib, 4, NULL, &data_len, NULL, 0);
+		if (res < 0) {
+			free (processes);
+			if (errno != ENOMEM)
+				return NULL;
+			limit --;
+		} else {
+			break;
+		}
+	}
+#endif /* KERN_PROC2 */
+
 #ifdef KERN_PROC2
 	res = data_len/sizeof (struct kinfo_proc2);
 #else
