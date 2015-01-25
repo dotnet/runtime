@@ -7358,6 +7358,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 
 					g_ptr_array_add (info->type_arguments, subinfo);
 
+					while (*p == ' ') p++;
 					if (*p == '[') {
 						p++;
 						fqname = TRUE;
