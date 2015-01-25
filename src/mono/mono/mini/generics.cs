@@ -1119,6 +1119,27 @@ class Tests
 			return 0;
 		}
 	}
+
+	struct FooStruct2 {
+		public int a1, a2, a3;
+	}
+
+	class MyClass<T> where T: struct {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public MyClass(int a1, int a2, int a3, int a4, int a5, int a6, Nullable<T> a) {
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static MyClass<T> foo () {
+			Nullable<T> a = new Nullable<T> ();
+			return new MyClass<T> (0, 0, 0, 0, 0, 0, a);
+		}
+	}
+
+	public static int test_0_newobj_generic_context () {
+		MyClass<FooStruct2>.foo ();
+		return 0;
+	}
 }
 
 #if !MOBILE

@@ -9814,7 +9814,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			if (!cmethod || mono_loader_get_last_error ())
 				LOAD_ERROR;
-			fsig = mono_method_get_signature_checked (cmethod, image, token, NULL, &cfg->error);
+			fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
 			CHECK_CFG_ERROR;
 
 			mono_save_token_info (cfg, image, token, cmethod);
