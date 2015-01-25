@@ -81,10 +81,10 @@ enum {
 	MMAP_FILE_ACCESS_READ_WRITE_EXECUTE = 5,
 };
 
-#ifdef PLATFORM_ANDROID
-#define DEFAULT_FILEMODE 0666
-#else
+#ifdef DEFFILEMODE
 #define DEFAULT_FILEMODE DEFFILEMODE
+#else
+#define DEFAULT_FILEMODE 0666
 #endif
 
 static int mmap_init_state;
