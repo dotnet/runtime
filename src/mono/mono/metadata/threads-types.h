@@ -40,6 +40,14 @@ typedef enum {
 	ThreadApartmentState_Unknown = 0x00000002
 } MonoThreadApartmentState;
 
+typedef enum {
+	ThreadPriority_Lowest = 0,
+	ThreadPriority_BelowNormal = 1,
+	ThreadPriority_Normal = 2,
+	ThreadPriority_AboveNormal = 3,
+	ThreadPriority_Highest = 4
+} MonoThreadPriority;
+
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
@@ -68,6 +76,8 @@ gint32 ves_icall_System_Threading_Thread_GetDomainID (void) MONO_INTERNAL;
 gboolean ves_icall_System_Threading_Thread_Yield (void) MONO_INTERNAL;
 MonoString* ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name) MONO_INTERNAL;
+int ves_icall_System_Threading_Thread_GetPriority (MonoInternalThread *thread) MONO_INTERNAL;
+void ves_icall_System_Threading_Thread_SetPriority (MonoInternalThread *thread, int priority) MONO_INTERNAL;
 MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoInternalThread *this_obj) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_SetCachedCurrentCulture (MonoThread *this_obj, MonoObject *culture) MONO_INTERNAL;
 MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoInternalThread *this_obj) MONO_INTERNAL;
