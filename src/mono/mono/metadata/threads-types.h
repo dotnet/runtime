@@ -105,7 +105,7 @@ gfloat ves_icall_System_Threading_Interlocked_Exchange_Single(gfloat *location, 
 gdouble ves_icall_System_Threading_Interlocked_Exchange_Double(gdouble *location, gdouble value) MONO_INTERNAL;
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand) MONO_INTERNAL;
-gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, gboolean *success) MONO_INTERNAL;
+gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, MonoBoolean *success) MONO_INTERNAL;
 gint64 ves_icall_System_Threading_Interlocked_CompareExchange_Long(gint64 *location, gint64 value, gint64 comparand) MONO_INTERNAL;
 MonoObject *ves_icall_System_Threading_Interlocked_CompareExchange_Object(MonoObject **location, MonoObject *value, MonoObject *comparand) MONO_INTERNAL;
 gpointer ves_icall_System_Threading_Interlocked_CompareExchange_IntPtr(gpointer *location, gpointer value, gpointer comparand) MONO_INTERNAL;
