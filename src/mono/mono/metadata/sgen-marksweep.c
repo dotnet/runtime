@@ -376,6 +376,8 @@ ms_free_block (void *block)
 	} while (SGEN_CAS_PTR (&empty_blocks, block, empty) != empty);
 
 	SGEN_ATOMIC_ADD_P (num_empty_blocks, 1);
+
+	binary_protocol_block_free (block, MS_BLOCK_SIZE);
 }
 
 //#define MARKSWEEP_CONSISTENCY_CHECK
@@ -503,6 +505,8 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	info->cardtable_mod_union = NULL;
 
 	update_heap_boundaries_for_block (info);
+
+	binary_protocol_block_alloc (info, MS_BLOCK_SIZE);
 
 	/* build free list */
 	obj_start = MS_BLOCK_FOR_BLOCK_INFO (info) + MS_BLOCK_SKIP;
@@ -1177,7 +1181,10 @@ static gboolean
 try_set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 {
 	gint32 old_state = SGEN_CAS (&block->state, new_state, expected_state);
-	return old_state == expected_state;
+	gboolean success = old_state == expected_state;
+	if (success)
+		binary_protocol_block_set_state (block, MS_BLOCK_SIZE, old_state, new_state);
+	return success;
 }
 
 /*
