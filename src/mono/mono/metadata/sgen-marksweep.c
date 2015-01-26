@@ -1317,6 +1317,11 @@ sweep_start (void)
 
 static void sweep_finish (void);
 
+/*
+ * LOCKING: The allocated blocks lock must be held when entering this function.  `block`
+ * must have been loaded from the array with the lock held.  This function will unlock the
+ * lock.
+ */
 static void
 check_block_for_sweeping (MSBlockInfo *block, int block_index)
 {
@@ -1329,6 +1334,7 @@ check_block_for_sweeping (MSBlockInfo *block, int block_index)
 	block->swept = 0;
 	SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
 	set_block_state (block, BLOCK_STATE_CHECKING, BLOCK_STATE_MARKING);
+	UNLOCK_ALLOCATED_BLOCKS;
 
 	assert_block_state_is_consistent (block);
 
@@ -1428,12 +1434,13 @@ sweep_loop_thread_func (void *dummy)
 
 		LOCK_ALLOCATED_BLOCKS;
 		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
-		UNLOCK_ALLOCATED_BLOCKS;
 
 		assert_block_state_is_consistent (block);
 
-		if (block->state == BLOCK_STATE_SWEPT)
+		if (block->state == BLOCK_STATE_SWEPT) {
+			UNLOCK_ALLOCATED_BLOCKS;
 			continue;
+		}
 
 		check_block_for_sweeping (block, block_index);
 	}
