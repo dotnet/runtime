@@ -741,7 +741,7 @@ typedef struct _SgenRememberedSet {
 
 	void (*scan_remsets) (SgenGrayQueue *queue);
 
-	void (*prepare_for_major_collection) (void);
+	void (*clear_cards) (void);
 
 	void (*finish_minor_collection) (void);
 	gboolean (*find_address) (char *addr);

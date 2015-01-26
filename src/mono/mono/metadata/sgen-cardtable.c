@@ -412,7 +412,7 @@ clear_cards (mword start, mword size)
 #endif
 
 static void
-sgen_card_table_prepare_for_major_collection (void)
+sgen_card_table_clear_cards (void)
 {
 	/*XXX we could do this in 2 ways. using mincore or iterating over all sections/los objects */
 	sgen_major_collector_iterate_live_block_ranges (clear_cards);
@@ -440,7 +440,7 @@ sgen_card_table_scan_remsets (SgenGrayQueue *queue)
 	sgen_los_iterate_live_block_ranges (move_cards_to_shadow_table);
 
 	/*Then we clear*/
-	sgen_card_table_prepare_for_major_collection ();
+	sgen_card_table_clear_cards ();
 #endif
 	SGEN_TV_GETTIME (atv);
 	sgen_major_collector_scan_card_table (queue);
@@ -780,7 +780,7 @@ sgen_card_table_init (SgenRememberedSet *remset)
 	remset->scan_remsets = sgen_card_table_scan_remsets;
 
 	remset->finish_minor_collection = sgen_card_table_finish_minor_collection;
-	remset->prepare_for_major_collection = sgen_card_table_prepare_for_major_collection;
+	remset->clear_cards = sgen_card_table_clear_cards;
 
 	remset->find_address = sgen_card_table_find_address;
 	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;

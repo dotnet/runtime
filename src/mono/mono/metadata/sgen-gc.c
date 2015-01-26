@@ -2517,7 +2517,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 
 	if (!concurrent_collection_in_progress) {
 		/* Remsets are not useful for a major collection */
-		remset.prepare_for_major_collection ();
+		remset.clear_cards ();
 	}
 
 	sgen_process_fin_stage_entries ();
