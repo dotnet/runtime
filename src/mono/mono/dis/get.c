@@ -215,14 +215,16 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContainer *
 		g_string_append (res, "*");
 		break;
 
-	case MONO_TYPE_FNPTR:
-		sig = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr);
+	case MONO_TYPE_FNPTR: {
+		MonoError error;
+		sig = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
 		s = dis_stringify_function_ptr (m, sig);
 		g_string_append (res, "method ");
 		g_string_append (res, s);
 		g_free (s);
 		break;
-
+	}
 	case MONO_TYPE_ARRAY:
 		ptr = get_type (m, ptr, &s, is_def, container);
 		g_string_append (res, s);
@@ -899,7 +901,8 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 			}
 
 			mono_metadata_decode_blob_size (sig, &sig);
-			method = mono_metadata_parse_method_signature_full (m, container, methoddef_row, sig, &sig);
+			method = mono_metadata_parse_method_signature_full (m, container, methoddef_row, sig, &sig, &error);
+			g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
 			free_method = 1;
 		}
 

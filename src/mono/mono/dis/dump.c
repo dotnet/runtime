@@ -598,7 +598,8 @@ dump_table_method (MonoImage *m)
 		mono_metadata_decode_table_row (m, MONO_TABLE_METHOD, i - 1, cols, MONO_METHOD_SIZE);
 		sigblob = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 		mono_metadata_decode_blob_size (sigblob, &sigblob);
-		method = mono_metadata_parse_method_signature_full (m, method_container ? method_container : type_container, i, sigblob, &sigblob);
+		method = mono_metadata_parse_method_signature_full (m, method_container ? method_container : type_container, i, sigblob, &sigblob, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
 		sig = dis_stringify_method_signature (m, method, i, method_container ? method_container : type_container, FALSE);
                 impl_flags = get_method_impl_flags (cols [MONO_METHOD_IMPLFLAGS]);
 		fprintf (output, "%d: %s (param: %d impl_flags: %s)\n", i, sig, cols [MONO_METHOD_PARAMLIST], impl_flags);

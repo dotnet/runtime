@@ -836,6 +836,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 	}
 
 	for (i = start; i < end; i++){
+		MonoError error;
 		MonoMethodSignature *ms;
 		MonoGenericContainer *container;
 		char *flags, *impl_flags;
@@ -862,13 +863,14 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 			container = type_container;
 		}
 
-		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig);
+		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig, &error);
 		if (ms != NULL){
 			sig_str = dis_stringify_method_signature (m, ms, i + 1, container, FALSE);
 			method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		} else {
 			sig_str = NULL;
 			method_name = g_strdup ("<NULL METHOD SIGNATURE>");
+			mono_error_cleanup (&error);
 		}
 
 		fprintf (output, "    // method line %d\n", i + 1);

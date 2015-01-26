@@ -1761,6 +1761,8 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 MonoMethodSignature*
 mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *generic_container, guint32 token)
 {
+	MonoError error;
+	MonoMethodSignature *ret;
 	MonoTableInfo *tables = image->tables;
 	guint32 idx = mono_metadata_token_index (token);
 	guint32 sig;
@@ -1776,7 +1778,12 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *gene
 	ptr = mono_metadata_blob_heap (image, sig);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	return mono_metadata_parse_method_signature_full (image, generic_container, 0, ptr, NULL); 
+	ret = mono_metadata_parse_method_signature_full (image, generic_container, 0, ptr, NULL, &error);
+	if (!ret) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+	}
+	return ret;
 }
 
 /*
@@ -1893,13 +1900,15 @@ mono_metadata_signature_size (MonoMethodSignature *sig)
  */
 MonoMethodSignature *
 mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *container,
-					   int def, const char *ptr, const char **rptr)
+					   int def, const char *ptr, const char **rptr, MonoError *error)
 {
 	MonoMethodSignature *method;
 	int i, *pattrs = NULL;
 	guint32 hasthis = 0, explicit_this = 0, call_convention, param_count;
 	guint32 gen_param_count = 0;
 	gboolean is_open = FALSE;
+
+	mono_error_init (error);
 
 	if (*ptr & 0x10)
 		gen_param_count = 1;
@@ -1927,6 +1936,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		if (!method->ret) {
 			mono_metadata_free_method_signature (method);
 			g_free (pattrs);
+			if (mono_loader_get_last_error ())
+				mono_error_set_from_loader_error (error);
+			else
+				mono_error_set_bad_image (error, m, "Could not parse return type signature");
 			return NULL;
 		}
 		is_open = mono_class_is_open_constructed_type (method->ret);
@@ -1935,12 +1948,14 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	for (i = 0; i < method->param_count; ++i) {
 		if (*ptr == MONO_TYPE_SENTINEL) {
 			if (method->call_convention != MONO_CALL_VARARG || def) {
-				g_warning ("found sentinel for methoddef or no vararg method 0x%08x on image %s", def, m->name);
+				g_assert (!mono_loader_get_last_error ());
+				mono_error_set_bad_image (error, m, "Found sentinel for methoddef or no vararg");
 				g_free (pattrs);
 				return NULL;
 			}
 			if (method->sentinelpos >= 0) {
-				g_warning ("found sentinel twice in the same signature for method 0x%08x on image %s", def, m->name);
+				g_assert (!mono_loader_get_last_error ());
+				mono_error_set_bad_image (error, m, "Found sentinel twice in the same signature.");
 				g_free (pattrs);
 				return NULL;
 			}
@@ -1949,6 +1964,10 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 		}
 		method->params [i] = mono_metadata_parse_type_full (m, container, MONO_PARSE_PARAM, pattrs ? pattrs [i+1] : 0, ptr, &ptr);
 		if (!method->params [i]) {
+			if (mono_loader_get_last_error ())
+				mono_error_set_from_loader_error (error);
+			else
+				mono_error_set_bad_image (error, m, "Could not parse type argument %d on method signature", i);
 			mono_metadata_free_method_signature (method);
 			g_free (pattrs);
 			return NULL;
@@ -1974,6 +1993,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	 * Add signature to a cache and increase ref count...
 	 */
 
+	g_assert (!mono_loader_get_last_error ());
 	return method;
 }
 
@@ -1994,7 +2014,14 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
 {
-	return mono_metadata_parse_method_signature_full (m, NULL, def, ptr, rptr);
+	MonoError error;
+	MonoMethodSignature *ret;
+	ret = mono_metadata_parse_method_signature_full (m, NULL, def, ptr, rptr, &error);
+	if (!ret) {
+		mono_loader_set_error_from_mono_error (&error);
+		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
+	}
+	return ret;
 }
 
 /*
@@ -3220,11 +3247,16 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (!type->data.type)
 			return FALSE;
 		break;
-	case MONO_TYPE_FNPTR:
-		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr);
-		if (!type->data.method)
+	case MONO_TYPE_FNPTR: {
+		MonoError error;
+		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, &error);
+		if (!type->data.method) {
+			mono_loader_set_error_from_mono_error (&error);
+			mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 			return FALSE;
+		}
 		break;
+	}
 	case MONO_TYPE_ARRAY:
 		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr);
 		if (!type->data.array)
