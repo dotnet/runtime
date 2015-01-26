@@ -7,7 +7,6 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <AssemblyName>Assembly1</AssemblyName>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <NuGetPackageImportStamp>62805582</NuGetPackageImportStamp>
     <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
   </PropertyGroup>

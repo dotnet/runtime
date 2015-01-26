@@ -9,7 +9,6 @@
     <AssemblyName>MemoryMappedViewAccessor.Tests</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <ProjectGuid>{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}</ProjectGuid>
   </PropertyGroup>

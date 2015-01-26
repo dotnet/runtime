@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Xunit;
 
-namespace OutOfTheBoxPartitionerTests
+namespace System.Collections.Concurrent.Tests
 {
     public class LongRangePartitionerTests
     {
@@ -48,9 +48,6 @@ namespace OutOfTheBoxPartitionerTests
         /// We unroll the tuples and flatten them to a single sequence
         /// The single sequence is compared to the original range for verification
         /// </summary>
-        /// <param name="from"></param>
-        /// <param name="count"></param>
-        /// <param name="dop"></param>
         [Fact]
         public static void CheckGetPartitions()
         {
@@ -62,6 +59,7 @@ namespace OutOfTheBoxPartitionerTests
             CheckGetPartitions(-1999, 5000, 63);
             CheckGetPartitions(9223372036854774807, 999, 13); // close to Int64.Max
         }
+
         public static void CheckGetPartitions(long from, long count, int dop)
         {
             long to = from + count;
@@ -115,9 +113,6 @@ namespace OutOfTheBoxPartitionerTests
         /// The single sequence is compared to the original range for verification
         /// Also the indices are extracted to ensure that they are ordered & normalized
         /// </summary>
-        /// <param name="from"></param>
-        /// <param name="count"></param>
-        /// <param name="dop"></param>
         [Fact]
         public static void CheckGetOrderablePartitions()
         {
@@ -416,8 +411,7 @@ namespace OutOfTheBoxPartitionerTests
             }
 
             var lastRange = rangeSizes[rangeSizes.Count - 1];
-            if (lastRange > desiredRangeSize)
-                Assert.False(true, String.Format("Last range has invalid size: {0}", lastRange));
+            Assert.True(desiredRangeSize >= lastRange, String.Format("Expect={0}, Actual={1}", desiredRangeSize, lastRange));
         }
 
         /// <summary>
@@ -490,7 +484,7 @@ namespace OutOfTheBoxPartitionerTests
             }
 
             // Verifying that all items are there
-            Assert.True(count == actualCount, "Must be equal.");
+            Assert.Equal(count, actualCount);
         }
 
         /// <summary>
@@ -565,7 +559,7 @@ namespace OutOfTheBoxPartitionerTests
             }
 
             // Verifying that all items are there
-            Assert.True(count == actualCount, "Must be equal.");
+            Assert.Equal(count, actualCount);
         }
     }
 }

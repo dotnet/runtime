@@ -91,7 +91,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 if ((long)win32Values[drives[i].Name] != -1)
                 {
                     //We are not using Path.GetTempFileName bacause that will limit us to only one drive
-                    String tempFileName = "Laks_";
+                    String tempFileName = "AvailableFreeSpaceTests_";
                     int fileCount = -1;
                     while (fileCount++ < 1000 && File.Exists(drives[i].Name + tempFileName + fileCount)) ;
                     if (fileCount >= 1000)
