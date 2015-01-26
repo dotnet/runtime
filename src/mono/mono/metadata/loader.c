@@ -2613,7 +2613,10 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 
 		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL);
 		if (!signature) {
-			mono_error_set_from_loader_error (error);
+			if (mono_loader_get_last_error ())
+				mono_error_set_from_loader_error (error);
+			else
+				mono_error_set_method_load (error, m->klass, m->name, "Could not parse signature 0x%08x due to unknown error", idx);
 			return NULL;
 		}
 
