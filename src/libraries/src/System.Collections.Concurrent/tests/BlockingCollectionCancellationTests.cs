@@ -19,15 +19,12 @@ namespace Test
 
             Task.Run(() => coll1.CompleteAdding());
             //call Take.. it should wake up with an OCE. when CompleteAdding() is called.
-            Assert.Throws<InvalidOperationException>(
-               () => coll1.Take());
-               // "InternalCancellation_WakingUpTake:  an IOE should be thrown if CompleteAdding occurs during blocking Take()");
-            Assert.Throws<InvalidOperationException>(
-                () => coll1.Add(1));
-                // "InternalCancellation_WakingUpAdd:  an InvalidOpEx should be thrown if CompleteAdding occurs during blocking Add()");
-            Assert.Throws<InvalidOperationException>(
-               () => coll1.TryAdd(1, 1000000));  //an indefinite wait to add.. 1000 seconds.
-               // "InternalCancellation_WakingUpTryAdd:  an InvalidOpEx should be thrown if CompleteAdding occurs during blocking Add()");
+            Assert.Throws<InvalidOperationException>(() => coll1.Take());
+            // "InternalCancellation_WakingUpTake:  an IOE should be thrown if CompleteAdding occurs during blocking Take()");
+            Assert.Throws<InvalidOperationException>(() => coll1.Add(1));
+            // "InternalCancellation_WakingUpAdd:  an InvalidOpEx should be thrown if CompleteAdding occurs during blocking Add()");
+            Assert.Throws<InvalidOperationException>(() => coll1.TryAdd(1, 1000000));  //an indefinite wait to add.. 1000 seconds.
+            // "InternalCancellation_WakingUpTryAdd:  an InvalidOpEx should be thrown if CompleteAdding occurs during blocking Add()");
         }
 
         //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while the taker is waiting.
@@ -43,8 +40,6 @@ namespace Test
                 });
 
             int item;
-            Assert.False(coll1.IsAddingCompleted,
-               "InternalCancellation_WakingUpTryTake:  At this point CompleteAdding should not have occurred.");
             bool tookItem = coll1.TryTake(out item, 1000000); // wait essentially indefinitely. 1000seconds.
             Assert.False(tookItem,
                "InternalCancellation_WakingUpTryTake:  TryTake should wake up with tookItem=false.");
@@ -92,9 +87,8 @@ namespace Test
             Task.Run(() => cs.Cancel());
 
             int item;
-
             EnsureOperationCanceledExceptionThrown(
-                () => bc.Take(cs.Token), cs.Token, 
+                () => bc.Take(cs.Token), cs.Token,
                 "ExternalCancel_Take:  The operation should wake up via token cancellation.");
             EnsureOperationCanceledExceptionThrown(
                () => bc.TryTake(out item, 100000, cs.Token), cs.Token,
@@ -167,11 +161,11 @@ namespace Test
         {
             BlockingCollection<int> bc = new BlockingCollection<int>();
             CancellationTokenSource cs = new CancellationTokenSource();
-            new Task(() =>
+            Task.Run(() =>
             {
                 Task.WaitAll(Task.Delay(100));
                 cs.Cancel();
-            }).Start();
+            });
 
             IEnumerable<int> enumerable = bc.GetConsumingEnumerable(cs.Token);
 

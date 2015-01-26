@@ -5,7 +5,6 @@
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{F3E433C8-352F-4944-BF7F-765CE435370D}</ProjectGuid>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Reflection.Metadata</AssemblyName>
     <DocumentationFile>$(OutputPath)System.Reflection.Metadata.xml</DocumentationFile>
