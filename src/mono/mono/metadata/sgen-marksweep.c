@@ -213,7 +213,7 @@ static size_t num_empty_blocks = 0;
 #define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped (), "Can't iterate blocks without lock when world is running."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} }
 
-static size_t num_major_sections = 0;
+static size_t num_major_sections = 0; /* GUARD */
 /* one free block list for each block object size */
 static MSBlockInfo * volatile *free_block_lists [MS_BLOCK_TYPE_MAX];
 
@@ -1295,7 +1295,7 @@ static size_t *sweep_slots_available;
 static size_t *sweep_slots_used;
 static size_t *sweep_num_blocks;
 
-static size_t num_major_sections_before_sweep; /* GUARD */
+static size_t num_major_sections_before_sweep;
 static size_t num_major_sections_freed_in_sweep; /* GUARD */
 
 static void
@@ -1317,6 +1317,91 @@ sweep_start (void)
 
 static void sweep_finish (void);
 
+static void
+check_block_for_sweeping (MSBlockInfo *block, int block_index)
+{
+	int count;
+	gboolean have_live = FALSE;
+	gboolean have_free = FALSE;
+	int nused = 0;
+	int i;
+
+	block->swept = 0;
+	SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
+	set_block_state (block, BLOCK_STATE_CHECKING, BLOCK_STATE_MARKING);
+
+	assert_block_state_is_consistent (block);
+
+	block->has_pinned = block->pinned;
+
+	block->is_to_space = FALSE;
+
+	count = MS_BLOCK_FREE / block->obj_size;
+
+	if (block->cardtable_mod_union) {
+		sgen_free_internal_dynamic (block->cardtable_mod_union, CARDS_PER_BLOCK, INTERNAL_MEM_CARDTABLE_MOD_UNION);
+		block->cardtable_mod_union = NULL;
+	}
+
+	/* Count marked objects in the block */
+	for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
+		nused += bitcount (block->mark_words [i]);
+
+	if (nused)
+		have_live = TRUE;
+	if (nused < count)
+		have_free = TRUE;
+
+	if (have_live) {
+		int obj_size_index = block->obj_size_index;
+		gboolean has_pinned = block->has_pinned;
+
+		set_block_state (block, BLOCK_STATE_NEED_SWEEPING, BLOCK_STATE_CHECKING);
+
+		/*
+		 * FIXME: Go straight to SWEPT if there are no free slots.  We need
+		 * to set the free slot list to NULL, though, and maybe update some
+		 * statistics.
+		 */
+		if (!lazy_sweep)
+			sweep_block (block, TRUE);
+
+		if (!has_pinned) {
+			++sweep_num_blocks [obj_size_index];
+			sweep_slots_used [obj_size_index] += nused;
+			sweep_slots_available [obj_size_index] += count;
+		}
+
+		/*
+		 * If there are free slots in the block, add
+		 * the block to the corresponding free list.
+		 */
+		if (have_free) {
+			MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
+			int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
+			add_free_block (free_blocks, index, block);
+		}
+
+		update_heap_boundaries_for_block (block);
+	} else {
+		/*
+		 * Blocks without live objects are removed from the
+		 * block list and freed.
+		 */
+		LOCK_ALLOCATED_BLOCKS;
+		SGEN_ASSERT (0, block_index < allocated_blocks.next_slot, "How did the number of blocks shrink?");
+		SGEN_ASSERT (0, BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]) == block, "How did the block move?");
+		allocated_blocks.data [block_index] = NULL;
+		UNLOCK_ALLOCATED_BLOCKS;
+
+		binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
+		ms_free_block (block);
+
+		--num_major_sections;
+		++num_major_sections_freed_in_sweep;
+	}
+}
+
 static mono_native_thread_return_t
 sweep_loop_thread_func (void *dummy)
 {
@@ -1333,13 +1418,6 @@ sweep_loop_thread_func (void *dummy)
 
 	for (;;) {
 		MSBlockInfo *block;
-		int count;
-		gboolean have_live = FALSE;
-		gboolean has_pinned;
-		gboolean have_free = FALSE;
-		int obj_size_index;
-		int nused = 0;
-		int i;
 
 		LOCK_ALLOCATED_BLOCKS;
 		if (block_index >= allocated_blocks.next_slot) {
@@ -1348,13 +1426,6 @@ sweep_loop_thread_func (void *dummy)
 		}
 		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
 		UNLOCK_ALLOCATED_BLOCKS;
-
-		obj_size_index = block->obj_size_index;
-
-		has_pinned = block->has_pinned;
-		block->has_pinned = block->pinned;
-
-		block->is_to_space = FALSE;
 
 		assert_block_state_is_consistent (block);
 
@@ -1368,74 +1439,7 @@ sweep_loop_thread_func (void *dummy)
 			break;
 		}
 
-		block->swept = 0;
-		SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
-		set_block_state (block, BLOCK_STATE_CHECKING, BLOCK_STATE_MARKING);
-
-		assert_block_state_is_consistent (block);
-
-		count = MS_BLOCK_FREE / block->obj_size;
-
-		if (block->cardtable_mod_union) {
-			sgen_free_internal_dynamic (block->cardtable_mod_union, CARDS_PER_BLOCK, INTERNAL_MEM_CARDTABLE_MOD_UNION);
-			block->cardtable_mod_union = NULL;
-		}
-
-		/* Count marked objects in the block */
-		for (i = 0; i < MS_NUM_MARK_WORDS; ++i) {
-			nused += bitcount (block->mark_words [i]);
-		}
-		if (nused) {
-			have_live = TRUE;
-		}
-		if (nused < count)
-			have_free = TRUE;
-
-		if (have_live) {
-			set_block_state (block, BLOCK_STATE_NEED_SWEEPING, BLOCK_STATE_CHECKING);
-
-			/*
-			 * FIXME: Go straight to SWEPT if there are no free slots.  We need
-			 * to set the free slot list to NULL, though, and maybe update some
-			 * statistics.
-			 */
-			if (!lazy_sweep)
-				sweep_block (block, TRUE);
-
-			if (!has_pinned) {
-				++sweep_num_blocks [obj_size_index];
-				sweep_slots_used [obj_size_index] += nused;
-				sweep_slots_available [obj_size_index] += count;
-			}
-
-			/*
-			 * If there are free slots in the block, add
-			 * the block to the corresponding free list.
-			 */
-			if (have_free) {
-				MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
-				int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
-				add_free_block (free_blocks, index, block);
-			}
-
-			update_heap_boundaries_for_block (block);
-		} else {
-			/*
-			 * Blocks without live objects are removed from the
-			 * block list and freed.
-			 */
-			LOCK_ALLOCATED_BLOCKS;
-			SGEN_ASSERT (0, block_index < allocated_blocks.next_slot, "How did the number of blocks shrink?");
-			SGEN_ASSERT (0, BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]) == block, "How did the block move?");
-			allocated_blocks.data [block_index] = NULL;
-			UNLOCK_ALLOCATED_BLOCKS;
-
-			binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
-			ms_free_block (block);
-
-			--num_major_sections;
-			++num_major_sections_freed_in_sweep;
-		}
+		check_block_for_sweeping (block, block_index);
 
 		++block_index;
 	}
