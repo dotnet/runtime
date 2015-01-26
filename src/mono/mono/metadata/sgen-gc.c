@@ -5293,9 +5293,9 @@ sgen_gc_unlock (void)
 }
 
 void
-sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
+sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback, gboolean requires_sweep)
 {
-	major_collector.iterate_live_block_ranges (callback);
+	major_collector.iterate_live_block_ranges (callback, requires_sweep);
 }
 
 void

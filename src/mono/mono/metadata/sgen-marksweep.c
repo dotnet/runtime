@@ -1937,12 +1937,13 @@ major_print_gc_param_usage (void)
  * This callback is used to clear cards, move cards to the shadow table and do counting.
  */
 static void
-major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
+major_iterate_live_block_ranges (sgen_cardtable_block_callback callback, gboolean requires_sweep)
 {
 	MSBlockInfo *block;
 	gboolean has_references;
 
-	major_finish_sweeping ();
+	if (requires_sweep)
+		major_finish_sweeping ();
 	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
