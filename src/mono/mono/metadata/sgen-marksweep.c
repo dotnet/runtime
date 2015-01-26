@@ -1406,6 +1406,7 @@ static mono_native_thread_return_t
 sweep_loop_thread_func (void *dummy)
 {
 	int block_index;
+	int num_blocks;
 	int small_id = mono_thread_info_register_small_id ();
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEEPING, "Sweep thread called with wrong state");
@@ -1413,35 +1414,28 @@ sweep_loop_thread_func (void *dummy)
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
 
-	/* traverse all blocks, free and zero unmarked objects */
-	block_index = 0;
+	LOCK_ALLOCATED_BLOCKS;
+	num_blocks = allocated_blocks.next_slot;
+	UNLOCK_ALLOCATED_BLOCKS;
 
-	for (;;) {
+	/*
+	 * We traverse the block array from high to low.  Nursery collections will have to
+	 * cooperate with the sweep thread to finish sweeping, and they will traverse from
+	 * low to high, to avoid constantly colliding on the same blocks.
+	 */
+	for (block_index = num_blocks - 1; block_index >= 0; --block_index) {
 		MSBlockInfo *block;
 
 		LOCK_ALLOCATED_BLOCKS;
-		if (block_index >= allocated_blocks.next_slot) {
-			UNLOCK_ALLOCATED_BLOCKS;
-			break;
-		}
 		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
 		UNLOCK_ALLOCATED_BLOCKS;
 
 		assert_block_state_is_consistent (block);
 
-		if (block->state == BLOCK_STATE_SWEPT) {
-			LOCK_ALLOCATED_BLOCKS;
-			for (; block_index < allocated_blocks.next_slot; ++block_index) {
-				block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
-				SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "Swept blocks must be at the end of the list.");
-			}
-			UNLOCK_ALLOCATED_BLOCKS;
-			break;
-		}
+		if (block->state == BLOCK_STATE_SWEPT)
+			continue;
 
 		check_block_for_sweeping (block, block_index);
-
-		++block_index;
 	}
 
 	LOCK_ALLOCATED_BLOCKS;
