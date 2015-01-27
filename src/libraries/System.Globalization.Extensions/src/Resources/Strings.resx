@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_OutOfMemoryException" xml:space="preserve">
+    <value>Insufficient memory to continue the execution of the program.</value>
+  </data>
+  <data name="Argument_IdnBadLabelSize" xml:space="preserve">
+    <value>IDN labels must be between 1 and 63 characters long.</value>
+  </data>
+  <data name="Argument_IdnBadPunycode" xml:space="preserve">
+    <value>Invalid IDN encoded string.</value>
+  </data>
+  <data name="Argument_IdnIllegalName" xml:space="preserve">
+    <value>Decoded string is not a valid IDN name.</value>
+  </data>
+  <data name="Argument_InvalidCharSequence" xml:space="preserve">
+    <value>Invalid Unicode code point found at index {0}.</value>
+  </data>
+  <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
+    <value>String contains invalid Unicode code points.</value>
+  </data>
+  <data name="Argument_InvalidFlag" xml:space="preserve">
+    <value>Value of flags is invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
+    <value>Index and count must refer to a location within the buffer.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="UnknownError_Num" xml:space="preserve">
+    <value>Unknown error '{0}'.</value>
+  </data>
+</root>
