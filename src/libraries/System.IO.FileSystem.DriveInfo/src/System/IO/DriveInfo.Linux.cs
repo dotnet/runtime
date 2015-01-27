@@ -62,7 +62,7 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                Interop.structStatvfs stats = GetStats();
+                Interop.libc.structStatvfs stats = GetStats();
                 return (long)((ulong)stats.f_bsize * (ulong)stats.f_bavail);
             }
         }
@@ -72,7 +72,7 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                Interop.structStatvfs stats = GetStats();
+                Interop.libc.structStatvfs stats = GetStats();
                 return (long)((ulong)stats.f_bsize * (ulong)stats.f_bfree);
             }
         }
@@ -82,7 +82,7 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                Interop.structStatvfs stats = GetStats();
+                Interop.libc.structStatvfs stats = GetStats();
                 return (long)((ulong)stats.f_bsize * (ulong)stats.f_blocks);
             }
         }
@@ -97,13 +97,13 @@ namespace System.IO
 
         /// <summary>Loads file system stats for the mounted path.</summary>
         /// <returns>The loaded stats.</returns>
-        private Interop.structStatvfs GetStats()
+        private Interop.libc.structStatvfs GetStats()
         {
-            Interop.structStatvfs stats;
-            if (Interop.statvfs(Name, out stats) != 0)
+            Interop.libc.structStatvfs stats;
+            if (Interop.libc.statvfs(Name, out stats) != 0)
             {
                 int errno = Marshal.GetLastWin32Error();
-                if (errno == (int)Interop.Errors.ENOENT)
+                if (errno == Interop.Errors.ENOENT)
                 {
                     throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, Name)); // match Win32 exception
                 }
@@ -137,16 +137,16 @@ namespace System.IO
             // Parse the mounts file
             const string MountsPath = "/proc/mounts"; // Linux mounts file
             IntPtr fp;
-            Interop.CheckIoPtr(fp = Interop.setmntent(MountsPath, Interop.MNTOPT_RO), path: MountsPath);
+            Interop.CheckIoPtr(fp = Interop.libc.setmntent(MountsPath, Interop.libc.MNTOPT_RO), path: MountsPath);
             try
             {
                 // Walk the entries in the mounts file, creating a DriveInfo for each that shouldn't be ignored.
                 List<DriveInfo> drives = new List<DriveInfo>();
-                Interop.mntent mntent = default(Interop.mntent);
-                while (Interop.getmntent_r(fp, ref mntent, strBuf, StringBufferLength) != IntPtr.Zero)
+                Interop.libc.mntent mntent = default(Interop.libc.mntent);
+                while (Interop.libc.getmntent_r(fp, ref mntent, strBuf, StringBufferLength) != IntPtr.Zero)
                 {
                     string type = DecodeString(mntent.mnt_type);
-                    if (!string.IsNullOrWhiteSpace(type) && type != Interop.MNTTYPE_IGNORE)
+                    if (!string.IsNullOrWhiteSpace(type) && type != Interop.libc.MNTTYPE_IGNORE)
                     {
                         string path = DecodeString(mntent.mnt_dir);
                         string name = DecodeString(mntent.mnt_fsname);
@@ -157,7 +157,7 @@ namespace System.IO
             }
             finally
             {
-                int result = Interop.endmntent(fp);
+                int result = Interop.libc.endmntent(fp);
                 Debug.Assert(result == 1); // documented to always return 1
             }
         }

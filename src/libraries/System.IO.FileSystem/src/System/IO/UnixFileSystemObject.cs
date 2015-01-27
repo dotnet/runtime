@@ -18,7 +18,7 @@ namespace System.IO
             private bool _isDirectory;
 
             /// <summary>The last cached stat information about the file.</summary>
-            private Interop.structStat _stat;
+            private Interop.libc.structStat _stat;
 
             /// <summary>
             /// Whether we've successfully cached a stat structure.
@@ -73,7 +73,7 @@ namespace System.IO
             {
                 get
                 {
-                    return (_stat.st_mode & (int)Interop.FileTypes.S_IFMT) == (int)Interop.FileTypes.S_IFDIR;
+                    return (_stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFDIR;
                 }
             }
 
@@ -85,21 +85,21 @@ namespace System.IO
             {
                 get
                 {
-                    Interop.Permissions readBit, writeBit;
-                    if (_stat.st_uid == Interop.geteuid())      // does the user effectively own the file?
+                    Interop.libc.Permissions readBit, writeBit;
+                    if (_stat.st_uid == Interop.libc.geteuid())      // does the user effectively own the file?
                     {
-                        readBit = Interop.Permissions.S_IRUSR;
-                        writeBit = Interop.Permissions.S_IWUSR;
+                        readBit = Interop.libc.Permissions.S_IRUSR;
+                        writeBit = Interop.libc.Permissions.S_IWUSR;
                     }
-                    else if (_stat.st_gid == Interop.getegid()) // does the user belong to a group that effectively owns the file?
+                    else if (_stat.st_gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
                     {
-                        readBit = Interop.Permissions.S_IRGRP;
-                        writeBit = Interop.Permissions.S_IWGRP;
+                        readBit = Interop.libc.Permissions.S_IRGRP;
+                        writeBit = Interop.libc.Permissions.S_IWGRP;
                     }
                     else                                        // everyone else
                     {
-                        readBit = Interop.Permissions.S_IROTH;
-                        writeBit = Interop.Permissions.S_IWOTH;
+                        readBit = Interop.libc.Permissions.S_IROTH;
+                        writeBit = Interop.libc.Permissions.S_IWOTH;
                     }
 
                     return
@@ -118,18 +118,18 @@ namespace System.IO
                     if (value) // true if going from writable to readable, false if going from readable to writable
                     {
                         // Take away all write permissions from user/group/everyone
-                        newMode &= ~(int)(Interop.Permissions.S_IWUSR | Interop.Permissions.S_IWGRP | Interop.Permissions.S_IWOTH);
+                        newMode &= ~(int)(Interop.libc.Permissions.S_IWUSR | Interop.libc.Permissions.S_IWGRP | Interop.libc.Permissions.S_IWOTH);
                     }
-                    else if ((newMode & (int)Interop.Permissions.S_IRUSR) != 0)
+                    else if ((newMode & (int)Interop.libc.Permissions.S_IRUSR) != 0)
                     {
                         // Give write permission to the owner if the owner has read permission
-                        newMode |= (int)Interop.Permissions.S_IWUSR;
+                        newMode |= (int)Interop.libc.Permissions.S_IWUSR;
                     }
 
                     // Change the permissions on the file
                     if (newMode != _stat.st_mode)
                     {
-                        while (Interop.CheckIo(Interop.chmod(_fullPath, newMode), _fullPath, _isDirectory)) ;
+                        while (Interop.CheckIo(Interop.libc.chmod(_fullPath, newMode), _fullPath, _isDirectory)) ;
                     }
                 }
             }
@@ -179,10 +179,10 @@ namespace System.IO
             {
                 _statInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
                 EnsureStatInitialized();
-                Interop.utimbuf buf;
+                Interop.libc.utimbuf buf;
                 buf.actime = accessTime ?? _stat.st_atime;
                 buf.modtime = writeTime ?? _stat.st_mtime;
-                while (Interop.CheckIo(Interop.utime(_fullPath, ref buf), _fullPath, _isDirectory)) ;
+                while (Interop.CheckIo(Interop.libc.utime(_fullPath, ref buf), _fullPath, _isDirectory)) ;
                 _statInitialized = -1;
             }
 
@@ -202,7 +202,7 @@ namespace System.IO
                 int result;
                 while (true)
                 {
-                    result = Interop.stat(_fullPath, out _stat);
+                    result = Interop.libc.stat(_fullPath, out _stat);
                     if (result >= 0)
                     {
                         _statInitialized = 0;
@@ -210,7 +210,7 @@ namespace System.IO
                     else
                     {
                         int errno = Marshal.GetLastWin32Error();
-                        if (errno == (int)Interop.Errors.EINTR)
+                        if (errno == Interop.Errors.EINTR)
                         {
                             continue;
                         }
