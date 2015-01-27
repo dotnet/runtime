@@ -5928,7 +5928,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 			opcode = OP_ROUND;
 		}
 		
-		if (opcode) {
+		if (opcode && fsig->param_count == 1) {
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_freg (cfg);
@@ -5937,7 +5937,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 		}
 
 		if (cfg->opt & MONO_OPT_CMOV) {
-			int opcode = 0;
+			opcode = 0;
 
 			if (strcmp (cmethod->name, "Min") == 0) {
 				if (fsig->params [0]->type == MONO_TYPE_I4)
@@ -5947,7 +5947,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 					opcode = OP_IMAX;
 			}		
 
-			if (opcode) {
+			if (opcode && fsig->param_count == 2) {
 				MONO_INST_NEW (cfg, ins, opcode);
 				ins->type = STACK_I4;
 				ins->dreg = mono_alloc_ireg (cfg);
@@ -5959,7 +5959,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 
 #if 0
 		/* OP_FREM is not IEEE compatible */
-		else if (strcmp (cmethod->name, "IEEERemainder") == 0) {
+		else if (strcmp (cmethod->name, "IEEERemainder") == 0 && fsig->param_count == 2) {
 			MONO_INST_NEW (cfg, ins, OP_FREM);
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];

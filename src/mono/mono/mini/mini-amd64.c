@@ -8207,7 +8207,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 			opcode = OP_ABS;
 		}
 		
-		if (opcode) {
+		if (opcode && fsig->param_count == 1) {
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_freg (cfg);
@@ -8238,7 +8238,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 			}
 		}
 		
-		if (opcode) {
+		if (opcode && fsig->param_count == 2) {
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->type = fsig->params [0]->type == MONO_TYPE_I4 ? STACK_I4 : STACK_I8;
 			ins->dreg = mono_alloc_ireg (cfg);
@@ -8249,18 +8249,13 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 
 #if 0
 		/* OP_FREM is not IEEE compatible */
-		else if (strcmp (cmethod->name, "IEEERemainder") == 0) {
+		else if (strcmp (cmethod->name, "IEEERemainder") == 0 && fsig->param_count == 2) {
 			MONO_INST_NEW (cfg, ins, OP_FREM);
 			ins->inst_i0 = args [0];
 			ins->inst_i1 = args [1];
 		}
 #endif
 	}
-
-	/* 
-	 * Can't implement CompareExchange methods this way since they have
-	 * three arguments.
-	 */
 
 	return ins;
 }
