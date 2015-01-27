@@ -48,8 +48,6 @@ Today, the repository contains the following components:
 * **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
   stopping of local system processes.
 
-* **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string comparisons and support the use of non-ASCII characters for Internet domain names.
-
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
   file system objects and for reading and writing files via streams.
 
