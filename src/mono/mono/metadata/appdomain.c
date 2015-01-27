@@ -106,10 +106,6 @@ static MonoAssembly *
 mono_domain_assembly_search (MonoAssemblyName *aname,
 							 gpointer user_data);
 
-static MonoAssembly *
-mono_domain_assembly_postload_search (MonoAssemblyName *aname,
-									  gpointer user_data);
-
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data);
 
@@ -234,8 +230,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_install_assembly_refonly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE));
 	mono_install_assembly_refonly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE));
-	mono_install_assembly_postload_search_hook (mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
-	mono_install_assembly_postload_refonly_search_hook (mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
@@ -913,12 +907,12 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 }
 
 MonoReflectionAssembly *
-mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refonly)
+mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly)
 {
 	MonoClass *klass;
 	MonoMethod *method;
 	MonoBoolean isrefonly;
-	gpointer params [2];
+	gpointer params [3];
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;
@@ -936,15 +930,15 @@ mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, gboolean refon
 
 	isrefonly = refonly ? 1 : 0;
 	params [0] = fname;
-	params [1] = &isrefonly;
+	params [1] = (requesting) ? mono_assembly_get_object (domain, requesting) : NULL;
+	params [2] = &isrefonly;
 	return (MonoReflectionAssembly *) mono_runtime_invoke (method, domain->domain, params, NULL);
 }
 
-static MonoAssembly *
-mono_domain_assembly_postload_search (MonoAssemblyName *aname,
-									  gpointer user_data)
+MonoAssembly *
+mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting,
+									  gboolean refonly)
 {
-	gboolean refonly = GPOINTER_TO_UINT (user_data);
 	MonoReflectionAssembly *assembly;
 	MonoDomain *domain = mono_domain_get ();
 	char *aname_str;
@@ -958,7 +952,7 @@ mono_domain_assembly_postload_search (MonoAssemblyName *aname,
 		g_free (aname_str);
 		return NULL;
 	}
-	assembly = mono_try_assembly_resolve (domain, str, refonly);
+	assembly = mono_try_assembly_resolve (domain, str, requesting, refonly);
 	g_free (aname_str);
 
 	if (assembly)
@@ -1983,7 +1977,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	if (!parsed) {
 		/* This is a parse error... */
 		if (!refOnly)
-			refass = mono_try_assembly_resolve (domain, assRef, refOnly);
+			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly);
 		return refass;
 	}
 
@@ -1993,7 +1987,7 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	if (!ass) {
 		/* MS.NET doesn't seem to call the assembly resolve handler for refonly assemblies */
 		if (!refOnly)
-			refass = mono_try_assembly_resolve (domain, assRef, refOnly);
+			refass = mono_try_assembly_resolve (domain, assRef, NULL, refOnly);
 		else
 			refass = NULL;
 		if (!refass) {

@@ -183,7 +183,9 @@ static mono_mutex_t assembly_binding_mutex;
 static GSList *loaded_assembly_bindings = NULL;
 
 static MonoAssembly*
-mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, gboolean refonly, gboolean postload);
+mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload);
+static MonoAssembly*
+mono_assembly_load_full_internal (MonoAssemblyName *aname, MonoAssembly *requesting, const char *basedir, MonoImageOpenStatus *status, gboolean refonly);
 static MonoBoolean
 mono_assembly_is_in_gac (const gchar *filanem);
 
@@ -1090,12 +1092,12 @@ mono_assembly_load_reference (MonoImage *image, int index)
 	if (image->assembly && image->assembly->ref_only) {
 		/* We use the loaded corlib */
 		if (!strcmp (aname.name, "mscorlib"))
-			reference = mono_assembly_load_full (&aname, image->assembly->basedir, &status, FALSE);
+			reference = mono_assembly_load_full_internal (&aname, image->assembly, image->assembly->basedir, &status, FALSE);
 		else {
 			reference = mono_assembly_loaded_full (&aname, TRUE);
 			if (!reference)
 				/* Try a postload search hook */
-				reference = mono_assembly_invoke_search_hook_internal (&aname, TRUE, TRUE);
+				reference = mono_assembly_invoke_search_hook_internal (&aname, image->assembly, TRUE, TRUE);
 		}
 
 		/*
@@ -1111,9 +1113,9 @@ mono_assembly_load_reference (MonoImage *image, int index)
 		 * The second load attempt has the basedir set to keep compatibility with the old mono behavior, for
 		 * example bug-349190.2.cs and who knows how much more code in the wild.
 		 */
-		reference = mono_assembly_load (&aname, NULL, &status);
+		reference = mono_assembly_load_full_internal (&aname, image->assembly, NULL, &status, FALSE);
 		if (!reference && image->assembly)
-			reference = mono_assembly_load (&aname, image->assembly->basedir, &status);
+			reference = mono_assembly_load_full_internal (&aname, image->assembly, image->assembly->basedir, &status, FALSE);
 	}
 
 	if (reference == NULL){
@@ -1232,9 +1234,12 @@ struct AssemblySearchHook {
 AssemblySearchHook *assembly_search_hook = NULL;
 
 static MonoAssembly*
-mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, gboolean refonly, gboolean postload)
+mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload)
 {
 	AssemblySearchHook *hook;
+
+	if (postload)
+		mono_domain_assembly_postload_search(aname, requesting, refonly);
 
 	for (hook = assembly_search_hook; hook; hook = hook->next) {
 		if ((hook->refonly == refonly) && (hook->postload == postload)) {
@@ -1250,7 +1255,7 @@ mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, gboolean ref
 MonoAssembly*
 mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
 {
-	return mono_assembly_invoke_search_hook_internal (aname, FALSE, FALSE);
+	return mono_assembly_invoke_search_hook_internal (aname, NULL, FALSE, FALSE);
 }
 
 static void
@@ -1764,7 +1769,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	 * assemblies lock.
 	 */
 	if (ass->aname.name) {
-		ass2 = mono_assembly_invoke_search_hook_internal (&ass->aname, refonly, FALSE);
+		ass2 = mono_assembly_invoke_search_hook_internal (&ass->aname, NULL, refonly, FALSE);
 		if (ass2) {
 			g_free (ass);
 			g_free (base_dir);
@@ -2367,7 +2372,7 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 		res->in_gac = TRUE;
 	else {
 		MonoDomain *domain = mono_domain_get ();
-		MonoReflectionAssembly *refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), FALSE);
+		MonoReflectionAssembly *refasm = mono_try_assembly_resolve (domain, mono_string_new (domain, name), NULL, FALSE);
 		if (refasm)
 			res = refasm->assembly;
 	}
@@ -2947,6 +2952,17 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 	return result;
 }
 
+MonoAssembly*
+mono_assembly_load_full_internal (MonoAssemblyName *aname, MonoAssembly *requesting, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
+{
+	MonoAssembly *result = mono_assembly_load_full_nosearch (aname, basedir, status, refonly);
+
+	if (!result)
+		/* Try a postload search hook */
+		result = mono_assembly_invoke_search_hook_internal (aname, requesting, refonly, TRUE);
+	return result;
+}
+
 /**
  * mono_assembly_load_full:
  * @aname: A MonoAssemblyName with the assembly name to load.
@@ -2966,12 +2982,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 MonoAssembly*
 mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
 {
-	MonoAssembly *result = mono_assembly_load_full_nosearch (aname, basedir, status, refonly);
-	
-	if (!result)
-		/* Try a postload search hook */
-		result = mono_assembly_invoke_search_hook_internal (aname, refonly, TRUE);
-	return result;
+	return mono_assembly_load_full_internal (aname, NULL, basedir, status, refonly);
 }
 
 /**
@@ -2989,9 +3000,9 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
 {
-	return mono_assembly_load_full (aname, basedir, status, FALSE);
+	return mono_assembly_load_full_internal (aname, NULL, basedir, status, FALSE);
 }
-	
+
 MonoAssembly*
 mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 {
@@ -3000,7 +3011,7 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
 
-	res = mono_assembly_invoke_search_hook_internal (aname, refonly, FALSE);
+	res = mono_assembly_invoke_search_hook_internal (aname, NULL, refonly, FALSE);
 
 	return res;
 }

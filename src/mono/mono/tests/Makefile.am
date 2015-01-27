@@ -57,6 +57,7 @@ BASE_TEST_CS_SRC=		\
 	arraylist.cs		\
 	assemblyresolve_event.cs	\
 	assemblyresolve_event3.cs	\
+	assemblyresolve_event4.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	create-instance.cs	\
