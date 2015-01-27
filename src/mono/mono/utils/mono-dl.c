@@ -18,200 +18,14 @@
 #include <string.h>
 #include <glib.h>
 
-#ifdef TARGET_WIN32
-#define SOPREFIX ""
-static const char suffixes [][5] = {
-	".dll"
-};
-#elif defined(__APPLE__)
-#define SOPREFIX "lib"
-static const char suffixes [][8] = {
-	".dylib",
-	".so",
-	".bundle"
-};
-#else
-#define SOPREFIX "lib"
-static const char suffixes [][4] = {
-	".so"
-};
-#endif
-
-#ifdef TARGET_WIN32
-
-#include <windows.h>
-#include <psapi.h>
-
-#define SO_HANDLE_TYPE HMODULE
-#define LL_SO_OPEN(file,flags) w32_load_module ((file), (flags))
-#define LL_SO_CLOSE(module) do { if (!(module)->main_module) FreeLibrary ((module)->handle); } while (0)
-#define LL_SO_SYMBOL(module, name) w32_find_symbol ((module), (name))
-#define LL_SO_TRFLAGS(flags) 0
-#define LL_SO_ERROR() w32_dlerror ()
-
-#elif defined (HAVE_DL_LOADER)
-
-#include <dlfcn.h>
-#include <unistd.h>
-
-#ifdef __MACH__
-#include <mach-o/dyld.h>
-#endif
-
-
-#ifndef RTLD_LAZY
-#define RTLD_LAZY       1
-#endif  /* RTLD_LAZY */
-
-#define SO_HANDLE_TYPE void*
-#define LL_SO_OPEN(file,flags) dlopen ((file), (flags))
-#define LL_SO_CLOSE(module) dlclose ((module)->handle)
-#define LL_SO_SYMBOL(module, name) dlsym ((module)->handle, (name))
-#define LL_SO_TRFLAGS(flags) convert_flags ((flags))
-#define LL_SO_ERROR() g_strdup (dlerror ())
-
-static int
-convert_flags (int flags)
-{
-	int lflags = flags & MONO_DL_LOCAL? 0: RTLD_GLOBAL;
-
-	if (flags & MONO_DL_LAZY)
-		lflags |= RTLD_LAZY;
-	else
-		lflags |= RTLD_NOW;
-	return lflags;
-}
-
-#else
-/* no dynamic loader supported */
-#define SO_HANDLE_TYPE void*
-#define LL_SO_OPEN(file,flags) NULL
-#define LL_SO_CLOSE(module) 
-#define LL_SO_SYMBOL(module, name) NULL
-#define LL_SO_TRFLAGS(flags) (flags)
-#define LL_SO_ERROR() g_strdup ("No support for dynamic loader")
-
-#endif
-
-static GSList *fallback_handlers;
-
 struct MonoDlFallbackHandler {
 	MonoDlFallbackLoad load_func;
 	MonoDlFallbackSymbol symbol_func;
 	MonoDlFallbackClose close_func;
 	void *user_data;
 };
-	
-struct _MonoDl {
-	SO_HANDLE_TYPE handle;
-	int main_module;
 
-	/* If not NULL, use the methods in MonoDlFallbackHandler instead of the LL_* methods */
-	MonoDlFallbackHandler *dl_fallback;
-};
-
-#ifdef TARGET_WIN32
-
-static char*
-w32_dlerror (void)
-{
-	char* ret = NULL;
-	wchar_t* buf = NULL;
-	DWORD code = GetLastError ();
-
-	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buf, 0, NULL))
-	{
-		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
-		LocalFree (buf);
-	} else {
-		g_assert_not_reached ();
-	}
-	return ret;
-}
-
-static gpointer
-w32_find_symbol (MonoDl *module, const gchar *symbol_name)
-{
-	HMODULE *modules;
-	DWORD buffer_size = sizeof (HMODULE) * 1024;
-	DWORD needed, i;
-	gpointer proc = NULL;
-
-	/* get the symbol directly from the specified module */
-	if (!module->main_module)
-		return GetProcAddress (module->handle, symbol_name);
-
-	/* get the symbol from the main module */
-	proc = GetProcAddress (module->handle, symbol_name);
-	if (proc != NULL)
-		return proc;
-
-	/* get the symbol from the loaded DLLs */
-	modules = (HMODULE *) g_malloc (buffer_size);
-	if (modules == NULL)
-		return NULL;
-
-	if (!EnumProcessModules (GetCurrentProcess (), modules,
-				 buffer_size, &needed)) {
-		g_free (modules);
-		return NULL;
-	}
-
-	/* check whether the supplied buffer was too small, realloc, retry */
-	if (needed > buffer_size) {
-		g_free (modules);
-
-		buffer_size = needed;
-		modules = (HMODULE *) g_malloc (buffer_size);
-
-		if (modules == NULL)
-			return NULL;
-
-		if (!EnumProcessModules (GetCurrentProcess (), modules,
-					 buffer_size, &needed)) {
-			g_free (modules);
-			return NULL;
-		}
-	}
-
-	for (i = 0; i < needed / sizeof (HANDLE); i++) {
-		proc = GetProcAddress (modules [i], symbol_name);
-		if (proc != NULL) {
-			g_free (modules);
-			return proc;
-		}
-	}
-
-	g_free (modules);
-	return NULL;
-}
-
-
-static gpointer
-w32_load_module (const char* file, int flags)
-{
-	gpointer hModule = NULL;
-	if (file) {
-		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
-		guint last_sem = SetErrorMode (SEM_FAILCRITICALERRORS);
-		guint32 last_error = 0;
-
-		hModule = LoadLibrary (file_utf16);
-		if (!hModule)
-			last_error = GetLastError ();
-
-		SetErrorMode (last_sem);
-		g_free (file_utf16);
-
-		if (!hModule)
-			SetLastError (last_error);
-	} else {
-		hModule = GetModuleHandle (NULL);
-	}
-	return hModule;
-}
-#endif
+static GSList *fallback_handlers;
 
 /*
  * read a value string from line with any of the following formats:
@@ -320,7 +134,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	MonoDl *module;
 	void *lib;
 	MonoDlFallbackHandler *dl_fallback = NULL;
-	int lflags = LL_SO_TRFLAGS (flags);
+	int lflags = mono_dl_convert_flags (flags);
 
 	if (error_msg)
 		*error_msg = NULL;
@@ -333,15 +147,8 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
 
-#ifdef PLATFORM_ANDROID
-	/* Bionic doesn't support NULL filenames */
-	if (!name)
-		lib = NULL;
-	else
-		lib = LL_SO_OPEN (name, lflags);
-#else
-	lib = LL_SO_OPEN (name, lflags);
-#endif
+	lib = mono_dl_open_file (name, lflags);
+
 	if (!lib) {
 		GSList *node;
 		for (node = fallback_handlers; node != NULL; node = node->next){
@@ -378,12 +185,12 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		llname = get_dl_name_from_libtool (lname);
 		g_free (lname);
 		if (llname) {
-			lib = LL_SO_OPEN (llname, lflags);
+			lib = mono_dl_open_file (llname, lflags);
 			g_free (llname);
 		}
 		if (!lib) {
 			if (error_msg) {
-				*error_msg = LL_SO_ERROR ();
+				*error_msg = mono_dl_current_error_string ();
 			}
 			free (module);
 			return NULL;
@@ -419,11 +226,11 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 			char *usname = malloc (strlen (name) + 2);
 			*usname = '_';
 			strcpy (usname + 1, name);
-			sym = LL_SO_SYMBOL (module, usname);
+			sym = mono_dl_lookup_symbol (module, usname);
 			free (usname);
 		}
 #else
-		sym = LL_SO_SYMBOL (module, name);
+		sym = mono_dl_lookup_symbol (module, name);
 #endif
 	}
 
@@ -434,7 +241,7 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	}
 	if (symbol)
 		*symbol = NULL;
-	return (module->dl_fallback != NULL) ? err :  LL_SO_ERROR ();
+	return (module->dl_fallback != NULL) ? err :  mono_dl_current_error_string ();
 }
 
 /**
@@ -454,7 +261,7 @@ mono_dl_close (MonoDl *module)
 		if (dl_fallback->close_func != NULL)
 			dl_fallback->close_func (module->handle, dl_fallback->user_data);
 	} else
-		LL_SO_CLOSE (module);
+		mono_dl_close_handle (module);
 	
 	free (module);
 }
@@ -504,16 +311,16 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 		suffixlen = 0;
 	} else {
 		idx--;
-		if (idx >= G_N_ELEMENTS (suffixes))
+		if (mono_dl_get_so_suffixes () [idx] == '\0')
 			return NULL;
 		first_call = FALSE;
-		suffix = suffixes [idx];
+		suffix = mono_dl_get_so_suffixes () [idx];
 		suffixlen = strlen (suffix);
 	}
 
-	prlen = strlen (SOPREFIX);
-	if (prlen && strncmp (name, SOPREFIX, prlen) != 0)
-		prefix = SOPREFIX;
+	prlen = strlen (mono_dl_get_so_prefix ());
+	if (prlen && strncmp (name, mono_dl_get_so_prefix (), prlen) != 0)
+		prefix = mono_dl_get_so_prefix ();
 	else
 		prefix = "";
 
@@ -563,9 +370,6 @@ mono_dl_fallback_unregister (MonoDlFallbackHandler *handler)
 	g_free (handler);
 }
 
-
-#if defined (HAVE_DL_LOADER)
-
 static MonoDl*
 try_load (const char *lib_name, char *dir, int flags, char **err)
 {
@@ -590,17 +394,10 @@ mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 	MonoDl *runtime_lib = NULL;
 	char buf [4096];
 	int binl;
-	binl = readlink ("/proc/self/exe", buf, sizeof (buf)-1);
 	*error_msg = NULL;
 
-#ifdef __MACH__
-	if (binl == -1) {
-		uint32_t bsize = sizeof (buf);
-		if (_NSGetExecutablePath (buf, &bsize) == 0) {
-			binl = strlen (buf);
-		}
-	}
-#endif
+	binl = mono_dl_get_executable_path (buf, sizeof (buf));
+
 	if (binl != -1) {
 		char *base;
 		char *resolvedname, *name;
@@ -632,13 +429,3 @@ mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 
 	return runtime_lib;
 }
-
-#else
-
-MonoDl*
-mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
-{
-	return NULL;
-}
-
-#endif

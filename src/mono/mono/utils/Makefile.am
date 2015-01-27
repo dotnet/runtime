@@ -22,6 +22,9 @@ monoutils_sources = \
 	mono-counters.c		\
 	mono-compiler.h		\
 	mono-dl.c		\
+	mono-dl-windows.c	\
+	mono-dl-darwin.c	\
+	mono-dl-posix.c		\
 	mono-dl.h		\
 	mono-internal-hash.c	\
 	mono-internal-hash.h	\
