@@ -38,13 +38,13 @@ get_method () {
 }
 
 diff_methods () {
-	TMP_FILE=tmp_file
+	TMP_FILE=$(tmp_file)
 	echo "$(get_methods $1 $2 $3 $4)" >$TMP_FILE
 	diff <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_methods $1 $2 $3 $4)")
 }
 
 diff_method () {
-	TMP_FILE=tmp_file
+	TMP_FILE=$(tmp_file)
 	echo "$(get_method $1 $2 $3 $4 $5)" >$TMP_FILE
 	sdiff -w 150 <(cat $TMP_FILE) <(echo "$(MONO_DEBUG=gen-compact-seq-points get_method $1 $2 $3 $4 $5 | grep -Ev il_seq_point)")
 }
@@ -63,7 +63,7 @@ else
 	echo "Checking unintended native code changes in $TEST_FILE with AOT"
 fi
 
-TMP_FILE=tmp_file
+TMP_FILE=$(tmp_file)
 
 echo "$(diff_methods $MONO_PATH $RUNTIME $TEST_FILE $USE_AOT)" > $TMP_FILE
 
