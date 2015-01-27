@@ -25,7 +25,11 @@ enum {
 #ifdef USED_CROSS_COMPILER_OFFSETS
 #define MONO_STRUCT_OFFSET(struct,field) MONO_OFFSET_ ## struct ## _ ## field
 #else
+#if defined(HAS_CROSS_COMPILER_OFFSETS) || defined(MONO_CROSS_COMPILE)
 #define MONO_STRUCT_OFFSET(struct,field) (MONO_OFFSET_ ## struct ## _ ## field == -1, G_STRUCT_OFFSET (struct,field))
+#else
+#define MONO_STRUCT_OFFSET(struct,field) G_STRUCT_OFFSET (struct,field)
+#endif
 #endif
 
 #endif
