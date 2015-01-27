@@ -99,5 +99,8 @@ int mono_networking_get_tcp_protocol (void) MONO_INTERNAL;
 int mono_networking_get_ip_protocol (void) MONO_INTERNAL;
 int mono_networking_get_ipv6_protocol (void) MONO_INTERNAL;
 
+void mono_networking_init (void) MONO_INTERNAL;
+void mono_networking_shutdown (void) MONO_INTERNAL;
+
 
 #endif

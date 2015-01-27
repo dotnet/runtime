@@ -78,9 +78,6 @@ typedef gboolean (*WapiTransmitFileFn)(guint32, gpointer, guint32, guint32,
 					WapiTransmitFileBuffers *,
 					WapiTransmitFileFlags);
 
-
-extern int WSAStartup(guint32 requested, WapiWSAData *data);
-extern int WSACleanup(void);
 extern void WSASetLastError(int error);
 extern int WSAGetLastError(void);
 extern int closesocket(guint32 handle);

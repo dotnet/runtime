@@ -81,8 +81,6 @@
 #define CreateSemaphore wapi_CreateSemaphore
 #define ReleaseSemaphore wapi_ReleaseSemaphore
 #define OpenSemaphore wapi_OpenSemaphore 
-#define WSAStartup wapi_WSAStartup
-#define WSACleanup wapi_WSACleanup
 #define WSASetLastError wapi_WSASetLastError
 #define WSAGetLastError wapi_WSAGetLastError
 #define WSAIoctl wapi_WSAIoctl 

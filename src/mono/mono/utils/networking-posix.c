@@ -325,3 +325,15 @@ mono_networking_addr_to_str (MonoAddress *address, char *buffer, socklen_t bufle
 }
 
 #endif
+
+void
+mono_networking_init (void)
+{
+	//nothing really
+}
+
+void
+mono_networking_shutdown (void)
+{
+	//nothing really
+}

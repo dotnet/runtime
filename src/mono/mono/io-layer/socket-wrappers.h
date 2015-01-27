@@ -85,5 +85,6 @@ extern int _wapi_FD_ISSET(guint32 handle, fd_set *set);
 extern void _wapi_FD_SET(guint32 handle, fd_set *set);
 #endif
 
+extern void _wapi_cleanup_networking (void);
 #endif /* HOST_WIN32 */
 

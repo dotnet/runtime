@@ -2528,22 +2528,13 @@ ves_icall_System_Net_Sockets_Socket_SendFile (SOCKET sock, MonoString *filename,
 
 void mono_network_init(void)
 {
-	WSADATA wsadata;
-	int err;
-	
-	err=WSAStartup(MAKEWORD(2,0), &wsadata);
-	if(err!=0) {
-		g_error("%s: Couldn't initialise networking", __func__);
-		exit(-1);
-	}
-
-	LOGDEBUG (g_message("%s: Using socket library: %s", __func__, wsadata.szDescription));
-	LOGDEBUG (g_message("%s: Socket system status: %s", __func__, wsadata.szSystemStatus));
+	mono_networking_init ();
 }
 
 void mono_network_cleanup(void)
 {
-	WSACleanup();
+	_wapi_cleanup_networking ();
+	mono_networking_shutdown ();
 }
 
 void
