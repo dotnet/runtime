@@ -358,22 +358,6 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray"/> struct based on the contents
-        /// of an existing instance, allowing a covariant static cast to efficiently reuse the existing array.
-        /// </summary>
-        /// <param name="items">The array to initialize the array with. No copy is made.</param>
-        /// <remarks>
-        /// Covariant upcasts from this method may be reversed by calling the
-        /// <see cref="ImmutableArray&lt;T&gt;.As&lt;TOther&gt;"/> instance method.
-        /// </remarks>
-        [Pure]
-        public static ImmutableArray<T> Create<T, TDerived>(ImmutableArray<TDerived> items)
-            where TDerived : class, T
-        {
-            return new ImmutableArray<T>(items.array);
-        }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;.Builder"/> class.
         /// </summary>
         /// <typeparam name="T">The type of elements stored in the array.</typeparam>
