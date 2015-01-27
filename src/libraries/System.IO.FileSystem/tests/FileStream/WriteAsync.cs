@@ -226,7 +226,7 @@ namespace System.IO.FileSystem.Tests
                     // Existing issue: FileStreamAsyncResult doesn't set CompletedSynchronously correctly.
 
                     // write should now complete synchronously since it is just copying to the write buffer
-                    FSAssert.CompletesSynchronously(fs.WriteAsync(buffer, 0, buffer.Length), checkCompletedSynchronously: false);
+                    FSAssert.CompletesSynchronously(fs.WriteAsync(buffer, 0, buffer.Length));
                 }
             }
         }
