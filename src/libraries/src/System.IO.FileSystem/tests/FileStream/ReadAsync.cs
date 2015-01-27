@@ -257,7 +257,7 @@ namespace System.IO.FileSystem.Tests
 
                     // read should now complete synchronously since it is serviced by the read buffer filled in the first request
                     Assert.Equal(TestBuffer.Length,
-                        FSAssert.CompletesSynchronously(fs.ReadAsync(buffer, 0, buffer.Length), checkCompletedSynchronously: false));
+                        FSAssert.CompletesSynchronously(fs.ReadAsync(buffer, 0, buffer.Length)));
                     Assert.Equal(TestBuffer, buffer);
                 }
             }
@@ -316,6 +316,7 @@ namespace System.IO.FileSystem.Tests
                 try
                 {
                     await readTask;
+                    // we may not have cancelled before the task completed.
                 }
                 catch(OperationCanceledException oce)
                 {
