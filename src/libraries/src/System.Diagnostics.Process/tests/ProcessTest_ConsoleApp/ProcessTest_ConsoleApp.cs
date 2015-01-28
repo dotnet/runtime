@@ -13,8 +13,11 @@ namespace ProcessTest_ConsoleApp
                 {
                     if (args[0].Equals("infinite"))
                     {
+                        // To avoid potential issues with orphaned processes (say, the test exits before
+                        // exiting the process, we'll say "infinite" is actually 30 seconds.
+                        
                         Console.WriteLine("ProcessTest_ConsoleApp.exe started with an endless loop");
-                        Thread.Sleep(-1);
+                        Thread.Sleep(30 * 1000);
                     }
                     if (args[0].Equals("error"))
                     {
