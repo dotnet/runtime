@@ -54,7 +54,7 @@ mono_dl_open_file (const char *file, int flags)
 {
 #ifdef PLATFORM_ANDROID
 	/* Bionic doesn't support NULL filenames */
-	if (!name)
+	if (!file)
 		return NULL;
 #endif
 	return dlopen (file, flags);
