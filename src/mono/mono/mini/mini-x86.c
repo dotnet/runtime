@@ -4336,6 +4336,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset, 4);
 			break;
 		}
+		case OP_ATOMIC_LOAD_R4:
+		case OP_ATOMIC_LOAD_R8: {
+			x86_fld_membase (code, ins->inst_basereg, ins->inst_offset, ins->opcode == OP_ATOMIC_LOAD_R8);
+			break;
+		}
 		case OP_ATOMIC_STORE_I1:
 		case OP_ATOMIC_STORE_U1:
 		case OP_ATOMIC_STORE_I2:
@@ -4360,6 +4365,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			x86_mov_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1, size);
+
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
+				x86_mfence (code);
+			break;
+		}
+		case OP_ATOMIC_STORE_R4:
+		case OP_ATOMIC_STORE_R8: {
+			x86_fst_membase (code, ins->inst_destbasereg, ins->inst_offset, ins->opcode == OP_ATOMIC_STORE_R8, TRUE);
 
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
 				x86_mfence (code);
@@ -6764,12 +6777,16 @@ mono_arch_opcode_supported (int opcode)
 	case OP_ATOMIC_LOAD_U1:
 	case OP_ATOMIC_LOAD_U2:
 	case OP_ATOMIC_LOAD_U4:
+	case OP_ATOMIC_LOAD_R4:
+	case OP_ATOMIC_LOAD_R8:
 	case OP_ATOMIC_STORE_I1:
 	case OP_ATOMIC_STORE_I2:
 	case OP_ATOMIC_STORE_I4:
 	case OP_ATOMIC_STORE_U1:
 	case OP_ATOMIC_STORE_U2:
 	case OP_ATOMIC_STORE_U4:
+	case OP_ATOMIC_STORE_R4:
+	case OP_ATOMIC_STORE_R8:
 		return TRUE;
 	default:
 		return FALSE;

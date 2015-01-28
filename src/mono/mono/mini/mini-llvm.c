@@ -653,10 +653,14 @@ load_store_to_llvm_type (int opcode, int *size, gboolean *sext, gboolean *zext)
 		return LLVMInt64Type ();
 	case OP_LOADR4_MEMBASE:
 	case OP_STORER4_MEMBASE_REG:
+	case OP_ATOMIC_LOAD_R4:
+	case OP_ATOMIC_STORE_R4:
 		*size = 4;
 		return LLVMFloatType ();
 	case OP_LOADR8_MEMBASE:
 	case OP_STORER8_MEMBASE_REG:
+	case OP_ATOMIC_LOAD_R8:
+	case OP_ATOMIC_STORE_R8:
 		*size = 8;
 		return LLVMDoubleType ();
 	case OP_LOAD_MEMBASE:
@@ -3500,7 +3504,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_U1:
 		case OP_ATOMIC_LOAD_U2:
 		case OP_ATOMIC_LOAD_U4:
-		case OP_ATOMIC_LOAD_U8: {
+		case OP_ATOMIC_LOAD_U8:
+		case OP_ATOMIC_LOAD_R4:
+		case OP_ATOMIC_LOAD_R8: {
 #if LLVM_API_VERSION >= 4
 			int size;
 			gboolean sext, zext;
@@ -3541,7 +3547,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U1:
 		case OP_ATOMIC_STORE_U2:
 		case OP_ATOMIC_STORE_U4:
-		case OP_ATOMIC_STORE_U8: {
+		case OP_ATOMIC_STORE_U8:
+		case OP_ATOMIC_STORE_R4:
+		case OP_ATOMIC_STORE_R8: {
 #if LLVM_API_VERSION >= 4
 			int size;
 			gboolean sext, zext;

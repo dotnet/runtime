@@ -5989,6 +5989,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (cmethod->name, "Read") && fsig->param_count == 1) {
 			guint32 opcode = 0;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
+			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
 
 			if (fsig->params [0]->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_LOAD_I1;
@@ -6002,6 +6003,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				opcode = OP_ATOMIC_LOAD_I4;
 			else if (fsig->params [0]->type == MONO_TYPE_U4)
 				opcode = OP_ATOMIC_LOAD_U4;
+			else if (fsig->params [0]->type == MONO_TYPE_R4)
+				opcode = OP_ATOMIC_LOAD_R4;
+			else if (fsig->params [0]->type == MONO_TYPE_R8)
+				opcode = OP_ATOMIC_LOAD_R8;
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_I)
 				opcode = OP_ATOMIC_LOAD_I8;
@@ -6019,7 +6024,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					return NULL;
 
 				MONO_INST_NEW (cfg, ins, opcode);
-				ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
+				ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : (is_float ? mono_alloc_freg (cfg) : mono_alloc_ireg (cfg));
 				ins->sreg1 = args [0]->dreg;
 				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_ACQ;
 				MONO_ADD_INS (cfg->cbb, ins);
@@ -6042,6 +6047,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				opcode = OP_ATOMIC_STORE_I4;
 			else if (fsig->params [0]->type == MONO_TYPE_U4)
 				opcode = OP_ATOMIC_STORE_U4;
+			else if (fsig->params [0]->type == MONO_TYPE_R4)
+				opcode = OP_ATOMIC_STORE_R4;
+			else if (fsig->params [0]->type == MONO_TYPE_R8)
+				opcode = OP_ATOMIC_STORE_R8;
 #if SIZEOF_REGISTER == 8
 			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_I)
 				opcode = OP_ATOMIC_STORE_I8;

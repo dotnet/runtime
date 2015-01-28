@@ -4237,7 +4237,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_I2:
 		case OP_ATOMIC_LOAD_U2:
 		case OP_ATOMIC_LOAD_I4:
-		case OP_ATOMIC_LOAD_U4: {
+		case OP_ATOMIC_LOAD_U4:
+		case OP_ATOMIC_LOAD_R4:
+		case OP_ATOMIC_LOAD_R8: {
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
 				ARM_DMB (code, ARM_DMB_SY);
 
@@ -4260,6 +4262,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_ATOMIC_LOAD_U4:
 				ARM_LDR_REG_REG (code, ins->dreg, ins->inst_basereg, ARMREG_LR);
 				break;
+			case OP_ATOMIC_LOAD_R4:
+				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+				ARM_FLDS (code, vfp_scratch1, ARMREG_LR, 0);
+				ARM_CVTS (code, ins->dreg, vfp_scratch1);
+				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+				break;
+			case OP_ATOMIC_LOAD_R8:
+				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
+				ARM_FLDD (code, ins->dreg, ARMREG_LR, 0);
+				break;
 			}
 
 			ARM_DMB (code, ARM_DMB_SY);
@@ -4270,7 +4282,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_I2:
 		case OP_ATOMIC_STORE_U2:
 		case OP_ATOMIC_STORE_I4:
-		case OP_ATOMIC_STORE_U4: {
+		case OP_ATOMIC_STORE_U4:
+		case OP_ATOMIC_STORE_R4:
+		case OP_ATOMIC_STORE_R8: {
 			ARM_DMB (code, ARM_DMB_SY);
 
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
@@ -4287,6 +4301,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_ATOMIC_STORE_I4:
 			case OP_ATOMIC_STORE_U4:
 				ARM_STR_REG_REG (code, ins->sreg1, ins->inst_destbasereg, ARMREG_LR);
+				break;
+			case OP_ATOMIC_STORE_R4:
+				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+				ARM_CVTD (code, vfp_scratch1, ins->sreg1);
+				ARM_FSTS (code, vfp_scratch1, ins->inst_destbasereg, ins->inst_offset);
+				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
+				break;
+			case OP_ATOMIC_STORE_R8:
+				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_destbasereg, ARMREG_LR);
+				ARM_FSTD (code, ins->sreg1, ARMREG_LR, 0);
 				break;
 			}
 
@@ -7311,6 +7335,11 @@ mono_arch_opcode_supported (int opcode)
 	case OP_ATOMIC_STORE_U2:
 	case OP_ATOMIC_STORE_U4:
 		return v7_supported;
+	case OP_ATOMIC_LOAD_R4:
+	case OP_ATOMIC_LOAD_R8:
+	case OP_ATOMIC_STORE_R4:
+	case OP_ATOMIC_STORE_R8:
+		return v7_supported && IS_VFP;
 	default:
 		return FALSE;
 	}

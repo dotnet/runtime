@@ -316,12 +316,16 @@ atomic_load_i2: dest:i src1:b len:7
 atomic_load_u2: dest:i src1:b len:7
 atomic_load_i4: dest:i src1:b len:7
 atomic_load_u4: dest:i src1:b len:7
+atomic_load_r4: dest:f src1:b len:10
+atomic_load_r8: dest:f src1:b len:10
 atomic_store_i1: dest:b src1:y len:10
 atomic_store_u1: dest:b src1:y len:10
 atomic_store_i2: dest:b src1:i len:10
 atomic_store_u2: dest:b src1:i len:10
 atomic_store_i4: dest:b src1:i len:10
 atomic_store_u4: dest:b src1:i len:10
+atomic_store_r4: dest:b src1:f len:10
+atomic_store_r8: dest:b src1:f len:10
 
 card_table_wbarrier: src1:a src2:i clob:d len:34
 

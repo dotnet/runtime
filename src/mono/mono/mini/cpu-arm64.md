@@ -427,9 +427,13 @@ atomic_load_i2: dest:i src1:b len:20
 atomic_load_u2: dest:i src1:b len:20
 atomic_load_i4: dest:i src1:b len:16
 atomic_load_u4: dest:i src1:b len:16
+atomic_load_r4: dest:f src1:b len:24
+atomic_load_r8: dest:f src1:b len:20
 atomic_store_i1: dest:b src1:i len:16
 atomic_store_u1: dest:b src1:i len:16
 atomic_store_i2: dest:b src1:i len:16
 atomic_store_u2: dest:b src1:i len:16
 atomic_store_i4: dest:b src1:i len:16
 atomic_store_u4: dest:b src1:i len:16
+atomic_store_r4: dest:b src1:f len:24
+atomic_store_r8: dest:b src1:f len:20
