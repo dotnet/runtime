@@ -92,7 +92,7 @@ public class Stack_ToArray
             Console.WriteLine("Fail! Error Err_main! Uncaught Exception in main(), exc_main==" + exc_main);
         }
 
-        Assert.Equal(true, bResult);
+        Assert.True(bResult);
     }
 }
 

@@ -9,7 +9,7 @@ namespace System.IO.MemoryMappedFiles
 {
     public sealed class MemoryMappedViewStream : UnmanagedMemoryStream
     {
-        private MemoryMappedView _view;
+        private readonly MemoryMappedView _view;
 
         [SecurityCritical]
         internal unsafe MemoryMappedViewStream(MemoryMappedView view)
@@ -23,10 +23,7 @@ namespace System.IO.MemoryMappedFiles
         public SafeMemoryMappedViewHandle SafeMemoryMappedViewHandle
         {
             [SecurityCritical]
-            get
-            {
-                return _view != null ? _view.ViewHandle : null;
-            }
+            get { return _view != null ? _view.ViewHandle : null; }
         }
 
         public override void SetLength(long value)

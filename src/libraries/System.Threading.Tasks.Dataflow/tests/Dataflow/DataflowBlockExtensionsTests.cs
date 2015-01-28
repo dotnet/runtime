@@ -498,8 +498,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var source1 = new BufferBlock<int>();
                 var source2 = new BufferBlock<int>();
                 var jb = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false, MaxNumberOfGroups = 1 });
-                source1.Completion.ContinueWith(_ => jb.Target1.Complete());
-                source2.Completion.ContinueWith(_ => jb.Target2.Complete());
+                source1.Completion.ContinueWith(_ => jb.Target1.Complete(), TaskScheduler.Default);
+                source2.Completion.ContinueWith(_ => jb.Target2.Complete(), TaskScheduler.Default);
                 source1.LinkTo(jb.Target1, i => true);
                 source2.LinkTo(jb.Target2, i => true);
                 source1.Post(42);
@@ -518,8 +518,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var source1 = new BufferBlock<int>();
                 var source2 = new BufferBlock<int>();
                 var jb = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1, Greedy = false });
-                source1.Completion.ContinueWith(_ => jb.Target1.Complete());
-                source2.Completion.ContinueWith(_ => jb.Target2.Complete());
+                source1.Completion.ContinueWith(_ => jb.Target1.Complete(), TaskScheduler.Default);
+                source2.Completion.ContinueWith(_ => jb.Target2.Complete(), TaskScheduler.Default);
 
                 using (source1.LinkTo(jb.Target1))
                 {
@@ -578,7 +578,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     for (int i = 0; i < 2; i++) source.Post(i);
                     source.Complete();
-                    source.Completion.ContinueWith(delegate { target1.Complete(); });
+                    source.Completion.ContinueWith(delegate { target1.Complete(); }, TaskScheduler.Default);
                     target1.Completion.Wait();
                 }
                 localPassed &= counter == 2;
@@ -596,7 +596,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     source.LinkTo(DataflowBlock.NullTarget<int>());
                     for (int i = 0; i < 2; i++) source.Post(i);
                     source.Complete();
-                    source.Completion.ContinueWith(delegate { target1.Complete(); });
+                    source.Completion.ContinueWith(delegate { target1.Complete(); }, TaskScheduler.Default);
                     target1.Completion.Wait();
                 }
                 localPassed &= counter == 1;
@@ -620,7 +620,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     {
                         target1.Complete();
                         target2.Complete();
-                    });
+                    }, TaskScheduler.Default);
                     target1.Completion.Wait();
                     target2.Completion.Wait();
                     localPassed &= counter == 1;
@@ -1066,7 +1066,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             {
                 bool localPassed = true;
                 var buffer = new BufferBlock<int>();
-                var t = Task.Factory.StartNew(() =>
+                var t = Task.Run(() =>
                 {
                     Task.Delay(1).Wait();
                     buffer.Post(1);
@@ -1086,7 +1086,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.Throws<TimeoutException>(() => buffer.Receive(TimeSpan.FromMilliseconds(0)));
                 buffer.Post(42);
                 localPassed &= buffer.Receive(TimeSpan.FromMilliseconds(-1)) == 42;
-                Task.Factory.StartNew(() => { Task.Delay(50).Wait(); buffer.Post(44); });
+                Task.Run(() => { Task.Delay(50).Wait(); buffer.Post(44); });
                 Assert.Throws<TimeoutException>(() => buffer.Receive(TimeSpan.FromMilliseconds(1)));
                 Assert.True(localPassed, string.Format("{0}: Receive with timeout", localPassed ? "Success" : "Failure"));
             }
@@ -1106,7 +1106,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     var cts = new CancellationTokenSource();
                     var buffer = new BufferBlock<int>(new DataflowBlockOptions { CancellationToken = cts.Token });
-                    Task.Factory.StartNew(() => { Task.Delay(1).Wait(); cts.Cancel(); });
+                    Task.Run(() => { Task.Delay(1).Wait(); cts.Cancel(); });
                     Assert.Throws<InvalidOperationException>(() => buffer.Receive());
                 }
 
@@ -1132,7 +1132,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 {
                     var buffer = new BufferBlock<int>();
                     var cts = new CancellationTokenSource();
-                    Task.Factory.StartNew(() => { Task.Delay(1).Wait(); cts.Cancel(); });
+                    Task.Run(() => { Task.Delay(1).Wait(); cts.Cancel(); });
                     Assert.Throws<OperationCanceledException>(() => buffer.Receive(cts.Token));
                 }
 
@@ -1195,7 +1195,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             {
                 bool localPassed = true;
                 var buffer = new BufferBlock<int>();
-                var posts = Task.Factory.StartNew(() =>
+                var posts = Task.Run(() =>
                 {
                     Task.Delay(1).Wait();
                     buffer.Post(1);
@@ -1227,7 +1227,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 for (int i = 0; i < 1; i++)
                 {
                     counter += i;
-                    Task.Factory.StartNew(state => { Task.Delay(1).Wait(); buffer.Post((int)state); }, i);
+                    Task.Factory.StartNew(state => { Task.Delay(1).Wait(); buffer.Post((int)state); }, i,
+                        CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                     counter -= buffer.ReceiveAsync().Result;
                 }
                 localPassed &= counter == 0;
@@ -1251,7 +1252,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 }
                 buffer.Post(42);
                 localPassed &= buffer.ReceiveAsync(TimeSpan.FromMilliseconds(-1)).Result == 42;
-                Task.Factory.StartNew(() => { Task.Delay(2).Wait(); buffer.Post(45); });
+                Task.Run(() => { Task.Delay(2).Wait(); buffer.Post(45); });
                 try
                 {
                     buffer.ReceiveAsync(TimeSpan.FromMilliseconds(1)).Wait();
@@ -1395,7 +1396,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                                     if (iter < ITEMS_TO_POST) body();
                                     else mres.Set();
                                 }
-                            }, executeSynchronously ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None);
+                            }, CancellationToken.None, executeSynchronously ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None, TaskScheduler.Default);
                         };
                         body();
                         mres.Wait();
@@ -1898,8 +1899,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // Construct sources
             var source1 = new BufferBlock<int>();
             var source2 = new BufferBlock<int>();
-            source1.Completion.ContinueWith(t => { Console.WriteLine("source1"); });
-            source2.Completion.ContinueWith(t => { Console.WriteLine("source2"); });
+            source1.Completion.ContinueWith(t => { Console.WriteLine("source1"); }, TaskScheduler.Default);
+            source2.Completion.ContinueWith(t => { Console.WriteLine("source2"); }, TaskScheduler.Default);
 
             // Post the rest of the messages and choose
             for (int i = 0; i < ITERATIONS; i++)
@@ -1922,7 +1923,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             var buffer = new BufferBlock<int>();
             var action = new ActionBlock<int>(i => buffer.Post(i));
-            action.Completion.ContinueWith(delegate { buffer.Complete(); });
+            action.Completion.ContinueWith(delegate { buffer.Complete(); }, TaskScheduler.Default);
             var encapsulated = DataflowBlock.Encapsulate(action, buffer);
 
             // Test argument validation
@@ -1961,7 +1962,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                                                                     new ExecutionDataflowBlockOptions() { BoundedCapacity = 1 });
                 var sourcePart = new BufferBlock<int>();
                 boundedTargetPart.LinkTo(sourcePart);
-                boundedTargetPart.Completion.ContinueWith(completion => sourcePart.Complete());
+                boundedTargetPart.Completion.ContinueWith(completion => sourcePart.Complete(), TaskScheduler.Default);
                 var encapsulatedTarget = DataflowBlock.Encapsulate(boundedTargetPart, sourcePart);
                 var sink = new ActionBlock<int>(x => { });
                 encapsulatedTarget.LinkTo(sink);
@@ -1969,7 +1970,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 // Mini-network
                 var source = new BufferBlock<int>();
                 source.LinkTo(encapsulatedTarget);
-                source.Completion.ContinueWith(completion => encapsulatedTarget.Complete());
+                source.Completion.ContinueWith(completion => encapsulatedTarget.Complete(), TaskScheduler.Default);
 
                 // Feed
                 for (messageSent = 0; messageSent < 2; messageSent++) source.Post(messageSent);
@@ -2137,7 +2138,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                                         if (iter < ITEMS_TO_POST) body();
                                         else mres.Set();
                                     }
-                                }, executeSynchronously ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None);
+                                }, CancellationToken.None, executeSynchronously ? TaskContinuationOptions.ExecuteSynchronously : TaskContinuationOptions.None, TaskScheduler.Default);
                             };
                             body();
                             mres.Wait();

@@ -204,7 +204,7 @@ namespace System.Xml.Linq
             AddString(ws);
         }
 
-        void Add(object o)
+        private void Add(object o)
         {
             if (_content == null)
             {
@@ -213,7 +213,7 @@ namespace System.Xml.Linq
             _content.Add(o);
         }
 
-        void AddNode(XNode n)
+        private void AddNode(XNode n)
         {
             if (_parent != null)
             {
@@ -230,7 +230,7 @@ namespace System.Xml.Linq
             }
         }
 
-        void AddString(string s)
+        private void AddString(string s)
         {
             if (s == null)
             {

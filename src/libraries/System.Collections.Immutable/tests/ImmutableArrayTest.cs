@@ -292,22 +292,22 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void CreateByCovariantStaticCast()
+        public void CastUpReference()
         {
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
-            ImmutableArray<object> baseImmutable = ImmutableArray.Create<object, string>(derivedImmutable);
+            ImmutableArray<object> baseImmutable = ImmutableArray<object>.CastUp(derivedImmutable);
             Assert.Equal(derivedImmutable, baseImmutable);
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
-            ImmutableArray<string> derivedImmutable2 = baseImmutable.As<string>();
-            Assert.Equal(derivedImmutable, derivedImmutable2);
+            Assert.Equal(derivedImmutable, baseImmutable.As<string>());
+            Assert.Equal(derivedImmutable, baseImmutable.CastArray<string>());
         }
 
         [Fact]
-        public void CreateByCovariantStaticCastDefault()
+        public void CastUpReferenceDefaultValue()
         {
             ImmutableArray<string> derivedImmutable = default(ImmutableArray<string>);
-            ImmutableArray<object> baseImmutable = ImmutableArray.Create<object, string>(derivedImmutable);
+            ImmutableArray<object> baseImmutable = ImmutableArray<object>.CastUp(derivedImmutable);
             Assert.True(baseImmutable.IsDefault);
             Assert.True(derivedImmutable.IsDefault);
 
@@ -315,6 +315,81 @@ namespace System.Collections.Immutable.Test
             ImmutableArray<string> derivedImmutable2 = baseImmutable.As<string>();
             Assert.True(derivedImmutable2.IsDefault);
             Assert.True(derivedImmutable == derivedImmutable2);
+        }
+
+        [Fact]
+        public void CastUpRefToInterface()
+        {
+            var stringArray = ImmutableArray.Create("a", "b");
+            var enumArray = ImmutableArray<IEnumerable>.CastUp(stringArray);
+            Assert.Equal(2, enumArray.Length);
+            Assert.Equal(stringArray, enumArray.CastArray<string>());
+            Assert.Equal(stringArray, enumArray.As<string>());
+        }
+
+        [Fact]
+        public void CastUpInterfaceToInterface()
+        {
+            var genericEnumArray = ImmutableArray.Create<IEnumerable<int>>(new List<int>(), new List<int>());
+            var legacyEnumArray = ImmutableArray<IEnumerable>.CastUp(genericEnumArray);
+            Assert.Equal(2, legacyEnumArray.Length);
+            Assert.Equal(genericEnumArray, legacyEnumArray.As<IEnumerable<int>>());
+            Assert.Equal(genericEnumArray, legacyEnumArray.CastArray<IEnumerable<int>>());
+        }
+
+        [Fact]
+        public void CastUpArrayToSystemArray()
+        {
+            var arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
+            var sysArray = ImmutableArray<Array>.CastUp(arrayArray);
+            Assert.Equal(2, sysArray.Length);
+            Assert.Equal(arrayArray, sysArray.As<int[]>());
+            Assert.Equal(arrayArray, sysArray.CastArray<int[]>());
+        }
+
+        [Fact]
+        public void CastUpArrayToObject()
+        {
+            var arrayArray = ImmutableArray.Create(new int[] { 1, 2 }, new int[] { 3, 4 });
+            var objArray = ImmutableArray<object>.CastUp(arrayArray);
+            Assert.Equal(2, objArray.Length);
+            Assert.Equal(arrayArray, objArray.As<int[]>());
+            Assert.Equal(arrayArray, objArray.CastArray<int[]>());
+        }
+
+        [Fact]
+        public void CastUpDelegateToSystemDelegate()
+        {
+            var delArray = ImmutableArray.Create<Action>(() => { }, () => { });
+            var sysDelArray = ImmutableArray<Delegate>.CastUp(delArray);
+            Assert.Equal(2, sysDelArray.Length);
+            Assert.Equal(delArray, sysDelArray.As<Action>());
+            Assert.Equal(delArray, sysDelArray.CastArray<Action>());
+        }
+
+        [Fact]
+        public void CastArrayUnrelatedInterface()
+        {
+            var strArray = ImmutableArray.Create<string>("cat", "dog");
+            var compArray = ImmutableArray<IComparable>.CastUp(strArray);
+            var enumArray = compArray.CastArray<IEnumerable>();
+            Assert.Equal(2, enumArray.Length);
+            Assert.Equal(strArray, enumArray.As<string>());
+            Assert.Equal(strArray, enumArray.CastArray<string>());
+        }
+
+        [Fact]
+        public void CastArrayBadInterface()
+        {
+            var formattableArray = ImmutableArray.Create<IFormattable>(1, 2);
+            Assert.Throws(typeof(InvalidCastException), () => formattableArray.CastArray<IComparable>());
+        }
+
+        [Fact]
+        public void CastArrayBadRef()
+        {
+            var objArray = ImmutableArray.Create<object>("cat", "dog");
+            Assert.Throws(typeof(InvalidCastException), () => objArray.CastArray<string>());
         }
 
         [Fact]

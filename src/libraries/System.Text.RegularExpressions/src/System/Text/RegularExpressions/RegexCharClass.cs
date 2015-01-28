@@ -4,25 +4,24 @@
 // This RegexCharClass class provides the "set of Unicode chars" functionality
 // used by the regexp engine.
 
-// The main function of RegexCharClass is as a builder to turn ranges, characters and 
-// Unicode categories into a single string.  This string is used as a black box 
+// The main function of RegexCharClass is as a builder to turn ranges, characters and
+// Unicode categories into a single string.  This string is used as a black box
 // representation of a character class by the rest of Regex.  The format is as follows.
 //
 // Char index   Use
 //      0       Flags - currently this only holds the "negate" flag
 //      1       length of the string representing the "set" portion, eg [a-z0-9] only has a "set"
 //      2       length of the string representing the "category" portion, eg [\p{Lu}] only has a "category"
-//      3...m   The set.  These are a series of ranges which define the characters included in the set. 
+//      3...m   The set.  These are a series of ranges which define the characters included in the set.
 //              To determine if a given character is in the set, we binary search over this set of ranges
 //              and see where the character should go.  Based on whether the ending index is odd or even,
-//              we know if the character is in the set. 
+//              we know if the character is in the set.
 //      m+1...n The categories.  This is a list of UnicodeCategory enum values which describe categories
-//              included in this class.  
+//              included in this class.
 
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace System.Text.RegularExpressions
@@ -42,8 +41,10 @@ namespace System.Text.RegularExpressions
         private const int CATEGORYLENGTH = 2;
         private const int SETSTART = 3;
 
-        private const char Nullchar = '\0';
-        private const char Lastchar = '\uFFFF';
+        private const String NullCharString = "\0";
+
+        private const char NullChar = '\0';
+        private const char LastChar = '\uFFFF';
 
         private const char GroupChar = (char)0;
 
@@ -57,16 +58,16 @@ namespace System.Text.RegularExpressions
 
         private static readonly String s_internalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
         private static readonly String s_space = "\x64";
-        private static readonly String s_notSpace = NegateCategory(s_space);
-        private static readonly String s_word;
-        private static readonly String s_notWord;
+        private static readonly String s_notSpace = "\uFF9C";
+        private static readonly String s_word = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        private static readonly String s_notWord = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
 
-        internal static readonly String SpaceClass;
-        internal static readonly String NotSpaceClass;
-        internal static readonly String WordClass;
-        internal static readonly String NotWordClass;
-        internal static readonly String DigitClass;
-        internal static readonly String NotDigitClass;
+        internal static readonly String SpaceClass = "\u0000\u0000\u0001\u0064";
+        internal static readonly String NotSpaceClass = "\u0001\u0000\u0001\u0064";
+        internal static readonly String WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        internal static readonly String NotWordClass = "\u0001\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        internal static readonly String DigitClass = "\u0000\u0000\u0001\u0009";
+        internal static readonly String NotDigitClass = "\u0000\u0000\u0001\uFFF7";
 
         private const String ECMASpaceSet = "\u0009\u000E\u0020\u0021";
         private const String NotECMASpaceSet = "\0\u0009\u000E\u0020\u0021";
@@ -85,17 +86,75 @@ namespace System.Text.RegularExpressions
         internal const String AnyClass = "\x00\x01\x00\x00";
         internal const String EmptyClass = "\x00\x00\x00";
 
-        private static Dictionary<String, String> _definedCategories;
+        // UnicodeCategory is zero based, so we add one to each value and subtract it off later
+        private const int DefinedCategoriesCapacity = 38;
+        private static readonly Dictionary<String, String> s_definedCategories = new Dictionary<String, String>(DefinedCategoriesCapacity)
+        {
+            // Others
+            { "Cc", "\u000F" }, // UnicodeCategory.Control + 1
+            { "Cf", "\u0010" }, // UnicodeCategory.Format + 1
+            { "Cn", "\u001E" }, // UnicodeCategory.OtherNotAssigned + 1
+            { "Co", "\u0012" }, // UnicodeCategory.PrivateUse + 1
+            { "Cs", "\u0011" }, // UnicodeCategory.Surrogate + 1
+            { "C", "\u0000\u000F\u0010\u001E\u0012\u0011\u0000" },
+
+            // Letters
+            { "Ll", "\u0002" }, // UnicodeCategory.LowercaseLetter + 1
+            { "Lm", "\u0004" }, // UnicodeCategory.ModifierLetter + 1
+            { "Lo", "\u0005" }, // UnicodeCategory.OtherLetter + 1
+            { "Lt", "\u0003" }, // UnicodeCategory.TitlecaseLetter + 1
+            { "Lu", "\u0001" }, // UnicodeCategory.UppercaseLetter + 1
+            { "L", "\u0000\u0002\u0004\u0005\u0003\u0001\u0000" },
+
+            // InternalRegexIgnoreCase = {LowercaseLetter} OR {TitlecaseLetter} OR {UppercaseLetter}
+            // !!!This category should only ever be used in conjunction with RegexOptions.IgnoreCase code paths!!!
+            { "__InternalRegexIgnoreCase__", "\u0000\u0002\u0003\u0001\u0000" },
+
+            // Marks
+            { "Mc", "\u0007" }, // UnicodeCategory.SpacingCombiningMark + 1
+            { "Me", "\u0008" }, // UnicodeCategory.EnclosingMark + 1
+            { "Mn", "\u0006" }, // UnicodeCategory.NonSpacingMark + 1
+            { "M", "\u0000\u0007\u0008\u0006\u0000" },
+
+            // Numbers
+            { "Nd", "\u0009" }, // UnicodeCategory.DecimalDigitNumber + 1
+            { "Nl", "\u000A" }, // UnicodeCategory.LetterNumber + 1
+            { "No", "\u000B" }, // UnicodeCategory.OtherNumber + 1
+            { "N", "\u0000\u0009\u000A\u000B\u0000" },
+
+            // Punctuation
+            { "Pc", "\u0013" }, // UnicodeCategory.ConnectorPunctuation + 1
+            { "Pd", "\u0014" }, // UnicodeCategory.DashPunctuation + 1
+            { "Pe", "\u0016" }, // UnicodeCategory.ClosePunctuation + 1
+            { "Po", "\u0019" }, // UnicodeCategory.OtherPunctuation + 1
+            { "Ps", "\u0015" }, // UnicodeCategory.OpenPunctuation + 1
+            { "Pf", "\u0018" }, // UnicodeCategory.FinalQuotePunctuation + 1
+            { "Pi", "\u0017" }, // UnicodeCategory.InitialQuotePunctuation + 1
+            { "P", "\u0000\u0013\u0014\u0016\u0019\u0015\u0018\u0017\u0000" },
+
+            // Symbols
+            { "Sc", "\u001B" }, // UnicodeCategory.CurrencySymbol + 1
+            { "Sk", "\u001C" }, // UnicodeCategory.ModifierSymbol + 1
+            { "Sm", "\u001A" }, // UnicodeCategory.MathSymbol + 1
+            { "So", "\u001D" }, // UnicodeCategory.OtherSymbol + 1
+            { "S", "\u0000\u001B\u001C\u001A\u001D\u0000" },
+
+            // Separators
+            { "Zl", "\u000D" }, // UnicodeCategory.LineSeparator + 1
+            { "Zp", "\u000E" }, // UnicodeCategory.ParagraphSeparator + 1
+            { "Zs", "\u000C" }, // UnicodeCategory.SpaceSeparator + 1
+            { "Z", "\u0000\u000D\u000E\u000C\u0000" },
+        };
 
         /*
-         *   The property table contains all the block definitions defined in the 
-         *   XML schema spec (http://www.w3.org/TR/2001/PR-xmlschema-2-20010316/#charcter-classes), Unicode 4.0 spec (www.unicode.org), 
-         *   and Perl 5.6 (see Programming Perl, 3rd edition page 167).   Three blocks defined by Perl (and here) may 
-         *   not be in the Unicode: IsHighPrivateUseSurrogates, IsHighSurrogates, and IsLowSurrogates.   
-         *   
+         *   The property table contains all the block definitions defined in the
+         *   XML schema spec (http://www.w3.org/TR/2001/PR-xmlschema-2-20010316/#charcter-classes), Unicode 4.0 spec (www.unicode.org),
+         *   and Perl 5.6 (see Programming Perl, 3rd edition page 167).   Three blocks defined by Perl (and here) may
+         *   not be in the Unicode: IsHighPrivateUseSurrogates, IsHighSurrogates, and IsLowSurrogates.
+         *
         **/
         // Has to be sorted by the first column
-        private static readonly String[][] _propTable = {
+        private static readonly String[][] s_propTable = {
             new [] {"IsAlphabeticPresentationForms",       "\uFB00\uFB50"},
             new [] {"IsArabic",                            "\u0600\u0700"},
             new [] {"IsArabicPresentationForms-A",         "\uFB50\uFE00"},
@@ -224,26 +283,26 @@ namespace System.Text.RegularExpressions
             Let U be the set of Unicode character values and let L be the lowercase
             function, mapping from U to U. To perform case insensitive matching of
             character sets, we need to be able to map an interval I in U, say
-    
+
                 I = [chMin, chMax] = { ch : chMin <= ch <= chMax }
-    
+
             to a set A such that A contains L(I) and A is contained in the union of
             I and L(I).
-    
+
             The table below partitions U into intervals on which L is non-decreasing.
             Thus, for any interval J = [a, b] contained in one of these intervals,
             L(J) is contained in [L(a), L(b)].
-    
+
             It is also true that for any such J, [L(a), L(b)] is contained in the
             union of J and L(J). This does not follow from L being non-decreasing on
             these intervals. It follows from the nature of the L on each interval.
             On each interval, L has one of the following forms:
-    
+
                 (1) L(ch) = constant            (LowercaseSet)
                 (2) L(ch) = ch + offset         (LowercaseAdd)
                 (3) L(ch) = ch | 1              (LowercaseBor)
                 (4) L(ch) = ch + (ch & 1)       (LowercaseBad)
-    
+
             It is easy to verify that for any of these forms [L(a), L(b)] is
             contained in the union of [a, b] and L([a, b]).
         ***************************************************************************/
@@ -253,7 +312,7 @@ namespace System.Text.RegularExpressions
         private const int LowercaseBor = 2;    // Bitwise or with 1.
         private const int LowercaseBad = 3;    // Bitwise and with 1 and add original.
 
-        private static readonly LowerCaseMapping[] _lcTable = new LowerCaseMapping[]
+        private static readonly LowerCaseMapping[] s_lcTable = new LowerCaseMapping[]
         {
             new LowerCaseMapping('\u0041', '\u005A', LowercaseAdd, 32),
             new LowerCaseMapping('\u00C0', '\u00DE', LowercaseAdd, 32),
@@ -351,160 +410,27 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\uFF21', '\uFF3A', LowercaseAdd, 32),
         };
 
+#if DEBUG
         static RegexCharClass()
         {
-            // addressing Dictionary versus Hashtable thread safety difference by using
-            // a temp Dictionary. Note that this is just a theoretical concern since this
-            // is a static ctor and getter methods aren't called until after this is 
-            // done; this is just to avoid the long-term possibility of thread safety 
-            // problems.
-            Dictionary<String, String> tempCategories = new Dictionary<String, String>(32);
+            // Make sure the initial capacity for s_definedCategories is correct
+            Debug.Assert(
+                s_definedCategories.Count == DefinedCategoriesCapacity,
+                "RegexCharClass s_definedCategories's initial capacity (DefinedCategoriesCapacity) is incorrect.",
+                "Expected (s_definedCategories.Count): {0}, Actual (DefinedCategoriesCapacity): {1}",
+                s_definedCategories.Count,
+                DefinedCategoriesCapacity);
 
-            char[] groups = new char[9];
-            StringBuilder word = new StringBuilder(11);
-
-            word.Append(GroupChar);
-            groups[0] = GroupChar;
-
-            // We need the UnicodeCategory enum values as a char so we can put them in a string
-            // in the hashtable.  In order to get there, we first must cast to an int, 
-            // then cast to a char
-            // Also need to distinguish between positive and negative values.  UnicodeCategory is zero 
-            // based, so we add one to each value and subtract it off later
-
-            // Others
-            groups[1] = (char)((int)UnicodeCategory.Control + 1);
-            tempCategories["Cc"] = groups[1].ToString();     // Control 
-            groups[2] = (char)((int)UnicodeCategory.Format + 1);
-            tempCategories["Cf"] = groups[2].ToString();     // Format
-            groups[3] = (char)((int)UnicodeCategory.OtherNotAssigned + 1);
-            tempCategories["Cn"] = groups[3].ToString();     // Not assigned
-            groups[4] = (char)((int)UnicodeCategory.PrivateUse + 1);
-            tempCategories["Co"] = groups[4].ToString();     // Private use
-            groups[5] = (char)((int)UnicodeCategory.Surrogate + 1);
-            tempCategories["Cs"] = groups[5].ToString();     // Surrogate
-
-            groups[6] = GroupChar;
-            tempCategories["C"] = new String(groups, 0, 7);
-
-            // Letters
-            groups[1] = (char)((int)UnicodeCategory.LowercaseLetter + 1);
-            tempCategories["Ll"] = groups[1].ToString();     // Lowercase
-            groups[2] = (char)((int)UnicodeCategory.ModifierLetter + 1);
-            tempCategories["Lm"] = groups[2].ToString();     // Modifier
-            groups[3] = (char)((int)UnicodeCategory.OtherLetter + 1);
-            tempCategories["Lo"] = groups[3].ToString();     // Other 
-            groups[4] = (char)((int)UnicodeCategory.TitlecaseLetter + 1);
-            tempCategories["Lt"] = groups[4].ToString();     // Titlecase
-            groups[5] = (char)((int)UnicodeCategory.UppercaseLetter + 1);
-            tempCategories["Lu"] = groups[5].ToString();     // Uppercase
-
-            //groups[6] = GroupChar;
-            tempCategories["L"] = new String(groups, 0, 7);
-            word.Append(new String(groups, 1, 5));
-
-            // InternalRegexIgnoreCase = {LowercaseLetter} OR {TitlecaseLetter} OR {UppercaseLetter}
-            // !!!This category should only ever be used in conjunction with RegexOptions.IgnoreCase code paths!!!
-            tempCategories[s_internalRegexIgnoreCase] = String.Format(CultureInfo.InvariantCulture, "{0}{1}{2}{3}{4}", GroupChar, groups[1], groups[4], groups[5], groups[6]);
-
-            // Marks        
-            groups[1] = (char)((int)UnicodeCategory.SpacingCombiningMark + 1);
-            tempCategories["Mc"] = groups[1].ToString();     // Spacing combining
-            groups[2] = (char)((int)UnicodeCategory.EnclosingMark + 1);
-            tempCategories["Me"] = groups[2].ToString();     // Enclosing
-            groups[3] = (char)((int)UnicodeCategory.NonSpacingMark + 1);
-            tempCategories["Mn"] = groups[3].ToString();     // Non-spacing
-
-            groups[4] = GroupChar;
-            tempCategories["M"] = new String(groups, 0, 5);
-            //word.Append(groups[1]);
-            word.Append(groups[3]);
-
-            // Numbers
-            groups[1] = (char)((int)UnicodeCategory.DecimalDigitNumber + 1);
-            tempCategories["Nd"] = groups[1].ToString();     // Decimal digit
-            groups[2] = (char)((int)UnicodeCategory.LetterNumber + 1);
-            tempCategories["Nl"] = groups[2].ToString();     // Letter
-            groups[3] = (char)((int)UnicodeCategory.OtherNumber + 1);
-            tempCategories["No"] = groups[3].ToString();     // Other 
-
-            //groups[4] = GroupChar;
-            tempCategories["N"] = new String(groups, 0, 5);
-            word.Append(groups[1]);
-            //word.Append(new String(groups, 1, 3));
-
-            // Punctuation
-            groups[1] = (char)((int)UnicodeCategory.ConnectorPunctuation + 1);
-            tempCategories["Pc"] = groups[1].ToString();     // Connector
-            groups[2] = (char)((int)UnicodeCategory.DashPunctuation + 1);
-            tempCategories["Pd"] = groups[2].ToString();     // Dash
-            groups[3] = (char)((int)UnicodeCategory.ClosePunctuation + 1);
-            tempCategories["Pe"] = groups[3].ToString();     // Close
-            groups[4] = (char)((int)UnicodeCategory.OtherPunctuation + 1);
-            tempCategories["Po"] = groups[4].ToString();     // Other
-            groups[5] = (char)((int)UnicodeCategory.OpenPunctuation + 1);
-            tempCategories["Ps"] = groups[5].ToString();     // Open
-            groups[6] = (char)((int)UnicodeCategory.FinalQuotePunctuation + 1);
-            tempCategories["Pf"] = groups[6].ToString();     // Inital quote
-            groups[7] = (char)((int)UnicodeCategory.InitialQuotePunctuation + 1);
-            tempCategories["Pi"] = groups[7].ToString();     // Final quote
-
-            groups[8] = GroupChar;
-            tempCategories["P"] = new String(groups, 0, 9);
-            word.Append(groups[1]);
-
-            // Symbols
-            groups[1] = (char)((int)UnicodeCategory.CurrencySymbol + 1);
-            tempCategories["Sc"] = groups[1].ToString();     // Currency
-            groups[2] = (char)((int)UnicodeCategory.ModifierSymbol + 1);
-            tempCategories["Sk"] = groups[2].ToString();     // Modifier
-            groups[3] = (char)((int)UnicodeCategory.MathSymbol + 1);
-            tempCategories["Sm"] = groups[3].ToString();     // Math
-            groups[4] = (char)((int)UnicodeCategory.OtherSymbol + 1);
-            tempCategories["So"] = groups[4].ToString();     // Other
-
-            groups[5] = GroupChar;
-            tempCategories["S"] = new String(groups, 0, 6);
-
-            // Separators
-            groups[1] = (char)((int)UnicodeCategory.LineSeparator + 1);
-            tempCategories["Zl"] = groups[1].ToString();     // Line
-            groups[2] = (char)((int)UnicodeCategory.ParagraphSeparator + 1);
-            tempCategories["Zp"] = groups[2].ToString();     // Paragraph
-            groups[3] = (char)((int)UnicodeCategory.SpaceSeparator + 1);
-            tempCategories["Zs"] = groups[3].ToString();     // Space
-
-            groups[4] = GroupChar;
-            tempCategories["Z"] = new String(groups, 0, 5);
-
-
-            word.Append(GroupChar);
-            s_word = word.ToString();
-            s_notWord = NegateCategory(s_word);
-
-
-            SpaceClass = "\x00\x00\x01" + s_space;
-            NotSpaceClass = "\x01\x00\x01" + s_space;
-            WordClass = "\x00\x00" + (char)s_word.Length + s_word;
-            NotWordClass = "\x01\x00" + (char)s_word.Length + s_word; ;
-            DigitClass = "\x00\x00\x01" + (char)((int)UnicodeCategory.DecimalDigitNumber + 1);
-            NotDigitClass = "\x00\x00\x01" + unchecked((char)(-((int)UnicodeCategory.DecimalDigitNumber + 1)));
-
-#if DEBUG
-            // make sure the _propTable is correctly ordered
-            int len = _propTable.Length;
+            // Make sure the s_propTable is correctly ordered
+            int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
-                Debug.Assert(String.Compare(_propTable[i][0], _propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass _propTable is out of order at (" + _propTable[i][0] + ", " + _propTable[i + 1][0] + ")");
+                Debug.Assert(String.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass s_propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
+        }
 #endif
 
-            _definedCategories = tempCategories;
-        }
-
-        /*
-         * RegexCharClass()
-         *
-         * Creates an empty character class.
-         */
+        /// <summary>
+        /// Creates an empty character class.
+        /// </summary>
         internal RegexCharClass()
         {
             _rangelist = new List<SingleRange>(6);
@@ -539,11 +465,9 @@ namespace System.Text.RegularExpressions
             AddRange(c, c);
         }
 
-        /*
-         * AddCharClass()
-         *
-         * Adds a regex char class
-         */
+        /// <summary>
+        /// Adds a regex char class
+        /// </summary>
         internal void AddCharClass(RegexCharClass cc)
         {
             int i;
@@ -566,11 +490,9 @@ namespace System.Text.RegularExpressions
             _categories.Append(cc._categories.ToString());
         }
 
-        /*
-         * AddSet()
-         *
-         * Adds a set (specified by its string represenation) to the class.
-         */
+        /// <summary>
+        /// Adds a set (specified by its string representation) to the class.
+        /// </summary>
         private void AddSet(String set)
         {
             int i;
@@ -586,7 +508,7 @@ namespace System.Text.RegularExpressions
 
             if (i < set.Length)
             {
-                _rangelist.Add(new SingleRange(set[i], Lastchar));
+                _rangelist.Add(new SingleRange(set[i], LastChar));
             }
         }
 
@@ -596,11 +518,9 @@ namespace System.Text.RegularExpressions
             _subtractor = sub;
         }
 
-        /*
-         * AddRange()
-         *
-         * Adds a single range of characters to the class.
-         */
+        /// <summary>
+        /// Adds a single range of characters to the class.
+        /// </summary>
         internal void AddRange(char first, char last)
         {
             _rangelist.Add(new SingleRange(first, last));
@@ -613,23 +533,20 @@ namespace System.Text.RegularExpressions
 
         internal void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
         {
-            String cat;
-            _definedCategories.TryGetValue(categoryName, out cat);
-            if (cat != null && !categoryName.Equals(s_internalRegexIgnoreCase))
+            string category;
+            if (s_definedCategories.TryGetValue(categoryName, out category) && !categoryName.Equals(s_internalRegexIgnoreCase))
             {
-                string catstr = cat;
-
                 if (caseInsensitive)
                 {
                     if (categoryName.Equals("Ll") || categoryName.Equals("Lu") || categoryName.Equals("Lt"))
                         // when RegexOptions.IgnoreCase is specified then {Ll}, {Lu}, and {Lt} cases should all match
-                        catstr = (string)_definedCategories[s_internalRegexIgnoreCase];
+                        category = s_definedCategories[s_internalRegexIgnoreCase];
                 }
 
                 if (invert)
-                    catstr = NegateCategory(catstr); // negate the category
+                    category = NegateCategory(category); // negate the category
 
-                _categories.Append((string)catstr);
+                _categories.Append(category);
             }
             else
                 AddSet(SetFromProperty(categoryName, invert, pattern));
@@ -640,55 +557,53 @@ namespace System.Text.RegularExpressions
             _categories.Append(category);
         }
 
-        /*
-         * AddLowerCase()
-         *
-         * Adds to the class any lowercase versions of characters already
-         * in the class. Used for case-insensitivity.
-         */
+        /// <summary>
+        /// Adds to the class any lowercase versions of characters already
+        /// in the class. Used for case-insensitivity.
+        /// </summary>
         internal void AddLowercase(CultureInfo culture)
         {
-            int i;
-            int origSize;
-            SingleRange range;
-
             _canonical = false;
 
-            for (i = 0, origSize = _rangelist.Count; i < origSize; i++)
+            int count = _rangelist.Count;
+            for (int i = 0; i < count; i++)
             {
-                range = _rangelist[i];
+                SingleRange range = _rangelist[i];
                 if (range._first == range._last)
-                    range._first = range._last = culture.TextInfo.ToLower(range._first);
+                {
+                    char lower = culture.TextInfo.ToLower(range._first);
+                    _rangelist[i] = new SingleRange(lower, lower);
+                }
                 else
+                {
                     AddLowercaseRange(range._first, range._last, culture);
+                }
             }
         }
 
-        /*
-         * AddLowercaseRange()
-         *
-         * For a single range that's in the set, adds any additional ranges
-         * necessary to ensure that lowercase equivalents are also included.
-         */
+        /// <summary>
+        /// For a single range that's in the set, adds any additional ranges
+        /// necessary to ensure that lowercase equivalents are also included.
+        /// </summary>
         private void AddLowercaseRange(char chMin, char chMax, CultureInfo culture)
         {
             int i, iMax, iMid;
             char chMinT, chMaxT;
             LowerCaseMapping lc;
 
-            for (i = 0, iMax = _lcTable.Length; i < iMax;)
+            for (i = 0, iMax = s_lcTable.Length; i < iMax;)
             {
                 iMid = (i + iMax) / 2;
-                if (_lcTable[iMid]._chMax < chMin)
+                if (s_lcTable[iMid]._chMax < chMin)
                     i = iMid + 1;
                 else
                     iMax = iMid;
             }
 
-            if (i >= _lcTable.Length)
+            if (i >= s_lcTable.Length)
                 return;
 
-            for (; i < _lcTable.Length && (lc = _lcTable[i])._chMin <= chMax; i++)
+            for (; i < s_lcTable.Length && (lc = s_lcTable[i])._chMin <= chMax; i++)
             {
                 if ((chMinT = lc._chMin) < chMin)
                     chMinT = chMin;
@@ -793,11 +708,9 @@ namespace System.Text.RegularExpressions
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        /*
-         * SingletonChar()
-         *
-         * Returns the char
-         */
+        /// <summary>
+        /// Returns the char
+        /// </summary>
         internal static char SingletonChar(String set)
         {
             Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
@@ -817,15 +730,13 @@ namespace System.Text.RegularExpressions
                 return false;
         }
 
-        /*
-         * IsSingleton()
-         *
-         * True if the set contains a single character only
-         */
+        /// <summary>
+        /// <c>true</c> if the set contains a single character only
+        /// </summary>
         internal static bool IsSingleton(String set)
         {
             if (set[FLAGS] == 0 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
-                (set[SETSTART] == Lastchar || set[SETSTART] + 1 == set[SETSTART + 1]))
+                (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
                 return true;
             else
                 return false;
@@ -834,7 +745,7 @@ namespace System.Text.RegularExpressions
         internal static bool IsSingletonInverse(String set)
         {
             if (set[FLAGS] == 1 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
-                (set[SETSTART] == Lastchar || set[SETSTART] + 1 == set[SETSTART + 1]))
+                (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
                 return true;
             else
                 return false;
@@ -853,9 +764,9 @@ namespace System.Text.RegularExpressions
         internal static bool IsECMAWordChar(char ch)
         {
             // According to ECMA-262, \s, \S, ., ^, and $ use Unicode-based interpretations of
-            // whitespace and newline, while \d, \D\, \w, \W, \b, and \B use ASCII-only 
+            // whitespace and newline, while \d, \D\, \w, \W, \b, and \B use ASCII-only
             // interpretations of digit, word character, and word boundary.  In other words,
-            // no special treatment of Unicode ZERO WIDTH NON-JOINER (ZWNJ U+200C) and 
+            // no special treatment of Unicode ZERO WIDTH NON-JOINER (ZWNJ U+200C) and
             // ZERO WIDTH JOINER (ZWJ U+200D) is required for ECMA word boundaries.
             return CharInClass(ch, ECMAWordClass);
         }
@@ -891,19 +802,17 @@ namespace System.Text.RegularExpressions
             bool b = CharInClassInternal(ch, set, start, mySetLength, myCategoryLength);
 
             // Note that we apply the negation *before* performing the subtraction.  This is because
-            // the negation only applies to the first char class, not the entire subtraction. 
+            // the negation only applies to the first char class, not the entire subtraction.
             if (set[start + FLAGS] == 1)
                 b = !b;
 
             return b && !subtracted;
         }
 
-        /*
-         * CharInClass()
-         *
-         * Determines a character's membership in a character class (via the
-         * string representation of the class).
-         */
+        /// <summary>
+        /// Determines a character's membership in a character class (via the
+        /// string representation of the class).
+        /// </summary>
         private static bool CharInClassInternal(char ch, string set, int start, int mySetLength, int myCategoryLength)
         {
             int min;
@@ -922,11 +831,11 @@ namespace System.Text.RegularExpressions
             }
 
             // The starting position of the set within the character class determines
-            // whether what an odd or even ending position means.  If the start is odd, 
-            // an *even* ending position means the character was in the set.  With recursive 
-            // subtractions in the mix, the starting position = start+SETSTART.  Since we know that 
-            // SETSTART is odd, we can simplify it out of the equation.  But if it changes we need to 
-            // reverse this check. 
+            // whether what an odd or even ending position means.  If the start is odd,
+            // an *even* ending position means the character was in the set.  With recursive
+            // subtractions in the mix, the starting position = start+SETSTART.  Since we know that
+            // SETSTART is odd, we can simplify it out of the equation.  But if it changes we need to
+            // reverse this check.
             Debug.Assert((SETSTART & 0x1) == 1, "If SETSTART is not odd, the calculation below this will be reversed");
             if ((min & 0x1) == (start & 0x1))
                 return true;
@@ -1000,11 +909,10 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
-        /*
-        *  CharInCategoryGroup
-        *  This is used for categories which are composed of other categories - L, N, Z, W...
-        *  These groups need special treatment when they are negated
-        */
+        /// <summary>
+        /// This is used for categories which are composed of other categories - L, N, Z, W...
+        /// These groups need special treatment when they are negated
+        /// </summary>
         private static bool CharInCategoryGroup(char ch, UnicodeCategory chcategory, string category, ref int i)
         {
             i++;
@@ -1088,7 +996,7 @@ namespace System.Text.RegularExpressions
                 if (i < end)
                     last = (char)(charClass[i] - 1);
                 else
-                    last = Lastchar;
+                    last = LastChar;
                 i++;
                 ranges.Add(new SingleRange(first, last));
             }
@@ -1100,29 +1008,25 @@ namespace System.Text.RegularExpressions
             return new RegexCharClass(charClass[start + FLAGS] == 1, ranges, new StringBuilder(charClass.Substring(end, myCategoryLength)), sub);
         }
 
-        /*
-         * RangeCount()
-         *
-         * The number of single ranges that have been accumulated so far.
-         */
+        /// <summary>
+        /// The number of single ranges that have been accumulated so far.
+        /// </summary>
         private int RangeCount()
         {
             return _rangelist.Count;
         }
 
-        /*
-         * ToString()
-         *
-         * Constructs the string representation of the class.
-         */
+        /// <summary>
+        /// Constructs the string representation of the class.
+        /// </summary>
         internal String ToStringClass()
         {
             if (!_canonical)
                 Canonicalize();
 
-            // make a guess about the length of the ranges.  We'll update this at the end. 
+            // make a guess about the length of the ranges.  We'll update this at the end.
             // This is important because if the last range ends in LastChar, we won't append
-            // LastChar to the list. 
+            // LastChar to the list.
             int rangeLen = _rangelist.Count * 2;
             StringBuilder sb = StringBuilderCache.Acquire(rangeLen + _categories.Length + 3);
 
@@ -1141,7 +1045,7 @@ namespace System.Text.RegularExpressions
                 SingleRange currentRange = _rangelist[i];
                 sb.Append(currentRange._first);
 
-                if (currentRange._last != Lastchar)
+                if (currentRange._last != LastChar)
                     sb.Append((char)(currentRange._last + 1));
             }
 
@@ -1155,31 +1059,27 @@ namespace System.Text.RegularExpressions
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        /*
-         * GetRangeAt(int i)
-         *
-         * The ith range.
-         */
+        /// <summary>
+        /// The ith range.
+        /// </summary>
         private SingleRange GetRangeAt(int i)
         {
             return _rangelist[i];
         }
 
-        /*
-         * Canonicalize()
-         *
-         * Logic to reduce a character class to a unique, sorted form.
-         */
+        /// <summary>
+        /// Logic to reduce a character class to a unique, sorted form.
+        /// </summary>
         private void Canonicalize()
         {
             SingleRange CurrentRange;
             int i;
             int j;
             char last;
-            bool Done;
+            bool done;
 
             _canonical = true;
-            _rangelist.Sort(0, _rangelist.Count, new SingleRangeComparer());
+            _rangelist.Sort(SingleRangeComparer.Instance);
 
             //
             // Find and eliminate overlapping or abutting ranges
@@ -1187,15 +1087,15 @@ namespace System.Text.RegularExpressions
 
             if (_rangelist.Count > 1)
             {
-                Done = false;
+                done = false;
 
                 for (i = 1, j = 0; ; i++)
                 {
                     for (last = _rangelist[j]._last; ; i++)
                     {
-                        if (i == _rangelist.Count || last == Lastchar)
+                        if (i == _rangelist.Count || last == LastChar)
                         {
-                            Done = true;
+                            done = true;
                             break;
                         }
 
@@ -1206,11 +1106,11 @@ namespace System.Text.RegularExpressions
                             last = CurrentRange._last;
                     }
 
-                    _rangelist[j]._last = last;
+                    _rangelist[j] = new SingleRange(_rangelist[j]._first, last);
 
                     j++;
 
-                    if (Done)
+                    if (done)
                         break;
 
                     if (j < i)
@@ -1223,26 +1123,26 @@ namespace System.Text.RegularExpressions
         private static String SetFromProperty(String capname, bool invert, string pattern)
         {
             int min = 0;
-            int max = _propTable.Length;
+            int max = s_propTable.Length;
             while (min != max)
             {
                 int mid = (min + max) / 2;
-                int res = String.Compare(capname, _propTable[mid][0], StringComparison.Ordinal);
+                int res = String.Compare(capname, s_propTable[mid][0], StringComparison.Ordinal);
                 if (res < 0)
                     max = mid;
                 else if (res > 0)
                     min = mid + 1;
                 else
                 {
-                    String set = _propTable[mid][1];
+                    String set = s_propTable[mid][1];
                     Debug.Assert(!String.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
                     if (invert)
                     {
-                        if (set[0] == Nullchar)
+                        if (set[0] == NullChar)
                         {
                             return set.Substring(1);
                         }
-                        return Nullchar + set;
+                        return NullCharString + set;
                     }
                     else
                     {
@@ -1255,18 +1155,18 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
 
-        /*
-         * SetDescription()
-         *
-         * Produces a human-readable description for a set string.
-         */
+        /// <summary>
+        /// Produces a human-readable description for a set string.
+        /// </summary>
         internal static String SetDescription(String set)
         {
             int mySetLength = set[SETLENGTH];
             int myCategoryLength = set[CATEGORYLENGTH];
             int myEndPosition = SETSTART + mySetLength + myCategoryLength;
 
-            StringBuilder desc = new StringBuilder("[");
+            StringBuilder desc = new StringBuilder();
+
+            desc.Append('[');
 
             int index = SETSTART;
             char ch1;
@@ -1281,7 +1181,7 @@ namespace System.Text.RegularExpressions
                 if (index + 1 < set.Length)
                     ch2 = (char)(set[index + 1] - 1);
                 else
-                    ch2 = Lastchar;
+                    ch2 = LastChar;
 
                 desc.Append(CharDescription(ch1));
 
@@ -1304,15 +1204,17 @@ namespace System.Text.RegularExpressions
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     string group = set.Substring(index, lastindex - index + 1);
 
-                    IDictionaryEnumerator en = _definedCategories.GetEnumerator();
-                    while (en.MoveNext())
+                    foreach (var kvp in s_definedCategories)
                     {
-                        if (group.Equals(en.Value))
+                        if (group.Equals(kvp.Value))
                         {
                             if ((short)set[index + 1] > 0)
-                                desc.Append("\\p{" + en.Key + "}");
+                                desc.Append("\\p{");
                             else
-                                desc.Append("\\P{" + en.Key + "}");
+                                desc.Append("\\P{");
+
+                            desc.Append(kvp.Key);
+                            desc.Append('}');
 
                             found = true;
                             break;
@@ -1360,24 +1262,21 @@ namespace System.Text.RegularExpressions
                                                                      "Sm", "Sc", "Sk", "So",
                                                                      "Cn" };
 
-        /*
-        * CharDescription()
-        *
-        * Produces a human-readable description for a single character.
-        */
+        /// <summary>
+        /// Produces a human-readable description for a single character.
+        /// </summary>
         internal static String CharDescription(char ch)
         {
-            StringBuilder sb = new StringBuilder();
-            int shift;
-
             if (ch == '\\')
                 return "\\\\";
 
             if (ch >= ' ' && ch <= '~')
             {
-                sb.Append(ch);
-                return sb.ToString();
+                return ch.ToString();
             }
+
+            var sb = new StringBuilder();
+            int shift;
 
             if (ch < 256)
             {
@@ -1417,7 +1316,9 @@ namespace System.Text.RegularExpressions
 
 #endif
 
-        // Lower case mapping descriptor.
+        /// <summary>
+        /// Lower case mapping descriptor.
+        /// </summary>
         private struct LowerCaseMapping
         {
             internal LowerCaseMapping(char chMin, char chMax, int lcOp, int data)
@@ -1428,32 +1329,33 @@ namespace System.Text.RegularExpressions
                 _data = data;
             }
 
-            internal char _chMin;
-            internal char _chMax;
-            internal int _lcOp;
-            internal int _data;
+            internal readonly char _chMin;
+            internal readonly char _chMax;
+            internal readonly int _lcOp;
+            internal readonly int _data;
         }
 
-        /*
-         * SingleRangeComparer
-         *
-         * For sorting ranges; compare based on the first char in the range.
-         */
+        /// <summary>
+        /// For sorting ranges; compare based on the first char in the range.
+        /// </summary>
         private sealed class SingleRangeComparer : IComparer<SingleRange>
         {
+            public static readonly SingleRangeComparer Instance = new SingleRangeComparer();
+
+            private SingleRangeComparer()
+            {
+            }
+
             public int Compare(SingleRange x, SingleRange y)
             {
-                return ((x)._first < (y)._first ? -1
-                       : ((x)._first > (y)._first ? 1 : 0));
+                return x._first.CompareTo(y._first);
             }
         }
 
-        /*
-         * SingleRange
-         *
-         * A first/last pair representing a single range of characters.
-         */
-        private sealed class SingleRange
+        /// <summary>
+        /// A first/last pair representing a single range of characters.
+        /// </summary>
+        private struct SingleRange
         {
             internal SingleRange(char first, char last)
             {
@@ -1461,8 +1363,8 @@ namespace System.Text.RegularExpressions
                 _last = last;
             }
 
-            internal char _first;
-            internal char _last;
+            internal readonly char _first;
+            internal readonly char _last;
         }
     }
 }

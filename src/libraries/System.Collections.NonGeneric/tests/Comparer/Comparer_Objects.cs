@@ -298,7 +298,7 @@ public class Comparer_Objects
         var runClass = new Comparer_Objects();
         Boolean bResult = runClass.runTest();
 
-        Assert.Equal(true, bResult);
+        Assert.True(bResult);
     }
 }  
 

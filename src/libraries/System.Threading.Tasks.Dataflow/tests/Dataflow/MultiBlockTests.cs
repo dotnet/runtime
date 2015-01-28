@@ -70,7 +70,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var c = new ActionBlock<int>(i => completedCount++);
 
             t.LinkTo(c, i => true);
-            t.Completion.ContinueWith(_ => c.Complete());
+            t.Completion.ContinueWith(_ => c.Complete(), TaskScheduler.Default);
 
             for (int i = 0; i < ITERS; i++) t.Post(i);
             t.Complete();
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
             t.LinkTo(c, i => i % 2 == 0);
             t.LinkTo(DataflowBlock.NullTarget<int>());
-            t.Completion.ContinueWith(_ => c.Complete());
+            t.Completion.ContinueWith(_ => c.Complete(), TaskScheduler.Default);
 
             for (int i = 0; i < ITERS; i++) t.Post(i);
             t.Complete();
@@ -148,7 +148,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 s.LinkTo(c);
                 return s;
             }).ToList();
-            Task.Factory.ContinueWhenAll(singleAssignments.Select(s => s.Completion).ToArray(), _ => c.Complete());
+            Task.Factory.ContinueWhenAll(singleAssignments.Select(s => s.Completion).ToArray(), _ => c.Complete(), 
+                CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
 
             foreach (var s in singleAssignments) s.Post(1);
             c.Completion.Wait();
@@ -186,7 +187,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var c = new ActionBlock<int[]>(i => completedCount++);
 
             foreach (var input in inputs) input.LinkTo(b);
-            Task.Factory.ContinueWhenAll(inputs.Select(i => i.Completion).ToArray(), _ => b.Complete());
+            Task.Factory.ContinueWhenAll(inputs.Select(i => i.Completion).ToArray(), _ => b.Complete(),
+                CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             b.LinkWithCompletion(c);
 
             for (int i = 0; i < ITERS; i++)
