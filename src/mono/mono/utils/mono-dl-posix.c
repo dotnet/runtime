@@ -45,7 +45,7 @@ mono_dl_get_so_suffixes (void)
 int
 mono_dl_get_executable_path (char *buf, int buflen)
 {
-	return readlink ("/proc/self/exe", buf, buflen - 1;
+	return readlink ("/proc/self/exe", buf, buflen - 1);
 }
 #endif
 
