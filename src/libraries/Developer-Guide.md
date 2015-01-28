@@ -8,7 +8,7 @@ Visual Studio 2013 (Update 3 or later) or Visual Studio 2015 (Preview or later) 
 
 The following free downloads are compatible:
 * [Visual Studio Community 2013](http://www.visualstudio.com/en-us/visual-studio-community-vs.aspx)
-* [Visual Studio Ultimate 2015 Preview](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs)
+* [Visual Studio Ultimate 2015 Preview](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs) + [Microsoft Build Tools 2013](http://www.microsoft.com/en-us/download/details.aspx?id=40760)
 
 ## Building From the Command Line
 
