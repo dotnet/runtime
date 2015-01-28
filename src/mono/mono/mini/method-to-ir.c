@@ -5615,13 +5615,17 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				case MONO_TYPE_U8:
 					ins->dreg = mono_alloc_lreg (cfg);
 					break;
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+					ins->dreg = mono_alloc_ireg (cfg);
+					break;
 				case MONO_TYPE_R4:
 				case MONO_TYPE_R8:
 					ins->dreg = mono_alloc_freg (cfg);
 					break;
 				default:
 					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
-					ins->dreg = mono_alloc_preg (cfg);
+					ins->dreg = mono_alloc_ireg_ref (cfg);
 					break;
 				}
 
@@ -6015,7 +6019,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					return NULL;
 
 				MONO_INST_NEW (cfg, ins, opcode);
-				ins->dreg = mono_alloc_ireg (cfg);
+				ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 				ins->sreg1 = args [0]->dreg;
 				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_ACQ;
 				MONO_ADD_INS (cfg->cbb, ins);
