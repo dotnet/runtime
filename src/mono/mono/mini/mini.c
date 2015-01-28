@@ -3983,6 +3983,9 @@ mono_codegen (MonoCompile *cfg)
 
 		if (cfg->opt & MONO_OPT_PEEPHOLE)
 			mono_arch_peephole_pass_2 (cfg, bb);
+
+		if (cfg->gen_seq_points && !cfg->gen_seq_points_debug_data)
+			bb_deduplicate_op_il_seq_points (cfg, bb);
 	}
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE)

@@ -71,4 +71,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy);
 int
 seq_point_info_get_write_size (MonoSeqPointInfo* info);
 
+void
+bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb);
+
 #endif /* __MONO_SEQ_POINTS_H__ */

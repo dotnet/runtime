@@ -625,3 +625,21 @@ seq_point_info_get_write_size (MonoSeqPointInfo* info)
 
 	return size;
 }
+
+void
+bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	MonoInst *ins, *n, *prev;
+
+	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
+		if (ins->opcode != OP_IL_SEQ_POINT)
+			continue;
+
+		prev = mono_inst_prev (ins, FILTER_NOP);
+
+		if (!prev || ins == prev || prev->opcode != OP_IL_SEQ_POINT)
+			continue;
+
+		MONO_REMOVE_INS (bb, prev);
+	};
+}
