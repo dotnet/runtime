@@ -5571,6 +5571,94 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		} else if (strcmp (cmethod->name, "MemoryBarrier") == 0 && fsig->param_count == 0) {
 			return emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+		} else if (!strcmp (cmethod->name, "VolatileRead") && fsig->param_count == 1) {
+			guint32 opcode = 0;
+			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
+
+			if (fsig->params [0]->type == MONO_TYPE_I1)
+				opcode = OP_LOADI1_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_U1)
+				opcode = OP_LOADU1_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_I2)
+				opcode = OP_LOADI2_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_U2)
+				opcode = OP_LOADU2_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_I4)
+				opcode = OP_LOADI4_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_U4)
+				opcode = OP_LOADU4_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_U8)
+				opcode = OP_LOADI8_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_R4)
+				opcode = OP_LOADR4_MEMBASE;
+			else if (fsig->params [0]->type == MONO_TYPE_R8)
+				opcode = OP_LOADR8_MEMBASE;
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_I || fsig->params [0]->type == MONO_TYPE_U)
+				opcode = OP_LOAD_MEMBASE;
+
+			if (opcode) {
+				MONO_INST_NEW (cfg, ins, opcode);
+				ins->inst_basereg = args [0]->dreg;
+				ins->inst_offset = 0;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				switch (fsig->params [0]->type) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+					ins->dreg = mono_alloc_ireg (cfg);
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+					ins->dreg = mono_alloc_lreg (cfg);
+					break;
+				case MONO_TYPE_R4:
+				case MONO_TYPE_R8:
+					ins->dreg = mono_alloc_freg (cfg);
+					break;
+				default:
+					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
+					ins->dreg = mono_alloc_preg (cfg);
+					break;
+				}
+
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
+
+				return ins;
+			}
+		} else if (!strcmp (cmethod->name, "VolatileWrite") && fsig->param_count == 2) {
+			guint32 opcode = 0;
+			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
+
+			if (fsig->params [0]->type == MONO_TYPE_I1 || fsig->params [0]->type == MONO_TYPE_U1)
+				opcode = OP_STOREI1_MEMBASE_REG;
+			else if (fsig->params [0]->type == MONO_TYPE_I2 || fsig->params [0]->type == MONO_TYPE_U2)
+				opcode = OP_STOREI2_MEMBASE_REG;
+			else if (fsig->params [0]->type == MONO_TYPE_I4 || fsig->params [0]->type == MONO_TYPE_U4)
+				opcode = OP_STOREI4_MEMBASE_REG;
+			else if (fsig->params [0]->type == MONO_TYPE_I8 || fsig->params [0]->type == MONO_TYPE_U8)
+				opcode = OP_STOREI8_MEMBASE_REG;
+			else if (fsig->params [0]->type == MONO_TYPE_R4)
+				opcode = OP_STORER4_MEMBASE_REG;
+			else if (fsig->params [0]->type == MONO_TYPE_R8)
+				opcode = OP_STORER8_MEMBASE_REG;
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_I || fsig->params [0]->type == MONO_TYPE_U)
+				opcode = OP_STORE_MEMBASE_REG;
+
+			if (opcode) {
+				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+
+				MONO_INST_NEW (cfg, ins, opcode);
+				ins->sreg1 = args [1]->dreg;
+				ins->inst_destbasereg = args [0]->dreg;
+				ins->inst_offset = 0;
+				MONO_ADD_INS (cfg->cbb, ins);
+
+				return ins;
+			}
 		}
 	} else if (cmethod->klass == mono_defaults.monitor_class) {
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
