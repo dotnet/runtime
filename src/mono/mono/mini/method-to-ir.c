@@ -5860,8 +5860,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_I4;
 				break;
 			case MONO_TYPE_I8:
-			case MONO_TYPE_I:
 				ins->type = STACK_I8;
+				break;
+			case MONO_TYPE_I:
+#if SIZEOF_REGISTER == 8
+				ins->type = STACK_I8;
+#else
+				ins->type = STACK_I4;
+#endif
 				break;
 			default:
 				g_assert (mini_type_is_reference (cfg, fsig->params [0]));
@@ -5914,8 +5920,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					ins->type = STACK_I4;
 					break;
 				case MONO_TYPE_I8:
-				case MONO_TYPE_I:
 					ins->type = STACK_I8;
+					break;
+				case MONO_TYPE_I:
+#if SIZEOF_REGISTER == 8
+					ins->type = STACK_I8;
+#else
+					ins->type = STACK_I4;
+#endif
 					break;
 				default:
 					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
