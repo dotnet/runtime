@@ -225,10 +225,10 @@ public class CreateFromFile : MMFTestBase
             VerifyCreateFromFile("Loc216", "CreateFromFile_test2.txt", FileMode.Open, "map215");
 
             // "global/" prefix
-            VerifyCreateFromFile("Loc217", "CreateFromFile_test2.txt", FileMode.Open, "global/mapname");
+            VerifyCreateFromFile("Loc217", "CreateFromFile_test2.txt", FileMode.Open, "global/CFF_0");
 
             // "local/" prefix
-            VerifyCreateFromFile("Loc218", "CreateFromFile_test2.txt", FileMode.Open, "local/mapname");
+            VerifyCreateFromFile("Loc218", "CreateFromFile_test2.txt", FileMode.Open, "local/CFF_1");
 
 
             ////////////////////////////////////////////////////////////////////////
@@ -391,13 +391,13 @@ public class CreateFromFile : MMFTestBase
             // "global/" prefix
             using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
             {
-                VerifyCreateFromFile("Loc417", fs, "global/mapname", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc417", fs, "global/CFF_2", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // "local/" prefix
             using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
             {
-                VerifyCreateFromFile("Loc418", fs, "local/mapname", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc418", fs, "local/CFF_3", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // [] capacity
