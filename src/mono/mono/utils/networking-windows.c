@@ -8,7 +8,6 @@
 #include <mono/utils/networking.h>
 
 #if defined(HOST_WIN32)
-#include 
 
 void *
 mono_get_local_interfaces (int family, int *interface_count)

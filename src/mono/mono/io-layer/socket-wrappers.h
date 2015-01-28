@@ -44,6 +44,7 @@
 #define _wapi_FD_ISSET FD_ISSET
 #define _wapi_FD_SET FD_SET
 
+#define _wapi_cleanup_networking() ;
 #else
 
 #define WSA_FLAG_OVERLAPPED           0x01
