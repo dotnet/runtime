@@ -60,10 +60,10 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc116", "map115", 500);
 
             // "global/" prefix
-            VerifyCreateNew("Loc117", "global/mapname", 4096);
+            VerifyCreateNew("Loc117", "global/CN_0", 4096);
 
             // "local/" prefix
-            VerifyCreateNew("Loc118", "local/mapname", 4096);
+            VerifyCreateNew("Loc118", "local/CN_1", 4096);
 
             // [] capacity
 
@@ -146,10 +146,10 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc416", "map415", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // "global/" prefix
-            VerifyCreateNew("Loc417", "global/mapname", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc417", "global/CN_2", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // "local/" prefix
-            VerifyCreateNew("Loc418", "local/mapname", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc418", "local/CN_3", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // [] capacity
 
