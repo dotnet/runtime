@@ -1676,14 +1676,36 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 }
 
 static void
+dump_sample_hits_inner (MonoProfiler *prof, StatBuffer *sbuf, int recurse, GPtrArray **array);
+
+static void
 dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
+{
+	GPtrArray *array = NULL;
+	dump_sample_hits_inner (prof, sbuf, recurse, &array);
+
+	if (array) {
+		int i;
+		g_ptr_array_sort (array, g_direct_equal);
+		for (i = 0; i < array->len; ++i) {
+			MonoJitInfo *cur = array->pdata [i];
+			//Ignore duplicates
+			if (i > 0 && array->pdata [i - 1] == cur)
+				continue;
+			method_jitted (prof, mono_jit_info_get_method (cur), cur, MONO_PROFILE_OK);
+		}
+	}
+}
+
+static void
+dump_sample_hits_inner (MonoProfiler *prof, StatBuffer *sbuf, int recurse, GPtrArray **array)
 {
 	uintptr_t *sample;
 	LogBuffer *logbuffer;
 	if (!sbuf)
 		return;
 	if (recurse && sbuf->next) {
-		dump_sample_hits (prof, sbuf->next, 1);
+		dump_sample_hits_inner (prof, sbuf->next, 1, array);
 		free_buffer (sbuf->next, sbuf->next->size);
 		sbuf->next = NULL;
 	}
@@ -1704,8 +1726,12 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
 
 			if (!method) {
 				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
-				if (ji)
+				if (ji) {
 					managed_sample_base [i * 4 + 0] = (uintptr_t)mono_jit_info_get_method (ji);
+					if (!*array)
+						*array = g_ptr_array_new ();
+					g_ptr_array_add (*array, ji);
+				}
 			}
 		}
 		logbuffer = ensure_logbuf (20 + count * 8);
