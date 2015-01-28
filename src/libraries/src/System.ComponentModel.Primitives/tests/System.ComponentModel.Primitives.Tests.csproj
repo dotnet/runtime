@@ -2,41 +2,34 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <AssemblyName>System.IO.Pipes.BasicTests</AssemblyName>
-    <SignAssembly>false</SignAssembly>
-    <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
-    <NuGetPackageImportStamp>d2615b94</NuGetPackageImportStamp>
+    <ProjectGuid>{C9534425-93FB-494F-8DD8-1E4E3E626FDE}</ProjectGuid>
+    <AssemblyName>System.ComponentModel.Primitives.Tests</AssemblyName>
+    <RootNamespace>System.ComponentModel.Primitives.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="NamedPipesSimpleTest.cs" />
-    <Compile Include="AnonymousPipesSimpleTest.cs" />
+    <Compile Include="ComponentModelPrimitivesBasicTests.cs" />
   </ItemGroup>
-  <!-- Automatically added by VS -->
+  <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.Pipes.csproj">
-      <Project>{16ee5522-f387-4c9e-9ef2-b5134b043f37}</Project>
-      <Name>System.IO.Pipes</Name>
+    <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
+    <ProjectReference Include="..\src\System.ComponentModel.Primitives.csproj">
+      <Project>{F620F382-30D1-451E-B125-2A612F92068B}</Project>
+      <Name>System.ComponentModel.Primitives</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
