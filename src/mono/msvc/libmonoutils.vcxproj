@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -33,6 +33,7 @@
     <ClCompile Include="..\mono\utils\mono-conc-hashtable.c" />
     <ClCompile Include="..\mono\utils\mono-context.c" />
     <ClCompile Include="..\mono\utils\mono-counters.c" />
+    <ClCompile Include="..\mono\utils\mono-dl-windows.c" />
     <ClCompile Include="..\mono\utils\mono-dl.c" />
     <ClCompile Include="..\mono\utils\mono-error.c" />
     <ClCompile Include="..\mono\utils\mono-filemap.c" />
