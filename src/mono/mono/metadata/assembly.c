@@ -1238,12 +1238,32 @@ mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly
 {
 	AssemblySearchHook *hook;
 
-	if (postload)
-		mono_domain_assembly_postload_search(aname, requesting, refonly);
-
 	for (hook = assembly_search_hook; hook; hook = hook->next) {
 		if ((hook->refonly == refonly) && (hook->postload == postload)) {
-			MonoAssembly *ass = hook->func (aname, hook->user_data);
+			MonoAssembly *ass;
+			/**
+			  * A little explanation is in order here.
+			  *
+			  * The default postload search hook needs to know the requesting assembly to report it to managed code.
+			  * The embedding API exposes a search hook that doesn't take such argument.
+			  *
+			  * The original fix would call the default search hook before all the registered ones and pass
+			  * the requesting assembly to it. It works but broke a very suddle embedding API aspect that some users
+			  * rely on. Which is the ordering between user hooks and the default runtime hook.
+			  *
+			  * Registering the hook after mono_jit_init would let your hook run before the default one and
+			  * when using it to handle non standard app layouts this could save your app from a massive amount
+			  * of syscalls that the default hook does when probing all sorts of places. Slow targets with horrible IO
+			  * are all using this trick and if we broke this assumption they would be very disapointed at us.
+			  *
+			  * So what's the fix? We register the default hook using regular means and special case it when iterating
+			  * over the registered hooks. This preserves ordering and enables managed resolve hooks to get the requesting
+			  * assembly.
+			  */
+			if (hook->func == (void*)mono_domain_assembly_postload_search)
+				ass = mono_domain_assembly_postload_search (aname, requesting, refonly);
+			else
+				ass = hook->func (aname, hook->user_data);
 			if (ass)
 				return ass;
 		}

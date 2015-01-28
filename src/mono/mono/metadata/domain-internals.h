@@ -664,7 +664,7 @@ MonoReflectionAssembly *
 mono_try_assembly_resolve (MonoDomain *domain, MonoString *fname, MonoAssembly *requesting, gboolean refonly) MONO_INTERNAL;
 
 MonoAssembly *
-mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly);
+mono_domain_assembly_postload_search (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly) MONO_INTERNAL;
 
 MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
 						const char       *basedir, 

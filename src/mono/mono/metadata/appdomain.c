@@ -230,6 +230,8 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_install_assembly_refonly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (FALSE));
 	mono_install_assembly_refonly_search_hook (mono_domain_assembly_search, GUINT_TO_POINTER (TRUE));
+	mono_install_assembly_postload_search_hook ((void*)mono_domain_assembly_postload_search, GUINT_TO_POINTER (FALSE));
+	mono_install_assembly_postload_refonly_search_hook ((void*)mono_domain_assembly_postload_search, GUINT_TO_POINTER (TRUE));
 	mono_install_assembly_load_hook (mono_domain_fire_assembly_load, NULL);
 	mono_install_lookup_dynamic_token (mono_reflection_lookup_dynamic_token);
 
