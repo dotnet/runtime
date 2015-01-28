@@ -1195,9 +1195,11 @@ threadpool_start_thread (ThreadPool *tp)
 #ifndef DISABLE_PERFCOUNTERS
 			mono_perfcounter_update_value (tp->pc_nthreads, TRUE, 1);
 #endif
-			thread = mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
-			if (!tp->is_io) {
+			if (tp->is_io) {
+				thread = mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
+			} else {
 				mono_mutex_lock (&threads_lock);
+				thread = mono_thread_create_internal (mono_get_root_domain (), tp->async_invoke, tp, TRUE, stack_size);
 				g_assert (threads != NULL);
 				g_ptr_array_add (threads, thread);
 				mono_mutex_unlock (&threads_lock);
