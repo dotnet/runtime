@@ -65,7 +65,7 @@ namespace System.Diagnostics.ProcessTests
             return p;
         }
 
-        [Fact]
+        [Fact, ActiveIssue(541)]
         public static void Process_BasePriority()
         {
             Process p = CreateProcessInfinite();
@@ -504,7 +504,7 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
+        [Fact, ActiveIssue(541)]
         public static void Process_PriorityClass()
         {
             Process p = CreateProcessInfinite();
