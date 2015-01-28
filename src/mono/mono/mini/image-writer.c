@@ -1843,6 +1843,7 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 #endif
 }
 
+#ifndef USE_BIN_WRITER
 static void 
 asm_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 {
@@ -1853,6 +1854,7 @@ asm_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 	asm_writer_emit_alignment (acfg, size);
 #endif
 }
+#endif
 
 #ifdef __native_client_codegen__
 static void

@@ -7991,7 +7991,7 @@ static void
 emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 {
 	char symbol [256];
-	int i, first_plt_got_patch, buf_size;
+	int i, first_plt_got_patch = 0, buf_size;
 	guint8 *p, *buf;
 	guint32 *got_info_offsets;
 	GotInfo *info = llvm ? &acfg->llvm_got_info : &acfg->got_info;

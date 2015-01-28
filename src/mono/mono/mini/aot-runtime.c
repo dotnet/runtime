@@ -1680,30 +1680,6 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, char **out_msg)
 	return usable;
 }
 
-/* This returns an interop address */
-static void*
-get_arm_bl_target (guint32 *ins_addr)
-{
-#ifdef TARGET_ARM
-	guint32 ins = *ins_addr;
-	gint32 offset;
-
-	if ((ins >> ARMCOND_SHIFT) == ARMCOND_NV) {
-		/* blx */
-		offset = (((int)(((ins & 0xffffff) << 1) | ((ins >> 24) & 0x1))) << 7) >> 7;
-		return (char*)ins_addr + (offset * 2) + 8 + 1;
-	} else {
-		offset = (((int)ins & 0xffffff) << 8) >> 8;
-		return (char*)ins_addr + (offset * 4) + 8;
-	}
-#elif defined(TARGET_ARM64)
-	return mono_arch_get_call_target (((guint8*)ins_addr) + 4);
-#else
-	g_assert_not_reached ();
-	return NULL;
-#endif
-}
-
 /*
  * TABLE should point to a table of call instructions. Return the address called by the INDEXth entry.
  */
@@ -4827,7 +4803,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	MonoAotModule *amodule;
 	gpointer code;
 	guint32 *ut, *ut_end, *entry;
-	int low, high, entry_index;
+	int low, high, entry_index = 0;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_extra_method (method, &amodule);
