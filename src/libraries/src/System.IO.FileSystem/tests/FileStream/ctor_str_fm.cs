@@ -57,8 +57,8 @@ namespace System.IO.FileSystem.Tests
                 // Ensure that the file was re-created
                 Assert.Equal(0L, fs.Length);
                 Assert.Equal(0L, fs.Position);
-                Assert.Equal(true, fs.CanRead);
-                Assert.Equal(true, fs.CanWrite);
+                Assert.True(fs.CanRead);
+                Assert.True(fs.CanWrite);
             }
         }
 
@@ -76,8 +76,8 @@ namespace System.IO.FileSystem.Tests
             using (FileStream fs = new FileStream(fileName, FileMode.CreateNew))
             {
                 fs.WriteByte(0);
-                Assert.Equal(true, fs.CanRead);
-                Assert.Equal(true, fs.CanWrite);
+                Assert.True(fs.CanRead);
+                Assert.True(fs.CanWrite);
             }
 
             Assert.Throws<IOException>(() => new FileStream(fileName, FileMode.CreateNew));
@@ -105,8 +105,8 @@ namespace System.IO.FileSystem.Tests
                 // Ensure that the file was re-opened
                 Assert.Equal(1L, fs.Length);
                 Assert.Equal(0L, fs.Position);
-                Assert.Equal(true, fs.CanRead);
-                Assert.Equal(true, fs.CanWrite);
+                Assert.True(fs.CanRead);
+                Assert.True(fs.CanWrite);
             }
         }
 
@@ -131,8 +131,8 @@ namespace System.IO.FileSystem.Tests
                 // Ensure that the file was re-opened
                 Assert.Equal(1L, fs.Length);
                 Assert.Equal(0L, fs.Position);
-                Assert.Equal(true, fs.CanRead);
-                Assert.Equal(true, fs.CanWrite);
+                Assert.True(fs.CanRead);
+                Assert.True(fs.CanWrite);
             }
         }
 
@@ -158,8 +158,8 @@ namespace System.IO.FileSystem.Tests
                 // Ensure that the file was re-opened and truncated
                 Assert.Equal(0L, fs.Length);
                 Assert.Equal(0L, fs.Position);
-                Assert.Equal(true, fs.CanRead);
-                Assert.Equal(true, fs.CanWrite);
+                Assert.True(fs.CanRead);
+                Assert.True(fs.CanWrite);
             }
         }
 
@@ -184,9 +184,9 @@ namespace System.IO.FileSystem.Tests
                 // Ensure that the file was re-opened and position set to end
                 Assert.Equal(1L, fs.Length);
                 Assert.Equal(1L, fs.Position);
-                Assert.Equal(false, fs.CanRead);
-                Assert.Equal(true, fs.CanSeek);
-                Assert.Equal(true, fs.CanWrite);
+                Assert.False(fs.CanRead);
+                Assert.True(fs.CanSeek);
+                Assert.True(fs.CanWrite);
                 Assert.Throws<IOException>(() => fs.Seek(-1, SeekOrigin.Current));
                 Assert.Throws<NotSupportedException>(() => fs.ReadByte());
             }

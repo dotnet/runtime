@@ -66,7 +66,7 @@ namespace System.Xml
 
         public static Uri ToUri(string s)
         {
-            if (s != null && s.Length > 0)
+            if (!string.IsNullOrEmpty(s))
             { //string.Empty is a valid uri but not "   "
                 s = TrimString(s);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
@@ -201,7 +201,7 @@ namespace System.Xml
 
         public static unsafe void VerifyCharData(string data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
-            if (data == null || data.Length == 0)
+            if (string.IsNullOrEmpty(data))
             {
                 return;
             }
@@ -243,7 +243,7 @@ namespace System.Xml
 
         public static string VerifyQName(string name, ExceptionType exceptionType)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentNullException("name");
             }

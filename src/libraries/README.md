@@ -36,6 +36,9 @@ Today, the repository contains the following components:
   a linked list dictionary, a bit vector, and collections that contain only strings. These collections exist in 
   .NET Core primarily for backwards compatibility and generally should be avoided when writing new code.
 
+* **System.ComponentModel**. Provides types used to implement the run-time and design-time behavior of components 
+  and controls.
+
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
 
@@ -52,6 +55,9 @@ Today, the repository contains the following components:
 
 * **System.IO.FileSystem.DriveInfo**. Provides the System.IO.DriveInfo class, which enables developers to query local drive    information.
 
+* **System.IO.MemoryMappedFiles**. Provides access to memory-mapped files, enabling code to read and write files by
+  reading and writing memory.
+
 * **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
   and/or named pipes.
 
@@ -66,6 +72,9 @@ Today, the repository contains the following components:
 
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
+
+* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
+  across common cultural standards, as well as support to create custom Encoding Providers.
 
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.

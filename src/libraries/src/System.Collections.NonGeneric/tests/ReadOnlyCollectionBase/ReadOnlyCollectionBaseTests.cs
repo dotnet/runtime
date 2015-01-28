@@ -323,7 +323,7 @@ public class ReadOnlyCollectionBaseTests
             bResult = false;
             Console.WriteLine("FAiL! Error Err_9999zzz! Uncaught Exception in main(), exc_main==" + exc_main);
         }
-        Assert.Equal(true, bResult);
+        Assert.True(bResult);
     }
 }
 

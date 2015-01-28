@@ -576,7 +576,7 @@ namespace System.Xml.Linq
             }
         }
 
-        IEnumerable<XElement> GetElementsAfterSelf(XName name)
+        private IEnumerable<XElement> GetElementsAfterSelf(XName name)
         {
             XNode n = this;
             while (n.parent != null && n != n.parent.content)
@@ -587,7 +587,7 @@ namespace System.Xml.Linq
             }
         }
 
-        IEnumerable<XElement> GetElementsBeforeSelf(XName name)
+        private IEnumerable<XElement> GetElementsBeforeSelf(XName name)
         {
             if (parent != null)
             {
@@ -628,7 +628,7 @@ namespace System.Xml.Linq
             return ws;
         }
 
-        string GetXmlString(SaveOptions o)
+        private string GetXmlString(SaveOptions o)
         {
             using (StringWriter sw = new StringWriter(CultureInfo.InvariantCulture))
             {

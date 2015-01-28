@@ -4,14 +4,11 @@
 // The Regex class represents a single compiled instance of a regular
 // expression.
 
-using System;
-using System.Threading;
 using System.Collections;
-using System.Reflection;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -344,7 +341,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Given a group number, maps it to a group name. Note that nubmered
+         * Given a group number, maps it to a group name. Note that numbered
          * groups automatically get a group name that is the decimal string
          * equivalent of its number.
          *
@@ -380,7 +377,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Given a group name, maps it to a group number. Note that nubmered
+         * Given a group name, maps it to a group number. Note that numbered
          * groups automatically get a group name that is the decimal string
          * equivalent of its number.
          *

@@ -7,30 +7,20 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    // Reliability notes:
-    // ReleaseHandle has reliability guarantee of Cer.Success, as defined by SafeHandle.
-    // It gets prepared as a CER at instance construction time.
-
     [SecurityCritical]
 #pragma warning disable 0618    // SafeBuffer is obsolete
-    public sealed class SafeMemoryMappedViewHandle : SafeBuffer
+    public sealed partial class SafeMemoryMappedViewHandle : SafeBuffer
 #pragma warning restore
     {
-        internal SafeMemoryMappedViewHandle() : base(true) { }
-
-        internal SafeMemoryMappedViewHandle(IntPtr handle, bool ownsHandle) : base(ownsHandle)
+        internal SafeMemoryMappedViewHandle() 
+            : base(true) 
         {
-            base.SetHandle(handle);
         }
 
-        override protected bool ReleaseHandle()
+        internal SafeMemoryMappedViewHandle(IntPtr handle, bool ownsHandle) 
+            : base(ownsHandle)
         {
-            if (Interop.mincore.UnmapViewOfFile(handle) != 0)
-            {
-                handle = IntPtr.Zero;
-                return true;
-            }
-            return false;
+            base.SetHandle(handle);
         }
     }
 }

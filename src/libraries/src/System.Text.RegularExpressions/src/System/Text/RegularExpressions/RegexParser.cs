@@ -1175,7 +1175,7 @@ namespace System.Text.RegularExpressions
         }
 
         /*
-         * Scans $ patterns recognized within replacment patterns
+         * Scans $ patterns recognized within replacement patterns
          */
         internal RegexNode ScanDollar()
         {

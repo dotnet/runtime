@@ -516,7 +516,7 @@ public class DictionaryBase_UnitTests
             Console.WriteLine("FAiL! Error Err_9999zzz! Uncaught Exception in main(), exc_main==" + exc_main);
         }
 
-        Assert.Equal(true, bResult);
+        Assert.True(bResult);
     }
 
     public class FooKey : IComparable

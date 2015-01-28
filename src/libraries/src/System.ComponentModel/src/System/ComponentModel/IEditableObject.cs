@@ -14,12 +14,12 @@ namespace System.ComponentModel
         void BeginEdit();
 
         /// <summary>
-        /// Discards changes since the last BeginEdit call. 
+        /// Pushes changes since the last BeginEdit into the underlying object.
         /// </summary>
         void EndEdit();
 
         /// <summary>
-        /// Pushes changes since the last BeginEdit into the underlying object. 
+        /// Discards changes since the last BeginEdit call.
         /// </summary>
         void CancelEdit();
     }
