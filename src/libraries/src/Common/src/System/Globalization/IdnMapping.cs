@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-//
 // This file contains the IDN functions and implementation.
 //
 // This allows encoding of non-ASCII domain names in a "punycode" form,
@@ -23,9 +22,7 @@
 //  RFC 3490 - Internationalizing Domain Names in Applications (IDNA)
 //  RFC 3491 - Nameprep: A Stringprep Profile for Internationalized Domain Names (IDN)
 //  RFC 3492 - Punycode: A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA)
-//
 
-using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -36,10 +33,10 @@ namespace System.Globalization
 #else
     public
 #endif
-    sealed class IdnMapping
+    sealed partial class IdnMapping
     {
-        bool m_bAllowUnassigned;
-        bool m_bUseStd3AsciiRules;
+        private bool _allowUnassigned;
+        private bool _useStd3AsciiRules;
 
         public IdnMapping()
         {
@@ -47,46 +44,34 @@ namespace System.Globalization
 
         public bool AllowUnassigned
         {
-            get
-            {
-                return this.m_bAllowUnassigned;
-            }
-
-            set
-            {
-                this.m_bAllowUnassigned = value;
-            }
+            get { return _allowUnassigned; }
+            set { _allowUnassigned = value; }
         }
 
         public bool UseStd3AsciiRules
         {
-            get
-            {
-                return this.m_bUseStd3AsciiRules;
-            }
-
-            set
-            {
-                this.m_bUseStd3AsciiRules = value;
-            }
+            get { return _useStd3AsciiRules; }
+            set { _useStd3AsciiRules = value; }
         }
 
         // Gets ASCII (Punycode) version of the string
-        public String GetAscii(String unicode)
+        public string GetAscii(string unicode)
         {
             return GetAscii(unicode, 0);
         }
 
-        public String GetAscii(String unicode, int index)
+        public string GetAscii(string unicode, int index)
         {
-            if (unicode == null) throw new ArgumentNullException("unicode");
+            if (unicode == null) 
+                throw new ArgumentNullException("unicode");
             Contract.EndContractBlock();
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
-        public String GetAscii(String unicode, int index, int count)
+        public string GetAscii(string unicode, int index, int count)
         {
-            if (unicode == null) throw new ArgumentNullException("unicode");
+            if (unicode == null) 
+                throw new ArgumentNullException("unicode");
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > unicode.Length)
@@ -98,71 +83,36 @@ namespace System.Globalization
             // We're only using part of the string
             unicode = unicode.Substring(index, count);
 
-            return GetAsciiUsingOS(unicode);
-        }
-
-        [System.Security.SecuritySafeCritical]
-        private String GetAsciiUsingOS(String unicode)
-        {
             if (unicode.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_IdnBadLabelSize, "unicode");
             }
-
             if (unicode[unicode.Length - 1] == 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), "unicode");
             }
 
-            uint flags = (uint)((AllowUnassigned ? IDN_ALLOW_UNASSIGNED : 0) | (UseStd3AsciiRules ? IDN_USE_STD3_ASCII_RULES : 0));
-            int length = Interop.mincore.IdnToAscii(flags, unicode, unicode.Length, null, 0);
-
-            int lastError;
-
-            if (length == 0)
-            {
-                lastError = Marshal.GetLastWin32Error();
-                if (lastError == ERROR_INVALID_NAME)
-                {
-                    throw new ArgumentException(SR.Argument_IdnIllegalName, "unicode");
-                }
-
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "unicode");
-            }
-
-            char[] output = new char[length];
-
-            length = Interop.mincore.IdnToAscii(flags, unicode, unicode.Length, output, length);
-            if (length == 0)
-            {
-                lastError = Marshal.GetLastWin32Error();
-                if (lastError == ERROR_INVALID_NAME)
-                {
-                    throw new ArgumentException(SR.Argument_IdnIllegalName, "unicode");
-                }
-
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, "unicode");
-            }
-
-            return new String(output, 0, length);
+            return GetAsciiCore(unicode);
         }
 
         // Gets Unicode version of the string.  Normalized and limited to IDNA characters.
-        public String GetUnicode(String ascii)
+        public string GetUnicode(string ascii)
         {
             return GetUnicode(ascii, 0);
         }
 
-        public String GetUnicode(String ascii, int index)
+        public string GetUnicode(string ascii, int index)
         {
-            if (ascii == null) throw new ArgumentNullException("ascii");
+            if (ascii == null) 
+                throw new ArgumentNullException("ascii");
             Contract.EndContractBlock();
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
-        public String GetUnicode(String ascii, int index, int count)
+        public string GetUnicode(string ascii, int index, int count)
         {
-            if (ascii == null) throw new ArgumentNullException("ascii");
+            if (ascii == null) 
+                throw new ArgumentNullException("ascii");
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? "index" : "count", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > ascii.Length)
@@ -180,66 +130,21 @@ namespace System.Globalization
             // We're only using part of the string
             ascii = ascii.Substring(index, count);
 
-            return GetUnicodeUsingOS(ascii);
+            return GetUnicodeCore(ascii);
         }
 
-
-        [System.Security.SecuritySafeCritical]
-        private string GetUnicodeUsingOS(string ascii)
-        {
-            uint flags = (uint)((AllowUnassigned ? IDN_ALLOW_UNASSIGNED : 0) | (UseStd3AsciiRules ? IDN_USE_STD3_ASCII_RULES : 0));
-            int length = Interop.mincore.IdnToUnicode(flags, ascii, ascii.Length, null, 0);
-            int lastError;
-
-            if (length == 0)
-            {
-                lastError = Marshal.GetLastWin32Error();
-                if (lastError == ERROR_INVALID_NAME)
-                {
-                    throw new ArgumentException(SR.Argument_IdnIllegalName, "ascii");
-                }
-
-                throw new ArgumentException(SR.Argument_IdnBadPunycode, "ascii");
-            }
-
-            char[] output = new char[length];
-
-            length = Interop.mincore.IdnToUnicode(flags, ascii, ascii.Length, output, length);
-            if (length == 0)
-            {
-                lastError = Marshal.GetLastWin32Error();
-                if (lastError == ERROR_INVALID_NAME)
-                {
-                    throw new ArgumentException(SR.Argument_IdnIllegalName, "ascii");
-                }
-
-                throw new ArgumentException(SR.Argument_IdnBadPunycode, "ascii");
-            }
-
-            return new String(output, 0, length);
-        }
-
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             IdnMapping that = obj as IdnMapping;
-
-            if (that != null)
-            {
-                return this.m_bAllowUnassigned == that.m_bAllowUnassigned &&
-                        this.m_bUseStd3AsciiRules == that.m_bUseStd3AsciiRules;
-            }
-
-            return (false);
+            return 
+                that != null &&
+                _allowUnassigned == that._allowUnassigned &&
+                _useStd3AsciiRules == that._useStd3AsciiRules;
         }
 
         public override int GetHashCode()
         {
-            return (this.m_bAllowUnassigned ? 100 : 200) + (this.m_bUseStd3AsciiRules ? 1000 : 2000);
+            return (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
         }
-
-        private const int IDN_ALLOW_UNASSIGNED = 0x1;
-        private const int IDN_USE_STD3_ASCII_RULES = 0x2;
-        private const int ERROR_INVALID_NAME = 123;
     }
 }
-

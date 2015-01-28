@@ -24,11 +24,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Interop.Globalization.Extensions.manual.cs">
-      <Link>Common\Interop\Interop.Globalization.Extensions.manual.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs">
-      <Link>Common\System\StringNormalizationExtensions.cs</Link>
+        <Link>Common\System\StringNormalizationExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs">
       <Link>Common\System\Globalization\IdnMapping.cs</Link>
@@ -37,7 +34,29 @@
       <Link>Common\System\Text\NormalizationForm.cs</Link>
     </Compile>
     <Compile Include="System\Globalization\Extensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.Globalization.Extensions.manual.cs">
+       <Link>Common\Interop\Interop.Globalization.Extensions.manual.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Windows.cs">
+      <Link>Common\System\Globalization\IdnMapping.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Windows.cs">
+        <Link>Common\System\StringNormalizationExtensions.Windows.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.Unix.cs">
+      <Link>Common\System\Globalization\IdnMapping.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.Unix.cs">
+        <Link>Common\System\StringNormalizationExtensions.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
