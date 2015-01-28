@@ -311,7 +311,7 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 		suffixlen = 0;
 	} else {
 		idx--;
-		if (mono_dl_get_so_suffixes () [idx] == '\0')
+		if (mono_dl_get_so_suffixes () [idx][0] == '\0')
 			return NULL;
 		first_call = FALSE;
 		suffix = mono_dl_get_so_suffixes () [idx];
