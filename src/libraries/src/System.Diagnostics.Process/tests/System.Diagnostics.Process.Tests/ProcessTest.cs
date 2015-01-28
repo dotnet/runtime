@@ -70,9 +70,15 @@ namespace System.Diagnostics.ProcessTests
         {
             Process p = CreateProcessInfinite();
             p.Start();
-            Assert.Equal(p.BasePriority, 8 /*Normal*/);
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                Assert.Equal(8, p.BasePriority);
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
         }
 
         private static bool s_Process_EnableRaiseEvents_isExitedEventHandlerCalled = false;
@@ -155,9 +161,15 @@ namespace System.Diagnostics.ProcessTests
         {
             Process p = CreateProcessInfinite();
             p.Start();
-            Assert.Equal(p.Id, Interop.GetProcessId(p.SafeHandle));
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                Assert.Equal(p.Id, Interop.GetProcessId(p.SafeHandle));
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
         }
 
         [Fact]
@@ -170,10 +182,16 @@ namespace System.Diagnostics.ProcessTests
 
             p = CreateProcessInfinite();
             p.Start();
-            Assert.False(p.HasExited, "Process_HasExited002 failed");
-
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                Assert.False(p.HasExited, "Process_HasExited002 failed");
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
+            
             Assert.True(p.HasExited, "Process_HasExited003 failed");
         }
 
@@ -292,13 +310,19 @@ namespace System.Diagnostics.ProcessTests
         {
             Process p = CreateProcessInfinite();
             p.Start();
-            IntPtr minWorkingSet, maxWorkingset;
-            uint flags;
-            Interop.GetProcessWorkingSetSizeEx(p.SafeHandle, out minWorkingSet, out maxWorkingset, out flags);
-            Assert.Equal(p.MinWorkingSet, minWorkingSet);
-            Assert.Equal(p.MaxWorkingSet, maxWorkingset);
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                IntPtr minWorkingSet, maxWorkingset;
+                uint flags;
+                Interop.GetProcessWorkingSetSizeEx(p.SafeHandle, out minWorkingSet, out maxWorkingset, out flags);
+                Assert.Equal(p.MinWorkingSet, minWorkingSet);
+                Assert.Equal(p.MaxWorkingSet, maxWorkingset);
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
         }
 
 
@@ -467,11 +491,17 @@ namespace System.Diagnostics.ProcessTests
         {
             Process p = CreateProcessInfinite();
             p.Start();
-            Assert.True(p.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
-            p.PriorityBoostEnabled = false;
-            Assert.False(p.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                Assert.True(p.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
+                p.PriorityBoostEnabled = false;
+                Assert.False(p.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
         }
 
         [Fact]
@@ -479,11 +509,17 @@ namespace System.Diagnostics.ProcessTests
         {
             Process p = CreateProcessInfinite();
             p.Start();
-            Assert.Equal(p.PriorityClass, ProcessPriorityClass.Normal);
-            p.PriorityClass = ProcessPriorityClass.High;
-            Assert.Equal(p.PriorityClass, ProcessPriorityClass.High);
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                Assert.Equal(p.PriorityClass, ProcessPriorityClass.Normal);
+                p.PriorityClass = ProcessPriorityClass.High;
+                Assert.Equal(p.PriorityClass, ProcessPriorityClass.High);
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
         }
 
         [Fact]
@@ -498,9 +534,15 @@ namespace System.Diagnostics.ProcessTests
         {
             Process p = CreateProcessInfinite();
             p.Start();
-            Assert.Equal(p.ProcessName, "ProcessTest_ConsoleApp");
-            p.Kill();
-            p.WaitForExit();
+            try
+            {
+                Assert.Equal(p.ProcessName, "ProcessTest_ConsoleApp");
+            }
+            finally
+            {
+                p.Kill();
+                p.WaitForExit();
+            }
         }
 
         [Fact]
