@@ -1,321 +1,564 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class BatchBlockTests
     {
         [Fact]
-        public void RunBatchBlockTests()
+        public void TestCtor()
         {
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new BatchBlock<int>(1, new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) : new BatchBlock<int>(1)));
-            Assert.True(ISourceBlockTestHelper.TestLinkTo<int[]>(ConstructBatchNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestReserveMessageAndReleaseReservation<int[]>(ConstructBatchNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestConsumeMessage<int[]>(ConstructBatchNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveWithFilter<int[]>(ConstructBatchNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveAll<int[]>(ConstructBatchNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestCancelWhileReserve(ct => new BatchBlock<int>(1, new GroupingDataflowBlockOptions { CancellationToken = ct }), source => (source as BatchBlock<int>).Post(0), source => (source as BatchBlock<int>).OutputCount));
-            Assert.True(ITargetBlockTestHelper.TestOfferMessage<int>(new BatchBlock<int>(1)));
-            Assert.True(ITargetBlockTestHelper.TestPost<int>(new BatchBlock<int>(1)));
-            Assert.True(ITargetBlockTestHelper.TestComplete<int>(new BatchBlock<int>(1)));
-            Assert.True(ITargetBlockTestHelper.TestCompletionTask<int>(new BatchBlock<int>(1)));
-            Assert.True(ITargetBlockTestHelper.TestNonGreedyPost(new BatchBlock<int>(1, new GroupingDataflowBlockOptions { Greedy = false })));
-
-            Assert.True(TestReleaseOnReserveException(linkBadFirst: true));
-            Assert.True(TestReleaseOnReserveException(linkBadFirst: false));
-            Assert.True(TestMaxNumberOfGroups(greedy: true, sync: true));
-            Assert.True(TestMaxNumberOfGroups(greedy: true, sync: false));
-            // {non-greedy sync} is intentioanlly skipped because it is not supported by the block
-            Assert.True(TestMaxNumberOfGroups(greedy: false, sync: false));
-            Assert.True(TestTriggerBatch(boundedCapacity: DataflowBlockOptions.Unbounded));
-            Assert.True(TestTriggerBatchRacingWithSendAsync(greedy: true));
-            Assert.True(TestTriggerBatchRacingWithSendAsync(greedy: false));
-            Assert.True(TestTriggerBatchRacingWithComplete(greedy: true));
-            Assert.True(TestTriggerBatchRacingWithComplete(greedy: false));
+            var blocks = new[]
+            {
+                new BatchBlock<int>(1),
+                new BatchBlock<int>(2, new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 }),
+                new BatchBlock<int>(3, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new BatchBlock<int>(4, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
+            };
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                Assert.Equal(expected: i + 1, actual: blocks[i].BatchSize);
+                Assert.Equal(expected: 0, actual: blocks[i].OutputCount);
+                Assert.NotNull(blocks[i].Completion);
+                Assert.False(blocks[i].Completion.IsCompleted);
+            }
         }
 
         [Fact]
-        public void TestBatchBlockConstructor()
-        {
-            // size without decline without option
-            var block = new BatchBlock<int>(42);
-            Assert.False(block.BatchSize != 42, "Constructor failed! BatchSize doesn't match for a brand new BatchBlock.");
-
-            // size with decline without option
-            block = new BatchBlock<int>(43, new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 });
-            Assert.False(block.BatchSize != 43, "Constructor failed! BatchSize doesn't match for a brand new BatchBlock.");
-
-            // size with decline with not cancelled token and default scheduler
-            block = new BatchBlock<int>(44, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 });
-            Assert.False(block.BatchSize != 44, "Constructor failed! BatchSize doesn't match for a brand new BatchBlock.");
-
-            //with a cancelled token and default scheduler
-            var token = new CancellationToken(true);
-            block = new BatchBlock<int>(45, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token, MaxNumberOfGroups = 1 });
-            Assert.False(block.BatchSize != 45, "Constructor failed! BatchSize doesn't match for a brand new BatchBlock.");
-        }
-
-        [Fact]
-        public void TestBatchInvalidArgumentValidation()
+        public void TestArgumentExceptions()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BatchBlock<int>(-1));
             Assert.Throws<ArgumentNullException>(() => new BatchBlock<int>(2, null));
-            Assert.True(ITargetBlockTestHelper.TestArgumentsExceptions<int>(new BatchBlock<int>(1)));
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<int[]>(new BatchBlock<int>(1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BatchBlock<int>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 1 }));
+            DataflowTestHelpers.TestArgumentsExceptions(new BatchBlock<int>(1));
         }
 
         [Fact]
-        [OuterLoop]
-        public void TestBatchNonGreedyCombo()
+        public void TestToString()
         {
-            bool passed = true;
-            const int value1 = 1;
-            const int value2 = 2;
+            DataflowTestHelpers.TestToString(nameFormat =>
+                nameFormat != null ?
+                    new BatchBlock<int>(2, new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new BatchBlock<int>(2));
+        }
 
-            BatchBlock<int> batch = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { Greedy = false });
-
-            // Offer 1 message - this should be postponed
-            // To avoid implementing a source, we use SendAsync and we verify the task is not completed
-            Task<bool> postTask1 = batch.SendAsync(value1);
-            bool localPassed = !postTask1.Wait(500);
-
-            Assert.True(localPassed, string.Format("SendAsync1 not completed - {0}", localPassed ? "Passed" : "FAILED"));
-
-            // Output count must be 0
-            localPassed = batch.OutputCount == 0;
-            Assert.True(localPassed, string.Format("OutputCount == 0 - {0} ({1})", localPassed ? "Passed" : "FAILED", batch.OutputCount));
-
-            // Offer another message - this should be postponed first and then consumed
-            Task<bool> postTask2 = batch.SendAsync(value2);
-
-            // Both SendAsync tasks must be completed
-            localPassed = postTask1.Wait(5000);
-
-            Assert.True(localPassed, string.Format("SendAsync1 completed - {0}", localPassed ? "Passed" : "FAILED"));
-            localPassed = postTask2.Wait(500);
-
-            Assert.True(localPassed, string.Format("SendAsync2 completed - {0}", localPassed ? "Passed" : "FAILED"));
-
-            // Both SendAsync tasks must have a result of true
-            if (passed)
+        [Fact]
+        public async Task TestOfferMessage()
+        {
+            var generators = new Func<BatchBlock<int>>[]
             {
-                localPassed = postTask1.Result;
+                () => new BatchBlock<int>(2),
+                () => new BatchBlock<int>(2, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 })
+            };
+            foreach (var generator in generators)
+            {
+                DataflowTestHelpers.TestOfferMessage_ArgumentValidation(generator());
 
-                Assert.True(localPassed, string.Format("SendAsync1 true - {0}", localPassed ? "Passed" : "FAILED"));
-                localPassed = postTask2.Result;
+                var target = generator();
+                DataflowTestHelpers.TestOfferMessage_AcceptsDataDirectly(target, messages: target.BatchSize * 2);
+                IList<int[]> items;
+                Assert.True(target.TryReceiveAll(out items));
+                Assert.Equal(expected: 2, actual: items.Count);
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+                await target.Completion;
 
-                Assert.True(localPassed, string.Format("SendAsync2 true - {0}", localPassed ? "Passed" : "FAILED"));
+                target = generator();
+                await DataflowTestHelpers.TestOfferMessage_AcceptsViaLinking(target, messages: target.BatchSize * 2);
+                Assert.True(target.TryReceiveAll(out items));
+                Assert.Equal(expected: 2, actual: items.Count);
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+                await target.Completion;
             }
-
-            // Output count must be 1
-            Task.Delay(500).Wait();
-            localPassed = batch.OutputCount == 1;
-
-            Assert.True(localPassed, string.Format("OutputCount == 1 - {0} ({1})", localPassed ? "Passed" : "FAILED", batch.OutputCount));
-
-            // TryReceive should return 1 result
-            int[] result;
-            localPassed = batch.TryReceive(out result);
-
-            Assert.True(localPassed, string.Format("TryReceive - {0}", localPassed ? "Passed" : "FAILED"));
-
-            // Verify order
-            localPassed = (result[0] == value1) && (result[1] == value2);
-
-            Assert.True(localPassed, string.Format("Order - {0} (Received[{1}, {2}] Expected[{3}, {4}])", localPassed ? "Passed" : "FAILED",
-                                                                                             result[0], result[1], value1, value2));
-
-            // Post 1 message - the result is non-deterministic but at least no exception should be thrown
-            batch.Post(value2);
-            Assert.True(localPassed, string.Format("Post did not throw - Passed"));
-
-            // Output count must be 0
-            localPassed = batch.OutputCount == 0;
-
-            Assert.True(localPassed, string.Format("OutputCount == 0 - {0} ({1})", localPassed ? "Passed" : "FAILED", batch.OutputCount));
-
-            Assert.True(localPassed, string.Format("{0}", passed ? "Passed" : "FAILED"));
         }
 
         [Fact]
-        [OuterLoop]
-        public void RunBatchBlockConformanceTests()
+        public void TestPost()
         {
-            bool localPassed;
-            // Greedy batching
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1 })
             {
-                localPassed = true;
-                const int NUM_MESSAGES = 1;
-                const int BATCH_SIZE = 1;
+                var bb = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
+                Assert.True(bb.Post(0));
+                bb.Complete();
+                Assert.False(bb.Post(0));
+            }
+        }
 
-                var batch = new BatchBlock<int>(BATCH_SIZE);
-                for (int i = 0; i < NUM_MESSAGES * BATCH_SIZE; i++) batch.Post(i);
-                for (int i = 0; i < NUM_MESSAGES; i++)
+        [Fact]
+        public Task TestCompletionTask()
+        {
+            return DataflowTestHelpers.TestCompletionTask(() => new BufferBlock<int>());
+        }
+
+        [Fact]
+        public async Task TestLinkToOptions()
+        {
+            const int Messages = 2;
+            foreach (bool append in DataflowTestHelpers.BooleanValues)
+            {
+                var bb = new BatchBlock<int>(1);
+                var values = new int[Messages][];
+                var targets = new ActionBlock<int[]>[Messages];
+                for (int i = 0; i < Messages; i++)
                 {
-                    int[] result = batch.Receive();
-                    localPassed &= result.Length == BATCH_SIZE;
-                    for (int j = 0; j < result.Length - 1; j++)
+                    int slot = i;
+                    targets[i] = new ActionBlock<int[]>(item => values[slot] = item);
+                    bb.LinkTo(targets[i], new DataflowLinkOptions { MaxMessages = 1, Append = append });
+                }
+                bb.PostRange(0, Messages);
+                bb.Complete();
+                await bb.Completion;
+
+                for (int i = 0; i < Messages; i++)
+                {
+                    targets[i].Complete();
+                    await targets[i].Completion;
+                    Assert.Equal(
+                        expected: append ? i : Messages - i - 1,
+                        actual: values[i][0]);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestReceives()
+        {
+            for (int test = 0; test < 3; test++)
+            {
+                var bb = new BatchBlock<int>(1);
+                bb.PostRange(0, 5);
+
+                int[] item;
+                switch (test)
+                {
+                    case 0:
+                        IList<int[]> items;
+                        Assert.True(bb.TryReceiveAll(out items));
+                        Assert.Equal(expected: 5, actual: items.Count);
+                        for (int i = 0; i < items.Count; i++)
+                        {
+                            Assert.Equal(expected: i, actual: items[i][0]);
+                        }
+                        Assert.False(bb.TryReceiveAll(out items));
+                        break;
+
+                    case 1:
+                        for (int i = 0; i < 5; i++)
+                        {
+                            Assert.True(bb.TryReceive(f => true, out item));
+                            Assert.Equal(expected: i, actual: item[0]);
+                        }
+                        Assert.False(bb.TryReceive(f => true, out item));
+                        break;
+
+                    case 2:
+                        for (int i = 0; i < 5; i++)
+                        {
+                            Assert.False(bb.TryReceive(f => f[0] == i + 1, out item));
+                            Assert.True(bb.TryReceive(f => f[0] == i, out item));
+                            Assert.Equal(expected: i, actual: item[0]);
+                        }
+                        Assert.False(bb.TryReceive(f => true, out item));
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestBoundedReceives()
+        {
+            for (int test = 0; test < 4; test++)
+            {
+                var bb = new BatchBlock<int>(1, new GroupingDataflowBlockOptions { BoundedCapacity = 1 });
+                Assert.True(bb.Post(0));
+
+                int[] item;
+                const int sends = 5;
+                for (int i = 1; i <= sends; i++)
+                {
+                    Task<bool> send = bb.SendAsync(i);
+                    Assert.True(await bb.OutputAvailableAsync()); // wait for previously posted/sent item
+
+                    switch (test)
                     {
-                        localPassed &= (result[j] + 1 == result[j + 1]);
+                        case 0:
+                            IList<int[]> items;
+                            Assert.True(bb.TryReceiveAll(out items));
+                            Assert.Equal(expected: 1, actual: items.Count);
+                            Assert.Equal(expected: 1, actual: items[0].Length);
+                            Assert.Equal(expected: i - 1, actual: items[0][0]);
+                            break;
+
+                        case 1:
+                            Assert.True(bb.TryReceive(f => true, out item));
+                            Assert.Equal(expected: 1, actual: item.Length);
+                            Assert.Equal(expected: i - 1, actual: item[0]);
+                            break;
+
+                        case 2:
+                            Assert.False(bb.TryReceive(f => f.Length == 1 && f[0] == i, out item));
+                            Assert.True(bb.TryReceive(f => f.Length == 1 && f[0] == i - 1, out item));
+                            Assert.Equal(expected: 1, actual: item.Length);
+                            Assert.Equal(expected: i - 1, actual: item[0]);
+                            break;
+
+                        case 3:
+                            item = await bb.ReceiveAsync();
+                            Assert.Equal(expected: 1, actual: item.Length);
+                            Assert.Equal(expected: i - 1, actual: item[0]);
+                            break;
                     }
                 }
 
-                Assert.True(localPassed, string.Format("{0}: Greedy batching", localPassed ? "Success" : "Failure"));
+                // Receive remaining item
+                item = await bb.ReceiveAsync();
+                Assert.Equal(expected: 1, actual: item.Length);
+                Assert.Equal(expected: sends, actual: item[0]);
+
+                bb.Complete();
+                await bb.Completion;
+            }
+        }
+
+        [Fact]
+        public async Task TestProducerConsumer()
+        {
+            foreach (TaskScheduler scheduler in new[] { TaskScheduler.Default, new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler })
+            foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 2, 3 })
+            foreach (int batchSize in new[] { 1, 2 })
+            {
+                const int Messages = 50;
+                var bb = new BatchBlock<int>(batchSize, new GroupingDataflowBlockOptions
+                {
+                    BoundedCapacity = boundedCapacity,
+                    MaxMessagesPerTask = maxMessagesPerTask,
+                    TaskScheduler = scheduler
+                });
+                await Task.WhenAll(
+                    Task.Run(async delegate { // consumer
+                        int i = 0;
+                        while (await bb.OutputAvailableAsync())
+                        {
+                            int[] items = await bb.ReceiveAsync();
+                            Assert.Equal(expected: batchSize, actual: items.Length);
+                            for (int j = 0; j < items.Length; j++)
+                            {
+                                Assert.Equal(expected: i + j, actual: items[j]);
+                            }
+                            i += batchSize;
+                        }
+                    }),
+                    Task.Run(async delegate { // producer
+                        for (int i = 0; i < Messages; i++)
+                        {
+                            await bb.SendAsync(i);
+                        }
+                        bb.Complete();
+                    }));
+            }
+        }
+
+        [Fact]
+        public async Task TestReserveReleaseConsume()
+        {
+            var bb = new BatchBlock<int>(2);
+            bb.PostItems(1, 2);
+            await DataflowTestHelpers.TestReserveAndRelease(bb);
+
+            bb = new BatchBlock<int>(2);
+            bb.PostItems(1, 2);
+            await DataflowTestHelpers.TestReserveAndConsume(bb);
+        }
+
+        [Fact]
+        public async Task TestNonGreedy()
+        {
+            var batch = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { Greedy = false });
+
+            for (int trial = 0; trial < 2; trial++)
+            {
+                Task<bool> firstSend = batch.SendAsync(1 + trial);
+                Assert.False(firstSend.IsCompleted); // should always pass, but due to race might not test what we really want it to
+                Assert.Equal(expected: 0, actual: batch.OutputCount); // ditto
+
+                Task<bool> secondSend = batch.SendAsync(3 + trial);
+
+                Assert.Equal(expected: true, actual: await firstSend);
+                Assert.Equal(expected: true, actual: await secondSend);
+
+                Assert.Equal(expected: true, actual: await batch.OutputAvailableAsync());
+                Assert.Equal(expected: 1, actual: batch.OutputCount);
+                int[] result = await batch.ReceiveAsync();
+                Assert.NotNull(result);
+                Assert.Equal(expected: 2, actual: result.Length);
+                Assert.Equal(expected: 1 + trial, actual: result[0]);
+                Assert.Equal(expected: 3 + trial, actual: result[1]);
             }
 
-            // Non-greedy batching with BATCH_SIZE sources used repeatedly
+            batch.Complete();
+            await batch.Completion;
+        }
+
+        [Fact]
+        public async Task TestGreedyFromPosts()
+        {
+            const int Batches = 3;
+            foreach (int batchSize in new[] { 1, 2, 5 })
             {
-                localPassed = true;
-                const int NUM_MESSAGES = 1;
-                const int BATCH_SIZE = 1;
-
-                var batch = new BatchBlock<int>(BATCH_SIZE, new GroupingDataflowBlockOptions { Greedy = false });
-                var buffers = Enumerable.Range(0, BATCH_SIZE).Select(_ => new BufferBlock<int>()).ToList();
-                foreach (var buffer in buffers) buffer.LinkTo(batch);
-
-                int prevSum = -1;
-                for (int i = 0; i < NUM_MESSAGES; i++)
+                var batch = new BatchBlock<int>(batchSize);
+                for (int i = 0; i < Batches * batchSize; i++)
                 {
-                    for (int j = 0; j < BATCH_SIZE; j++) buffers[j].Post(i);
-                    int sum = batch.Receive().Sum();
-                    localPassed &= (sum > prevSum);
-                    prevSum = sum;
+                    Assert.True(batch.Post(i));
+                    Assert.Equal(expected: (i+1) / batchSize, actual: batch.OutputCount);
                 }
 
-                Assert.True(localPassed, string.Format("{0}: Non-greedy batching with BATCH_SIZE sources used repeatedly", localPassed ? "Success" : "Failure"));
+                for (int i = 0; i < Batches; i++)
+                {
+                    int[] result = await batch.ReceiveAsync();
+                    Assert.Equal(expected: batchSize, actual: result.Length);
+                    Assert.Equal(expected: Batches - (i + 1), actual: batch.OutputCount);
+                    for (int j = 0; j < result.Length - 1; j++)
+                    {
+                        Assert.Equal(result[j] + 1, result[j + 1]);
+                    }
+                }
             }
+        }
 
-            // Non-greedy batching with BATCH_SIZE * NUM_MESSAGES sources
+        [Fact]
+        public async Task TestMultipleNonGreedyFromSources()
+        {
+            const int Batches = 10;
+            foreach (int batchSize in new[] { 1, 2, 5 })
             {
-                localPassed = true;
-                const int NUM_MESSAGES = 1;
-                const int BATCH_SIZE = 2;
+                var batch = new BatchBlock<int>(batchSize, new GroupingDataflowBlockOptions { Greedy = false });
+                var buffers = Enumerable.Range(0, batchSize).Select(_ => new BufferBlock<int>()).ToList();
+                foreach (var buffer in buffers)
+                {
+                    buffer.LinkTo(batch);
+                }
 
-                var batch = new BatchBlock<int>(BATCH_SIZE, new GroupingDataflowBlockOptions { Greedy = false });
-                var buffers = Enumerable.Range(0, BATCH_SIZE * NUM_MESSAGES).Select(_ => new BufferBlock<int>()).ToList();
+                int prevSum = -1;
+                for (int i = 0; i < Batches; i++)
+                {
+                    for (int j = 0; j < batchSize; j++)
+                    {
+                        buffers[j].Post(i);
+                    }
+                    int sum = (await batch.ReceiveAsync()).Sum();
+                    Assert.True(sum > prevSum);
+                    prevSum = sum;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestBoundedCapacityFromSends()
+        {
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 3 })
+            foreach (bool greedy in DataflowTestHelpers.BooleanValues)
+            {
+                var bb = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { BoundedCapacity = boundedCapacity, Greedy = greedy });
+                Task<bool>[] sends = Enumerable.Range(0, 100).Select(i => bb.SendAsync(i)).ToArray();
+                ((IDataflowBlock)bb).Fault(new InvalidCastException());
+                await Assert.ThrowsAsync<InvalidCastException>(() => bb.Completion);
+                await Task.WhenAll(sends);
+            }
+        }
+
+        [Fact]
+        public async Task TestNonGreedyFailedConsume()
+        {
+            foreach (bool exceptionalConsume in DataflowTestHelpers.BooleanValues)
+            foreach (bool linkGoodFirst in DataflowTestHelpers.BooleanValues)
+            {
+                const int BatchSize = 2;
+                var bb = new BatchBlock<int>(BatchSize, new GroupingDataflowBlockOptions { Greedy = false });
+
+                var goodSource = new BufferBlock<int>();
+                Assert.True(goodSource.Post(1));
+
+                if (linkGoodFirst)
+                {
+                    goodSource.LinkTo(bb);
+                }
+
+                var badSource = new DelegatePropagator<int, int>
+                {
+                    ReserveMessageDelegate = delegate { return true; },
+                    ConsumeMessageDelegate = delegate(DataflowMessageHeader header, ITargetBlock<int> target, out bool messageConsumed) {
+                        if (exceptionalConsume)
+                        {
+                            throw new FormatException(); // throw when attempting to consume reserved message
+                        }
+                        else
+                        {
+                            messageConsumed = false; // fail when attempting to consume reserved message
+                            return 0;
+                        }
+                    }
+                };
+                Assert.Equal(
+                    expected: DataflowMessageStatus.Postponed,
+                    actual: ((ITargetBlock<int>)bb).OfferMessage(new DataflowMessageHeader(2), 2, badSource, consumeToAccept: true));
+
+                if (!linkGoodFirst)
+                {
+                    goodSource.LinkTo(bb);
+                }
+
+                await (exceptionalConsume ?
+                    (Task)Assert.ThrowsAsync<FormatException>(() => bb.Completion) :
+                    (Task)Assert.ThrowsAsync<InvalidOperationException>(() => bb.Completion));
+            }
+        }
+
+        [Fact]
+        public async Task TestBatchingFromSubsetOfSources()
+        {
+            const int Batches = 5;
+            foreach (int batchSize in new[] { 1, 2, 5 })
+            foreach (bool greedy in DataflowTestHelpers.BooleanValues)
+            {
+                var batch = new BatchBlock<int>(batchSize, new GroupingDataflowBlockOptions { Greedy = greedy });
+                var buffers = Enumerable.Range(0, batchSize * Batches).Select(_ => new BufferBlock<int>()).ToList();
+
                 foreach (var buffer in buffers)
                 {
                     buffer.LinkTo(batch);
                     buffer.Post(1);
                 }
 
-                for (int i = 0; i < NUM_MESSAGES; i++)
+                for (int i = 0; i < Batches; i++)
                 {
-                    localPassed &= batch.Receive().Sum() == BATCH_SIZE;
+                    Assert.Equal(expected: batchSize, actual: (await batch.ReceiveAsync()).Sum());
                 }
-
-                Assert.True(localPassed, string.Format("{0}: Non-greedy batching with N*M sources", localPassed ? "Success" : "Failure"));
             }
+        }
 
-            // Non-greedy batching with missed messages
+        [Fact]
+        public async Task TestNonGreedyLostMessages()
+        {
+            foreach (int batchSize in new[] { 2, 5 })
             {
-                localPassed = true;
-                const int BATCH_SIZE = 2;
+                var batch = new BatchBlock<int>(batchSize, new GroupingDataflowBlockOptions { Greedy = false });
+                var buffers = Enumerable.Range(0, batchSize - 1).Select(_ => new BufferBlock<int>()).ToList();
 
-                var batch = new BatchBlock<int>(BATCH_SIZE, new GroupingDataflowBlockOptions { Greedy = false });
-                var buffers = Enumerable.Range(0, BATCH_SIZE - 1).Select(_ => new BufferBlock<int>()).ToList();
-                using (var ce = new CountdownEvent(BATCH_SIZE - 1))
-                {
-                    foreach (var buffer in buffers)
-                    {
-                        buffer.LinkTo(batch);
-                        buffer.LinkTo(new ActionBlock<int>(i => ce.Signal()));
-                        buffer.Post(42);
-                    }
-                    ce.Wait();
-                }
+                var tcs = new TaskCompletionSource<bool>();
+                int remaining = buffers.Count;
 
-                buffers = Enumerable.Range(0, BATCH_SIZE).Select(_ => new BufferBlock<int>()).ToList();
+                // Offer the batch almost all the messages it needs, but have them consumed by someone else
                 foreach (var buffer in buffers)
                 {
                     buffer.LinkTo(batch);
+                    buffer.LinkTo(new ActionBlock<int>(i => {
+                        if (Interlocked.Decrement(ref remaining) == 0)
+                        {
+                            tcs.SetResult(true);
+                        }
+                    }));
                     buffer.Post(42);
+                }
+                await tcs.Task;
+
+                // Now offer from another set of sources that won't lose them
+                buffers = Enumerable.Range(0, batchSize).Select(_ => new BufferBlock<int>()).ToList();
+                foreach (var buffer in buffers)
+                {
+                    buffer.LinkTo(batch);
+                    buffer.Post(43);
                     buffer.Complete();
                 }
 
-                localPassed &= Task.WaitAll(buffers.Select(b => b.Completion).ToArray(), 2000);
+                // Wait until all the messages are consumed
+                await Task.WhenAll(from buffer in buffers select buffer.Completion);
 
-                Assert.True(localPassed, string.Format("{0}: Non-greedy batching with missed messages", localPassed ? "Success" : "Failure"));
+                int[] results = await batch.ReceiveAsync();
+                Assert.Equal(expected: 0, actual: batch.OutputCount);
+                batch.Complete();
+                await batch.Completion;
             }
+        }
 
-            // Test using a precanceled token
+        [Fact]
+        public async Task TestPrecancellation()
+        {
+            var b = new BatchBlock<int>(42, new GroupingDataflowBlockOptions { 
+                CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 
+            });
+
+            Assert.Equal(expected: 42, actual: b.BatchSize);
+            Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<int[]>()));
+            Assert.False(b.Post(42));
+            Task<bool> t = b.SendAsync(42);
+            Assert.True(t.IsCompleted);
+            Assert.False(t.Result);
+            int[] ignoredValue;
+            IList<int[]> ignoredValues;
+            Assert.False(b.TryReceive(out ignoredValue));
+            Assert.False(b.TryReceiveAll(out ignoredValues));
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            Assert.NotNull(b.Completion);
+            b.Complete(); // verify doesn't throw
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+        }
+
+        [Fact]
+        public async Task TestFaultingAndCancellation()
+        {
+            foreach (bool fault in DataflowTestHelpers.BooleanValues)
             {
-                localPassed = true;
-                try
+                var cts = new CancellationTokenSource();
+                var bb = new BatchBlock<int>(1, new GroupingDataflowBlockOptions { CancellationToken = cts.Token });
+                bb.PostRange(0, 4);
+                Assert.Equal(expected: 0, actual: (await bb.ReceiveAsync())[0]);
+                Assert.Equal(expected: 1, actual: (await bb.ReceiveAsync())[0]);
+
+                if (fault)
                 {
-                    var cts = new CancellationTokenSource();
+                    Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)bb).Fault(null));
+                    ((IDataflowBlock)bb).Fault(new InvalidCastException());
+                    await Assert.ThrowsAsync<InvalidCastException>(() => bb.Completion);
+                }
+                else
+                {
                     cts.Cancel();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 };
-                    var b = new BatchBlock<int>(42, dbo);
-
-                    int[] ignoredValue;
-                    IList<int[]> ignoredValues;
-                    localPassed &= b.BatchSize == 42;
-                    localPassed &= b.LinkTo(new ActionBlock<int[]>(delegate { })) != null;
-                    localPassed &= b.SendAsync(42).Result == false;
-                    localPassed &= b.TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= b.Post(42) == false;
-                    localPassed &= b.OutputCount == 0;
-                    localPassed &= b.TryReceive(out ignoredValue) == false;
-                    localPassed &= b.Completion != null;
-                    b.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
                 }
 
-                Assert.True(localPassed, string.Format("{0}: Precanceled tokens work correctly", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test completing block while still items buffered
-            {
-                localPassed = true;
-                var b = new BatchBlock<int>(5);
-                b.Post(1);
-                b.Post(2);
-                b.Post(3);
-                b.Complete();
-                localPassed &= b.Receive().Length == 3;
-                Assert.True(localPassed, string.Format("{0}: Makes batches of remaining items", localPassed ? "Success" : "Failure"));
+                Assert.Equal(expected: 0, actual: bb.OutputCount);
             }
         }
 
-        private static BatchBlock<int> ConstructBatchNewWithNMessages(int messagesCount)
+        [Fact]
+        public async Task TestCompletionWithBufferedItems()
         {
-            var block = new BatchBlock<int>(1);
-            for (int i = 0; i < messagesCount; i++)
-            {
-                block.Post(i);
-            }
+            var b = new BatchBlock<int>(5);
+            b.PostRange(0, 3);
+            b.Complete();
 
-            // Spin until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount);
-
-            return block;
+            await b.OutputAvailableAsync();
+            Assert.Equal(expected: 1, actual: b.OutputCount);
+            int[] items = await b.ReceiveAsync();
+            Assert.Equal(expected: 3, actual: items.Length);
+            await b.Completion;
         }
 
-        private static bool TestMaxNumberOfGroups(bool greedy, bool sync)
+        [Fact]
+        public async Task TestMaxNumberOfGroups()
         {
-            Contract.Assert(greedy || !sync, "Non-greedy sync doesn't make sense.");
-            bool passed = true;
-
+            foreach (bool greedy in DataflowTestHelpers.BooleanValues)
             for (int maxNumberOfGroups = 1; maxNumberOfGroups <= 21; maxNumberOfGroups += 20)
             {
-                for (int itemsPerBatch = 1; itemsPerBatch <= 1; itemsPerBatch++)
+                for (int itemsPerBatch = 1; itemsPerBatch <= 3; itemsPerBatch += 2)
                 {
-                    var options = new GroupingDataflowBlockOptions { MaxNumberOfGroups = maxNumberOfGroups, Greedy = greedy };
-                    var batch = new BatchBlock<int>(itemsPerBatch, options);
+                    var batch = new BatchBlock<int>(itemsPerBatch, 
+                        new GroupingDataflowBlockOptions { MaxNumberOfGroups = maxNumberOfGroups, Greedy = greedy });
 
                     // Feed all N batches; all should succeed
                     for (int batchNum = 0; batchNum < maxNumberOfGroups; batchNum++)
@@ -323,460 +566,230 @@ namespace System.Threading.Tasks.Dataflow.Tests
                         var sendAsyncs = new Task<bool>[itemsPerBatch];
                         for (int itemNum = 0; itemNum < itemsPerBatch; itemNum++)
                         {
-                            if (sync)
+                            sendAsyncs[itemNum] = batch.SendAsync(itemNum);
+                            if (greedy)
                             {
-                                Assert.True(batch.Post(itemNum), string.Format("FAILED batch.Post({0}) on MaxNOG {1}", itemNum, batchNum));
+                                Assert.True(sendAsyncs[itemNum].IsCompleted);
+                                Assert.True(sendAsyncs[itemNum].Result);
                             }
-                            else
+                            else if (itemNum < itemsPerBatch - 1)
                             {
-                                sendAsyncs[itemNum] = batch.SendAsync(itemNum);
-                            }
-                        }
-                        if (!sync)
-                        {
-                            Assert.True(Task.WaitAll(sendAsyncs, 4000),
-                                string.Format("FAILED batch.SendAsyncs should have been completed in batch num {0}", batchNum));
-                            if (passed)
-                            {
-                                Assert.True(sendAsyncs.All(t => t.Status == TaskStatus.RanToCompletion && t.Result),
-                                    string.Format("FAILED batch.SendAsyncs should have been completed in batch num {0}", batchNum));
+                                Assert.False(sendAsyncs[itemNum].IsCompleted);
                             }
                         }
+                        await Task.WhenAll(sendAsyncs);
                     }
 
                     // Next message should fail in greedy mode
                     if (greedy)
                     {
-                        if (sync)
-                        {
-                            Assert.False(batch.Post(1), "FAILED batch.Post(1) after completed groups should be declind");
-                        }
-                        else
-                        {
-                            var t = batch.SendAsync(1);
-                            Assert.True(t != null && t.Status == TaskStatus.RanToCompletion && t.Result == false, "FAILED batch.SendAsync(1) after completed groups should be declined");
-                        }
+                        var t = batch.SendAsync(1);
+                        Assert.Equal(expected: TaskStatus.RanToCompletion, actual: t.Status);
+                        Assert.False(t.Result);
                     }
 
-                    // Wait until the all batches are produced
-                    Assert.True(SpinWait.SpinUntil(() => batch.OutputCount == maxNumberOfGroups, 4000), "FAILED All batches should have been produced");
+                    // Make sure all batches were produced
+                    for (int i = 0; i < maxNumberOfGroups; i++)
+                    {
+                        int[] result = await batch.ReceiveAsync();
+                        Assert.Equal(expected: itemsPerBatch, actual: result.Length);
+                    }
 
                     // Next message should fail, even after groups have been produced
-                    if (sync)
-                    {
-                        Assert.False(batch.Post(1), "FAILED batch.Post(1) after completed groups are output should be declind");
-                    }
-                    else
+                    if (!greedy)
                     {
                         var t = batch.SendAsync(1);
-                        Assert.True(t != null && t.Status == TaskStatus.RanToCompletion && t.Result == false, "FAILED batch.SendAsync(1) after completed groups are output should be declined");
+                        Assert.Equal(expected: TaskStatus.RanToCompletion, actual: t.Status);
+                        Assert.False(t.Result);
                     }
                 }
             }
-
-            Assert.True(passed, string.Format("{0}", passed ? "Passed" : "FAILED"));
-            return passed;
         }
 
-        private static bool TestReleaseOnReserveException(bool linkBadFirst)
+        [Fact]
+        public async Task TestReleaseOnReserveException()
         {
-            bool passed = true;
-
-            // Bad source throws on ReserveMessage
-            var badSource = new ThrowerBlock();
-            badSource.Post(ThrowOn.ReserveMessage);
-
-            // Good source never throws
-            var goodSource = new ThrowerBlock();
-            goodSource.Post(ThrowOn.TryReceive); // Any value unrelated to the offer/consume protocol
-
-            var batch = new BatchBlock<ThrowOn>(2, new GroupingDataflowBlockOptions { Greedy = false });
-
-            // Each linking will offer a message
-            if (linkBadFirst)
+            foreach (bool linkBadFirst in DataflowTestHelpers.BooleanValues)
             {
-                badSource.LinkTo(batch);
-                goodSource.LinkTo(batch);
+                var goodSource = new BufferBlock<int>();
+                goodSource.Post(1);
+
+                DelegatePropagator<int, int> badSource = null;
+                badSource = new DelegatePropagator<int, int>
+                {
+                    LinkToDelegate = (target, options) => {
+                        target.OfferMessage(new DataflowMessageHeader(1), 2, badSource, consumeToAccept: true);
+                        return new DelegateDisposable();
+                    },
+                    ReserveMessageDelegate = delegate { throw new InvalidCastException(); }
+                };
+
+                var batch = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { Greedy = false });
+
+                if (linkBadFirst) // Each linking will offer a message
+                {
+                    badSource.LinkTo(batch);
+                    goodSource.LinkTo(batch);
+                }
+                else
+                {
+                    goodSource.LinkTo(batch);
+                    badSource.LinkTo(batch);
+                }
+
+                await Assert.ThrowsAnyAsync<InvalidCastException>(() => batch.Completion);
+
+                int item;
+                Assert.True(goodSource.TryReceive(out item)); // The good message must not be Reserved
             }
-            else
-            {
-                goodSource.LinkTo(batch);
-                badSource.LinkTo(batch);
-            }
-
-            // The batch must be faulted
-            Task.Delay(1).Wait();
-            Assert.True(TaskHasFaulted(batch.Completion, "ReserveMessage"));
-
-            // The good message must not be Reserved
-            Task.Delay(1).Wait();
-            Assert.True(goodSource.LastOperation != ThrowOn.ReserveMessage);
-            Assert.True(passed, string.Format("Good message not reserved ({0}) - {1}", goodSource.LastOperation, passed ? "Passed" : "FAILED"));
-
-            Assert.True(passed, string.Format("{0}", passed ? "Passed" : "FAILED"));
-            return passed;
         }
 
-        private static bool TestTriggerBatch(int boundedCapacity)
+        [Fact]
+        public void TestTriggerBatch_Nop()
         {
-            bool passed = true;
-
-            // Test greedy with batch size of 1 (force should always be a nop)
+            const int Iters = 2;
+            var b = new BatchBlock<int>(1);
+            for (int i = 0; i < Iters; i++)
             {
-                bool localPassed = true;
-                const int ITERS = 2;
-                var b = new BatchBlock<int>(1, new GroupingDataflowBlockOptions() { BoundedCapacity = boundedCapacity });
-                for (int i = 0; i < ITERS; i++)
-                {
-                    b.Post(i);
-                    int outputCount = b.OutputCount;
-                    b.TriggerBatch();
-                    localPassed &= outputCount == b.OutputCount;
-                }
-                localPassed &= b.OutputCount == ITERS;
-                for (int i = 0; i < ITERS; i++)
-                {
-                    var arr = b.Receive();
-                    localPassed &= arr.Length == 1 && arr[0] == i;
-                }
-
-                Assert.True(localPassed, string.Format("greedy with batch size of 1 - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test greedy with varying batch sizes and smaller queued numbers
-            {
-                bool localPassed = true;
-                foreach (var batchSize in new[] { 3 })
-                {
-                    foreach (var queuedBeforeTrigger in new[] { 1, batchSize - 1 })
-                    {
-                        var b = new BatchBlock<int>(batchSize, new GroupingDataflowBlockOptions() { BoundedCapacity = boundedCapacity });
-                        for (int p = 1; p <= queuedBeforeTrigger; p++) b.Post(p);
-                        localPassed &= b.OutputCount == 0;
-                        b.TriggerBatch();
-                        b.OutputAvailableAsync().Wait(); // The previous batch is triggered asynchronously when non-Unbounded BoundedCapacity is provided
-                        localPassed &= b.OutputCount == 1 && b.Receive().Length == queuedBeforeTrigger;
-                        for (int j = 0; j < batchSize; j++)
-                        {
-                            localPassed &= b.OutputCount == 0;
-                            b.Post(j);
-                        }
-                        localPassed &= b.OutputCount == 1;
-                    }
-                }
-
-                Assert.True(localPassed, string.Format("greedy with varying batch sizes - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
-            }
-
-            // Test greedy with empty queue
-            {
-                bool localPassed = true;
-                foreach (var batchSize in new[] { 1 })
-                {
-                    var b = new BatchBlock<int>(batchSize, new GroupingDataflowBlockOptions() { BoundedCapacity = boundedCapacity });
-                    for (int i = 0; i < 2; i++) b.TriggerBatch();
-                    localPassed &= b.OutputCount == 0;
-                }
-
-                Assert.True(localPassed, string.Format("greedy with empty queue - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
-            }
-
-            // Test greedy after decline
-            {
-                bool localPassed = true;
-                {
-                    var b = new BatchBlock<int>(2, new GroupingDataflowBlockOptions() { BoundedCapacity = boundedCapacity });
-                    localPassed &= b.OutputCount == 0;
-                    b.Complete();
-                    localPassed &= b.OutputCount == 0;
-                    b.TriggerBatch();
-                    localPassed &= b.OutputCount == 0;
-                }
-
-                {
-                    var b = new BatchBlock<int>(2, new GroupingDataflowBlockOptions() { BoundedCapacity = boundedCapacity });
-                    localPassed &= b.OutputCount == 0;
-                    b.Post(1);
-                    localPassed &= b.OutputCount == 0;
-                    b.Complete();
-                    localPassed &= b.OutputCount == 1;
-                    b.TriggerBatch();
-                    localPassed &= b.OutputCount == 1;
-                }
-
-                Assert.True(localPassed, string.Format("greedy after decline - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
-            }
-
-            // Test greedy after canceled
-            {
-                bool localPassed = true;
-                {
-                    var cts = new CancellationTokenSource();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, BoundedCapacity = boundedCapacity };
-                    var b = new BatchBlock<int>(2, dbo);
-                    localPassed &= b.OutputCount == 0;
-                    cts.Cancel();
-                    localPassed &= b.OutputCount == 0;
-                    b.TriggerBatch();
-                    localPassed &= b.OutputCount == 0;
-                }
-
-                {
-                    var cts = new CancellationTokenSource();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, BoundedCapacity = boundedCapacity };
-                    var b = new BatchBlock<int>(2, dbo);
-                    localPassed &= b.OutputCount == 0;
-                    b.Post(1);
-                    localPassed &= b.OutputCount == 0;
-                    cts.Cancel();
-                    localPassed &= b.OutputCount == 0;
-                    b.TriggerBatch();
-                    localPassed &= b.OutputCount == 0;
-                }
-
-                Assert.True(localPassed, string.Format("greedy after canceled - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
-            }
-
-            // Test greedy with MaxNumberOfGroups == 1
-            {
-                bool localPassed = true;
-
-                var b = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1, BoundedCapacity = boundedCapacity });
-                b.Post(1);
-                localPassed &= b.OutputCount == 0;
+                b.Post(i);
+                int outputCount = b.OutputCount;
+                Assert.Equal(expected: i + 1, actual: outputCount);
                 b.TriggerBatch();
-                b.OutputAvailableAsync().Wait(); // The previous batch is triggered asynchronously when non-Unbounded BoundedCapacity is provided
-                localPassed &= b.OutputCount == 1;
-                localPassed &= b.Post(2) == false;
-                b.TriggerBatch();
-                localPassed &= b.OutputCount == 1;
-
-                Assert.True(localPassed, string.Format("greedy with MaxNumberOfGroups == 1 - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
+                Assert.Equal(expected: outputCount, actual: b.OutputCount);
             }
 
-            // Test non-greedy with no queued or postponed messages
+            b = new BatchBlock<int>(1);
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            for (int i = 0; i < 2; i++)
             {
-                bool localPassed = true;
-
-                var dbo = new GroupingDataflowBlockOptions { Greedy = false, BoundedCapacity = boundedCapacity };
-                var b = new BatchBlock<int>(3, dbo);
-                localPassed &= b.OutputCount == 0;
                 b.TriggerBatch();
-                localPassed &= b.OutputCount == 0;
-
-                Assert.True(localPassed, string.Format("non-greedy with no mesages - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
             }
-
-            // Test non-greedy with no queued but postponed messages
+            for (int i = 0; i < 2; i++)
             {
-                bool localPassed = true;
-                var dbo = new GroupingDataflowBlockOptions { Greedy = false, BoundedCapacity = boundedCapacity };
-
-                const int BATCH_SIZE = 10;
-                for (int numPostponedMessages = 1; numPostponedMessages < BATCH_SIZE; numPostponedMessages++)
-                {
-                    var b = new BatchBlock<int>(BATCH_SIZE, dbo);
-                    localPassed &= b.OutputCount == 0;
-                    for (int i = 0; i < numPostponedMessages; i++) localPassed &= !b.SendAsync(i).IsCompleted;
-                    b.TriggerBatch();
-                    var output = b.Receive();
-                    localPassed &= output.Length == numPostponedMessages;
-                    for (int i = 0; i < output.Length; i++) localPassed &= output[i] == i;
-                    localPassed &= b.OutputCount == 0;
-                    b.TriggerBatch();
-                    localPassed &= b.OutputCount == 0;
-                }
-
-                Assert.True(localPassed, string.Format("non-greedy with postponed, no queued - {0}", localPassed ? "Passed" : "FAILED"));
-                passed &= localPassed;
+                b.Complete();
+                b.TriggerBatch();
             }
-
-            return passed;
+            Assert.Equal(expected: 0, actual: b.OutputCount);
         }
 
-        private static bool TestTriggerBatchRacingWithSendAsync(bool greedy)
+        [Fact]
+        public void TestTriggerBatch_VaryingBatchSizes()
         {
-            bool passed = true;
-            const int batchSize = 2;
-            const int iterations = 1;
-            const int waitTimeout = 100;
-            var dbo = new GroupingDataflowBlockOptions { Greedy = greedy };
-
-            for (int iter = 0; iter < iterations; iter++)
+            foreach (var batchSize in new[] { 2, 5 })
+            foreach (var queuedBeforeTrigger in new[] { 1, batchSize - 1 })
             {
-                bool localPassed = true;
-                var sendAsyncTasks = new Task<bool>[batchSize - 1];
-                Task<bool> lastSendAsyncTask = null;
-                var racerReady = new ManualResetEventSlim();
-                var racerDone = new ManualResetEventSlim();
-                int[] output1 = null;
-                int[] output2 = null;
+                var b = new BatchBlock<int>(batchSize);
+                b.PostRange(1, queuedBeforeTrigger + 1);
 
-                // Blocks
-                var batch = new BatchBlock<int>(batchSize, dbo);
-                var terminator = new ActionBlock<int[]>(x => { if (output1 == null) output1 = x; else output2 = x; });
-                batch.LinkTo(terminator);
+                Assert.Equal(expected: 0, actual: b.OutputCount);
+                b.TriggerBatch();
+                Assert.Equal(expected: 1, actual: b.OutputCount);
+                
+                int[] results;
+                Assert.True(b.TryReceive(out results));
+                Assert.Equal(expected: queuedBeforeTrigger, actual: results.Length);
 
-                // Queue up batchSize-1 input items
-                for (int i = 0; i < batchSize - 1; i++) sendAsyncTasks[i] = batch.SendAsync(i);
-                var racer = Task.Run(() =>
-                                    {
-                                        racerReady.Set();
-                                        lastSendAsyncTask = batch.SendAsync(batchSize - 1);
-                                        racerDone.Set();
-                                    });
-
-                // Wait for the racer to get ready and trigger
-                localPassed &= (racerReady.Wait(waitTimeout));
-                batch.TriggerBatch();
-                Assert.True(localPassed, "The racer task FAILED to start.");
-
-                // Wait for the SendAsync tasks to complete
-                localPassed &= Task.WaitAll(sendAsyncTasks, waitTimeout);
-                Assert.True(localPassed, "SendAsync tasks FAILED to complete");
-
-                // Wait for a batch to be produced
-                if (localPassed)
+                for (int j = 0; j < batchSize; j++)
                 {
-                    localPassed &= SpinWait.SpinUntil(() => output1 != null, waitTimeout);
-                    Assert.True(localPassed, "FAILED to produce a batch");
+                    Assert.Equal(expected: 0, actual: b.OutputCount);
+                    b.Post(j);
                 }
-
-                if (localPassed && output1.Length < batchSize)
-                {
-                    // If the produced batch is not full, we'll trigger one more and count the items.
-                    // However, we need to make sure the last message has been offered. Otherwise this 
-                    // trigger will have no effect.
-                    racerDone.Wait(waitTimeout);
-                    batch.TriggerBatch();
-
-                    if (localPassed)
-                    {
-                        // Wait for the last SendAsync task to complete
-                        localPassed &= SpinWait.SpinUntil(() => lastSendAsyncTask != null, waitTimeout);
-                        localPassed &= lastSendAsyncTask.Wait(waitTimeout);
-                        Assert.True(localPassed, "The last SendAsync task FAILED to complete");
-                    }
-
-                    // Wait for a second batch to be produced
-                    if (localPassed)
-                    {
-                        localPassed &= SpinWait.SpinUntil(() => output2 != null, waitTimeout);
-                        Assert.True(localPassed, "FAILED to produce a second batch");
-                    }
-
-                    //Verify the total number of input items propagated
-                    if (localPassed)
-                    {
-                        localPassed &= output1.Length + output2.Length == batchSize;
-                        Assert.True(localPassed, string.Format("FAILED to propagate {0} input items. count1={1}, count2={2}",
-                                                                            batchSize, output1.Length, output2.Length));
-                    }
-                }
-
-                passed &= localPassed;
-                if (!localPassed)
-                {
-                    Assert.True(localPassed, string.Format("Iteration={0}", iter));
-                    Assert.True(localPassed, string.Format("Count1={0}", output1 == null ? "null" : output1.Length.ToString()));
-                    Assert.True(localPassed, string.Format("Count2={0}", output2 == null ? "null" : output2.Length.ToString()));
-                    break;
-                }
+                Assert.Equal(expected: 1, actual: b.OutputCount);
             }
-
-            return passed;
         }
 
-        private static bool TestTriggerBatchRacingWithComplete(bool greedy)
+        [Fact]
+        public void TestTriggerBatch_Cancellation()
         {
-            bool passed = true;
-            const int batchSize = 2;
-            const int iterations = 1;
-            const int waitTimeout = 100;
-            var dbo = new GroupingDataflowBlockOptions { Greedy = greedy };
-
-            for (int iter = 0; iter < iterations; iter++)
+            foreach (bool post in DataflowTestHelpers.BooleanValues)
             {
-                bool localPassed = true;
-                var sendAsyncTasks = new Task<bool>[batchSize - 1];
-                var racerReady = new ManualResetEventSlim();
-                int[] output1 = null;
-                int[] output2 = null;
-
-                // Blocks
-                var batch = new BatchBlock<int>(batchSize, dbo);
-                var terminator = new ActionBlock<int[]>(x => { if (output1 == null) output1 = x; else output2 = x; });
-                batch.LinkTo(terminator);
-
-                // Queue up batchSize-1 input items
-                for (int i = 0; i < batchSize - 1; i++) sendAsyncTasks[i] = batch.SendAsync(i);
-                var racer = Task.Run(() =>
+                var cts = new CancellationTokenSource();
+                var b = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { CancellationToken = cts.Token });
+                Assert.Equal(expected: 0, actual: b.OutputCount);
+                if (post)
                 {
-                    racerReady.Set();
-                    batch.Complete();
-                });
-
-                // Wait for the racer to get ready and trigger
-                localPassed &= racerReady.Wait(waitTimeout);
-                batch.TriggerBatch();
-                Assert.True(localPassed, "The racer task FAILED to start.");
-
-                if (localPassed)
-                {
-                    // Wait for the SendAsync tasks to complete
-                    localPassed &= Task.WaitAll(sendAsyncTasks, waitTimeout);
-                    Assert.True(localPassed, "SendAsync tasks FAILED to complete");
+                    b.Post(42);
+                    Assert.Equal(expected: 0, actual: b.OutputCount);
                 }
-
-                // Do this verification only in greedy mode, because non-greedy is non-deterministic
-                if (greedy)
-                {
-                    // Wait for a batch to be produced
-                    if (localPassed)
-                    {
-                        localPassed &= SpinWait.SpinUntil(() => output1 != null, waitTimeout);
-                        Assert.True(localPassed, "FAILED to produce a batch");
-                    }
-
-                    if (localPassed)
-                    {
-                        //Verify the number of input items propagated
-                        localPassed &= output1.Length == batchSize - 1;
-                        Assert.True(localPassed, string.Format("FAILED to propagate {0} input items. count1={1}",
-                                                                            batchSize, output1.Length));
-                    }
-                }
-
-                // Wait for the block to complete
-                if (localPassed)
-                {
-                    localPassed &= batch.Completion.Wait(waitTimeout);
-                    Assert.True(localPassed, "The block FAILED to complete");
-                }
-
-                // There should never be a second batch produced
-                if (localPassed)
-                {
-                    localPassed &= output2 == null;
-                    Assert.True(localPassed, "FAILED not to produce a second batch");
-                }
-
-                passed &= localPassed;
-                if (!localPassed)
-                {
-                    Assert.True(localPassed, string.Format("Iteration={0}", iter));
-                    Assert.True(localPassed, string.Format("Count1={0}", output1 == null ? "null" : output1.Length.ToString()));
-                    break;
-                }
+                cts.Cancel();
+                Assert.Equal(expected: 0, actual: b.OutputCount);
+                b.TriggerBatch();
+                Assert.Equal(expected: 0, actual: b.OutputCount);
             }
+        }
 
-            return passed;
+        [Fact]
+        public void TestTriggerBatch_MaxNumberOfGroups()
+        {
+            foreach (int maxGroups in new[] { 1, 3 })
+            {
+                var b = new BatchBlock<int>(2, new GroupingDataflowBlockOptions { MaxNumberOfGroups = maxGroups });
+                for (int i = 0; i < maxGroups; i++)
+                {
+                    b.Post(42);
+                    Assert.Equal(expected: i, actual: b.OutputCount);
+                    b.TriggerBatch();
+                    Assert.Equal(expected: i + 1, actual: b.OutputCount);
+                }
+                Assert.False(b.Post(43));
+                b.TriggerBatch();
+                Assert.Equal(expected: maxGroups, actual: b.OutputCount);
+            }
+        }
+
+        [Fact]
+        public void TestTriggerBatch_NonGreedyEmpty()
+        {
+            var dbo = new GroupingDataflowBlockOptions { Greedy = false };
+            var b = new BatchBlock<int>(3, dbo);
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            b.TriggerBatch();
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+        }
+
+        [Fact]
+        public async Task TestTriggerBatch_NonGreedy()
+        {
+            var dbo = new GroupingDataflowBlockOptions { Greedy = false };
+
+            const int BatchSize = 10;
+            for (int numPostponedMessages = 1; numPostponedMessages < BatchSize; numPostponedMessages++)
+            {
+                var b = new BatchBlock<int>(BatchSize, dbo);
+                Assert.Equal(expected: 0, actual: b.OutputCount);
+                for (int i = 0; i < numPostponedMessages; i++)
+                {
+                    Assert.False(b.SendAsync(i).IsCompleted);
+                }
+                b.TriggerBatch();
+                int[] results = await b.ReceiveAsync();
+                Assert.Equal(expected: numPostponedMessages, actual: results.Length);
+                for (int i = 0; i < results.Length; i++)
+                {
+                    Assert.Equal(expected: i, actual: results[i]);
+                }
+                Assert.Equal(expected: 0, actual: b.OutputCount);
+                b.TriggerBatch();
+                Assert.Equal(expected: 0, actual: b.OutputCount);
+            }
+        }
+
+        [Fact]
+        public async Task TestFaultyScheduler()
+        {
+            var bb = new BatchBlock<int>(2, new GroupingDataflowBlockOptions
+            {
+                Greedy = false,
+                TaskScheduler = new DelegateTaskScheduler
+                {
+                    QueueTaskDelegate = delegate { throw new FormatException(); }
+                }
+            });
+            Task<bool> t1 = bb.SendAsync(1);
+            Task<bool> t2 = bb.SendAsync(2);
+            await Assert.ThrowsAsync<TaskSchedulerException>(() => bb.Completion);
+            Assert.False(await t1);
+            Assert.False(await t2);
         }
     }
 }

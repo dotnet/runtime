@@ -1,535 +1,511 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class BufferBlockTests
     {
         [Fact]
-        public void RunBufferBlockTests()
-        {
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new BufferBlock<int>(new DataflowBlockOptions() { NameFormat = nameFormat }) : new BufferBlock<int>()));
-            Assert.True(ISourceBlockTestHelper.TestLinkTo<int>(ConstructBufferNewWithNMessages(2), 1));
-            Assert.True(ISourceBlockTestHelper.TestReserveMessageAndReleaseReservation<int>(ConstructBufferNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestConsumeMessage<int>(ConstructBufferNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveWithFilter<int>(ConstructBufferNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveAll<int>(ConstructBufferNewWithNMessages(1), 1));
-            Assert.True(ITargetBlockTestHelper.TestOfferMessage<int>(new BufferBlock<int>()));
-            Assert.True(ITargetBlockTestHelper.TestPost<int>(new BufferBlock<int>()));
-            Assert.True(ITargetBlockTestHelper.TestComplete<int>(new BufferBlock<int>()));
-            Assert.True(ITargetBlockTestHelper.TestCompletionTask<int>(new BufferBlock<int>()));
-        }
-
-        private static BufferBlock<int> ConstructBufferNewWithNMessages(int messagesCount)
+        public void TestCtor()
         {
             var block = new BufferBlock<int>();
-            for (int i = 0; i < messagesCount; i++)
-            {
-                block.Post(i);
-            }
+            Assert.Equal(expected: 0, actual: block.Count);
+            Assert.False(block.Completion.IsCompleted);
 
-            // Spin until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            SpinWait.SpinUntil(() => block.Count == messagesCount);
-
-            return block;
-        }
-
-        [Fact]
-        [OuterLoop]
-        public void TestBufferBlockBounding()
-        {
-            const int WAIT_TIMEOUT = 4000; // wait at most 4 seconds for a particularly race-condition
-
-            // Test buffer doesn't exceed limit
-            {
-                bool localPassed = true;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-                    for (int i = 0; i < boundedCapacity; i++)
-                    {
-                        var send = b.SendAsync(i);
-                        Assert.True(send.Wait(0) && send.Result, "Send should succeed as capacity not yet reached");
-                    }
-
-                    for (int i = boundedCapacity; i < boundedCapacity + 2 && localPassed; i++)
-                    {
-                        Assert.True(b.Count == boundedCapacity, "Count should equal bounded capacity after all posts completed");
-
-                        var t = b.SendAsync(i);
-                        Assert.True(!t.IsCompleted, "Send should not have completed on a full buffer");
-                        b.Receive();
-                        Assert.True(t.Wait(WAIT_TIMEOUT), "The send should have completed before the timeout");
-                        Assert.True(t.IsCompleted && t.Result, "The send should have completed successfully");
-                        Assert.True(SpinWait.SpinUntil(() => b.Count == boundedCapacity, WAIT_TIMEOUT), "The count should be back at the bounded capacity after successful send");
-                    }
-
-                    int remainingCount = b.Count;
-                    while (b.Count > 0)
-                    {
-                        remainingCount--;
-                        int ignored;
-                        Assert.True(b.TryReceive(out ignored), "Should have been able to successfully remove each item");
-                    }
-
-                    Assert.True(remainingCount == 0, "Should be no items left after removals");
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Doesn't exceed limits", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test correct ordering
-            {
-                bool localPassed = true;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    int iters = boundedCapacity + 2;
-                    var tasks = new Task<bool>[iters];
-
-                    var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-                    for (int i = 0; i < boundedCapacity; i++)
-                    {
-                        var t = b.SendAsync(i);
-                        Assert.True(t.IsCompleted && t.Result, "Sends until capacity reached should complete immediately and successfully");
-                        tasks[i] = t;
-                    }
-
-                    for (int i = boundedCapacity; i < iters; i++)
-                    {
-                        var t = b.SendAsync(i);
-                        Assert.True(!t.IsCompleted, "Sends after capacity reached should not be completed");
-                        tasks[i] = t;
-                    }
-
-                    for (int i = 0; i < iters && localPassed; i++)
-                    {
-                        if (i >= boundedCapacity & i < iters - boundedCapacity)
-                        {
-                            Assert.True(!tasks[i + boundedCapacity].IsCompleted, "Remaining sends should not yet be completed");
-                        }
-                        Assert.True(b.Receive() == i, "Received value should match sent value in correct order");
-                        Assert.True(tasks[i].Wait(WAIT_TIMEOUT) && tasks[i].Result, "Next sender task should have completed");
-                    }
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Correct ordering", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test declining
-            {
-                bool localPassed = true;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    var b = new BufferBlock<string>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-
-                    int total = boundedCapacity + 2;
-                    var tasks = new Task<bool>[total];
-
-                    for (int i = 0; i < total; i++)
-                    {
-                        tasks[i] = b.SendAsync(i.ToString());
-                    }
-
-                    for (int i = 0; i < total; i++)
-                    {
-                        Assert.True((i < boundedCapacity) == tasks[i].IsCompleted, "All sends below the capacity should have completed");
-                    }
-
-                    b.Complete();
-
-                    Assert.True(Task.WaitAll(tasks, WAIT_TIMEOUT), "All postponed sends should complete once declined");
-
-                    for (int i = 0; i < total; i++)
-                    {
-                        Assert.True(
-                            tasks[i].IsCompleted && tasks[i].Result == (i < boundedCapacity),
-                            "All postponed/declined sends should have returned false");
-                    }
-                }
-            }
-
-            // Test circular linking
-            {
-                bool localPassed = true;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-                    b.LinkTo(b);
-
-                    for (int i = 0; i < boundedCapacity - 1; i++)
-                    {
-                        var send = b.SendAsync(i);
-                        localPassed &= send.Wait(0) && send.Result;
-                    }
-
-                    Task.Delay(250).Wait(); // allow some arbitrary time for the block to propagate to itself
-                    Assert.True(SpinWait.SpinUntil(() => b.Count == boundedCapacity - 1, WAIT_TIMEOUT),
-                        "Count should eventually be equal to number posted, even with circular linking");
-                    var sendLast = b.SendAsync(boundedCapacity - 1);
-                    Assert.True(sendLast.Wait(WAIT_TIMEOUT) && sendLast.Result,
-                        "Posting the last item to make the capacity should succeed");
-                    Assert.True(SpinWait.SpinUntil(() => b.Count == boundedCapacity, WAIT_TIMEOUT),
-                        "Count should now equal the bounded capacity");
-                    var sendExcess = b.SendAsync(boundedCapacity);
-                    Assert.True(!sendExcess.Wait(500),
-                        "Additional posts should fail");
-
-                    if (localPassed)
-                    {
-                        var items = new HashSet<int>(Enumerable.Range(0, boundedCapacity + 1)); //Include the excess item
-                        for (int i = 0; i < boundedCapacity + 1 && localPassed; i++)
-                        {
-                            int value = -1;
-                            Assert.True(SpinWait.SpinUntil(() => b.TryReceive(out value), WAIT_TIMEOUT),
-                                "Should be able to receive all previously posted items");
-                            if (localPassed)
-                            {
-                                Assert.True(
-                                    items.Remove(value),
-                                    "All previously posted values should be found");
-                            }
-                        }
-
-                        Assert.True(items.Count == 0, "All items should have been removed");
-                        Assert.True(b.Count == 0, "Nothing should be left in the buffer");
-                    }
-                }
-            }
-
-            // Test producer-consumer
-            {
-                bool localPassed = true;
-                const int ITERS = 2;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-
-                    var p = Task.Run(() =>
-                    {
-                        Assert.True(b.Count == 0, "Nothing should be in the buffer yet");
-                        for (int i = 0; i < ITERS; i++)
-                        {
-                            if (!b.SendAsync(i).Wait(WAIT_TIMEOUT))
-                            {
-                                localPassed = false;
-                                Assert.True(localPassed, "Send should have completed within timeout");
-                            }
-                        }
-                    });
-
-                    var c = Task.Run(() =>
-                    {
-                        for (int i = 0; i < ITERS; i++)
-                        {
-                            var t = b.ReceiveAsync();
-                            if (!t.Wait(WAIT_TIMEOUT))
-                            {
-                                localPassed = false;
-                                Assert.True(localPassed, "Receive should have completed within timeout");
-                            }
-                            if (t.Status != TaskStatus.RanToCompletion || t.Result != i)
-                            {
-                                localPassed = false;
-                                Assert.True(localPassed, "Receive should have completed with correct value");
-                            }
-                        }
-                        Assert.True(b.Count == 0, "The buffer should be empty after all items received");
-                    });
-
-                    if (!Task.WaitAll(new[] { p, c }, WAIT_TIMEOUT))
-                    {
-                        localPassed = false;
-                        Assert.True(localPassed, "Both producer and consumer should have completed in allotted time");
-                    }
-                }
-            }
-
-            // Test multi-item removal
-            {
-                bool localPassed = true;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-
-                    for (int iter = 0; iter < 2; iter++)
-                    {
-                        for (int i = 0; i < boundedCapacity; i++)
-                        {
-                            var send = b.SendAsync(i);
-                            localPassed &= send.Wait(0) && send.Result;
-                        }
-
-                        IList<int> output;
-                        Assert.True(b.TryReceiveAll(out output), "Data should have been available");
-                        Assert.True(output.Count == boundedCapacity, "Should have removed all posted items");
-                    }
-                }
-            }
-
-            // Test releasing of postponed messages
-            {
-                const int excess = 10;
-                bool localPassed = true;
-
-                for (int boundedCapacity = 1; boundedCapacity <= 3 && localPassed; boundedCapacity += 2)
-                {
-                    for (int iter = 0; iter < 2; iter++)
-                    {
-                        var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
-
-                        var sendAsync = new Task<bool>[boundedCapacity + excess];
-                        for (int i = 0; i < boundedCapacity + excess; i++) sendAsync[i] = b.SendAsync(i);
-
-                        b.Complete();
-
-                        for (int i = 0; i < boundedCapacity; i++)
-                        {
-                            Assert.True(sendAsync[i].Result, string.Format("bc={0} iter={1} send failed but should have succeeded", boundedCapacity, iter));
-                        }
-
-                        for (int i = 0; i < excess; i++)
-                        {
-                            Assert.True(!sendAsync[boundedCapacity + i].Result, string.Format("bc={0} iter={1} send succeeded but should have failed", boundedCapacity, iter));
-                        }
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public void TestBufferBlockConstructor()
-        {
-            // without option
-            var block = new BufferBlock<int>();
-            Assert.False(block.Count != 0, "Constructor failed! Count returned a non zero value for a brand new BufferBlock.");
-
-            //with not cancelled token and default scheduler
             block = new BufferBlock<int>(new DataflowBlockOptions { MaxMessagesPerTask = 1 });
-            Assert.False(block.Count != 0, "Constructor failed! Count returned a non zero value for a brand new BufferBlock.");
+            Assert.Equal(expected: 0, actual: block.Count);
+            Assert.False(block.Completion.IsCompleted);
 
-            //with a cancelled token and default scheduler
-            var token = new CancellationToken(true);
-            block = new BufferBlock<int>(new DataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-            Assert.False(block.Count != 0, "Constructor failed! Count returned a non zero value for a brand new BufferBlock.");
+            block = new BufferBlock<int>(new DataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) });
+            Assert.Equal(expected: 0, actual: block.Count);
         }
 
         [Fact]
-        public void TestSourceCoreSpecificsThroughBufferBlock()
+        public void TestArgumentExceptions()
+        {
+            Assert.Throws<ArgumentNullException>(() => new BufferBlock<int>(null));
+            DataflowTestHelpers.TestArgumentsExceptions(new BufferBlock<int>());
+        }
+
+        [Fact]
+        public void TestToString()
+        {
+            DataflowTestHelpers.TestToString(nameFormat =>
+                nameFormat != null ?
+                    new BufferBlock<int>(new DataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new BufferBlock<int>());
+        }
+
+        [Fact]
+        public async Task TestOfferMessage()
+        {
+            var generators = new Func<BufferBlock<int>>[]
+            {
+                () => new BufferBlock<int>(),
+                () => new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = 10 }),
+                () => new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = 10, MaxMessagesPerTask = 1 })
+            };
+            foreach (var generator in generators)
+            {
+                DataflowTestHelpers.TestOfferMessage_ArgumentValidation(generator());
+
+                var target = generator();
+                DataflowTestHelpers.TestOfferMessage_AcceptsDataDirectly(target);
+                int ignored;
+                while (target.TryReceive(out ignored)) ;
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+                await target.Completion;
+
+                target = generator();
+                await DataflowTestHelpers.TestOfferMessage_AcceptsViaLinking(target);
+                while (target.TryReceive(out ignored)) ;
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+                await target.Completion;
+            }
+        }
+
+        [Fact]
+        public void TestPost()
+        {
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1 })
+            {
+                var bb = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
+                Assert.True(bb.Post(0));
+                bb.Complete();
+                Assert.False(bb.Post(0));
+            }
+        }
+
+        [Fact]
+        public Task TestCompletionTask()
+        {
+            return DataflowTestHelpers.TestCompletionTask(() => new BufferBlock<int>());
+        }
+
+        [Fact]
+        public async Task TestLinkToOptions()
+        {
+            const int Messages = 1;
+            foreach (bool append in DataflowTestHelpers.BooleanValues)
+            {
+                var bb = new BufferBlock<int>();
+                var values = new int[Messages];
+                var targets = new ActionBlock<int>[Messages];
+                for (int i = 0; i < Messages; i++)
+                {
+                    int slot = i;
+                    targets[i] = new ActionBlock<int>(item => values[slot] = item);
+                    bb.LinkTo(targets[i], new DataflowLinkOptions { MaxMessages = 1, Append = append });
+                }
+
+                bb.PostRange(0, Messages);
+                bb.Complete();
+                await bb.Completion;
+
+                for (int i = 0; i < Messages; i++)
+                {
+                    Assert.Equal(
+                        expected: append ? i : Messages - i - 1,
+                        actual: values[i]);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestReceives()
+        {
+            for (int test = 0; test < 3; test++)
+            {
+                var bb = new BufferBlock<int>();
+                bb.PostRange(0, 5);
+
+                int item;
+                switch (test)
+                {
+                    case 0:
+                        IList<int> items;
+                        Assert.True(bb.TryReceiveAll(out items));
+                        Assert.Equal(expected: 5, actual: items.Count);
+                        for (int i = 0; i < items.Count; i++)
+                        {
+                            Assert.Equal(expected: i, actual: items[i]);
+                        }
+                        Assert.False(bb.TryReceiveAll(out items));
+                        break;
+
+                    case 1:
+                        for (int i = 0; i < 5; i++)
+                        {
+                            Assert.True(bb.TryReceive(f => true, out item));
+                            Assert.Equal(expected: i, actual: item);
+                        }
+                        Assert.False(bb.TryReceive(f => true, out item));
+                        break;
+
+                    case 2:
+                        for (int i = 0; i < 5; i++)
+                        {
+                            Assert.False(bb.TryReceive(f => f == i + 1, out item));
+                            Assert.True(bb.TryReceive(f => f == i, out item));
+                            Assert.Equal(expected: i, actual: item);
+                        }
+                        Assert.False(bb.TryReceive(f => true, out item));
+                        break;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestBoundedReceives()
+        {
+            for (int test = 0; test < 4; test++)
+            {
+                var bb = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = 1 });
+                Assert.True(bb.Post(0));
+
+                const int sends = 5;
+                for (int i = 1; i <= sends; i++)
+                {
+                    Task<bool> send = bb.SendAsync(i);
+                    Assert.True(await bb.OutputAvailableAsync()); // wait for previously posted/sent item
+
+                    int item;
+                    switch (test)
+                    {
+                        case 0:
+                            IList<int> items;
+                            Assert.True(bb.TryReceiveAll(out items));
+                            Assert.Equal(expected: 1, actual: items.Count);
+                            Assert.Equal(expected: i - 1, actual: items[0]);
+                            break;
+
+                        case 1:
+                            Assert.True(bb.TryReceive(f => true, out item));
+                            Assert.Equal(expected: i - 1, actual: item);
+                            break;
+
+                        case 2:
+                            Assert.False(bb.TryReceive(f => f == i, out item));
+                            Assert.True(bb.TryReceive(f => f == i - 1, out item));
+                            Assert.Equal(expected: i - 1, actual: item);
+                            break;
+
+                        case 3:
+                            Assert.Equal(expected: i - 1, actual: await bb.ReceiveAsync());
+                            break;
+                    }
+                }
+
+                // Receive remaining item
+                Assert.Equal(expected: sends, actual: await bb.ReceiveAsync());
+
+                bb.Complete();
+                await bb.Completion;
+            }
+        }
+
+        [Fact]
+        [OuterLoop] // waits for a period of time
+        public async Task TestCircularLinking()
+        {
+            for (int boundedCapacity = 1; boundedCapacity <= 3; boundedCapacity++)
+            {
+                var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
+                b.PostRange(0, boundedCapacity);
+                using (b.LinkTo(b))
+                {
+                    await Task.Delay(200);
+                }
+                Assert.Equal(expected: boundedCapacity, actual: b.Count);
+            }
+        }
+
+        [Fact]
+        public async Task TestProducerConsumer()
+        {
+            foreach (TaskScheduler scheduler in new[] { TaskScheduler.Default, new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler })
+            foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            {
+                const int Messages = 100;
+                var bb = new BufferBlock<int>(new DataflowBlockOptions 
+                {
+                    BoundedCapacity = boundedCapacity,
+                    MaxMessagesPerTask = maxMessagesPerTask,
+                    TaskScheduler = scheduler
+                });
+                await Task.WhenAll(
+                    Task.Run(async delegate { // consumer
+                        int i = 0;
+                        while (await bb.OutputAvailableAsync())
+                        {
+                            Assert.Equal(expected: i, actual: await bb.ReceiveAsync());
+                            i++;
+                        }
+                    }),
+                    Task.Run(async delegate { // producer
+                        for (int i = 0; i < Messages; i++)
+                        {
+                            await bb.SendAsync(i);
+                        }
+                        bb.Complete();
+                    }));
+            }
+        }
+
+        [Fact]
+        public async Task TestMessagePostponement()
+        {
+            foreach (int boundedCapacity in new[] { 1, 3 })
+            {
+                const int Excess = 10;
+                var b = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = boundedCapacity });
+
+                var sendAsync = new Task<bool>[boundedCapacity + Excess];
+                for (int i = 0; i < boundedCapacity + Excess; i++) 
+                    sendAsync[i] = b.SendAsync(i);
+                b.Complete();
+
+                for (int i = 0; i < boundedCapacity; i++)
+                {
+                    Assert.True(sendAsync[i].IsCompleted);
+                    Assert.True(sendAsync[i].Result);
+                }
+
+                for (int i = 0; i < Excess; i++)
+                {
+                    Assert.False(await sendAsync[boundedCapacity + i]);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestReserveReleaseConsume()
+        {
+            var bb = new BufferBlock<int>();
+            bb.Post(1);
+            await DataflowTestHelpers.TestReserveAndRelease(bb);
+
+            bb = new BufferBlock<int>();
+            bb.Post(2);
+            await DataflowTestHelpers.TestReserveAndConsume(bb);
+        }
+
+        [Fact]
+        public void TestSourceCoreSpecifics()
         {
             var messageHeader = new DataflowMessageHeader(1);
             bool consumed;
             var block = new BufferBlock<int>();
             ((ITargetBlock<int>)block).OfferMessage(messageHeader, 42, null, false);
 
-            var nonlinkedTarget = new ActionBlock<int>(i => { });
-            bool reserved = ((ISourceBlock<int>)block).ReserveMessage(messageHeader, nonlinkedTarget);
-            Assert.False(!reserved, "Failure: SourceCore did not allow a non-linked target to reserve");
+            var target = new ActionBlock<int>(i => { });
+            Assert.True(((ISourceBlock<int>)block).ReserveMessage(messageHeader, target));
+            ((ISourceBlock<int>)block).ReleaseReservation(messageHeader, target);
 
-            ((ISourceBlock<int>)block).ReleaseReservation(messageHeader, nonlinkedTarget);
-            ((ISourceBlock<int>)block).ConsumeMessage(messageHeader, new ActionBlock<int>(i => { }), out consumed);
-            Assert.False(!consumed || block.Count != 0, "Failure: SourceCore did not allow a non-linked target to consume");
+            ((ISourceBlock<int>)block).ConsumeMessage(messageHeader, DataflowBlock.NullTarget<int>(), out consumed);
+            
+            Assert.True(consumed);
+            Assert.Equal(expected: 0, actual: block.Count);
         }
 
         [Fact]
-        public async Task TestBufferBlockOutputAvailableAsyncAfterTryReceiveAll()
+        [OuterLoop] // has a timeout
+        public async Task TestOutputAvailableAsyncAfterTryReceiveAll()
         {
-            var multipleConcurrentTestsTask =
-                Task.WhenAll(
-                    Enumerable.Repeat(-1, 1000)
-                        .Select(_ => GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()));
-            var timeoutTask = Task.Delay(100);
+            Func<Task<bool>> generator = () => {
+                var buffer = new BufferBlock<object>();
+                buffer.Post(null);
+
+                IList<object> items;
+                buffer.TryReceiveAll(out items);
+
+                var outputAvailableAsync = buffer.OutputAvailableAsync();
+
+                buffer.Post(null);
+
+                return outputAvailableAsync;
+            };
+
+            var multipleConcurrentTestsTask = Task.WhenAll(Enumerable.Repeat(0, 1000).Select(_ => generator()));
+            var timeoutTask = Task.Delay(2000);
             var completedTask = await Task.WhenAny(multipleConcurrentTestsTask, timeoutTask).ConfigureAwait(false);
 
             Assert.True(completedTask != timeoutTask);
         }
 
-        private Task GetOutputAvailableAsyncTaskAfterTryReceiveAllOnNonEmptyBufferBlock()
+        [Fact]
+        public async Task TestCountZeroAtCompletion()
         {
-            var buffer = new BufferBlock<object>();
+            var cts = new CancellationTokenSource();
+            var buffer = new BufferBlock<int>(new DataflowBlockOptions() { CancellationToken = cts.Token });
+            buffer.Post(1);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => buffer.Completion);
+            Assert.Equal(expected: 0, actual: buffer.Count);
 
-            buffer.Post(null);
-
-            IList<object> items;
-            buffer.TryReceiveAll(out items);
-
-            var outputAvailableAsync = buffer.OutputAvailableAsync();
-
-            buffer.Post(null);
-
-            return outputAvailableAsync;
+            cts = new CancellationTokenSource();
+            buffer = new BufferBlock<int>();
+            buffer.Post(1);
+            ((IDataflowBlock)buffer).Fault(new InvalidOperationException());
+            await Assert.ThrowsAnyAsync<InvalidOperationException>(() => buffer.Completion);
+            Assert.Equal(expected: 0, actual: buffer.Count);
         }
 
         [Fact]
-        public void TestBufferBlockInvalidArgumentValidation()
+        public void TestCount()
         {
-            Assert.Throws<ArgumentNullException>(() => new BufferBlock<int>(null));
-            Assert.True(ITargetBlockTestHelper.TestArgumentsExceptions<int>(new BufferBlock<int>()));
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<int>(new BufferBlock<int>()));
+            var bb = new BufferBlock<int>();
+            for (int i = 1; i <= 10; i++)
+            {
+                bb.Post(i);
+                Assert.Equal(expected: i, actual: bb.Count);
+            }
+            for (int i = 10; i > 0; i--)
+            {
+                int item;
+                Assert.True(bb.TryReceive(out item));
+                Assert.Equal(expected: 11 - i, actual: item);
+                Assert.Equal(expected: i - 1, actual: bb.Count);
+            }
         }
 
         [Fact]
-        [OuterLoop]
-        public void TestBufferBlockCompletionOrder()
+        public async Task TestChainedSendReceive()
         {
-            const int ITERATIONS = 1000;
-            for (int iter = 0; iter < ITERATIONS; iter++)
+            foreach (bool post in DataflowTestHelpers.BooleanValues)
+            {
+                const int Iters = 10;
+                var network = DataflowTestHelpers.Chain<BufferBlock<int>, int>(4, () => new BufferBlock<int>());
+                for (int i = 0; i < Iters; i++)
+                {
+                    if (post)
+                    {
+                        network.Post(i);
+                    }
+                    else
+                    {
+                        await network.SendAsync(i);
+                    }
+                    Assert.Equal(expected: i, actual: await network.ReceiveAsync());
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestSendAllThenReceive()
+        {
+            foreach (bool post in DataflowTestHelpers.BooleanValues)
+            {
+                const int Iters = 10;
+                var network = DataflowTestHelpers.Chain<BufferBlock<int>, int>(4, () => new BufferBlock<int>());
+
+                if (post)
+                {
+                    network.PostRange(0, Iters);
+                }
+                else
+                {
+                    await Task.WhenAll(from i in Enumerable.Range(0, Iters) select network.SendAsync(i));
+                }
+
+                for (int i = 0; i < Iters; i++)
+                {
+                    Assert.Equal(expected: i, actual: await network.ReceiveAsync());
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestPrecanceled()
+        {
+            var bb = new BufferBlock<int>(
+                new DataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+
+            int ignoredValue;
+            IList<int> ignoredValues;
+
+            IDisposable link = bb.LinkTo(DataflowBlock.NullTarget<int>());
+            Assert.NotNull(link);
+            link.Dispose();
+
+            Assert.False(bb.Post(42));
+            var t = bb.SendAsync(42);
+            Assert.True(t.IsCompleted);
+            Assert.False(t.Result);
+            Assert.Equal(expected: 0, actual: bb.Count);
+
+            Assert.False(bb.TryReceiveAll(out ignoredValues));
+            Assert.False(bb.TryReceive(out ignoredValue));
+
+            Assert.NotNull(bb.Completion);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+            bb.Complete(); // just make sure it doesn't throw
+        }
+
+        [Fact]
+        public async Task TestFaultingAndCancellation()
+        {
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1 })
+            foreach (bool fault in DataflowTestHelpers.BooleanValues)
             {
                 var cts = new CancellationTokenSource();
-                var options = new DataflowBlockOptions() { CancellationToken = cts.Token };
-                var buffer = new BufferBlock<int>(options);
+                var bb = new BufferBlock<int>(new DataflowBlockOptions { CancellationToken = cts.Token, BoundedCapacity = boundedCapacity });
 
-                buffer.Post(1);
-                cts.Cancel();
-                try { buffer.Completion.Wait(); }
-                catch { }
-                    
-                Assert.False(buffer.Count != 0, string.Format("Iteration {0}: Completed before clearing messages.", iter));
-            }
-        }
+                Task<bool>[] sends = Enumerable.Range(0, 4).Select(i => bb.SendAsync(i)).ToArray();
+                Assert.Equal(expected: 0, actual: await bb.ReceiveAsync());
+                Assert.Equal(expected: 1, actual: await bb.ReceiveAsync());
 
-        [Fact]
-        public void TestBufferBlockCount()
-        {
-            BufferBlock<int> bufferBlock = new BufferBlock<int>();
-            Assert.False(bufferBlock.Count != 0, "BufferBlock.Count failed! an initialized block has a non zero count");
-
-            for (int i = 0; i < 10; i++)
-            {
-                ((ITargetBlock<int>)bufferBlock).OfferMessage(new DataflowMessageHeader(1 + i), i, null, false); // Message ID doesn't matter because consumeTosAccept:false
-            }
-
-            Assert.False(bufferBlock.Count != 10, string.Format("BufferBlock.Count failed! expected {0}, actual {1}", 10, bufferBlock.Count));
-
-            IList<int> items;
-            bool result = bufferBlock.TryReceiveAll(out items);
-
-            Assert.False(bufferBlock.Count != 0, string.Format("BufferBlock.Count failed! expected {0}, actual {1}", 0, bufferBlock.Count));
-        }
-
-        [Fact]
-        [OuterLoop]
-        public void RunBufferBlockConformanceTests()
-        {
-            bool localPassed;
-            // Do everything twice - once through OfferMessage and Once through Post
-            for (FeedMethod feedMethod = FeedMethod._First; feedMethod < FeedMethod._Count; feedMethod++)
-            {
-                Func<DataflowBlockOptions, TargetProperties<int>> bufferBlockFactory =
-                    options =>
-                    {
-                        BufferBlock<int> bufferBlock = new BufferBlock<int>(options);
-                        ActionBlock<int> actionBlock = new ActionBlock<int>(i => TrackCaptures(i), (ExecutionDataflowBlockOptions)options);
-
-                        bufferBlock.LinkTo(actionBlock);
-
-                        return new TargetProperties<int> { Target = bufferBlock, Capturer = actionBlock, ErrorVerifyable = false };
-                    };
-                CancellationTokenSource cancellationSource = new CancellationTokenSource();
-                var defaultOptions = new ExecutionDataflowBlockOptions();
-                var dopOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-                var mptOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 10 };
-                var cancellationOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 100, CancellationToken = cancellationSource.Token };
-
-                Assert.True(FeedTarget(bufferBlockFactory, defaultOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(bufferBlockFactory, defaultOptions, 10, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(bufferBlockFactory, dopOptions, 1000, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(bufferBlockFactory, mptOptions, 10000, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(bufferBlockFactory, mptOptions, 10000, Intervention.Complete, null, feedMethod, true));
-                Assert.True(FeedTarget(bufferBlockFactory, cancellationOptions, 10000, Intervention.Cancel, cancellationSource, feedMethod, true));
-            }
-
-            // Test chained Post/Receive
-            {
-                localPassed = true;
-                const int ITERS = 2;
-                var network = Chain<BufferBlock<int>, int>(4, () => new BufferBlock<int>());
-                for (int i = 0; i < ITERS; i++)
+                if (fault)
                 {
-                    network.Post(i);
-                    localPassed &= (((IReceivableSourceBlock<int>)network).Receive() == i);
+                    Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)bb).Fault(null));
+                    ((IDataflowBlock)bb).Fault(new InvalidCastException());
+                    await Assert.ThrowsAsync<InvalidCastException>(() => bb.Completion);
                 }
-                Assert.True(localPassed, string.Format("{0}: Chained Post/Receive", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test chained SendAsync/Receive
-            {
-                localPassed = true;
-                const int ITERS = 2;
-                var network = Chain<BufferBlock<int>, int>(4, () => new BufferBlock<int>());
-                for (int i = 0; i < ITERS; i++)
+                else
                 {
-                    network.SendAsync(i);
-                    localPassed &= (((IReceivableSourceBlock<int>)network).Receive() == i);
-                }
-                Assert.True(localPassed, string.Format("{0}: Chained SendAsync/Receive", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test chained Post all then Receive
-            {
-                localPassed = true;
-                const int ITERS = 2;
-                var network = Chain<BufferBlock<int>, int>(4, () => new BufferBlock<int>());
-                for (int i = 0; i < ITERS; i++) localPassed &= network.Post(i) == true;
-                for (int i = 0; i < ITERS; i++) localPassed &= ((IReceivableSourceBlock<int>)network).Receive() == i;
-                Assert.True(localPassed, string.Format("{0}: Chained Post all then Receive", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test chained SendAsync all then Receive
-            {
-                localPassed = true;
-                const int ITERS = 2;
-                var network = Chain<BufferBlock<int>, int>(4, () => new BufferBlock<int>());
-                var tasks = new Task[ITERS];
-                for (int i = 1; i <= ITERS; i++) tasks[i - 1] = network.SendAsync(i);
-                Task.WaitAll(tasks);
-                int total = 0;
-                for (int i = 1; i <= ITERS; i++) total += ((IReceivableSourceBlock<int>)network).Receive();
-                localPassed &= (total == ((ITERS * (ITERS + 1)) / 2));
-                Assert.True(localPassed, string.Format("{0}: Chained SendAsync all then Receive", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test using a precanceled token
-            {
-                localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
                     cts.Cancel();
-                    var dbo = new DataflowBlockOptions { CancellationToken = cts.Token };
-                    var bb = new BufferBlock<int>(dbo);
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+                }
 
-                    int ignoredValue;
-                    IList<int> ignoredValues;
-                    localPassed &= bb.LinkTo(new ActionBlock<int>(delegate { })) != null;
-                    localPassed &= bb.SendAsync(42).Result == false;
-                    localPassed &= bb.TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= bb.Post(42) == false;
-                    localPassed &= bb.Count == 0;
-                    localPassed &= bb.TryReceive(out ignoredValue) == false;
-                    localPassed &= bb.Completion != null;
-                    bb.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-                Assert.True(localPassed, string.Format("    {0}: Precanceled tokens work correctly", localPassed ? "Success" : "Failure"));
+                await Task.WhenAll(sends);
+                Assert.Equal(expected: 0, actual: bb.Count);
             }
         }
+
+        [Fact]
+        public async Task TestFaultyScheduler()
+        {
+            var bb = new BufferBlock<int>(new DataflowBlockOptions 
+            {
+                TaskScheduler = new DelegateTaskScheduler
+                {
+                    QueueTaskDelegate = delegate { throw new FormatException(); }
+                }
+            });
+            bb.Post(42);
+            bb.LinkTo(DataflowBlock.NullTarget<int>());
+            await Assert.ThrowsAsync<TaskSchedulerException>(() => bb.Completion);
+        }
+
+        [Fact]
+        public async Task TestFaultyTarget()
+        {
+            ISourceBlock<int> bb = new BufferBlock<int>();
+            bb.Fault(new InvalidCastException());
+            await Assert.ThrowsAsync<InvalidCastException>(() => bb.Completion);
+
+            Assert.Throws<FormatException>(() => {
+                bb.LinkTo(new DelegatePropagator<int, int>
+                {
+                    FaultDelegate = delegate { throw new FormatException(); }
+                }, new DataflowLinkOptions { PropagateCompletion = true });
+            });
+        }
+
     }
 }
