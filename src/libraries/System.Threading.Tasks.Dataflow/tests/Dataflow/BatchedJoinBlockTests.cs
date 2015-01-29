@@ -1,331 +1,493 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class BatchedJoinBlockTests
     {
         [Fact]
-        public void RunBatchedJoinBlockTests()
+        public void TestCtor()
         {
-            // BatchedJoinBlock`2
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new BatchedJoinBlock<int, int>(1, new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) : new BatchedJoinBlock<int, int>(1)));
-            Assert.True(ISourceBlockTestHelper.TestLinkTo<Tuple<IList<int>, IList<int>>>(ConstructBatchedJoin2NewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestReserveMessageAndReleaseReservation<Tuple<IList<int>, IList<int>>>(ConstructBatchedJoin2NewWithNMessages(1)));
-            //Assert.True(ISourceBlockTestHelper.TestReleaseReservation<Tuple<IList<int>, IList<int>>>(ConstructBatchedJoin2NewWithNMessages(1)));
-
-            // BatchedJoinBlock`3
-            Assert.True(ISourceBlockTestHelper.TestConsumeMessage<Tuple<IList<int>, IList<int>, IList<int>>>(ConstructBatchedJoin3NewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveWithFilter<Tuple<IList<int>, IList<int>, IList<int>>>(ConstructBatchedJoin3NewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveAll<Tuple<IList<int>, IList<int>, IList<int>>>(ConstructBatchedJoin3NewWithNMessages(1), 1));
-        }
-
-        private static BatchedJoinBlock<int, int> ConstructBatchedJoin2NewWithNMessages(int messagesCount)
-        {
-            var block = new BatchedJoinBlock<int, int>(2);
-            for (int i = 0; i < messagesCount; i++)
+            var blocks2 = new[]
             {
-                block.Target1.Post(i);
-                block.Target2.Post(i);
+                new BatchedJoinBlock<int, string>(1),
+                new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { 
+                    MaxNumberOfGroups = 1 }),
+                new BatchedJoinBlock<int, string>(3, new GroupingDataflowBlockOptions { 
+                    MaxMessagesPerTask = 1 }),
+                new BatchedJoinBlock<int, string>(4, new GroupingDataflowBlockOptions { 
+                    MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
+            };
+            for (int i = 0; i < blocks2.Length; i++)
+            {
+                Assert.Equal(expected: i + 1, actual: blocks2[i].BatchSize);
+                Assert.Equal(expected: 0, actual: blocks2[i].OutputCount);
+                Assert.NotNull(blocks2[i].Completion);
             }
 
-            // Spin until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount);
-
-            return block;
-        }
-
-        private static BatchedJoinBlock<int, int, int> ConstructBatchedJoin3NewWithNMessages(int messagesCount)
-        {
-            var block = new BatchedJoinBlock<int, int, int>(3);
-            for (int i = 0; i < messagesCount; i++)
+            var blocks3 = new[]
             {
-                block.Target1.Post(i);
-                block.Target2.Post(i);
-                block.Target3.Post(i);
+                new BatchedJoinBlock<int, string, double>(1),
+                new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { 
+                    MaxNumberOfGroups = 1 }),
+                new BatchedJoinBlock<int, string, double>(3, new GroupingDataflowBlockOptions { 
+                    MaxMessagesPerTask = 1 }),
+                new BatchedJoinBlock<int, string, double>(4, new GroupingDataflowBlockOptions { 
+                    MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
+            };
+            for (int i = 0; i < blocks3.Length; i++)
+            {
+                Assert.Equal(expected: i + 1, actual: blocks2[i].BatchSize);
+                Assert.Equal(expected: 0, actual: blocks2[i].OutputCount);
+                Assert.NotNull(blocks2[i].Completion);
             }
-
-            // Spin until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount);
-
-            return block;
         }
 
         [Fact]
-        public void TestBatchedJoinBlockConstructor()
+        public void TestArgumentExceptions()
         {
-            // *** 2-way BatchedJoinBlock ***
-            // batch size without decline without option
-            var block = new BatchedJoinBlock<int, int>(42);
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block.BatchSize != 42, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
-            // batch size with decline without option
-            block = new BatchedJoinBlock<int, int>(43, new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 });
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block.BatchSize != 43, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
-            // batch size with decline with not cancelled token and default scheduler
-            block = new BatchedJoinBlock<int, int>(44, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 });
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block.BatchSize != 44, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
-            // decline with a cancelled token and default scheduler
-            var token = new CancellationToken(true);
-            block = new BatchedJoinBlock<int, int>(45, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token, MaxNumberOfGroups = 1 });
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block.BatchSize != 45, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, string>(-1));
+            Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, string>(2, null));
+            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { Greedy = false }));
+            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 2 }));
 
-            // *** 3-way BatchedJoinBlock ***
-            // batch size without decline without option
-            var block3 = new BatchedJoinBlock<int, int, int>(42);
-            Assert.False(block3.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block3.BatchSize != 42, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
-            // batch size with decline without option
-            block3 = new BatchedJoinBlock<int, int, int>(43, new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 });
-            Assert.False(block3.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block3.BatchSize != 43, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
-            // batch size with decline with not cancelled token and default scheduler
-            block3 = new BatchedJoinBlock<int, int, int>(44, new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 });
-            Assert.False(block3.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block3.BatchSize != 44, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
-            // decline with a cancelled token and default scheduler
-            token = new CancellationToken(true);
-            block3 = new BatchedJoinBlock<int, int, int>(45, new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token, MaxNumberOfGroups = 1 });
-            Assert.False(block3.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new BatchedJoinBlock.");
-            Assert.False(block3.BatchSize != 45, "Constructor failed! BatchSize does not match for a brand new BatchedJoinBlock.");
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, string, double>(-1));
+            Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, string, double>(2, null));
+            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { Greedy = false }));
+            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 2 }));
+
+            DataflowTestHelpers.TestArgumentsExceptions(new BatchedJoinBlock<int, string>(1));
+            DataflowTestHelpers.TestArgumentsExceptions(new BatchedJoinBlock<int, string, double>(1));
         }
 
         [Fact]
-        public void TestBatchedJoinInvalidArgumentValidation()
+        public void TestToString()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, int>(0));
-            Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, int>(1, null));
-            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, int>(1, new GroupingDataflowBlockOptions { Greedy = false }));
-            Assert.Throws<NotSupportedException>(() => { var ignored = new BatchedJoinBlock<int, int>(2).Target1.Completion; });
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<Tuple<IList<int>, IList<int>>>(new BatchedJoinBlock<int, int>(2)));
+            DataflowTestHelpers.TestToString(nameFormat =>
+                nameFormat != null ?
+                    new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new BatchedJoinBlock<int, string>(2));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, int, int>(0));
-            Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, int, int>(1, null));
-            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, int, int>(1, new GroupingDataflowBlockOptions { Greedy = false }));
-            Assert.Throws<NotSupportedException>(() => { var ignored = new BatchedJoinBlock<int, int, int>(2).Target3.Completion; });
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<Tuple<IList<int>, IList<int>, IList<int>>>(new BatchedJoinBlock<int, int, int>(2)));
+            DataflowTestHelpers.TestToString(nameFormat =>
+                nameFormat != null ?
+                    new BatchedJoinBlock<int, string, double>(3, new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new BatchedJoinBlock<int, string, double>(3));
         }
 
         [Fact]
-        [OuterLoop]
-        public void RunBatchedJoinBlockConformanceTests()
+        public async Task TestCompletionTask()
         {
-            // Test Post/Receive single block
-            var block = new BatchedJoinBlock<int, int>(2);
-            int iter = 10;
-            for (int i = 0; i < iter; i++)
+            await DataflowTestHelpers.TestCompletionTask(() => new BatchedJoinBlock<int, string>(2));
+            await DataflowTestHelpers.TestCompletionTask(() => new BatchedJoinBlock<int, string, double>(2));
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => new BatchedJoinBlock<int, string>(2).Target1.Completion);
+            await Assert.ThrowsAsync<NotSupportedException>(() => new BatchedJoinBlock<int, string, double>(2).Target1.Completion);
+        }
+
+        [Fact]
+        public void TestPostThenReceive2()
+        {
+            const int Iters = 10;
+            var block = new BatchedJoinBlock<int, string>(2);
+            for (int i = 0; i < Iters; i++)
             {
+                int prevCount = block.OutputCount;
                 block.Target1.Post(i);
-                block.Target2.Post(i);
+                Assert.Equal(expected: prevCount, actual: block.OutputCount);
+                block.Target2.Post(i.ToString());
+
                 if (i % block.BatchSize == 0)
                 {
-                    var msg = block.Receive();
-                    Assert.False(msg.Item1.Count != msg.Item2.Count, "BatchedJoinBlock Post/Receive failed, returned arrays of differnet length");
+                    Assert.Equal(expected: prevCount + 1, actual: block.OutputCount);
+
+                    Tuple<IList<int>, IList<string>> msg;
+                    Assert.False(block.TryReceive(f => false, out msg));
+                    Assert.True(block.TryReceive(out msg));
+
+                    Assert.Equal(expected: 1, actual: msg.Item1.Count);
+                    Assert.Equal(expected: 1, actual: msg.Item2.Count);
+
                     for (int j = 0; j < msg.Item1.Count; j++)
                     {
-                        if (msg.Item1[j] != msg.Item2[j])
-                        {
-                            Assert.False(true, "BatchedJoinBlock Post/Receive failed, returned arrys items are different");
-                        }
+                        Assert.Equal(msg.Item1[j].ToString(), msg.Item2[j]);
                     }
                 }
             }
+        }
 
-            // Test PostAll then Receive single block
-            block = new BatchedJoinBlock<int, int>(2);
-            for (int i = 0; i < iter; i++)
+        [Fact]
+        public void TestPostThenReceive3()
+        {
+            const int Iters = 10;
+            var block = new BatchedJoinBlock<int, string, int>(3);
+            for (int i = 0; i < Iters; i++)
+            {
+                Tuple<IList<int>, IList<string>, IList<int>> item;
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+
+                block.Target1.Post(i);
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+                Assert.False(block.TryReceive(out item));
+
+                block.Target2.Post(i.ToString());
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+                Assert.False(block.TryReceive(out item));
+
+                block.Target3.Post(i);
+                Assert.Equal(expected: 1, actual: block.OutputCount);
+
+                Tuple<IList<int>, IList<string>, IList<int>> msg;
+                Assert.True(block.TryReceive(out msg));
+                Assert.Equal(expected: 1, actual: msg.Item1.Count);
+                Assert.Equal(expected: 1, actual: msg.Item2.Count);
+                Assert.Equal(expected: 1, actual: msg.Item3.Count);
+                for (int j = 0; j < msg.Item1.Count; j++)
+                {
+                    Assert.Equal(msg.Item1[j].ToString(), msg.Item2[j]);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestPostAllThenReceive()
+        {
+            const int Iters = 10;
+
+            var block = new BatchedJoinBlock<int, int>(2);
+            for (int i = 0; i < Iters; i++)
             {
                 block.Target1.Post(i);
                 block.Target2.Post(i);
             }
-
-            Assert.False(block.OutputCount != iter, string.Format("BatchedJoinBlock Post failed, expected, incorrect OutputCount. Expected {0} actual {1}", iter, block.OutputCount));
+            Assert.Equal(expected: Iters, actual: block.OutputCount);
 
             for (int i = 0; i < block.OutputCount; i++)
             {
-                var msg = block.Receive();
-                if (msg.Item1.Count != msg.Item2.Count)
-                {
-                    Assert.False(true, "BatchedJoinBlock PostAll then Receive failed, returned arrays of differnet length");
-                }
+                Tuple<IList<int>, IList<int>> msg;
+                Assert.True(block.TryReceive(out msg));
+
+                Assert.Equal(expected: 1, actual: msg.Item1.Count);
+                Assert.Equal(expected: 1, actual: msg.Item2.Count);
+
                 for (int j = 0; j < msg.Item1.Count; j++)
                 {
-                    if (msg.Item1[j] != msg.Item2[j])
-                    {
-                        Assert.False(true, "BatchedJoinBlock PostAll then Receive failed, returned arrys items are different");
-                    }
+                    Assert.Equal(msg.Item1[j], msg.Item2[j]);
                 }
             }
+        }
 
-            //Test one target Post < patchSize msg with TryReceive
-            block = new BatchedJoinBlock<int, int>(2);
-            block.Target1.Post(0);
-            Tuple<IList<int>, IList<int>> result;
-            if (block.TryReceive(out result))
+        [Fact]
+        public void TestUnbalanced2()
+        {
+            const int Iters = 10, NumBatches = 2;
+            int batchSize = Iters / NumBatches;
+
+            var block = new BatchedJoinBlock<string, int>(batchSize);
+            for (int i = 0; i < Iters; i++)
             {
-                Assert.False(true, "BatchedJoinBlock.TryReceive failed, returned true and the number of messages is less than the batch size");
-            }
-            if (block.OutputCount > 0)
-            {
-                Assert.False(true, "BatchedJoinBlock.OutputCount failed, returned count > 0 and only one target posted a message");
+                block.Target2.Post(i);
+                Assert.Equal(expected: (i + 1) / batchSize, actual: block.OutputCount);
             }
 
-            // Test handling of stragglers at end of block's life
-            block = new BatchedJoinBlock<int, int>(2);
-            for (int i = 0; i < 10; i++)
+            IList<Tuple<IList<string>, IList<int>>> items;
+            Assert.True(block.TryReceiveAll(out items));
+            Assert.Equal(expected: NumBatches, actual: items.Count);
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                Assert.NotNull(item.Item1);
+                Assert.NotNull(item.Item2);
+                Assert.Equal(expected: batchSize, actual: item.Item2.Count);
+                for (int j = 0; j < batchSize; j++)
+                {
+                    Assert.Equal(expected: (i * batchSize) + j, actual: item.Item2[j]);
+                }
+            }
+            Assert.False(block.TryReceiveAll(out items));
+        }
+
+        [Fact]
+        public void TestUnbalanced3()
+        {
+            const int Iters = 10, NumBatches = 2;
+            int batchSize = Iters / NumBatches;
+            Tuple<IList<int>, IList<string>, IList<double>> item;
+
+            var block = new BatchedJoinBlock<int, string, double>(batchSize);
+            for (int i = 0; i < Iters; i++)
+            {
+                block.Target1.Post(i);
+                Assert.Equal(expected: (i + 1) / batchSize, actual: block.OutputCount);
+            }
+
+            for (int i = 0; i < NumBatches; i++)
+            {
+                Assert.True(block.TryReceive(out item));
+                Assert.NotNull(item.Item1);
+                Assert.NotNull(item.Item2);
+                Assert.NotNull(item.Item3);
+                Assert.Equal(expected: batchSize, actual: item.Item1.Count);
+                for (int j = 0; j < batchSize; j++)
+                {
+                    Assert.Equal(expected: (i * batchSize) + j, actual: item.Item1[j]);
+                }
+            }
+            Assert.False(block.TryReceive(out item));
+        }
+
+        [Fact]
+        public void TestCompletion()
+        {
+            const int Iters = 10;
+
+            var block = new BatchedJoinBlock<int, int>(2);
+            for (int i = 0; i < Iters; i++)
             {
                 block.Target1.Post(i);
                 block.Target2.Post(i);
             }
+            Assert.Equal(expected: Iters, actual: block.OutputCount);
+
             block.Target1.Post(10);
             block.Target1.Complete();
             block.Target2.Complete();
-            if (block.OutputCount != 11)
+            Assert.Equal(expected: Iters + 1, actual: block.OutputCount);
+
+            Tuple<IList<int>, IList<int>> item;
+            for (int i = 0; i < Iters; i++)
             {
-                Assert.False(true, "BatchedJoinBlock last batch not generated correctly");
+                Assert.True(block.TryReceive(out item));
+                Assert.Equal(expected: 1, actual: item.Item1.Count);
+                Assert.Equal(expected: 1, actual: item.Item2.Count);
             }
 
-            for (int i = 0; i < 10; i++) block.Receive();
-            var lastResult = block.Receive();
-            if (lastResult.Item1.Count != 1 || lastResult.Item2.Count != 0)
-            {
-                Assert.False(true, "BatchedJoinBlock last batch contains incorrect data");
-            }
-
-            // Test BatchedJoinBlock`2 using a precanceled token
-            {
-                var localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 };
-                    var bjb = new BatchedJoinBlock<int, int>(42, dbo);
-
-                    Tuple<IList<int>, IList<int>> ignoredValue;
-                    IList<Tuple<IList<int>, IList<int>>> ignoredValues;
-                    localPassed &= bjb.LinkTo(new ActionBlock<Tuple<IList<int>, IList<int>>>(delegate { })) != null;
-                    localPassed &= bjb.Target1.Post(42) == false;
-                    localPassed &= bjb.Target2.Post(42) == false;
-                    localPassed &= bjb.Target1.SendAsync(42).Result == false;
-                    localPassed &= bjb.Target2.SendAsync(42).Result == false;
-                    localPassed &= bjb.TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= bjb.TryReceive(out ignoredValue) == false;
-                    localPassed &= bjb.OutputCount == 0;
-                    localPassed &= bjb.Completion != null;
-                    bjb.Target1.Complete();
-                    bjb.Target2.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-
-                Assert.True(localPassed, "Precanceled tokens don't work correctly on BJB`2");
-            }
-
-            // Test BatchedJoinBlock`3 using a precanceled token
-            {
-                var localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 };
-                    var bjb = new BatchedJoinBlock<int, int, int>(42, dbo);
-
-                    Tuple<IList<int>, IList<int>, IList<int>> ignoredValue;
-                    IList<Tuple<IList<int>, IList<int>, IList<int>>> ignoredValues;
-                    localPassed &= bjb.LinkTo(new ActionBlock<Tuple<IList<int>, IList<int>, IList<int>>>(delegate { })) != null;
-                    localPassed &= bjb.Target1.Post(42) == false;
-                    localPassed &= bjb.Target2.Post(42) == false;
-                    localPassed &= bjb.Target3.Post(42) == false;
-                    localPassed &= bjb.Target1.SendAsync(42).Result == false;
-                    localPassed &= bjb.Target2.SendAsync(42).Result == false;
-                    localPassed &= bjb.Target3.SendAsync(42).Result == false;
-                    localPassed &= bjb.TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= bjb.TryReceive(out ignoredValue) == false;
-                    localPassed &= bjb.OutputCount == 0;
-                    localPassed &= bjb.Completion != null;
-                    bjb.Target1.Complete();
-                    bjb.Target2.Complete();
-                    bjb.Target3.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-
-                Assert.True(localPassed, "Precanceled tokens don't work correctly on BJB`3");
-            }
-
-            // Test BatchedJoinBlock`2 completion through all targets
-            {
-                var localPassed = true;
-                var batchedJoin = new BatchedJoinBlock<int, int>(99);
-                var terminator = new ActionBlock<Tuple<IList<int>, IList<int>>>(x => { });
-                batchedJoin.LinkTo(terminator);
-                batchedJoin.Target1.Post(1);
-                batchedJoin.Target1.Complete();
-                batchedJoin.Target2.Complete();
-                localPassed = batchedJoin.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("BatchedJoinBlock`2 completed through targets - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test BatchedJoinBlock`3 completion through all targets
-            {
-                var localPassed = true;
-                var batchedJoin = new BatchedJoinBlock<int, int, int>(99);
-                var terminator = new ActionBlock<Tuple<IList<int>, IList<int>, IList<int>>>(x => { });
-                batchedJoin.LinkTo(terminator);
-                batchedJoin.Target1.Post(1);
-                batchedJoin.Target1.Complete();
-                batchedJoin.Target2.Complete();
-                batchedJoin.Target3.Complete();
-                localPassed = batchedJoin.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("BatchedJoinBlock`3 completed through targets - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test BatchedJoinBlock`2 completion through block
-            {
-                var localPassed = true;
-                var batchedJoin = new BatchedJoinBlock<int, int>(99);
-                var terminator = new ActionBlock<Tuple<IList<int>, IList<int>>>(x => { });
-                batchedJoin.LinkTo(terminator);
-                batchedJoin.Target1.Post(1);
-                batchedJoin.Complete();
-                localPassed = batchedJoin.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("BatchedJoinBlock`2 completed through block - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test BatchedJoinBlock`3 completion through block
-            {
-                var localPassed = true;
-                var batchedJoin = new BatchedJoinBlock<int, int, int>(99);
-                var terminator = new ActionBlock<Tuple<IList<int>, IList<int>, IList<int>>>(x => { });
-                batchedJoin.LinkTo(terminator);
-                batchedJoin.Target1.Post(1);
-                batchedJoin.Complete();
-                localPassed = batchedJoin.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("BatchedJoinBlock`3 completed through block - {0}", localPassed ? "Passed" : "FAILED"));
-            }
+            Assert.True(block.TryReceive(out item));
+            Assert.Equal(expected: 1, actual: item.Item1.Count);
+            Assert.Equal(expected: 0, actual: item.Item2.Count);
         }
+
+        [Fact]
+        public async Task TestPrecanceled2()
+        {
+            var b = new BatchedJoinBlock<int, int>(42, 
+                new GroupingDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 });
+
+            Tuple<IList<int>, IList<int>> ignoredValue;
+            IList<Tuple<IList<int>, IList<int>>> ignoredValues;
+
+            Assert.NotNull(b.LinkTo(new ActionBlock<Tuple<IList<int>, IList<int>>>(delegate { })));
+            Assert.False(b.Target1.Post(42));
+            Assert.False(b.Target2.Post(42));
+            
+            foreach (var target in new[] { b.Target1, b.Target2 })
+            {
+                var t = target.SendAsync(42);
+                Assert.True(t.IsCompleted);
+                Assert.False(t.Result);
+            }
+            
+            Assert.False(b.TryReceiveAll(out ignoredValues));
+            Assert.False(b.TryReceive(out ignoredValue));
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            Assert.NotNull(b.Completion);
+            b.Target1.Complete();
+            b.Target2.Complete();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+        }
+
+        [Fact]
+        public async Task TestPrecanceled3()
+        {
+            var b = new BatchedJoinBlock<int, int, int>(42,
+                new GroupingDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 });
+
+            Tuple<IList<int>, IList<int>, IList<int>> ignoredValue;
+            IList<Tuple<IList<int>, IList<int>, IList<int>>> ignoredValues;
+
+            Assert.NotNull(b.LinkTo(new ActionBlock<Tuple<IList<int>, IList<int>, IList<int>>>(delegate { })));
+            Assert.False(b.Target1.Post(42));
+            Assert.False(b.Target2.Post(42));
+
+            foreach (var target in new[] { b.Target1, b.Target2 })
+            {
+                var t = target.SendAsync(42);
+                Assert.True(t.IsCompleted);
+                Assert.False(t.Result);
+            }
+
+            Assert.False(b.TryReceiveAll(out ignoredValues));
+            Assert.False(b.TryReceive(out ignoredValue));
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            Assert.NotNull(b.Completion);
+            b.Target1.Complete();
+            b.Target2.Complete();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+        }
+
+        [Fact]
+        public async Task TestCompletesThroughTargets()
+        {
+            var b2 = new BatchedJoinBlock<int, int>(99);
+            b2.Target1.Post(1);
+            b2.Target1.Complete();
+            b2.Target2.Complete();
+            Tuple<IList<int>, IList<int>> item2 = await b2.ReceiveAsync();
+            Assert.Equal(expected: 1, actual: item2.Item1.Count);
+            Assert.Equal(expected: 0, actual: item2.Item2.Count);
+            await b2.Completion;
+
+            var b3 = new BatchedJoinBlock<int, int, int>(99);
+            b3.Target2.Post(1);
+            b3.Target3.Complete();
+            b3.Target2.Complete();
+            b3.Target1.Complete();
+            Tuple<IList<int>, IList<int>, IList<int>> item3 = await b3.ReceiveAsync();
+            Assert.Equal(expected: 0, actual: item3.Item1.Count);
+            Assert.Equal(expected: 1, actual: item3.Item2.Count);
+            Assert.Equal(expected: 0, actual: item3.Item3.Count);
+            await b3.Completion;
+        }
+
+        [Fact]
+        public async Task TestFaultsThroughTargets()
+        {
+            var b2 = new BatchedJoinBlock<int, int>(99);
+            b2.Target1.Post(1);
+            ((IDataflowBlock)b2.Target1).Fault(new FormatException());
+            await Assert.ThrowsAsync<FormatException>(() => b2.Completion);
+
+            var b3 = new BatchedJoinBlock<int, int, int>(99);
+            b3.Target3.Post(1);
+            ((IDataflowBlock)b3.Target2).Fault(new FormatException());
+            await Assert.ThrowsAsync<FormatException>(() => b3.Completion);
+        }
+
+        [Fact]
+        public async Task TestCompletesThroughBlock()
+        {
+            var b2 = new BatchedJoinBlock<int, int>(99);
+            b2.Target1.Post(1);
+            b2.Complete();
+            Tuple<IList<int>, IList<int>> item2 = await b2.ReceiveAsync();
+            Assert.Equal(expected: 1, actual: item2.Item1.Count);
+            Assert.Equal(expected: 0, actual: item2.Item2.Count);
+            await b2.Completion;
+
+            var b3 = new BatchedJoinBlock<int, int, int>(99);
+            b3.Target3.Post(1);
+            b3.Complete();
+            Tuple<IList<int>, IList<int>, IList<int>> item3 = await b3.ReceiveAsync();
+            Assert.Equal(expected: 0, actual: item3.Item1.Count);
+            Assert.Equal(expected: 0, actual: item3.Item2.Count);
+            Assert.Equal(expected: 1, actual: item3.Item3.Count);
+            await b3.Completion;
+        }
+
+        [Fact]
+        public async Task TestReserveReleaseConsume()
+        {
+            var b2 = new BatchedJoinBlock<int, int>(2);
+            b2.Target1.Post(1);
+            b2.Target2.Post(2);
+            await DataflowTestHelpers.TestReserveAndRelease(b2);
+
+            b2 = new BatchedJoinBlock<int, int>(2);
+            b2.Target1.Post(1);
+            b2.Target2.Post(2);
+            await DataflowTestHelpers.TestReserveAndConsume(b2);
+
+            var b3 = new BatchedJoinBlock<int, int, int>(1);
+            b3.Target2.Post(3);
+            await DataflowTestHelpers.TestReserveAndRelease(b3);
+
+            b3 = new BatchedJoinBlock<int, int, int>(4);
+            b3.Target3.Post(1);
+            b3.Target3.Post(2);
+            b3.Target3.Post(3);
+            b3.Target2.Post(3);
+            await DataflowTestHelpers.TestReserveAndConsume(b3);
+        }
+
+        [Fact]
+        public async Task TestConsumeToAccept()
+        {
+            var wob = new WriteOnceBlock<int>(i => i * 2);
+            wob.Post(1);
+            await wob.Completion;
+
+            var b2 = new BatchedJoinBlock<int, int>(1);
+            wob.LinkTo(b2.Target2, new DataflowLinkOptions { PropagateCompletion = true });
+            Tuple<IList<int>, IList<int>> item2 = await b2.ReceiveAsync();
+            Assert.Equal(expected: 0, actual: item2.Item1.Count);
+            Assert.Equal(expected: 1, actual: item2.Item2.Count);
+            b2.Target1.Complete();
+
+            var b3 = new BatchedJoinBlock<int, int, int>(1);
+            wob.LinkTo(b3.Target3, new DataflowLinkOptions { PropagateCompletion = true });
+            Tuple<IList<int>, IList<int>, IList<int>> item3 = await b3.ReceiveAsync();
+            Assert.Equal(expected: 0, actual: item3.Item1.Count);
+            Assert.Equal(expected: 0, actual: item3.Item2.Count);
+            Assert.Equal(expected: 1, actual: item3.Item3.Count);
+            b3.Target1.Complete();
+            b3.Target2.Complete();
+
+            await Task.WhenAll(b2.Completion, b3.Completion);
+        }
+
+        [Fact]
+        public async Task TestOfferMessage2()
+        {
+            Func<ITargetBlock<int>> generator = () => {
+                var b = new BatchedJoinBlock<int, int>(1);
+                return b.Target1;
+            };
+            DataflowTestHelpers.TestOfferMessage_ArgumentValidation(generator());
+            DataflowTestHelpers.TestOfferMessage_AcceptsDataDirectly(generator());
+            await DataflowTestHelpers.TestOfferMessage_AcceptsViaLinking(generator());
+        }
+
+        [Fact]
+        public async Task TestOfferMessage3()
+        {
+            Func<ITargetBlock<int>> generator = () => {
+                var b = new BatchedJoinBlock<int, int, int>(1);
+                return b.Target1;
+            };
+            DataflowTestHelpers.TestOfferMessage_ArgumentValidation(generator());
+            DataflowTestHelpers.TestOfferMessage_AcceptsDataDirectly(generator());
+            await DataflowTestHelpers.TestOfferMessage_AcceptsViaLinking(generator());
+        }
+
+        [Fact]
+        public async Task TestMaxNumberOfGroups()
+        {
+            const int MaxGroups = 2;
+
+            var b2 = new BatchedJoinBlock<int, int>(1, new GroupingDataflowBlockOptions { MaxNumberOfGroups = MaxGroups });
+            b2.Target1.PostRange(0, MaxGroups);
+            Assert.False(b2.Target1.Post(42));
+            Assert.False(b2.Target2.Post(42));
+            IList<Tuple<IList<int>, IList<int>>> items2;
+            Assert.True(b2.TryReceiveAll(out items2));
+            Assert.Equal(expected: MaxGroups, actual: items2.Count);
+            await b2.Completion;
+
+            var b3 = new BatchedJoinBlock<int, int, int>(1, new GroupingDataflowBlockOptions { MaxNumberOfGroups = MaxGroups });
+            b3.Target1.PostRange(0, MaxGroups);
+            Assert.False(b3.Target1.Post(42));
+            Assert.False(b3.Target2.Post(42));
+            Assert.False(b3.Target3.Post(42));
+            IList<Tuple<IList<int>, IList<int>, IList<int>>> items3;
+            Assert.True(b3.TryReceiveAll(out items3));
+            Assert.Equal(expected: MaxGroups, actual: items3.Count);
+            await b3.Completion;
+        }
+
     }
 }
