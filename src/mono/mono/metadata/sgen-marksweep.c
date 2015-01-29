@@ -270,7 +270,7 @@ add_scanned_object (void *ptr)
 #endif
 
 static void
-sweep_block (MSBlockInfo *block, gboolean during_major_collection);
+sweep_block (MSBlockInfo *block);
 
 static int
 ms_find_block_obj_size_index (size_t size)
@@ -577,7 +577,7 @@ ensure_can_access_block_free_list (MSBlockInfo *block)
 			break;
 		case BLOCK_STATE_NEED_SWEEPING:
 			stat_major_blocks_lazy_swept ++;
-			sweep_block (block, FALSE);
+			sweep_block (block);
 			break;
 		case BLOCK_STATE_SWEEPING:
 			/* FIXME: do this more elegantly */
@@ -815,7 +815,7 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 			continue;
 		if (sweep && lazy_sweep) {
 			/* FIXME: We can't just call `sweep_block` willy-nilly. */
-			sweep_block (block, FALSE);
+			sweep_block (block);
 			SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "Block must be swept after sweeping");
 		}
 
@@ -1215,7 +1215,7 @@ set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
  *   Traverse BLOCK, freeing and zeroing unused objects.
  */
 static void
-sweep_block (MSBlockInfo *block, gboolean during_major_collection)
+sweep_block (MSBlockInfo *block)
 {
 	int count;
 	void *reversed = NULL;
@@ -1423,7 +1423,7 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 		 * statistics.
 		 */
 		if (!lazy_sweep)
-			sweep_block (block, TRUE);
+			sweep_block (block);
 
 		if (!has_pinned) {
 			++sweep_num_blocks [obj_size_index];
@@ -1721,7 +1721,7 @@ major_start_major_collection (void)
 		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
 
 		FOREACH_BLOCK (block) {
-			sweep_block (block, TRUE);
+			sweep_block (block);
 		} END_FOREACH_BLOCK;
 
 		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
@@ -2161,7 +2161,7 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFun
 
 		assert_block_state_is_consistent (block);
 		if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING)
-			sweep_block (block, FALSE);
+			sweep_block (block);
 
 		HEAVY_STAT (++marked_cards);
 
