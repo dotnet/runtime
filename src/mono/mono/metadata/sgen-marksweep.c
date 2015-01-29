@@ -214,7 +214,24 @@ static size_t num_empty_blocks = 0;
 #define END_FOREACH_BLOCK_NO_LOCK	} }
 
 static size_t num_major_sections = 0; /* GUARD */
-/* one free block list for each block object size */
+/*
+ * One free block list for each block object size.  We add and remove blocks from these
+ * lists lock-free via CAS.
+ *
+ * Blocks accessed/removed from `free_block_lists`:
+ *   from the mutator (with GC lock held)
+ *   in nursery collections
+ *   in non-concurrent major collections
+ *   in the finishing pause of concurrent major collections (whole list is cleared)
+ *
+ * Blocks added to `free_block_lists`:
+ *   in the sweeping thread
+ *   during nursery collections
+ *   from domain clearing (with the world stopped and no sweeping happening)
+ *
+ * The only item of those that doesn't require the GC lock is the sweep thread.  The sweep
+ * thread only ever adds blocks to the free list, so the ABA problem can't occur.
+ */
 static MSBlockInfo * volatile *free_block_lists [MS_BLOCK_TYPE_MAX];
 
 static guint64 stat_major_blocks_alloced = 0;
@@ -1203,9 +1220,6 @@ sweep_block (MSBlockInfo *block, gboolean during_major_collection)
 	int count;
 	void *reversed = NULL;
 
-	if (!during_major_collection)
-		g_assert (!sgen_concurrent_collection_in_progress ());
-
  retry:
 	assert_block_state_is_consistent (block);
 
@@ -1483,6 +1497,15 @@ sweep_loop_thread_func (void *dummy)
 
 		LOCK_ALLOCATED_BLOCKS;
 		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
+
+		/*
+		 * The block might have been freed by another thread doing some checking
+		 * work.
+		 */
+		if (!block) {
+			UNLOCK_ALLOCATED_BLOCKS;
+			continue;
+		}
 
 		assert_block_state_is_consistent (block);
 
@@ -2073,34 +2096,148 @@ card_offset (char *obj, char *base)
 }
 
 static void
-major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
+scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFunc scan_func, SgenGrayQueue *queue)
 {
-	MSBlockInfo *block;
-	gboolean has_references;
-	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
+#ifndef SGEN_HAVE_OVERLAPPING_CARDS
+	guint8 cards_copy [CARDS_PER_BLOCK];
+#endif
+	gboolean small_objects;
+	int block_obj_size;
+	char *block_start;
+	guint8 *card_data, *card_base;
+	guint8 *card_data_end;
+	char *scan_front = NULL;
+
+	block_obj_size = block->obj_size;
+	small_objects = block_obj_size < CARD_SIZE_IN_BYTES;
+
+	block_start = MS_BLOCK_FOR_BLOCK_INFO (block);
 
 	/*
-	 * FIXME: Don't wait for sweep, just iterate the blocks and sweep them individually
-	 * if necessary.
+	 * This is safe in face of card aliasing for the following reason:
+	 *
+	 * Major blocks are 16k aligned, or 32 cards aligned.
+	 * Cards aliasing happens in powers of two, so as long as major blocks are aligned to their
+	 * sizes, they won't overflow the cardtable overlap modulus.
 	 */
-	major_finish_sweeping ();
+	if (mod_union) {
+		card_data = card_base = block->cardtable_mod_union;
+		/*
+		 * This happens when the nursery collection that precedes finishing
+		 * the concurrent collection allocates new major blocks.
+		 */
+		if (!card_data)
+			return;
+	} else {
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+		card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
+#else
+		if (!sgen_card_table_get_card_data (cards_copy, (mword)block_start, CARDS_PER_BLOCK))
+			return;
+		card_data = card_base = cards_copy;
+#endif
+	}
+	card_data_end = card_data + CARDS_PER_BLOCK;
+
+	card_data += MS_BLOCK_SKIP >> CARD_BITS;
+
+	card_data = initial_skip_card (card_data);
+	while (card_data < card_data_end) {
+		size_t card_index, first_object_index;
+		char *start;
+		char *end;
+		char *first_obj, *obj;
+
+		HEAVY_STAT (++scanned_cards);
+
+		if (!*card_data) {
+			++card_data;
+			continue;
+		}
+
+		card_index = card_data - card_base;
+		start = (char*)(block_start + card_index * CARD_SIZE_IN_BYTES);
+		end = start + CARD_SIZE_IN_BYTES;
+
+		assert_block_state_is_consistent (block);
+		if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING)
+			sweep_block (block, FALSE);
+
+		HEAVY_STAT (++marked_cards);
+
+		if (small_objects)
+			sgen_card_table_prepare_card_for_scanning (card_data);
+
+		/*
+		 * If the card we're looking at starts at or in the block header, we
+		 * must start at the first object in the block, without calculating
+		 * the index of the object we're hypothetically starting at, because
+		 * it would be negative.
+		 */
+		if (card_index <= (MS_BLOCK_SKIP >> CARD_BITS))
+			first_object_index = 0;
+		else
+			first_object_index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
+
+		obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, first_object_index);
+
+		while (obj < end) {
+			if (obj < scan_front || !MS_OBJ_ALLOCED_FAST (obj, block_start))
+				goto next_object;
+
+			if (mod_union) {
+				/* FIXME: do this more efficiently */
+				int w, b;
+				MS_CALC_MARK_BIT (w, b, obj);
+				if (!MS_MARK_BIT (block, w, b))
+					goto next_object;
+			}
+
+			if (small_objects) {
+				HEAVY_STAT (++scanned_objects);
+				scan_func (obj, sgen_obj_get_descriptor (obj), queue);
+			} else {
+				size_t offset = card_offset (obj, block_start);
+				sgen_cardtable_scan_object (obj, block_obj_size, card_base + offset, mod_union, queue);
+			}
+		next_object:
+			obj += block_obj_size;
+			g_assert (scan_front <= obj);
+			scan_front = obj;
+		}
+
+		HEAVY_STAT (if (*card_data) ++remarked_cards);
+		binary_protocol_card_scan (first_obj, obj - first_obj);
+
+		if (small_objects)
+			++card_data;
+		else
+			card_data = card_base + card_offset (obj, block_start);
+	}
+}
+
+static void
+major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
+{
+	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
+	int block_index;
+	gboolean do_sweep_checking = sweep_state == SWEEP_STATE_SWEEPING;
 
 	if (!concurrent_mark)
 		g_assert (!mod_union);
 
-	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
-#ifndef SGEN_HAVE_OVERLAPPING_CARDS
-		guint8 cards_copy [CARDS_PER_BLOCK];
-#endif
-		gboolean small_objects;
-		int block_obj_size;
-		char *block_start;
-		guint8 *card_data, *card_base;
-		guint8 *card_data_end;
-		char *scan_front = NULL;
+	/*
+	 * We're running with the world stopped and the only other thread doing work is the
+	 * sweep thread, which doesn't add blocks to the array, so we can safely access
+	 * `next_slot` without locking.
+	 */
+	for (block_index = 0; block_index < allocated_blocks.next_slot; ++block_index) {
+		//gboolean has_references;
+		void *tagged_block;
+		MSBlockInfo *block;
 
 #ifdef PREFETCH_CARDS
-		int prefetch_index = __index + 6;
+		int prefetch_index = block_index + 6;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [prefetch_index]);
 			guint8 *prefetch_cards = sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (prefetch_block));
@@ -2110,116 +2247,29 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
                 }
 #endif
 
-		if (!has_references)
-			continue;
+		if (do_sweep_checking) {
+			LOCK_ALLOCATED_BLOCKS;
+			tagged_block = allocated_blocks.data [block_index];
+			block = BLOCK_UNTAG_HAS_REFERENCES (tagged_block);
 
-		block_obj_size = block->obj_size;
-		small_objects = block_obj_size < CARD_SIZE_IN_BYTES;
+			if (!block || !BLOCK_IS_TAGGED_HAS_REFERENCES (tagged_block)) {
+				UNLOCK_ALLOCATED_BLOCKS;
+				continue;
+			}
 
-		block_start = MS_BLOCK_FOR_BLOCK_INFO (block);
-
-		/*
-		 * This is safe in face of card aliasing for the following reason:
-		 *
-		 * Major blocks are 16k aligned, or 32 cards aligned.
-		 * Cards aliasing happens in powers of two, so as long as major blocks are aligned to their
-		 * sizes, they won't overflow the cardtable overlap modulus.
-		 */
-		if (mod_union) {
-			card_data = card_base = block->cardtable_mod_union;
-			/*
-			 * This happens when the nursery collection that precedes finishing
-			 * the concurrent collection allocates new major blocks.
-			 */
-			if (!card_data)
+			if (!ensure_block_is_checked_for_sweeping (block, block_index, NULL))
 				continue;
 		} else {
-#ifdef SGEN_HAVE_OVERLAPPING_CARDS
-			card_data = card_base = sgen_card_table_get_card_scan_address ((mword)block_start);
-#else
-			if (!sgen_card_table_get_card_data (cards_copy, (mword)block_start, CARDS_PER_BLOCK))
+			tagged_block = allocated_blocks.data [block_index];
+			block = BLOCK_UNTAG_HAS_REFERENCES (tagged_block);
+			SGEN_ASSERT (0, block, "Why are there holes in the block array when we're not sweeping?");
+
+			if (!BLOCK_IS_TAGGED_HAS_REFERENCES (tagged_block))
 				continue;
-			card_data = card_base = cards_copy;
-#endif
 		}
-		card_data_end = card_data + CARDS_PER_BLOCK;
 
-		card_data += MS_BLOCK_SKIP >> CARD_BITS;
-
-		card_data = initial_skip_card (card_data);
-		while (card_data < card_data_end) {
-			size_t card_index, first_object_index;
-			char *start;
-			char *end;
-			char *first_obj, *obj;
-
-			HEAVY_STAT (++scanned_cards);
-
-			if (!*card_data) {
-				++card_data;
-				continue;
-			}
-
-			card_index = card_data - card_base;
-			start = (char*)(block_start + card_index * CARD_SIZE_IN_BYTES);
-			end = start + CARD_SIZE_IN_BYTES;
-
-			assert_block_state_is_consistent (block);
-			if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING)
-				sweep_block (block, FALSE);
-
-			HEAVY_STAT (++marked_cards);
-
-			if (small_objects)
-				sgen_card_table_prepare_card_for_scanning (card_data);
-
-			/*
-			 * If the card we're looking at starts at or in the block header, we
-			 * must start at the first object in the block, without calculating
-			 * the index of the object we're hypothetically starting at, because
-			 * it would be negative.
-			 */
-			if (card_index <= (MS_BLOCK_SKIP >> CARD_BITS))
-				first_object_index = 0;
-			else
-				first_object_index = MS_BLOCK_OBJ_INDEX_FAST (start, block_start, block_obj_size);
-
-			obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, first_object_index);
-
-			while (obj < end) {
-				if (obj < scan_front || !MS_OBJ_ALLOCED_FAST (obj, block_start))
-					goto next_object;
-
-				if (mod_union) {
-					/* FIXME: do this more efficiently */
-					int w, b;
-					MS_CALC_MARK_BIT (w, b, obj);
-					if (!MS_MARK_BIT (block, w, b))
-						goto next_object;
-				}
-
-				if (small_objects) {
-					HEAVY_STAT (++scanned_objects);
-					scan_func (obj, sgen_obj_get_descriptor (obj), queue);
-				} else {
-					size_t offset = card_offset (obj, block_start);
-					sgen_cardtable_scan_object (obj, block_obj_size, card_base + offset, mod_union, queue);
-				}
-			next_object:
-				obj += block_obj_size;
-				g_assert (scan_front <= obj);
-				scan_front = obj;
-			}
-
-			HEAVY_STAT (if (*card_data) ++remarked_cards);
-			binary_protocol_card_scan (first_obj, obj - first_obj);
-
-			if (small_objects)
-				++card_data;
-			else
-				card_data = card_base + card_offset (obj, block_start);
-		}
-	} END_FOREACH_BLOCK_NO_LOCK;
+		scan_card_table_for_block (block, mod_union, scan_func, queue);
+	}
 }
 
 static void
