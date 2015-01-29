@@ -25,6 +25,10 @@
 
 #include "sgen-gc.h"
 
+/* Special indices returned by MATCH_INDEX. */
+#define BINARY_PROTOCOL_NO_MATCH (-1)
+#define BINARY_PROTOCOL_MATCH (-2)
+
 #define PROTOCOL_ID(method) method ## _id
 #define PROTOCOL_STRUCT(method) method ## _struct
 
@@ -55,7 +59,7 @@ enum {
 #define CUSTOM_PRINT(_)
 
 #define IS_ALWAYS_MATCH(_)
-#define IS_MATCH(_)
+#define MATCH_INDEX(_)
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
@@ -126,7 +130,7 @@ enum {
 #define CUSTOM_PRINT(_)
 
 #define IS_ALWAYS_MATCH(_)
-#define IS_MATCH(_)
+#define MATCH_INDEX(_)
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
@@ -198,7 +202,7 @@ void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
 #define CUSTOM_PRINT(_)
 
 #define IS_ALWAYS_MATCH(_)
-#define IS_MATCH(_)
+#define MATCH_INDEX(_)
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY

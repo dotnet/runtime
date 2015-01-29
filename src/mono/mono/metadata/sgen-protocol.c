@@ -375,7 +375,7 @@ protocol_entry (unsigned char type, gpointer data, int size)
 #define CUSTOM_PRINT(_)
 
 #define IS_ALWAYS_MATCH(_)
-#define IS_MATCH(_)
+#define MATCH_INDEX(_)
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY \
