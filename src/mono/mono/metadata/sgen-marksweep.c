@@ -495,7 +495,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	 */
 	info->is_to_space = (sgen_get_current_collection_generation () == GENERATION_OLD);
 	info->swept = 1;
-	info->state = info->is_to_space ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
+	info->state = (info->is_to_space || sgen_concurrent_collection_in_progress ()) ? BLOCK_STATE_MARKING : BLOCK_STATE_SWEPT;
 	info->cardtable_mod_union = NULL;
 
 	update_heap_boundaries_for_block (info);
