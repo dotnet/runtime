@@ -1681,7 +1681,10 @@ major_start_major_collection (void)
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Major collection on unswept heap");
 
-	/* clear the free lists */
+	/*
+	 * Clear the free lists for block sizes where we do evacuation.  For those block
+	 * sizes we will have to allocate new blocks.
+	 */
 	for (i = 0; i < num_block_obj_sizes; ++i) {
 		if (!evacuate_block_obj_sizes [i])
 			continue;
@@ -2005,6 +2008,11 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback, gboolea
 
 	if (requires_sweep)
 		major_finish_sweeping ();
+
+	/*
+	 * FIXME: Don't take the lock for the whole allocated blocks array because we're
+	 * stopping the sweep thread.
+	 */
 	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
