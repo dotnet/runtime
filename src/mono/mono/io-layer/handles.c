@@ -222,16 +222,7 @@ static void handle_cleanup (void)
 int
 wapi_getdtablesize (void)
 {
-#ifdef HAVE_GETRLIMIT
-	struct rlimit limit;
-	int res;
-
-	res = getrlimit (RLIMIT_NOFILE, &limit);
-	g_assert (res == 0);
-	return limit.rlim_cur;
-#else
-	return getdtablesize ();
-#endif
+	return eg_getdtablesize ();
 }
 
 /*

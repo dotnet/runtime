@@ -218,8 +218,8 @@ write_all (int fd, const void *vbuf, size_t n)
 }
 
 #ifndef G_OS_WIN32
-static int
-g_getdtablesize (void)
+int
+eg_getdtablesize (void)
 {
 #ifdef HAVE_GETRLIMIT
 	struct rlimit limit;
@@ -231,6 +231,12 @@ g_getdtablesize (void)
 #else
 	return getdtablesize ();
 #endif
+}
+#else
+int
+eg_getdtablesize (void)
+{
+	g_error ("Should not be called");
 }
 #endif
 
@@ -277,7 +283,7 @@ g_spawn_command_line_sync (const gchar *command_line,
 			close (stderr_pipe [0]);
 			dup2 (stderr_pipe [1], STDERR_FILENO);
 		}
-		for (i = g_getdtablesize () - 1; i >= 3; i--)
+		for (i = eg_getdtablesize () - 1; i >= 3; i--)
 			close (i);
 
 		/* G_SPAWN_SEARCH_PATH is always enabled for g_spawn_command_line_sync */
@@ -438,7 +444,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 			}
 
 			if ((flags & G_SPAWN_LEAVE_DESCRIPTORS_OPEN) != 0) {
-				for (i = g_getdtablesize () - 1; i >= 3; i--)
+				for (i = eg_getdtablesize () - 1; i >= 3; i--)
 					close (i);
 			}
 
