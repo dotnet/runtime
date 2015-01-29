@@ -7,6 +7,22 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
+    /// <summary>Common Unix errno error codes.</summary>
+    internal static class Errors
+    {
+        internal const int ENOENT = 2;
+        internal const int EINTR = 4;
+        internal const int EWOULDBLOCK = 11;
+        internal const int EACCES = 13;
+        internal const int EEXIST = 17;
+        internal const int EXDEV = 18;
+        internal const int EISDIR = 21;
+        internal const int EINVAL = 22;
+        internal const int EFBIG = 27;
+        internal const int ENAMETOOLONG = 36;
+        internal const int ECANCELED = 125;
+    }
+
     /// <summary>
     /// Validates the result of system call that returns greater than or equal to 0 on success
     /// and less than 0 on failure, with errno set to the error code.
@@ -26,7 +42,7 @@ internal static partial class Interop
         if (result < 0)
         {
             int errno = Marshal.GetLastWin32Error();
-            if (errno != (int)Interop.Errors.EINTR)
+            if (errno != Interop.Errors.EINTR)
             {
                 throw Interop.GetExceptionForIoErrno(errno, path, isDirectory);
             }
@@ -47,22 +63,6 @@ internal static partial class Interop
         return CheckIo(ptr == IntPtr.Zero ? -1 : 0, path, isDirectory);
     }
 
-    /// <summary>Common Unix errno error codes.</summary>
-    internal enum Errors
-    {
-        ENOENT = 2,
-        EINTR = 4,
-        EWOULDBLOCK = 11,
-        EACCES = 13,
-        EEXIST = 17,
-        EXDEV = 18,
-        EISDIR = 21,
-        EINVAL = 22,
-        EFBIG = 27,
-        ENAMETOOLONG = 36,
-        ECANCELED = 125,
-    }
-
     /// <summary>
     /// Gets an Exception to represent the supplied errno error code.
     /// </summary>
@@ -72,7 +72,7 @@ internal static partial class Interop
     /// <returns></returns>
     internal static Exception GetExceptionForIoErrno(int errno, string path = null, bool isDirectory = false)
     {
-        switch ((Errors)errno)
+        switch (errno)
         {
             case Errors.EINVAL:
                 throw new ArgumentException();
@@ -120,9 +120,9 @@ internal static partial class Interop
                     return new IOException(SR.Format(SR.IO_FileExists_Name, path), errno);
                 }
                 goto default;
-        
+
             default:
-                return new IOException(strerror(errno), errno);
+                return new IOException(libc.strerror(errno), errno);
         }
     }
 }

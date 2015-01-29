@@ -11,7 +11,7 @@ namespace System.ComponentModel
     {
         private static string GetErrorMessage(int error)
         {
-            return Interop.strerror(error);
+            return Interop.libc.strerror(error);
         }
     }
 }
