@@ -18,13 +18,27 @@
   <!-- References are resolved from packages.config -->
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\IO\DriveInfo.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs"><Link>Interop\Interop.Libraries.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs"><Link>Interop\Interop.Errors.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.statvfs.cs"><Link>Interop\Interop.statvfs.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs"><Link>Interop\Interop.strerror.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.endmntent.cs"><Link>Interop\Interop.endmntent.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.getmntent.cs"><Link>Interop\Interop.getmntent.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.setmntent.cs"><Link>Interop\Interop.setmntent.cs</Link></Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.statvfs.cs">
+      <Link>Common\Interop\Interop.statvfs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.endmntent.cs">
+      <Link>Common\Interop\Interop.endmntent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.getmntent.cs">
+      <Link>Common\Interop\Interop.getmntent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.setmntent.cs">
+      <Link>Common\Interop\Interop.setmntent.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="Interop\Interop.Windows.cs" />
