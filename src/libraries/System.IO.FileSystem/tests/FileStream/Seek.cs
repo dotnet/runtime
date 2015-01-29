@@ -107,15 +107,15 @@ namespace System.IO.FileSystem.Tests
                 Assert.Equal(TestBuffer.Length, fs.Position);
 
                 // Beginning
-                fs.Seek(0, SeekOrigin.Begin);
+                Assert.Equal(0, fs.Seek(0, SeekOrigin.Begin));
                 Assert.Equal(0, fs.Position);
 
                 // End
-                fs.Seek(fs.Length, SeekOrigin.Begin);
+                Assert.Equal(fs.Length, fs.Seek(fs.Length, SeekOrigin.Begin));
                 Assert.Equal(fs.Length, fs.Position);
 
                 // Middle
-                fs.Seek(fs.Length / 2, SeekOrigin.Begin);
+                Assert.Equal(fs.Length / 2, fs.Seek(fs.Length / 2, SeekOrigin.Begin));
                 Assert.Equal(fs.Length / 2, fs.Position);
             }
         }
@@ -132,15 +132,15 @@ namespace System.IO.FileSystem.Tests
                 Assert.Equal(TestBuffer.Length, fs.Position);
 
                 // Beginning
-                fs.Seek(-fs.Length, SeekOrigin.Current);
+                Assert.Equal(0, fs.Seek(-fs.Length, SeekOrigin.Current));
                 Assert.Equal(0, fs.Position);
 
                 // End
-                fs.Seek(fs.Length, SeekOrigin.Current);
+                Assert.Equal(fs.Length, fs.Seek(fs.Length, SeekOrigin.Current));
                 Assert.Equal(fs.Length, fs.Position);
 
                 // Middle
-                fs.Seek(fs.Length / 2 - fs.Length, SeekOrigin.Current);
+                Assert.Equal(fs.Length / 2, fs.Seek(fs.Length / 2 - fs.Length, SeekOrigin.Current));
                 Assert.Equal(fs.Length / 2, fs.Position);
             }
         }
@@ -158,15 +158,15 @@ namespace System.IO.FileSystem.Tests
                 Assert.Equal(TestBuffer.Length, fs.Position);
 
                 // Beginning
-                fs.Seek(-fs.Length, SeekOrigin.End);
+                Assert.Equal(0, fs.Seek(-fs.Length, SeekOrigin.End));
                 Assert.Equal(0, fs.Position);
 
                 // End
-                fs.Seek(0, SeekOrigin.End);
+                Assert.Equal(fs.Length, fs.Seek(0, SeekOrigin.End));
                 Assert.Equal(fs.Length, fs.Position);
 
                 // Middle
-                fs.Seek(fs.Length / 2 - fs.Length, SeekOrigin.End);
+                Assert.Equal(fs.Length / 2, fs.Seek(fs.Length / 2 - fs.Length, SeekOrigin.End));
                 Assert.Equal(fs.Length / 2, fs.Position);
             }
         }
@@ -202,13 +202,13 @@ namespace System.IO.FileSystem.Tests
             // validate that seeks that don't change position
             long position = stream.Position;
 
-            stream.Seek(position, SeekOrigin.Begin);
+            Assert.Equal(position, stream.Seek(position, SeekOrigin.Begin));
             Assert.Equal(position, stream.Position);
 
-            stream.Seek(0, SeekOrigin.Current);
+            Assert.Equal(position, stream.Seek(0, SeekOrigin.Current));
             Assert.Equal(position, stream.Position);
             
-            stream.Seek(position - stream.Length, SeekOrigin.End);
+            Assert.Equal(position, stream.Seek(position - stream.Length, SeekOrigin.End));
             Assert.Equal(position, stream.Position);
         }
 
@@ -222,37 +222,38 @@ namespace System.IO.FileSystem.Tests
                 // Ensure our test is set up correctly
                 Assert.Equal(TestBuffer.Length, fs.Length);
                 Assert.Equal(TestBuffer.Length, fs.Position);
+                long originalLength = TestBuffer.Length;
 
                 // Move past end
-                fs.Seek(fs.Length + 1, SeekOrigin.Begin);
-                Assert.Equal(TestBuffer.Length + 1, fs.Position);
+                Assert.Equal(originalLength + 1, fs.Seek(fs.Length + 1, SeekOrigin.Begin));
+                Assert.Equal(originalLength + 1, fs.Position);
                 // Length is not updated until a write
-                Assert.Equal(TestBuffer.Length, fs.Length);
+                Assert.Equal(originalLength, fs.Length);
 
                 // At end of stream
                 Assert.Equal(-1, fs.ReadByte());
                 // Read should not update position or length
-                Assert.Equal(TestBuffer.Length + 1, fs.Position);
-                Assert.Equal(TestBuffer.Length, fs.Length);
+                Assert.Equal(originalLength + 1, fs.Position);
+                Assert.Equal(originalLength, fs.Length);
 
                 // Move back one, still at end of stream since length hasn't changed
-                fs.Seek(-1, SeekOrigin.Current);
+                Assert.Equal(originalLength, fs.Seek(-1, SeekOrigin.Current));
                 Assert.Equal(-1, fs.ReadByte());
                 // Read should not update position or length
-                Assert.Equal(TestBuffer.Length, fs.Position);
-                Assert.Equal(TestBuffer.Length, fs.Length);
+                Assert.Equal(originalLength, fs.Position);
+                Assert.Equal(originalLength, fs.Length);
 
                 // Move past end
-                fs.Seek(fs.Length + 1, SeekOrigin.Begin);
+                Assert.Equal(originalLength + 1, fs.Seek(fs.Length + 1, SeekOrigin.Begin));
                 fs.WriteByte(0x2A);
                 // Writing a single byte should update length by 2 (filling gap with zero).
-                Assert.Equal(TestBuffer.Length + 2, fs.Position);
-                Assert.Equal(TestBuffer.Length + 2, fs.Length);
+                Assert.Equal(originalLength + 2, fs.Position);
+                Assert.Equal(originalLength + 2, fs.Length);
                 // Validate zero fill
-                fs.Seek(-2, SeekOrigin.Current);
+                Assert.Equal(originalLength, fs.Seek(-2, SeekOrigin.Current));
                 Assert.Equal(0, fs.ReadByte());
                 // Validate written value
-                Assert.Equal(0x2A, fs.ReadByte());                
+                Assert.Equal(0x2A, fs.ReadByte());
             }
         }
     }
