@@ -696,7 +696,7 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 }
 
 gint32
-ves_icall_System_IO_MonoIO_GetFileType (MonoSafeHandle *safeHandle, gint32 *error)
+ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error)
 {
 	gboolean ret;
 	
@@ -704,7 +704,7 @@ ves_icall_System_IO_MonoIO_GetFileType (MonoSafeHandle *safeHandle, gint32 *erro
 
 	*error=ERROR_SUCCESS;
 	
-	ret=GetFileType (safeHandle->handle);
+	ret=GetFileType (handle);
 	if(ret==FILE_TYPE_UNKNOWN) {
 		/* Not necessarily an error, but the caller will have
 		 * to decide based on the error value.
@@ -812,7 +812,7 @@ ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_Read (MonoSafeHandle *safeHandle, MonoArray *dest,
+ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 				 gint32 dest_offset, gint32 count,
 				 gint32 *error)
 {
@@ -830,7 +830,7 @@ ves_icall_System_IO_MonoIO_Read (MonoSafeHandle *safeHandle, MonoArray *dest,
 		mono_raise_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
 
 	buffer = mono_array_addr (dest, guchar, dest_offset);
-	result = ReadFile (safeHandle->handle, buffer, count, &n, NULL);
+	result = ReadFile (handle, buffer, count, &n, NULL);
 
 	if (!result) {
 		*error=GetLastError ();
@@ -841,7 +841,7 @@ ves_icall_System_IO_MonoIO_Read (MonoSafeHandle *safeHandle, MonoArray *dest,
 }
 
 gint32 
-ves_icall_System_IO_MonoIO_Write (MonoSafeHandle *safeHandle, MonoArray *src,
+ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 				  gint32 src_offset, gint32 count,
 				  gint32 *error)
 {
@@ -859,7 +859,7 @@ ves_icall_System_IO_MonoIO_Write (MonoSafeHandle *safeHandle, MonoArray *src,
 		mono_raise_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
 	
 	buffer = mono_array_addr (src, guchar, src_offset);
-	result = WriteFile (safeHandle->handle, buffer, count, &n, NULL);
+	result = WriteFile (handle, buffer, count, &n, NULL);
 
 	if (!result) {
 		*error=GetLastError ();
@@ -870,7 +870,7 @@ ves_icall_System_IO_MonoIO_Write (MonoSafeHandle *safeHandle, MonoArray *src,
 }
 
 gint64 
-ves_icall_System_IO_MonoIO_Seek (MonoSafeHandle *safeHandle, gint64 offset, gint32 origin,
+ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 				 gint32 *error)
 {
 	gint32 offset_hi;
@@ -880,7 +880,7 @@ ves_icall_System_IO_MonoIO_Seek (MonoSafeHandle *safeHandle, gint64 offset, gint
 	*error=ERROR_SUCCESS;
 	
 	offset_hi = offset >> 32;
-	offset = SetFilePointer (safeHandle->handle, (gint32) (offset & 0xFFFFFFFF), &offset_hi,
+	offset = SetFilePointer (handle, (gint32) (offset & 0xFFFFFFFF), &offset_hi,
 				 convert_seekorigin (origin));
 
 	if(offset==INVALID_SET_FILE_POINTER) {
@@ -891,7 +891,7 @@ ves_icall_System_IO_MonoIO_Seek (MonoSafeHandle *safeHandle, gint64 offset, gint
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_Flush (MonoSafeHandle *safeHandle, gint32 *error)
+ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error)
 {
 	gboolean ret;
 	
@@ -899,7 +899,7 @@ ves_icall_System_IO_MonoIO_Flush (MonoSafeHandle *safeHandle, gint32 *error)
 
 	*error=ERROR_SUCCESS;
 	
-	ret=FlushFileBuffers (safeHandle->handle);
+	ret=FlushFileBuffers (handle);
 	if(ret==FALSE) {
 		*error=GetLastError ();
 	}
@@ -908,7 +908,7 @@ ves_icall_System_IO_MonoIO_Flush (MonoSafeHandle *safeHandle, gint32 *error)
 }
 
 gint64 
-ves_icall_System_IO_MonoIO_GetLength (MonoSafeHandle *safeHandle, gint32 *error)
+ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error)
 {
 	gint64 length;
 	guint32 length_hi;
@@ -917,7 +917,7 @@ ves_icall_System_IO_MonoIO_GetLength (MonoSafeHandle *safeHandle, gint32 *error)
 
 	*error=ERROR_SUCCESS;
 	
-	length = GetFileSize (safeHandle->handle, &length_hi);
+	length = GetFileSize (handle, &length_hi);
 	if(length==INVALID_FILE_SIZE) {
 		*error=GetLastError ();
 	}
@@ -926,7 +926,7 @@ ves_icall_System_IO_MonoIO_GetLength (MonoSafeHandle *safeHandle, gint32 *error)
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_SetLength (MonoSafeHandle *safeHandle, gint64 length,
+ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
 				      gint32 *error)
 {
 	gint64 offset, offset_set;
@@ -941,7 +941,7 @@ ves_icall_System_IO_MonoIO_SetLength (MonoSafeHandle *safeHandle, gint64 length,
 	/* save file pointer */
 
 	offset_hi = 0;
-	offset = SetFilePointer (safeHandle->handle, 0, &offset_hi, FILE_CURRENT);
+	offset = SetFilePointer (handle, 0, &offset_hi, FILE_CURRENT);
 	if(offset==INVALID_SET_FILE_POINTER) {
 		*error=GetLastError ();
 		return(FALSE);
@@ -950,14 +950,14 @@ ves_icall_System_IO_MonoIO_SetLength (MonoSafeHandle *safeHandle, gint64 length,
 	/* extend or truncate */
 
 	length_hi = length >> 32;
-	offset_set=SetFilePointer (safeHandle->handle, length & 0xFFFFFFFF, &length_hi,
+	offset_set=SetFilePointer (handle, length & 0xFFFFFFFF, &length_hi,
 				   FILE_BEGIN);
 	if(offset_set==INVALID_SET_FILE_POINTER) {
 		*error=GetLastError ();
 		return(FALSE);
 	}
 
-	result = SetEndOfFile (safeHandle->handle);
+	result = SetEndOfFile (handle);
 	if(result==FALSE) {
 		*error=GetLastError ();
 		return(FALSE);
@@ -965,7 +965,7 @@ ves_icall_System_IO_MonoIO_SetLength (MonoSafeHandle *safeHandle, gint64 length,
 
 	/* restore file pointer */
 
-	offset_set=SetFilePointer (safeHandle->handle, offset & 0xFFFFFFFF, &offset_hi,
+	offset_set=SetFilePointer (handle, offset & 0xFFFFFFFF, &offset_hi,
 				   FILE_BEGIN);
 	if(offset_set==INVALID_SET_FILE_POINTER) {
 		*error=GetLastError ();
@@ -976,7 +976,7 @@ ves_icall_System_IO_MonoIO_SetLength (MonoSafeHandle *safeHandle, gint64 length,
 }
 
 MonoBoolean
-ves_icall_System_IO_MonoIO_SetFileTime (MonoSafeHandle *safeHandle, gint64 creation_time,
+ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 					gint64 last_access_time,
 					gint64 last_write_time, gint32 *error)
 {
@@ -1004,7 +1004,7 @@ ves_icall_System_IO_MonoIO_SetFileTime (MonoSafeHandle *safeHandle, gint64 creat
 	else
 		last_write_filetime = (FILETIME *)&last_write_time;
 
-	ret=SetFileTime (safeHandle->handle, creation_filetime, last_access_filetime, last_write_filetime);
+	ret=SetFileTime (handle, creation_filetime, last_access_filetime, last_write_filetime);
 	if(ret==FALSE) {
 		*error=GetLastError ();
 	}
@@ -1189,28 +1189,28 @@ ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name)
 	return(ret);
 }
 
-void ves_icall_System_IO_MonoIO_Lock (MonoSafeHandle *safeHandle, gint64 position,
+void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
 				      gint64 length, gint32 *error)
 {
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
 	
-	ret=LockFile (safeHandle->handle, position & 0xFFFFFFFF, position >> 32,
+	ret=LockFile (handle, position & 0xFFFFFFFF, position >> 32,
 		      length & 0xFFFFFFFF, length >> 32);
 	if (ret == FALSE) {
 		*error = GetLastError ();
 	}
 }
 
-void ves_icall_System_IO_MonoIO_Unlock (MonoSafeHandle *safeHandle, gint64 position,
+void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 					gint64 length, gint32 *error)
 {
 	gboolean ret;
 	
 	*error=ERROR_SUCCESS;
 	
-	ret=UnlockFile (safeHandle->handle, position & 0xFFFFFFFF, position >> 32,
+	ret=UnlockFile (handle, position & 0xFFFFFFFF, position >> 32,
 			length & 0xFFFFFFFF, length >> 32);
 	if (ret == FALSE) {
 		*error = GetLastError ();
