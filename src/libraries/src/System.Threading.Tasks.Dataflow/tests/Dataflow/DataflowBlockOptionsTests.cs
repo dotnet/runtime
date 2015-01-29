@@ -1,177 +1,94 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class DataflowBlockOptionsTests
     {
         [Fact]
-        [OuterLoop]
-        public void RunDataflowBlockOptionsTests()
+        public void TestInvalidArguments()
         {
-            // Test base DataflowBlockOptions
+            Assert.Throws<ArgumentNullException>(() => { new DataflowBlockOptions().TaskScheduler = null; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().MaxMessagesPerTask = -2; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().MaxMessagesPerTask = 0; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().BoundedCapacity = -2; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().BoundedCapacity = 0; });
+            Assert.Throws<ArgumentNullException>(() => { new DataflowBlockOptions().NameFormat = null; });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new ExecutionDataflowBlockOptions().MaxDegreeOfParallelism = -2; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new ExecutionDataflowBlockOptions().MaxDegreeOfParallelism = 0; });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new GroupingDataflowBlockOptions().MaxNumberOfGroups = -2; });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { new GroupingDataflowBlockOptions().MaxNumberOfGroups = 0; });
+        }
+
+        [Fact]
+        public void TestDefaultValues()
+        {
+            Action<DataflowBlockOptions> verifyBaseDefaults = dbo => {
+                Assert.Equal(expected: TaskScheduler.Default, actual: dbo.TaskScheduler);
+                Assert.Equal(expected: DataflowBlockOptions.Unbounded, actual: dbo.MaxMessagesPerTask);
+                Assert.Equal(expected: DataflowBlockOptions.Unbounded, actual: dbo.BoundedCapacity);
+                Assert.Equal(expected: CancellationToken.None, actual: dbo.CancellationToken);
+                Assert.Equal(expected: -1, actual: DataflowBlockOptions.Unbounded);
+                Assert.Equal(expected: @"{0} Id={1}", actual: dbo.NameFormat);
+            };
+
+            verifyBaseDefaults(new DataflowBlockOptions());
+
+            var edbo = new ExecutionDataflowBlockOptions();
+            verifyBaseDefaults(edbo);
+            Assert.Equal(expected: 1, actual: edbo.MaxDegreeOfParallelism);
+
+            var gdbo = new GroupingDataflowBlockOptions();
+            verifyBaseDefaults(gdbo);
+            Assert.Equal(expected: DataflowBlockOptions.Unbounded, actual: gdbo.MaxNumberOfGroups);
+            Assert.Equal(expected: true, actual: gdbo.Greedy);
+        }
+
+        [Fact]
+        public void TestPropertyRoundtripping()
+        {
+            var dbo = new DataflowBlockOptions();
+            var edbo = new ExecutionDataflowBlockOptions();
+            var gdbo = new GroupingDataflowBlockOptions();
+
+            foreach (int value in new[] { 2, Int32.MaxValue, DataflowBlockOptions.Unbounded })
             {
-                // Test invalid property values
-                {
-                    Assert.Throws<ArgumentNullException>(() => { new DataflowBlockOptions().TaskScheduler = null; });
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().MaxMessagesPerTask = -2; });
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().MaxMessagesPerTask = 0; });
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().BoundedCapacity = -2; });
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new DataflowBlockOptions().BoundedCapacity = 0; });
-                    Assert.Throws<ArgumentNullException>(() => { new DataflowBlockOptions().NameFormat = null; });
-                }
+                SetAndTest(dbo, (o,v) => o.MaxMessagesPerTask = v, o => o.MaxMessagesPerTask, value);
+                SetAndTest(dbo, (o,v) => o.BoundedCapacity = v, o => o.BoundedCapacity, value);
+                SetAndTest(edbo, (o,v) => o.MaxDegreeOfParallelism = v, o => o.MaxDegreeOfParallelism, value);
+                SetAndTest(gdbo, (o,v) => o.MaxNumberOfGroups = v, o => o.MaxNumberOfGroups, value);
+            }
+            SetAndTest(gdbo, (o,v) => o.MaxNumberOfGroups = v, o => o.MaxNumberOfGroups, Int64.MaxValue);
 
-                // Test default values
-                {
-                    var db = new DataflowBlockOptions();
-                    Assert.True(db.TaskScheduler == TaskScheduler.Default, "TaskScheduler should be Default");
-                    Assert.True(db.MaxMessagesPerTask == DataflowBlockOptions.Unbounded, "Max messages should be unbounded.");
-                    Assert.True(db.BoundedCapacity == DataflowBlockOptions.Unbounded, "Bounded capacity should be unbounded.");
-                    Assert.True(
-                        !db.CancellationToken.CanBeCanceled && !db.CancellationToken.IsCancellationRequested,
-                        "The cancellation token should be None.");
-                    Assert.True(DataflowBlockOptions.Unbounded == -1, "Unbounded should be the value -1");
-                    Assert.True(db.NameFormat == @"{0} Id={1}", @"NameFormat should be the value '{0} Id={1}'");
-                }
-
-                // Test that set values are retrievable
-                {
-                    var db = new DataflowBlockOptions();
-
-                    db.MaxMessagesPerTask = 2;
-                    Assert.True(db.MaxMessagesPerTask == 2, "Expected max messages to be the set value 2");
-                    db.MaxMessagesPerTask = Int32.MaxValue;
-                    Assert.True(db.MaxMessagesPerTask == Int32.MaxValue, "Expected max messages to be the set value Int32.MaxValue");
-                    db.MaxMessagesPerTask = DataflowBlockOptions.Unbounded;
-                    Assert.True(db.MaxMessagesPerTask == DataflowBlockOptions.Unbounded, "Expected max messages to be unbounded.");
-
-                    db.BoundedCapacity = 2;
-                    Assert.True(db.BoundedCapacity == 2, "Expected bounded capacity to be the set value 2");
-                    db.BoundedCapacity = Int32.MaxValue;
-                    Assert.True(db.BoundedCapacity == Int32.MaxValue, "Expected bounded capacity to be the set value Int32.MaxValue");
-                    db.BoundedCapacity = DataflowBlockOptions.Unbounded;
-                    Assert.True(db.BoundedCapacity == DataflowBlockOptions.Unbounded, "Expected bounded capacity to be unbounded.");
-
-                    var dummyScheduler = new DummyScheduler();
-                    db.TaskScheduler = dummyScheduler;
-                    Assert.True(db.TaskScheduler == dummyScheduler, "Expected task scheduler to be the dummy scheduler");
-                    db.TaskScheduler = TaskScheduler.Default;
-                    Assert.True(db.TaskScheduler == TaskScheduler.Default, "Expected task scheduler to be the default scheduler");
-
-                    var cts = new CancellationTokenSource();
-                    db.CancellationToken = cts.Token;
-                    Assert.True(db.CancellationToken == cts.Token, "Expected the token to be the one just set");
-                    db.CancellationToken = CancellationToken.None;
-                    Assert.True(db.CancellationToken == CancellationToken.None, "Expected the token to be none");
-
-                    db.NameFormat = "none";
-                    Assert.True(db.NameFormat.Equals("none"), "Expected name format to be the set value 'none'");
-                    db.NameFormat = "foo {0}";
-                    Assert.True(db.NameFormat.Equals("foo {0}"), @"Expected name format to be the set value 'foo {0}'");
-                    db.NameFormat = "foo {0} bar {1}";
-                    Assert.True(db.NameFormat.Equals("foo {0} bar {1}"), @"Expected name format to be the set value 'foo {0} bar {1}'");
-                    db.NameFormat = "kaboom {0} {1} {2}";
-                    Assert.True(db.NameFormat.Equals("kaboom {0} {1} {2}"), @"Expected name format to be the set value 'kaboom {0} {1} {2}'");
-                }
+            foreach (TaskScheduler value in new[] { new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler, TaskScheduler.Default })
+            {
+                SetAndTest(dbo, (o,v) => o.TaskScheduler = v, o => o.TaskScheduler, value);
             }
 
-            // Test base ExecutionDataflowBlockOptions
+            foreach (CancellationToken value in new[] { new CancellationToken(false), new CancellationToken(true), new CancellationTokenSource().Token })
             {
-                // Test invalid property values
-                {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new ExecutionDataflowBlockOptions().MaxDegreeOfParallelism = -2; });
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new ExecutionDataflowBlockOptions().MaxDegreeOfParallelism = 0; });
-                }
-
-                // Test default values
-                {
-                    var db = new ExecutionDataflowBlockOptions();
-                    Assert.True(db.TaskScheduler == TaskScheduler.Default, "Expected task scheduler to have default value");
-                    Assert.True(db.MaxMessagesPerTask == DataflowBlockOptions.Unbounded, "Expected max messages to have default value");
-                    Assert.True(db.BoundedCapacity == DataflowBlockOptions.Unbounded, "Expected bounded capacity to have default value");
-                    Assert.True(
-                        !db.CancellationToken.CanBeCanceled && !db.CancellationToken.IsCancellationRequested, "Expected cancellation token to have default value");
-                    Assert.True(db.MaxDegreeOfParallelism == 1, "Expected max dop to have default value");
-                }
-
-                // Test that set values are retrievable
-                {
-                    var db = new ExecutionDataflowBlockOptions();
-
-                    db.MaxDegreeOfParallelism = 2;
-                    Assert.True(db.MaxDegreeOfParallelism == 2, "Expected max dop to be 2");
-                    db.MaxDegreeOfParallelism = Int32.MaxValue;
-                    Assert.True(db.MaxDegreeOfParallelism == Int32.MaxValue, "Expected max dop to be Int32.MaxValue");
-                    db.MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded;
-                    Assert.True(db.MaxDegreeOfParallelism == DataflowBlockOptions.Unbounded, "Expected max dop to be unbounded");
-                }
+                SetAndTest(dbo, (o,v) => o.CancellationToken = v, o => o.CancellationToken, value);
             }
 
-            // Test base GroupingDataflowBlockOptions
+            foreach (string value in new[] { "none", "foo {0}", "foo {0} bar {1}", "kaboom {0} {1} {2}" })
             {
-                // Test invalid property values
-                {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new GroupingDataflowBlockOptions().MaxNumberOfGroups = -2; });
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { new GroupingDataflowBlockOptions().MaxNumberOfGroups = 0; });
-                }
+                SetAndTest(dbo, (o, v) => o.NameFormat = v, o => o.NameFormat, value);
+            }
 
-                // Test default values
-                {
-                    var db = new GroupingDataflowBlockOptions();
-                    Assert.True(db.TaskScheduler == TaskScheduler.Default, "Expected task scheduler to have default value");
-                    Assert.True(db.MaxMessagesPerTask == DataflowBlockOptions.Unbounded, "Expected max messages to have default value");
-                    Assert.True(db.BoundedCapacity == DataflowBlockOptions.Unbounded, "Expected bounded capacity to have default value");
-                    Assert.True(
-                        !db.CancellationToken.CanBeCanceled && !db.CancellationToken.IsCancellationRequested, "Expected cancellation token to have default value");
-                    Assert.True(db.MaxNumberOfGroups == DataflowBlockOptions.Unbounded, "Expected max groups to have default value");
-                    Assert.True(db.Greedy == true, "Expected greedy to have default value");
-                }
-
-                // Test that set values are retrievable
-                {
-                    var db = new GroupingDataflowBlockOptions();
-
-                    db.MaxNumberOfGroups = 2;
-                    Assert.True(db.MaxNumberOfGroups == 2, "Expected max groups to be 2");
-                    db.MaxNumberOfGroups = Int32.MaxValue;
-                    Assert.True(db.MaxNumberOfGroups == Int32.MaxValue, "Expected max groups to be Int32.MaxValue");
-                    db.MaxNumberOfGroups = Int64.MaxValue;
-                    Assert.True(db.MaxNumberOfGroups == Int64.MaxValue, "Expected max groups to be Int64.MaxValue");
-                    db.MaxNumberOfGroups = DataflowBlockOptions.Unbounded;
-                    Assert.True(db.MaxMessagesPerTask == DataflowBlockOptions.Unbounded, "Expected max groups to unbounded");
-
-                    db.Greedy = true;
-                    Assert.True(db.Greedy == true, "Expected greedy to be true");
-                    db.Greedy = false;
-                    Assert.True(db.Greedy == false, "Expected greedy to be false");
-                    db.Greedy = true;
-                    Assert.True(db.Greedy == true, "Expected greedy to be true");
-                }
+            foreach (bool value in DataflowTestHelpers.BooleanValues)
+            {
+                SetAndTest(gdbo, (o, v) => o.Greedy = v, o => o.Greedy, value);
             }
         }
 
-        class DummyScheduler : TaskScheduler
+        private void SetAndTest<T, TValue>(T source, Action<T, TValue> setter, Func<T, TValue> getter, TValue value)
         {
-            protected override System.Collections.Generic.IEnumerable<Task> GetScheduledTasks()
-            {
-                throw new NotImplementedException();
-            }
-
-            protected override void QueueTask(Task task)
-            {
-                throw new NotImplementedException();
-            }
-
-            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
-            {
-                throw new NotImplementedException();
-            }
+            setter(source, value);
+            Assert.Equal(expected: value, actual: getter(source));
         }
     }
 }

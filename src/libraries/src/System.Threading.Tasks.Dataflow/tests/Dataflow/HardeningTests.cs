@@ -1,21 +1,20 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
+
+// NOTE: This file of tests needs to be reviewed, scrubbed, and augmented.
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class HardeningTests
     {
-        private const int BUFFER_BOUNDED_CAPACITY_10 = 2;
+        private const int BufferBoundedCapacity = 2;
+        private static readonly int s_randomSeed = Environment.TickCount;
 
         [Fact]
         [OuterLoop]
@@ -24,11 +23,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // OfferMessage: All single-target source blocks
             Assert.True(TestHardeningSource((s, m) => ((ITargetBlock<ThrowOn>)s).Post(m), new BufferBlock<ThrowOn>(), HardeningScenario.Sync));
             Assert.True(TestHardeningSource((s, m) => ((ITargetBlock<ThrowOn>)s).Post(m), new BufferBlock<ThrowOn>(), HardeningScenario.Async));
-            
+
             // ConsumeMessage (greedy): Batch, BatchedJoin, Join, WriteOnce, Buffer, Broadcast, TargetCore sync (~Action), TargetCore async (~Action)
             Assert.True(TestHardeningTargetJoin2(new BatchedJoinBlock<ThrowOn, ThrowOn>(2), ThrowOn.ConsumeMessage, greedy: true));
             Assert.True(TestHardeningTarget(new WriteOnceBlock<ThrowOn>(x => x), ThrowOn.ConsumeMessage, greedy: true));
-           
+
             var nonGreedyGroupingOptions = new GroupingDataflowBlockOptions { Greedy = false }; // Sequential, non-greedy
             var nonGreedyExecutionOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1 }; // Sequential, non-greedy
 
@@ -74,7 +73,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var nonGreedyExecutionOptions = new ExecutionDataflowBlockOptions { BoundedCapacity = 1 }; // Sequential, non-greedy
             Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { return Task.Run(() => { Task.Delay(1000).Wait(); }); }, nonGreedyExecutionOptions), ThrowOn.ConsumeMessage, greedy: false));
             Assert.True(TestHardeningTarget(new ActionBlock<ThrowOn>(x => { Task.Delay(1000).Wait(); }, nonGreedyExecutionOptions), ThrowOn.ConsumeMessage, greedy: false));
-            Assert.True(TestHardeningTarget(new BufferBlock<ThrowOn>(new DataflowBlockOptions { BoundedCapacity = BUFFER_BOUNDED_CAPACITY_10 }), ThrowOn.ConsumeMessage, greedy: false));
+            Assert.True(TestHardeningTarget(new BufferBlock<ThrowOn>(new DataflowBlockOptions { BoundedCapacity = BufferBoundedCapacity }), ThrowOn.ConsumeMessage, greedy: false));
 
             Assert.True(TestHardeningTargetJoin2(new JoinBlock<ThrowOn, ThrowOn>(nonGreedyGroupingOptions), ThrowOn.ReleaseReservation, greedy: false));
             Assert.True(TestHardeningTargetJoin2(new JoinBlock<ThrowOn, ThrowOn>(nonGreedyGroupingOptions), ThrowOn.ReserveMessage, greedy: false));
@@ -156,9 +155,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             Console.WriteLine("* TestFaultCore {0} (withMessages={1}, greedy={2})", block.GetType().Name, withMessages, greedy);
 
-            const int MESSAGE_COUNT = 100;
+            const int MessageCount = 100;
             bool passed = true;
-            var rnd = new Random(Parallelism.RandomSeed);
+            var rnd = new Random(s_randomSeed);
             var errorMessage = rnd.Next().ToString();
             var excIn = new InvalidOperationException(errorMessage);
             Task<bool>[] sendTasks = null;
@@ -168,43 +167,43 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // so that we can wait on them later.
             if (withMessages)
             {
-                for (int i = 0; i < MESSAGE_COUNT; i++)
+                for (int i = 0; i < MessageCount; i++)
                 {
                     if (block is ITargetBlock<T>)
                     {
-                        if (sendTasks == null) sendTasks = new Task<bool>[MESSAGE_COUNT];
+                        if (sendTasks == null) sendTasks = new Task<bool>[MessageCount];
 
                         sendTasks[i] = ((ITargetBlock<T>)block).SendAsync(default(T));
                     }
                     else if (block is JoinBlock<T, T>)
                     {
-                        if (sendTasks == null) sendTasks = new Task<bool>[2 * MESSAGE_COUNT];
+                        if (sendTasks == null) sendTasks = new Task<bool>[2 * MessageCount];
 
                         sendTasks[i] = ((JoinBlock<T, T>)block).Target1.SendAsync(default(T));
-                        sendTasks[i + MESSAGE_COUNT] = ((JoinBlock<T, T>)block).Target2.SendAsync(default(T));
+                        sendTasks[i + MessageCount] = ((JoinBlock<T, T>)block).Target2.SendAsync(default(T));
                     }
                     else if (block is JoinBlock<T, T, T>)
                     {
-                        if (sendTasks == null) sendTasks = new Task<bool>[3 * MESSAGE_COUNT];
+                        if (sendTasks == null) sendTasks = new Task<bool>[3 * MessageCount];
 
                         sendTasks[i] = ((JoinBlock<T, T, T>)block).Target1.SendAsync(default(T));
-                        sendTasks[i + MESSAGE_COUNT] = ((JoinBlock<T, T, T>)block).Target2.SendAsync(default(T));
-                        sendTasks[i + 2 * MESSAGE_COUNT] = ((JoinBlock<T, T, T>)block).Target3.SendAsync(default(T));
+                        sendTasks[i + MessageCount] = ((JoinBlock<T, T, T>)block).Target2.SendAsync(default(T));
+                        sendTasks[i + 2 * MessageCount] = ((JoinBlock<T, T, T>)block).Target3.SendAsync(default(T));
                     }
                     else if (block is BatchedJoinBlock<T, T>)
                     {
-                        if (sendTasks == null) sendTasks = new Task<bool>[2 * MESSAGE_COUNT];
+                        if (sendTasks == null) sendTasks = new Task<bool>[2 * MessageCount];
 
                         sendTasks[i] = ((BatchedJoinBlock<T, T>)block).Target1.SendAsync(default(T));
-                        sendTasks[i + MESSAGE_COUNT] = ((BatchedJoinBlock<T, T>)block).Target2.SendAsync(default(T));
+                        sendTasks[i + MessageCount] = ((BatchedJoinBlock<T, T>)block).Target2.SendAsync(default(T));
                     }
                     else if (block is BatchedJoinBlock<T, T, T>)
                     {
-                        if (sendTasks == null) sendTasks = new Task<bool>[3 * MESSAGE_COUNT];
+                        if (sendTasks == null) sendTasks = new Task<bool>[3 * MessageCount];
 
                         sendTasks[i] = ((BatchedJoinBlock<T, T, T>)block).Target1.SendAsync(default(T));
-                        sendTasks[i + MESSAGE_COUNT] = ((BatchedJoinBlock<T, T, T>)block).Target2.SendAsync(default(T));
-                        sendTasks[i + 2 * MESSAGE_COUNT] = ((BatchedJoinBlock<T, T, T>)block).Target3.SendAsync(default(T));
+                        sendTasks[i + MessageCount] = ((BatchedJoinBlock<T, T, T>)block).Target2.SendAsync(default(T));
+                        sendTasks[i + 2 * MessageCount] = ((BatchedJoinBlock<T, T, T>)block).Target3.SendAsync(default(T));
                     }
                     else throw new InvalidOperationException(string.Format("Unexpected block type: {0}", block.GetType().Name));
                 }
@@ -222,105 +221,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.True(TaskHasFaulted(block.Completion, errorMessage));
 
             return passed;
-        }
-
-        // Test to make sure we appropriately store data into exceptions for debugging purposes
-        [Fact]
-        [OuterLoop]
-        public void TestExceptionDataStorage()
-        {
-            const string EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE = "DataflowMessageValue";
-            {
-                bool localPassed = true;
-                var ab = new ActionBlock<int>((Action<int>)(i => { throw new InvalidOperationException(); }));
-                ab.Post(42);
-                ((IAsyncResult)ab.Completion).AsyncWaitHandle.WaitOne();
-                var e = ab.Completion.Exception;
-                localPassed &= e != null && e.InnerExceptions.Count == 1;
-                if (localPassed)
-                {
-                    localPassed &= (string)e.InnerException.Data[EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE] == "42";
-                }
-                Assert.True(localPassed, string.Format("Single exception from sync delegate: {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            {
-                bool localPassed = true;
-                var barrier = new Barrier(2);
-                var ab = new ActionBlock<int>((Action<int>)(i =>
-                                                    {
-                                                        barrier.SignalAndWait(10000); // All messages must enter the pipeline before we start throwing
-                                                        throw new InvalidOperationException();
-                                                    }),
-                                              new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2 });
-                ab.Post(42);
-                ab.Post(43);
-                ((IAsyncResult)ab.Completion).AsyncWaitHandle.WaitOne();
-                var e = ab.Completion.Exception;
-                localPassed &= e != null && e.InnerExceptions.Count == 2;
-                if (localPassed)
-                {
-                    bool found42 = false, found43 = false;
-                    foreach (var innerException in e.InnerExceptions)
-                    {
-                        if ((string)innerException.Data[EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE] == "42") found42 = true;
-                        else if ((string)innerException.Data[EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE] == "43") found43 = true;
-                    }
-                    localPassed &= found42 && found43;
-                }
-                Assert.True(localPassed, string.Format("Multiple exceptions from sync delegate: {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            {
-                bool localPassed = true;
-                var barrier = new Barrier(2);
-                var ab = new ActionBlock<int>(new Func<int, Task>(i =>
-                                                        {
-                                                            barrier.SignalAndWait(10000); // All messages must enter the pipeline before we start throwing
-                                                            throw new InvalidOperationException();
-                                                        }),
-                                              new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2 });
-                ab.Post(42);
-                ab.Post(43);
-                ((IAsyncResult)ab.Completion).AsyncWaitHandle.WaitOne();
-                var e = ab.Completion.Exception;
-                localPassed &= e != null && e.InnerExceptions.Count == 2;
-                if (localPassed)
-                {
-                    bool found42 = false, found43 = false;
-                    foreach (var innerException in e.InnerExceptions)
-                    {
-                        if ((string)innerException.Data[EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE] == "42") found42 = true;
-                        else if ((string)innerException.Data[EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE] == "43") found43 = true;
-                    }
-                    localPassed &= found42 && found43;
-                }
-                Assert.True(localPassed, string.Format("Multiple exceptions from async delegate: {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            {
-                bool localPassed = true;
-                var ab = new ActionBlock<ThrowFromToString>(i => { throw new InvalidOperationException(); });
-                ab.Post(new ThrowFromToString());
-                ((IAsyncResult)ab.Completion).AsyncWaitHandle.WaitOne();
-                var e = ab.Completion.Exception;
-                localPassed &= e != null && e.InnerExceptions.Count == 1;
-                if (localPassed)
-                {
-                    localPassed &= (string)e.InnerException.Data[EXCEPTIONDATAKEY_DATAFLOWMESSAGEVALUE] == null;
-                }
-                Assert.True(localPassed, string.Format("Handle throw from ToString", localPassed ? "Passed" : "FAILED"));
-            }
-
-            {
-                bool localPassed = true;
-                var ab = new ActionBlock<int>(i => { throw new ThrowFromDataException(); });
-                ab.Post(42);
-                ((IAsyncResult)ab.Completion).AsyncWaitHandle.WaitOne();
-                var e = ab.Completion.Exception;
-                localPassed &= e != null && e.InnerExceptions.Count == 1 && e.InnerException is ThrowFromDataException;
-                Assert.True(localPassed, string.Format("Handle faulty Exception.Data property: {0}", localPassed ? "Passed" : "FAILED"));
-            }
         }
 
         private class ThrowFromToString
@@ -525,7 +425,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     {
                         // Bounded Buffer needs to fill up its capacity in order to start postponing
                         var buffer = (BufferBlock<ThrowOn>)target;
-                        for (int i = 0; i < BUFFER_BOUNDED_CAPACITY_10; i++) buffer.SendAsync(ThrowOn.Uninitialized);
+                        for (int i = 0; i < BufferBoundedCapacity; i++) buffer.SendAsync(ThrowOn.Uninitialized);
                     }
                 }
 
@@ -937,8 +837,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             catch (AggregateException ae)
             {
                 string errorMessage = "";
-                ae.Handle(e =>
-                {
+                ae.Handle(e => {
                     errorMessage = e.Message;
                     return (expectedErrorMessage == null) || e is InvalidOperationException;
                 }); // Observe the expected exception 
@@ -1043,7 +942,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             // If an item has been buffered, offer it to the target
             if (_m_value != ThrowOn.Uninitialized) _m_target.OfferMessage(new DataflowMessageHeader(1), _m_value, this, true); // We always want the target to come back and consume it
 
-            return new NoopOnUnlinked();
+            return new DelegateDisposable();
         }
 
         bool IReceivableSourceBlock<ThrowOn>.TryReceive(Predicate<ThrowOn> filter, out ThrowOn item)

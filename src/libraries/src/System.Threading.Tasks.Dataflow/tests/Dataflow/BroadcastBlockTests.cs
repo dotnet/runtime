@@ -1,204 +1,299 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class BroadcastBlockTests
     {
         [Fact]
-        public void RunBroadcastBlockTests()
+        public void TestCtor()
         {
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new BroadcastBlock<int>(null, new DataflowBlockOptions() { NameFormat = nameFormat }) : new BroadcastBlock<int>(null)));
-            Assert.True(ISourceBlockTestHelper.TestLinkTo<int>(ConstructBroadcastNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestReserveMessageAndReleaseReservation<int>(ConstructBroadcastNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestConsumeMessage<int>(ConstructBroadcastNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveWithFilter<int>(ConstructBroadcastNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTargetOrder<int>(new BroadcastBlock<int>(i => i), 1));
-            Assert.True(ITargetBlockTestHelper.TestPost<int>(new BroadcastBlock<int>(i => i)));
-            Assert.True(ITargetBlockTestHelper.TestCompletionTask<int>(new BroadcastBlock<int>(i => i)));
-        }
-
-        private static BroadcastBlock<int> ConstructBroadcastNewWithNMessages(int messagesCount)
-        {
-            var block = new BroadcastBlock<int>(i => i);
-            for (int i = 0; i < messagesCount; i++)
+            var blocks = new[] {
+                new BroadcastBlock<int>(i => i),
+                new BroadcastBlock<int>(null),
+                new BroadcastBlock<int>(i => i, new DataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new BroadcastBlock<int>(null, new DataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new BroadcastBlock<int>(i => i, new DataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) }),
+                new BroadcastBlock<int>(null, new DataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) })
+            };
+            foreach (var block in blocks)
             {
-                block.Post(i);
-            }
-
-            // Wait until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            // Since there is no property to check on the BroadcastBlock, just sleep for 2 ms
-            Task.Delay(2).Wait();
-
-            return block;
-        }
-
-        [Fact]
-        public void TestBroadcastBlockConstructor()
-        {
-            try
-            {
-                // without option
-                var block = new BroadcastBlock<int>(i => i);
-                block = new BroadcastBlock<int>(null);
-                // There is no property to verify. If construction itself fails, there will be an exception.
-
-                //with not cancelled token and default scheduler
-                block = new BroadcastBlock<int>(i => i, new DataflowBlockOptions { MaxMessagesPerTask = 1 });
-                block = new BroadcastBlock<int>(null, new DataflowBlockOptions { MaxMessagesPerTask = 1 });
-                // There is no property to verify. If construction itself fails, there will be an exception.
-
-                //with a cancelled token and default scheduler
-                var token = new CancellationToken(true);
-                block = new BroadcastBlock<int>(i => i, new DataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-                block = new BroadcastBlock<int>(null, new DataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-                // There is no property to verify. If construction itself fails, there will be an exception.
-            }
-            catch (Exception ex)
-            {
-                Assert.True(false, "Test Failed, exception thrown during construction: " + ex.Message);
+                Assert.NotNull(block.Completion);
+                Assert.False(block.Completion.IsCompleted);
+                int item;
+                Assert.False(block.TryReceive(out item));
             }
         }
 
         [Fact]
-        public void TestBroadcastBlockInvalidArgumentValidation()
+        public void TestArgumentExceptions()
         {
             Assert.Throws<ArgumentNullException>(() => new BroadcastBlock<int>(i => i, null));
-            Assert.True(ITargetBlockTestHelper.TestArgumentsExceptions<int>(new BroadcastBlock<int>(i => i)));
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<int>(new BroadcastBlock<int>(i => i)));
+            Assert.Throws<ArgumentException>(() =>
+                ((ITargetBlock<int>)new BroadcastBlock<int>(null)).OfferMessage(default(DataflowMessageHeader), 0, null, consumeToAccept: false));
+            Assert.Throws<ArgumentException>(() =>
+                ((ITargetBlock<int>)new BroadcastBlock<int>(null)).OfferMessage(new DataflowMessageHeader(1), 0, null, consumeToAccept: true));
+            DataflowTestHelpers.TestArgumentsExceptions(new BroadcastBlock<int>(i => i));
         }
 
         [Fact]
-        [OuterLoop]
-        public void RunBroadcastBlockConformanceTests()
+        public void TestToString()
         {
-            bool localPassed = true;
+            DataflowTestHelpers.TestToString(
+                nameFormat => nameFormat != null ?
+                    new BroadcastBlock<int>(i => i, new DataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new BroadcastBlock<int>(i => i));
+        }
+
+        [Fact]
+        public async Task TestPost()
+        {
+            var bb = new BroadcastBlock<int>(i => i);
+            Assert.True(bb.Post(1));
+            bb.Complete();
+            Assert.False(bb.Post(2));
+            await bb.Completion;
+        }
+
+        [Fact]
+        public async Task TestCompletionTask()
+        {
+            await DataflowTestHelpers.TestCompletionTask(() => new WriteOnceBlock<int>(i => i));
+        }
+
+        [Fact]
+        public async Task TestReceiveThenPost()
+        {
+            var bb = new BroadcastBlock<int>(null);
+            var ignored = Task.Run(() => bb.Post(42));
+            Assert.Equal(expected: 42, actual: await bb.ReceiveAsync()); // this should always pass, but due to race we may not test what we're hoping to
+
+            bb = new BroadcastBlock<int>(null);
+            Task<int> t = bb.ReceiveAsync();
+            Assert.False(t.IsCompleted);
+            bb.Post(16);
+            Assert.Equal(expected: 16, actual: await t);
+        }
+
+        [Fact]
+        public async Task TestBroadcasting()
+        {
+            var bb = new BroadcastBlock<int>(i => i + 1);
+            var targets = Enumerable.Range(0, 3).Select(_ => new TransformBlock<int, int>(i => i)).ToArray();
+            foreach (var target in targets)
             {
-                // Test posting then receiving
-                localPassed = true;
-                var bb = new BroadcastBlock<int>(i => i);
-                for (int i = 0; i < 2; i++) bb.Post(i);
-                Task.Delay(1).Wait();
-                localPassed |= bb.Receive() == 1;
-                Assert.True(localPassed, string.Format("{0}: Posting then receiving", localPassed ? "Success" : "Failure"));
+                bb.LinkTo(target);
             }
 
+            const int Messages = 3;
+            bb.PostRange(0, Messages);
+            for (int i = 0; i < Messages; i++)
             {
-                // Test receiving then posting
-                localPassed = true;
-                var bb = new BroadcastBlock<int>(i => i);
-                Task.Run(() =>
+                foreach (var target in targets)
                 {
-                    Task.Delay(1).Wait();
-                    bb.Post(42);
-                });
-
-                localPassed |= bb.Receive() == 42;
-                Assert.True(localPassed, string.Format("{0}: Receiving then posting", localPassed ? "Success" : "Failure"));
-            }
-
-            {
-                // Test broadcasting
-                localPassed = true;
-                var bb = new BroadcastBlock<int>(i => i + 1);
-                var tb1 = new TransformBlock<int, int>(i => i);
-                var tb2 = new TransformBlock<int, int>(i => i);
-                var tb3 = new TransformBlock<int, int>(i => i);
-                bb.LinkTo(tb1);
-                bb.LinkTo(tb2);
-                bb.LinkTo(tb3);
-                for (int i = 0; i < 2; i++)
-                {
-                    bb.Post(i);
+                    Assert.Equal(expected: i + 1, actual: await target.ReceiveAsync());
                 }
-                for (int i = 0; i < 2; i++)
-                {
-                    localPassed |= tb1.Receive() == i + 1;
-                    localPassed |= tb2.Receive() == i + 1;
-                    localPassed |= tb3.Receive() == i + 1;
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Broadcasting", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test using a precanceled token
-            {
-                localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-                    var dbo = new DataflowBlockOptions { CancellationToken = cts.Token };
-                    var bb = new BroadcastBlock<int>(i => i, dbo);
-
-                    int ignoredValue;
-                    IList<int> ignoredValues;
-                    localPassed &= bb.LinkTo(new ActionBlock<int>(delegate { })) != null;
-                    localPassed &= bb.SendAsync(42).Result == false;
-                    localPassed &= ((IReceivableSourceBlock<int>)bb).TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= bb.Post(42) == false;
-                    localPassed &= bb.TryReceive(out ignoredValue) == false;
-                    localPassed &= bb.Completion != null;
-                    bb.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Precanceled tokens work correctly", localPassed ? "Success" : "Failure"));
             }
         }
 
         [Fact]
-        [OuterLoop]
-        public void TestBroadcastCloning()
+        public async Task TestRepeatedReceives()
+        {
+            var bb = new BroadcastBlock<int>(null);
+            bb.Post(42);
+            Assert.Equal(expected: 42, actual: await bb.ReceiveAsync());
+            for (int i = 0; i < 3; i++)
+            {
+                int item;
+                Assert.True(bb.TryReceive(out item));
+                Assert.Equal(expected: 42, actual: item);
+
+                Assert.False(bb.TryReceive(f => f == 41, out item));
+                Assert.True(bb.TryReceive(f => f == 42, out item));
+                Assert.Equal(expected: 42, actual: item);
+            }
+        }
+
+        [Fact]
+        public void TestLinkingAfterCompletion()
+        {
+            var b = new BroadcastBlock<int>(i => i * 2);
+            b.Post(1);
+            b.Complete();
+            using (b.LinkTo(new ActionBlock<int>(i => { })))
+            using (b.LinkTo(new ActionBlock<int>(i => { })))
+            {
+                Assert.False(b.Post(2));
+            }
+        }
+
+        [Fact]
+        public async Task TestLinkingToCompleted()
+        {
+            var b = new BroadcastBlock<int>(i => i * 2);
+            var ab = new ActionBlock<int>(i => { });
+            b.LinkTo(ab);
+            ab.Complete();
+            Assert.True(b.Post(1));
+            b.Complete();
+            await b.Completion;
+        }
+
+        [Fact]
+        public async Task TestCloning()
         {
             // Test cloning when a clone function is provided
             {
-                var broadcast = new BroadcastBlock<int>(x => -x);
-                Assert.True(broadcast.Post(42), "Expected initial post on cloning Broadcast to succeed");
-                Assert.True(broadcast.Receive() == -42, "Expected Receive'd data to be a clone");
-                int item;
-                Assert.True(broadcast.TryReceive(out item) && item == -42, "Expected TryReceive'd data to be a clone");
-                IList<int> items;
-                Assert.True(((IReceivableSourceBlock<int>)broadcast).TryReceiveAll(out items) && items.Count == 1 && items[0] == -42, "Expected TryReceiveAll'd data to be a clone");
-                var ab = new ActionBlock<int>(i =>
+                int data = 42;
+                var bb = new BroadcastBlock<int>(x => -x);
+                Assert.True(bb.Post(data));
+
+                for (int i = 0; i < 3; i++)
                 {
-                    Assert.True(i == -42, "Expected propagated data to be a clone.");
+                    Assert.Equal(expected: -data, actual: await bb.ReceiveAsync());
+                    Assert.Equal(expected: -data, actual: bb.Receive());
+                    Assert.Equal(expected: -data, actual: await bb.ReceiveAsync());
+
+                    IList<int> items;
+                    Assert.True(((IReceivableSourceBlock<int>)bb).TryReceiveAll(out items));
+                    Assert.Equal(expected: items.Count, actual: 1);
+                    Assert.Equal(expected: -data, actual: items[0]);
+                }
+
+                int result = 0;
+                var target = new ActionBlock<int>(i => {
+                    Assert.Equal(expected: 0, actual: result);
+                    result = i;
+                    Assert.Equal(expected: -data, actual: i);
                 });
-                broadcast.LinkTo(ab);
-                ab.Complete();
-                Assert.True(ab.Completion.Wait(4000), "Expected action block to complete after cloned data flowed to it");
+                bb.LinkTo(target, new DataflowLinkOptions { PropagateCompletion = true });
+                bb.Complete();
+                await target.Completion;
             }
 
             // Test successful processing when no clone function exists
             {
                 var data = new object();
-                var broadcast = new WriteOnceBlock<object>(null);
-                Assert.True(broadcast.Post(data), "Expected initial post on non-cloning Broadcast to succeed");
-                Assert.True(broadcast.Receive() == data, "Expected Receive'd data to be original data");
-                object item;
-                Assert.True(broadcast.TryReceive(out item) && item == data, "Expected TryReceive'd data to be original data");
-                IList<object> items;
-                Assert.True(((IReceivableSourceBlock<object>)broadcast).TryReceiveAll(out items) && items.Count == 1 && items[0] == data, "Expected TryReceiveAll'd data to be original data");
-                var ab = new ActionBlock<object>(i =>
+                var bb = new BroadcastBlock<object>(null);
+                Assert.True(bb.Post(data));
+
+                object result;
+                for (int i = 0; i < 3; i++)
                 {
-                    Assert.True(i == data, "Expected propagated data to be original data.");
+                    Assert.Equal(expected: data, actual: await bb.ReceiveAsync());
+                    Assert.Equal(expected: data, actual: bb.Receive());
+                    Assert.Equal(expected: data, actual: await bb.ReceiveAsync());
+
+                    IList<object> items;
+                    Assert.True(((IReceivableSourceBlock<object>)bb).TryReceiveAll(out items));
+                    Assert.Equal(expected: 1, actual: items.Count);
+                    Assert.Equal(expected: data, actual: items[0]);
+                }
+
+                result = null;
+                var target = new ActionBlock<object>(o => {
+                    Assert.Null(result);
+                    result = o;
+                    Assert.Equal(expected: data, actual: o);
                 });
-                broadcast.LinkTo(ab);
-                ab.Complete();
-                Assert.True(ab.Completion.Wait(4000), "Expected action block to complete after original data flowed to it");
+                bb.LinkTo(target, new DataflowLinkOptions { PropagateCompletion = true });
+                bb.Complete();
+                await target.Completion;
             }
         }
+
+        [Fact]
+        public async Task TestPrecancellation()
+        {
+            var b = new BroadcastBlock<int>(null, new DataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+
+            Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<int>()));
+            Assert.False(b.Post(42));
+            Task<bool> t = b.SendAsync(42);
+            Assert.True(t.IsCompleted);
+            Assert.False(t.Result);
+            int ignoredValue;
+            IList<int> ignoredValues;
+            Assert.False(b.TryReceive(out ignoredValue));
+            Assert.False(((IReceivableSourceBlock<int>)b).TryReceiveAll(out ignoredValues));
+            Assert.NotNull(b.Completion);
+            b.Complete(); // verify doesn't throw
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+        }
+
+        [Fact]
+        public async Task TestReserveReleaseConsume()
+        {
+            var bb = new BroadcastBlock<int>(i => i * 2);
+            bb.Post(1);
+            await DataflowTestHelpers.TestReserveAndRelease(bb, reservationIsTargetSpecific: false);
+
+            bb = new BroadcastBlock<int>(i => i * 2);
+            bb.Post(2);
+            await DataflowTestHelpers.TestReserveAndConsume(bb, reservationIsTargetSpecific: false);
+        }
+
+        [Fact]
+        public async Task TestBounding()
+        {
+            var bb = new BroadcastBlock<int>(null, new DataflowBlockOptions { BoundedCapacity = 1 });
+            var ab = new ActionBlock<int>(i => { });
+            bb.LinkTo(ab, new DataflowLinkOptions { PropagateCompletion = true });
+
+            Task<bool>[] sends = Enumerable.Range(0, 40).Select(i => bb.SendAsync(i)).ToArray();
+            bb.Complete();
+
+            await Task.WhenAll(sends);
+            await ab.Completion;
+        }
+
+        [Fact]
+        public async Task TestFaultingAndCancellation()
+        {
+            foreach (bool fault in DataflowTestHelpers.BooleanValues)
+            {
+                var cts = new CancellationTokenSource();
+                var bb = new BroadcastBlock<int>(null, new GroupingDataflowBlockOptions { CancellationToken = cts.Token, BoundedCapacity = 2 });
+                Task<bool>[] sends = Enumerable.Range(0, 4).Select(i => bb.SendAsync(i)).ToArray();
+
+                if (fault)
+                {
+                    Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)bb).Fault(null));
+                    ((IDataflowBlock)bb).Fault(new InvalidCastException());
+                    await Assert.ThrowsAsync<InvalidCastException>(() => bb.Completion);
+                }
+                else
+                {
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+                }
+
+                await Task.WhenAll(sends);
+            }
+        }
+
+        [Fact]
+        public async Task TestFaultyScheduler()
+        {
+            var bb = new BroadcastBlock<int>(null, new DataflowBlockOptions {
+                BoundedCapacity = 1,
+                TaskScheduler = new DelegateTaskScheduler
+                {
+                    QueueTaskDelegate = delegate { throw new FormatException(); }
+                }
+            });
+            Task<bool> t1 = bb.SendAsync(1);
+            Task<bool> t2 = bb.SendAsync(2);
+            bb.LinkTo(DataflowBlock.NullTarget<int>());
+            await Assert.ThrowsAsync<TaskSchedulerException>(() => bb.Completion);
+            Assert.True(await t1);
+            Assert.False(await t2);
+        }
+
     }
 }
