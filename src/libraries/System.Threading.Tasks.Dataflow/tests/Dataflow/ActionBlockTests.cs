@@ -1,537 +1,506 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class ActionBlockTests
     {
         [Fact]
-        public void RunActionBlockTests()
+        public void TestToString()
         {
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new ActionBlock<int>(x => { }, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat }) : new ActionBlock<int>(x => { })));
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat =>
-                nameFormat != null ?
-                new ActionBlock<int>(x => { }, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat, SingleProducerConstrained = true }) :
-                new ActionBlock<int>(x => { }, new ExecutionDataflowBlockOptions() { SingleProducerConstrained = true })));
+            // Test ToString() with the only custom configuration being NameFormat
+            DataflowTestHelpers.TestToString(
+                nameFormat => nameFormat != null ?
+                    new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new ActionBlock<int>(i => { }));
 
-            Assert.True(ITargetBlockTestHelper.TestArgumentsExceptions<int>(new ActionBlock<int>(i => { })));
-            Assert.True(ITargetBlockTestHelper.TestOfferMessage<int>(new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = true })));
-
-            Assert.True(ITargetBlockTestHelper.TestPost<int>(new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = true })));
-            Assert.True(ITargetBlockTestHelper.TestComplete<int>(new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = true })));
-            Assert.True(ITargetBlockTestHelper.TestCompletionTask<int>(new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = true })));
-
-            Assert.True(ITargetBlockTestHelper.TestNonGreedyPost(new ActionBlock<int>(x => { Task.Delay(1); }, new ExecutionDataflowBlockOptions() { BoundedCapacity = 1 })));
+            // Test ToString() with other configuration
+            DataflowTestHelpers.TestToString(
+                nameFormat => nameFormat != null ?
+                    new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat, SingleProducerConstrained = true }) :
+                    new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions() { SingleProducerConstrained = true }));
         }
 
         [Fact]
-        public void TestActionBlockConstructor()
+        public async Task TestOfferMessage()
         {
-            // SYNC
-            // without option
-            var block = new ActionBlock<int>(i => { });
-            Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock." + block.InputCount);
+            var generators = new Func<ActionBlock<int>>[]
+            {
+                () => new ActionBlock<int>(i => { }),
+                () => new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { BoundedCapacity = 10 }),
+                () => new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { BoundedCapacity = 10, MaxMessagesPerTask = 1, MaxDegreeOfParallelism = 4 })
+            };
+            foreach (var generator in generators)
+            {
+                DataflowTestHelpers.TestOfferMessage_ArgumentValidation(generator());
 
-            //with not cancelled token and default scheduler
-            block = new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
-            Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock.");
+                var target = generator();
+                DataflowTestHelpers.TestOfferMessage_AcceptsDataDirectly(target);
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+                await target.Completion;
 
-            //with a cancelled token and default scheduler
-            var token = new CancellationToken(true);
-            block = new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-            Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock.");
-
-            // ASYNC (a copy of the sync but with constructors returning Task instead of void
-            var dummyTask = new Task(() => { });
-
-            // without option
-            block = new ActionBlock<int>(i => dummyTask);
-            Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock.");
-
-            //with not cancelled token and default scheduler
-            block = new ActionBlock<int>(i => dummyTask, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
-            Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock.");
-
-            //with a cancelled token and default scheduler
-            token = new CancellationToken(true);
-            block = new ActionBlock<int>(i => dummyTask, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-            Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new ActionBlock.");
+                target = generator();
+                await DataflowTestHelpers.TestOfferMessage_AcceptsViaLinking(target);
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+                await target.Completion;
+            }
         }
 
         [Fact]
-        public void TestActionBlockInvalidArgumentValidation()
+        public void TestPost()
         {
+            foreach (bool bounded in DataflowTestHelpers.BooleanValues)
+            {
+                ActionBlock<int> ab = new ActionBlock<int>(i => { },
+                    new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 }); // test greedy and then non-greedy
+                Assert.True(ab.Post(0), "Expected non-completed ActionBlock to accept Post'd message");
+                ab.Complete();
+                Assert.False(ab.Post(0), "Expected Complete'd ActionBlock to decline messages");
+            }
+        }
+
+        [Fact]
+        public async Task TestCompletionTask()
+        {
+            await DataflowTestHelpers.TestCompletionTask(() => new ActionBlock<int>(i => { }));
+        }
+
+        [Fact]
+        public void TestCtor()
+        {
+            // Invalid arguments
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>((Func<int, Task>)null));
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>((Func<int, Task>)null));
             Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => { }, null));
-            Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => Task.Factory.StartNew(() => { }), null));
+            Assert.Throws<ArgumentNullException>(() => new ActionBlock<int>(i => default(Task), null));
+
+            // Valid arguments; make sure they don't throw, and validate some properties afterwards
+            var blocks = new[]
+            {
+                new ActionBlock<int>(i => { }),
+
+                new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) }),
+
+                new ActionBlock<int>(i => default(Task)),
+
+                new ActionBlock<int>(i => default(Task), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new ActionBlock<int>(i => default(Task), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) })
+            };
+            foreach (var block in blocks)
+            {
+                Assert.Equal(block.InputCount, 0);
+                Assert.NotNull(block.Completion);
+            }
         }
 
         [Fact]
-        [OuterLoop]
-        public void RunActionBlockConformanceTests()
+        public async Task TestBasicMessageProcessing()
         {
-            // SYNC
-            // Do everything twice - once through OfferMessage and Once through Post
-            for (FeedMethod feedMethod = FeedMethod._First; feedMethod < FeedMethod._Count; feedMethod++)
+            var options = new[]
             {
-                Func<DataflowBlockOptions, TargetProperties<int>> actionBlockFactory =
-                    options =>
-                    {
-                        ITargetBlock<int> target = new ActionBlock<int>(i => TrackCaptures(i), (ExecutionDataflowBlockOptions)options);
-                        return new TargetProperties<int> { Target = target, Capturer = target, ErrorVerifyable = true };
-                    };
-
-                CancellationTokenSource cancellationSource = new CancellationTokenSource();
-                var defaultOptions = new ExecutionDataflowBlockOptions();
-                var dopOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-                var mptOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 1 };
-                var cancellationOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 1, CancellationToken = cancellationSource.Token };
-                var spscOptions = new ExecutionDataflowBlockOptions { SingleProducerConstrained = true };
-                var spscMptOptions = new ExecutionDataflowBlockOptions { SingleProducerConstrained = true, MaxMessagesPerTask = 10 };
-
-                Assert.True(FeedTarget(actionBlockFactory, defaultOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, dopOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, mptOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, mptOptions, 1, Intervention.Complete, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, cancellationOptions, 1, Intervention.Cancel, cancellationSource, feedMethod, true));
-
-                Assert.True(FeedTarget(actionBlockFactory, spscOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, spscOptions, 1, Intervention.Complete, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, spscMptOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, spscMptOptions, 1, Intervention.Complete, null, feedMethod, true));
-            }
-
-            // Test scheduler usage
-            {
-                bool localPassed = true;
-                for (int trial = 0; trial < 2; trial++)
+                // Actual values used here aren't important; just want to make sure the block works 
+                // with these properties set to non-default values
+                new ExecutionDataflowBlockOptions { },
+                new ExecutionDataflowBlockOptions { BoundedCapacity = 1 },
+                new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 2 },
+                new ExecutionDataflowBlockOptions { SingleProducerConstrained = true },
+                new ExecutionDataflowBlockOptions { TaskScheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler },
+                new ExecutionDataflowBlockOptions
                 {
-                    var sts = new SimpleTaskScheduler();
-
-                    var options = new ExecutionDataflowBlockOptions { TaskScheduler = sts, MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, MaxMessagesPerTask = 1 };
-                    if (trial == 0) options.SingleProducerConstrained = true;
-
-                    var ab = new ActionBlock<int>(i => localPassed &= TaskScheduler.Current.Id == sts.Id, options);
-                    for (int i = 0; i < 2; i++) ab.Post(i);
-                    ab.Complete();
-                    ab.Completion.Wait();
+                    BoundedCapacity = 2,
+                    MaxMessagesPerTask = 4,
+                    SingleProducerConstrained = true,
+                    TaskScheduler = new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler,
+                    CancellationToken = new CancellationTokenSource().Token,
+                    NameFormat = ""
                 }
+            };
 
-                Assert.True(localPassed, string.Format("{0}: Correct scheduler usage", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test count
+            // Make sure all data makes it through the block
+            for (int propMechanism = 0; propMechanism < 2; propMechanism++)
             {
-                bool localPassed = true;
-                for (int trial = 0; trial < 2; trial++)
+                foreach (var option in options)
                 {
-                    var barrier1 = new Barrier(2);
-                    var barrier2 = new Barrier(2);
-                    var ab = new ActionBlock<int>(i =>
+                    string result = null;
+                    foreach (var target in new[] 
+                        { 
+                            new ActionBlock<char>(c => result += c, option), // sync
+                            new ActionBlock<char>(c => Task.Run(() => result += c), option) // async 
+                        })
                     {
-                        barrier1.SignalAndWait();
-                        barrier2.SignalAndWait();
-                    }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = (trial == 0) });
-                    for (int iter = 0; iter < 2; iter++)
-                    {
-                        for (int i = 1; i <= 2; i++) ab.Post(i);
-                        for (int i = 1; i >= 0; i--)
+                        result = "";
+
+                        switch (propMechanism)
                         {
-                            barrier1.SignalAndWait();
-                            localPassed &= i == ab.InputCount;
-                            barrier2.SignalAndWait();
+                            case 0:
+                                for (int i = 0; i < 26; i++)
+                                {
+                                    char c = (char)('a' + i);
+                                    if (option.BoundedCapacity == DataflowBlockOptions.Unbounded)
+                                        target.Post(c);
+                                    else
+                                        await target.SendAsync(c); // will work even if Unbounded, but we can test Post if it's Unbounded
+                                }
+                                target.Complete();
+                                break;
+
+                            case 1:
+                                var source = new BufferBlock<char>();
+                                source.PostAll(Enumerable.Range(0, 26).Select(i => (char)('a' + i)));
+                                source.Complete();
+                                source.LinkTo(target, new DataflowLinkOptions { PropagateCompletion = true });
+                                break;
                         }
+
+                        await target.Completion;
+                        Assert.Equal(expected: "abcdefghijklmnopqrstuvwxyz", actual: result);
                     }
                 }
-
-                Assert.True(localPassed, string.Format("{0}: InputCount", localPassed ? "Success" : "Failure"));
             }
 
-            // Test ordering
+        }
+
+        [Fact]
+        public async Task TestSchedulerUsage()
+        {
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
             {
-                bool localPassed = true;
-                for (int trial = 0; trial < 2; trial++)
-                {
-                    int prev = -1;
-                    var ab = new ActionBlock<int>(i =>
+                var scheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
+
+                var sync = new ActionBlock<int>(_ => Assert.Equal(scheduler.Id, TaskScheduler.Current.Id),
+                    new ExecutionDataflowBlockOptions 
+                    { 
+                        TaskScheduler = scheduler,
+                        SingleProducerConstrained = singleProducerConstrained
+                    });
+                sync.PostRange(0, 10);
+                sync.Complete();
+                await sync.Completion;
+
+                var async = new ActionBlock<int>(_ => {
+                    Assert.Equal(scheduler.Id, TaskScheduler.Current.Id);
+                    return Task.FromResult(0);
+                }, new ExecutionDataflowBlockOptions
                     {
-                        if (prev + 1 != i) localPassed &= false;
-                        prev = i;
-                    }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = (trial == 0) });
-                    for (int i = 0; i < 2; i++) ab.Post(i);
-                    ab.Complete();
-                    ab.Completion.Wait();
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Correct ordering", localPassed ? "Success" : "Failure"));
+                        TaskScheduler = scheduler,
+                        SingleProducerConstrained = singleProducerConstrained
+                    });
+                async.PostRange(0, 10);
+                async.Complete();
+                await async.Completion;
             }
+        }
 
-            // Test non-greedy
+        [Fact]
+        public async Task TestInputCount()
+        {
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
             {
-                bool localPassed = true;
-                var barrier = new Barrier(2);
-                var ab = new ActionBlock<int>(i =>
-                {
-                    barrier.SignalAndWait();
-                }, new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-                ab.SendAsync(1);
-                Task.Delay(200).Wait();
-                var sa2 = ab.SendAsync(2);
-                localPassed &= !sa2.IsCompleted;
-                barrier.SignalAndWait(); // for SendAsync(1)
-                barrier.SignalAndWait(); // for SendAsync(2)
-                localPassed &= sa2.Wait(100);
-                int total = 0;
-                ab = new ActionBlock<int>(i =>
-                {
-                    Interlocked.Add(ref total, i);
-                    Task.Delay(1).Wait();
-                }, new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-                for (int i = 1; i <= 100; i++) ab.SendAsync(i);
-                SpinWait.SpinUntil(() => total == ((100 * 101) / 2), 30000);
-                localPassed &= total == ((100 * 101) / 2);
-                Assert.True(localPassed, string.Format("total={0} (must be {1})", total, (100 * 101) / 2));
-                Assert.True(localPassed, string.Format("{0}: Non-greedy support", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test that OperationCanceledExceptions are ignored
-            {
-                bool localPassed = true;
-                for (int trial = 0; trial < 2; trial++)
-                {
-                    int sumOfOdds = 0;
-                    var ab = new ActionBlock<int>(i =>
-                    {
-                        if ((i % 2) == 0) throw new OperationCanceledException();
-                        sumOfOdds += i;
-                    }, new ExecutionDataflowBlockOptions { SingleProducerConstrained = (trial == 0) });
-                    for (int i = 0; i < 4; i++) ab.Post(i);
-                    ab.Complete();
-                    ab.Completion.Wait();
-                    localPassed = sumOfOdds == (1 + 3);
-                }
-
-                Assert.True(localPassed, string.Format("{0}: OperationCanceledExceptions are ignored", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test using a precanceled token
-            {
-                bool localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-                    var dbo = new ExecutionDataflowBlockOptions { CancellationToken = cts.Token };
-                    var ab = new ActionBlock<int>(i => { }, dbo);
-
-                    localPassed &= ab.Post(42) == false;
-                    localPassed &= ab.InputCount == 0;
-                    localPassed &= ab.Completion != null;
-                    ab.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Precanceled tokens work correctly", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test faulting
-            {
-                bool localPassed = true;
-                for (int trial = 0; trial < 2; trial++)
-                {
-                    var ab = new ActionBlock<int>(i => { throw new InvalidOperationException(); },
-                        new ExecutionDataflowBlockOptions { SingleProducerConstrained = (trial == 0) });
-                    ab.Post(42);
-                    ab.Post(1);
-                    ab.Post(2);
-                    ab.Post(3);
-                    try { localPassed &= ab.Completion.Wait(5000); }
-                    catch { }
-                    localPassed &= ab.Completion.IsFaulted;
-                    localPassed &= SpinWait.SpinUntil(() => ab.InputCount == 0, 500);
-                    localPassed &= ab.Post(4) == false;
-                }
-
-                Assert.True(localPassed, string.Format("{0}: Faulted handled correctly", localPassed ? "Success" : "Failure"));
-            }
-
-            // ASYNC (a copy of the sync but with constructors returning Task instead of void
-
-            // Do everything twice - once through OfferMessage and Once through Post
-            for (FeedMethod feedMethod = FeedMethod._First; feedMethod < FeedMethod._Count; feedMethod++)
-            {
-                Func<DataflowBlockOptions, TargetProperties<int>> actionBlockFactory =
-                    options =>
-                    {
-                        ITargetBlock<int> target = new ActionBlock<int>(i => TrackCapturesAsync(i), (ExecutionDataflowBlockOptions)options);
-                        return new TargetProperties<int> { Target = target, Capturer = target, ErrorVerifyable = true };
-                    };
-                CancellationTokenSource cancellationSource = new CancellationTokenSource();
-                var defaultOptions = new ExecutionDataflowBlockOptions();
-                var dopOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-                var mptOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 10 };
-                var cancellationOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 100, CancellationToken = cancellationSource.Token };
-
-                Assert.True(FeedTarget(actionBlockFactory, defaultOptions, 1, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, defaultOptions, 10, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, dopOptions, 1000, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, mptOptions, 10000, Intervention.None, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, mptOptions, 10000, Intervention.Complete, null, feedMethod, true));
-                Assert.True(FeedTarget(actionBlockFactory, cancellationOptions, 10000, Intervention.Cancel, cancellationSource, feedMethod, true));
-            }
-
-            // Test scheduler usage
-            {
-                bool localPassed = true;
-                var sts = new SimpleTaskScheduler();
-                var ab = new ActionBlock<int>(i =>
-                    {
-                        localPassed &= TaskScheduler.Current.Id == sts.Id;
-                        return Task.Factory.StartNew(() => { });
-                    }, new ExecutionDataflowBlockOptions { TaskScheduler = sts, MaxDegreeOfParallelism = -1, MaxMessagesPerTask = 10 });
-                for (int i = 0; i < 2; i++) ab.Post(i);
-                ab.Complete();
-                ab.Completion.Wait();
-                Assert.True(localPassed, string.Format("{0}: Correct scheduler usage", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test count
-            {
-                bool localPassed = true;
-                var barrier1 = new Barrier(2);
-                var barrier2 = new Barrier(2);
-                var ab = new ActionBlock<int>(i => Task.Factory.StartNew(() =>
-                {
+                Barrier barrier1 = new Barrier(2), barrier2 = new Barrier(2);
+                var options = new ExecutionDataflowBlockOptions { SingleProducerConstrained = singleProducerConstrained };
+                Action<int> body = _ => {
                     barrier1.SignalAndWait();
+                    // will test InputCount here
                     barrier2.SignalAndWait();
-                }));
+                };
+
+                ActionBlock<int> ab = sync ?
+                    new ActionBlock<int>(body, options) :
+                    new ActionBlock<int>(i => Task.Run(() => body(i)), options);
+
                 for (int iter = 0; iter < 2; iter++)
                 {
-                    for (int i = 1; i <= 2; i++) ab.Post(i);
+                    ab.PostItems(1, 2);
                     for (int i = 1; i >= 0; i--)
                     {
                         barrier1.SignalAndWait();
-                        localPassed &= i == ab.InputCount;
+                        Assert.Equal(expected: i, actual: ab.InputCount);
                         barrier2.SignalAndWait();
                     }
                 }
-                Assert.True(localPassed, string.Format("{0}: InputCount", localPassed ? "Success" : "Failure"));
-            }
 
-            // Test ordering
+                ab.Complete();
+                await ab.Completion;
+            }
+        }
+
+        [Fact]
+        public async Task TestOrderMaintained()
+        {
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
             {
-                bool localPassed = true;
+                var options = new ExecutionDataflowBlockOptions { SingleProducerConstrained = singleProducerConstrained };
                 int prev = -1;
-                var ab = new ActionBlock<int>(i =>
+                Action<int> body = i => 
                 {
-                    return Task.Factory.StartNew(() =>
-                    {
-                        if (prev + 1 != i) localPassed &= false;
-                        prev = i;
-                    });
-                });
-                for (int i = 0; i < 2; i++) ab.Post(i);
+                    Assert.Equal(expected: prev + 1, actual: i);
+                    prev = i;
+                };
+
+                ActionBlock<int> ab = sync ?
+                    new ActionBlock<int>(body, options) :
+                    new ActionBlock<int>(i => Task.Run(() => body(i)), options);
+                ab.PostRange(0, 100);
                 ab.Complete();
-                ab.Completion.Wait();
-                Assert.True(localPassed, string.Format("{0}: Correct ordering", localPassed ? "Success" : "Failure"));
+                await ab.Completion;
             }
+        }
 
-            // Test non-greedy
+        [Fact]
+        public async Task TestNonGreedy()
+        {
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
             {
-                bool localPassed = true;
-                var barrier = new Barrier(2);
-                var ab = new ActionBlock<int>(i =>
+                var barrier1 = new Barrier(2);
+                Action<int> body = _ => barrier1.SignalAndWait();
+                var options = new ExecutionDataflowBlockOptions { BoundedCapacity = 1 };
+
+                ActionBlock<int> ab = sync ?
+                    new ActionBlock<int>(body, options) :
+                    new ActionBlock<int>(i => Task.Run(() => body(i)), options);
+
+                Task<bool>[] sends = Enumerable.Range(0, 10).Select(i => ab.SendAsync(i)).ToArray();
+                for (int i = 0; i < sends.Length; i++)
                 {
-                    return Task.Factory.StartNew(() =>
+                    Assert.True(sends[i].Result); // Next send should have completed and with the value successfully accepted
+                    for (int j = i + 1; j < sends.Length; j++) // No further sends should have completed yet
                     {
-                        barrier.SignalAndWait();
-                    });
-                }, new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-                ab.SendAsync(1);
-                Task.Delay(200).Wait();
-                var sa2 = ab.SendAsync(2);
-                localPassed &= !sa2.IsCompleted;
-                barrier.SignalAndWait(); // for SendAsync(1)
-                barrier.SignalAndWait(); // for SendAsync(2)
-                localPassed &= sa2.Wait(100);
-                int total = 0;
-                ab = new ActionBlock<int>(i =>
-                {
-                    return Task.Factory.StartNew(() =>
-                    {
-                        Interlocked.Add(ref total, i);
-                        Task.Delay(1).Wait();
-                    });
-                }, new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
-                for (int i = 1; i <= 100; i++) ab.SendAsync(i);
-                SpinWait.SpinUntil(() => total == ((100 * 101) / 2), 30000);
-                localPassed &= total == ((100 * 101) / 2);
-                Assert.True(localPassed, string.Format("total={0} (must be {1})", total, (100 * 101) / 2));
-                Assert.True(localPassed, string.Format("{0}: Non-greedy support", localPassed ? "Success" : "Failure"));
+                        Assert.False(sends[j].IsCompleted);
+                    }
+                    barrier1.SignalAndWait();
+                }
+
+                ab.Complete();
+                await ab.Completion;
             }
+        }
 
-            // Test that OperationCanceledExceptions are ignored
+        [Fact]
+        public async Task TestConsumeToAccept()
+        {
+            foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1 })
+            foreach (bool singleProducer in DataflowTestHelpers.BooleanValues)
             {
-                bool localPassed = true;
+                int sum = 0;
+                var bb = new BroadcastBlock<int>(i => i * 2, new DataflowBlockOptions { MaxMessagesPerTask = maxMessagesPerTask });
+                var ab = new ActionBlock<int>(i => sum += i, new ExecutionDataflowBlockOptions { SingleProducerConstrained = singleProducer });
+                bb.LinkTo(ab, new DataflowLinkOptions { PropagateCompletion = true });
+
+                const int Messages = 100;
+                bb.PostRange(1, Messages + 1);
+                bb.Complete();
+
+                await ab.Completion;
+                Assert.Equal(expected: 100 * 101, actual: sum);
+            }
+        }
+
+        [Fact]
+        public async Task TestOperationCanceledExceptionsIgnored()
+        {
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
+            {
+                var options = new ExecutionDataflowBlockOptions { SingleProducerConstrained = singleProducerConstrained };
                 int sumOfOdds = 0;
-                var ab = new ActionBlock<int>(i =>
-                {
+                Action<int> body = i => {
                     if ((i % 2) == 0) throw new OperationCanceledException();
-                    return Task.Factory.StartNew(() => { sumOfOdds += i; });
-                });
-                for (int i = 0; i < 4; i++) ab.Post(i);
+                    sumOfOdds += i;
+                };
+
+                ActionBlock<int> ab = sync ?
+                    new ActionBlock<int>(body, options) :
+                    new ActionBlock<int>(async i => { await Task.Yield(); body(i); }, options);
+
+                const int MaxValue = 10;
+                ab.PostRange(0, MaxValue);
                 ab.Complete();
-                ab.Completion.Wait();
-                localPassed = sumOfOdds == (1 + 3);
-                Assert.True(localPassed, string.Format("{0}: OperationCanceledExceptions are ignored", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test that null task is ignored
-            {
-                bool localPassed = true;
-                int sumOfOdds = 0;
-                var ab = new ActionBlock<int>(i =>
-                {
-                    if ((i % 2) == 0) return null;
-                    return Task.Factory.StartNew(() => { sumOfOdds += i; });
-                });
-                for (int i = 0; i < 4; i++) ab.Post(i);
-                ab.Complete();
-                ab.Completion.Wait();
-                localPassed = sumOfOdds == (1 + 3);
-                Assert.True(localPassed, string.Format("{0}: null tasks are ignored", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test faulting from the delegate
-            {
-                bool localPassed = true;
-                var ab = new ActionBlock<int>(new Func<int, Task>(i => { throw new InvalidOperationException(); }));
-                ab.Post(42);
-                ab.Post(1);
-                ab.Post(2);
-                ab.Post(3);
-                try { localPassed &= ab.Completion.Wait(100); }
-                catch { }
-                localPassed &= ab.Completion.IsFaulted;
-                localPassed &= SpinWait.SpinUntil(() => ab.InputCount == 0, 500);
-                localPassed &= ab.Post(4) == false;
-                Assert.True(localPassed, string.Format("{0}: Faulted from delegate handled correctly", localPassed ? "Success" : "Failure"));
-            }
-
-            // Test faulting from the task
-            {
-                bool localPassed = true;
-                var ab = new ActionBlock<int>(i => Task.Factory.StartNew(() => { throw new InvalidOperationException(); }));
-                ab.Post(42);
-                ab.Post(1);
-                ab.Post(2);
-                ab.Post(3);
-                try { localPassed &= ab.Completion.Wait(100); }
-                catch { }
-                localPassed &= ab.Completion.IsFaulted;
-                localPassed &= SpinWait.SpinUntil(() => ab.InputCount == 0, 500);
-                localPassed &= ab.Post(4) == false;
-                Assert.True(localPassed, string.Format("{0}: Faulted from task handled correctly", localPassed ? "Success" : "Failure"));
+                await ab.Completion;
+                Assert.Equal(
+                    expected: Enumerable.Range(0, MaxValue).Where(i => i % 2 != 0).Sum(),
+                    actual: sumOfOdds);
             }
         }
 
         [Fact]
-        [OuterLoop]
-        public void TestDynamicParallelism()
+        public async Task TestPrecanceledToken()
         {
-            bool passed = false, executingFirst = false;
-            const int firstItem = 1;
-            const int secondItem = 2;
-
-            int maxDOP = Parallelism.ActualDegreeOfParallelism > 1 ? Parallelism.ActualDegreeOfParallelism : 2; // Must be >= 2
-            int maxMPT = Int32.MaxValue;
-            var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = maxDOP, MaxMessagesPerTask = maxMPT };
-
-            ActionBlock<int> action = new ActionBlock<int>((item) =>
+            var options = new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) };
+            var blocks = new []
             {
-                if (item == firstItem)
-                {
-                    executingFirst = true;
-                    Task.Delay(100).Wait();
-                    executingFirst = false;
-                }
+                new ActionBlock<int>(i => { }, options),
+                new ActionBlock<int>(i => Task.FromResult(0), options)
+            };
 
-                if (item == secondItem)
-                {
-                    passed = executingFirst;
-                }
-            }, options);
+            foreach (ActionBlock<int> ab in blocks)
+            {
+                Assert.False(ab.Post(42));
+                Assert.Equal(expected: 0, actual: ab.InputCount);
+                Assert.NotNull(ab.Completion);
 
-            BufferBlock<int> buffer = new BufferBlock<int>();
-            buffer.LinkTo(action);
+                ab.Complete();
+                ((IDataflowBlock)ab).Fault(new Exception());
 
-            buffer.Post(firstItem);
-            Task.Delay(1).Wait(); // Make sure item 2 propagates after item 1 has started executing
-            buffer.Post(secondItem);
-
-            Task.Delay(1).Wait(); // Let item 2 get propagated to the ActionBlock
-            action.Complete();
-            action.Completion.Wait();
-
-            Assert.True(passed, "Test failed: executingFirst is false.");
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ab.Completion);
+            }
         }
 
         [Fact]
-        [OuterLoop]
-        public void TestReleasingOfPostponedMessages()
+        public async Task TestFault()
         {
-            const int excess = 5;
-            for (int dop = 1; dop <= Parallelism.ActualDegreeOfParallelism; dop++)
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
             {
-                var localPassed = true;
-                var nextOfferEvent = new AutoResetEvent(true);
-                var releaseProcessingEvent = new ManualResetEventSlim();
-                var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, BoundedCapacity = dop };
-                var action = new ActionBlock<int>(x => { nextOfferEvent.Set(); releaseProcessingEvent.Wait(); }, options);
-                var sendAsyncDop = new Task<bool>[dop];
-                var sendAsyncExcess = new Task<bool>[excess];
-
-                // Send DOP messages
-                for (int i = 0; i < dop; i++)
-                {
-                    // Throttle sending to make sure we saturate DOP exactly
-                    nextOfferEvent.WaitOne();
-                    sendAsyncDop[i] = action.SendAsync(i);
-                }
-
-                // Send EXCESS more messages. All of these will surely be postponed
-                for (int i = 0; i < excess; i++)
-                    sendAsyncExcess[i] = action.SendAsync(dop + i);
-
-                // Wait until the tasks for the first DOP messages get completed
-                Task.WaitAll(sendAsyncDop, 5000);
-
-                // Complete the block. This will cause the EXCESS messages to be declined.
-                action.Complete();
-                releaseProcessingEvent.Set();
-
-                // Verify all DOP messages have been accepted
-                for (int i = 0; i < dop; i++) localPassed &= sendAsyncDop[i].Result;
-                Assert.True(localPassed, string.Format("DOP={0} : Consumed up to DOP - {1}", dop, localPassed ? "Passed" : "FAILED"));
-
-
-                // Verify all EXCESS messages have been declined
-                localPassed = true;
-                for (int i = 0; i < excess; i++) localPassed &= !sendAsyncExcess[i].Result;
-                Assert.True(localPassed, string.Format("DOP={0} : Declined excess - {1}", dop, localPassed ? "Passed" : "FAILED"));
+                var ab = new ActionBlock<int>(i => { },
+                    new ExecutionDataflowBlockOptions { SingleProducerConstrained = true });
+                Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)ab).Fault(null));
+                ((IDataflowBlock)ab).Fault(new InvalidCastException());
+                await Assert.ThrowsAsync<InvalidCastException>(() => ab.Completion);
             }
         }
+
+        [Fact]
+        public async Task TestFaulting()
+        {
+            for (int trial = 0; trial < 3; trial++)
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
+            {
+                var options = new ExecutionDataflowBlockOptions { SingleProducerConstrained = singleProducerConstrained };
+                Action thrower = () => { throw new InvalidOperationException(); };
+
+                ActionBlock<int> ab = null;
+                switch (trial)
+                {
+                    case 0: ab = new ActionBlock<int>(i => thrower(), options); break;
+                    case 1: ab = new ActionBlock<int>(i => { thrower(); return Task.FromResult(0); }, options); break;
+                    case 2: ab = new ActionBlock<int>(i => Task.Run(thrower), options); break;
+                }
+                ab.PostRange(0, 4);
+
+                try
+                {
+                    await ab.Completion;
+                    Assert.True(false, "Should always throw IOE");
+                }
+                catch (InvalidOperationException) { }
+
+                Assert.Equal(expected: 0, actual: ab.InputCount);
+                Assert.False(ab.Post(5));
+            }
+        }
+
+        [Fact]
+        public async Task TestNullReturnedTasks()
+        {
+            int sumOfOdds = 0;
+
+            var ab = new ActionBlock<int>(i => {
+                if ((i % 2) == 0) return null;
+                return Task.Run(() => { sumOfOdds += i; });
+            });
+
+            const int MaxValue = 10;
+            ab.PostRange(0, MaxValue);
+            ab.Complete();
+            await ab.Completion;
+
+            Assert.Equal(
+                expected: Enumerable.Range(0, MaxValue).Where(i => i % 2 != 0).Sum(),
+                actual: sumOfOdds);
+        }
+
+        [Fact]
+        public async Task TestParallelExecution()
+        {
+            int dop = 2;
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            foreach (bool singleProducerConstrained in DataflowTestHelpers.BooleanValues)
+            {
+                Barrier barrier = new Barrier(dop);
+                var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, SingleProducerConstrained = singleProducerConstrained };
+                ActionBlock<int> ab = sync ?
+                    new ActionBlock<int>(_ => barrier.SignalAndWait(), options) :
+                    new ActionBlock<int>(_ => Task.Run(() => barrier.SignalAndWait()), options);
+
+                int iters = dop * 4;
+                ab.PostRange(0, iters);
+                ab.Complete();
+                await ab.Completion;
+            }
+        }
+
+        [Fact]
+        public async Task TestReleasingOfPostponedMessages()
+        {
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            {
+                Barrier barrier1 = new Barrier(2), barrier2 = new Barrier(2);
+                Action<int> body = i => { barrier1.SignalAndWait(); barrier2.SignalAndWait(); };
+                var options = new ExecutionDataflowBlockOptions { BoundedCapacity = 1 };
+                ActionBlock<int> ab = sync ?
+                    new ActionBlock<int>(body, options) :
+                    new ActionBlock<int>(i => Task.Run(() => body(i)), options);
+
+                ab.Post(0);
+                barrier1.SignalAndWait();
+
+                Task<bool>[] sends = Enumerable.Range(0, 10).Select(i => ab.SendAsync(i)).ToArray();
+                Assert.All(sends, s => Assert.False(s.IsCompleted));
+
+                ab.Complete();
+                barrier2.SignalAndWait();
+
+                await ab.Completion;
+
+                Assert.All(sends, s => Assert.False(s.Result));
+            }
+        }
+
+        [Fact]
+        public async Task TestExceptionDataStorage()
+        {
+            const string DataKey = "DataflowMessageValue"; // must match key used in dataflow source
+
+            // Validate that a message which causes the ActionBlock to fault
+            // ends up being stored (ToString) in the resulting exception's Data
+            var ab1 = new ActionBlock<int>((Action<int>)(i => { throw new FormatException(); }));
+            ab1.Post(42);
+            await Assert.ThrowsAsync<FormatException>(() => ab1.Completion);
+            AggregateException e = ab1.Completion.Exception;
+            Assert.Equal(expected: 1, actual: e.InnerExceptions.Count);
+            Assert.Equal(expected: "42", actual: (string)e.InnerException.Data[DataKey]);
+        
+            // Test case where message's ToString throws
+            var ab2 = new ActionBlock<ObjectWithFaultyToString>((Action<ObjectWithFaultyToString>)(i => { throw new FormatException(); }));
+            ab2.Post(new ObjectWithFaultyToString());
+            Exception ex = await Assert.ThrowsAsync<FormatException>(() => ab2.Completion);
+            Assert.False(ex.Data.Contains(DataKey));
+        }
+
+        private class ObjectWithFaultyToString
+        {
+            public override string ToString() { throw new InvalidTimeZoneException(); }
+        }
+
+        [Fact]
+        public async Task TestFaultyScheduler()
+        {
+            var ab = new ActionBlock<int>(i => { },
+                new ExecutionDataflowBlockOptions
+                {
+                    TaskScheduler = new DelegateTaskScheduler
+                    {
+                        QueueTaskDelegate = delegate { throw new FormatException(); }
+                    }
+                });
+            ab.Post(42);
+            await Assert.ThrowsAsync<TaskSchedulerException>(() => ab.Completion);
+        }
+
     }
 }
