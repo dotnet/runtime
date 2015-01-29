@@ -5671,6 +5671,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					break;
 				}
 
+				if (opcode == OP_LOADI8_MEMBASE)
+					ins = mono_decompose_opcode (cfg, ins);
+
 				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 
 				return ins;
@@ -5702,6 +5705,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->inst_destbasereg = args [0]->dreg;
 				ins->inst_offset = 0;
 				MONO_ADD_INS (cfg->cbb, ins);
+
+				if (opcode == OP_STOREI8_MEMBASE_REG)
+					ins = mono_decompose_opcode (cfg, ins);
 
 				return ins;
 			}
