@@ -386,8 +386,6 @@ ms_free_block (void *block)
 static void
 check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 {
-	MSBlockInfo *b;
-
 	SGEN_ASSERT (0, sweep_state != SWEEP_STATE_SWEEPING, "Can't examine allocated blocks during sweep");
 	for (; block; block = block->next_free) {
 		SGEN_ASSERT (0, block->state != BLOCK_STATE_CHECKING, "Can't have a block we're checking in a free list.");
@@ -396,8 +394,7 @@ check_block_free_list (MSBlockInfo *block, int size, gboolean pinned)
 
 		/* blocks in the free lists must have at least
 		   one free slot */
-		if (block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING)
-			g_assert (block->free_list);
+		g_assert (block->free_list);
 
 		/* the block must be in the allocated_blocks array */
 		g_assert (sgen_pointer_queue_find (&allocated_blocks, BLOCK_TAG (block)) != (size_t)-1);
@@ -427,9 +424,6 @@ consistency_check (void)
 		int num_free = 0;
 		void **free;
 
-		/* check block header */
-		g_assert (((MSBlockHeader*)block->block)->info == block);
-
 		/* count number of free slots */
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
@@ -445,7 +439,7 @@ consistency_check (void)
 		g_assert (num_free == 0);
 
 		/* check all mark words are zero */
-		if (block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING) {
+		if (!sgen_concurrent_collection_in_progress () && (block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING)) {
 			for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 				g_assert (block->mark_words [i] == 0);
 		}
