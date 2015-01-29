@@ -80,8 +80,8 @@ struct _MSBlockInfo {
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
 	unsigned int is_to_space : 1;
 	unsigned int swept : 1;
-	void **free_list;
-	MSBlockInfo *next_free;
+	void ** volatile free_list;
+	MSBlockInfo * volatile next_free;
 	size_t pin_queue_first_entry;
 	size_t pin_queue_last_entry;
 	guint8 *cardtable_mod_union;
