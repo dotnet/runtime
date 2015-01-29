@@ -104,39 +104,103 @@
     <Compile Include="System\IO\UnixFileStream.cs" />
     <Compile Include="System\IO\UnixFileSystem.cs" />
     <Compile Include="System\IO\UnixFileSystemObject.cs" />
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"><Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs"><Link>Common\System\IO\PathInternal.Unix.cs</Link></Compile>
-      
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs"><Link>Interop\Interop.Libraries.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs"><Link>Interop\Interop.Errors.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.access.cs"><Link>Interop\Interop.access.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chdir.cs"><Link>Interop\Interop.chdir.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chmod.cs"><Link>Interop\Interop.chmod.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs"><Link>Interop\Interop.close.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.opendir.cs"><Link>Interop\Interop.opendir.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.closedir.cs"><Link>Interop\Interop.closedir.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.flock.cs"><Link>Interop\Interop.flock.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fnmatch.cs"><Link>Interop\Interop.fnmatch.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fsync.cs"><Link>Interop\Interop.fsync.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate64.cs"><Link>Interop\Interop.ftruncate64.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getegid.cs"><Link>Interop\Interop.getegid.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.geteuid.cs"><Link>Interop\Interop.geteuid.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getcwd.cs"><Link>Interop\Interop.getcwd.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open64.cs"><Link>Interop\Interop.open64.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs"><Link>Interop\Interop.lseek64.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkdir.cs"><Link>Interop\Interop.mkdir.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs"><Link>Interop\Interop.pathconf.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs"><Link>Interop\Interop.Permissions.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs"><Link>Interop\Interop.posix_fadvise.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs"><Link>Interop\Interop.read.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readdir.cs"><Link>Interop\Interop.readdir.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs"><Link>Interop\Interop.rename.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.remove.cs"><Link>Interop\Interop.remove.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.stat.cs"><Link>Interop\Interop.stat.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs"><Link>Interop\Interop.strerror.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs"><Link>Interop\Interop.write.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.utime.cs"><Link>Interop\Interop.utime.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs"><Link>Interop\Interop.unlink.cs</Link></Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.access.cs">
+      <Link>Common\Interop\Interop.access.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chdir.cs">
+      <Link>Common\Interop\Interop.chdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chmod.cs">
+      <Link>Common\Interop\Interop.chmod.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
+      <Link>Common\Interop\Interop.close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.opendir.cs">
+      <Link>Common\Interop\Interop.opendir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.closedir.cs">
+      <Link>Common\Interop\Interop.closedir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.flock.cs">
+      <Link>Common\Interop\Interop.flock.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fnmatch.cs">
+      <Link>Common\Interop\Interop.fnmatch.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fsync.cs">
+      <Link>Common\Interop\Interop.fsync.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate64.cs">
+      <Link>Common\Interop\Interop.ftruncate64.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getegid.cs">
+      <Link>Common\Interop\Interop.getegid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.geteuid.cs">
+      <Link>Common\Interop\Interop.geteuid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getcwd.cs">
+      <Link>Common\Interop\Interop.getcwd.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open64.cs">
+      <Link>Common\Interop\Interop.open64.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs">
+      <Link>Common\Interop\Interop.lseek64.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkdir.cs">
+      <Link>Common\Interop\Interop.mkdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
+      <Link>Common\Interop\Interop.pathconf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
+      <Link>Common\Interop\Interop.Permissions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs">
+      <Link>Common\Interop\Interop.posix_fadvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
+      <Link>Common\Interop\Interop.read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readdir.cs">
+      <Link>Common\Interop\Interop.readdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs">
+      <Link>Common\Interop\Interop.rename.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.remove.cs">
+      <Link>Common\Interop\Interop.remove.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.stat.cs">
+      <Link>Common\Interop\Interop.stat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
+      <Link>Common\Interop\Interop.write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.utime.cs">
+      <Link>Common\Interop\Interop.utime.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
+      <Link>Common\Interop\Interop.unlink.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
