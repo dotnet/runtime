@@ -53,19 +53,43 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\ConsolePal.Unix.cs" />
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"><Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs"><Link>Common\System\IO\StringBuilderCache.cs</Link></Compile>
-    
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs"><Link>Interop\Interop.Libraries.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs"><Link>Interop\Interop.Errors.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs"><Link>Interop\Interop.close.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getenv.cs"><Link>Interop\Interop.getenv.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs"><Link>Interop\Interop.lseek64.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open64.cs"><Link>Interop\Interop.open64.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs"><Link>Interop\Interop.read.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs"><Link>Interop\Interop.write.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.snprintf.cs"><Link>Interop\Interop.snprintf.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs"><Link>Interop\Interop.strerror.cs</Link></Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>Common\System\IO\StringBuilderCache.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
+      <Link>Common\Interop\Interop.close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getenv.cs">
+      <Link>Common\Interop\Interop.getenv.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs">
+      <Link>Common\Interop\Interop.lseek64.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open64.cs">
+      <Link>Common\Interop\Interop.open64.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
+      <Link>Common\Interop\Interop.read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
+      <Link>Common\Interop\Interop.write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.snprintf.cs">
+      <Link>Common\Interop\Interop.snprintf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Interop.strerror.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
