@@ -5,7 +5,6 @@
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}</ProjectGuid>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Reflection.Metadata.Tests</AssemblyName>
     <RootNamespace>System.Reflection.Metadata.Tests</RootNamespace>

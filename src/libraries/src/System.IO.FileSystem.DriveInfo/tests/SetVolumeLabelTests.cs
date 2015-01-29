@@ -94,12 +94,16 @@ namespace System.IO.FileSystem.DriveInfoTests
             {
                 if (drives[i].IsReady && drives[i].DriveType != DriveType.CDRom && drives[i].DriveType != DriveType.Network)
                 {
+                    volumeSettable = true;
                     try
                     {
                         drives[i].VolumeLabel = null;
                     }
-                    catch (UnauthorizedAccessException) { }
-                    if (drives[i].VolumeLabel != String.Empty)
+                    catch (UnauthorizedAccessException)
+                    {
+                        volumeSettable = false;
+                    }
+                    if (volumeSettable && drives[i].VolumeLabel != String.Empty)
                     {
                         Assert.False(true, string.Format("Error, Wrong result returned, <{0}>", drives[i].VolumeLabel));
                     }

@@ -24,160 +24,105 @@ namespace System.Resources.ResourceWriterTests
         [Fact]
         public static void ExceptionforResWriter01()
         {
-            MemoryStream ms2 = null;
-
-            try
-            {
-                var rw = new ResourceWriter(ms2);
-            }
-            catch (Exception Ex)
-            {
-                if (Ex.GetType() != typeof(ArgumentNullException))
+            Assert.Throws<ArgumentNullException>(() =>
                 {
-                    Assert.True(false, string.Format("Expected {0} but got {1}", typeof(ArgumentNullException).ToString(), Ex.GetType().ToString()));
-                }
-            }
+                    MemoryStream ms2 = null;
+                    var rw = new ResourceWriter(ms2);
+                });
         }
 
         [Fact]
         public static void ExceptionforResWriter02()
         {
-            byte[] buffer = new byte[_RefBuffer.Length];
-            using (var ms2 = new MemoryStream(buffer, false))
-            {
-                try
+            Assert.Throws<ArgumentException>(() =>
                 {
-                    var rw = new ResourceWriter(ms2);
-                }
-                catch (Exception Ex)
-                {
-                    if (Ex.GetType() != typeof(ArgumentException))
+                    byte[] buffer = new byte[_RefBuffer.Length];
+                    using (var ms2 = new MemoryStream(buffer, false))
                     {
-                        Assert.True(false, string.Format("Expected {0} but got {1}", typeof(ArgumentException).ToString(), Ex.GetType().ToString()));
+                        var rw = new ResourceWriter(ms2);
                     }
-                }
-            }
+                });
         }
 
         [Fact]
         public static void ExceptionforResWriter03()
         {
-            byte[] buffer = new byte[_RefBuffer.Length];
-            using (var ms2 = new MemoryStream(buffer, true))
-            {
-                var rw1 = new ResourceWriter(ms2);
-                try
+            Assert.Throws<ArgumentNullException>(() =>
                 {
-                    rw1.AddResource(null, "args");
-                }
-                catch (Exception Ex)
-                {
-                    if (Ex.GetType() != typeof(ArgumentNullException))
+                    byte[] buffer = new byte[_RefBuffer.Length];
+                    using (var ms2 = new MemoryStream(buffer, true))
                     {
-                        Assert.True(false, string.Format("Expected {0} but got {1}", typeof(ArgumentNullException).ToString(), Ex.GetType().ToString()));
-                    }
-                }
-                finally
-                {
-                    try
-                    {
-                        rw1.Dispose();
-                    }
-                    catch (Exception Ex)
-                    {
-                        if (Ex.GetType() != typeof(System.ArgumentOutOfRangeException))
+                        var rw1 = new ResourceWriter(ms2);
+                        try
                         {
-                            Assert.True(false, string.Format("Expected {0} but got {1}", typeof(System.ArgumentOutOfRangeException).ToString(), Ex.GetType().ToString()));
+                            rw1.AddResource(null, "args");
+                        }
+                        finally
+                        {
+                            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                                {
+                                    rw1.Dispose();
+                                });
                         }
                     }
-                }
-            }
+                });
         }
 
         [Fact]
         public static void ExceptionforResWriter04()
         {
-            byte[] buffer = new byte[_RefBuffer.Length];
-            using (var ms2 = new MemoryStream(buffer, true))
-            {
-                var rw1 = new ResourceWriter(ms2);
-                try
+            Assert.Throws<ArgumentException>(() =>
                 {
-                    rw1.AddResource("key1", "args");
-                    rw1.AddResource("key1", "args");
-                }
-                catch (Exception Ex)
-                {
-                    if (Ex.GetType() != typeof(System.ArgumentException))
+                    byte[] buffer = new byte[_RefBuffer.Length];
+                    using (var ms2 = new MemoryStream(buffer, true))
                     {
-                        Assert.True(false, string.Format("Expected {0} but got {1}", typeof(System.ArgumentException).ToString(), Ex.GetType().ToString()));
+                        using (var rw1 = new ResourceWriter(ms2))
+                        {
+                            rw1.AddResource("key1", "args");
+                            rw1.AddResource("key1", "args");
+                        }
                     }
-                }
-                finally
-                {
-                    rw1.Dispose();
-                }
-            }
+                });
         }
 
         [Fact]
         public static void ExceptionforResWriter05()
         {
-            byte[] buffer = new byte[_RefBuffer.Length];
-            using (var ms2 = new MemoryStream(buffer, true))
-            {
-                var rw1 = new ResourceWriter(ms2);
-                try
+            Assert.Throws<InvalidOperationException>(() =>
                 {
-                    rw1.AddResource("key2", "args");
-                }
-                catch (Exception Ex)
-                {
-                    if (Ex.GetType() != typeof(InvalidOperationException))
+                    byte[] buffer = new byte[_RefBuffer.Length];
+                    using (var ms2 = new MemoryStream(buffer, true))
                     {
-                        Assert.True(false, string.Format("Expected {0} but got {1}", typeof(InvalidOperationException).ToString(), Ex.GetType().ToString()));
+                        var rw1 = new ResourceWriter(ms2);
+                        rw1.AddResource("key2", "args");
+                        rw1.Dispose();
+                        rw1.AddResource("key2", "args");
                     }
-                }
-                finally
-                {
-                    rw1.Dispose();
-                }
-            }
+                });
         }
 
         [Fact]
         public static void ExceptionforResWriter06()
         {
-            byte[] buffer = new byte[_RefBuffer.Length];
-            using (var ms2 = new MemoryStream(buffer, true))
-            {
-                var rw1 = new ResourceWriter(ms2);
-                try
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
                 {
-                    rw1.Generate();
-                }
-                catch (Exception Ex)
-                {
-                    if (Ex.GetType() != typeof(ArgumentOutOfRangeException))
+                    byte[] buffer = new byte[_RefBuffer.Length];
+                    using (var ms2 = new MemoryStream(buffer, true))
                     {
-                        Assert.True(false, string.Format("Expected {0} but got {1}", typeof(ArgumentOutOfRangeException).ToString(), Ex.GetType().ToString()));
-                    }
-                }
-                finally
-                {
-                    try
-                    {
-                        rw1.Dispose();
-                    }
-                    catch (Exception Ex)
-                    {
-                        if (Ex.GetType() != typeof(System.NotSupportedException))
+                        var rw1 = new ResourceWriter(ms2);
+                        try
                         {
-                            Assert.True(false, string.Format("Expected {0} but got {1}", typeof(System.NotSupportedException).ToString(), Ex.GetType().ToString()));
+                            rw1.Generate();
+                        }
+                        finally
+                        {
+                            Assert.Throws<NotSupportedException>(() =>
+                                {
+                                    rw1.Dispose();
+                                });
                         }
                     }
-                }
-            }
+                });
         }
 
         [Fact]

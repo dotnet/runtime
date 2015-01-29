@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Globalization.Extensions</RootNamespace>
+    <AssemblyName>System.Globalization.Extensions</AssemblyName>
+    <ProjectGuid>{2B96AA10-84C0-4927-8611-8D2474B990E8}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Interop.Globalization.Extensions.manual.cs">
+      <Link>Common\Interop\Interop.Globalization.Extensions.manual.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\StringNormalizationExtensions.cs">
+      <Link>Common\System\StringNormalizationExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Globalization\IdnMapping.cs">
+      <Link>Common\System\Globalization\IdnMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\NormalizationForm.cs">
+      <Link>Common\System\Text\NormalizationForm.cs</Link>
+    </Compile>
+    <Compile Include="System\Globalization\Extensions.cs" />
+    <Compile Include="Interop\Interop.Manual.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
