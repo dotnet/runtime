@@ -28,8 +28,12 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\ComponentModel\Win32Exception.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs"><Link>Interop\Interop.Libraries.cs</Link></Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs"><Link>Interop\Interop.strerror.cs</Link></Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Interop.strerror.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
