@@ -235,3 +235,6 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# vim temporary files
+.*.swp
