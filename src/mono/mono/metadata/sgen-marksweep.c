@@ -1315,15 +1315,57 @@ static void sweep_finish (void);
  * LOCKING: The allocated blocks lock must be held when entering this function.  `block`
  * must have been loaded from the array with the lock held.  This function will unlock the
  * lock.
+ *
+ * Returns whether the block is still there.
  */
-static void
-check_block_for_sweeping (MSBlockInfo *block, int block_index)
+static gboolean
+ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gboolean *have_checked)
 {
 	int count;
 	gboolean have_live = FALSE;
 	gboolean have_free = FALSE;
 	int nused = 0;
+	int block_state = block->state;
 	int i;
+
+	if (have_checked)
+		*have_checked = FALSE;
+
+	if (sweep_state != SWEEP_STATE_SWEEPING) {
+		SGEN_ASSERT (0, block_state != BLOCK_STATE_SWEEPING && block_state != BLOCK_STATE_CHECKING, "Invalid block state.");
+		if (!lazy_sweep)
+			SGEN_ASSERT (0, block_state != BLOCK_STATE_NEED_SWEEPING, "Invalid block state.");
+	}
+
+ retry:
+	switch (block_state) {
+	case BLOCK_STATE_SWEPT:
+	case BLOCK_STATE_NEED_SWEEPING:
+	case BLOCK_STATE_SWEEPING:
+		UNLOCK_ALLOCATED_BLOCKS;
+		return TRUE;
+	case BLOCK_STATE_MARKING:
+		if (sweep_state == SWEEP_STATE_SWEEPING)
+			break;
+		UNLOCK_ALLOCATED_BLOCKS;
+		return TRUE;
+	case BLOCK_STATE_CHECKING:
+		/*
+		 * FIXME: do this more elegantly.
+		 *
+		 * Also, when we're called from the sweep thread, we don't actually have to
+		 * wait for it to finish, because the sweep thread doesn't use the block.
+		 * However, the sweep thread needs to know when all the blocks have been
+		 * checked (so it can set the global sweep state to SWEPT), so we'd have to
+		 * do some kind of accounting if we don't wait.
+		 */
+		g_usleep (100);
+		block_state = block->state;
+		goto retry;
+	default:
+		SGEN_ASSERT (0, FALSE, "Illegal block state");
+		break;
+	}
 
 	block->swept = 0;
 	SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
@@ -1331,6 +1373,9 @@ check_block_for_sweeping (MSBlockInfo *block, int block_index)
 	UNLOCK_ALLOCATED_BLOCKS;
 
 	assert_block_state_is_consistent (block);
+
+	if (have_checked)
+		*have_checked = TRUE;
 
 	block->has_pinned = block->pinned;
 
@@ -1379,10 +1424,17 @@ check_block_for_sweeping (MSBlockInfo *block, int block_index)
 		if (have_free) {
 			MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
 			int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
+
+			if (!lazy_sweep)
+				SGEN_ASSERT (0, block->free_list, "How do we not have a free list when there are free slots?");
+
 			add_free_block (free_blocks, index, block);
 		}
 
+		/* FIXME: Do we need the heap boundaries while we do nursery collections? */
 		update_heap_boundaries_for_block (block);
+
+		return TRUE;
 	} else {
 		/*
 		 * Blocks without live objects are removed from the
@@ -1399,6 +1451,8 @@ check_block_for_sweeping (MSBlockInfo *block, int block_index)
 
 		--num_major_sections;
 		++num_major_sections_freed_in_sweep;
+
+		return FALSE;
 	}
 }
 
@@ -1425,6 +1479,7 @@ sweep_loop_thread_func (void *dummy)
 	 */
 	for (block_index = num_blocks - 1; block_index >= 0; --block_index) {
 		MSBlockInfo *block;
+		gboolean have_checked;
 
 		LOCK_ALLOCATED_BLOCKS;
 		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
@@ -1436,7 +1491,7 @@ sweep_loop_thread_func (void *dummy)
 			continue;
 		}
 
-		check_block_for_sweeping (block, block_index);
+		ensure_block_is_checked_for_sweeping (block, block_index, &have_checked);
 	}
 
 	LOCK_ALLOCATED_BLOCKS;
