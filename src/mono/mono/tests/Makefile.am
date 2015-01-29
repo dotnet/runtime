@@ -110,6 +110,7 @@ BASE_TEST_CS_SRC=		\
 	array.cs		\
 	enum.cs			\
 	enum2.cs		\
+	enum-intrins.cs		\
 	property.cs		\
 	enumcast.cs		\
 	assignable-tests.cs	\

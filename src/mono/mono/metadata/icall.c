@@ -3113,6 +3113,18 @@ ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, MonoObject *value)
 	return res;
 }
 
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Enum_InternalHasFlag (MonoObject *a, MonoObject *b)
+{
+	int size = mono_class_value_size (a->vtable->klass, NULL);
+	guint64 a_val = 0, b_val = 0;
+
+	memcpy (&a_val, mono_object_unbox (a), size);
+	memcpy (&b_val, mono_object_unbox (b), size);
+
+	return (a_val & b_val) == b_val;
+}
+
 ICALL_EXPORT MonoObject *
 ves_icall_System_Enum_get_value (MonoObject *this)
 {

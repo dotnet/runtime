@@ -4612,6 +4612,48 @@ handle_ccastclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src)
 	return ins;
 }
 
+static G_GNUC_UNUSED MonoInst*
+handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, MonoInst *enum_flag)
+{
+	MonoType *enum_type = mono_type_get_underlying_type (&klass->byval_arg);
+	guint32 load_opc = mono_type_to_load_membase (cfg, enum_type);
+	gboolean is_i4 = TRUE;
+
+	switch (enum_type->type) {
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+#if SIZEOF_REGISTER == 8
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#endif
+		is_i4 = FALSE;
+		break;
+	}
+
+	{
+		MonoInst *load, *and, *cmp, *ceq;
+		int enum_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
+		int and_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
+		int dest_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
+
+		EMIT_NEW_LOAD_MEMBASE (cfg, load, load_opc, enum_reg, enum_this->dreg, 0);
+		EMIT_NEW_BIALU (cfg, and, is_i4 ? OP_IAND : OP_LAND, and_reg, enum_reg, enum_flag->dreg);
+		EMIT_NEW_BIALU (cfg, cmp, is_i4 ? OP_ICOMPARE : OP_LCOMPARE, -1, and_reg, enum_flag->dreg);
+		EMIT_NEW_UNALU (cfg, ceq, is_i4 ? OP_ICEQ : OP_LCEQ, dest_reg, -1);
+
+		ceq->type = is_i4 ? STACK_I4 : STACK_I8;
+
+		if (!is_i4) {
+			load = mono_decompose_opcode (cfg, load);
+			and = mono_decompose_opcode (cfg, and);
+			cmp = mono_decompose_opcode (cfg, cmp);
+			ceq = mono_decompose_opcode (cfg, ceq);
+		}
+
+		return ceq;
+	}
+}
+
 /*
  * Returns NULL and set the cfg exception on error.
  */
@@ -10252,6 +10294,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 		case CEE_BOX: {
 			MonoInst *val;
+			MonoClass *enum_class;
+			MonoMethod *has_flag;
 
 			CHECK_STACK (1);
 			--sp;
@@ -10276,6 +10320,49 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (target_type_is_incompatible (cfg, &klass->byval_arg, *sp))
 				UNVERIFIED;
 			/* frequent check in generic code: box (struct), brtrue */
+
+			/*
+			 * Look for:
+			 *
+			 *   <push int/long ptr>
+			 *   <push int/long>
+			 *   box MyFlags
+			 *   constrained. MyFlags
+			 *   callvirt instace bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
+			 *
+			 * If we find this sequence and the operand types on box and constrained
+			 * are equal, we can emit a specialized instruction sequence instead of
+			 * the very slow HasFlag () call.
+			 */
+			if ((cfg->opt & MONO_OPT_INTRINS) &&
+			    /* Cheap checks first. */
+			    ip + 5 + 6 + 5 < end &&
+			    ip [5] == CEE_PREFIX1 &&
+			    ip [6] == CEE_CONSTRAINED_ &&
+			    ip [11] == CEE_CALLVIRT &&
+			    ip_in_bb (cfg, bblock, ip + 5 + 6 + 5) &&
+			    mono_class_is_enum (klass) &&
+			    (enum_class = mini_get_class (method, read32 (ip + 7), generic_context)) &&
+			    (has_flag = mini_get_method (cfg, method, read32 (ip + 12), NULL, generic_context)) &&
+			    has_flag->klass == mono_defaults.enum_class &&
+			    !strcmp (has_flag->name, "HasFlag") &&
+			    has_flag->signature->hasthis &&
+			    has_flag->signature->param_count == 1) {
+				CHECK_TYPELOAD (enum_class);
+
+				if (enum_class == klass) {
+					MonoInst *enum_this, *enum_flag;
+
+					ip += 5 + 6 + 5;
+					--sp;
+
+					enum_this = sp [0];
+					enum_flag = sp [1];
+
+					*sp++ = handle_enum_has_flag (cfg, klass, enum_this, enum_flag);
+					break;
+				}
+			}
 
 			// FIXME: LLVM can't handle the inconsistent bb linking
 			if (!mono_class_is_nullable (klass) &&
