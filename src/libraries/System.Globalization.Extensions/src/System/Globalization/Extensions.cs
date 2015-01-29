@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -40,8 +39,8 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
-        private CompareInfo _compareInfo;
-        private CompareOptions _options;
+        private readonly CompareInfo _compareInfo;
+        private readonly CompareOptions _options;
 
         internal CultureAwareComparer(CompareInfo compareInfo, CompareOptions options)
         {
@@ -79,14 +78,13 @@ namespace System.Globalization
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             CultureAwareComparer comparer = obj as CultureAwareComparer;
-            if (comparer == null)
-            {
-                return false;
-            }
-            return (_options == comparer._options) && (_compareInfo.Equals(comparer._compareInfo));
+            return
+                comparer != null &&
+                _options == comparer._options &&
+                _compareInfo.Equals(comparer._compareInfo);
         }
 
         public override int GetHashCode()
