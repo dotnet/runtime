@@ -11,6 +11,7 @@ internal partial class Interop
     internal const int ERROR_NOT_ENOUGH_MEMORY = 8;
     internal const int ERROR_INVALID_PARAMETER = 87;
     internal const int ERROR_INSUFFICIENT_BUFFER = 122;
+    internal const int ERROR_INVALID_NAME = 123;
     internal const int ERROR_NO_UNICODE_TRANSLATION = 1113;
 
     // The VM can override the last error code with this value in debug builds
@@ -57,6 +58,10 @@ internal partial class Interop
                                         [System.Runtime.InteropServices.OutAttribute()]
                                         char[] destenation,
                                         int destenationLength);
+
+
+        internal const int IDN_ALLOW_UNASSIGNED = 0x1;
+        internal const int IDN_USE_STD3_ASCII_RULES = 0x2;
     }
 }
 
