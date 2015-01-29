@@ -4634,14 +4634,14 @@ handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, M
 		MonoInst *load, *and, *cmp, *ceq;
 		int enum_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
 		int and_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
-		int dest_reg = is_i4 ? alloc_ireg (cfg) : alloc_lreg (cfg);
+		int dest_reg = alloc_ireg (cfg);
 
 		EMIT_NEW_LOAD_MEMBASE (cfg, load, load_opc, enum_reg, enum_this->dreg, 0);
 		EMIT_NEW_BIALU (cfg, and, is_i4 ? OP_IAND : OP_LAND, and_reg, enum_reg, enum_flag->dreg);
 		EMIT_NEW_BIALU (cfg, cmp, is_i4 ? OP_ICOMPARE : OP_LCOMPARE, -1, and_reg, enum_flag->dreg);
 		EMIT_NEW_UNALU (cfg, ceq, is_i4 ? OP_ICEQ : OP_LCEQ, dest_reg, -1);
 
-		ceq->type = is_i4 ? STACK_I4 : STACK_I8;
+		ceq->type = STACK_I4;
 
 		if (!is_i4) {
 			load = mono_decompose_opcode (cfg, load);
