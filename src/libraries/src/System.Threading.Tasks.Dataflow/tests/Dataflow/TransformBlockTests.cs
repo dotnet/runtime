@@ -1,531 +1,545 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class TransformBlockTests
     {
         [Fact]
-        [OuterLoop]
-        public void RunTransformBlockTests()
+        public async Task TestCtor()
         {
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new TransformBlock<int, int>(x => x, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat }) : new TransformBlock<int, int>(x => x)));
-            Assert.True(ISourceBlockTestHelper.TestLinkTo<string>(ConstructTransformWithNMessages(2), 1));
-            Assert.True(ISourceBlockTestHelper.TestReserveMessageAndReleaseReservation<string>(ConstructTransformWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestConsumeMessage<string>(ConstructTransformWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveWithFilter<string>(ConstructTransformWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveAll<string>(ConstructTransformWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTargetOrder<int>(new TransformBlock<int, int>(x => x), 2));
-            Assert.True(ITargetBlockTestHelper.TestOfferMessage<int>(new TransformBlock<int, string>(i => i.ToString())));
-            Assert.True(ITargetBlockTestHelper.TestPost<int>(new TransformBlock<int, string>(i => i.ToString())));
-            Assert.True(ITargetBlockTestHelper.TestComplete<int>(new TransformBlock<int, string>(i => i.ToString())));
-            Assert.True(ITargetBlockTestHelper.TestCompletionTask<int>(new TransformBlock<int, string>(i => i.ToString())));
-            Assert.True(ITargetBlockTestHelper.TestNonGreedyPost(new TransformBlock<int, int>(x => { Task.Delay(5).Wait(); return x; }, new ExecutionDataflowBlockOptions { BoundedCapacity = 1 })));
-
-            Assert.True(TestQuickStop(testThrow: false));
-            Assert.True(TestQuickStop(testThrow: true));
-        }
-
-        private static TransformBlock<int, string> ConstructTransformWithNMessages(int messagesCount)
-        {
-            var block = new TransformBlock<int, string>(i => i.ToString());
-            for (int i = 0; i < messagesCount; i++)
+            var blocks = new[] {
+                new TransformBlock<int, string>(i => i.ToString()),
+                new TransformBlock<int, string>(i => i.ToString(), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new TransformBlock<int, string>(i => Task.Run(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 })
+            };
+            foreach (var block in blocks)
             {
-                block.Post(i);
+                Assert.Equal(expected: 0, actual: block.InputCount);
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+                Assert.False(block.Completion.IsCompleted);
             }
 
-            // Spin until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount);
-
-            return block;
-        }
-
-        [Fact]
-        public void TestTransformBlockConstructor()
-        {
-            // SYNC
+            blocks = new[] {
+                new TransformBlock<int, string>(i => i.ToString(), 
+                    new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) }),
+                new TransformBlock<int, string>(i => Task.Run(() => i.ToString()), 
+                    new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) })
+            };
+            foreach (var block in blocks)
             {
-                // without option
-                var block = new TransformBlock<int, string>(i => i.ToString());
-                Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
-                //with not cancelled token and default scheduler
-                block = new TransformBlock<int, string>(i => i.ToString(), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
-                Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
-                //with a cancelled token and default scheduler
-                var token = new CancellationToken(true);
-                block = new TransformBlock<int, string>(i => i.ToString(), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-                Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
-            }
-
-            // ASYNC (a copy of the sync but with constructors returning Task<T> instead of T
-            {
-                // without option
-                var block = new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()));
-                Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
-                //with not cancelled token and default scheduler
-                block = new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 });
-                Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
-                //with a cancelled token and default scheduler
-                var token = new CancellationToken(true);
-                block = new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token });
-                Assert.False(block.InputCount != 0, "Constructor failed! InputCount returned a non zero value for a brand new TransformBlock.");
+                Assert.Equal(expected: 0, actual: block.InputCount);
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => block.Completion);
             }
         }
 
         [Fact]
-        public void TestTransformBlockInvalidArgumentValidation()
+        public void TestArgumentExceptions()
         {
-            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>((Func<int, string>)null));
-            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>((Func<int, Task<string>>)null));
-            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>(i => i.ToString(), null));
-            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, string>(i => Task.Factory.StartNew(() => i.ToString()), null));
-            Assert.True(ITargetBlockTestHelper.TestArgumentsExceptions<int>(new TransformBlock<int, string>(i => i.ToString())));
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<string>(new TransformBlock<int, string>(i => i.ToString())));
+            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, int>((Func<int, int>)null));
+            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, int>((Func<int, Task<int>>)null));
+            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, int>(i => i, null));
+            Assert.Throws<ArgumentNullException>(() => new TransformBlock<int, int>(i => Task.Run(() => i), null));
+
+            DataflowTestHelpers.TestArgumentsExceptions(new TransformBlock<int, int>(i => i));
         }
 
-        private static bool TestQuickStop(bool testThrow)
+        [Fact]
+        public void TestToString()
         {
-            bool passed = true;
+            DataflowTestHelpers.TestToString(nameFormat =>
+                nameFormat != null ?
+                    new TransformBlock<int, int>(i => i, new ExecutionDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new TransformBlock<int, int>(i => i));
+        }
 
-            CancellationTokenSource cts = new CancellationTokenSource();
-            var options = new ExecutionDataflowBlockOptions { CancellationToken = cts.Token };
+        [Fact]
+        public async Task TestOfferMessage()
+        {
+            var generators = new Func<TransformBlock<int, int>>[]
+            {
+                () => new TransformBlock<int, int>(i => i),
+                () => new TransformBlock<int, int>(i => i, new ExecutionDataflowBlockOptions { BoundedCapacity = 10 }),
+                () => new TransformBlock<int, int>(i => Task.Run(() => i), new ExecutionDataflowBlockOptions { BoundedCapacity = 10, MaxMessagesPerTask = 1 })
+            };
+            foreach (var generator in generators)
+            {
+                DataflowTestHelpers.TestOfferMessage_ArgumentValidation(generator());
 
-            var propagator = new TransformBlock<ThrowOn, ThrowOn>(x => { Task.Delay(200).Wait(); return x; }, options);
-            var thrower = new ThrowerBlock();
+                var target = generator();
+                DataflowTestHelpers.TestOfferMessage_AcceptsDataDirectly(target);
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
 
-            // Post enough messages to require long processing
+                target = generator();
+                await DataflowTestHelpers.TestOfferMessage_AcceptsViaLinking(target);
+                DataflowTestHelpers.TestOfferMessage_CompleteAndOffer(target);
+            }
+        }
+
+        [Fact]
+        public void TestPost()
+        {
+            foreach (bool bounded in DataflowTestHelpers.BooleanValues)
+            foreach (var tb in new[] { 
+                new TransformBlock<int, int>(i => i, new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 }),
+                new TransformBlock<int, int>(i => Task.Run(() => i), new ExecutionDataflowBlockOptions { BoundedCapacity = bounded ? 1 : -1 })})
+            {
+                Assert.True(tb.Post(0), "Expected non-completed TransformBlock to accept Post'd message");
+                tb.Complete();
+                Assert.False(tb.Post(0), "Expected Complete'd TransformBlock to decline messages");
+            }
+        }
+
+        [Fact]
+        public Task TestCompletionTask()
+        {
+            return DataflowTestHelpers.TestCompletionTask(() => new TransformBlock<int, int>(i => i));
+        }
+
+        [Fact]
+        public async Task TestLinkToOptions()
+        {
+            const int Messages = 1;
+            foreach (bool append in DataflowTestHelpers.BooleanValues)
+            foreach (var tb in new[] { new TransformBlock<int, int>(i => i), new TransformBlock<int, int>(i => Task.Run(() => i)) })
+            {
+                var values = new int[Messages];
+                var targets = new ActionBlock<int>[Messages];
+                for (int i = 0; i < Messages; i++)
+                {
+                    int slot = i;
+                    targets[i] = new ActionBlock<int>(item => values[slot] = item);
+                    tb.LinkTo(targets[i], new DataflowLinkOptions { MaxMessages = 1, Append = append });
+                }
+
+                tb.PostRange(0, Messages);
+                tb.Complete();
+                await tb.Completion;
+
+                for (int i = 0; i < Messages; i++)
+                {
+                    Assert.Equal(
+                        expected: append ? i : Messages - i - 1,
+                        actual: values[i]);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestReceives()
+        {
+            for (int test = 0; test < 2; test++)
+            {
+                foreach (var tb in new[] { 
+                    new TransformBlock<int, int>(i => i * 2),
+                    new TransformBlock<int, int>(i => Task.Run(() => i * 2)) })
+                {
+                    tb.PostRange(0, 5);
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Assert.Equal(expected: i * 2, actual: await tb.ReceiveAsync());
+                    }
+
+                    int item;
+                    IList<int> items;
+                    Assert.False(tb.TryReceive(out item));
+                    Assert.False(tb.TryReceiveAll(out items));
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestCircularLinking()
+        {
+            const int Iters = 200;
+
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            {
+                var tcs = new TaskCompletionSource<bool>();
+                Func<int, int> body = i => {
+                    if (i >= Iters) tcs.SetResult(true);
+                    return i + 1;
+                };
+
+                TransformBlock<int, int> tb = sync ?
+                    new TransformBlock<int, int>(body) :
+                    new TransformBlock<int, int>(i => Task.Run(() => body(i)));
+
+                using (tb.LinkTo(tb))
+                {
+                    tb.Post(0);
+                    await tcs.Task;
+                    tb.Complete();
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestProducerConsumer()
+        {
+            foreach (TaskScheduler scheduler in new[] { TaskScheduler.Default, new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler })
+            foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            foreach (int dop in new[] { 1, 2 })
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            {
+                const int Messages = 100;
+                var options = new ExecutionDataflowBlockOptions
+                {
+                    BoundedCapacity = boundedCapacity,
+                    MaxDegreeOfParallelism = dop,
+                    MaxMessagesPerTask = maxMessagesPerTask,
+                    TaskScheduler = scheduler
+                };
+                TransformBlock<int, int> tb = sync ?
+                    new TransformBlock<int, int>(i => i, options) :
+                    new TransformBlock<int, int>(i => Task.Run(() => i), options);
+
+                await Task.WhenAll(
+                    Task.Run(async delegate { // consumer
+                        int i = 0;
+                        while (await tb.OutputAvailableAsync())
+                        {
+                            Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+                            i++;
+                        }
+                    }),
+                    Task.Run(async delegate { // producer
+                        for (int i = 0; i < Messages; i++)
+                        {
+                            await tb.SendAsync(i);
+                        }
+                        tb.Complete();
+                    }));
+            }
+        }
+
+        [Fact]
+        public async Task TestMessagePostponement()
+        {
+            const int Excess = 10;
+            foreach (int boundedCapacity in new[] { 1, 3 })
+            {
+                var options = new ExecutionDataflowBlockOptions { BoundedCapacity = boundedCapacity };
+                foreach (var tb in new[] { new TransformBlock<int, int>(i => i, options), new TransformBlock<int, int>(i => Task.Run(() => i), options) })
+                {
+                    var sendAsync = new Task<bool>[boundedCapacity + Excess];
+                    for (int i = 0; i < boundedCapacity + Excess; i++)
+                    {
+                        sendAsync[i] = tb.SendAsync(i);
+                    }
+                    tb.Complete();
+
+                    for (int i = 0; i < boundedCapacity; i++)
+                    {
+                        Assert.True(sendAsync[i].IsCompleted);
+                        Assert.True(sendAsync[i].Result);
+                    }
+
+                    for (int i = 0; i < Excess; i++)
+                    {
+                        Assert.False(await sendAsync[boundedCapacity + i]);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestReserveReleaseConsume()
+        {
+            var tb = new TransformBlock<int, int>(i => i * 2);
+            tb.Post(1);
+            await DataflowTestHelpers.TestReserveAndRelease(tb);
+
+            tb = new TransformBlock<int, int>(i => i * 2);
+            tb.Post(2);
+            await DataflowTestHelpers.TestReserveAndConsume(tb);
+        }
+
+        [Fact]
+        public async Task TestCountZeroAtCompletion()
+        {
+            var cts = new CancellationTokenSource();
+            var tb = new TransformBlock<int, int>(i => i, new ExecutionDataflowBlockOptions() { CancellationToken = cts.Token });
+            tb.Post(1);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tb.Completion);
+            Assert.Equal(expected: 0, actual: tb.InputCount);
+            Assert.Equal(expected: 0, actual: tb.OutputCount);
+
+            cts = new CancellationTokenSource();
+            tb = new TransformBlock<int, int>(i => i);
+            tb.Post(1);
+            ((IDataflowBlock)tb).Fault(new InvalidOperationException());
+            await Assert.ThrowsAnyAsync<InvalidOperationException>(() => tb.Completion);
+            Assert.Equal(expected: 0, actual: tb.InputCount);
+            Assert.Equal(expected: 0, actual: tb.OutputCount);
+        }
+
+        [Fact]
+        public void TestInputCount()
+        {
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            {
+                Barrier barrier1 = new Barrier(2), barrier2 = new Barrier(2);
+                Func<int, int> body = item => {
+                    barrier1.SignalAndWait();
+                    // will test InputCount here
+                    barrier2.SignalAndWait();
+                    return item;
+                };
+
+                TransformBlock<int, int> tb = sync ?
+                    new TransformBlock<int, int>(body) :
+                    new TransformBlock<int, int>(i => Task.Run(() => body(i)));
+
+                for (int iter = 0; iter < 2; iter++)
+                {
+                    tb.PostItems(1, 2);
+                    for (int i = 1; i >= 0; i--)
+                    {
+                        barrier1.SignalAndWait();
+                        Assert.Equal(expected: i, actual: tb.InputCount);
+                        barrier2.SignalAndWait();
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        [OuterLoop] // spins waiting for a condition to be true, though it should happen very quickly
+        public async Task TestCount()
+        {
+            var tb = new TransformBlock<int, int>(i => i);
+            Assert.Equal(expected: 0, actual: tb.InputCount);
+            Assert.Equal(expected: 0, actual: tb.OutputCount);
+
+            tb.PostRange(1, 11);
+            await Task.Run(() => SpinWait.SpinUntil(() => tb.OutputCount == 10));
+            for (int i = 10; i > 0; i--)
+            {
+                int item;
+                Assert.True(tb.TryReceive(out item));
+                Assert.Equal(expected: 11 - i, actual: item);
+                Assert.Equal(expected: i - 1, actual: tb.OutputCount);
+            }
+        }
+
+        [Fact]
+        public async Task TestChainedSendReceive()
+        {
+            foreach (bool post in DataflowTestHelpers.BooleanValues)
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            {
+                const int Iters = 10;
+                Func<TransformBlock<int, int>> func = sync ?
+                    (Func<TransformBlock<int, int>>)(() => new TransformBlock<int, int>(i => i * 2)) :
+                    (Func<TransformBlock<int, int>>)(() => new TransformBlock<int, int>(i => Task.Run(() => i * 2)));
+                var network = DataflowTestHelpers.Chain<TransformBlock<int, int>, int>(4, func);
+                for (int i = 0; i < Iters; i++)
+                {
+                    if (post)
+                    {
+                        network.Post(i);
+                    }
+                    else
+                    {
+                        await network.SendAsync(i);
+                    }
+                    Assert.Equal(expected: i * 16, actual: await network.ReceiveAsync());
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestSendAllThenReceive()
+        {
+            foreach (bool post in DataflowTestHelpers.BooleanValues)
+            foreach (bool sync in DataflowTestHelpers.BooleanValues)
+            {
+                const int Iters = 10;
+                Func<TransformBlock<int, int>> func = sync ?
+                    (Func<TransformBlock<int, int>>)(() => new TransformBlock<int, int>(i => i * 2)) :
+                    (Func<TransformBlock<int, int>>)(() => new TransformBlock<int, int>(i => Task.Run(() => i * 2)));
+                var network = DataflowTestHelpers.Chain<TransformBlock<int, int>, int>(4, func);
+
+                if (post)
+                {
+                    network.PostRange(0, Iters);
+                }
+                else
+                {
+                    await Task.WhenAll(from i in Enumerable.Range(0, Iters) select network.SendAsync(i));
+                }
+
+                for (int i = 0; i < Iters; i++)
+                {
+                    Assert.Equal(expected: i * 16, actual: await network.ReceiveAsync());
+                }
+            }
+        }
+
+        [Fact]
+        public async Task TestPrecanceled()
+        {
+            var bb = new TransformBlock<int, int>(i => i,
+                new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+
+            int ignoredValue;
+            IList<int> ignoredValues;
+
+            IDisposable link = bb.LinkTo(DataflowBlock.NullTarget<int>());
+            Assert.NotNull(link);
+            link.Dispose();
+            
+            Assert.False(bb.Post(42));
+            var t = bb.SendAsync(42);
+            Assert.True(t.IsCompleted);
+            Assert.False(t.Result);
+
+            Assert.False(bb.TryReceiveAll(out ignoredValues));
+            Assert.False(bb.TryReceive(out ignoredValue));
+
+            Assert.NotNull(bb.Completion);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+            bb.Complete(); // just make sure it doesn't throw
+        }
+
+        [Fact]
+        public async Task TestExceptions()
+        {
+            var tb1 = new TransformBlock<int, int>((Func<int, int>)(i => { throw new InvalidCastException(); }));
+            var tb2 = new TransformBlock<int, int>((Func<int, Task<int>>)(i => { throw new InvalidProgramException(); }));
+            var tb3 = new TransformBlock<int, int>((Func<int, Task<int>>)(i => Task.Run((Func<int>)(() => { throw new InvalidTimeZoneException(); }))));
+
+            for (int i = 0; i < 3; i++)
+            {
+                tb1.Post(i);
+                tb2.Post(i);
+                tb3.Post(i);
+            }
+
+            await Assert.ThrowsAsync<InvalidCastException>(() => tb1.Completion);
+            await Assert.ThrowsAsync<InvalidProgramException>(() => tb2.Completion);
+            await Assert.ThrowsAsync<InvalidTimeZoneException>(() => tb3.Completion);
+
+            Assert.All(new[] { tb1, tb2, tb3 }, tb => Assert.True(tb.InputCount == 0 && tb.OutputCount == 0));
+        }
+
+        [Fact]
+        public async Task TestFaultingAndCancellation()
+        {
+            foreach (bool fault in DataflowTestHelpers.BooleanValues)
+            {
+                var cts = new CancellationTokenSource();
+                var tb = new TransformBlock<int, int>(i => i, new ExecutionDataflowBlockOptions { CancellationToken = cts.Token });
+                tb.PostRange(0, 4);
+                Assert.Equal(expected: 0, actual: await tb.ReceiveAsync());
+                Assert.Equal(expected: 1, actual: await tb.ReceiveAsync());
+
+                if (fault)
+                {
+                    Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)tb).Fault(null));
+                    ((IDataflowBlock)tb).Fault(new InvalidCastException());
+                    await Assert.ThrowsAsync<InvalidCastException>(() => tb.Completion);
+                }
+                else
+                {
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tb.Completion);
+                }
+
+                Assert.Equal(expected: 0, actual: tb.InputCount);
+                Assert.Equal(expected: 0, actual: tb.OutputCount);
+            }
+        }
+
+        [Fact]
+        public async Task TestCancellationExceptionsIgnored()
+        {
+            var t = new TransformBlock<int, int>(i => {
+                if ((i % 2) == 0) throw new OperationCanceledException();
+                return i;
+            });
+            t.PostRange(0, 2);
+            t.Complete();
             for (int i = 0; i < 2; i++)
-                propagator.Post(testThrow && i == 1 ? ThrowOn.OfferMessage : ThrowOn.TryReceive); // Throw on the second message
-
-            // Link the thrower
-            propagator.LinkTo(thrower);
-
-            // Once a message has been processed, cancel the propagator (if we are testing cancellation)
-            SpinWait.SpinUntil(() => thrower.LastOperation == ThrowOn.OfferMessage);
-            if (!testThrow) cts.Cancel();
-
-            // Wait for the propagator to complete
-            try
             {
-                var ranToCompletion = propagator.Completion.Wait(10000);
-                passed = false;
-                Console.WriteLine("Task is faulted or canceled (finished: {0}) - FAILED", ranToCompletion ? "ran to copmpletion" : "still running");
-            }
-            catch (AggregateException ae)
-            {
-                passed = testThrow ? ae.InnerException is InvalidOperationException : ae.InnerException is TaskCanceledException;
-                ae.Handle(e => true);
-                Console.WriteLine("Task is faulted or canceled (exception) - {0}", passed ? "Passed" : "FAILED");
+                if ((i % 2) != 0)
+                {
+                    Assert.Equal(expected: i, actual: await t.ReceiveAsync());
+                }
             }
 
-            return passed;
+            await t.Completion;
         }
 
-        //
-        // The test that verifies that internally, TransformBlock does not get confused
+        [Fact]
+        public async Task TestNullTasksIgnored()
+        {
+            foreach (int dop in new[] { DataflowBlockOptions.Unbounded, 1, 2 })
+            {
+                var tb = new TransformBlock<int, int>(i => {
+                    if ((i % 2) == 0) return null;
+                    return Task.Run(() => i);
+                }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop });
+
+                const int Iters = 100;
+                tb.PostRange(0, Iters);
+                tb.Complete();
+
+                for (int i = 0; i < Iters; i++)
+                {
+                    if ((i % 2) != 0)
+                    {
+                        Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+                    }
+                }
+                await tb.Completion;
+            }
+        }
+
+        // Verifies that internally, TransformBlock does not get confused
         // between Func<T, Task<object>> and Func<T, object>.
         [Fact]
-        [OuterLoop]
-        public void RunTransformCtorOverloadTest()
+        public async Task TestCtorOverloading()
         {
-            bool passed = true;
+            Func<object, Task<object>> f = x => Task.FromResult<object>(x);
+            for (int test = 0; test < 2; test++)
             {
-                Func<object, Task<object>> f = x => Task<object>.FromResult(x);
-                TransformBlock<object, object> tf = new TransformBlock<object, object>(f);
-                var mre = new ManualResetEvent(false);
+                TransformBlock<object, object> tf = test == 0 ?
+                    new TransformBlock<object, object>(f) :
+                    new TransformBlock<object, object>((Func<object, object>)f);
+                var tcs = new TaskCompletionSource<bool>();
 
-                ActionBlock<object> a = new ActionBlock<object>(x =>
-                {
-                    bool localPassed = !(x is Task<object>);
-                    passed &= localPassed;
-
-                    mre.Set();
+                ActionBlock<object> a = new ActionBlock<object>(x => {
+                    Assert.Equal(expected: test == 1, actual: x is Task<object>);
+                    tcs.SetResult(true);
                 });
 
                 tf.LinkTo(a);
                 tf.Post(new object());
 
-                mre.WaitOne();
+                await tcs.Task;
             }
-            {
-                Func<object, Task<object>> f = x => Task<object>.FromResult(x);
-                TransformBlock<object, object> tf = new TransformBlock<object, object>((Func<object, object>)f);
-                var mre = new ManualResetEvent(false);
-
-                ActionBlock<object> a = new ActionBlock<object>(x =>
-                {
-                    bool localPassed = x is Task<object>;
-                    passed &= localPassed;
-
-                    mre.Set();
-                });
-
-                tf.LinkTo(a);
-                tf.Post(new object());
-
-                mre.WaitOne();
-            }
-
-            Assert.True(passed, "Test failed.");
         }
 
         [Fact]
-        [OuterLoop]
-        public void RunTransformBlockConformanceTests()
+        public async Task TestFaultyLinkedTarget()
         {
-            bool passed = true;
-
-            // SYNC
-            #region Sync
+            var tb = new TransformBlock<int, int>(i => i);
+            tb.LinkTo(new DelegatePropagator<int, int>
             {
-                // Do everything twice - once through OfferMessage and Once through Post
-                for (FeedMethod feedMethod = FeedMethod._First; passed & feedMethod < FeedMethod._Count; feedMethod++)
-                {
-                    Func<DataflowBlockOptions, TargetProperties<int>> transformBlockFactory =
-                        options =>
-                        {
-                            TransformBlock<int, int> transformBlock = new TransformBlock<int, int>(i => i, (ExecutionDataflowBlockOptions)options);
-                            ActionBlock<int> actionBlock = new ActionBlock<int>(i => TrackCaptures(i), (ExecutionDataflowBlockOptions)options);
-
-                            transformBlock.LinkTo(actionBlock);
-
-                            return new TargetProperties<int> { Target = transformBlock, Capturer = actionBlock, ErrorVerifyable = false };
-                        };
-                    CancellationTokenSource cancellationSource = new CancellationTokenSource();
-                    var defaultOptions = new ExecutionDataflowBlockOptions();
-                    var dopOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-                    var mptOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 2 };
-                    var cancellationOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 2, CancellationToken = cancellationSource.Token };
-
-                    passed &= FeedTarget(transformBlockFactory, defaultOptions, 1, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, defaultOptions, 1, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, dopOptions, 1, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, mptOptions, 1, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, mptOptions, 1, Intervention.Complete, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, cancellationOptions, 1, Intervention.Cancel, cancellationSource, feedMethod, true);
-                }
-
-                // Test chained Post/Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => i * 2));
-                    for (int i = 0; i < ITERS; i++)
-                    {
-                        network.Post(i);
-                        localPassed &= (((IReceivableSourceBlock<int>)network).Receive() == i * 16);
-                    }
-                    Console.WriteLine("{0}: Chained Post/Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test chained SendAsync/Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => i * 2));
-                    for (int i = 0; i < ITERS; i++)
-                    {
-                        network.SendAsync(i);
-                        localPassed &= (((IReceivableSourceBlock<int>)network).Receive() == i * 16);
-                    }
-                    Console.WriteLine("{0}: Chained SendAsync/Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test chained Post all then Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => i * 2));
-                    for (int i = 0; i < ITERS; i++) localPassed &= network.Post(i) == true;
-                    for (int i = 0; i < ITERS; i++) localPassed &= ((IReceivableSourceBlock<int>)network).Receive() == i * 16;
-                    Console.WriteLine("{0}: Chained Post all then Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test chained SendAsync all then Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => i * 2));
-                    var tasks = new Task[ITERS];
-                    for (int i = 1; i <= ITERS; i++) tasks[i - 1] = network.SendAsync(i);
-                    Task.WaitAll(tasks);
-                    int total = 0;
-                    for (int i = 1; i <= ITERS; i++) total += ((IReceivableSourceBlock<int>)network).Receive();
-                    localPassed &= (total == ((ITERS * (ITERS + 1)) / 2 * 16));
-                    Console.WriteLine("{0}: Chained SendAsync all then Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test that OperationCanceledExceptions are ignored
-                {
-                    bool localPassed = true;
-
-                    var t = new TransformBlock<int, int>(i =>
-                    {
-                        if ((i % 2) == 0) throw new OperationCanceledException();
-                        return i;
-                    });
-                    for (int i = 0; i < 2; i++) t.Post(i);
-                    t.Complete();
-                    for (int i = 0; i < 2; i++)
-                    {
-                        if ((i % 2) != 0) localPassed &= t.Receive() == i;
-                    }
-                    t.Completion.Wait();
-                    Console.WriteLine("{0}: OperationCanceledExceptions are ignored", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test using a precanceled token
-                {
-                    bool localPassed = true;
-                    try
-                    {
-                        var cts = new CancellationTokenSource();
-                        cts.Cancel();
-                        var dbo = new ExecutionDataflowBlockOptions { CancellationToken = cts.Token };
-                        var t = new TransformBlock<int, int>(i => i, dbo);
-
-                        int ignoredValue;
-                        IList<int> ignoredValues;
-                        localPassed &= t.LinkTo(new ActionBlock<int>(delegate { })) != null;
-                        localPassed &= t.SendAsync(42).Result == false;
-                        localPassed &= t.TryReceiveAll(out ignoredValues) == false;
-                        localPassed &= t.Post(42) == false;
-                        localPassed &= t.OutputCount == 0;
-                        localPassed &= t.TryReceive(out ignoredValue) == false;
-                        localPassed &= t.Completion != null;
-                        t.Complete();
-                    }
-                    catch (Exception)
-                    {
-                        localPassed = false;
-                    }
-                    Console.WriteLine("    {0}: Precanceled tokens work correctly", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test faulting
-                {
-                    bool localPassed = true;
-                    var t = new TransformBlock<int, int>(new Func<int, int>(i => { throw new InvalidOperationException(); }));
-                    t.Post(42);
-                    t.Post(1);
-                    t.Post(2);
-                    t.Post(3);
-                    try { t.Completion.Wait(); }
-                    catch { }
-                    localPassed &= t.Completion.IsFaulted;
-                    localPassed &= SpinWait.SpinUntil(() => t.InputCount == 0, 500);
-                    localPassed &= SpinWait.SpinUntil(() => t.OutputCount == 0, 500);
-                    localPassed &= t.Post(4) == false;
-                    Console.WriteLine("    {0}: Faulted handled correctly", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-            }
-            #endregion
-
-            #region Async
-            // ASYNC (a copy of the sync but with constructors returning Task<T> instead of T
-            {
-                // Do everything twice - once through OfferMessage and Once through Post
-                for (FeedMethod feedMethod = FeedMethod._First; passed & feedMethod < FeedMethod._Count; feedMethod++)
-                {
-                    Func<DataflowBlockOptions, TargetProperties<int>> transformBlockFactory =
-                        options =>
-                        {
-                            TransformBlock<int, int> transformBlock = new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i), (ExecutionDataflowBlockOptions)options);
-                            ActionBlock<int> actionBlock = new ActionBlock<int>(i => TrackCaptures(i), (ExecutionDataflowBlockOptions)options);
-
-                            transformBlock.LinkTo(actionBlock);
-
-                            return new TargetProperties<int> { Target = transformBlock, Capturer = actionBlock, ErrorVerifyable = false };
-                        };
-                    CancellationTokenSource cancellationSource = new CancellationTokenSource();
-                    var defaultOptions = new ExecutionDataflowBlockOptions();
-                    var dopOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-                    var mptOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 2 };
-                    var cancellationOptions = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, MaxMessagesPerTask = 2, CancellationToken = cancellationSource.Token };
-
-                    passed &= FeedTarget(transformBlockFactory, defaultOptions, 1, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, dopOptions, 10, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, mptOptions, 10000, Intervention.None, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, mptOptions, 10000, Intervention.Complete, null, feedMethod, true);
-                    passed &= FeedTarget(transformBlockFactory, cancellationOptions, 10000, Intervention.Cancel, cancellationSource, feedMethod, true);
-                }
-
-                // Test chained Post/Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
-                    for (int i = 0; i < ITERS; i++)
-                    {
-                        network.Post(i);
-                        localPassed &= (((IReceivableSourceBlock<int>)network).Receive() == i * 16);
-                    }
-                    Console.WriteLine("{0}: Chained Post/Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test chained SendAsync/Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
-                    for (int i = 0; i < ITERS; i++)
-                    {
-                        network.SendAsync(i);
-                        localPassed &= (((IReceivableSourceBlock<int>)network).Receive() == i * 16);
-                    }
-                    Console.WriteLine("{0}: Chained SendAsync/Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test chained Post all then Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
-                    for (int i = 0; i < ITERS; i++) localPassed &= network.Post(i) == true;
-                    for (int i = 0; i < ITERS; i++) localPassed &= ((IReceivableSourceBlock<int>)network).Receive() == i * 16;
-                    Console.WriteLine("{0}: Chained Post all then Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test chained SendAsync all then Receive
-                {
-                    bool localPassed = true;
-                    const int ITERS = 2;
-                    var network = Chain<TransformBlock<int, int>, int>(4, () => new TransformBlock<int, int>(i => Task.Factory.StartNew(() => i * 2)));
-                    var tasks = new Task[ITERS];
-                    for (int i = 1; i <= ITERS; i++) tasks[i - 1] = network.SendAsync(i);
-                    Task.WaitAll(tasks);
-                    int total = 0;
-                    for (int i = 1; i <= ITERS; i++) total += ((IReceivableSourceBlock<int>)network).Receive();
-                    localPassed &= (total == ((ITERS * (ITERS + 1)) / 2 * 16));
-                    Console.WriteLine("{0}: Chained SendAsync all then Receive", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test that OperationCanceledExceptions are ignored
-                {
-                    bool localPassed = true;
-
-                    var t = new TransformBlock<int, int>(i =>
-                    {
-                        if ((i % 2) == 0) throw new OperationCanceledException();
-                        return Task.Factory.StartNew(() => i);
-                    });
-                    for (int i = 0; i < 2; i++) t.Post(i);
-                    t.Complete();
-                    for (int i = 0; i < 2; i++)
-                    {
-                        if ((i % 2) != 0) localPassed &= t.Receive() == i;
-                    }
-                    t.Completion.Wait();
-                    Console.WriteLine("{0}: OperationCanceledExceptions are ignored", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test that null tasks are ignored
-                {
-                    bool localPassed = true;
-
-                    var t = new TransformBlock<int, int>(i =>
-                    {
-                        if ((i % 2) == 0) return null;
-                        return Task.Factory.StartNew(() => i);
-                    });
-                    for (int i = 0; i < 2; i++) t.Post(i);
-                    t.Complete();
-                    for (int i = 0; i < 2; i++)
-                    {
-                        if ((i % 2) != 0) localPassed &= t.Receive() == i;
-                    }
-                    t.Completion.Wait();
-                    Console.WriteLine("{0}: null tasks are ignored", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test that null tasks are ignored when a reordering buffer is in place
-                {
-                    bool localPassed = true;
-
-                    var t = new TransformBlock<int, int>(i =>
-                    {
-                        if (i == 0)
-                        {
-                            Task.Delay(10).Wait();
-                            return null;
-                        }
-                        return Task.Factory.StartNew(() => i);
-                    }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2 });
-                    t.Post(0);
-                    t.Post(1);
-                    try
-                    {
-                        localPassed &= t.Receive(TimeSpan.FromSeconds(4)) == 1;
-                    }
-                    catch
-                    {
-                        localPassed = false;
-                    }
-                    Console.WriteLine("{0}: null tasks are ignored with reordering buffer", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test faulting from the delegate
-                {
-                    bool localPassed = true;
-                    var t = new TransformBlock<int, int>(new Func<int, Task<int>>(i => { throw new InvalidOperationException(); }));
-                    t.Post(42);
-                    t.Post(1);
-                    t.Post(2);
-                    t.Post(3);
-                    try { t.Completion.Wait(); }
-                    catch { }
-                    localPassed &= t.Completion.IsFaulted;
-                    localPassed &= SpinWait.SpinUntil(() => t.InputCount == 0, 500);
-                    localPassed &= SpinWait.SpinUntil(() => t.OutputCount == 0, 500);
-                    localPassed &= t.Post(4) == false;
-                    Console.WriteLine("    {0}: Faulted from delegate handled correctly", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-
-                // Test faulting from the task
-                {
-                    bool localPassed = true;
-                    var t = new TransformBlock<int, int>(new Func<int, Task<int>>(i => Task<int>.Factory.StartNew(() => { throw new InvalidOperationException(); })));
-                    t.Post(42);
-                    t.Post(1);
-                    t.Post(2);
-                    t.Post(3);
-                    try { t.Completion.Wait(); }
-                    catch { }
-                    localPassed &= t.Completion.IsFaulted;
-                    localPassed &= SpinWait.SpinUntil(() => t.InputCount == 0, 500);
-                    localPassed &= SpinWait.SpinUntil(() => t.OutputCount == 0, 500);
-                    localPassed &= t.Post(4) == false;
-                    Console.WriteLine("    {0}: Faulted from task handled correctly", localPassed ? "Success" : "Failure");
-                    passed &= localPassed;
-                }
-            }
-            #endregion
-
-            Assert.True(passed, "Test failed.");
+                OfferMessageDelegate = delegate { throw new InvalidCastException(); }
+            });
+            tb.Post(42);
+            await Assert.ThrowsAsync<InvalidCastException>(() => tb.Completion);
         }
     }
 }

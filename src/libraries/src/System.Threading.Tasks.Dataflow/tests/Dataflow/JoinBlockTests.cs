@@ -1,632 +1,457 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
+using System.Linq;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class JoinBlockTests
     {
-        [Fact]        
-        public void RunJoinBlockTests()
+        [Fact]
+        public void TestCtor2()
         {
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new JoinBlock<int, int>(new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) : new JoinBlock<int, int>()));
-            Assert.True(IDataflowBlockTestHelper.TestToString(nameFormat => nameFormat != null ? new JoinBlock<int, int, int>(new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) : new JoinBlock<int, int, int>()));
-            Assert.True(ISourceBlockTestHelper.TestLinkTo<Tuple<int, int>>(ConstructJoinNewWithNMessages(2), 1));
-            Assert.True(ISourceBlockTestHelper.TestReserveMessageAndReleaseReservation<Tuple<int, int>>(ConstructJoinNewWithNMessages(1)));
-            //Assert.True(ISourceBlockTestHelper.TestReleaseReservation<Tuple<int, int>>(ConstructJoinNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestConsumeMessage<Tuple<int, int>>(ConstructJoinNewWithNMessages(1)));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveWithFilter<Tuple<int, int>>(ConstructJoinNewWithNMessages(1), 1));
-            Assert.True(ISourceBlockTestHelper.TestTryReceiveAll<Tuple<int, int>>(ConstructJoinNewWithNMessages(1), 1));
-
-            Assert.True(TestJoinMaxNumberOfGroups(greedy: true, sync: true));
-            Assert.True(TestJoinMaxNumberOfGroups(greedy: true, sync: false));
-            // {non-greedy sync} is intentioanlly skipped because it is not supported by the block
-            Assert.True(TestJoinMaxNumberOfGroups(greedy: false, sync: false));
-        }
-
-        private static JoinBlock<int, int> ConstructJoinNewWithNMessages(int messagesCount)
-        {
-            var block = new JoinBlock<int, int>();
-            for (int i = 0; i < messagesCount; i++)
+            var blocks = new[]
             {
-                block.Target1.Post(i);
-                block.Target2.Post(i);
+                new JoinBlock<int, string>(),
+                new JoinBlock<int, string>(new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 }),
+                new JoinBlock<int, string>(new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new JoinBlock<int, string>(new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
+            };
+            foreach (var block in blocks)
+            {
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+                Assert.NotNull(block.Completion);
             }
-
-            // Spin until the messages have been properly buffered up. 
-            // Otherwise TryReceive fails.
-            SpinWait.SpinUntil(() => block.OutputCount == messagesCount);
-
-            return block;
         }
 
         [Fact]
-        public void TestJoinBlockConstructor()
+        public void TestCtor3()
         {
-            // without decline without option
-            var block = new JoinBlock<int, int>();
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new JoinBlock.");
-            // decline without option
-            block = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 });
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new JoinBlock.");
-            // decline with not cancelled token and default scheduler
-            block = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 });
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new JoinBlock.");
-            // decline with a cancelled token and default scheduler
-            var token = new CancellationToken(true);
-            block = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = token, MaxNumberOfGroups = 1 });
-            Assert.False(block.OutputCount != 0, "Constructor failed! OutputCount returned a non zero value for a brand new JoinBlock.");
+            var blocks = new[]
+            {
+                new JoinBlock<int, string, double>(),
+                new JoinBlock<int, string, double>(new GroupingDataflowBlockOptions { MaxNumberOfGroups = 1 }),
+                new JoinBlock<int, string, double>(new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1 }),
+                new JoinBlock<int, string, double>(new GroupingDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true), MaxNumberOfGroups = 1 })
+            };
+            foreach (var block in blocks)
+            {
+                Assert.Equal(expected: 0, actual: block.OutputCount);
+                Assert.NotNull(block.Completion);
+            }
         }
 
         [Fact]
-        public void TestJoinInvalidArgumentValidation()
+        public void TestToString()
+        {
+            DataflowTestHelpers.TestToString(
+                nameFormat => nameFormat != null ?
+                    new JoinBlock<int, string>(new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new JoinBlock<int, string>());
+            DataflowTestHelpers.TestToString(
+                nameFormat => nameFormat != null ?
+                    new JoinBlock<int, string, double>(new GroupingDataflowBlockOptions() { NameFormat = nameFormat }) :
+                    new JoinBlock<int, string, double>());
+        }
+
+        [Fact]
+        public void TestArgumentExceptions()
         {
             Assert.Throws<ArgumentNullException>(() => new JoinBlock<int, int>(null));
             Assert.Throws<ArgumentNullException>(() => new JoinBlock<int, int, int>(null));
             Assert.Throws<NotSupportedException>(() => { var ignored = new JoinBlock<int, int>().Target1.Completion; });
             Assert.Throws<NotSupportedException>(() => { var ignored = new JoinBlock<int, int, int>().Target3.Completion; });
 
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<Tuple<int, int>>(new JoinBlock<int, int>()));
-            Assert.True(ISourceBlockTestHelper.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>()));
+            DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int>>(new JoinBlock<int, int>());
+            DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>());
         }
 
         [Fact]
-        [OuterLoop]
-        public void RunJoinBlockConformanceTests()
+        public async Task TestPostThenReceive()
         {
-            // Test Post/Receive single block
+            const int Iters = 3;
+
+            var block2 = new JoinBlock<int, int>();
+            for (int i = 0; i < Iters; i++)
             {
-                int iter = 2;
+                block2.Target1.Post(i);
+                block2.Target2.Post(i + 1);
 
-                var block2 = new JoinBlock<int, int>();
-                for (int i = 0; i < iter; i++)
-                {
-                    block2.Target1.Post(i);
-                    block2.Target2.Post(i);
-                    var msg = block2.Receive();
-
-                    Assert.False(msg.Item1 != i || msg.Item2 != i, string.Format("JoinBlock Post/Receive failed expected {0},{1} and actual {2},{3}", i, i, msg.Item1, msg.Item2));
-                }
-
-                var block3 = new JoinBlock<int, int, int>();
-                for (int i = 0; i < iter; i++)
-                {
-                    block3.Target1.Post(i);
-                    block3.Target2.Post(i);
-                    block3.Target3.Post(i);
-                    var msg = block3.Receive();
-                    Assert.False(msg.Item1 != i || msg.Item2 != i || msg.Item3 != i, string.Format("JoinBlock Post/Receive failed expected {0},{1},{2} and actual {3},{4},{5}", i, i, i, msg.Item1, msg.Item2, msg.Item3));
-                }
+                Tuple<int, int> msg = await block2.ReceiveAsync();
+                Assert.Equal(expected: i, actual: msg.Item1);
+                Assert.Equal(expected: i + 1, actual: msg.Item2);
             }
 
-            // Test PostAll then Receive single block
+            var block3 = new JoinBlock<int, int, int>();
+            for (int i = 0; i < Iters; i++)
             {
-                int iter = 2;
+                block3.Target1.Post(i);
+                block3.Target2.Post(i + 1);
+                block3.Target3.Post(i + 2);
 
-                var block2 = new JoinBlock<int, int>();
-                for (int i = 0; i < iter; i++)
-                {
-                    block2.Target1.Post(i);
-                    block2.Target2.Post(i);
-                }
-                for (int i = 0; i < iter; i++)
-                {
-                    var msg = block2.Receive();
-                    Assert.False(msg.Item1 != msg.Item2, "JoinBlock PostAll then Receive failed expected, incorrect msg pair");
-                }
-
-                var block3 = new JoinBlock<int, int, int>();
-                for (int i = 0; i < iter; i++)
-                {
-                    block3.Target1.Post(i);
-                    block3.Target2.Post(i);
-                    block3.Target3.Post(i);
-                }
-                for (int i = 0; i < iter; i++)
-                {
-                    var msg = block3.Receive();
-                    Assert.False(msg.Item1 != msg.Item2 || msg.Item2 != msg.Item3, "JoinBlock PostAll then Receive failed expected, incorrect msg pair");
-                }
-            }
-
-            //Test one target Post with TryReceive
-            {
-                var block2 = new JoinBlock<int, int>();
-                block2.Target1.Post(0);
-                Tuple<int, int> result2;
-                Assert.False(block2.TryReceive(out result2), "JoinBlock.TryReceive failed, returned true and only one target posted a message");
-                Assert.False(block2.OutputCount > 0, "JoinBlock.OutputCount failed, returned count > 0 and only one target posted a message");
-                var block3 = new JoinBlock<int, int, int>();
-                block3.Target1.Post(0);
-                Tuple<int, int, int> result3;
-                Assert.False(block3.TryReceive(out result3), "JoinBlock.TryReceive failed, returned true and only one target posted a message");
-                Assert.False(block3.OutputCount > 0, "JoinBlock.OutputCount failed, returned count > 0 and only one target posted a message");
-            }
-
-            // Test JoinBlock`2 using a precanceled token
-            {
-                var localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 };
-                    var jb = new JoinBlock<int, int>(dbo);
-
-                    Tuple<int, int> ignoredValue;
-                    IList<Tuple<int, int>> ignoredValues;
-                    localPassed &= jb.LinkTo(new ActionBlock<Tuple<int, int>>(delegate { })) != null;
-                    localPassed &= jb.Target1.Post(42) == false;
-                    localPassed &= jb.Target2.Post(42) == false;
-                    localPassed &= jb.Target1.SendAsync(42).Result == false;
-                    localPassed &= jb.Target2.SendAsync(42).Result == false;
-                    localPassed &= jb.TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= jb.TryReceive(out ignoredValue) == false;
-                    localPassed &= jb.OutputCount == 0;
-                    localPassed &= jb.Completion != null;
-                    jb.Target1.Complete();
-                    jb.Target2.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-
-                Assert.True(localPassed, string.Format("Precanceled tokens on JB`2 - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test JoinBlock`3 using a precanceled token
-            {
-                var localPassed = true;
-                try
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-                    var dbo = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, MaxNumberOfGroups = 1 };
-                    var jb = new JoinBlock<int, int, int>(dbo);
-
-                    Tuple<int, int, int> ignoredValue;
-                    IList<Tuple<int, int, int>> ignoredValues;
-                    localPassed &= jb.LinkTo(new ActionBlock<Tuple<int, int, int>>(delegate { })) != null;
-                    localPassed &= jb.Target1.Post(42) == false;
-                    localPassed &= jb.Target2.Post(42) == false;
-                    localPassed &= jb.Target3.Post(42) == false;
-                    localPassed &= jb.Target1.SendAsync(42).Result == false;
-                    localPassed &= jb.Target2.SendAsync(42).Result == false;
-                    localPassed &= jb.Target3.SendAsync(42).Result == false;
-                    localPassed &= jb.TryReceiveAll(out ignoredValues) == false;
-                    localPassed &= jb.TryReceive(out ignoredValue) == false;
-                    localPassed &= jb.OutputCount == 0;
-                    localPassed &= jb.Completion != null;
-                    jb.Target1.Complete();
-                    jb.Target2.Complete();
-                    jb.Target3.Complete();
-                }
-                catch (Exception)
-                {
-                    localPassed = false;
-                }
-
-                Assert.True(localPassed, string.Format("Precanceled tokens on JB`3 - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test JoinBlock`2 completion through all targets
-            {
-                var localPassed = true;
-                var join = new JoinBlock<int, int>();
-                join.Target1.Post(1);
-                join.Target1.Complete();
-                join.Target2.Complete();
-                localPassed = join.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("JoinBlock`2 completed through targets - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test JoinBlock`3 completion through all targets
-            {
-                var localPassed = true;
-                var join = new JoinBlock<int, int, int>();
-                join.Target1.Post(1);
-                join.Target1.Complete();
-                join.Target2.Complete();
-                join.Target3.Complete();
-                localPassed = join.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("JoinBlock`3 completed through targets - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test JoinBlock`2 completion through block
-            {
-                var localPassed = true;
-                var join = new JoinBlock<int, int>();
-                join.Target1.Post(1);
-                join.Complete();
-                localPassed = join.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("JoinBlock`2 completed through block - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-
-            // Test JoinBlock`3 completion through block
-            {
-                var localPassed = true;
-                var join = new JoinBlock<int, int, int>();
-                join.Target1.Post(1);
-                join.Complete();
-                localPassed = join.Completion.Wait(2000);
-
-                Assert.True(localPassed, string.Format("JoinBlock`3 completed through block - {0}", localPassed ? "Passed" : "FAILED"));
+                Tuple<int, int, int> msg = await block3.ReceiveAsync();
+                Assert.Equal(expected: i, actual: msg.Item1);
+                Assert.Equal(expected: i + 1, actual: msg.Item2);
+                Assert.Equal(expected: i + 2, actual: msg.Item3);
             }
         }
 
         [Fact]
-        public void TestNonGreedyFailToConsumeReservedMessage()
+        public async Task TestPostAllThenReceive()
         {
-            NullOnConsumeSource<int> source1 = new NullOnConsumeSource<int>();
-            NullOnConsumeSource<int> source2 = new NullOnConsumeSource<int>();
+            int iter = 2;
+
+            var block2 = new JoinBlock<int, int>();
+            for (int i = 0; i < iter; i++)
+            {
+                block2.Target1.Post(i);
+                block2.Target2.Post(i + 1);
+            }
+            for (int i = 0; i < iter; i++)
+            {
+                Tuple<int, int> msg = await block2.ReceiveAsync(); 
+                Assert.Equal(expected: i, actual: msg.Item1);
+                Assert.Equal(expected: i + 1, actual: msg.Item2);
+            }
+
+            var block3 = new JoinBlock<int, int, int>();
+            for (int i = 0; i < iter; i++)
+            {
+                block3.Target1.Post(i);
+                block3.Target2.Post(i + 1);
+                block3.Target3.Post(i + 2);
+            }
+            for (int i = 0; i < iter; i++)
+            {
+                Tuple<int, int, int> msg = await block3.ReceiveAsync();
+                Assert.Equal(expected: i, actual: msg.Item1);
+                Assert.Equal(expected: i + 1, actual: msg.Item2);
+                Assert.Equal(expected: i + 2, actual: msg.Item3);
+            }
+        }
+
+        [Fact]
+        public async Task TestSendAllThenReceive()
+        {
+            int iter = 2;
+            Task<bool> t1, t2, t3;
+
+            var block2 = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
+            for (int i = 0; i < iter; i++)
+            {
+                t1 = block2.Target1.SendAsync(i);
+                Assert.False(t1.IsCompleted);
+                t2 = block2.Target2.SendAsync(i + 1);
+                await Task.WhenAll(t1, t2);
+            }
+            for (int i = 0; i < iter; i++)
+            {
+                Tuple<int, int> msg = await block2.ReceiveAsync();
+                Assert.Equal(expected: i, actual: msg.Item1);
+                Assert.Equal(expected: i + 1, actual: msg.Item2);
+            }
+
+            var block3 = new JoinBlock<int, int, int>(new GroupingDataflowBlockOptions { Greedy = false });
+            for (int i = 0; i < iter; i++)
+            {
+                t1 = block3.Target1.SendAsync(i);
+                Assert.False(t1.IsCompleted);
+                t2 = block3.Target2.SendAsync(i + 1);
+                Assert.False(t2.IsCompleted);
+                t3 = block3.Target3.SendAsync(i + 2);
+                await Task.WhenAll(t1, t2, t3);
+            }
+            for (int i = 0; i < iter; i++)
+            {
+                Tuple<int, int, int> msg = await block3.ReceiveAsync();
+                Assert.Equal(expected: i, actual: msg.Item1);
+                Assert.Equal(expected: i + 1, actual: msg.Item2);
+                Assert.Equal(expected: i + 2, actual: msg.Item3);
+            }
+        }
+
+        [Fact]
+        public void TestOneTargetInsufficient()
+        {
+            var block2 = new JoinBlock<int, int>();
+            block2.Target1.Post(0);
+
+            Tuple<int, int> result2;
+            Assert.False(block2.TryReceive(out result2));
+            Assert.Equal(expected: 0, actual: block2.OutputCount);
+
+            var block3 = new JoinBlock<int, int, int>();
+            block3.Target1.Post(0);
+
+            Tuple<int, int, int> result3;
+            Assert.False(block3.TryReceive(out result3));
+            Assert.Equal(expected: 0, actual: block3.OutputCount);
+        }
+
+        [Fact]
+        public async Task TestPrecancellation2()
+        {
+            var b = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { 
+                CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1 
+            });
+
+            Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<Tuple<int, int>>()));
+            Assert.False(b.Target1.Post(42));
+            Assert.False(b.Target2.Post(43));
+            
+            Task<bool> t1 = b.Target1.SendAsync(42);
+            Task<bool> t2 = b.Target2.SendAsync(43);
+            Assert.True(t1.IsCompleted);
+            Assert.False(t1.Result);
+            Assert.True(t2.IsCompleted);
+            Assert.False(t2.Result);
+
+            Tuple<int, int> ignoredValue;
+            IList<Tuple<int, int>>  ignoredValues;
+            Assert.False(b.TryReceive(out ignoredValue));
+            Assert.False(b.TryReceiveAll(out ignoredValues));
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            Assert.NotNull(b.Completion);
+            b.Complete();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+        }
+
+        [Fact]
+        public async Task TestPrecancellation3()
+        {
+            var b = new JoinBlock<int, int, int>(new GroupingDataflowBlockOptions
+            {
+                CancellationToken = new CancellationToken(canceled: true),
+                MaxNumberOfGroups = 1
+            });
+
+            Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<Tuple<int, int, int>>()));
+            Assert.False(b.Target1.Post(42));
+            Assert.False(b.Target2.Post(43));
+            Assert.False(b.Target2.Post(44));
+
+            Task<bool> t1 = b.Target1.SendAsync(42);
+            Task<bool> t2 = b.Target2.SendAsync(43);
+            Task<bool> t3 = b.Target2.SendAsync(44);
+            Assert.True(t1.IsCompleted);
+            Assert.False(t1.Result);
+            Assert.True(t2.IsCompleted);
+            Assert.False(t2.Result);
+            Assert.True(t3.IsCompleted);
+            Assert.False(t3.Result);
+
+            Tuple<int, int, int> ignoredValue;
+            IList<Tuple<int, int, int>> ignoredValues;
+            Assert.False(b.TryReceive(out ignoredValue));
+            Assert.False(b.TryReceiveAll(out ignoredValues));
+            Assert.Equal(expected: 0, actual: b.OutputCount);
+            Assert.NotNull(b.Completion);
+            b.Complete();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+        }
+
+        [Fact]
+        public async Task TestCompletionThroughTargets()
+        {
+            for (int test = 1; test <= 2; test++)
+            {
+                var join = new JoinBlock<int, int>();
+                switch (test)
+                {
+                    case 1:
+                        join.Target1.Post(1);
+                        join.Target1.Complete();
+                        join.Target2.Complete();
+                        break;
+                    case 2:
+                        join.Target1.Complete();
+                        join.Target2.Post(1);
+                        join.Target2.Complete();
+                        break;
+                }
+                await join.Completion;
+            }
+
+            for (int test = 1; test <= 3; test++)
+            {
+                var join = new JoinBlock<int, int, int>();
+                switch (test)
+                {
+                    case 1:
+                        join.Target1.Post(1);
+                        join.Target1.Complete();
+                        join.Target2.Complete();
+                        join.Target3.Complete();
+                        break;
+                    case 2:
+                        join.Target1.Complete();
+                        join.Target2.Post(1);
+                        join.Target2.Complete();
+                        join.Target3.Complete();
+                        break;
+                    case 3:
+                        join.Target1.Complete();
+                        join.Target2.Complete();
+                        join.Target3.Post(1);
+                        join.Target3.Complete();
+                        break;
+                }
+                await join.Completion;
+            }
+        }
+
+        [Fact]
+        public async Task TestFaultThroughTargets()
+        {
+            var join2 = new JoinBlock<int, string>();
+            join2.Target2.Fault(new FormatException());
+            await Assert.ThrowsAsync<FormatException>(() => join2.Completion);
+
+            var join3 = new JoinBlock<int, string, double>();
+            join3.Target3.Fault(new FormatException());
+            await Assert.ThrowsAsync<FormatException>(() => join3.Completion);
+        }
+
+        [Fact]
+        public async Task TestCompletionTask()
+        {
+            await DataflowTestHelpers.TestCompletionTask(() => new JoinBlock<int, string>());
+            await DataflowTestHelpers.TestCompletionTask(() => new JoinBlock<int, string, double>());
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => new JoinBlock<string, string>().Target1.Completion);
+            await Assert.ThrowsAsync<NotSupportedException>(() => new JoinBlock<string, string, double>().Target1.Completion);
+        }
+
+        [Fact]
+        public async Task TestCompletionThroughBlock()
+        {
+            var join2 = new JoinBlock<int, int>();
+            join2.Target1.Post(1);
+            join2.Complete();
+            await join2.Completion;
+
+            var join3 = new JoinBlock<int, int, int>();
+            join3.Target1.Post(2);
+            join3.Complete();
+            await join3.Completion;
+        }
+
+        [Fact]
+        public async Task TestNonGreedyFailToConsumeReservedMessage()
+        {
+            var sources = Enumerable.Range(0, 2).Select(i => new DelegatePropagator<int, int>
+            {
+                ReserveMessageDelegate = delegate { return true; },
+                ConsumeMessageDelegate = delegate(DataflowMessageHeader messageHeader, ITargetBlock<int> target, out bool messageConsumed) {
+                    messageConsumed = false; // fail consumption of a message already reserved
+                    Assert.Equal(expected: 0, actual: i); // shouldn't get to second source
+                    return 0;
+                }
+            }).ToArray();
+                
             var options = new GroupingDataflowBlockOptions { Greedy = false };
             JoinBlock<int, int> join = new JoinBlock<int, int>(options);
 
-            source1.LinkTo(join.Target1);
-            source2.LinkTo(join.Target2);
+            join.Target1.OfferMessage(new DataflowMessageHeader(1), 0, sources[0], consumeToAccept: true); // call back ConsumeMassage
+            join.Target2.OfferMessage(new DataflowMessageHeader(1), 0, sources[1], consumeToAccept: true); // call back ConsumeMassage
 
-            try
-            {
-                join.Completion.Wait();
-                Assert.True(false, "Failed to throw an exception");
-            }
-            catch (AggregateException ae)
-            {
-                ae.Handle(e => true);
-            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => join.Completion);
+        }
 
-            if (source2.ConsumeMessageCalled)
+        [Fact]
+        public async Task TestNonGreedyDropPostponedOnCompletion()
+        {
+            var joinBlock = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
+            var source = new BufferBlock<int>();
+            source.Post(1);
+            source.LinkTo(joinBlock.Target1);
+            joinBlock.Complete();
+            await joinBlock.Completion;
+        }
+
+        [Fact]
+        public async Task TestMaxNumberOfGroups()
+        {
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 2, 3 })
+            foreach (bool greedy in DataflowTestHelpers.BooleanValues)
             {
-                Assert.True(false, "Failed to skip consuming the second message");
+                var join = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { MaxNumberOfGroups = 2, BoundedCapacity = 2 });
+                Task<bool>[] sends1 = Enumerable.Range(0, 10).Select(i => join.Target1.SendAsync(i)).ToArray();
+                Task<bool>[] sends2 = Enumerable.Range(0, 10).Select(i => join.Target2.SendAsync(i)).ToArray();
+                var ab = new ActionBlock<Tuple<int, int>>(i => { }, new ExecutionDataflowBlockOptions { BoundedCapacity = 1 });
+                join.LinkTo(ab, new DataflowLinkOptions { PropagateCompletion = true });
+                await join.Completion;
+                await Task.WhenAll(sends1);
+                await Task.WhenAll(sends2);
             }
         }
 
         [Fact]
-        [OuterLoop]
-        public void TestJoinNonGreedyCombo()
+        public async Task TestTree()
         {
-            JoinBlock<int, int> join = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
-
-            // Offer 1 message - this should be postponed
-            // To avoid implementing a source, we use SendAsync and we verify the task is not completed
-            var send1 = join.Target1.SendAsync(1);
-            bool localPassed = !send1.Wait(500);
-            Assert.True(localPassed, string.Format("SendAsync not completed - {0}", localPassed ? "Passed" : "FAILED"));
-
-            // Output count must be 0
-            localPassed = join.OutputCount == 0;
-            Assert.True(localPassed, string.Format("OutputCount == 0 - {0} ({1})", localPassed ? "Passed" : "FAILED", join.OutputCount));
-
-            // Post 1 message - the result is non-deterministic but at least no exception should be thrown
-            join.Target2.Post(2);
-            Assert.True(localPassed, string.Format("Post did not throw - Passed"));
-
-            // Offer 1 message - this should be postponed
-            var send2 = join.Target2.SendAsync(2);
-
-            // The SendAsync tasks must be completed
-            localPassed = send1.Wait(500);
-            Assert.True(localPassed, string.Format("SendAsync1 completed - {0}", localPassed ? "Passed" : "FAILED"));
-            localPassed = send2.Wait(500);
-            Assert.True(localPassed, string.Format("SendAsync2 completed - {0}", localPassed ? "Passed" : "FAILED"));
-
-            // The SendAsync tasks must have a result of true
-            if (localPassed)
+            foreach (bool greedy in DataflowTestHelpers.BooleanValues)
+            foreach (int boundedCapacity in new[] { DataflowBlockOptions.Unbounded, 1 })
+            foreach (int maxMessagesPerTask in new[] { DataflowBlockOptions.Unbounded, 1 })
             {
-                localPassed = send1.Result;
-                Assert.True(localPassed, string.Format("SendAsync1 true - {0}", localPassed ? "Passed" : "FAILED"));
-
-                localPassed = send2.Result;
-                Assert.True(localPassed, string.Format("SendAsync2 true - {0}", localPassed ? "Passed" : "FAILED"));
-            }
-            Task.Delay(500).Wait();
-
-            // Output count must be 1
-            localPassed = join.OutputCount == 1;
-            Assert.True(localPassed, string.Format("OutputCount == 1 - {0} ({1})", localPassed ? "Passed" : "FAILED", join.OutputCount));
-
-            // TryReceive should return 1 result
-            Tuple<int, int> result;
-            localPassed = join.TryReceive(out result);
-            Assert.True(localPassed, string.Format("TryReceive - {0}", localPassed ? "Passed" : "FAILED"));
-        }
-
-        [Fact]
-        [OuterLoop]
-        public void TestJoinCancelationWaits()
-        {
-            bool passed = true;
-            bool localPassed;
-
-            var cts = new CancellationTokenSource();
-            var nonGreedyOptionsWithCancellation = new GroupingDataflowBlockOptions { CancellationToken = cts.Token, Greedy = false };
-
-            var badSource = new BlockOnConsumeSource<int>(1, true);
-            var goodSource = new BlockOnConsumeSource<int>(2, false);
-
-            var join = new JoinBlock<int, int>(nonGreedyOptionsWithCancellation);
-
-            // Linking a target behind the Join and feeding messages into the targets 
-            // is important to trigger the functionality implemented by SourceCore. 
-            var terminator = new ActionBlock<Tuple<int, int>>(x => { Console.WriteLine("terminator: ({0},{1})", x.Item1, x.Item2); });
-            join.LinkTo(terminator);
-            var send1 = join.Target1.SendAsync(98);
-            var send2 = join.Target2.SendAsync(99);
-
-            // Wait for the sent messages to be consumed
-            send1.Wait();
-            send2.Wait();
-
-            // Each linking will offer a message
-            badSource.LinkTo(join.Target1);
-            goodSource.LinkTo(join.Target2);
-
-            // Both messages must be reserved
-            badSource.ReservedEvent.WaitOne();
-            goodSource.ReservedEvent.WaitOne();
-
-            // The message from badSource must be consumed
-            badSource.ConsumedEvent.WaitOne();
-
-            // Cancel the Join
-            cts.Cancel();
-
-            // The Join must not complete, because the targets are still working
-            try
-            {
-                localPassed = !join.Completion.Wait(1000);
-            }
-            catch (AggregateException ae)
-            {
-                ae.Handle(e => e is TaskCanceledException);
-                localPassed = false;
-            }
-            passed &= localPassed;
-            Assert.True(localPassed, string.Format("Join is not complete ({0}) - {1}", join.Completion.Status, localPassed ? "Passed" : "FAILED"));
-
-            // Unblock the blocked operation
-            badSource.BlockingEvent.Set();
-
-            // The Join must become Canceled now
-            try
-            {
-                join.Completion.Wait(1000);
-                localPassed = false;
-            }
-            catch (AggregateException ae)
-            {
-                ae.Handle(e => e is TaskCanceledException);
-                localPassed = join.Completion.Status == TaskStatus.Canceled;
-            }
-            passed &= localPassed;
-            Assert.True(localPassed, string.Format("Join is canceled ({0}) - {1}", join.Completion.Status, localPassed ? "Passed" : "FAILED"));
-        }
-
-        [Fact]
-        [OuterLoop]
-        public void TestJoinWithFaultedTarget()
-        {
-            bool passed = true;
-
-            var nonGreedyOptions = new GroupingDataflowBlockOptions { Greedy = false };
-            var goodSource = new ThrowerBlock();
-            var badSource = new ThrowerBlock();
-            var join = new JoinBlock<ThrowOn, ThrowOn>(nonGreedyOptions);
-            var terminator = new ActionBlock<Tuple<ThrowOn, ThrowOn>>(xy => { Console.WriteLine("Terminator: We shouldn't be here - FAILED"); passed = false; });
-
-            // Pre-load the sources
-            goodSource.Post(ThrowOn.TryReceive); // Will not throw in this test
-            badSource.Post(ThrowOn.ConsumeMessage);
-
-            // Link
-            join.LinkTo(terminator);
-            goodSource.LinkTo(join.Target1);
-            badSource.LinkTo(join.Target2);
-            Task.Delay(500).Wait();
-
-            // The Join must be faulted now
-            passed &= TaskHasFaulted(join.Completion, "ConsumeMessage");
-
-            Assert.True(passed, string.Format("{0}", passed ? "Passed" : "FAILED"));
-        }
-
-        private static bool TestJoinMaxNumberOfGroups(bool greedy, bool sync)
-        {
-            Contract.Assert(greedy || !sync, "Non-greedy sync doesn't make sense.");
-
-            Console.WriteLine("* TestJoinMaxNumberOfGroups (greedy={0}, sync={1})", greedy, sync);
-            bool passed = true;
-
-            for (int maxNumberOfGroups = 1; maxNumberOfGroups <= 3; maxNumberOfGroups += 2)
-            {
-                var options = new GroupingDataflowBlockOptions { Greedy = greedy, MaxNumberOfGroups = maxNumberOfGroups };
-                var join = new JoinBlock<int, int>(options);
-
-                for (int joinNum = 0; joinNum < maxNumberOfGroups; joinNum++)
+                var gdbo = new GroupingDataflowBlockOptions
                 {
-                    // Feed each target to make sure one join is produced
-                    if (sync)
-                    {
-                        passed &= join.Target1.Post(1);
-                        Assert.True(passed, string.Format("FAILED join.Target1.Post(1) should be accepted in group num {0}", joinNum));
-                        if (joinNum == maxNumberOfGroups - 1)
-                        {
-                            passed &= !join.Target1.Post(2);
-                            Assert.True(passed, string.Format("FAILED join.Target1.Post(2) should be declined in group num {0}", joinNum));
-                        }
+                    Greedy = greedy,
+                    BoundedCapacity = boundedCapacity,
+                    MaxMessagesPerTask = maxMessagesPerTask
+                };
+                var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
 
-                        passed &= join.Target2.Post(3);
-                        Assert.True(passed, string.Format("FAILED join.Target2.Post(3) should be accepted in group num {0}", joinNum));
-                    }
-                    else
-                    {
-                        var feed1 = join.Target1.SendAsync(1);
-                        if (greedy && joinNum == maxNumberOfGroups - 1)
-                        {
-                            var feed2 = join.Target1.SendAsync(2);
-                            passed &= feed2.Status == TaskStatus.RanToCompletion && feed2.Result == false;
-                            Assert.True(passed,
-                                string.Format("FAILED join.Target1.SendAsync(2) should be declined in group num {0}", joinNum));
-                        }
-                        var feed3 = join.Target2.SendAsync(3);
+                var join1 = new JoinBlock<int, string>(gdbo);
+                var join2 = new JoinBlock<double, short>(gdbo);
+                var join5 = new JoinBlock<Tuple<int, string>, Tuple<double, short>>(gdbo);
 
-                        passed &= feed1.Result;
-                        Assert.True(passed, string.Format("FAILED join.Target1.SendAsync(1) should be accepted in group num {0}", joinNum));
-                        passed &= feed3.Result;
-                        Assert.True(passed, string.Format("FAILED join.Target2.SendAsync(3) should be accepted in group num {0}", joinNum));
-                    }
-                }
+                var join3 = new JoinBlock<string, object>(gdbo);
+                var join4 = new JoinBlock<float, IntPtr>(gdbo);
+                var join6 = new JoinBlock<Tuple<string, object>, Tuple<float, IntPtr>>(gdbo);
 
-                // Wait until the first join is produced
-                passed &= SpinWait.SpinUntil(() => join.OutputCount == maxNumberOfGroups, 4000);
-                Assert.True(passed, string.Format("FAILED Not all joins completed in a timely fashion - completed {0} out of {1}", join.OutputCount, maxNumberOfGroups));
+                var join7 = new JoinBlock<
+                    Tuple<Tuple<int, string>, Tuple<double, short>>,
+                    Tuple<Tuple<string, object>, Tuple<float, IntPtr>>>(gdbo);
 
-                // This attempt to feed should fail on each target
-                if (sync)
-                {
-                    passed &= !join.Target1.Post(4);
-                    Assert.True(passed, string.Format("FAILED Target1 incorrectly accepted a post after all {0} groups completed", maxNumberOfGroups));
-                    passed &= !join.Target2.Post(5);
-                    Assert.True(passed, string.Format("FAILED Target2 incorrectly accepted a post after all {0} groups completed", maxNumberOfGroups));
-                }
-                else
-                {
-                    passed &= !join.Target1.SendAsync(4).Result;
-                    Assert.True(passed, string.Format("FAILED Target1 incorrectly accepted a SendAsync after all {0} groups completed", maxNumberOfGroups));
-                    passed &= !join.Target2.SendAsync(5).Result;
-                    Assert.True(passed, string.Format("FAILED Target2 incorrectly accepted a SendAsync after all {0} groups completed", maxNumberOfGroups));
-                }
+                int count = 0;
+                var sink = new ActionBlock<Tuple<Tuple<Tuple<int, string>, Tuple<double, short>>,
+                    Tuple<Tuple<string, object>, Tuple<float, IntPtr>>>>(i => count++);
+
+                join1.LinkTo(new ActionBlock<Tuple<int,string>>(item => { }), t => false); // ensure don't propagate across false filtered link
+                join1.LinkTo(join5.Target1, linkOptions, t => true); // ensure joins work through filters
+                join2.LinkTo(join5.Target2, linkOptions);
+                join3.LinkTo(join6.Target1, linkOptions, t => true);
+                join4.LinkTo(join6.Target2, linkOptions);
+                join5.LinkTo(join7.Target1, linkOptions, t => true);
+                join6.LinkTo(join7.Target2, linkOptions);
+                join7.LinkTo(sink, linkOptions);
+
+                const int Messages = 5;
+                CreateFillLink<int>(Messages, join1.Target1);
+                CreateFillLink<string>(Messages, join1.Target2);
+                CreateFillLink<double>(Messages, join2.Target1);
+                CreateFillLink<short>(Messages, join2.Target2);
+                CreateFillLink<string>(Messages, join3.Target1);
+                CreateFillLink<object>(Messages, join3.Target2);
+                CreateFillLink<float>(Messages, join4.Target1);
+                CreateFillLink<IntPtr>(Messages, join4.Target2);
+
+                await sink.Completion;
+                Assert.Equal(expected: Messages, actual: count);
             }
-
-            return passed;
         }
-    }
 
-    /// <summary>
-    /// A source block that always returns messageConsumed==false on ConsumeMessage even for reserved messages.
-    /// It is testing JoinBlock only.
-    /// </summary>
-    internal class NullOnConsumeSource<TOutput> : ISourceBlock<TOutput>
-    {
-        internal bool ConsumeMessageCalled = false;
-
-        TOutput ISourceBlock<TOutput>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed)
+        private static void CreateFillLink<T>(int messages, ITargetBlock<T> target)
         {
-            ConsumeMessageCalled = true;
-            messageConsumed = false; // This is the purpose of the block
-            return default(TOutput);
+            var b = new BufferBlock<T>();
+            b.PostRange(0, messages, i => default(T));
+            b.Complete();
+            b.LinkTo(target, new DataflowLinkOptions { PropagateCompletion = true });
         }
 
-        IDisposable ISourceBlock<TOutput>.LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
-        {
-            target.OfferMessage(new DataflowMessageHeader(1), default(TOutput), this, true /* call back ConsumeMassage */);
-            return new NoopOnUnlinked();
-        }
-
-        void ISourceBlock<TOutput>.ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
-        {
-        }
-
-        bool ISourceBlock<TOutput>.ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
-        {
-            return true;
-        }
-
-        Task IDataflowBlock.Completion
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public void Complete()
-        {
-            throw new NotImplementedException();
-        }
-
-        void IDataflowBlock.Fault(Exception exception)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    internal class NoopOnUnlinked : IDisposable
-    {
-        void IDisposable.Dispose()
-        {
-        }
-    }
-
-
-    /// <summary>
-    /// Dummy Source that will offer one message and will block on consume (if required).
-    /// This block should be used by the Non greedy joins.
-    /// </summary>
-    public class BlockOnConsumeSource<TOutput> : ISourceBlock<TOutput>
-    {
-        public ManualResetEvent ReservedEvent = new ManualResetEvent(false);
-        public ManualResetEvent ConsumedEvent = new ManualResetEvent(false);
-        public ManualResetEvent ReleasedEvent = new ManualResetEvent(false);
-        public ManualResetEvent BlockingEvent = new ManualResetEvent(false);
-
-        private TOutput _m_value;
-        private bool _m_blockOnConsume;
-
-        public BlockOnConsumeSource(TOutput value, bool blockOnConsume)
-        {
-            _m_value = value;
-            _m_blockOnConsume = blockOnConsume;
-
-            if (!blockOnConsume) BlockingEvent.Set();
-        }
-
-        TOutput ISourceBlock<TOutput>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed)
-        {
-            ConsumedEvent.Set();
-            this.BlockingEvent.WaitOne();
-            messageConsumed = true;
-            return _m_value;
-        }
-
-        IDisposable ISourceBlock<TOutput>.LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
-        {
-            target.OfferMessage(new DataflowMessageHeader(1), _m_value, this, consumeToAccept: true);
-            return new NoopOnUnlinked();
-        }
-
-        void ISourceBlock<TOutput>.ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
-        {
-            ReleasedEvent.Set();
-        }
-
-        bool ISourceBlock<TOutput>.ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
-        {
-            ReservedEvent.Set();
-            return true;
-        }
-
-        Task IDataflowBlock.Completion
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public void Complete()
-        {
-            throw new NotImplementedException();
-        }
-
-        void IDataflowBlock.Fault(Exception exception)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
