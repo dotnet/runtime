@@ -12,7 +12,7 @@ namespace System.ComponentModel
     {
         /// <summary>
         /// Resets the object's state to unchanged by rejecting the modifications.
-        ///
+        /// </summary>
         void RejectChanges();
     }
 }
