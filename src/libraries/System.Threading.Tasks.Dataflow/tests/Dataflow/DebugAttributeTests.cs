@@ -1,39 +1,29 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public partial class DataflowBlockTests : DataflowBlockTestBase
+    public class DebugAttributeTests
     {
         [Fact]
-        public void RunDebugAttributeTests()
+        public void TestDebuggerDisplaysAndTypeProxies()
         {
-            bool passed = true;
-
             // Test both canceled and non-canceled
-            for (int iter = 0; iter < 2; iter++)
+            foreach (var ct in new[] { new CancellationToken(false), new CancellationToken(true) })
             {
-                var cts = new CancellationTokenSource();
-                if (iter == 0) cts.Cancel();
-
                 // Some blocks have different code paths for whether they're greedy or not.
                 // This helps with code-coverage.
                 var dboBuffering = new DataflowBlockOptions();
                 var dboNoBuffering = new DataflowBlockOptions() { BoundedCapacity = 1 };
-                var dboExBuffering = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, CancellationToken = cts.Token };
+                var dboExBuffering = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, CancellationToken = ct };
                 var dboExSpsc = new ExecutionDataflowBlockOptions { SingleProducerConstrained = true };
-                var dboExNoBuffering = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, BoundedCapacity = 1, CancellationToken = cts.Token };
+                var dboExNoBuffering = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2, BoundedCapacity = 1, CancellationToken = ct };
                 var dboGroupGreedy = new GroupingDataflowBlockOptions();
                 var dboGroupNonGreedy = new GroupingDataflowBlockOptions { Greedy = false };
 
@@ -43,6 +33,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     // Primary Blocks
                     Tuple.Create<bool,bool,object>(true, true, new ActionBlock<int>(i => {})),
                     Tuple.Create<bool,bool,object>(true, true, new ActionBlock<int>(i => {}, dboExBuffering)),
+                    Tuple.Create<bool,bool,object>(true, true, new ActionBlock<int>(i => {}, dboExSpsc)),
                     Tuple.Create<bool,bool,object>(true, true, SendAsyncMessages(new ActionBlock<int>(i => {}, dboExNoBuffering), 2)),
                     Tuple.Create<bool,bool,object>(true, true, new TransformBlock<int,int>(i => i)),
                     Tuple.Create<bool,bool,object>(true, true, new TransformBlock<int,int>(i => i, dboExBuffering)),
@@ -60,6 +51,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     Tuple.Create<bool,bool,object>(true, true, new BroadcastBlock<int>(i => i, dboBuffering)),
                     Tuple.Create<bool,bool,object>(true, true, SendAsyncMessages(new BroadcastBlock<int>(i => i, dboNoBuffering), 20)),
                     Tuple.Create<bool,bool,object>(true, true, new WriteOnceBlock<int>(i => i)),
+                    Tuple.Create<bool,bool,object>(true, true, SendAsyncMessages(new WriteOnceBlock<int>(i => i), 1)),
                     Tuple.Create<bool,bool,object>(true, true, new WriteOnceBlock<int>(i => i, dboBuffering)),
                     Tuple.Create<bool,bool,object>(true, true, new JoinBlock<int,int>()),
                     Tuple.Create<bool,bool,object>(true, true, new JoinBlock<int,int>(dboGroupGreedy)),
@@ -79,16 +71,19 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     // Supporting and Internal Types
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new ActionBlock<int>(i => {}, dboExBuffering), "_defaultTarget")),
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new ActionBlock<int>(i => {}, dboExNoBuffering), "_defaultTarget")),
+                    Tuple.Create<bool,bool,object>(true, false, GetFieldValue(GetFieldValue(new ActionBlock<int>(i => {}), "_defaultTarget"), "_messages")),
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new ActionBlock<int>(i => {}, dboExSpsc), "_spscTarget")),
+                    Tuple.Create<bool,bool,object>(true, false, GetFieldValue(GetFieldValue(new ActionBlock<int>(i => {}, dboExSpsc), "_spscTarget"), "_messages")),
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new BufferBlock<int>(), "_source")),
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = 10 }), "_source")),
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new TransformBlock<int,int>(i => i, dboExBuffering), "_source")),
                     Tuple.Create<bool,bool,object>(true, true, GetFieldValue(new TransformBlock<int,int>(i => i, dboExNoBuffering), "_reorderingBuffer")),
                     Tuple.Create<bool,bool,object>(true, true, GetFieldValue(GetFieldValue(new TransformBlock<int,int>(i => i, dboExBuffering), "_source"), "_targetRegistry")),
-                    Tuple.Create<bool,bool,object>(true, true, GetFieldValue(GetFieldValue(new TransformBlock<int,int>(i => i, dboExNoBuffering), "_source"), "_targetRegistry")),
+                    Tuple.Create<bool,bool,object>(true, true, GetFieldValue(GetFieldValue(WithLinkedTarget<TransformBlock<int,int>,int>(new TransformBlock<int,int>(i => i, dboExNoBuffering)), "_source"), "_targetRegistry")),
                     Tuple.Create<bool,bool,object>(true, true, new JoinBlock<int,int>().Target1),
                     Tuple.Create<bool,bool,object>(true, true, new JoinBlock<int,int>(dboGroupGreedy).Target1),
                     Tuple.Create<bool,bool,object>(true, true, new JoinBlock<int,int>(dboGroupNonGreedy).Target1),
+                    Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new JoinBlock<int,int>().Target1, "_sharedResources")),
                     Tuple.Create<bool,bool,object>(true, true, new BatchedJoinBlock<int,int>(42).Target1),
                     Tuple.Create<bool,bool,object>(true, true, new BatchedJoinBlock<int,int>(42, dboGroupGreedy).Target1),
                     Tuple.Create<bool,bool,object>(true, false, GetFieldValue(new BatchBlock<int>(42), "_target")),
@@ -104,37 +99,28 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     Tuple.Create<bool,bool,object>(true, false, CreateReceiveTarget<int>()),
                     Tuple.Create<bool,bool,object>(true, false, CreateOutputAvailableTarget()),
                     Tuple.Create<bool,bool,object>(true, false, CreateChooseTarget<int>()),
+                    Tuple.Create<bool,bool,object>(true, false, new BufferBlock<int>().AsObservable().Subscribe(DataflowBlock.NullTarget<int>().AsObserver())),
 
                     // Other
                     Tuple.Create<bool,bool,object>(true, false, new DataflowMessageHeader(1)),
                 };
 
                 // Test all DDAs and DTPAs
-                passed &= (from obj in objectsToTest where obj.Item1 select obj.Item3).All(obj => TestDda(obj));
-                passed &= (from obj in objectsToTest where obj.Item2 select obj.Item3).All(obj => TestDtpa(obj));
+                Assert.All(from obj in objectsToTest where obj.Item1 select obj.Item3, obj => TestDebuggerDisplayReferences(obj));
+                Assert.All(from obj in objectsToTest where obj.Item2 select obj.Item3, obj => TestDebuggerTypeProxyProperties(obj));
             }
-
-            Assert.True(passed, "Test failed.");
-        }
-
-        private static bool TestDda(object obj)
-        {
-            var result = AllDebuggerDisplayReferencesWork(obj);
-            Assert.True(result, string.Format("{0} has invalid DDA", obj.GetType()));
-            return result;
-        }
-
-        private static bool TestDtpa(object obj)
-        {
-            var result = AllDebuggerTypeProxyPropertiesWork(obj);
-            Assert.True(result, string.Format("{0} has invalid DTPA", obj.GetType()));
-            return result;
         }
 
         private static object SendAsyncMessages<T>(ITargetBlock<T> target, int numMessages)
         {
             for (int i = 0; i < numMessages; i++) target.SendAsync(default(T));
             return target;
+        }
+
+        private static TBlock WithLinkedTarget<TBlock, T>(TBlock block) where TBlock : ISourceBlock<T>
+        {
+            block.LinkTo(DataflowBlock.NullTarget<T>());
+            return block;
         }
 
         private static object GetFieldValue(object obj, string fieldName)
@@ -151,63 +137,32 @@ namespace System.Threading.Tasks.Dataflow.Tests
             return fi.GetValue(obj);
         }
 
-        private static bool AllDebuggerTypeProxyPropertiesWork(object obj)
+        private static void TestDebuggerTypeProxyProperties(object obj)
         {
             var attrs = obj.GetType().GetTypeInfo().GetCustomAttributes(typeof(DebuggerTypeProxyAttribute), false).ToArray();
-            if (attrs.Length != 1)
-            {
-                Console.WriteLine("Incorrect number of DebuggerTypeProxyAttributes");
-                return false;
-            }
+            Assert.Equal(expected: 1, actual: attrs.Length);
 
-            object proxyInstance = null;
-            try
+            DebuggerTypeProxyAttribute dtpa = (DebuggerTypeProxyAttribute)attrs[0];
+            string attrText = dtpa.ProxyTypeName;
+            var proxyType = Type.GetType(attrText);
+            var genericArguments = obj.GetType().GetGenericArguments();
+            if (genericArguments.Any())
             {
-                DebuggerTypeProxyAttribute dtpa = (DebuggerTypeProxyAttribute)attrs[0];
-                string attrText = dtpa.ProxyTypeName;
-                var proxyType = Type.GetType(attrText);
-                var genericArguments = obj.GetType().GetGenericArguments();
-                if (genericArguments.Any())
-                {
-                    proxyType = proxyType.MakeGenericType(genericArguments);
-                }
-                proxyInstance = Activator.CreateInstance(proxyType, obj);
+                proxyType = proxyType.MakeGenericType(genericArguments);
             }
-            catch (Exception) { }
-            if (proxyInstance == null)
-            {
-                Console.WriteLine("Could not instantiate proxy");
-                return false;
-            }
+            object proxyInstance = Activator.CreateInstance(proxyType, obj); // make sure we can instantiate it
 
-            bool success = true;
-            try
+            PropertyInfo[] propertyInfos = proxyInstance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            foreach (var pi in propertyInfos)
             {
-                var propertyInfos = proxyInstance.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-                foreach (var pi in propertyInfos)
-                {
-                    object result = pi.GetValue(proxyInstance, null);
-                }
+                pi.GetValue(proxyInstance, null); // make sure we can access all its properties
             }
-            catch { success = false; }
-            if (!success)
-            {
-                Console.WriteLine("Could not invoke all proxy properties");
-                return false;
-            }
-
-            return success;
         }
 
-        private static bool AllDebuggerDisplayReferencesWork(object obj)
+        private static void TestDebuggerDisplayReferences(object obj)
         {
             var attrs = obj.GetType().GetTypeInfo().GetCustomAttributes(typeof(DebuggerDisplayAttribute), false).ToArray();
-            if (attrs.Length != 1)
-            {
-                Console.WriteLine("Incorrect number of DebuggerDisplayAttributes");
-                return false;
-            }
+            Assert.Equal(expected: 1, actual: attrs.Length);
 
             DebuggerDisplayAttribute dda = (DebuggerDisplayAttribute)attrs[0];
             string attrText = dda.Value;
@@ -220,39 +175,21 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 if (openBrace < pos) break;
                 int closeBrace = attrText.IndexOf('}', openBrace);
                 if (closeBrace < openBrace) break;
+
                 string reference = attrText.Substring(openBrace + 1, closeBrace - openBrace - 1).Replace(",nq", "");
                 pos = closeBrace + 1;
+
                 references.Add(reference);
             }
-            if (references.Count == 0)
-            {
-                Console.WriteLine("No referenced values");
-                return false;
-            }
+            Assert.NotEqual(0, actual: references.Count);
 
             foreach (var reference in references)
             {
                 PropertyInfo pi = obj.GetType().GetProperty(reference, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 FieldInfo fi = obj.GetType().GetField(reference, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (pi == null && fi == null)
-                {
-                    Console.WriteLine("Missing reference target {0} from type {1}", reference, obj.GetType().FullName);
-                    return false;
-                }
-                bool success = true;
-                try
-                {
-                    object result = pi != null ? pi.GetValue(obj, null) : fi.GetValue(obj);
-                }
-                catch { success = false; }
-                if (!success)
-                {
-                    Console.WriteLine("Property get failed {0} from type {1}", reference, obj.GetType().FullName);
-                    return false;
-                }
+                Assert.False(pi == null & fi == null); // must be either a property or a field
+                object result = pi != null ? pi.GetValue(obj, null) : fi.GetValue(obj); // make sure we can access the property or field
             }
-
-            return true;
         }
 
         private static ISourceBlock<T> CreateNopLinkSource<T>()
