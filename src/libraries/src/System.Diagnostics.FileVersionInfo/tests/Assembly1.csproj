@@ -29,7 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime">
-      <HintPath>$(PackagesDir)\System.Runtime.4.0.20-beta-22412\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
+      <HintPath>$(PackagesDir)\System.Runtime.4.0.20-beta-22512\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
