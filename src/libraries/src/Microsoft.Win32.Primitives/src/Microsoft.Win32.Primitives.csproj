@@ -27,9 +27,9 @@
     <Compile Include="System\ComponentModel\Win32Exception.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="$(CommonPath)\Interop\Interop.strerror.Unix.cs" />
-    <Compile Include="Interop\Interop.Unix.cs" />
     <Compile Include="System\ComponentModel\Win32Exception.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs"><Link>Interop\Interop.Libraries.cs</Link></Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs"><Link>Interop\Interop.strerror.cs</Link></Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

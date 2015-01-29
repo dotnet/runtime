@@ -15,9 +15,15 @@ namespace System.IO
         /// <summary>The maximum name length for the system.  -1 if it hasn't yet been initialized.</summary>
         private static int _maxName = -1;
 
-        public override int MaxPath { get { return GetPathConfValue(ref _maxPath, Interop.PathConfNames.PATH_MAX, Interop.DEFAULT_MAX_PATH); } }
+        public override int MaxPath 
+        {
+            get { return GetPathConfValue(ref _maxPath, Interop.libc.PathConfNames._PC_PATH_MAX, Interop.libc.DEFAULT_PC_PATH_MAX); } 
+        }
 
-        public override int MaxDirectoryPath { get { return GetPathConfValue(ref _maxName, Interop.PathConfNames.NAME_MAX, Interop.DEFAULT_MAX_NAME); } }
+        public override int MaxDirectoryPath 
+        {
+            get { return GetPathConfValue(ref _maxName, Interop.libc.PathConfNames._PC_NAME_MAX, Interop.libc.DEFAULT_PC_NAME_MAX); } 
+        }
 
         /// <summary>
         /// Gets a pathconf value by name.  If the cached value is less than zero (meaning not yet initialized),
@@ -25,14 +31,14 @@ namespace System.IO
         /// If the field is greater than or equal to zero, it's value is returned.
         /// </summary>
         /// <param name="cachedValue">The field used to cache the pathconf value.</param>
-        /// <param name="name">The name of the pathconf value.</param>
+        /// <param name="pathConfName">The name of the pathconf value.</param>
         /// <param name="defaultValue">The default value to use in case pathconf fails.</param>
         /// <returns>The pathconf value, or the default if pathconf failed to return a value.</returns>
-        private static int GetPathConfValue(ref int cachedValue, Interop.PathConfNames name, int defaultValue)
+        private static int GetPathConfValue(ref int cachedValue, int pathConfName, int defaultValue)
         {
             if (cachedValue < 0) // benign race condition on cached value
             {
-                int result = Interop.pathconf("/", (int)name);
+                int result = Interop.libc.pathconf("/", pathConfName);
                 cachedValue = result >= 0 ? result : defaultValue;
             }
             return cachedValue;
@@ -57,22 +63,22 @@ namespace System.IO
             }
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
-            Interop.structStat stat;
-            while (Interop.CheckIo(Interop.stat(sourceFullPath, out stat), sourceFullPath)) ;
-            int newMode = stat.st_mode & (int)Interop.Permissions.Mask;
-            while (Interop.CheckIo(Interop.chmod(destFullPath, newMode), destFullPath)) ;
+            Interop.libc.structStat stat;
+            while (Interop.CheckIo(Interop.libc.stat(sourceFullPath, out stat), sourceFullPath)) ;
+            int newMode = stat.st_mode & (int)Interop.libc.Permissions.Mask;
+            while (Interop.CheckIo(Interop.libc.chmod(destFullPath, newMode), destFullPath)) ;
         }
 
         public override void MoveFile(string sourceFullPath, string destFullPath)
         {
-            while (Interop.rename(sourceFullPath, destFullPath) < 0)
+            while (Interop.libc.rename(sourceFullPath, destFullPath) < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
-                if (errno == (int)Interop.Errors.EINTR) // interrupted; try again
+                if (errno == Interop.Errors.EINTR) // interrupted; try again
                 {
                     continue;
                 }
-                else if (errno == (int)Interop.Errors.EXDEV) // rename fails across devices / mount points
+                else if (errno == Interop.Errors.EXDEV) // rename fails across devices / mount points
                 {
                     CopyFile(sourceFullPath, destFullPath, overwrite: false);
                     DeleteFile(sourceFullPath);
@@ -87,14 +93,14 @@ namespace System.IO
 
         public override void DeleteFile(string fullPath)
         {
-            while (Interop.remove(fullPath) < 0)
+            while (Interop.libc.remove(fullPath) < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
-                if (errno == (int)Interop.Errors.EINTR) // interrupted; try again
+                if (errno == Interop.Errors.EINTR) // interrupted; try again
                 {
                     continue;
                 }
-                else if (errno == (int)Interop.Errors.ENOENT) // already doesn't exist; nop
+                else if (errno == Interop.Errors.ENOENT) // already doesn't exist; nop
                 {
                     break;
                 }
@@ -107,9 +113,9 @@ namespace System.IO
 
         public override bool FileExists(string fullPath)
         {
-            while (Interop.access(fullPath, (int)Interop.AccessModes.F_OK) < 0)
+            while (Interop.libc.access(fullPath, Interop.libc.AccessModes.F_OK) < 0)
             {
-                if (Marshal.GetLastWin32Error() == (int)Interop.Errors.EINTR)
+                if (Marshal.GetLastWin32Error() == Interop.Errors.EINTR)
                 {
                     continue;
                 }
@@ -175,7 +181,7 @@ namespace System.IO
                 string root = Directory.InternalGetDirectoryRoot(fullPath);
                 if (!DirectoryExists(root))
                 {
-                    throw Interop.GetExceptionForIoErrno((int)Interop.Errors.ENOENT, fullPath, isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(Interop.Errors.ENOENT, fullPath, isDirectory: true);
                 }
                 return;
             }
@@ -193,18 +199,18 @@ namespace System.IO
                 }
 
                 int errno = 0;
-                while ((result = Interop.mkdir(name, (int)Interop.Permissions.S_IRWXU)) < 0 && (errno = Marshal.GetLastWin32Error()) == (int)Interop.Errors.EINTR) ;
+                while ((result = Interop.libc.mkdir(name, (int)Interop.libc.Permissions.S_IRWXU)) < 0 && (errno = Marshal.GetLastWin32Error()) == Interop.Errors.EINTR) ;
                 if (result < 0 && firstError == 0)
                 {
                     // While we tried to avoid creating directories that don't
                     // exist above, there are a few cases that can fail, e.g.
                     // a race condition where another process or thread creates
                     // the directory first, or there's a file at the location.
-                    if (errno != (int)Interop.Errors.EEXIST)
+                    if (errno != Interop.Errors.EEXIST)
                     {
                         firstError = errno;
                     }
-                    else if (FileExists(name) || (!DirectoryExists(name, out errno) && errno == (int)Interop.Errors.EACCES))
+                    else if (FileExists(name) || (!DirectoryExists(name, out errno) && errno == Interop.Errors.EACCES))
                     {
                         // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
                         firstError = errno;
@@ -222,10 +228,10 @@ namespace System.IO
 
         public override void MoveDirectory(string sourceFullPath, string destFullPath)
         {
-            while (Interop.rename(sourceFullPath, destFullPath) < 0)
+            while (Interop.libc.rename(sourceFullPath, destFullPath) < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
-                switch ((Interop.Errors)errno)
+                switch (errno)
                 {
                     case Interop.Errors.EINTR: // interrupted; try again
                         continue;
@@ -241,7 +247,7 @@ namespace System.IO
         {
             if (!DirectoryExists(fullPath))
             {
-                throw Interop.GetExceptionForIoErrno((int)Interop.Errors.ENOENT, fullPath, isDirectory: true);
+                throw Interop.GetExceptionForIoErrno(Interop.Errors.ENOENT, fullPath, isDirectory: true);
             }
             RemoveDirectoryInternal(fullPath, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
@@ -293,10 +299,10 @@ namespace System.IO
                 }
             }
 
-            while (Interop.remove(fullPath) < 0)
+            while (Interop.libc.remove(fullPath) < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
-                switch ((Interop.Errors)errno)
+                switch (errno)
                 {
                     case Interop.Errors.EINTR: // interrupted; try again
                         continue;
@@ -322,21 +328,21 @@ namespace System.IO
 
         private bool DirectoryExists(string fullPath, out int errno)
         {
-            Interop.structStat stat;
+            Interop.libc.structStat stat;
             while (true)
             {
                 errno = 0;
-                int result = Interop.stat(fullPath, out stat);
+                int result = Interop.libc.stat(fullPath, out stat);
                 if (result < 0)
                 {
                     errno = Marshal.GetLastWin32Error();
-                    if (errno == (int)Interop.Errors.EINTR)
+                    if (errno == Interop.Errors.EINTR)
                     {
                         continue;
                     }
                     return false;
                 }
-                return (stat.st_mode & (int)Interop.FileTypes.S_IFMT) == (int)Interop.FileTypes.S_IFDIR;
+                return (stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFDIR;
             }
         }
 
@@ -380,23 +386,23 @@ namespace System.IO
 
                 // Open an enumerator of its contents.
                 IntPtr pdir;
-                while (Interop.CheckIoPtr(pdir = Interop.opendir(dirPath), dirPath, isDirectory: true)) ;
+                while (Interop.CheckIoPtr(pdir = Interop.libc.opendir(dirPath), dirPath, isDirectory: true)) ;
                 try
                 {
                     // Read each entry from the enumerator
                     IntPtr curEntry;
-                    while ((curEntry = Interop.readdir(pdir)) != IntPtr.Zero) // no validation needed for readdir
+                    while ((curEntry = Interop.libc.readdir(pdir)) != IntPtr.Zero) // no validation needed for readdir
                     {
                         // Get the name and full name of the entry
                         string name = GetDirEntName(curEntry);
                         string fullNewName = dirPath + "/" + name;
 
                         // Determine whether the entry is a file or a directory and whether it matches the supplied pattern
-                        Interop.structStat stat;
-                        while (Interop.CheckIo(Interop.stat(fullNewName, out stat), fullNewName)) ;
-                        bool isDir = (stat.st_mode & (int)Interop.FileTypes.S_IFMT) == (int)Interop.FileTypes.S_IFDIR && !ShouldIgnoreDirectory(name);
-                        bool isFile = (stat.st_mode & (int)Interop.FileTypes.S_IFMT) == (int)Interop.FileTypes.S_IFREG;
-                        bool matchesSearchPattern = Interop.fnmatch(searchPattern, name, 0) == 0;
+                        Interop.libc.structStat stat;
+                        while (Interop.CheckIo(Interop.libc.stat(fullNewName, out stat), fullNewName)) ;
+                        bool isDir = (stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFDIR && !ShouldIgnoreDirectory(name);
+                        bool isFile = (stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFREG;
+                        bool matchesSearchPattern = Interop.libc.fnmatch(searchPattern, name, Interop.libc.FnmatchFlags.None) == 0;
 
                         // Yield the result if the user has asked for it.  In the case of directories,
                         // always explore it by pushing it onto the stack, regardless of whether
@@ -421,7 +427,7 @@ namespace System.IO
                 finally
                 {
                     // Close the directory enumerator
-                    while (Interop.CheckIo(Interop.closedir(pdir), dirPath)) ;
+                    while (Interop.CheckIo(Interop.libc.closedir(pdir), dirPath)) ;
                 }
             }
         }
@@ -436,7 +442,7 @@ namespace System.IO
         /// </returns>
         private static unsafe string GetDirEntName(IntPtr dirEnt)
         {
-            Interop.dirent* curEntryPtr = (Interop.dirent*)dirEnt;
+            Interop.libc.dirent* curEntryPtr = (Interop.libc.dirent*)dirEnt;
             return PtrToString(curEntryPtr->d_name);
         }
 
@@ -463,14 +469,14 @@ namespace System.IO
             byte[] pathBuffer = new byte[MaxPath];
             fixed (byte* ptr = pathBuffer)
             {
-                while (Interop.CheckIoPtr((IntPtr)Interop.getcwd(ptr, (IntPtr)pathBuffer.Length))) ;
+                while (Interop.CheckIoPtr((IntPtr)Interop.libc.getcwd(ptr, (IntPtr)pathBuffer.Length))) ;
                 return PtrToString(ptr);
             }
         }
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            while (Interop.CheckIo(Interop.chdir(fullPath), fullPath)) ;
+            while (Interop.CheckIo(Interop.libc.chdir(fullPath), fullPath)) ;
         }
 
         public override FileAttributes GetAttributes(string fullPath)

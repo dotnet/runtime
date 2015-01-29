@@ -98,7 +98,7 @@ namespace System
             string locale = null;
             foreach (string envVar in LocaleEnvVars)
             {
-                locale = Interop.getenv(envVar);
+                locale = Interop.libc.getenv(envVar);
                 if (!string.IsNullOrWhiteSpace(locale)) break;
             }
 
@@ -224,7 +224,7 @@ namespace System
             fixed (byte* bufPtr = buffer)
             {
                 long result;
-                while (Interop.CheckIo(result = (long)Interop.read(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
+                while (Interop.CheckIo(result = (long)Interop.libc.read(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
                 Contract.Assert(result <= count);
                 return (int)result;
             }
@@ -241,7 +241,7 @@ namespace System
             fixed (byte* bufPtr = buffer)
             {
                 long result;
-                while (Interop.CheckIo(result = (long)Interop.write(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
+                while (Interop.CheckIo(result = (long)Interop.libc.write(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
                 Contract.Assert(result == count);
                 return (int)result;
             }
@@ -288,14 +288,14 @@ namespace System
                 Contract.Assert(devPath != null && devPath.StartsWith("/dev/std"));
                 Contract.Assert(access == FileAccess.Read || access == FileAccess.Write);
 
-                Interop.OpenFlags flags = 0;
+                Interop.libc.OpenFlags flags = 0;
                 switch (access)
                 {
-                    case FileAccess.Read: flags = Interop.OpenFlags.O_RDONLY; break;
-                    case FileAccess.Write: flags = Interop.OpenFlags.O_WRONLY; break;
+                    case FileAccess.Read: flags = Interop.libc.OpenFlags.O_RDONLY; break;
+                    case FileAccess.Write: flags = Interop.libc.OpenFlags.O_WRONLY; break;
                 }
 
-                _handle = SafeFileHandle.Open(devPath, (int)flags, 0);
+                _handle = SafeFileHandle.Open(devPath, flags, 0);
             }
 
             protected override void Dispose(bool disposing)
@@ -390,7 +390,7 @@ namespace System
                 /// <returns>The database, or null if it could not be found.</returns>
                 private static Database ReadDatabase()
                 {
-                    string term = Interop.getenv("TERM");
+                    string term = Interop.libc.getenv("TERM");
                     return term != null ? ReadDatabase(term) : null;
                 }
 
@@ -413,14 +413,14 @@ namespace System
                     Database db;
 
                     // First try a location specified in the TERMINFO environment variable.
-                    string terminfo = Interop.getenv("TERMINFO");
+                    string terminfo = Interop.libc.getenv("TERMINFO");
                     if (!string.IsNullOrWhiteSpace(terminfo) && (db = ReadDatabase(term, terminfo)) != null)
                     {
                         return db;
                     }
 
                     // Then try in the user's home directory.
-                    string home = Interop.getenv("HOME");
+                    string home = Interop.libc.getenv("HOME");
                     if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
                     {
                         return db;
@@ -448,11 +448,11 @@ namespace System
                     string filePath = directoryPath + "/" + term[0] + "/" + term; // filePath == /directory/termFirstLetter/term
 
                     int fd;
-                    while ((fd = Interop.open64(filePath, (int)Interop.OpenFlags.O_RDONLY, 0)) < 0)
+                    while ((fd = Interop.libc.open64(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
                     {
                         // Don't throw in this case, as we'll be polling multiple locations looking for the file.
                         // But we still want to retry if the open is interrupted by a signal.
-                        if (Marshal.GetLastWin32Error() != (int)Interop.Errors.EINTR)
+                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
                         {
                             return null;
                         }
@@ -462,8 +462,8 @@ namespace System
                     {
                         // Read in all of the terminfo data
                         long termInfoLength;
-                        while (Interop.CheckIo(termInfoLength = Interop.lseek64(fd, 0, (int)Interop.SeekWhence.SEEK_END))) ; // jump to the end to get the file length
-                        while (Interop.CheckIo(Interop.lseek64(fd, 0, (int)Interop.SeekWhence.SEEK_SET))) ; // reset back to beginning
+                        while (Interop.CheckIo(termInfoLength = Interop.libc.lseek64(fd, 0, Interop.libc.SeekWhence.SEEK_END))) ; // jump to the end to get the file length
+                        while (Interop.CheckIo(Interop.libc.lseek64(fd, 0, Interop.libc.SeekWhence.SEEK_SET))) ; // reset back to beginning
                         const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                         const int HeaderLength = 12;
                         if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)
@@ -483,11 +483,11 @@ namespace System
                     }
                     finally
                     {
-                        int result = Interop.close(fd);
+                        int result = Interop.libc.close(fd);
                         if (result < 0)
                         {
                             int errno = Marshal.GetLastWin32Error();
-                            if (errno != (int)Interop.Errors.EINTR) // Avoid retrying close on EINTR, e.g. https://lkml.org/lkml/2005/9/11/49
+                            if (errno != Interop.Errors.EINTR) // Avoid retrying close on EINTR, e.g. https://lkml.org/lkml/2005/9/11/49
                             {
                                 throw Interop.GetExceptionForIoErrno(errno);
                             }
@@ -917,8 +917,8 @@ namespace System
                     // Determine how much space is needed to store the formatted string.
                     string stringArg = arg as string;
                     int neededLength = stringArg != null ?
-                        Interop.snprintf(null, IntPtr.Zero, format, stringArg) :
-                        Interop.snprintf(null, IntPtr.Zero, format, (int)arg);
+                        Interop.libc.snprintf(null, IntPtr.Zero, format, stringArg) :
+                        Interop.libc.snprintf(null, IntPtr.Zero, format, (int)arg);
                     if (neededLength == 0)
                     {
                         return string.Empty;
@@ -933,8 +933,8 @@ namespace System
                     fixed (byte* ptr = bytes)
                     {
                         int length = stringArg != null ?
-                            Interop.snprintf(ptr, (IntPtr)bytes.Length, format, stringArg) :
-                            Interop.snprintf(ptr, (IntPtr)bytes.Length, format, (int)arg);
+                            Interop.libc.snprintf(ptr, (IntPtr)bytes.Length, format, stringArg) :
+                            Interop.libc.snprintf(ptr, (IntPtr)bytes.Length, format, (int)arg);
                         if (length != neededLength)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_PrintF);
