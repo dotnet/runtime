@@ -1,0 +1,140 @@
+## Goals
+We have the following goals related to interop code being used in CoreFX:
+
+- Minimize code duplication for interop.
+	- We should only define a given interop signature in a single place.  This stuff is tricky, and we shouldn’t be copy-and-pasting it.
+- Minimize unnecessary IL in assemblies.  
+	- Interop signatures should only be compiled into the assemblies that actually consume them.  Having extra signatures bloats assemblies and makes it more difficult to do static analysis over assemblies to understand what they actually use.  It also leads to problems when such static verification is used as a gate, e.g. if a store verifies that only certain APIs are used by apps in the store.
+- Keep interop code isolated and consolidated.
+	- This is both for good hygiene and to help keep platform-specific code separated from platform-neutral code, which is important for maximizing reusable code above PAL layers.
+
+## Approach
+
+### Interop type
+- All code related to interop signatures (DllImports, interop structs used in DllImports, constants that map to native values, etc.) should live in a partial, static, and internal “Interop” class in the root namespace, e.g.
+```C#
+internal static partial class Interop { … }
+```
+
+- Declarations shouldn’t be in Interop directly, but rather within a partial, static, internal nested type named for a given library or set of libraries, e.g.
+```C#
+internal static partial class Interop
+{
+    internal static partial class libc { … }
+}
+...
+internal static partial class Interop
+{
+    internal static partial class mincore { … }
+}
+```
+- With few exceptions, the only methods that should be defined in these interop types are DllImports.
+	- Exceptions are limited to times when most or every consumer of a particular DllImport will need to wrap its invocation in a helper, e.g. to provide additional marshaling support, to hide thread-safety issues in the underlying OS implementation, to do any required manipulation of safe handles, etc.  In such cases, the DllImport should be private whenever possible rather than internal, with the helper code exposed to consumers rather than having the DllImport exposed directly.
+
+### File organization
+- The Interop partial class definitions should live in Interop.*.cs files.  These Interop.*.cs files should all live under Common rather than within a given assembly’s folder.
+	- The only exception to this should be when an assembly P/Invokes to its own native library that isn’t available to or consumed by anyone else, e.g. System.IO.Compression P/Invoking to clrcompression.dll.  In such cases, System.IO.Compression should have its own Interop folder which follows a similar scheme as outlined in this proposal, but just for these private P/Invokes.
+- Under Common\src\Interop, we’ll have a folder for each target platform, and within each platform, for each library from which functionality is being consumed.  The Interop.*.cs files will live within those library folders, e.g.
+```
+\Common\src\Interop
+    \Windows
+        \mincore
+            ... interop files
+	\Unix
+        \libc
+            ... interop files
+    \Linux
+        \libc
+            ... interop files
+```
+As shown above, platforms may be additive, in that an assembly may use functionality from multiple folders, e.g. System.IO.FileSystem’s Linux build will use functionality both from Unix (common across all Unix systems) and from Linux (specific to Linux and not available across non-Linux Unix systems).
+			 
+- Interop.*.cs files are created in a way such that every assembly consuming the file will need every DllImport it contains.
+	- If multiple related DllImports will all be needed by every consumer, they may be declared in the same file, named for the functionality grouping, e.g. Interop.IOErrors.cs.
+	- Otherwise, in the limit (and the expected case for most situations) each Interop.*.cs file will contain a single DllImport and associated interop types (e.g. the structs used with that signature) and helper wrappers, e.g. Interop.strerror.cs.
+```
+\Common\src\Interop
+    \Unix
+        \libc
+            \Interop.strerror.cs
+    \Windows
+        \mincore
+            \Interop.OutputDebugString.cs
+```
+
+- If structs/constants will be used on their own without an associated DllImport, or if they may be used with multiple DllImports not in the same file, they should be declared in a separate file.
+- In the case of multiple overloads of the same DllImport (e.g. some overloads taking a SafeHandle and others taking an IntPtr, or overloads taking different kinds of SafeHandles), if they can’t all be declared in the same file (because they won’t all be consumed by all consumers), the file should be qualified with the key differentiator, e.g.
+
+```
+\Common\src\Interop
+    \Windows
+        \mincore
+            \Interop.DuplicateHandle_SafeTokenHandle.cs
+            \Interop.DuplicateHandle_IntPtr.cs
+```
+
+- The library names used per-platform are stored in internal constants in the Interop class in a private Libraries class in a per-platform file named Interop.Libraries.cs.  These constants are then used for all DllImports to that library, rather than having the string duplicated each time, e.g.
+```C#
+internal static partial class Interop // contents of Common\src\Interop\Windows\Interop.Libraries.cs
+{
+    private static class Libraries
+    {
+        internal const string Kernel32 = "kernel32.dll";
+        internal const string Localization = "api-ms-win-core-localization-l1-2-0.dll";
+        internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
+        internal const string ProcessThreads = "api-ms-win-core-processthreads-l1-1-0.dll";
+        internal const string File = "api-ms-win-core-file-l1-1-0.dll";
+        internal const string NamedPipe = "api-ms-win-core-namedpipe-l1-1-0.dll";
+        internal const string IO = "api-ms-win-core-io-l1-1-0.dll";
+        ...
+    }
+}
+```
+(Note that this will likely result in some extra constants defined in each assembly that uses interop, which minimally violates one of the goals, but it’s very minimal.)
+			 
+- .csproj project files then include the interop code they need, e.g.
+```XML
+<ItemGroup Condition=" '$(OS)' == 'Unix' ">
+    <Compile Include="Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="Interop\Unix\libc\Interop.strerror.cs" />
+    <Compile Include="Interop\Unix\libc\Interop.getenv.cs" />
+    <Compile Include="Interop\Unix\libc\Interop.getenv.cs" />
+    <Compile Include="Interop\Unix\libc\Interop.open64.cs" />
+    <Compile Include="Interop\Unix\libc\Interop.close.cs" />
+    <Compile Include="Interop\Unix\libc\Interop.snprintf.cs" />
+    ...
+</ItemGroup
+```
+
+### Constants
+- Wherever possible, constants should be defined as "const".  Only if the data type doesn’t support this (e.g. IntPtr) should they instead be static readonly fields.
+
+- Related constants should be grouped under a partial, static, internal type, e.g. for error codes they'd be grouped under an Errors type:
+```C#
+internal static partial class Interop
+{
+    internal static partial class libc
+    {
+        internal static partial class Errors
+        {
+            internal const int ENOENT = 2;
+            internal const int EINTR = 4;
+            internal const int EWOULDBLOCK = 11;
+            internal const int EACCES = 13;
+            internal const int EEXIST = 17;
+            internal const int EXDEV = 18;
+            internal const int EISDIR = 21;
+            internal const int EINVAL = 22;
+            internal const int EFBIG = 27;
+            internal const int ENAMETOOLONG = 36;
+            internal const int ECANCELED = 125;
+            ...
+        }
+    }
+}
+```
+Using enums instead of partial, static classes can lead to needing lots of casts at call sites and can cause problems if such a type needs to be split across multiple files (enums can’t currently be partial).  However, enums can be valuable in making it clear in a DllImport signature what values are permissible.  Enums may be used in limited circumstances where these aren’t concerns: the full set of values can be represented in the enum, and the interop signature can be defined to use the enum type rather than the underlying integral type.
+
+## Naming
+- Interop signatures / structs / constants should be defined using the same name / capitalization / etc. that’s used in the corresponding native code.
+	- We should not rename any of these based on managed coding guidelines.  The only exception to this is for the constant grouping type, which should be named with the most discoverable name possible; if that name is a concept (e.g. Errors), it can be named using managed naming guidelines.
