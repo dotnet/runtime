@@ -5966,7 +5966,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			cmp->type = STACK_I4;
 			MONO_ADD_INS (cfg->cbb, cmp);
 
-			MONO_INST_NEW (cfg, ceq, OP_CEQ);
+			MONO_INST_NEW (cfg, ceq, OP_ICEQ);
 			ceq->dreg = alloc_ireg (cfg);
 			ceq->type = STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ceq);
