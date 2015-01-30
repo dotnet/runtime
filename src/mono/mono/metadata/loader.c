@@ -950,17 +950,11 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 
 			ptr = mono_metadata_blob_heap (image, sig_idx);
 			mono_metadata_decode_blob_size (ptr, &ptr);
-			/* FIXME make type/signature parsing not produce loader errors */
-			sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
-			g_assert (!mono_loader_get_last_error ());
 
-			if (!sig) {
-				guint32 class = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-				const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
-				//FIXME include the decoding error
-				mono_error_set_bad_image (error, image, "Bad method signature class token 0x%08x field name %s token 0x%08x", class, fname, token);
+			sig = mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
+			if (!sig)
 				return NULL;
-			}
+
 			sig = cache_memberref_sig (image, sig_idx, sig);
 		}
 		/* FIXME: we probably should verify signature compat in the dynamic case too*/
@@ -1101,15 +1095,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	sig = find_cached_memberref_sig (image, sig_idx);
 	if (!sig) {
-		sig = mono_metadata_parse_method_signature (image, 0, ptr, NULL);
-		if (sig == NULL) {
-			/* FIXME don't swallow parsing error */
-			if (mono_loader_get_last_error ()) /* FIXME mono_metadata_parse_method_signature leak a loader error */
-				mono_error_set_from_loader_error (error);
-			else
-				mono_error_set_method_load (error, klass, mname, "Could not parse method signature");
+		sig = mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
+		if (sig == NULL)
 			goto fail;
-		}
 
 		sig = cache_memberref_sig (image, sig_idx, sig);
 	}
