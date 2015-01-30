@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = ExitThread
+Name = Test for ExitThread
+TYPE = DEFAULT
+EXE1 = test3
+LIB1 = dllmain
+Description 
+= Test to ensure proper operation of the ExitThread
+= API. This tests to make sure ExitThread() results
+= in any loaded dynamic libraries having their entry
+= point called with a THREAD_DETACH notification.

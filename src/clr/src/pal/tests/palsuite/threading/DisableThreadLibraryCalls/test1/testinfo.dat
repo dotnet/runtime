@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Threading
+Function = DisableThreadLibraryCalls
+Name = Positive Test #1 for DisableThreadLibraryCalls
+TYPE = DEFAULT
+EXE1 = test1
+LIB1 = testlib
+Description
+=Tests that DisableThreadLibraryCalls actually stops thread 
+=attach/detach notifications to a library.  Also tests how it
+=handles an invalid module handle.

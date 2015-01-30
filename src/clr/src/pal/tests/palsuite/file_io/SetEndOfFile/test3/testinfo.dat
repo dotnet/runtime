@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetEndOfFile
+Name = Positive Test for SetEndOfFile
+Type = DEFAULT 
+EXE1 = setendoffile
+Description
+=Set the end of file past the actual end
+=of file thereby, extending it.
+

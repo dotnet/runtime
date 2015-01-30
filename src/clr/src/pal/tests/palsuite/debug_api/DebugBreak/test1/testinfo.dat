@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Debug
+Function = DebugBreak
+Name = DebugBreak test #1
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that DebugBreak "works".  This will require case by case 
+= manual interpretation.

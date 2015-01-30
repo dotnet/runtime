@@ -1,0 +1,18 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Debug 
+Function = ReadProcessMemory
+Name = Check that writing/reading text to/from process memory succeeds.
+TYPE = DEFAULT
+EXE1 = test2
+EXE2 = helper
+Description
+= Create a child process and attempt to write to its memory
+= at the places and lengths it specifies via a data file.
+= the child verifies that all the specified memory was altered
+= with no overruns. Parent then tries to read memory from child
+= and does memory compare to ensure it read memory contents
+= correctly

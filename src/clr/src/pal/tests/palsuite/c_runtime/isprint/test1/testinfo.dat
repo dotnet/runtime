@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = miscellaneous
+Function = isprint
+Name = Positive test for isprint API to check if a character is printable
+TYPE = DEFAULT
+EXE1 = isprint
+Description
+=Test the isprint to check if a character is printable

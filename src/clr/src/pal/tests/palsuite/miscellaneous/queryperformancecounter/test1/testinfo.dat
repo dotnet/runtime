@@ -1,0 +1,11 @@
+Version = 1.0
+Section = Miscellaneous
+Function = QueryPerformanceCounter
+Name = Positive Test for QueryPerformanceCounter
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= This test will verify with QueryPerformanceCounter
+= and QueryPerformanceFrequency that an API call of Sleep
+= of 100 milliseconds takes 100 milliseconds, taking into
+= account the error tolerance.

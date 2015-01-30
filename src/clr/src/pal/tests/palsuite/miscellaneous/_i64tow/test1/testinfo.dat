@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = miscellaneous
+Function = _i64tow
+Name = Test #1 for _i64tow
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests _i64tow with normal values and different radices, negative 
+=values, as well as the highest and lowest values.

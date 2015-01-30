@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = pal_specific
+Function = PAL_RegisterLibraryW and PAL_UnregisterLibraryW API
+Name = Negative test for PAL_RegisterLibraryW and PAL_UnregisterLibaryW API to map and unmap a non-existant module
+TYPE = DEFAULT
+EXE1 = pal_registerlibraryw_unregisterlibraryw_neg
+Description
+=Test the PAL_RegisterLibraryW and PAL_UnregisterLibraryW to map a non-existant
+=module into calling process address space
+

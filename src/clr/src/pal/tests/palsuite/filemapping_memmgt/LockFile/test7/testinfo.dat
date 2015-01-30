@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = LockFile
+Name = Positive test for LockFile API
+TYPE = DEFAULT
+EXE1 = test7
+Description
+= Ensure that LockFile succeeds when the lock begins beyond
+= EOF.  Try locking an invalid HANDLE and a NULL Handle.

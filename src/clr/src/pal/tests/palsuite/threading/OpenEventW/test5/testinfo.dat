@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = OpenEventW
+Name = Positive test for OpenEventW
+TYPE = DEFAULT
+EXE1 = test5
+Description 
+= Test to ensure proper operation of the OpenEventW()
+= API by creating a new named event with CreateEventA()
+= and verifying that it can be opened with OpenEventW().
+= It should be possible to use the event handles
+= interchangeably, we test by setting the event with the
+= original handle and waiting on it with the new one,
+= then resetting it with the new one and waiting
+= on it with the original one.

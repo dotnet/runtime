@@ -1,0 +1,3 @@
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft Common Language Runtime native cross compiler\0"
+
+#include "..\..\dlls\mscorrc\mscorrc.rc"

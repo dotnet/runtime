@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = GetCurrentThreadId
+Name = Positive Test for GetCurrentThreadId
+TYPE = DEFAULT
+EXE1 = threadid
+Description 
+= Test to ensure GetCurrentThreadId returns the threadId of the current 
+= thread.

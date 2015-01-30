@@ -1,0 +1,12 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+
+#include "resource.h"
+
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Runtime Multi-CLR Debugging Helper\0"
+
+#include <fxver.h>
+#include <fxver.rc>

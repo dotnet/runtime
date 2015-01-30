@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = IsBadWritePtr
+Name = Return Value test IsBadWritePtr
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Create three consecuative pages, NOACCES, READWRITE and
+= NOACCESS.  Check to ensure that the READWRITE page returns 0, to 
+= ensure that IsBadWritePtr isn't overflowing.  Also check the other two
+= pages to see that they return non-zero.
+
+
+
+

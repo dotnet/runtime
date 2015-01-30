@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = IsBadCodePtr
+Name = Positive Test for IsBadCodePtr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= ensure that IsBadCodePtr return 0 when
+= it can read memory or non zero when it can't.

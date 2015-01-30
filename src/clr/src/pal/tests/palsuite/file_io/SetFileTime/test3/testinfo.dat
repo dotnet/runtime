@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFileTime
+Name = Negative Test for SetFileTime
+TYPE = DEFAULT
+EXE1 = setfiletime
+Description 
+= Test the SetFileTime function.
+= This test checks to ensure that the function fails when passed an
+= invalid file HANDLE  

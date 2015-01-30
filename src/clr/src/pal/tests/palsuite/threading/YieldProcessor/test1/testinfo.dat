@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = YieldProcessor
+Name = Test for YieldProcessor
+TYPE = DEFAULT
+EXE1 = test
+Description 
+= Purpose: Test to ensure YieldProcessor is 
+= working properly on supported platforms

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = PAL_Specific
+Function = PAL_get_stderr
+Name = Positive test PAL_get_stderr to retrieve the PAL standard error stream pointer
+TYPE = DEFAULT
+EXE1 = pal_get_stderr
+Description
+=Test the PAL_get_stderr to retrieve the PAL standard error output stream pointer and 
+=output a test message to this error stream
+=this test case will be run both manually and automatically

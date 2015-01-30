@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = c_runtime
+Function = ungetc
+Name = test for ungetc (test 1)
+Type = DEFAULT
+EXE1 = ungetc
+Description
+= Test how ungetc handles a write-only file (should fail)

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fputs
+Name = Check that fputs returns EOF when called on closed/readonly streams
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Check to see that fputs fails and returns EOF when called on
+= a closed file stream and a read-only file stream.

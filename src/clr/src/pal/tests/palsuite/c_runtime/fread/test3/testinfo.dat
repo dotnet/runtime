@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fread
+Name = Positive Test for fread
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Tests the PAL implementation of the fread function.
+= Open a file in READ mode, then try to read from the file with
+= different 'size' params.  Check to ensure the return values and
+= the text in the buffer is correct

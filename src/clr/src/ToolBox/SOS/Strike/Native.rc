@@ -1,0 +1,12 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft NTSD extension for .NET Runtime\0"
+
+#include <fxver.h>
+#include <fxver.rc>
+
+DOCUMENTATION              TEXT     DISCARDABLE   "sosdocs.txt"

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = errno
+Name = Positive Test for errno
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Test that errno begins as 0, and sets to ERANGE when that 
+= error is forced with wcstoul.

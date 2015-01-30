@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = GetACP
+Name = Test #1 for GetACP
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests that GetACP returns code-page 1252.

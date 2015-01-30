@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = realloc
+Name = Positive Test for realloc
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Uses realloc to allocate and realloate memory, checking that memory
+= contents are copied when the memory is reallocated.
+

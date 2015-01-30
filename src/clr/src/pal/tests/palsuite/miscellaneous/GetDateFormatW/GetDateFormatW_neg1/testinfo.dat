@@ -1,0 +1,8 @@
+Version = 1.0
+Section = miscellaneous
+Function = GetDateFormatW
+Name = Negative test for GetDateFormatW by passing an invlid locale identifier
+TYPE = DEFAULT
+EXE1 = getdateformatw_neg
+Description
+=negative test GetDateFormatW by passing an invalid locale identifier

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = GetCurrentProcessId
+Name = Positive Test for GetCurrentProcessId
+TYPE = DEFAULT
+EXE1 = processid
+Description 
+= Test to ensure GetCurrentProcessId returns the current process id number.
+= This test compares the result of GetCurrentProcessId to getpid.

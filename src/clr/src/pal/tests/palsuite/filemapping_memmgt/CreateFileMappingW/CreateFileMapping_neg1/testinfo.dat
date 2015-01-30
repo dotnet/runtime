@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = CreateFileMapping
+Name = Negative test for CreateFileMappingW - with a zero length file
+TYPE = DEFAULT
+EXE1 = createfilemapping_neg
+Description
+=Test the CreateFileMapping to try to map a zero length file

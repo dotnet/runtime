@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = towupper
+Name = Positive Test for towupper
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the towupper function.
+= Check that the towupper function makes lower case character a capital.
+= Also check that it has no effect on upper case letters and special
+= characters.
+
+
+
+

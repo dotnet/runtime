@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = vfprintf
+Name = Positive Test for vfprintf
+TYPE = DEFAULT
+EXE1 = test6
+Description
+= Tests vfprintf with characters

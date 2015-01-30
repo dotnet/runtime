@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 2.8.12.2)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(SOURCES
+  WFSOExSemaphoreTest.c
+)
+
+add_executable(paltest_waitforsingleobject_wfsoexsemaphoretest
+  ${SOURCES}
+)
+
+add_dependencies(paltest_waitforsingleobject_wfsoexsemaphoretest CoreClrPal)
+
+target_link_libraries(paltest_waitforsingleobject_wfsoexsemaphoretest
+  pthread
+  rt
+  m
+  CoreClrPal
+)

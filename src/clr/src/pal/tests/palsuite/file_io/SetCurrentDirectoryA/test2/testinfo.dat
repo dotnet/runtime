@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetCurrentDirectoryA
+Name = Positive test for SetCurrentDirectoryA (test 2)
+Type = DEFAULT
+EXE1 = setcurrentdirectorya
+Description
+= Set the current directory with ../ and verify the results.

@@ -1,0 +1,29 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+  <!-- ********************************************************************************************* -->
+  <!-- *** Task -->
+  <!-- ********************************************************************************************* -->
+
+  <PropertyGroup>
+    <BclRewriterCommand Condition="'$(BclRewriterCommand)'==''">$(ToolsDir)\$(BuildToolsPackageName).$(BuildToolsVersion)\BclRewriter.exe</BclRewriterCommand>
+    <BclRewriterModelFile>$(MscorlibDir)model.xml</BclRewriterModelFile>
+    <BclRewriterWorkDir>$(IntermediateOutputPath)\BclRewriter</BclRewriterWorkDir>
+    <BclRewriterSymbolOutput>$(IntermediateOutputPath)\BclRewriter\$(TargetName).pdb</BclRewriterSymbolOutput>
+    <BclRewriterOutput>$(IntermediateOutputPath)\BclRewriter\$(TargetName)$(TargetExt)</BclRewriterOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RewrittenAssembly Include="$(BclRewriterOutput)" />
+  </ItemGroup>
+  
+  <Target Name="RewriteWithBclRewriter" 
+          Inputs="@(AnnotatedAssembly)" Outputs="@(RewrittenAssembly)">
+   
+    <Exec Command="$(BclRewriterCommand) @(AnnotatedAssembly) /out:$(BclRewriterOutput) /include:$(BclRewriterModelFile) /platform:win /architecture:$(Platform) /flavor:$(_BuildType) /define:$(DefineConstants) /keepTempFiles+" StandardOutputImportance="Normal" />
+
+    <!-- Update the location of the symbol file-->
+    <PropertyGroup>
+      <CurrentAssemblyPdb>$(BclRewriterSymbolOutput)</CurrentAssemblyPdb>
+    </PropertyGroup>
+  </Target>
+</Project>

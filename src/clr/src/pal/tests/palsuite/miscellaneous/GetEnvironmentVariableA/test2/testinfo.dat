@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetEnvironmentVariableA
+Name = Return value test on GetEnvironmentVariableA
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Pass a small buffer to GetEnvironmentVariableA 
+= to ensure it returns the size it requires.
+
+
+

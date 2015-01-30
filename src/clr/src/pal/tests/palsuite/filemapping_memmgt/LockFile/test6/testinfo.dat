@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = LockFile
+Name = Positive test for LockFile API
+TYPE = DEFAULT
+EXE1 = test6
+EXE2 = helper
+Description
+= Append to a file which is locked until the end of the file, and
+= append to a file which is locked past the end of the file.  (The first
+= should succeed, while the second should fail)

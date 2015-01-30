@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _wsplitpath
+Name = Positive Test for _wsplitpath
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Passes _wsplitpath() a series of sample paths and checks that it
+= parses them as expected.
+
+

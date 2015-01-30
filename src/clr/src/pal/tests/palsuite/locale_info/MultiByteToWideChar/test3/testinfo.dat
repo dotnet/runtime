@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = MultiByteToWideChar
+Name = Test #3 for MultiByteToWideChar
+TYPE = DEFAULT
+EXE1 = test3
+Description
+=Tests that MultiByteToWideChar correctly handles the following 
+=error conditions: insufficient buffer space, invalid code pages,
+=and invalid flags.
+

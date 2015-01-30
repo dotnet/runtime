@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetSystemInfo
+Name = Positive Test for GetSystemInfo
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Ensures the two required System Info fields can be aquired,
+= and the others are all 0.
+
+
+

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = AreFileApisANSI
+Name = Positive Test for AreFileApisANSI
+Type = DEFAULT 
+EXE1 = arefileapisansi
+Description
+=Ensure the return is TRUE because FALSE is not an option in FreeBSD
+

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcsstr
+Name = Positive Test for wcsstr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that wcsstr correctly find substrings in wide stings, including 
+= returning NULL when the substring can't be found.

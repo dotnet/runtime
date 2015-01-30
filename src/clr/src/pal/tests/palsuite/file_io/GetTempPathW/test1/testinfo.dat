@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetTempPathW
+Name = Test for GetTempPathW (test 1)
+Type = DEFAULT
+EXE1 = gettemppathw
+Description
+= Calls GetTempPathW and verifies by passing the returned
+= value to CreateDirectoryW. If the returned path exists,
+= CreateDirectoryW will fail.
+

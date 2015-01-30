@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = InterlockedExchange64
+Name = Positive test of InterlockedExchange64
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to see if this exchanges the variables correctly and
+= has the correct return value.
+
+
+

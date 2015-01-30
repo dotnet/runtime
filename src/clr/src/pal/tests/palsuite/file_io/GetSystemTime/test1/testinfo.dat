@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetSystemTime
+Name = Positive test of GetSystemTime
+Type = DEFAULT 
+EXE1 = test
+Description
+= Tests the PAL implementation of the GetSystemTime API

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = strncmp
+Name = Test #1 for strncmp
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Test to ensure all three possible return values are given under the 
+= appropriate circumstance.  Also, uses different sizes, to only compare
+= portions of strings, checking to make sure these return the correct value.

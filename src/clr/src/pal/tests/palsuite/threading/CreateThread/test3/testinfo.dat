@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = CreateThread
+Name = Positive Test for CreateThread
+TYPE = DEFAULT
+EXE1 = test3
+Description 
+= Check to see that the handle CreateThread returns can be closed while 
+= the thread is still running.
+

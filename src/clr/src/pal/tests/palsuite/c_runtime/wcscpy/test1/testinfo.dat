@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcscpy
+Name = Positive Test for wcscpy
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that wcscpy correctly copies a null-terminated wide string.

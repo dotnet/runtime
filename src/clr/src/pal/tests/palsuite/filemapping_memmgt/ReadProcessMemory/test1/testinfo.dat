@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = ReadProcessMemory
+Name = Positive test for ReadProcessMemory API to read memory contents
+TYPE = DEFAULT
+EXE1 = readprocessmemory
+Description
+=Test the ReadProcessMemory to read the memory contents

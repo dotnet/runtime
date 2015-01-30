@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Debug
+Function = OutputDebugStringA
+Name = OutputDebugStringA test #1
+TYPE = DEFAULT
+EXE1 = test1
+EXE2 = helper
+Description
+=Tests that OutputDebugString generates the correct debugging event behaviour.

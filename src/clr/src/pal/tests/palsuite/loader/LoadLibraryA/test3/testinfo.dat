@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Loader
+Function = LoadLibraryA
+Name = Negative test LoadLibraryA API with a NULL module name
+TYPE = DEFAULT
+EXE1 = loadlibrarya
+Description
+=Test the LoadLibraryA to map NULL module into calling 
+=process address space
+

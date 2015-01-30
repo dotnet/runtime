@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fseek
+Name = Positive Test for fseek
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Call seek to move a file pointer to the start of a file, a position
+= offset from the start, a position offset from the current position, and
+= a position offset from the end of the file.  Check that the file
+= pointer is at the correct position after each seek.

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = FindClose
+Name = Test for FindClose (test 1)
+Type = DEFAULT 
+EXE1 = findclose
+Description
+= Test the FindClose on handles opened using the Find functions
+

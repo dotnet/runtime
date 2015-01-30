@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = exit
+Name = Positive Test for exit
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Calls exit on fail, and verifies that it actually stops program execution,
+= and return 1.

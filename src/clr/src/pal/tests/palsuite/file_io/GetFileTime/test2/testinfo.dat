@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileTime
+Name = Positive Test for GetFileTime
+TYPE = DEFAULT
+EXE1 = getfiletime
+Description 
+= Tests the PAL implementation of the GetFileTime function
+= Test to see that access date either stays the same or increases
+= when a read is performed.  Write
+= and creation time should stay unchanged.  Note: Under FreeBSD
+= the Creation time should not change with just a read.

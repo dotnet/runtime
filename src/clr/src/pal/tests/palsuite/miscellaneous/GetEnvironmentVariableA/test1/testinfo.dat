@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetEnvironmentVariableA
+Name = Return value test for GetEnvironmentVariableA
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Assign a properly sized buffer and get an environment variable, check to
+= ensure it returns the correct values.
+
+
+

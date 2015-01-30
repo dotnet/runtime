@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = localtime
+Name = Positive Test for localtime
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the localtime function.
+= localtime() is passed a date in seconds, since January 01
+= 1970 midnight, UTC. localtime() converts the time to the 
+= tm struct, those values are tested for validity.

@@ -1,0 +1,203 @@
+<!--
+***********************************************************************************************
+CLRTest.Execute.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file contains the logic for providing Execution Script generation.
+
+WARNING:   When setting properties based on their current state (for example:
+           <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
+           target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
+           
+           Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Target: GetExecuteCmdFullPath
+    Return Executed Cmd Relative Full Path
+    We can use this target get its toRun Project's Cmd Full Path to avoid hard-code
+  -->
+  <Target
+    Name="GetExecuteCmdFullPath"
+    Returns="$(ExecuteCmdFullPath)">
+    <PropertyGroup>
+        <ExecuteCmdFullPath>$(OutputPath)\$(AssemblyName).cmd</ExecuteCmdFullPath>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+  *******************************************************************************************
+  TARGET: GenerateExecutionScriptInternal
+  
+  For tests that "run" we will generate an execution script that wraps any arguments or other
+  goo.  This allows generated .lst files to be very simple and reusable to invoke any "stage"
+  of test execution.
+  
+  Notice this is hooked up to run after targets that generate the stores that are marked with GenerateScripts metadata.
+  Note also that this means it will run after the first of such targets.
+  -->
+  <Target Name="GenerateBatchExecutionScript"
+    Inputs="$(MSBuildProjectFullPath)"
+    Outputs="$(OutputPath)\$(AssemblyName).cmd">
+
+    <PropertyGroup>
+    
+      <!-- TODO:2 build in debugger experience support -->
+    
+      <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)"><![CDATA[
+set CLRTestExpectedExitCode=$(CLRTestExitCode)
+ECHO BEGIN EXECUTION
+      ]]></BatchCLRTestExitCodePrep>
+    
+      <BatchCLRTestArgPrep Condition=" '$(CLRTestExecutionArguments)'!='' "><![CDATA[
+set CLRTestExecutionArguments=$(CLRTestExecutionArguments) 
+      ]]></BatchCLRTestArgPrep>
+    
+      <!-- By default, be prepared to do a full check -->
+      <BatchCLRTestExitCodeCheck><![CDATA[
+ECHO Expected: %CLRTestExpectedExitCode%
+ECHO Actual: %CLRTestExitCode%
+IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
+  ECHO END EXECUTION - FAILED
+  ECHO FAILED
+  Exit /b 1
+) ELSE (
+  ECHO END EXECUTION - PASSED
+  ECHO PASSED
+  Exit /b 0
+)
+      ]]></BatchCLRTestExitCodeCheck>
+    </PropertyGroup>
+  
+    <ItemGroup Condition="$(_CLRTestNeedsToRun)">
+      <Clean Include="$(OutputPath)\$(AssemblyName).cmd"/>
+
+      <BatchCLRTestExecutionScriptArgument Include="debug">
+        <HasParam>true</HasParam>
+        <ParamName>debuggerFullPath</ParamName>
+        <Command><![CDATA[
+    IF EXIST "%2" (
+        set _DebuggerFullPath=%2
+    ) ELSE (
+        ECHO The Debugger FullPath "%2" doesn't exist
+        GOTO :USAGE
+    )
+        ]]></Command>
+        <Description>Run testcases under debugger.</Description>
+      </BatchCLRTestExecutionScriptArgument>
+    </ItemGroup>
+  
+    <!--Call GetExecuteCmdFullPath to get ToRunProject cmd file Path  -->
+    <MSBuild Projects="$(CLRTestProjectToRun)" Targets="GetExecuteCmdFullPath" Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
+      <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
+    </MSBuild>
+    
+    <PropertyGroup>
+      <!-- Calculate the thing we're going to run -->
+      <_CLRTestRunFile Condition="'$(_CLRTestNeedsProjectToRun)' != 'True'">"$(AssemblyName).exe"</_CLRTestRunFile>
+
+      <!-- TODO: make this better? -->
+      <_CLRTestRunFile Condition=" '$(CLRTestIsHosted)'=='true' And !$(_CLRTestNeedsProjectToRun) ">"%Core_Root%\corerun.exe" $(_CLRTestRunFile)</_CLRTestRunFile>
+
+      <BatchCLRTestLaunchCmds Condition=" '$(BatchCLRTestLaunchCmds)'=='' "><![CDATA[
+ECHO $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
+%_DebuggerFullPath% $(_CLRTestRunFile) %CLRTestExecutionArguments% %Host_Args%
+set CLRTestExitCode=%ERRORLEVEL%
+      ]]></BatchCLRTestLaunchCmds>
+                
+    </PropertyGroup>
+     
+    <Message Text="MSBuildProjectDirectory:$(MSBuildProjectDirectory)" />
+    <Message Text="_CLRTestToRunFileFullPath:$(_CLRTestToRunFileFullPath)"/>
+    <Message Text="_CLRTestRunFile:$(_CLRTestRunFile)" />
+    
+    <ItemGroup>
+      <_RequiredProperties Include="_CLRTestRunFile">
+        <Value>$(_CLRTestRunFile)</Value>
+      </_RequiredProperties>
+    </ItemGroup>
+    
+    <!-- Raise an error if any value in _RequiredProperties is missing  -->
+    <Error Condition=" '%(_RequiredProperties.Value)'=='' "
+      Text="Missing required test property [%(_RequiredProperties.Identity)]. Something isn't plumbed through correctly.  Contact $(_CLRTestBuildSystemOwner)." />
+      <!-- TODO: this is weird.  Consider eliminating it. -->
+    <GenerateParamList ArgumentItems="@(BatchCLRTestExecutionScriptArgument)">
+      <Output TaskParameter="ParamList" PropertyName="_CLRTestParamList"/>
+    </GenerateParamList>
+    
+    <PropertyGroup>
+      <!--
+      This generates the script portion to parse all of the command line arguments.
+      The Command metadata for BatchCLRTestExecutionScriptArgument items is executed
+      when the argument is found.
+      -->
+      <BatchCLRTestArgPrep><![CDATA[
+REM Parse Command Line
+:NextArg
+
+IF /I '%1' == '-?'     GOTO :USAGE
+IF /I '%1' == '/?'     GOTO :USAGE
+IF /I '%1' == '-h'     GOTO :USAGE
+IF /I '%1' == '/h'     GOTO :USAGE
+
+@(BatchCLRTestExecutionScriptArgument -> 'set cond=0
+IF /I [%1] == [-%(Identity)] set cond=1
+IF /I [%1] == [/%(Identity)] set cond=1
+IF %cond% EQU 1 (
+%(Command)
+shift
+IF /I [%(HasParam)] == [true] shift
+goto NextArg
+)','
+')
+
+if NOT "%1" == "" (
+set CLRTestExecutionArguments=%*
+goto :ArgsDone
+)
+
+goto ArgsDone
+
+:USAGE
+ECHO.Usage
+ECHO %0 $(_CLRTestParamList)
+ECHO.
+ECHO                         - OPTIONS -
+@(BatchCLRTestExecutionScriptArgument -> 'ECHO -%(Identity) %(ParamName)
+ECHO      %(Description)', '
+')
+Exit /b 1
+
+:ArgsDone
+$(BatchCLRTestArgPrep)
+      ]]></BatchCLRTestArgPrep>
+      <!-- NOTE! semicolons must be escaped with %3B boooo -->
+      <_CLRTestExecutionScriptText><![CDATA[
+@ECHO OFF
+setlocal
+pushd %~dp0
+$(BatchCLRTestArgPrep)
+$(BatchCLRTestExitCodePrep)
+REM Precommands
+$(_CLRTestPreCommands)
+REM Launch
+$(BatchCLRTestLaunchCmds)
+REM PostCommands
+$(_CLRTestPostCommands)
+$(BatchCLRTestExitCodeCheck)
+      ]]></_CLRTestExecutionScriptText>
+    </PropertyGroup>
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(OutputPath)\$(AssemblyName).cmd"
+      Lines="$(_CLRTestExecutionScriptText)"
+      Overwrite="true" />
+  </Target>
+  
+</Project>

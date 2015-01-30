@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = exception_handling
+Function = PAL_EXCEPT_FILTER
+Name = Test for PAL_EXCEPT_FILTER
+Type = DEFAULT 
+EXE1 = pal_except_filter
+LANG = cpp
+Description
+= Tests the PAL implementation of the PAL_EXCEPT_FILTER. An 
+= exception is forced and the filter returns
+= EXCEPTION_CONTINUE_EXECUTION to allow execution to continue.

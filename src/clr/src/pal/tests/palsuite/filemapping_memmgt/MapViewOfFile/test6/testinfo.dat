@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = MapViewOfFile
+Name = Positive test for MapViewOfFile API.
+TYPE = DEFAULT
+EXE1 = mapviewoffile
+Description
+= Positive test the MapViewOfFile API.
+= Mapping in a section of anonymous pagefile

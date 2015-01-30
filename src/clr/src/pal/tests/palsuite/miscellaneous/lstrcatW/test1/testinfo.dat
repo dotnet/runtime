@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = lstrcatW
+Name = Positive test of lstrcatW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to see that concatenating two strings works,
+= and also check return values in successful and failing situations.
+
+
+

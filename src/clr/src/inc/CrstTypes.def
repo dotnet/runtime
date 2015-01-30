@@ -1,0 +1,775 @@
+// ==++==
+//
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+//
+// ==--==
+
+//
+// This file is used to describe the different types of Crst and their dependencies on other Crst types (in
+// terms of which types may be legally held while others are acquired).
+//
+// The CrstTypeTool utility is used to parse this file, verify that there are no logical inconsistencies (such
+// as a cycle in the dependencies) and generate an enum value and numerical ranking for each type. This
+// ranking is used by the runtime (in checked builds) to verify that none of the rules described below are
+// violated (which could lead to a deadlock).
+//
+// When you add a new Crst type you need to be aware of which Crst types may be already held when your Crst is
+// acquired and which other types may be subsequently acquired. You can then add a Crst definition to this
+// file and annotate it with those dependencies. Running CrstTypeTool will check to see if this introduces a
+// potential deadlock problem and if everything checks out will generate a new version of
+// file:CrstTypes.h (be sure to check this file out from TFS/SD before running CrstTypeTool).
+//
+// The format of this file is a very simple language. Comments are introduced with '//' and continue to the
+// end of the line. Keywords are case insensitive (Crst type names, however, are case sensitive since they'll
+// be translated directly to C++ enum values). Crst type names are used without the 'Crst' prefix used in C++
+// code (e.g. CrstAppDomainCache is referred to as AppDomainCache). The following words are reserved keywords
+// and may not be used as the names of Crst types:
+//      Crst
+//      End
+//      AcquiredBefore
+//      AcquiredAfter
+//      Unordered
+//      SameLevelAs
+//
+// Each Crst type definition has the following format (where [] indicates optional and ... indicates zero or
+// more repetitions):
+//      Crst <type name>
+//          [AcquiredBefore <type name>...]
+//          [AcquiredAfter <type name>...]
+//          [SameLevelAs <type name>...]
+//          [Unordered]
+//      End
+//
+// For example:
+//      Crst Foo
+//          AcquiredBefore Bar
+//          AcquiredAfter Zob Baz
+//          SameLevelAs Foo
+//      End
+//
+// This introduces a new Crst type Foo (CrstFoo inside the runtime). This type may be legally acquired when
+// the current thread holds Crst instances of type Zob, Bar or even other instances of Foo. While Foo is held
+// it is legal to acquire Crsts of type Bar. Assuming that this definition does not introduce any dependency
+// cycles, CrstTypeTool will assign a numeric rank to CrstFoo that maximizes the chance that any other Crst
+// type interaction you didn't explicitly specify (e.g. holding Foo while taking a Crst of type Wibble) will
+// generate a ranking violation assert in the checked build.
+//
+// Note that the following set of definitions:
+//      Crst A AcquiredBefore B End
+//      Crst B End
+//
+//      Crst A End
+//      Crst B AcquiredAfter A End
+//
+//      Crst A AcquiredBefore B End
+//      Crst B AcquiredAfter A End
+//
+// are all equivalent. You are free to use whichever variant seems clearest to you (CrstTypeTool will tell you
+// if you introduce conflicting rules). Similarly "A SameLevelAs B" implies "B SameLevelAs A". The initial
+// contents of this file uses AcquiredBefore in preference to AcquiredAfter purely because it was generated
+// automatically by a profiling mechanism (the initial rules were seeded from observations of Crst usage while
+// running our test suites). Feel free to add meaningful comments to existing rules if you feel they can
+// usefully clarify the reasons for particular dependencies.
+//
+// CrstTypeTool is a csScript file at file:..\..\bin\CrstTypeTool.csScript. Simply typing "CrstTypeTool" from a
+// clrenv command window prompt should rebuild file:CrstTypes.h from the current CrstTypes.def (again,
+// remember to check out CrstTypes.h first).
+// Note: If you cannot run the script from command line, because of this error:
+//     Script language type is unsupported.
+//     Use /? for more help on usage.
+// Or because .csscript extension is not associated with anything on your machine,
+// Then use "csc.exe CrstTypeTool.csscript" from ClrEnv environment and run the resulting executable.
+//
+// Each Crst type definition is currently in alphabetical order. Please maintain this convention.
+//
+
+Crst AllowedFiles
+    AcquiredBefore JumpStubCache UniqueStack
+End
+
+Crst AppDomainCache
+    AcquiredBefore FusionBindContext FusionLoadContext LoaderHeap UniqueStack UnresolvedClassLock
+End
+
+Crst AppDomainHandleTable
+    AcquiredBefore AvailableParamTypes HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList
+                   ThreadStore SystemDomain
+End
+
+Crst ArgBasedStubCache
+End
+
+Crst AssemblyIdentityCache
+End
+
+Crst AssemblyLoader
+    AcquiredBefore DeadlockDetection UniqueStack
+End
+
+Crst AvailableClass
+    AcquiredBefore LoaderHeap
+End
+
+Crst AssemblyDependencyGraph
+End
+
+Crst AvailableParamTypes
+    AcquiredBefore FusionBindContext FusionLoadContext IbcProfile LoaderHeap
+End
+
+Crst BaseDomain
+    AcquiredBefore LoaderHeap UniqueStack
+End
+
+Crst CCompRC
+    Unordered
+End
+
+Crst Cer
+    AcquiredBefore JumpStubCache UniqueStack
+End
+
+Crst ClassFactInfoHash
+    AcquiredBefore SyncBlockCache ThreadStore
+End
+
+Crst ClassInit
+    AcquiredBefore DeadlockDetection IbcProfile
+    SameLevelAs Jit
+End
+
+Crst CrstCLRPrivBinderLocalWinMDPath
+End
+
+Crst CLRPrivBinderMaps
+End
+
+Crst CLRPrivBinderMapsAdd
+    AcquiredBefore CLRPrivBinderMaps
+End
+
+Crst COMWrapperCache
+    AcquiredBefore HandleTable UniqueStack
+End
+
+Crst ConnectionNameTable
+End
+
+Crst Contexts
+    AcquiredBefore AvailableParamTypes Cer ClassInit DeadlockDetection DomainLocalBlock FuncPtrStubs
+                   GlobalStrLiteralMap Jit LoaderHeap ModuleLookupTable RWLock SigConvert SingleUseLock
+                   StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock FusionClosure
+End
+
+Crst CoreCLRBinderLog
+	Unordered
+End
+
+Crst CSPCache
+    AcquiredBefore JumpStubCache 
+End
+
+Crst DeadlockDetection
+End
+
+Crst DebuggerController
+    // AcquiredBefore DebuggerHeapLock DebuggerJitInfo LoaderHeap
+    
+    // See bug: 581892. This has a conflict with CrstInstMethodHashTableRanking.     
+    // The controller logic will be moved to OOP in V3, and so this lock will no longer be necessary.
+    // Fixing this in-proc would be difficult, and it would all be throwaway as we go oop.
+    Unordered
+End
+
+// This is a leaf debugger lock. 
+Crst DebuggerFavorLock
+    AcquiredAfter DebuggerJitInfo DebuggerMutex
+End
+
+// Debugger Heap lock is the smallest of the debugger locks.
+Crst DebuggerHeapLock
+    AcquiredAfter DebuggerFavorLock DebuggerJitInfo DebuggerMutex
+    // Disabled per bug 581892
+    // AcquiredAfter DebuggerController 
+End
+
+Crst DebuggerJitInfo
+    AcquiredBefore DebuggerHeapLock
+End
+
+// This is the major debugger lock. 
+// It's the largest of the debugger locks.
+Crst DebuggerMutex
+    AcquiredBefore AvailableParamTypes ConnectionNameTable 
+                   DynamicIL LoaderHeap ModuleLookupTable ThreadStore                   
+
+    // Disabled per bug 581892
+    // AcquiredBefore DebuggerController 
+    AcquiredBefore DebuggerHeapLock DebuggerJitInfo
+
+End
+
+// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety) 
+// and is released before taking any other lock except for CrstDataTest2
+Crst DataTest1
+    AcquiredAfter DebuggerMutex
+End
+
+// This lock is used only for testing data consistency (see code:DataTest::TestDataSafety) 
+// and is released before taking any other lockCrst DataTest2
+Crst DataTest2
+    AcquiredAfter DataTest1
+End
+
+
+Crst DbgTransport
+End
+
+Crst DelegateToFPtrHash
+End
+
+Crst DomainLocalBlock
+    AcquiredBefore AppDomainHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
+End
+
+Crst DynamicIL
+End
+
+Crst DynamicMT
+    AcquiredBefore IbcProfile
+End
+
+Crst DynLinkZapItems
+    AcquiredBefore LoaderHeap
+End
+
+Crst EventStore
+End
+
+Crst Exception
+End
+
+Crst ExecuteManLock
+    AcquiredBefore UniqueStack
+End
+
+Crst ExecuteManRangeLock
+End
+
+Crst FCall
+    AcquiredBefore LoaderHeap
+End
+
+Crst RetThunkCache
+    AcquiredBefore LoaderHeap
+End
+
+Crst FriendAccessCache
+    AcquiredBefore JumpStubCache UniqueStack
+End
+
+Crst FuncPtrStubs
+    AcquiredBefore IbcProfile LoaderHeap UniqueStack CodeFragmentHeap JumpStubCache PatchEntryPoint
+End
+
+Crst FusionAppCtx
+    AcquiredBefore FusionPolicyConfigPool FusionSingleUse  FusionAssemblyDownload
+End
+
+Crst FusionAssemblyDownload
+    AcquiredBefore FusionDownload UniqueStack
+End
+
+Crst FusionBindResult
+End
+
+Crst FusionClb
+End
+
+Crst FusionClosure
+    AcquiredBefore FusionBindContext FusionLoadContext FusionAppCtx FusionClosureGraph DomainLocalBlock ModuleFixup
+End
+
+Crst FusionClosureGraph
+    AcquiredBefore FusionAppCtx FusionBindContext FusionLoadContext
+End
+
+Crst FusionConfigSettings
+End
+
+Crst FusionDownload
+End
+
+Crst FusionLoadContext
+    AcquiredBefore PEImage
+End
+
+Crst FusionBindContext
+    AcquiredBefore PEImage
+End
+
+Crst FusionLog
+    AcquiredBefore IbcProfile UniqueStack
+End
+
+Crst FusionWarningLog
+    AcquiredBefore FusionBindContext FusionLoadContext FusionLog
+End
+
+Crst FusionNgenIndex
+    AcquiredBefore SystemDomainDelayedUnloadList
+End
+
+Crst FusionNgenIndexPool
+    AcquiredBefore SystemDomainDelayedUnloadList
+End
+
+Crst FusionPcyCache
+End
+
+Crst FusionPolicyConfigPool
+     AcquiredBefore UniqueStack
+End
+
+Crst FusionSingleUse
+    AcquiredBefore PEImage
+End
+
+Crst FusionIsoLibInit
+End
+
+Crst NativeBinderInit
+    Unordered
+End
+
+Crst NativeImageCache
+    Unordered
+End
+
+Crst GCMemoryPressure
+End
+
+Crst GlobalStrLiteralMap
+    AcquiredBefore HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
+End
+
+Crst HandleTable
+    SameLevelAs HandleTable
+End
+
+Crst HostAssemblyMap
+End
+
+Crst HostAssemblyMapAdd
+    AcquiredBefore HostAssemblyMap
+End
+
+Crst IbcProfile
+End
+
+Crst IJWFixupData
+    AcquiredBefore FuncPtrStubs IJWHash LoaderHeap
+End
+
+Crst IJWHash
+End
+
+Crst ILStubGen
+    AcquiredBefore DeadlockDetection UniqueStack
+End
+
+Crst InstMethodHashTable
+    AcquiredBefore FusionBindContext FusionLoadContext LoaderHeap UniqueStack JumpStubCache
+End
+
+Crst InterfaceVTableMap
+End
+
+Crst Interop
+    AcquiredBefore AppDomainHandleTable AvailableParamTypes Cer ClassInit DeadlockDetection DomainLocalBlock
+                   HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
+                   StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
+End
+
+Crst InteropData
+    AcquiredBefore LoaderHeap UniqueStack
+End
+
+Crst IOThreadpoolWorker
+    AcquiredBefore ThreadIdDispenser ThreadStore
+End
+
+Crst IsJMCMethod
+End
+
+Crst ISymUnmanagedReader
+    AcquiredBefore PEImagePDBStream UniqueStack JumpStubCache
+End
+
+Crst Jit
+    AcquiredBefore DeadlockDetection JumpStubCache
+    SameLevelAs ClassInit
+End
+
+Crst JitGenericHandleCache
+End
+
+Crst JitPerf
+    Unordered
+End
+
+Crst JumpStubCache
+    AcquiredBefore ExecuteManRangeLock LoaderHeap SingleUseLock
+    AcquiredAfter AppDomainCache ExecuteManLock FusionAssemblyDownload FusionNgenIndex FusionNgenIndexPool 
+                  ILStubGen SharedBaseDomain ThreadpoolTimerQueue ThreadpoolWaitThreads 
+                  TPMethodTable TypeIDMap BaseDomain AssemblyLoader
+End
+
+Crst ListLock
+    Unordered
+End
+
+// Leaflock leveling, used for crsts that explicitly want to be a leaf lock
+Crst LeafLock
+End
+
+Crst LoaderAllocator
+    AcquiredBefore AppDomainHandleTable HandleTable UniqueStack ThreadStore
+    AcquiredAfter DomainLocalBlock
+End
+
+Crst LoaderAllocatorReferences
+    AcquiredBefore LoaderAllocator
+    AcquiredAfter PendingTypeLoadEntry InstMethodHashTable
+End
+
+Crst AssemblyList
+    AcquiredAfter LoaderAllocatorReferences ThreadStore AssemblyLoader
+End
+
+Crst LoaderHeap
+End
+
+Crst Mda
+End
+
+Crst MetadataTracker
+    Unordered
+End
+
+Crst StubCache
+    AcquiredBefore LoaderHeap
+End
+
+Crst ModIntPairList
+End
+
+Crst Module
+    AcquiredBefore LoaderHeap UniqueStack
+End
+
+Crst ModuleFixup
+    AcquiredBefore AppDomainHandleTable GlobalStrLiteralMap IbcProfile SyncBlockCache
+End
+
+Crst ModuleLookupTable
+    AcquiredBefore LoaderHeap
+End
+
+Crst MUThunkHash
+End
+
+Crst Nls
+End
+
+Crst ObjectList
+    SameLevelAs ObjectList
+End
+
+Crst OnEventManager
+End
+
+Crst PatchEntryPoint
+End
+
+Crst PEFileSecurityManager
+End
+
+Crst PEImage
+    AcquiredBefore UniqueStack
+End
+
+Crst ILFingerprintCache
+    AcquiredBefore PEImage
+End
+
+Crst PEImagePDBStream
+End
+
+Crst PendingTypeLoadEntry
+    AcquiredBefore AppDomainCache AppDomainHandleTable AssemblyLoader AvailableClass AvailableParamTypes
+                   BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
+                   DomainLocalBlock DynLinkZapItems Exception ExecuteManRangeLock FuncPtrStubs
+                   FusionAppCtx FusionAssemblyDownload FusionBindResult FusionClosure FusionDownload
+                   FusionBindContext FusionLoadContext FusionNgenIndex FusionNgenIndexPool FusionPcyCache
+                   FusionPolicyConfigPool FusionSingleUse GlobalStrLiteralMap HandleTable IbcProfile
+                   IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap ModIntPairList
+                   Module ModuleLookupTable PEImage SecurityStackwalkCache SharedAssemblyCreate
+                   SharedBaseDomain SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
+                   SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
+    SameLevelAs PendingTypeLoadEntry
+End
+
+Crst PinHandle
+End
+
+// ProfilerGCRefDataFreeList synchronizes access to the profiler API's list of
+// free, previously allocated structures that track moved references and
+// root references during a GC.
+Crst ProfilerGCRefDataFreeList
+End
+
+// ProfilingAPIStatus serializes attempts to transition the global status
+// from state to state, and access to the ProfilerDetachInfo structure
+// between the thread executing DetachProfiler(), and the DetachThread
+// carrying out the evacuation order.
+Crst ProfilingAPIStatus
+End
+
+Crst PublisherCertificate
+End
+
+Crst RCWCache
+    AcquiredBefore IbcProfile LoaderHeap RCWCleanupList
+End
+
+Crst RCWRefCache
+    AcquiredBefore HandleTable
+End
+
+Crst RCWCleanupList
+End
+
+Crst ReDacl
+End
+
+Crst Reflection
+    AcquiredBefore LoaderHeap UnresolvedClassLock
+End
+
+// Used to synchronize all rejit information stored in a given AppDomain.  One of these
+// crsts exist per domain (except the SharedDomain--see below)
+Crst ReJITDomainTable
+    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController
+    AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex
+End
+
+// Same as ReJITDomainTable, but this is for the SharedDomain's ReJitManager.  Only
+// reason we have a special type for the SharedDomain's ReJitManager is so that we can
+// explicitly level this guy differently from ReJITDomainTable, so that both the
+// SharedDomain's ReJitManager table lock AND one non-SharedDomain's ReJitManager table
+// lock may be held simultaneously.  This is useful during ETW rundown.
+Crst ReJITSharedDomainTable
+    AcquiredBefore ReJITDomainTable
+    AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex
+End
+
+// Used to synchronize all global requests (which may span multiple AppDomains) which add
+// new functions to rejit tables, or request Reverts on existing functions in the rejit
+// tables.  One of these crsts exist per runtime.
+Crst ReJITGlobalRequest
+    AcquiredBefore ThreadStore ReJITSharedDomainTable ReJITDomainTable SystemDomain
+End
+
+// ETW infrastructure uses this crst to protect a hash table of TypeHandles which is
+// used to remember which types have been logged (to avoid duplicate logging of the
+// same type).
+Crst EtwTypeLogHash
+    AcquiredAfter ThreadStore AllowedFiles Cer TPMethodTable
+    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController 
+               DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
+               JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
+               ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
+               ThreadIdDispenser ThreadStaticDataHashTable
+End
+
+Crst Remoting
+    AcquiredBefore AppDomainHandleTable AvailableParamTypes Cer ClassInit DeadlockDetection DebuggerController
+                   DebuggerHeapLock DebuggerJitInfo DebuggerMutex DomainLocalBlock ExecuteManRangeLock
+                   FuncPtrStubs GlobalStrLiteralMap HandleTable InstMethodHashTable Jit JitGenericHandleCache
+                   JumpStubCache LoaderHeap StubCache Module ModuleLookupTable SecurityStackwalkCache SigConvert
+                   SingleUseLock StubUnwindInfoHeapSegments SyncBlockCache SystemDomainDelayedUnloadList
+                   ThreadStore UnresolvedClassLock PendingTypeLoadEntry
+End
+
+Crst RWLock
+End
+
+Crst SavedExceptionInfo
+    AcquiredBefore DebuggerController
+End
+
+Crst SaveModuleProfileData
+End
+
+Crst SecurityPolicyCache
+End
+
+Crst SecurityPolicyInit
+    AcquiredBefore SecurityPolicyCache
+End
+
+Crst SecurityStackwalkCache
+End
+
+Crst SharedAssemblyCreate
+    AcquiredBefore DeadlockDetection UniqueStack
+End
+
+Crst SharedBaseDomain
+    AcquiredBefore UniqueStack
+End
+
+Crst SigConvert
+    AcquiredBefore LoaderHeap
+End
+
+Crst SingleUseLock
+    AcquiredBefore ExecuteManRangeLock LoaderHeap UniqueStack DebuggerJitInfo
+End
+
+Crst UnwindInfoTableLock
+	AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
+    AcquiredBefore StressLog
+End
+
+Crst SpecialStatics
+End
+
+Crst StressLog
+    Unordered
+End
+
+Crst StrongName
+End
+
+Crst CodeFragmentHeap
+    AcquiredBefore SingleUseLock
+End
+
+Crst StubDispatchCache
+End
+
+Crst StubUnwindInfoHeapSegments
+    AcquiredAfter StubCache
+End
+
+Crst SyncBlockCache
+    AcquiredBefore ThreadIdDispenser
+End
+
+Crst SyncHashLock
+End
+
+Crst SystemBaseDomain
+End
+
+Crst SystemDomain
+    AcquiredBefore DebuggerMutex HandleTable IbcProfile SaveModuleProfileData SecurityPolicyCache
+                   ThreadIdDispenser ThreadStore
+End
+
+Crst SystemDomainDelayedUnloadList
+End
+
+Crst ThreadIdDispenser
+End
+
+Crst ThreadpoolEventCache
+End
+
+Crst ThreadpoolTimerQueue
+    AcquiredBefore UniqueStack
+End
+
+Crst ThreadpoolWaitThreads
+    AcquiredBefore UniqueStack
+End
+
+Crst ThreadpoolWorker
+    AcquiredBefore ThreadIdDispenser ThreadStore
+End
+
+Crst ThreadStaticDataHashTable
+    AcquiredBefore SyncBlockCache
+End
+
+Crst ThreadStore
+    AcquiredBefore AvailableParamTypes ConnectionNameTable DeadlockDetection DebuggerController 
+                   DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
+                   JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
+                   ProfilerGCRefDataFreeList RWLock SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
+                   ThreadIdDispenser ThreadStaticDataHashTable
+End
+
+Crst TPMethodTable
+    AcquiredBefore DebuggerHeapLock LoaderHeap UniqueStack AvailableParamTypes
+End
+
+Crst TypeIDMap
+    AcquiredBefore UniqueStack
+End
+
+Crst TypeEquivalenceMap
+    AcquiredBefore LoaderHeap
+End
+
+Crst UMThunkHash
+End
+
+Crst UniqueStack
+    AcquiredBefore LoaderHeap
+End
+
+Crst UnresolvedClassLock
+    AcquiredBefore AvailableParamTypes DynLinkZapItems IbcProfile JumpStubCache
+End
+
+Crst WrapperTemplate
+    AcquiredBefore IbcProfile
+End
+
+Crst UMEntryThunkCache
+    AcquiredBefore LoaderHeap
+End
+
+Crst PinnedByrefValidation
+End
+
+Crst AssemblyUsageLog
+End
+
+Crst VSDIndirectionCellLock
+    AcquiredBefore LoaderHeap
+End
+
+Crst MulticoreJitHash
+End
+
+Crst MulticoreJitManager
+    AcquiredBefore MulticoreJitHash ThreadStore
+End
+
+Crst WinRTFactoryCache
+    AcquiredBefore HandleTable    
+End
+
+Crst SqmManager 
+End
+
+Crst StackSampler
+End
+
+Crst InlineTrackingMap
+    AcquiredBefore IbcProfile
+End

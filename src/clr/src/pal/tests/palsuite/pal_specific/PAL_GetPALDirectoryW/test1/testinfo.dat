@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = PAL_Specific
+Function = PAL_GetPALDirectoryW
+Name = Positive test for PAL_GetPALDirectoryW to retrieve fully-qualified directory name.
+TYPE = DEFAULT
+EXE1 = pal_getpaldirectoryw
+Description
+=Retrieve the fully-qualified directory name where the PAL DLL is loaded from

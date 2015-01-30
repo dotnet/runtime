@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = QueueUserAPC
+Name = Test #1 for QueueUserAPC
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+=Tests that APCs sent to a thread in an alertable state via 
+=QueueUserAPC are executed in FIFO order.  Also tests that the APC
+=function is executed within the context of the correct thread and 
+=that the dwData parameter gets sent correctly.

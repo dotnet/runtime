@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = getc
+Name = test for getc (test 1)
+Type = DEFAULT
+EXE1 = getc
+Description
+= Write a string to a file, read it in one character
+= at a time with getc and compare with the original string.
+= It also verifies that getc can't read past EOF.

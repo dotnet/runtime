@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Loader
+Function = LoadLibraryw
+Name = Negative test for LoadLibraryW API by passing a module name without extension but with a trailing dot.
+TYPE = DEFAULT
+EXE1 = loadlibraryw
+Description
+=Test the LoadLibraryW by passing a module name without extension
+=but with a trailing dot.
+

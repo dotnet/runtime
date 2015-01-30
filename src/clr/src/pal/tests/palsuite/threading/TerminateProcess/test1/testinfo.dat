@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = TerminateProcess
+Name = Positive Test for TerminateProcess
+TYPE = DEFAULT
+EXE1 = terminateprocess
+Description 
+= Test to see if the function TerminateProcess terminates the currently 
+= running process and passes the appropriate value through uExitCode.
+

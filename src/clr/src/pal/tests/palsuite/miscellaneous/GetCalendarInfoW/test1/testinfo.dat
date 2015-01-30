@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = miscellaneous
+Function = GetCalendarInfoW
+Name = Positive test for GetCalendarInfoW API to retrieve the info of a calendar
+TYPE = DEFAULT
+EXE1 = getcalendarinfow
+Description
+= Test the GetCalendarInfoW to retrieve the information of a calendar
+= This test for US English
+

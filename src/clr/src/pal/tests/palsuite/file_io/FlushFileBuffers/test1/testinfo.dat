@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = FlushFileBuffers
+Name = Positive Test for FlushFileBuffers
+TYPE = DEFAULT
+EXE1 = flushfilebuffers
+Description 
+= Test the FlushFileBuffers
+= Test the return values -- ensure that the correct values are
+= returned for success and failure.
+= This test does not prove that flush worked,
+= there is no way of stopping the OS from flushing
+= the file by itself.

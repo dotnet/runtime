@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = GetStringTypeExW
+Name = Test #2 for GetStringTypeExW
+TYPE = DEFAULT
+EXE1 = test2
+Description
+=Tests GetStringTypeExW with values from every possible unicode category.

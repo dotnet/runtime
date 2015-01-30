@@ -1,0 +1,20 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+
+Section = file_io
+
+Function = GetFileAttributesW
+
+Name = Positive Test for GetFileAttributesW
+
+TYPE = DEFAULT
+
+EXE1 = getfileattributesw
+
+Description 
+
+= Test the GetFileAttributesW function
+
