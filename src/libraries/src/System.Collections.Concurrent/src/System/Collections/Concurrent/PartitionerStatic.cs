@@ -619,7 +619,7 @@ namespace System.Collections.Concurrent
                     else
                     {
                         return new InternalPartitionEnumerator(_sharedReader, _sharedIndex,
-                            _hasNoElementsLeft, _sharedLock, _activePartitionCount, this, _useSingleChunking);
+                            _hasNoElementsLeft, _activePartitionCount, this, _useSingleChunking);
                     }
                 }
 
@@ -890,7 +890,6 @@ namespace System.Collections.Concurrent
                 // the values of the following two fields are passed in from
                 // outside(already initialized) by the constructor, 
                 private readonly SharedBool _hasNoElementsLeft;
-                private readonly object _sharedLock;
                 private readonly SharedInt _activePartitionCount;
                 private InternalPartitionEnumerable _enumerable;
 
@@ -899,14 +898,12 @@ namespace System.Collections.Concurrent
                     IEnumerator<TSource> sharedReader,
                     SharedLong sharedIndex,
                     SharedBool hasNoElementsLeft,
-                    object sharedLock,
                     SharedInt activePartitionCount,
                     InternalPartitionEnumerable enumerable,
                     bool useSingleChunking)
                     : base(sharedReader, sharedIndex, useSingleChunking)
                 {
                     _hasNoElementsLeft = hasNoElementsLeft;
-                    _sharedLock = sharedLock;
                     _enumerable = enumerable;
                     _activePartitionCount = activePartitionCount;
 

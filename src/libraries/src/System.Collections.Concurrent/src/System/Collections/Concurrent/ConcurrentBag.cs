@@ -400,7 +400,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="list">The list to steal</param>
         /// <returns>True if can steal, false otherwise</returns>
-        private bool CanSteal(ThreadLocalList list)
+        private static bool CanSteal(ThreadLocalList list)
         {
             if (list.Count <= 2 && list._currentOp != (int)ListOperation.None)
             {
@@ -410,11 +410,7 @@ namespace System.Collections.Concurrent
                     spinner.SpinOnce();
                 }
             }
-            if (list.Count > 0)
-            {
-                return true;
-            }
-            return false;
+            return list.Count > 0;
         }
 
         /// <summary>
