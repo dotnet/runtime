@@ -402,7 +402,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Local helper function to validate the Pop Push range methods input
         /// </summary>
-        private void ValidatePushPopRangeInput(T[] items, int startIndex, int count)
+        private static void ValidatePushPopRangeInput(T[] items, int startIndex, int count)
         {
             if (items == null)
             {
@@ -663,7 +663,7 @@ namespace System.Collections.Concurrent
         /// <param name="collection">The collection to place the popped items in</param>
         /// <param name="startIndex">the beginning of index of where to place the popped items</param>
         /// <param name="nodesCount">The number of nodes.</param>
-        private void CopyRemovedItems(Node head, T[] collection, int startIndex, int nodesCount)
+        private static void CopyRemovedItems(Node head, T[] collection, int startIndex, int nodesCount)
         {
             Node current = head;
             for (int i = startIndex; i < startIndex + nodesCount; i++)
