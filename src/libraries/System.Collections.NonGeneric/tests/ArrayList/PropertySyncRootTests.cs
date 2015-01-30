@@ -27,7 +27,7 @@ namespace System.Collections.ArrayListTests
             Task[] workers;
             Action ts1;
             Action ts2;
-            int iNumberOfWorkers = 100;
+            int iNumberOfWorkers = 10;
 
             //[] Vanila test case - testing SyncRoot is not as simple as its implementation looks like. This is the working
             //scenrio we have in mind.
@@ -67,9 +67,8 @@ namespace System.Collections.ArrayListTests
             ts2 = new Action(ReverseElements);
             for (int iThreads = 0; iThreads < iNumberOfWorkers; iThreads += 2)
             {
-
-                workers[iThreads] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
-                workers[iThreads + 1] = Task.Factory.StartNew(ts2, TaskCreationOptions.LongRunning);
+                workers[iThreads] = Task.Run(ts1);
+                workers[iThreads + 1] = Task.Run(ts2);
             }
 
             Task.WaitAll(workers);
