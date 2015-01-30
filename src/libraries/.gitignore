@@ -235,3 +235,11 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# vim temporary files
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
