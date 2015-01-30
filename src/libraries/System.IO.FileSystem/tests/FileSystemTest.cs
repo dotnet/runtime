@@ -9,6 +9,8 @@ namespace System.IO.FileSystem.Tests
 {
     public abstract class FileSystemTest : IDisposable
     {
+        public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
+
         public string TestDirectory { get; private set; }
 
         public FileSystemTest()

@@ -39,7 +39,44 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileStream\Flush.Sharing.cs" />
+    <Compile Include="FileStream\Flush_toDisk.cs" />
+    <Compile Include="FileStream\SafeFileHandle.cs" />
+    <Compile Include="FileStream\IsAsync.cs" />
+    <Compile Include="FileStream\CanTimeout.cs" />
+    <Compile Include="FileStream\CanSeek.Windows.cs" />
+    <Compile Include="FileStream\CanSeek.cs" />
+    <Compile Include="FileStream\Name.cs" />
+    <Compile Include="FileStream\CanWrite.cs" />
+    <Compile Include="FileStream\CanRead.cs" />
+    <Compile Include="FileStream\Buffering_regression.cs" />
+    <Compile Include="FileStream\Flush.cs" />
+    <Compile Include="FileStream\Dispose.cs" />
+    <Compile Include="FileStream\WriteAsync.cs" />
+    <Compile Include="FileStream\Write.cs" />
+    <Compile Include="FileStream\ToString.cs" />
+    <Compile Include="FileStream\WriteByte.cs" />
+    <Compile Include="FileStream\ReadAsync.cs" />
+    <Compile Include="FileStream\Read.cs" />
+    <Compile Include="FileStream\ReadByte.cs" />
+    <Compile Include="FileStream\SetLength.cs" />
+    <Compile Include="FileStream\Length.cs" />
+    <Compile Include="FileStream\Position.cs" />
+    <Compile Include="FileStream\Seek.cs" />
+    <Compile Include="FileStream\ctor_sfh_fa_buffer_async.cs" />
+    <Compile Include="FileStream\ctor_sfh_fa_buffer.cs" />
+    <Compile Include="FileStream\ctor_sfh_fa.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.write.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.read.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.delete.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer_fo.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer_async.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa.cs" />
     <Compile Include="FileStream\ctor_str_fm.cs" />
+    <Compile Include="UnseekableFileStream.cs" />
+    <Compile Include="FSAssert.cs" />
     <Compile Include="FileSystemTest.cs" />
   </ItemGroup>
   <ItemGroup>

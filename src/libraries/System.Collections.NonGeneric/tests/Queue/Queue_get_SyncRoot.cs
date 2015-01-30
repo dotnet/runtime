@@ -80,15 +80,13 @@ public class Queue_get_SyncRoot
                     iCountErrors++;
                 }
 
-                //we are going to rumble with the Queues with 2 threads
-
                 workers = new Task[iNumberOfWorkers];
                 ts1 = new Action(SortElements);
                 ts2 = new Action(ReverseElements);
                 for (int iThreads = 0; iThreads < iNumberOfWorkers; iThreads += 2)
                 {
-                    workers[iThreads] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
-                    workers[iThreads + 1] = Task.Factory.StartNew(ts2, TaskCreationOptions.LongRunning);
+                    workers[iThreads] = Task.Run(ts1);
+                    workers[iThreads + 1] = Task.Run(ts2);
                 }
 
                 Task.WaitAll(workers);

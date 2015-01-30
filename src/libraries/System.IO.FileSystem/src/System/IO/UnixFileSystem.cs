@@ -44,9 +44,9 @@ namespace System.IO
             return cachedValue;
         }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
-            return new UnixFileStream(fullPath, mode, access, share, bufferSize, options);
+            return new UnixFileStream(fullPath, mode, access, share, bufferSize, options, parent);
         }
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)

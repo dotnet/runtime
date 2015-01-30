@@ -90,14 +90,13 @@ public class Stack_get_SyncRoot
                     Console.WriteLine("Err_234dnvf! Expected value not returned, " + (arrSon.SyncRoot == arrMother.SyncRoot));
                 }
 
-                //we are going to rumble with the Stacks with 2 threads
                 var ts1 = new Action(SortElements);
                 var ts2 = new Action(ReverseElements);
                 Task[] tasks = new Task[iNumberOfWorkers];
                 for (int iThreads = 0; iThreads < iNumberOfWorkers; iThreads += 2)
                 {
-                    tasks[iThreads] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
-                    tasks[iThreads + 1] = Task.Factory.StartNew(ts2, TaskCreationOptions.LongRunning);
+                    tasks[iThreads] = Task.Run(ts1);
+                    tasks[iThreads + 1] = Task.Run(ts2);
                 }
                 Task.WaitAll(tasks);
 
