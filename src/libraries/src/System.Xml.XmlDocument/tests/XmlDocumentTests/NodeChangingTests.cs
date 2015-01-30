@@ -9,7 +9,7 @@ namespace XmlDocumentTests.XmlDocumentTests
     public class NodeChangingTests
     {
         [Fact]
-        public static void RemoveNode()
+        public static void ChangingNodeFiresChangingEvent()
         {
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml(@"<root> <elem1>text1</elem1> <elem2>text2</elem2> </root>");
