@@ -91,9 +91,9 @@ namespace System.IO
             Select(sourceFullPath, destFullPath).MoveFile(sourceFullPath, destFullPath);
         }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
-            return Select(fullPath, isCreate: true).Open(fullPath, mode, access, share, bufferSize, options);
+            return Select(fullPath, isCreate: true).Open(fullPath, mode, access, share, bufferSize, options, parent);
         }
 
         public override void RemoveDirectory(string fullPath, bool recursive)

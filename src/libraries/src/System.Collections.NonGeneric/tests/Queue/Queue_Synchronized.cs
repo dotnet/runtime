@@ -162,7 +162,7 @@ public class Queue_Synchronized
         {
             for (int i = 0; i < m_ThreadsToUse; i++)
             {
-                ths[i] = Task.Factory.StartNew(new Action(this.StartEnThread), TaskCreationOptions.LongRunning);
+                ths[i] = Task.Factory.StartNew(new Action(this.StartEnThread), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             m_ThreadCount = m_ThreadsToUse;
             Task.WaitAll(ths);
@@ -190,7 +190,7 @@ public class Queue_Synchronized
             m_ThreadCount = m_ThreadsToUse;
             for (int i = 0; i < m_ThreadsToUse; i++)
             {
-                ths[i] = Task.Factory.StartNew(new Action(this.StartDeThread), TaskCreationOptions.LongRunning);
+                ths[i] = Task.Factory.StartNew(new Action(this.StartDeThread), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             Task.WaitAll(ths);
 
@@ -218,7 +218,7 @@ public class Queue_Synchronized
             m_ThreadCount = m_ThreadsToUse;
             for (int i = 0; i < m_ThreadsToUse; i++)
             {
-                ths[i] = Task.Factory.StartNew(new Action(this.StartDeEnThread), TaskCreationOptions.LongRunning);
+                ths[i] = Task.Factory.StartNew(new Action(this.StartDeEnThread), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             Task.WaitAll(ths);
 
@@ -245,7 +245,7 @@ public class Queue_Synchronized
             m_ThreadCount = m_ThreadsToUse;
             for (int i = 0; i < m_ThreadsToUse; i++)
             {
-                ths[i] = Task.Factory.StartNew(new Action(this.StartEnDeThread), TaskCreationOptions.LongRunning);
+                ths[i] = Task.Factory.StartNew(new Action(this.StartEnDeThread), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             Task.WaitAll(ths);
 

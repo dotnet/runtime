@@ -7,13 +7,13 @@ setlocal
 ::       assembly. 
 
 :: Check prerequisites
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corefx/wiki/Developer%%20Guide for build instructions. && exit /b 1
-
-if not defined VSINSTALLDIR echo Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/corefx/wiki/Developer%%20Guide for build instructions. && exit /b 1
+if not defined VS120COMNTOOLS (
+    if not defined VS140COMNTOOLS (
+        echo Error: build.cmd should be run from a Visual Studio 2013 or 2015 Command Prompt.  
+        echo        Please see https://github.com/dotnet/corefx/wiki/Developer%%20Guide for build instructions.
+        exit /b 1
+    )
+)
 
 :: Log build command line
 set _buildprefix=echo
@@ -28,7 +28,7 @@ call :build %*
 goto :AfterBuild
 
 :build
-%_buildprefix% %_msbuildexe% "%~dp0build.proj" /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%~dp0msbuild.log";Append %* %_buildpostfix%
+%_buildprefix% msbuild "%~dp0build.proj" /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%~dp0msbuild.log";Append %* %_buildpostfix%
 set BUILDERRORLEVEL=%ERRORLEVEL%
 goto :eof
 
