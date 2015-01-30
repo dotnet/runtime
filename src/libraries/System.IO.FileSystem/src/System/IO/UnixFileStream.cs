@@ -957,7 +957,7 @@ namespace System.IO
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(long offset, SeekOrigin origin)
         {
-            Contract.Assert(!_fileHandle.IsClosed && _canSeek);
+            Contract.Assert(!_fileHandle.IsClosed && CanSeek);
             Contract.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = SysCall((fd, off, or) => Interop.lseek64(fd, off, or), offset, (int)origin); // SeekOrigin values are the same as Interop.SeekWhence values
