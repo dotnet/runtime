@@ -1,0 +1,109 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+#ifndef DEBUGGER_DUMPCOMMON_H
+#define DEBUGGER_DUMPCOMMON_H
+
+#if defined(DACCESS_COMPILE) || defined(RIGHT_SIDE_COMPILE)
+
+// When debugging against minidumps, we frequently need to ignore errors
+// due to the dump not having memory content.
+// You should be VERY careful using these macros.  Because our code does not
+//  distinguish target types, when you allow memory to be missing because a dump
+//  target may not have that memory content by-design you are also implicitly
+//  allowing that same data to be missing from a live debugging target.
+// Also, be aware that these macros exist in code under vm\.  You must be careful to
+//  only allow them to change execution for DAC and DBI.
+// Be careful state is such that execution can continue if the target is missing
+//  memory.
+// In general, there are two solutions to this problem:
+//  a) add the memory to all minidumps
+//  b) stop forcing the memory to always be present
+// All decisions between a & b focus on cost.  For a, cost is adding the memory & a complete
+//  path to locate it to the dump, both in terms of dump generation time and most
+//  especially in terms of dump size (we cannot make MiniDumpNormal many MB for trivial
+//  apps).
+//  For b, cost is that we lose some of our validation when we have to turn off asserts
+//  and other checks for targets that should always have the missing memory present
+//  because we have no concept of allowing it to be missing only from a dump.
+
+// This seemingly awkward try block starting tag is so that when the macro is used over
+//  multiple source lines we don't create a useless try/catch block.  This is important
+//  when using the macros in vm\ code.
+#define EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY EX_TRY
+#define EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY                                \
+    EX_CATCH                                                                        \
+    {                                                                               \
+        if ((GET_EXCEPTION()->GetHR() != HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY)) && \
+            (GET_EXCEPTION()->GetHR() != CORDBG_E_READVIRTUAL_FAILURE) )            \
+        {                                                                           \
+            EX_RETHROW;                                                             \
+        }                                                                           \
+    }                                                                               \
+    EX_END_CATCH(SwallowAllExceptions)
+
+#define EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER EX_TRY
+#define EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER                       \
+    EX_CATCH                                                                        \
+    {                                                                               \
+        if ((GET_EXCEPTION()->GetHR() != HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY)) && \
+            (GET_EXCEPTION()->GetHR() != CORDBG_E_READVIRTUAL_FAILURE) )            \
+        {                                                                           \
+            EX_RETHROW;                                                             \
+        }                                                                           \
+        else                                                                        \
+
+#define EX_TRY_ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY EX_TRY
+#define EX_END_CATCH_ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY                \
+    EX_CATCH                                                                        \
+    {                                                                               \
+        if ((GET_EXCEPTION()->GetHR() != HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY)) && \
+            (GET_EXCEPTION()->GetHR() != CORDBG_E_READVIRTUAL_FAILURE) &&           \
+            (GET_EXCEPTION()->GetHR() != CORDBG_E_TARGET_INCONSISTENT))             \
+        {                                                                           \
+            EX_RETHROW;                                                             \
+        }                                                                           \
+    }                                                                               \
+    EX_END_CATCH(SwallowAllExceptions)
+
+
+#define EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER                  \
+    }                                                                               \
+    EX_END_CATCH(SwallowAllExceptions)
+
+// Only use this version for wrapping single source lines, or you'll make debugging
+// painful.
+#define ALLOW_DATATARGET_MISSING_MEMORY(sourceCode)                             \
+    EX_TRY                                                                      \
+    {                                                                           \
+        sourceCode                                                              \
+    }                                                                           \
+    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
+
+#define ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(sourceCode)             \
+    EX_TRY                                                                      \
+    {                                                                           \
+        sourceCode                                                              \
+    }                                                                           \
+    EX_END_CATCH_ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY
+
+#else
+#define EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+#define EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY
+#define EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER \
+    #error This macro is only intended for use in DAC code!
+#define EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER \
+    #error This macro is only intended for use in DAC code!
+#define EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER \
+    #error This macro is only intended for use in DAC code!
+
+
+#define ALLOW_DATATARGET_MISSING_MEMORY(sourceCode)                             \
+    sourceCode
+
+#endif // defined(DACCESS_COMPILE) || defined(RIGHT_SIDE_COMPILE)
+
+
+#endif //DEBUGGER_DUMPCOMMON_H

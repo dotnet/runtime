@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = CreateFileMapping
+Name = CreateFileMappingA - unnamed swap, READWRITE.
+TYPE = DEFAULT
+EXE1 = createfilemapping
+Description
+= Positive test the CreateFileMapping API.
+= Test an unnamed File Mapping to a "swap" 
+= handle with access PAGE_READWRITE.

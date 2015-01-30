@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetCurrentDirectoryA
+Name = Test for GetCurrentDirectoryA (test 1)
+Type = DEFAULT 
+EXE1 = getcurrentdirectorya
+Description
+= Calculate the current directory name and compare to that
+= returned by GetCurrentDirectoryA
+

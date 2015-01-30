@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileTime
+Name = Positive Test for GetFileTime
+TYPE = DEFAULT
+EXE1 = getfiletime
+Description 
+= Test the GetFileTime function.  Open a file and get the time.  Then write
+= to that file.  This will change the write and under FreeBSD
+= the creation time.  Ensure that all of these are increasing.

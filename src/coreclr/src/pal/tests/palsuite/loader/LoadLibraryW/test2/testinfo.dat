@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Loader
+Function = LoadLibraryW
+Name = Negative test LoadLibraryW API to load a not exist module
+TYPE = DEFAULT
+EXE1 = loadlibraryw
+Description
+=Test the LoadLibraryW  to load a not exist module
+

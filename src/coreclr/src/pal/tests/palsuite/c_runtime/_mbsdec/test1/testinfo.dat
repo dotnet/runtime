@@ -1,0 +1,18 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _mbsdec
+Name = Positive Test for _mbsdec
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Ensure that this function moves the string pointer back one character.   
+= First do a basic test to check that the pointer gets moved back the one
+= character, given str1 and str+1 as params.  Then try with both 
+= params being the same pointer, which should return NULL.  Also test 
+= when the first pointer is past the second pointer, which should 
+= return null. Finally try this function on an array of single bytes, 
+= which it assumes are characters and should work in the same fashion.

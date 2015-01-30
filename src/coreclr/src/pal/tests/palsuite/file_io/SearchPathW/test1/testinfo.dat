@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SearchPathW 
+Name = Test #1 for SearchPathW
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests the PAL implementation of the SearchFileW function 

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = ExitProcess
+Name = Positive test for ExitProcess
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Test to ensure proper operation of the ExitProcess()
+= API by ensuring it works before PAL_Initialize() is
+= called.

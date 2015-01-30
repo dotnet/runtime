@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Loader
+Function = LoadLibraryA
+Name = Negative test for LoadLibraryA API by passing a module name without extension but with a trailing dot.
+TYPE = DEFAULT
+EXE1 = loadlibrarya
+Description
+=Test the LoadLibraryA by passing a module name without extension
+=but with a trailing dot.
+

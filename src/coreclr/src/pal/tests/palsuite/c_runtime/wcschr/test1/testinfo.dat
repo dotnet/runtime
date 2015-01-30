@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcschr
+Name = Positive Test for wcschr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that wcschr correctly finds the first occurrence of a character in a
+= string.

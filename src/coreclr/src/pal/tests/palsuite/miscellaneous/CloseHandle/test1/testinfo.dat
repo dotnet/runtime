@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = CloseHandle
+Name = Positive Test for CloseHandle
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Open a file to get a handle, and then close the file using CloseHandle
+
+
+

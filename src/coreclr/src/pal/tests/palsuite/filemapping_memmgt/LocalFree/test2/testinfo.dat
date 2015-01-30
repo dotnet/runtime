@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = LocalFree
+Name = Positive test LocalFree API by passing NULL as local memory object handle 
+TYPE = DEFAULT
+EXE1 = localfree
+Description
+=Test the LocalFree by passing NULL 
+=as a local memory object handle

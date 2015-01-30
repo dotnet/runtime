@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <SccProjectName>SAK</SccProjectName>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup>
+    <BuildCoreBinaries>true</BuildCoreBinaries>
+    <BuildSysBinaries>true</BuildSysBinaries>
+  </PropertyGroup>
+  <!--Import the settings-->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.props" />
+  <!--Leaf project Properties-->
+  <PropertyGroup>
+    <OutputName>corguids</OutputName>
+    <OutputPath>$(ClrLibDest)</OutputPath>
+    <TargetType>LIBRARY</TargetType>
+    <Ltcg>false</Ltcg>
+    <MidlTlbDir>$(IntermediateOutputDirectory)</MidlTlbDir>
+    <NoCrt>true</NoCrt>
+    <DevdivPublishFolder>$(EnlistmentRootPath)\public\devdiv\inc</DevdivPublishFolder>
+
+    <Mktypliblink>$(LINKER) -Incremental:NO</Mktypliblink>
+    <CDefines>$(CDefines);REAL_TLB_FILE=$(IntermediateOutputDirectory)\mscoree_tlb.tlb;REAL_METAHOST_TLB_FILE=$(IntermediateOutputDirectory)\metahost.tlb;REAL_CORDEBUG_TLB_FILE=$(IntermediateOutputDirectory)\cordebug.tlb</CDefines>
+    <CrimsonEventsManifest>ClrEtwAll.man</CrimsonEventsManifest>
+    
+    <!-- Selects the appropriate private events manifest -->
+    <CrimsonEventsManifestSourcePath>$(Clrbase)\src\VM\$(CrimsonEventsManifest)</CrimsonEventsManifestSourcePath>
+
+    <CrimsonPubliceventsManifest>CLR-ETW.man</CrimsonPubliceventsManifest>
+    <MofEventsManifest>ClrEtwAll.mof</MofEventsManifest>
+    <MofEventsUninstallmanifest>ClrEtwAll.mof.uninstall</MofEventsUninstallmanifest>
+    <MofPubliceventsManifest>CLR.mof</MofPubliceventsManifest>
+    <MofPubliceventsTempmanifest>CLR-ETW.mof</MofPubliceventsTempmanifest>
+    <MofPubliceventsUninstallmanifest>CLR.mof.uninstall</MofPubliceventsUninstallmanifest>
+    <ClrEtwAllHeader>ClrEtwAll.h</ClrEtwAllHeader>
+    <ClrEtwAllMainHeader>ClrEtwAllMain.h</ClrEtwAllMainHeader>
+    <ClrEtwDummyHeader>etmdummy.h</ClrEtwDummyHeader>
+    <EvxmlEventsManifest>ClrEtwAll.evxml</EvxmlEventsManifest>
+    <GenetwGeneratePubliceventsManifest>-g publicman</GenetwGeneratePubliceventsManifest>
+    <McWinmetapath>$(SdkIncPath)\winmeta.xml</McWinmetapath>
+    <McEventmanpath>$(SdkIncPath)\eventman.xsd</McEventmanpath>
+    <McFlags>$(McFlags) /w $(McEventmanpath) /W $(McWinmetapath) -b -co</McFlags>
+        
+    <!-- On desktop CLR 4.5+, only Vista+ is supported, and we can omit the backward-compatible gunk, which also
+         frees us up to use Vista+-only syntax, which is required for new events like MethodILToNativeMap -->
+    <McAdditionalOptions>$(McFlags) -um -p FireEtw</McAdditionalOptions>
+  </PropertyGroup>
+
+  <!-- List of files in corguids.lib is shared with cross compilation via corguids.targets -->
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\src\inc\corguids.targets" />
+
+  <ItemGroup>
+    <DataFile Include="$(Clrbase)\src\inc\cor.h" />
+    <DataFile Include="$(Clrbase)\src\inc\CorHdr.h" />
+    <DataFile Include="$(Clrbase)\src\inc\corhlpr.h" />
+    <DataFile Include="$(Clrbase)\src\inc\corhlpr.cpp" />
+    <DataFile Include="$(Clrbase)\src\inc\CorTpoolHdr.h" />
+    <DataFile Include="$(Clrbase)\src\inc\isolation.h" />
+    <DataFile Include="$(Clrbase)\src\inc\ICeeFileGen.h" />
+    <DataFile Include="$(Clrbase)\src\inc\openum.h" />
+    <DataFile Include="$(Clrbase)\src\inc\VerError.h" />
+    <DataFile Include="$(Clrbase)\src\inc\clrdata.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\cordebug.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\xcordebug.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\corprof.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\corpub.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\fusion.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\gchost.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\ivalidator.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\IVEHandler.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\metahost.idl" />
+    <DataFile Include="$(Clrbase)\src\inc\MSCOREE.IDL" />
+    <DataFile Include="$(Clrbase)\src\inc\opcode.def" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CorError.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\clrdata.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\cordebug.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\xcordebug.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\corprof.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\corpub.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\fusion.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\gchost.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\ivalidator.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\ivehandler.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\metahost.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\mscoree.h" />
+    <DataFile Include="$(IntermediateOutputDirectory)\\corsym.h" />
+    <DataFile Include="$(ClrLibPath)\$(OutputName).lib" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivAppXHosting.h" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivHosting.h" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivBinding.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivBinding.h" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(Clrbase)\src\inc\CLRPrivRuntimeBinders.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <DataFile Include="$(IntermediateOutputDirectory)\CLRPrivRuntimeBinders.h" Condition="'$(FeatureHostedBinder)'=='true'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(FeatureCoreClr)' == 'true'">
+    <CoreClrSDKHeader Include= "mscoree.h">
+      <SrcOverRide>$(IntermediateOutputDirectory)\</SrcOverRide>
+    </CoreClrSDKHeader>
+  </ItemGroup>
+
+  <!-- These files aren't in place until PublishLinked, and we copy from that location to binaries -->
+  <ItemGroup Condition="'$(FeatureCoreClr)' != 'true'">
+    <PostPublishCopyFile Include="$(IntermediateOutputDirectory)\mscoree.realtlb">
+      <PostPublishCopyFileDest>$(ClrInterLibPath)\mscoree.tlb</PostPublishCopyFileDest>
+    </PostPublishCopyFile>
+    <PostPublishCopyFile Include="$(IntermediateOutputDirectory)\metahost.realtlb">
+      <PostPublishCopyFileDest>$(ClrLibPath)\metahost.tlb</PostPublishCopyFileDest>
+    </PostPublishCopyFile>
+    <PostPublishCopyFile Include="$(IntermediateOutputDirectory)\cordebug.realtlb">
+      <PostPublishCopyFileDest>$(ClrLibPath)\cordebug.tlb</PostPublishCopyFileDest>
+    </PostPublishCopyFile>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(FeatureCoreClr)' != 'true'">
+    <PostPublishCopyFile Include="$(ClrInterLibPath)\mscoree.tlb">
+      <PostPublishCopyFileDest>$(BinariesDirectory)\mscoree.tlb</PostPublishCopyFileDest>
+    </PostPublishCopyFile>  
+    <PostPublishCopyFile Include="$(ClrLibPath)\metahost.tlb">
+      <PostPublishCopyFileDest>$(BinariesDirectory)\metahost.tlb</PostPublishCopyFileDest>
+    </PostPublishCopyFile>  
+    <PostPublishCopyFile Include="$(ClrLibPath)\cordebug.tlb">
+      <PostPublishCopyFileDest>$(BinariesDirectory)\cordebug.tlb</PostPublishCopyFileDest>
+    </PostPublishCopyFile>  
+  </ItemGroup>  
+  <ItemGroup>
+    <RCResourceFile Include="$(Clrbase)\src\inc\mscoree_mktlb.rc">
+      <IncludeInLib>false</IncludeInLib>
+    </RCResourceFile>
+    <RCResourceFile Include="$(Clrbase)\src\inc\metahost_mktlb.rc">
+      <IncludeInLib>false</IncludeInLib>
+    </RCResourceFile>
+    <RCResourceFile Include="$(Clrbase)\src\inc\cordebug_mktlb.rc">
+      <IncludeInLib>false</IncludeInLib>
+    </RCResourceFile>
+  </ItemGroup>
+    <!-- remove when switching to vctasks-->
+    <Target Name="VCLibLinkOptionsMapping" />
+  <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
+  <PropertyGroup>
+    <BuildGeneratedDependsOn>
+          GenerateOpcodeRefops;
+          GenerateCorHdr;
+          OptimizeFxRetarget;
+          $(BuildGeneratedDependsOn);
+        </BuildGeneratedDependsOn>
+  </PropertyGroup>
+  <Target Name="PostPublishCopy" Inputs="@(PostPublishCopyFile)" AfterTargets="LinkTlbs" BeforeTargets="Publish" Outputs="@(PostPublishCopyFile->'%(PostPublishCopyFileDest)')">
+    <Copy SourceFiles="@(PostPublishCopyFile)" DestinationFiles="%(PostPublishCopyFile.PostPublishCopyFileDest)" />
+  </Target>
+  <ItemGroup>
+    <Clean Include="$(IntermediateOutputDirectory)\opcode.refops" />
+  </ItemGroup>
+  <Target Name="GenerateOpcodeRefops" Inputs="$(Clrbase)\src\inc\opcode.def" Outputs="$(IntermediateOutputDirectory)\opcode.refops" BeforeTargets="PublishGenerated">
+    <Exec Command="$(PerlCommand) genrops.pl &lt; opcode.def &gt; $(IntermediateOutputDirectory)\opcode.refops" StandardOutputImportance="Normal" />
+  </Target>
+  <ItemGroup>
+    <Clean Include="$(IntermediateOutputDirectory)\corerror.h;$(IntermediateOutputDirectory)\mscorurt.rc" />
+  </ItemGroup>
+  <Target Name="GenerateCorHdr" Inputs="$(Clrbase)\src\inc\corerror.xml" Outputs="$(IntermediateOutputDirectory)\corerror.h;$(IntermediateOutputDirectory)\mscorurt.rc">
+    <Exec Command="$(ManagedToolsPath)\genheaders.exe $(Clrbase)\src\inc\corerror.xml &quot;$(IntermediateOutputDirectory)\corerror.h&quot; &quot;$(IntermediateOutputDirectory)\mscorurt.rc&quot;" StandardOutputImportance="Normal" />
+  </Target>
+  <!-- Etw event manifest targets -->
+  <ItemGroup>
+    <MessageCompile Include="$(CrimsonEventsManifestSourcePath)" />
+    <MessageCompile Include="$(IntermediateOutputDirectory)\$(CrimsonPubliceventsManifest)" />
+  </ItemGroup>
+  <Target Name="GenerateClrEtwMan" Inputs="$(CrimsonEventsManifestSourcePath)" Outputs="$(IntermediateOutputDirectory)\$(CrimsonPubliceventsManifest)" BeforeTargets="MessageCompile">
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl $(GenetwGeneratePubliceventsManifest) -i $(CrimsonEventsManifestSourcePath) -o $(IntermediateOutputDirectory)\$(CrimsonPubliceventsManifest)" StandardOutputImportance="Normal" />
+  </Target>
+  <Target Name="OptimizeFxRetarget" Inputs="$(Clrbase)\src\inc\fxretarget.h" Outputs="$(IntermediateOutputDirectory)\fxretarget_generated.hpp" BeforeTargets="PublishGenerated">
+    <Exec Command="$(Clrbase)\bin\OptimizeFxRetarget.exe $(Clrbase)\src\inc\fxretarget.h $(IntermediateOutputDirectory)\fxretarget_generated.hpp" />
+  </Target>
+  <ItemGroup>
+    <Clean Include="
+      $(IntermediateOutputDirectory)\$(ClrEtwAllHeader);
+      $(IntermediateOutputDirectory)\$(ClrEtwAllMainHeader);
+      $(IntermediateOutputDirectory)\$(ClrEtwDummyHeader);
+      $(BinariesDirectory)\$(MofEventsUninstallmanifest);
+      $(BinariesDirectory)\$(MofPubliceventsUninstallmanifest);
+      $(BinariesDirectory)\$(EvxmlEventsManifest);
+      $(BinariesDirectory)\$(CrimsonEventsManifest);
+      $(BinariesDirectory)\$(CrimsonPubliceventsManifest)" />
+  </ItemGroup>
+  <Target Name="GenerateClrEtwAllHeader" Inputs="$(CrimsonEventsManifestSourcePath);$(IntermediateOutputDirectory)\$(ClrEtwAllHeader)" Outputs="$(IntermediateOutputDirectory)\$(ClrEtwAllMainHeader);$(BinariesDirectory)\$(MofEventsUninstallmanifest);$(BinariesDirectory)\$(MofPubliceventsUninstallmanifest);$(BinariesDirectory)\$(EvxmlEventsManifest);$(BinariesDirectory)\$(CrimsonEventsManifest);$(BinariesDirectory)\$(CrimsonPubliceventsManifest);$(IntermediateOutputDirectory)\$(ClrEtwDummyHeader)" AfterTargets="MessageCompile">
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g header -i $(CrimsonEventsManifestSourcePath) -o $(IntermediateOutputDirectory)\$(ClrEtwAllMainHeader) -h $(IntermediateOutputDirectory)\$(ClrEtwAllHeader)" StandardOutputImportance="Normal" />
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g dummy -i $(IntermediateOutputDirectory)\$(ClrEtwAllHeader) -o $(IntermediateOutputDirectory)\$(ClrEtwDummyHeader)" StandardOutputImportance="Normal"/>
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g mofuninstall -i $(CrimsonEventsManifestSourcePath) -o $(BinariesDirectory)\$(MofEventsUninstallmanifest)" StandardOutputImportance="Normal" />
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g mofuninstall -i $(IntermediateOutputDirectory)\$(CrimsonPubliceventsManifest) -o $(BinariesDirectory)\$(MofPubliceventsUninstallmanifest)" StandardOutputImportance="Normal" />
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g evxml -i $(CrimsonEventsManifestSourcePath) -o $(BinariesDirectory)\$(EvxmlEventsManifest)" StandardOutputImportance="Normal"/>
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g batchplaceholders -i $(CrimsonEventsManifestSourcePath) -o $(BinariesDirectory)\$(CrimsonEventsManifest)" StandardOutputImportance="Normal"/>
+    <Exec Command="$(PerlCommand) $(Clrbase)\bin\genetw.pl -g exeplaceholders -i $(IntermediateOutputDirectory)\$(CrimsonPubliceventsManifest) -o $(BinariesDirectory)\$(CrimsonPubliceventsManifest) -v $(CLRRuntimeVersion)" StandardOutputImportance="Normal"/>
+  </Target>
+  <ItemGroup>
+    <Clean Include="prep_tlbs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TlbLinkSeh Condition="'$(BuildArchitecture)' == 'i386'">true</TlbLinkSeh>
+    <TlbLinkOptions>/DYNAMICBASE /debug:none</TlbLinkOptions>
+    <TlbLinkOptions Condition="'$(BuildArchitecture)' == 'i386'">$(TlbLinkOptions) /NXCOMPAT</TlbLinkOptions>
+    <TlbLinkMachineType>$(BuildArchitecture)</TlbLinkMachineType>
+    <TlbLinkMachineType Condition="'$(BuildArchitecture)' == 'i386'">x86</TlbLinkMachineType>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(FeatureCoreClr)' != 'true'">
+    <LinkTlb Include="$(IntermediateOutputPath)mscoree_mktlb.res">
+      <OutFile>$(IntermediateOutputPath)mscoree.realtlb</OutFile>
+    </LinkTlb>
+    <LinkTlb Include="$(IntermediateOutputPath)metahost_mktlb.res">
+      <OutFile>$(IntermediateOutputPath)metahost.realtlb</OutFile>
+    </LinkTlb>
+    <LinkTlb Include="$(IntermediateOutputPath)cordebug_mktlb.res">
+      <OutFile>$(IntermediateOutputPath)cordebug.realtlb</OutFile>
+    </LinkTlb>
+  </ItemGroup>
+  <Target Name="LinkTlbs" Inputs="@(LinkTlb);" Outputs="@(LinkTlb->'%(OutFile)')" BeforeTargets="PublishFilesLinked" DependsOnTargets="VCLibLinkOptionsMapping">
+        <Link
+            Sources="%(LinkTlb.Identity)"
+            TargetMachine="$(VCLinkLibMachineType)"
+            GenerateManifest="true"
+            ManifestFile="$(IntermediateOutputPath)prep_tlbs.mt"
+            LinkIncremental="false"
+            IgnoreAllDefaultLibraries="true"
+            NoEntryPoint="true"
+            LinkDLL="true"
+            OutputFile="%(LinkTlb.OutFile)"
+            AdditionalOptions="$(TlbLinkOptions)"
+            TreatLinkerWarningAsErrors="$(Internal_TlbLinkWarningsAsErrors)"
+            ImageHasSafeExceptionHandlers="$(TlbLinkSeh)"
+            StackCommitSize="0"
+            StackReserveSize="0"
+            HeapCommitSize="0"
+            HeapReserveSize="0">
+
+    </Link>
+
+        <ItemGroup>
+            <DataFile Include="@(LinkTlb->'%(OutFile)')" Condition="'$(CopyTlbToOutput)' == 'true'"/>
+        </ItemGroup>
+  </Target>
+
+  <Target Name="EnsureCopyProductFiles"
+      Condition="'$(FeatureCoreclr)' == 'true'"
+      AfterTargets="MIDL" >
+     <CallTarget Targets="CopyProductFiles"/>
+  </Target>
+
+  <ItemGroup>
+    <PublishPartGenerated Include="$(ClrInterLibPath)\mscoree.tlb" Condition="'$(FeatureCoreclr)' != 'true' and Exists('$(ClrLibPath)\mscoree.tlb')">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\binderngen.h" Condition="'$(FeatureFusion)'=='true'">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\fusionpriv.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\assemblyusagelog.h" Condition="'$(FeatureCoreclr)' != 'true'">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\isolationpriv.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\mscoreepriv.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\clrdata.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\cordebug.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\xcordebug.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>    
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\corprof.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\corpub.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\mscorsvc.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\fusion.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\isolation.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>    
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\gchost.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ivalidator.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>    
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ivehandler.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\LegacyActivationShim.h" Condition="'$(FeatureCoreclr)' != 'true'">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\LegacyActivationShimUtil.h" Condition="'$(FeatureCoreclr)' != 'true'">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>    
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\LegacyActivationShimDelayLoad.h" Condition="'$(FeatureCoreclr)' != 'true'">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\metahost.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\sospriv.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\mscoree.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\corsym.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'"> 
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivAppXHosting.h" Condition="'$(FeatureHostedBinder)'=='true'"> 
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CorError.h">
+      <Visibility>Inter</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRInternal.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\xclrdata.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAll.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAllMain.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\etmdummy.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrPrivHosting.h" Condition="'$(FeatureHostedBinder)'=='true'">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivRuntimeBinders.h" Condition="'$(FeatureHostedBinder)'=='true'">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+	<PublishPartGenerated Include="$(IntermediateOutputDirectory)\CLRPrivBinding.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAll.rc">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAll_MSG00001.bin">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAllTEMP.BIN">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\mscoruef.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\tlbimpexp.h">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\mscorurt.rc">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAll_MSG00001.bin">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\ClrEtwAllTEMP.BIN">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+    <PublishPartGenerated Include="$(IntermediateOutputDirectory)\fxretarget_generated.hpp">
+      <Visibility>Intra</Visibility>
+      <FileType>Include</FileType>
+    </PublishPartGenerated>
+  </ItemGroup>
+  <ItemGroup>
+    <PublishPartCompiled Include="$(ClrLibPath)\$(OutputName).lib" Condition="'$(FeatureCoreclr)'!='true'">
+      <Visibility>Inter</Visibility>
+      <FileType>Binary</FileType>
+    </PublishPartCompiled>
+  </ItemGroup>
+</Project>

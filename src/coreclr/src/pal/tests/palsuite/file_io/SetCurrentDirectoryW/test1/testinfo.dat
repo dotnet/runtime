@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetCurrentDirectoryW
+Name = Test for SetCurrentDirectoryW (test 1)
+Type = DEFAULT 
+EXE1 = setcurrentdirectoryw
+Description
+= Change the current directory and verify the results.
+

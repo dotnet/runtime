@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Debug 
+Function = WriteProcessMemory
+Name = Check that writing text to process memory succeeds.
+TYPE = DEFAULT
+EXE1 = test1
+EXE2 = helper
+Description
+= Create a child process and attempt to write to its memory
+= at the places and lengths it specifies via a data file.
+= the child verifies that all the specified memory was altered
+= with no overruns.

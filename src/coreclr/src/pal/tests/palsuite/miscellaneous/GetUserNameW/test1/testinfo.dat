@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetUserNameW
+Name = Test for GetUserNameW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Check to ensure that GetUserNameW returnes a decent value.
+

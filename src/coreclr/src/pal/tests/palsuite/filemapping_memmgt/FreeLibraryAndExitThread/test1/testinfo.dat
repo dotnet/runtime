@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = FreeLibraryAndExitThread
+Name = Positive test for FreeLibraryAndExitThread
+TYPE = DEFAULT
+EXE1 = test1
+LIB1 = dlltest
+Description
+= Tests the PAL implementation of the FreeLibraryAndExitThread
+= function. When run, FreeLibraryAndExitThread will exit the 
+= process that it is called within, therefore we create a
+= thread to run the API. Then we test for the existance of the
+= thread and access to the library.

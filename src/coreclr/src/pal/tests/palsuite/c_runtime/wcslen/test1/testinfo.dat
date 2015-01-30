@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcslen
+Name = Positive Test for wcslen
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that wcslen correctly returns the length (in wide characters, not byte)
+= of a wide string 

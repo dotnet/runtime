@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetLongPathNameW
+Name = Test for GetLongPathNameW FreeBSD version (test 2)
+Type = DEFAULT
+EXE1 = getlongpathnamew
+Description
+= Tests invalid path names. Tests conversion of short to long
+= path names as well as passing it a path name that is already short.
+= Under BSD, there isn't a shortened version of directory names so
+= I just use a long path name as the short path name to ensure it returns
+= the same thing.

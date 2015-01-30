@@ -1,0 +1,117 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+/* ------------------------------------------------------------------------- *
+ * Common Language Runtime Verifier / Validator Interace
+ *
+ * Purpose: IValidator is used to staticly validate COR images.
+ *
+ * Protocol:
+ *
+ * Client CoCreates CorHost.Validator, 
+ *      Calls Validate()
+ *          [in/optional] IVEHandler for error callbacks on error
+ *          [in/optional] Appdomain to use for validating assemblies
+ *
+ *      On Error, Validator calls IVEHandler.VEHandler() method. 
+ *          (IVEHandler supplied by the client).
+ *          VEHandler() could return CONTINUE / STOP ...
+ *
+ *      VEHandler() can call Validator.FormatEventInfo()  to get a detailed 
+ *          error message on any error passed to IVEHandler.
+ *
+ * ------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------- *
+ * Imported types
+ * ------------------------------------------------------------------------- */
+
+#ifndef DO_NO_IMPORTS
+import "ivehandler.idl";
+#endif
+
+#pragma warning(push)
+#pragma warning(disable:28718)    //Unable to annotate as this is not a local interface
+
+
+
+/* ------------------------------------------------------------------------- *
+ * Forward declarations
+ * ------------------------------------------------------------------------- */
+
+interface IValidator;
+interface ILoader;
+
+
+/* ------------------------------------------------------------------------- *
+ * Flags
+ * ------------------------------------------------------------------------- */
+enum ValidatorFlags
+{
+        VALIDATOR_EXTRA_VERBOSE =       0x00000001,
+        VALIDATOR_SHOW_SOURCE_LINES =   0x00000002, // RESERVED FOR FUTURE USE
+        VALIDATOR_CHECK_ILONLY =        0x00000004,
+        VALIDATOR_CHECK_PEFORMAT_ONLY = 0x00000008,
+        VALIDATOR_NOCHECK_PEFORMAT =    0x00000010,
+        VALIDATOR_TRANSPARENT_ONLY =    0x00000020,
+};
+
+/* ------------------------------------------------------------------------- *
+ * IValidator interface
+ * ------------------------------------------------------------------------- */
+[
+ object,
+ uuid(63DF8730-DC81-4062-84A2-1FF943F59FAC),
+ pointer_default(unique)
+]
+interface IValidator : IUnknown
+{
+        HRESULT Validate(
+                        [in] IVEHandler        *veh,
+                        [in] IUnknown          *pAppDomain,
+                        [in] unsigned long      ulFlags,
+                        [in] unsigned long      ulMaxError,
+                        [in] unsigned long      token,
+                        [in] LPWSTR             fileName,
+                        [in, size_is(ulSize)] BYTE *pe,
+                        [in] unsigned long      ulSize);
+
+        HRESULT FormatEventInfo(
+                        [in] HRESULT            hVECode,
+                        [in] VEContext          Context,
+                        [in, out] LPWSTR        msg,
+                        [in] unsigned long      ulMaxLength,
+                        [in] SAFEARRAY(VARIANT) psa);
+};
+
+
+/* ------------------------------------------------------------------------- *
+ * ICLRValidator interface
+ * ------------------------------------------------------------------------- */
+[
+ object,
+ uuid(63DF8730-DC81-4062-84A2-1FF943F59FDD),
+ pointer_default(unique)
+]
+interface ICLRValidator : IUnknown
+{
+        HRESULT Validate(
+                        [in] IVEHandler        *veh,
+                        [in] unsigned long      ulAppDomainId,
+                        [in] unsigned long      ulFlags,
+                        [in] unsigned long      ulMaxError,
+                        [in] unsigned long      token,
+                        [in] LPWSTR             fileName,
+                        [in, size_is(ulSize)] BYTE *pe,
+                        [in] unsigned long      ulSize);
+
+        HRESULT FormatEventInfo(
+                        [in] HRESULT            hVECode,
+                        [in] VEContext          Context,
+                        [in, out] LPWSTR        msg,
+                        [in] unsigned long      ulMaxLength,
+                        [in] SAFEARRAY(VARIANT) psa);
+};
+#pragma warning(pop)
+

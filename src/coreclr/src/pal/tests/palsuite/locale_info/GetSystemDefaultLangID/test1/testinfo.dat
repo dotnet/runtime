@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = GetSystemDefaultLangID
+Name = Test #1 for GetSystemDefaultLangID
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Checks that GetSystemDefaultLangID can be used to make a valid
+=locale, and that it is consistent with LOCALE_USER_DEFAULT.

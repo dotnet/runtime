@@ -1,0 +1,974 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+//+---------------------------------------------------------------------------
+//
+//  Microsoft Windows
+//  File:       fusionpriv.idl
+//
+//  Contents:   Fusion Interfaces
+//
+//  Classes:
+//
+//  Functions:
+//
+//
+//----------------------------------------------------------------------------
+cpp_quote("//=--------------------------------------------------------------------------=")
+cpp_quote("// fusionpriv.h")
+cpp_quote("//=--------------------------------------------------------------------------=")
+cpp_quote("// Copyright (c) Microsoft Corporation.  All rights reserved.")
+cpp_quote("//")
+cpp_quote("// THIS CODE AND INFORMATION IS PROVIDED \"AS IS\" WITHOUT WARRANTY OF")
+cpp_quote("// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO")
+cpp_quote("// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A")
+cpp_quote("// PARTICULAR PURPOSE.")
+cpp_quote("//=--------------------------------------------------------------------------=")
+cpp_quote("")
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma comment(lib,\"uuid.lib\")")
+cpp_quote("#endif")
+cpp_quote("")
+cpp_quote("//---------------------------------------------------------------------------=")
+cpp_quote("// Fusion Interfaces.")
+cpp_quote("")
+
+cpp_quote("#if defined(_CLR_BLD) && !defined(FEATURE_FUSION)")
+cpp_quote("#error FEATURE_FUSION is not enabled, please do not include fusionpriv.h")
+cpp_quote("#endif")
+
+
+import "objidl.idl";
+import "oleidl.idl";
+import "fusion.idl";
+
+#ifndef FEATURE_CORECLR
+import "binderngen.idl";
+#endif
+
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma once")
+cpp_quote("#endif")
+
+interface IAssembly;
+interface IAssemblyBindSink;
+interface IAssemblyBinding;
+interface IAssemblyManifestImport;
+interface IAssemblyModuleImport;
+interface IAssemblyBindingClosure;
+
+interface IAssemblyNameBinder;
+interface IHistoryAssembly;
+interface IHistoryReader;
+interface IFusionBindLog;
+
+interface IAssemblyScavenger;
+
+interface IHostAssembly;
+interface IHostAssemblyModuleImport;
+
+interface IMetaDataAssemblyImport;
+#pragma midl_echo("struct IMetaDataAssemblyImport;")
+
+struct AssemblyReferenceClosureWalkContextForProfAPI;
+
+cpp_quote("EXTERN_C const IID IID_IApplicationContext;       ")
+cpp_quote("EXTERN_C const IID IID_IAssembly;           ")
+cpp_quote("EXTERN_C const IID IID_IAssemblyBindSink;   ")
+cpp_quote("EXTERN_C const IID IID_IAssemblyBinding;   ")
+cpp_quote("EXTERN_C const IID IID_IAssemblyManifestImport;")
+cpp_quote("EXTERN_C const IID IID_IAssemblyModuleImport;  ")
+
+cpp_quote("EXTERN_C const IID IID_IHistoryAssembly;      ")
+cpp_quote("EXTERN_C const IID IID_IHistoryReader;      ")
+cpp_quote("EXTERN_C const IID IID_IMetaDataAssemblyImportControl;      ")
+
+cpp_quote("EXTERN_C const IID IID_IAssemblyScavenger;  ")
+
+cpp_quote("EXTERN_C const IID IID_IHostAssembly; ")
+cpp_quote("EXTERN_C const IID IID_IHostAssemblyModuleImport; ")
+//
+// Bind flags for IAssemblyName::BindToObject
+//
+// External caller of IAssemblyName::BindToObject should only use ASM_BINDF_PARENT_ASM_HINT/ASM_BINDF_NONE/ASM_BINDF_INSPECTION_ONLY.
+// The rest is used internally by fusion. They can(and should) be set via IApplicationContext::Set.
+//
+typedef enum
+{
+    ASM_BINDF_NONE                            = 0x0,
+    ASM_BINDF_FORCE_CACHE_INSTALL             = 0x1,
+    ASM_BINDF_RFS_INTEGRITY_CHECK             = 0x2,
+    ASM_BINDF_RFS_MODULE_CHECK                = 0x4,
+    ASM_BINDF_BINPATH_PROBE_ONLY              = 0x8,
+    //ASM_BINDF_SHARED_BINPATH_HINT             = 0x10, 
+    ASM_BINDF_PARENT_ASM_HINT                 = 0x20,
+    ASM_BINDF_DISALLOW_APPLYPUBLISHERPOLICY   = 0x40,
+    ASM_BINDF_DISALLOW_APPBINDINGREDIRECTS    = 0x80,
+    ASM_BINDF_DISABLE_FX_UNIFICATION          = 0x100, 
+    ASM_BINDF_DO_NOT_PROBE_NATIVE_IMAGE       = 0x200,
+    ASM_BINDF_DISABLE_DOWNLOAD                = 0x400,
+    ASM_BINDF_INSPECTION_ONLY                 = 0x800,
+    ASM_BINDF_DISALLOW_APP_BASE_PROBING       = 0x1000,
+    ASM_BINDF_SUPPRESS_SECURITY_CHECKS        = 0x2000
+} ASM_BIND_FLAGS;
+
+typedef enum tagDEVOVERRIDEMODE {
+    DEVOVERRIDE_LOCAL     = 0x1,
+    DEVOVERRIDE_GLOBAL    = 0x2
+} DEVOVERRIDEMODE;
+
+typedef	enum tagWALK_LEVEL
+{
+    LEVEL_STARTING,				// only basic info
+    LEVEL_WINRTCHECK,           // WinRT specific checks
+    LEVEL_GACCHECK,				// until find something outside of the GAC
+    LEVEL_COMPLETE,				// no reason to request higher than this
+    LEVEL_FXPREDICTED,			// full walk, but FX assemblies were predicted
+    LEVEL_FXPROBED				// full walk, but FX assemblies could not be predicted
+} WALK_LEVEL;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IHistoryAssembly
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(e6096a07-e188-4a49-8d50-2a0172a0d205),
+        pointer_default(unique)
+]
+interface IHistoryAssembly : IUnknown
+{
+    HRESULT GetAssemblyName
+    (
+        [out, annotation("__out")] LPWSTR wzAsmName,
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetPublicKeyToken
+    (
+        [out, annotation("__out")] LPWSTR wzPublicKeyToken,
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetCulture
+    (
+        [out, annotation("__out")] LPWSTR wzCulture,
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetReferenceVersion
+    (
+        [out, annotation("__out")] LPWSTR wzVerRef,
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+        
+    HRESULT GetActivationDate
+    (
+        [out, annotation("__out")] LPWSTR wzActivationDate, 
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetAppCfgVersion
+    (
+        [out, annotation("__out")] LPWSTR pwzVerAppCfg, 
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetPublisherCfgVersion
+    (
+        [out, annotation("__out")] LPWSTR pwzVerPublisherCfg, 
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetAdminCfgVersion
+    (
+        [out, annotation("__out")] LPWSTR pwzAdminCfg,
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IHistoryReader
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(1d23df4d-a1e2-4b8b-93d6-6ea3dc285a54),
+        pointer_default(unique)
+]
+interface IHistoryReader : IUnknown
+{
+    HRESULT GetFilePath
+    (
+        [out, annotation("__out")] LPWSTR wzFilePath,
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetApplicationName
+    (
+        [out, annotation("__out")] LPWSTR wzAppName, 
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+
+    HRESULT GetEXEModulePath
+    (
+        [out, annotation("__out")] LPWSTR wzExePath, 
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    
+    HRESULT GetNumActivations
+    (
+        [out] DWORD *pdwNumActivations
+    );
+    
+    HRESULT GetActivationDate
+    (
+        [in] DWORD dwIdx, 
+        [out] FILETIME *pftDate
+    );
+    
+    HRESULT GetRunTimeVersion
+    (
+        [in] FILETIME *pftActivationDate,
+        [out, annotation("__out")] LPWSTR wzRunTimeVersion, 
+        [in, out, annotation("__inout")] DWORD *pdwSize
+    );
+    
+    HRESULT GetNumAssemblies
+    (
+        [in] FILETIME *pftActivationDate, 
+        [out] DWORD *pdwNumAsms
+    );
+        
+    HRESULT GetHistoryAssembly
+    (
+        [in] FILETIME *pftActivationDate, 
+        [in] DWORD dwIdx,
+        [out] IHistoryAssembly **ppHistAsm
+    );
+}
+    
+typedef enum {
+    LOADCTX_TYPE_DEFAULT,
+    LOADCTX_TYPE_LOADFROM,
+    LOADCTX_TYPE_UNKNOWN,
+    LOADCTX_TYPE_HOSTED,    // Assembly bind was provided by hosted binder.
+} LOADCTX_TYPE;
+
+// Log for normal assembly binding
+cpp_quote("#define FUSION_BIND_LOG_CATEGORY_DEFAULT       0")
+// Log for native image binding
+cpp_quote("#define FUSION_BIND_LOG_CATEGORY_NGEN          1")
+// max entry for bind log kinds. Should always point to the biggest one
+cpp_quote("#define FUSION_BIND_LOG_CATEGORY_MAX           2")
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IFusionBindLog
+//
+///////////////////////////////////////////////////////////////////////////////
+
+[
+        local,
+        object,
+        uuid(67E9F87D-8B8A-4a90-9D3E-85ED5B2DCC83),
+        pointer_default(unique)
+]
+interface IFusionBindLog : IUnknown
+{
+    HRESULT SetResultCode
+    (
+        [in]        DWORD   dwLogCategory,
+        [in]        HRESULT hr
+    );
+
+    HRESULT GetResultCode
+    (
+        [in]       DWORD   dwLogCategory,
+        [out]       HRESULT *pHr
+    );
+    
+    HRESULT GetBindLog
+    (
+        [in]       DWORD             dwDetailLevel,
+        [in]       DWORD             dwLogCategory, 
+        [out, annotation("__out_opt")]      LPWSTR            pwzDebugLog,
+        [in, out, annotation("__inout")]  DWORD            *pcbDebugLog
+    );
+
+    HRESULT LogMessage
+    (
+        [in]       DWORD             dwDetailLevel,
+        [in]       DWORD             dwLogCategory, 
+        [in]       LPCWSTR           pwzDebugLog
+    );
+
+    HRESULT Flush
+    (
+        [in]       DWORD             dwDetailLevel,
+        [in]       DWORD             dwLogCategory
+    );
+
+    HRESULT GetBindingID
+    (
+        [out]      ULONGLONG        *pullBindingID
+    );
+
+    HRESULT ETWTraceLogMessage
+    (
+        [in]       DWORD             dwETWLogCategory, 
+        [in]       IAssemblyName     *pAsm
+    );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyManifestImport
+// 
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid( de9a68ba-0fa2-11d3-94aa-00c04fc308ff),
+        pointer_default(unique)
+]
+interface IAssemblyManifestImport: IUnknown
+{
+    typedef [unique] IAssemblyManifestImport *LPASSEMBLY_MANIFEST_IMPORT;
+    
+    HRESULT GetAssemblyNameDef(
+        [out] IAssemblyName **ppAssemblyName);
+
+    HRESULT GetNextAssemblyNameRef(
+        [in]        DWORD            nIndex,
+        [out]       IAssemblyName ** ppAssemblyName);
+
+    HRESULT GetNextAssemblyModule(
+        [in]       DWORD                    nIndex,
+        [out]      IAssemblyModuleImport **ppImport);
+
+    HRESULT GetModuleByName(
+        [in]       LPCOLESTR               szModuleName,
+        [out]      IAssemblyModuleImport **ppModImport);
+
+    HRESULT GetManifestModulePath(
+        [out, size_is(*pccModulePath), annotation("__out_ecount_full(*pccModulePath)")]  LPOLESTR szModulePath, 
+        [in, out]  LPDWORD pccModulePath);
+
+    HRESULT GetInternalMDImport(
+        [out] IMetaDataAssemblyImport **ppMDImport);
+
+    HRESULT LoadDataFromMDImport(
+        [in] IMetaDataAssemblyImport *ppMDImport);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IApplicationContext
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(7c23ff90-33af-11d3-95da-00a024a85b51),
+        pointer_default(unique)
+]
+interface IApplicationContext: IUnknown
+{
+    cpp_quote("// App context configuration variables")
+    cpp_quote("#define ACTAG_APP_BASE_URL            L\"APPBASE\"")
+    cpp_quote("#define ACTAG_MACHINE_CONFIG          L\"MACHINE_CONFIG\"")
+    cpp_quote("#define ACTAG_APP_PRIVATE_BINPATH     L\"PRIVATE_BINPATH\"")
+    cpp_quote("#define ACTAG_APP_SHARED_BINPATH      L\"SHARED_BINPATH\"")
+    cpp_quote("#define ACTAG_APP_SNAPSHOT_ID         L\"SNAPSHOT_ID\"")
+    cpp_quote("#define ACTAG_APP_CONFIG_FILE         L\"APP_CONFIG_FILE\"")
+    cpp_quote("#define ACTAG_APP_ID                  L\"APPLICATION_ID\"")
+    cpp_quote("#define ACTAG_APP_SHADOW_COPY_DIRS    L\"SHADOW_COPY_DIRS\"")
+    cpp_quote("#define ACTAG_APP_DYNAMIC_BASE        L\"DYNAMIC_BASE\"")
+    cpp_quote("#define ACTAG_APP_CACHE_BASE          L\"CACHE_BASE\"")
+    cpp_quote("#define ACTAG_APP_NAME                L\"APP_NAME\"")
+    cpp_quote("#define ACTAG_DEV_PATH                L\"DEV_PATH\"")
+    cpp_quote("#define ACTAG_HOST_CONFIG_FILE        L\"HOST_CONFIG\"")
+    cpp_quote("#define ACTAG_SXS_ACTIVATION_CONTEXT  L\"SXS\"")
+    cpp_quote("#define ACTAG_APP_CFG_LOCAL_FILEPATH  L\"APP_CFG_LOCAL_FILEPATH\"")
+    cpp_quote("#define ACTAG_ZAP_STRING              L\"ZAP_STRING\"")
+    cpp_quote("#define ACTAG_ZAP_CONFIG_FLAGS        L\"ZAP_CONFIG_FLAGS\"")
+    cpp_quote("#define ACTAG_APP_DOMAIN_ID           L\"APPDOMAIN_ID\"")
+    cpp_quote("#define ACTAG_APP_CONFIG_BLOB         L\"APP_CONFIG_BLOB\"")
+    cpp_quote("#define ACTAG_FX_ONLY                 L\"FX_ONLY\"")
+   
+    cpp_quote("// App context flag overrides")
+    cpp_quote("#define ACTAG_FORCE_CACHE_INSTALL     L\"FORCE_CACHE_INSTALL\"")
+    cpp_quote("#define ACTAG_RFS_INTEGRITY_CHECK     L\"RFS_INTEGRITY_CHECK\"")
+    cpp_quote("#define ACTAG_RFS_MODULE_CHECK        L\"RFS_MODULE_CHECK\"")
+    cpp_quote("#define ACTAG_BINPATH_PROBE_ONLY      L\"BINPATH_PROBE_ONLY\"")
+    cpp_quote("#define ACTAG_DISALLOW_APPLYPUBLISHERPOLICY  L\"DISALLOW_APP\"")
+    cpp_quote("#define ACTAG_DISALLOW_APP_BINDING_REDIRECTS  L\"DISALLOW_APP_REDIRECTS\"")
+    cpp_quote("#define ACTAG_DISALLOW_APP_BASE_PROBING L\"DISALLOW_APP_BASE_PROBING\"")
+    cpp_quote("#define ACTAG_CODE_DOWNLOAD_DISABLED  L\"CODE_DOWNLOAD_DISABLED\"")
+    cpp_quote("#define ACTAG_DISABLE_FX_ASM_UNIFICATION  L\"DISABLE_FX_ASM_UNIFICATION\"")
+
+    typedef [unique] IApplicationContext *LPAPPLICATIONCONTEXT;
+    
+    typedef enum
+    {
+        APP_CTX_FLAGS_INTERFACE = 0x1
+    } APP_FLAGS;
+
+    HRESULT SetContextNameObject(
+        [in]    LPASSEMBLYNAME pName);
+
+    HRESULT GetContextNameObject(
+        [out]   LPASSEMBLYNAME * ppName);
+
+
+    HRESULT Set(
+        [in]    LPCOLESTR szName, 
+        [in]    LPVOID pvValue,
+        [in]    DWORD  cbValue,
+        [in]    DWORD  dwFlags);
+
+    HRESULT Get(
+        [in]         LPCOLESTR szName, 
+        [out]        LPVOID   pvValue,
+        [in, out]    LPDWORD  pcbValue,
+        [in]         DWORD    dwFlags);
+        
+    HRESULT GetDynamicDirectory(
+        [out, annotation("__out_ecount_opt(*pdwSize)")]         LPWSTR wzDynamicDir,
+        [in, out]     LPDWORD pdwSize);
+        
+    HRESULT GetAppCacheDirectory(
+        [out, annotation("__out_ecount_opt(*pdwSize)")]         LPWSTR wzAppCacheDir,
+        [in, out]     LPDWORD pdwSize);
+    
+    HRESULT RegisterKnownAssembly(
+        [in]          IAssemblyName *pName,
+        [in]          LPCWSTR pwzAsmURL,
+        [out]         IAssembly **ppAsmOut);
+    
+    HRESULT PrefetchAppConfigFile();
+        
+    // This will give a IAssemblyBindingClosure object without really walking
+    // the closure. Any of the APIs on IAssemblyBindingClosure may trigger a 
+    // real walking. 
+    //
+    // This closure is not cached in fusion. Caller is responsible to cache the closure.
+    //
+    // pUnk is the result of a previous bind within the same application context. 
+    // It could be IHostAssembly or IAssembly. The assembly has to be strongly named.
+    // 
+    // dwSharingFlags cannot be 0 now.
+    HRESULT GetAssemblyBindingClosure(
+        [in]  IUnknown *pUnk,
+        [in]  LPCWSTR pwzNativeImagePath,
+        [out] IAssemblyBindingClosure **ppAsmClosure
+        );
+}
+
+[
+        local,
+        object,
+        uuid(56972d9d-0f6c-47de-a038-e82d5de3a777),
+        pointer_default(unique)
+]
+interface IAssemblyNameBinder : IUnknown 
+{
+    HRESULT BindToObject(
+        [in]      REFIID               refIID,
+        [in]      IUnknown            *pUnkSink, 
+        [in]      IUnknown            *pUnkContext,
+        [in]      LPCOLESTR            szCodeBase,
+        [in]      LONGLONG             llFlags,
+        [in]      LPVOID               pParentAssembly,
+        [in]      DWORD                cbReserved,
+        [out]     LPVOID               *ppv,
+        [out]     LPVOID               *ppvNI);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssembly
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(ff08d7d4-04c2-11d3-94aa-00c04fc308ff),
+        pointer_default(unique)
+]
+interface IAssembly : IUnknown
+{
+    typedef [unique] IAssembly *LPASSEMBLY;
+    
+    cpp_quote("#define ASMLOC_LOCATION_MASK          0x0000001B")
+    cpp_quote("#define ASMLOC_UNKNOWN                0x00000000")
+    cpp_quote("#define ASMLOC_GAC                    0x00000001")
+    cpp_quote("#define ASMLOC_DOWNLOAD_CACHE         0x00000002")
+    cpp_quote("#define ASMLOC_RUN_FROM_SOURCE        0x00000003")
+    cpp_quote("#define ASMLOC_CODEBASE_HINT          0x00000004")
+    cpp_quote("#define ASMLOC_ZAP                    0x00000008")
+    cpp_quote("#define ASMLOC_DEV_OVERRIDE           0x00000010")
+    
+    HRESULT GetAssemblyNameDef(
+        [out] IAssemblyName **ppAssemblyName);
+
+    HRESULT GetNextAssemblyNameRef(
+        [in] DWORD nIndex,
+        [out] IAssemblyName **ppAssemblyName);
+        
+    HRESULT GetNextAssemblyModule(
+        [in] DWORD nIndex,
+        [out] IAssemblyModuleImport **ppModImport);
+
+    HRESULT GetModuleByName(
+        [in]       LPCOLESTR               szModuleName,
+        [out]      IAssemblyModuleImport **ppModImport);
+
+    HRESULT GetManifestModulePath(
+        [out, size_is(*pccModulePath), annotation("__out_ecount_full_opt(*pccModulePath)")]  LPOLESTR szModulePath, 
+        [in, out]  LPDWORD pccModulePath);
+        
+    HRESULT GetAssemblyPath(
+        [out, size_is(*lpcwBuffer), annotation("__out_ecount_full_opt(*lpcwBuffer)")] LPOLESTR pStr,
+        [in, out] LPDWORD lpcwBuffer);
+
+    HRESULT GetAssemblyLocation(
+        [out] DWORD *pdwAsmLocation);
+        
+    LOADCTX_TYPE GetFusionLoadContext();
+
+    HRESULT GetNextHardBoundDependency(
+        [in]    DWORD dwIndex, 
+        [out]   IAssembly **ppILAsm, 
+        [out]   IAssembly **ppNIAsm);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyBindingClosureEnumerator
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(b3f1e4ed-cb09-4b85-9a1b-6809582f1ebc),
+        pointer_default(unique)
+]
+interface IAssemblyBindingClosureEnumerator : IUnknown
+{
+    // Get the next assembly in the closure's path
+    HRESULT GetNextAssemblyPath(
+        [out] LPCOLESTR *ppPath,
+        [out] LPCOLESTR *ppniPath);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyBindingClosure
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(415c226a-e513-41ba-9651-9c48e97aa5de),
+        pointer_default(unique)
+]
+interface IAssemblyBindingClosure : IUnknown
+{
+    // Test if all the assemblies in the closure are in GAC.
+    // return:
+    //      S_OK        all assemblies are in GAC.
+    //      S_FALSE     not all assemblies are in GAC.
+    //      otherwise   failure.
+    HRESULT IsAllAssembliesInGAC();
+
+    // Test to see if two closures are semantically the same
+    // under the specified sharing context.
+    // return:
+    //      S_OK        Equal.
+    //      S_FALSE     Not Equal.
+    //      otherwise   failure.
+    HRESULT IsEqual(
+        [in] IAssemblyBindingClosure *pAssemblyClosure
+        );
+
+    HRESULT GetNextFailureAssembly(
+        [in]  DWORD dwIndex, 
+        [out] IAssemblyName **ppName,
+        [out] HRESULT *pHResult);
+
+	// ensure enough data is available
+    HRESULT EnsureWalked(
+        [in] IUnknown *pStartingAssembly, 
+        [in] IApplicationContext *pAppCtx, 
+        [in] WALK_LEVEL level);
+
+    // Iterate over assembly paths in the closure
+    HRESULT EnumerateAssemblies(
+        [out] IAssemblyBindingClosureEnumerator **ppEnumerator);
+
+    HRESULT HasBeenWalked([in] WALK_LEVEL level);
+
+    // Test if the assembly might have unknonwn dependecies because of WinRT
+    // return:
+    //      S_OK        May.
+    //      S_FALSE     No, all dependecies are traceable or FX.
+    //      otherwise   failure.
+    HRESULT MayHaveUnknownDependencies();
+
+
+    // The closure walker asks the profiler (when present) for any additional
+    // assembly references the profiler wishes to add.  This method is then called
+    // back by the profiler for each such assembly reference.
+    HRESULT AddProfilerAssemblyReference(
+        [in] LPVOID pbPublicKeyOrToken,
+        [in] ULONG cbPublicKeyOrToken,
+        [in] LPCWSTR     szName,
+        [in] LPVOID pMetaData,
+        [in] void  *pbHashValue,
+        [in] ULONG       cbHashValue,
+        [in] DWORD       dwAssemblyRefFlags,
+        [in] struct AssemblyReferenceClosureWalkContextForProfAPI * pContext);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyBindSink
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(af0bc960-0b9a-11d3-95ca-00a024a85b51),
+        pointer_default(unique)
+]
+interface IAssemblyBindSink : IUnknown
+{
+    typedef [unique] IAssemblyBindSink *LPASSEMBLY_BIND_SINK;
+    
+    typedef struct _tagFusionBindInfo
+    {
+        IFusionBindLog             *pdbglog;
+        IAssemblyName              *pNamePolicy;
+        DWORD                       dwPoliciesApplied;
+    } FusionBindInfo;
+
+    typedef enum
+    {
+        ASM_NOTIFICATION_START,
+        ASM_NOTIFICATION_PROGRESS,
+        ASM_NOTIFICATION_SUSPEND,
+        ASM_NOTIFICATION_ATTEMPT_NEXT_CODEBASE,
+        ASM_NOTIFICATION_BIND_INFO,
+        ASM_NOTIFICATION_DONE,
+        ASM_NOTIFICATION_NATIVE_IMAGE_DONE        
+    } ASM_NOTIFICATION;
+
+
+    HRESULT OnProgress(
+        [in]    DWORD          dwNotification,
+        [in]    HRESULT        hrNotification,
+        [in]    LPCWSTR        szNotification,
+        [in]    DWORD          dwProgress,
+        [in]    DWORD          dwProgressMax,
+        [in]    LPVOID         pvBindInfo,
+        [in]    IUnknown      *pUnk);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyBinding
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(cfe52a80-12bd-11d3-95ca-00a024a85b51),
+        pointer_default(unique)
+]
+interface IAssemblyBinding : IUnknown
+{
+    typedef [unique] IAssemblyBinding *LPASSEMBLY_BINDINDING;
+
+    HRESULT Control(
+        [in]    HRESULT        hrControl);
+
+    HRESULT DoDefaultUI(
+        [in]    HWND    hWnd,
+        [in]    DWORD   dwFlags);   
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyModuleImport
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(da0cd4b0-1117-11d3-95ca-00a024a85b51),
+        pointer_default(unique)
+]
+interface IAssemblyModuleImport : IStream
+{
+    typedef [unique] IAssemblyModuleImport *LPASSEMBLY_MODULE_IMPORT;
+
+    HRESULT GetModuleName(
+        [out, size_is(*pccModuleName), annotation("__out_ecount_full_opt(*pccModuleName)")]  LPOLESTR szModuleName, 
+        [in, out]  LPDWORD pccModuleName);
+
+    HRESULT GetHashAlgId(
+        [out]   LPDWORD pdwHashAlgId);
+
+    HRESULT GetHashValue(
+        [out, size_is(*pcbHashValue)] BYTE *pbHashValue,
+        [in, out] LPDWORD pcbHashValue);
+
+    HRESULT GetFlags(
+        [out]  LPDWORD pdwFlags);
+
+    HRESULT GetModulePath(
+        [out, size_is(*pccModulePath), annotation("__out_ecount_full_opt(*pccModulePath)")]  LPOLESTR szModulePath, 
+        [in, out]  LPDWORD pccModulePath);
+        
+    BOOL IsAvailable();
+    
+    HRESULT BindToObject(
+        [in]       IAssemblyBindSink *pBindSink,
+        [in]       IApplicationContext *pAppCtx,
+        [in]       LONGLONG llFlags,
+        [out]      LPVOID *ppv);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyScavenger
+//
+///////////////////////////////////////////////////////////////////////////////
+[
+        local,
+        object,
+        uuid(21b8916c-f28e-11d2-a473-00ccff8ef448),
+        pointer_default(unique)
+]
+interface IAssemblyScavenger : IUnknown
+{
+
+    HRESULT  ScavengeAssemblyCache
+    (
+    );
+
+    HRESULT GetCacheDiskQuotas
+    (
+        [out] DWORD *pdwZapQuotaInGAC,
+        [out] DWORD *pdwDownloadQuotaAdmin,
+        [out] DWORD *pdwDownloadQuotaUser
+    );
+
+    HRESULT SetCacheDiskQuotas
+    (
+        [in] DWORD dwZapQuotaInGAC,
+        [in] DWORD dwDownloadQuotaAdmin,
+        [in] DWORD dwDownloadQuotaUser
+    );
+
+    HRESULT  GetCurrentCacheUsage
+    (
+        [out] DWORD *dwZapUsage,
+        [out] DWORD *dwDownloadUsage
+    );
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+[
+        local,
+        object,
+        uuid(D8FB9BD6-3969-11d3-B4AF-00C04F8ECB26),
+        pointer_default(unique)
+]
+interface ICodebaseList : IUnknown
+{
+    HRESULT AddCodebase
+    (
+        [in]       LPCWSTR              wzCodebase,
+        [in]       DWORD                dwFlags
+    );
+    
+    HRESULT RemoveCodebase
+    (
+        [in]       DWORD               dwIndex
+    );
+    
+    HRESULT RemoveAll();
+    
+    HRESULT GetCount
+    (
+        [out]      DWORD              *pdwCount
+    );
+    
+    HRESULT GetCodebase
+    (
+        [in]       DWORD               dwIndex,
+        [out]      DWORD              *pdwFlags,
+        [out, annotation("__out_ecount_opt(*pcbCodebase)")]      
+                    LPWSTR              wzCodebase,
+        [in, out]  DWORD              *pcbCodebase
+    );
+}
+
+[
+        local,
+        object,
+        uuid(0A6F16F8-ACD7-11d3-B4ED-00C04F8ECB26),
+        pointer_default(unique)
+]
+interface IDownloadMgr : IUnknown
+{
+    HRESULT PreDownloadCheck
+    (
+        [out]      void **ppv,
+        [out]      void **ppvNI
+    );
+
+    HRESULT DoSetup
+    (
+        [in]       LPCWSTR              wzSourceUrl,
+        [in]       LPCWSTR              wzFilePath,
+        [in]       const FILETIME      *pftLastMod,
+        [out]      IUnknown             **ppUnk,
+        [out]      IUnknown             **ppAsmNI
+    );
+    
+    HRESULT ProbeFailed
+    (
+        [out]      IUnknown             **ppUnk
+    );
+    
+    HRESULT IsDuplicate
+    (
+        [out]      IDownloadMgr         *ppDLMgr
+    );
+    
+    HRESULT LogResult();
+
+    HRESULT DownloadEnabled
+    (
+        [out]      BOOL *pbEnabled
+    );
+    
+    HRESULT GetBindInfo
+    (
+        [out]      FusionBindInfo       *pBindInfo
+    );
+
+    HRESULT CacheBindingResult
+    (
+        [in]        HRESULT hrResult
+    );
+}
+
+
+[
+        local,
+        object,
+        uuid(711f7c2d-8234-4505-b02f-7554f46cbf29),
+        pointer_default(unique)
+]
+interface IHostAssembly : IUnknown
+{
+    typedef [unique] IHostAssembly *LPHOSTASSEMBLY;  
+   
+    HRESULT GetAssemblyNameDef(
+        [out] IAssemblyName **ppAssemblyName);
+
+    HRESULT GetNextAssemblyNameRef(
+        [in] DWORD nIndex,
+        [out] IAssemblyName **ppAssemblyName);
+        
+    HRESULT GetNextAssemblyModule(
+        [in] DWORD nIndex,
+        [out] IHostAssemblyModuleImport **ppModImport);
+
+    HRESULT GetModuleByName(
+        [in]       LPCOLESTR                   szModuleName,
+        [out]      IHostAssemblyModuleImport **ppModImport);
+
+    // Always release the copy in fusion
+    HRESULT GetAssemblyStream(
+        [out]      IStream **ppStreamAsm);
+        
+    HRESULT GetAssemblyId(
+        [out]      UINT64 *pAssemblyId);
+
+    // Always release the copy in fusion
+    HRESULT GetAssemblyDebugStream(
+        [out]      IStream **ppDebugStream);
+
+    LOADCTX_TYPE GetFusionLoadContext(
+        );
+        
+    HRESULT GetAssemblyContext(
+        [out]      UINT64 *pdwAssemblyContext);
+}
+
+[
+        local,
+        object,
+        uuid(b6f2729d-6c0f-4944-b692-e5a2ce2c6e7a),
+        pointer_default(unique)
+]
+interface IHostAssemblyModuleImport : IUnknown
+{
+    typedef [unique] IHostAssemblyModuleImport *LPHOSTASSEMBLY_MODULE_IMPORT;
+
+    HRESULT GetModuleName(
+        [out, size_is(*pccModuleName), annotation("__out_ecount_full(*pccModuleName)")]  LPOLESTR szModuleName, 
+        [in, out]  LPDWORD pccModuleName);
+
+    HRESULT GetModuleStream(
+        [out]  IStream **ppStreamModule);
+        
+    HRESULT GetModuleId(
+        [out]  DWORD  *pdwModuleId);
+
+    HRESULT GetModuleDebugStream(
+        [out]  IStream **ppDebugStream);
+}    
+
+
+#pragma midl_echo("STDAPI CreateHistoryReader(LPCWSTR wzFilePath, IHistoryReader **ppHistReader);")
+#pragma midl_echo("STDAPI LookupHistoryAssembly(LPCWSTR pwzFilePath, FILETIME *pftActivationDate, LPCWSTR pwzAsmName, LPCWSTR pwzPublicKeyToken, LPCWSTR wzCulture, LPCWSTR pwzVerRef, IHistoryAssembly **pHistAsm);")
+#pragma midl_echo("STDAPI GetHistoryFileDirectory(__out_ecount_opt(*pdwSize) LPWSTR wzDir, DWORD *pdwSize);")
+#pragma midl_echo("STDAPI PreBindAssembly(IApplicationContext *pAppCtx, IAssemblyName *pName, IAssembly *pAsmParent, IAssemblyName **ppNamePostPolicy, LPVOID pvReserved); ")
+
+#pragma midl_echo("STDAPI CreateApplicationContext(IAssemblyName *pName, LPAPPLICATIONCONTEXT *ppCtx);             ")
+#pragma midl_echo("STDAPI IsRetargetableAssembly(IAssemblyName *pName, BOOL *pbIsRetargetable);             ")
+#pragma midl_echo("STDAPI IsOptionallyRetargetableAssembly(IAssemblyName *pName, BOOL *pbIsRetargetable);             ")
+
+
+cpp_quote("#define EXPLICITBIND_FLAGS_NON_BINDABLE          0x0")
+cpp_quote("#define EXPLICITBIND_FLAGS_EXE                   0x1")
+
+#ifndef FEATURE_CORECLR
+#pragma midl_echo("HRESULT BindToSystem(IAssemblyName *pNameSystem, LPCWSTR pcwzSystemDirectory, IUnknown *pNIEva, IApplicationContext *pAppCtx, IAssembly **ppAsmOut, IBindResult **ppNIAsmOut, IFusionBindLog **ppdbglog);")
+
+#pragma midl_echo("HRESULT ExplicitBind(LPCWSTR wzPath, IApplicationContext *pAppCtx, DWORD dwFlags, IUnknown *pNIEva, IAssembly **ppAsmOut, IBindResult **ppNIAsmOut, IFusionBindLog **ppdbglog);")
+
+#pragma midl_echo("HRESULT GetBindContextFromApplicationContext(IApplicationContext *pAppCtx, IBindContext **ppBindCtx);")
+
+#pragma midl_echo("HRESULT SetApplicationContext_WinRTBinder(IApplicationContext * pAppCtx, IBindContext * pWinRTBinder);")
+
+// Used by InstallNativeImage() to extract dependency names from the NI's CORCOMPILE_DEPENDENCY_INFO records.
+#pragma midl_echo("STDAPI FusionGetAssemblyNameRefFromMDImport(IMetaDataAssemblyImport *pMDImport, /* This is really an mdAssemblyRef */ DWORD mdar, DWORD dwFlags, IAssemblyName **ppName);")
+
+#endif //!FEATURE_CORECLR

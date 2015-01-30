@@ -1,0 +1,21 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+# Automatable to detect gross errors; also manually inspect for proper behaviour
+miscellaneous/messageboxw/test1,1 
+# Automatable to detect gross errors; also manually inspect for proper behaviour
+# Env var PAL_DISABLE_MESSAGEBOX=1 disables msg boxes for automation on Windows
+miscellaneous/messageboxw/test2,1
+# gethostbyname2 will fail if one of the 2 conditions is not met:
+#   i.  the test machine's /etc/hosts file does not contain an entry for the local host
+#   ii. the test machine is not registered with a reachable dns server
+networking/gethostbyname/gethostbyname2,1
+# Automatable to detect gross errors; also manually inspect for proper behaviour
+pal_specific/pal_get_stderr/test1,1
+pal_specific/pal_get_stdout/test1,1
+# The tests for the sleep api may fail depending upon what other 
+# processes are running and their relative priority.
+threading/sleep/test1,1
+threading/sleepex/test1,1
+

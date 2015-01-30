@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = malloc
+Name = Positive Test for malloc
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that malloc properly allocates memory.

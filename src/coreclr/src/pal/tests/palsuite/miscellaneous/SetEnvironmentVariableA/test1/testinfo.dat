@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = SetEnvironmentVariableA
+Name = Positive test of SetEnvironmentVariableA
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Set an environment variable and check to ensure success was returned.  Then
+= get the environment variable and compare to the correct value.  Also, check
+= that calling the function again, resets the variable properly.  And that
+= calling with NULL deletes the variable.
+
+
+
+

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileTime
+Name = Positive Test for GetFileTime
+TYPE = DEFAULT
+EXE1 = getfiletime
+Description 
+= Test the GetFileTime function.  This test creates two files and compares
+= their creation times.  They should be different.  It also tries to get the
+= file time of an invalid handle, which should cause the function to tail.

@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = UnlockFile
+Name = Positive test for UnlockFile API
+TYPE = DEFAULT
+EXE1 = test3
+EXE2 = helper
+Description
+= Lock a portion of the file with the parent.  Then have the child lock 
+= another portion.  Have the child attempt to call Unlock on the parent's 
+= locked data, and the parent do the same to the child.  Ensure that the 
+= locks are respected.
+

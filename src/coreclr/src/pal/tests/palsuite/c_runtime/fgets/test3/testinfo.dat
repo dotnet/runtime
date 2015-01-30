@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fgets
+Name = Positive Test for fgets
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Tries to read from an empty file using fgets(), to verify handling of
+= EOF condition. 
+

@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _getw
+Name = Positive Test for _getw
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Several integers are read from a previously written file
+=using _getw.  The test passes if the values read match those known to
+=be in the file.
+

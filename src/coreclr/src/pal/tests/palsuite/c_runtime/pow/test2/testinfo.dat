@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = pow
+Name = Call pow with special input and output.
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Call the pow function with special input values or with
+= values that produce special output such as non-numbers
+= infinity or negative infinity.
+

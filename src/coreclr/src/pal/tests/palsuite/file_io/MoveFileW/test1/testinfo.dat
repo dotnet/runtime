@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = MoveFileW
+Name = Positive Test for MoveFileW
+TYPE = DEFAULT
+EXE1 = movefilew
+Description
+=Performs a number of MoveFileW tests and uses the 
+=file ExpectedResults.txt to determine if the test passed/failed

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetConsoleOutputCP
+Name = Positive Test for GetConsoleOutputCP (test 1)
+Type = DEFAULT
+EXE1 = getconsoleoutputcp
+Description
+= Test GetConsoleOutputCP. Apparently there are only two possible
+= return values: CP_ACP or 1252

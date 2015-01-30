@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Samples
+Function = sample
+Name = Sample Test #2
+TYPE = DEFAULT
+EXE1 = test
+Description
+=This is a sample test case.  It will always fail.
+

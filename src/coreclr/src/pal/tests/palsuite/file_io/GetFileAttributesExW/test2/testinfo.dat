@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileAttributesExW
+Name = Test for GetFileAttributesExW
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Tests the PAL implementation of the GetFileAttributesExW function.
+= First get a file's attributes, modify the file, re-get its attributes
+= and compare the two sets of attributes  

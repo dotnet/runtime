@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileTime
+Name = Positive Test for GetFileTime
+TYPE = DEFAULT
+EXE1 = getfiletime
+Description 
+= Test the GetFileTime function.  This test gets the file time of a given
+= file while passing all the combonations of NULL as parameters.  The
+= function should handle these as unneeded times, and still succeed.

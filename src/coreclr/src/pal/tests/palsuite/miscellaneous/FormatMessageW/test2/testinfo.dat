@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = FormatMessageW
+Name = Positive test of FormatMessageW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= A collection of tests to check and make sure all the standard formatters work.
+
+
+

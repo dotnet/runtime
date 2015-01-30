@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetCurrentDirectoryW
+Name = Test for GetCurrentDirectoryW (test 1)
+Type = DEFAULT 
+EXE1 = getcurrentdirectoryw
+Description
+= Compute the current directory and compare with the results 
+= from GetCurrentDirectoryW
+

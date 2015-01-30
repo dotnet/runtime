@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = HeapReAlloc
+Name = Positive test for HeapReAlloc to check behaviour with byte size 0
+TYPE = DEFAULT
+EXE1 = test5
+Description
+= Allocate some memory. Then call HeapRealloc with 0 as the
+= amount of memory to reallocate.  This should work, essentially freeing
+= the memory (though we can't verfiy this)
+

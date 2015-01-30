@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileType
+Name = Test for GetFileTYpe
+TYPE = DEFAULT
+EXE1 = getfiletype
+Description
+= Test the PAL implementation of the GetFileType on a handle 
+= to a console.

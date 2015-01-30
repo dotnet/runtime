@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetCurrentDirectoryW
+Name = Negative test for SetCurrentDirectoryW (test 3)
+Type = DEFAULT
+EXE1 = setcurrentdirectoryw
+Description
+= Try calling SetCurrentDirectoryW with an invalid path,
+= with a valid filename and with NULL

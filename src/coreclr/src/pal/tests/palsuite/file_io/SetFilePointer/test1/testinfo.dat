@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFilePointer
+Name = Test for SetFilePointer (test 1)
+Type = DEFAULT 
+EXE1 = setfilepointer
+Description
+=Set the file pointer on a NULL file handle and other invalid options
+

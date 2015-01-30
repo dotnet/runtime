@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcscmp
+Name = Test #1 for wcscmp
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that wcscmp correctly compares two strings with case sensitivity.

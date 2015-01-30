@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _rtor
+Name = Positive Test for _rotr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the _rotr function. 
+= The _rotr function rotates the unsigned value. _rotr
+= rotates the value right and "wraps" bits rotated off 
+= one end of value to the other end.  
+= This test compares the result to a previously determined
+= value.

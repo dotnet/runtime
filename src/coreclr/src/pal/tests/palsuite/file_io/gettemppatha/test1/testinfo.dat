@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetTempPathA
+Name = Test for GetTempPathA (test 1)
+Type = DEFAULT
+EXE1 = gettemppatha
+Description
+= Calls GetTempPathA and verifies by passing the returned
+= value to CreateDirectoryA. If the returned path exists,
+= CreateDirectoryA will fail.
+

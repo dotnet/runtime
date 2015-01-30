@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = MapViewOfFile
+Name = Negative test MapViewOfFile API
+TYPE = DEFAULT
+EXE1 = mapviewoffile
+Description
+= Negative test the MapViewOfFile API.
+= Call MapViewOfFile with all access modes, 
+= except read-only, on a read only map.

@@ -1,0 +1,170 @@
+#!/bin/bash
+
+usage()
+{
+    echo "Usage: $0 [BuildArch] [BuildType] [clean]"
+    echo "BuildType can be: Debug, Release"
+    echo "BuildArch can be: Amd64"
+    echo "clean - optional argument to force a clean build."
+
+    exit 1
+}
+
+# Performs "clean build" type actions (deleting and remaking directories)
+
+clean()
+{
+    echo Doing a clean build
+
+    # make projects would need a rebuild
+    MakeCleanArgs=clean
+
+    # Cleanup the binaries drop folder
+    if [ -d "$__BinDir" ]; then 
+        rm -r $__BinDir
+    fi
+    
+    mkdir -p $__BinDir
+
+    # Cleanup the CMake folder
+    if [ -d "$__CMakeSlnDir" ]; then
+         rm -r $__CMakeSlnDir
+    fi
+    mkdir -p $__CMakeSlnDir
+
+    # Cleanup the logs folder
+    if [ -d "$__LogsDir" ]; then
+        rm -r $__LogsDir
+    fi
+    
+    mkdir -p $__LogsDir
+
+    # Cleanup intermediates folder
+    if [ -d "$__IntermediatesDir" ]; then
+        rm -f $__IntermediatesDir
+    fi
+
+    mkdir -p $__IntermediatesDir
+}
+
+# Check the system to ensure the right pre-reqs are in place
+
+check_prereqs()
+{
+    echo Checking pre-requisites...
+    
+    # Check presence of CMake on the path
+    hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
+    
+    # Check for clang
+    hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
+}
+
+build_coreclr()
+{
+    # All set to commence the build
+    
+    echo Commencing build of native components for %__BuildArch%/%__BuildType%
+    cd $__CMakeSlnDir
+    
+    # Regenerate the CMake solution
+    $__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh $__VBL_ROOT
+    
+    # Check that the makefiles were created.
+    
+    if [ ! -f "$__CMakeSlnDir/Makefile" ]; then
+        echo Failed to generate native component build project!
+        exit 1
+    fi
+    
+    # Build CoreCLR
+    
+    make $__UnprocessedBuildArgs
+    if [ $? != 0 ]; then
+        echo Failed to build coreclr components.
+        exit 1
+    fi
+}
+
+echo Commencing CoreCLR Repo build
+
+# Argument types supported by this script:
+#
+# Build architecture - valid value is: Amd64.
+# Build Type         - valid values are: Debug, Release
+#
+# Set the default arguments for build
+
+# Obtain the location of the bash script to figure out whether the root of the repo is.
+__ProjectRoot=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+__VBL_ROOT="$__ProjectRoot"
+__BuildArch=amd64
+__MSBuildBuildArch=x64
+__BuildType=debug
+
+# Set the various build properties here so that CMake and MSBuild can pick them up
+__ProjectDir="$__ProjectRoot"
+__SourceDir="$__ProjectDir/src"
+__PackagesDir="$__SourceDir/.nuget"
+__RootBinDir="$__ProjectDir/binaries"
+__LogsDir="$__RootBinDir/Logs"
+__CMakeSlnDir="$__RootBinDir/CMake"
+__UnprocessedBuildArgs=
+__MSBCleanBuildArgs=
+__CleanBuild=false
+
+for i in "$@"
+    do
+        case $i in
+        -?|-h|--help)
+        usage
+        exit 1
+        ;;
+        amd64)
+        __BuildArch=amd64
+        __MSBuildBuildArch=x64
+        ;;
+        debug)
+        __BuildType=debug
+        ;;
+        release)
+        __BuildType=release
+        ;;
+        clean)
+        __CleanBuild=true
+        ;;
+        *)
+        __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
+    esac
+done
+
+# Set the remaining variables based upon the determined build configuration
+__BinDir="$__RootBinDir/Product/$__BuildArch/$__BuildType"
+__PackagesBinDir="$__BinDir/.nuget"
+__ToolsDir="$__RootBinDir/tools"
+__TestWorkingDir="$__RootBinDir/tests/$__BuildArch/$__BuildType"
+__IntermediatesDir="$__RootBinDir/intermediates/$__BuildArch/$__BuildType"
+
+# Switch to clean build mode if the binaries output folder does not exist
+if [ ! -d "$__RootBinDir" ]; then
+    __CleanBuild=1
+fi
+
+# Configure environment if we are doing a clean build.
+if [ $__CleanBuild == 1 ]; then
+    clean
+fi
+
+# Check prereqs.
+
+check_prereqs
+
+# Build the coreclr (native) components.
+
+build_coreclr
+
+# Build complete
+
+echo Repo successfully built.
+echo Product binaries are available at $__BinDir
+exit 0

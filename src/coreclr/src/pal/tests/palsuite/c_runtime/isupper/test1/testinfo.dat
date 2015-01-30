@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = isupper
+Name = Positive Test for isupper
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the isupper function
+= Check that a number of characters return the correct values for whether
+= they are upper case or not.
+
+
+
+
+

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _ecvt
+Name = Call _ecvt on normal values, negatives, exponents and hex digits.
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Call the _ecvt function on a number of cases.  Check that it
+= handles negatives, positives and double bounds correctly.  Also check that 
+= the 'digit' specification works.

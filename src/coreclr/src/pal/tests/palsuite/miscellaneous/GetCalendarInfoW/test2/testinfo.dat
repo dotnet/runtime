@@ -1,0 +1,11 @@
+Version = 1.0
+Section = miscellaneous
+Function = GetCalendarInfoW
+Name = Positive test #2 for GetCalendarInfoW API to retrieve the info of a 
+calendar
+TYPE = DEFAULT
+EXE1 = getcalendarinfow
+Description
+= Test the GetCalendarInfoW to retrieve the information of all calendars
+= but US English
+

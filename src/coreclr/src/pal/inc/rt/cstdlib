@@ -1,0 +1,15 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+//
+// <OWNER>clrosdev</OWNER>
+//
+// ===========================================================================
+// File: cstdlib
+// 
+// ===========================================================================
+// dummy cstdlib for PAL
+
+#include "palrt.h"

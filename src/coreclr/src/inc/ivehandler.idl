@@ -1,0 +1,73 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+/* ------------------------------------------------------------------------- *
+ * Common Language Runtime Verification Event Handler Interface
+ * ------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------- *
+ * Imported types
+ * ------------------------------------------------------------------------- */
+
+#ifndef DO_NO_IMPORTS
+
+import "unknwn.idl";
+
+#define _VER_RAW_STRUCT_FOR_IDL_
+#include "VerError.h"
+#undef _VER_RAW_STRUCT_FOR_IDL_
+
+#endif
+
+typedef _VerError VEContext;
+
+/* ------------------------------------------------------------------------- *
+ * Forward declarations
+ * ------------------------------------------------------------------------- */
+
+interface IVEHandler;
+
+
+/* ------------------------------------------------------------------------- *
+ * Library defintion
+ * ------------------------------------------------------------------------- */
+
+[
+  uuid(856CA1B0-7DAB-11d3-ACEC-00C04F86C309),
+  version(1.0),
+  helpstring("Common Language Runtime Verification Event Handler 1.0 Type Library")
+]
+library VEHandlerLib
+{
+    importlib("STDOLE2.TLB");
+
+	[
+        uuid(856CA1B1-7DAB-11d3-ACEC-00C04F86C309)
+	]
+	coclass VEHandlerClass
+	{
+		[default] interface IVEHandler;
+	};
+    
+};
+
+/* ------------------------------------------------------------------------- *
+ * IVEHandler interface
+ * ------------------------------------------------------------------------- */
+[
+ object,
+ uuid(856CA1B2-7DAB-11d3-ACEC-00C04F86C309),
+ pointer_default(unique)
+]
+interface IVEHandler : IUnknown
+{
+    HRESULT VEHandler(
+			[in] HRESULT VECode,
+			[in] VEContext Context,
+			[in] SAFEARRAY(VARIANT) psa);
+	HRESULT SetReporterFtn(
+			[in] __int64 lFnPtr);
+
+};
+

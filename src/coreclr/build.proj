@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+
+  <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
+  <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <Address ParameterType="System.String" Required="true"/>
+      <FileName ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+           var directory = System.IO.Path.GetDirectoryName(FileName);
+           System.IO.Directory.CreateDirectory(directory);
+           var client = new System.Net.WebClient();
+           client.Proxy = System.Net.WebRequest.DefaultWebProxy;
+           client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+           client.DownloadFile(Address, FileName);
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="_RestoreBuildTools"
+    BeforeTargets="Build"
+    Inputs="$(BuildToolsTargetInputs)"
+    Outputs="$(BuildToolsTargetOutputs)"
+    >
+
+    <!-- Download latest nuget.exe -->
+    <DownloadFile
+      Condition="!Exists($(NuGetToolPath))"
+      Address="http://nuget.org/nuget.exe"
+      FileName="$(NuGetToolPath)" />
+
+    <!-- Restore build tools -->
+    <Exec
+      StandardOutputImportance="Low"
+      Command="&quot;$(NuGetToolPath)&quot; install &quot; $(SourceDir).nuget\packages.config &quot;  -o &quot; $(ToolsDir) &quot; $(NuGetConfigCommandLine)" />
+
+    <Touch Files="$(BuildToolsInstallSemaphore)" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Setup Nuget properties -->
+  <PropertyGroup>
+    <NuSpecPathSrc>$(PackagesDir)Microsoft.DotNet.CoreCLR.nuspec</NuSpecPathSrc>
+    <NuSpecPathBin>$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec</NuSpecPathBin>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NuSpecs Include="$(NuSpecPathBin)" />
+  </ItemGroup>
+
+  <!-- Generate Microsoft.Dotnet.CoreCLR nuget package -->
+  <Target Name="BuildNuGetPackages" AfterTargets="Build" Condition="'$(BuildNugetPackage)' != 'false'">
+    <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
+    <Copy SourceFiles="$(NuSpecPathSrc)" DestinationFiles="$(NuSpecPathBin)" />
+    <Exec Command="$(NuGetToolPath) pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
+  </Target>
+
+  <ItemGroup>
+    <PDBSToMove Include="$(BinDir)mscorlib.pdb"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <MscorlibPDBPath>$(BinDir)mscorlib.pdb</MscorlibPDBPath>
+  </PropertyGroup>
+  
+  <Target Name="MovePDB" AfterTargets="Build">
+    <Move Condition="Exists($(MscorlibPDBPath))"
+        SourceFiles="@(PDBSToMove)"
+        DestinationFolder="$(BinDir)PDB"
+    />
+  </Target>
+  
+  <!-- Build mscorlib -->
+  <ItemGroup>
+    <Project Include="src\mscorlib\mscorlib.csproj" />
+  </ItemGroup>
+
+  <Import Project="dir.traversal.targets" />
+
+  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
+  <Target Name="Clean">
+    <Delete Files="$(BinDir)mscorlib.*" />
+  </Target>
+</Project>

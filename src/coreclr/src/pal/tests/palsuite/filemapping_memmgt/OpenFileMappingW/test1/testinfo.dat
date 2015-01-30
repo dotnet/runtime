@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = OpenFileMappingW
+Name = Positive test for OpenFileMappingW API
+TYPE = DEFAULT
+EXE1 = openfilemappingw
+Description
+=Test the OpenFileMappingW with FILE_MAP_ALL_ACCESS access

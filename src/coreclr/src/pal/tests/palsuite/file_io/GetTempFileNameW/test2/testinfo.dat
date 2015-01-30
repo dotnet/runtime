@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetTempFileNameW
+Name = Test for GetTempFileNameW (test 2)
+Type = DEFAULT 
+EXE1 = gettempfilenamew
+Description
+= This test attempts to create over 65000 files and will
+= have to be run manually because it will take longer than
+= the maximum 60 seconds allowed per test
+

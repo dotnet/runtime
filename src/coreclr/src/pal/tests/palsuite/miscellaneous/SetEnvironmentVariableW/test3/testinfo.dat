@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = SetEnvironmentVariableW
+Name = Return value test of SetEnvironmentVariableW
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Create environment variables that differ only by case
+= and verify that they are treated distinctly in the
+= BSD Operating System.

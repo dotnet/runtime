@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = isalpha
+Name = Positive Test for isalpha
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the isalpha function
+= Check that a number of characters return the correct values for whether
+= they are alpha or not.
+
+
+
+
+

@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFileTime
+Name = Negative Test for SetFileTime
+TYPE = DEFAULT
+EXE1 = setfiletime
+Description 
+= Test the SetFileTime function.  
+= This test first tries to SetFileTime on a HANDLE which doesn't have
+= GENERIC_WRITE set, which should fail.  Then it attempts to set the file
+= time with bad FILETIME structures, which should also fail

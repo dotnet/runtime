@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcstod
+Name = Positive Test for wcstod
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Tests wcstod with overflows
+

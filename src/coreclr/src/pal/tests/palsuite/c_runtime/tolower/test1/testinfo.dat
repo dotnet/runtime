@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = tolower
+Name = Positive Test for tolower
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the tolower function.
+= Check that the tolower function makes capital character lower case.
+= Also check that it has no effect on lower case letters and special
+= characters.
+
+
+
+

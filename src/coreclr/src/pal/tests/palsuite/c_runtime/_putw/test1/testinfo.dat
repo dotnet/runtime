@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _putw
+Name = Positive test for _putw
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Several integers are written to a new file using _putw.  This file is
+= closed, reopened and read from to verify the writes were successful.

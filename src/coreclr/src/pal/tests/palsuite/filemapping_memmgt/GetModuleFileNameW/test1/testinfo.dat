@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = GetModuleFileNameW
+Name = Positive test for GetModuleFileNameW API
+TYPE = DEFAULT
+EXE1 = getmodulefilenamew
+Description
+=Test the GetModuleFileNameW to retrive the specified module
+=full path and file name in UNICODE

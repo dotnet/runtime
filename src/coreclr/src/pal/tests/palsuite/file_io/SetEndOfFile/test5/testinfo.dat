@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetEndOfFile
+Name = Positive Test for SetEndOfFile
+Type = DEFAULT 
+EXE1 = test5
+Description
+= Tests the PAL implementation of the SetEndOfFile function.
+= Test attempts to set the end of file pointer to a position
+= which has data before and after it.  Then it attempts to 
+= read text beyond the end of file pointer.
+

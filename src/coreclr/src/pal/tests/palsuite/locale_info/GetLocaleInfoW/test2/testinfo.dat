@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = GetLocaleInfoW
+Name = Test #2 for GetLocaleInfoW
+TYPE = DEFAULT
+EXE1 = test2
+Description
+=Tests that GetLocaleInfoW will correctly return the amount of
+=buffer space required.  Also tests that it correctly handles a 
+=buffer of insufficient space.

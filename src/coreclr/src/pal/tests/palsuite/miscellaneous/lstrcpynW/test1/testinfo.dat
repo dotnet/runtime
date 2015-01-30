@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = lstrcpynW
+Name = Positive test of lstrcpynW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Ensure that a copy of a string works, and that the return values
+= are correct for success and failure.
+
+
+

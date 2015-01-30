@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = SetEnvironmentVariableA
+Name = Return value test of SetEnvironmentVariableA
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Test to see that passing NULL to the first param fails.
+= Test that passing NULL to both params fails.
+= Set an environment variable, then pass NULL to the second param
+= to delete it.  Then make the same call again, to check that it fails.
+
+
+
+

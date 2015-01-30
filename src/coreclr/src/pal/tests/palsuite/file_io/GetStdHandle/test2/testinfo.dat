@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetStdHandle
+Name = Positive Test for GetStdHandle (test 2)
+Type = DEFAULT 
+EXE1 = getstdhandle
+Description
+= Smoke Test GetStdHandle on a valid/invalid std handles
+

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = getenv
+Name = Test retrieval of variables differing only by case.
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Check that environment variables differing only by their
+= case are interpreted as the same variables in the WIN32
+= platform.

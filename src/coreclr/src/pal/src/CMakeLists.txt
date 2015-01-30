@@ -1,0 +1,141 @@
+cmake_minimum_required(VERSION 2.8.12.2)
+project(CoreClrPal)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Include directories
+
+include_directories(include)
+
+# Compile options
+
+add_definitions(-DPLATFORM_UNIX=1)
+add_definitions(-D__LINUX__=1)
+add_definitions(-DLP64COMPATIBLE=1)
+add_definitions(-DFEATURE_PAL=1)
+add_definitions(-DCORECLR=1)
+add_definitions(-DPIC=1)
+add_definitions(-DBIT64=1)
+add_definitions(-D_WIN64=1)
+
+add_compile_options(-fno-builtin)
+add_compile_options(-fPIC)
+
+set(SOURCES
+  arch/i386/context.cpp
+  arch/i386/processor.cpp
+  cruntime/file.cpp
+  cruntime/filecrt.cpp
+  cruntime/finite.cpp
+  cruntime/lstr.cpp
+  cruntime/malloc.cpp
+  cruntime/mbstring.cpp
+  cruntime/misc.cpp
+  cruntime/misctls.cpp
+  cruntime/path.cpp
+  cruntime/printf.cpp
+  cruntime/printfcpp.cpp
+  cruntime/silent_printf.cpp
+  cruntime/string.cpp
+  cruntime/stringtls.cpp
+  cruntime/thread.cpp
+  cruntime/wchar.cpp
+  cruntime/wchartls.cpp
+  debug/debug.cpp
+  exception/console.cpp
+  exception/seh.cpp
+  exception/signal.cpp
+  file/directory.cpp
+  file/disk.cpp
+  file/file.cpp
+  file/filetime.cpp
+  file/find.cpp
+  file/path.cpp
+  file/shmfilelockmgr.cpp
+  handlemgr/handleapi.cpp
+  handlemgr/handlemgr.cpp
+  init/pal.cpp
+  init/sxs.cpp
+  loader/module.cpp
+  loader/modulename.cpp
+  locale/unicode.cpp
+  locale/unicode_data.cpp
+  locale/utf8.cpp
+  map/common.cpp
+  map/map.cpp
+  map/virtual.cpp
+  memory/heap.cpp
+  memory/local.cpp
+  misc/dbgmsg.cpp
+  misc/environ.cpp
+  misc/error.cpp
+  misc/fmtmessage.cpp
+  misc/interlock.cpp
+  misc/miscpalapi.cpp
+  misc/strutil.cpp
+  misc/sysinfo.cpp
+  misc/time.cpp
+  misc/utils.cpp
+  misc/version.cpp
+  objmgr/palobjbase.cpp
+  objmgr/shmobject.cpp
+  objmgr/shmobjectmanager.cpp
+  safecrt/makepath_s.c
+  safecrt/memcpy_s.c
+  safecrt/memmove_s.c
+  safecrt/mbusafecrt.c
+  safecrt/safecrt_input_s.c
+  safecrt/safecrt_output_l.c
+  safecrt/safecrt_output_s.c
+  safecrt/safecrt_winput_s.c
+  safecrt/safecrt_woutput_s.c
+  safecrt/splitpath_s.c
+  safecrt/sprintf.c
+  safecrt/sscanf.c
+  safecrt/strcat_s.c
+  safecrt/strcpy_s.c
+  safecrt/strlen_s.c
+  safecrt/strncat_s.c
+  safecrt/strncpy_s.c
+  safecrt/strtok_s.c
+  safecrt/swprintf.c
+  safecrt/vsprintf.c
+  safecrt/vswprint.c
+  safecrt/wcscat_s.c
+  safecrt/wcscpy_s.c
+  safecrt/wcslen_s.c
+  safecrt/wcsncat_s.c
+  safecrt/wcsncpy_s.c
+  safecrt/wcstok_s.c
+  safecrt/wmakepath_s.c
+  safecrt/wsplitpath_s.c
+  safecrt/xtoa_s.c
+  safecrt/xtow_s.c
+  shmemory/shmemory.cpp
+  sync/cs.cpp
+  synchobj/event.cpp
+  synchobj/semaphore.cpp
+  synchobj/mutex.cpp
+  synchmgr/synchcontrollers.cpp
+  synchmgr/synchmanager.cpp
+  synchmgr/wait.cpp
+  thread/process.cpp
+  thread/thread.cpp
+  thread/threadsusp.cpp
+  thread/tls.cpp
+)
+
+add_library(CoreClrPal
+  STATIC
+  ${SOURCES}
+)
+
+target_link_libraries(CoreClrPal
+  pthread
+  rt
+  dl
+  m
+)
+
+
+add_subdirectory(examples)

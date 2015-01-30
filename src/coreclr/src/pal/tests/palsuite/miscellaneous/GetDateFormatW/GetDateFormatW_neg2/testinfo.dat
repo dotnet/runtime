@@ -1,0 +1,9 @@
+Version = 1.0
+Section = miscellaneous
+Function = GetDateFormatW
+Name = Negative test for GetDateFormatW by passing an invalid flag
+TYPE = DEFAULT
+EXE1 = getdateformatw_neg
+Description
+=test for GetDateFormatW by passing an invalid flag which is not
+=supported

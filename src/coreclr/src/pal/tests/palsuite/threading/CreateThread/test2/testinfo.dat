@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = CreateThread
+Name = Positive Test for CreateThread
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Test that lpThreadId is assigned the correct threadId value and
+= that lpThreadId can be NULL.

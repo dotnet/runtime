@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = FreeEnvironmentStringsW
+Name = Positive Return value test for FreeEnvironmentStringsW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Ensure that FreeEnvironmentStringsW returns success when passed pointers
+= that don't point to an environment block.
+
+
+

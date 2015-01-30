@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = ExitThread
+Name = Positive Test for ExitThread
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+= Test for ExitThread.  Create a thread and then call
+= exit thread within the threading function.  Ensure that it exits
+= immediatly.

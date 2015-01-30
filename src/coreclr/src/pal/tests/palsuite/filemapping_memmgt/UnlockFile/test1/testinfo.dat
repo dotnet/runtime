@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = UnlockFile
+Name = Positive test for UnlockFile API
+TYPE = DEFAULT
+EXE1 = test1
+EXE2 = helper
+Description
+= Have the parent Lock a file, then have the child check the lock, then
+= have the parent unlock the file, and the child check again.  
+= This requires some IPC, which is done here with a crude busy wait on a 
+= file (waiting for the file size to change) to avoid too many more
+= dependencies.

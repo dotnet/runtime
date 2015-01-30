@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcstok
+Name = wcstok test- tokenize a string and ensure the string takes correct form.
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Search for a number of tokens within strings.  Check that the return values
+= are what is expect, and also that the strings match up with our expected
+= results.
