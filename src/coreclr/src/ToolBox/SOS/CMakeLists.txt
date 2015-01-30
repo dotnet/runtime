@@ -1,0 +1,3 @@
+add_subdirectory(strike)
+add_subdirectory(DacTableGen)
+add_subdirectory(diasdk)

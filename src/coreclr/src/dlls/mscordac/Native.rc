@@ -1,0 +1,10 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET External Data Access Support\0"
+
+#include <fxver.h>
+#include <fxver.rc>

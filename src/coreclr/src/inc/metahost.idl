@@ -1,0 +1,1098 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+/**************************************************************************************
+ ** Motivation for redesigning the shim APIs:                                        **
+ ** - old APIs assume that there is only one runtime in the process                  **
+ ** - old APIs are redundant (multiple ways for achieving the same effect)           **
+ ** - old APIs are flat and difficult to version (*Ex variants etc.)                 **
+ ** - old APIs mix together totally different concepts - choosing a runtime vs.      **
+ **   activating the runtime vs. performing an operation on the activated runtime    **
+ ** - old APIs are poorly named (incosistent use of the Cor* prefix etc.)            **
+ ** - all in all there's a lot of legacy behavior in the old APIs that it makes      **
+ **   sense to start from scratch                                                    **
+ **                                                                                  **
+ ** Design goals:                                                                    **
+ ** - clear separation between the no-policy base part and the policy-decision-      **
+ **   making part                                                                    **
+ ** - easy to extend with additional functionality by introducing new versions of    **
+ **   the interfaces (interface types are not hardcoded in method signatures)        **
+ ** - functions performing clearly defined steps rather than poorly documented       **
+ **   heavy-weight black boxes                                                       **
+ **************************************************************************************/
+
+/**************************************************************************************
+ ** Interfaces described in this IDL file follow the "Nano-COM" model. Basically     **
+ ** lifetime management (AddRef/Release) and encapsulation (implicit context) are    **
+ ** used from COM. There are no COM types (BSTR, SAFEARRAY, VARIANT), apartment      **
+ ** models, aggregation, or registry activation (CoCreateInstance).                  **
+ **************************************************************************************/
+
+
+import "unknwn.idl";
+import "oaidl.idl";
+import "ocidl.idl";
+
+import "mscoree.idl";
+
+cpp_quote("#include <winapifamily.h>")
+cpp_quote("#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)")
+
+/**************************************************************************************
+ ** This should be the only flat public API exposed from mscoree going forward.      **
+ ** The returned interface is likely to be implemented in a separate versioned DLL   **
+ ** (mscorhst.dll living in the versioned directory for instance). Acceptable values **
+ ** for riid in v4.0 are IID_ICLRMetaHost, IID_ICLRMetaHostPolicy and                **
+ ** IID_ICLRDebugging.                                                               **
+ **************************************************************************************/
+cpp_quote("STDAPI CLRCreateInstance(REFCLSID clsid, REFIID riid, /*iid_is(riid)*/ LPVOID *ppInterface);")
+
+// CLSID CLRStrongName : uuid(B79B0ACD-F5CD-409b-B5A5-A16244610B92)
+cpp_quote("EXTERN_GUID(CLSID_CLRStrongName, 0xB79B0ACD, 0xF5CD, 0x409b, 0xB5, 0xA5, 0xA1, 0x62, 0x44, 0x61, 0x0B, 0x92);")
+
+// IID ICLRMetaHost : uuid(D332DB9E-B9B3-4125-8207-A14884F53216)
+cpp_quote("EXTERN_GUID(IID_ICLRMetaHost, 0xD332DB9E, 0xB9B3, 0x4125, 0x82, 0x07, 0xA1, 0x48, 0x84, 0xF5, 0x32, 0x16);")
+
+// CLSID_CLRMetaHost : uuid(9280188D-0E8E-4867-B30C-7FA83884E8DE)
+cpp_quote("EXTERN_GUID(CLSID_CLRMetaHost, 0x9280188d, 0xe8e, 0x4867, 0xb3, 0xc, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde);")
+
+// IID ICLRMetaHostPolicy : uuid(E2190695-77B2-492e-8E14-C4B3A7FDD593)
+cpp_quote("EXTERN_GUID(IID_ICLRMetaHostPolicy, 0xE2190695, 0x77B2, 0x492e, 0x8E, 0x14, 0xC4, 0xB3, 0xA7, 0xFD, 0xD5, 0x93);")
+
+// CLSID_CLRMetaHostPolicy : uuid(2EBCD49A-1B47-4a61-B13A-4A03701E594B)
+cpp_quote("EXTERN_GUID(CLSID_CLRMetaHostPolicy, 0x2ebcd49a, 0x1b47, 0x4a61, 0xb1, 0x3a, 0x4a, 0x3, 0x70, 0x1e, 0x59, 0x4b);")
+
+// IID ICLRDebugging : uuid(D28F3C5A-9634-4206-A509-477552EEFB10)
+cpp_quote("EXTERN_GUID(IID_ICLRDebugging, 0xd28f3c5a, 0x9634, 0x4206, 0xa5, 0x9, 0x47, 0x75, 0x52, 0xee, 0xfb, 0x10);")
+
+// CLSID_CLRDebugging : uuid(BACC578D-FBDD-48a4-969F-02D932B74634)
+cpp_quote("EXTERN_GUID(CLSID_CLRDebugging, 0xbacc578d, 0xfbdd, 0x48a4, 0x96, 0x9f, 0x2, 0xd9, 0x32, 0xb7, 0x46, 0x34);")
+
+// IID ICLRRuntimeInfo : uuid(BD39D1D2-BA2F-486a-89B0-B4B0CB466891)
+cpp_quote("EXTERN_GUID(IID_ICLRRuntimeInfo, 0xBD39D1D2, 0xBA2F, 0x486a, 0x89, 0xB0, 0xB4, 0xB0, 0xCB, 0x46, 0x68, 0x91);")
+
+// IID ICLRStrongName : uuid(9FD93CCF-3280-4391-B3A9-96E1CDE77C8D)
+cpp_quote("EXTERN_GUID(IID_ICLRStrongName, 0x9FD93CCF, 0x3280, 0x4391, 0xB3, 0xA9, 0x96, 0xE1, 0xCD, 0xE7, 0x7C, 0x8D);")
+
+// IID ICLRStrongName2 : uuid(C22ED5C5-4B59-4975-90EB-85EA55C0069B)
+cpp_quote("EXTERN_GUID(IID_ICLRStrongName2, 0xC22ED5C5, 0x4B59, 0x4975, 0x90, 0xEB, 0x85, 0xEA, 0x55, 0xC0, 0x06, 0x9B);")
+
+// IID ICLRStrongName3 : uuid(22c7089b-bbd3-414a-b698-210f263f1fed)
+cpp_quote("EXTERN_GUID(IID_ICLRStrongName3, 0x22c7089b, 0xbbd3, 0x414a, 0xb6, 0x98, 0x21, 0x0f, 0x26, 0x3f, 0x1f, 0xed);")
+
+// CLSID for legacy debugging interface : uuid(DF8395B5-A4BA-450b-A77C-A9A47762C520}
+cpp_quote("EXTERN_GUID(CLSID_CLRDebuggingLegacy, 0xDF8395B5, 0xA4BA, 0x450b, 0xA7, 0x7C, 0xA9, 0xA4, 0x77, 0x62, 0xC5, 0x20);")
+
+// CLSID CLRProfiling interface : uuid{BD097ED8-733E-43fe-8ED7-A95FF9A8448C}
+cpp_quote("EXTERN_GUID(CLSID_CLRProfiling, 0xbd097ed8, 0x733e, 0x43fe, 0x8e, 0xd7, 0xa9, 0x5f, 0xf9, 0xa8, 0x44, 0x8c);")
+
+// IID ICLRProfiling interface : uuid{B349ABE3-B56F-4689-BFCD-76BF39D888EA}
+cpp_quote("EXTERN_GUID(IID_ICLRProfiling, 0xb349abe3, 0xb56f, 0x4689, 0xbf, 0xcd, 0x76, 0xbf, 0x39, 0xd8, 0x88, 0xea);")
+
+// IID ICLRDebuggingLibraryProvider interface : uuid{3151C08D-4D09-4f9b-8838-2880BF18FE51}
+cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4f9b, 0x88, 0x38, 0x28, 0x80, 0xbf, 0x18, 0xfe, 0x51);")
+
+typedef HRESULT(__stdcall * CLRCreateInstanceFnPtr)(
+        REFCLSID clsid,
+        REFIID riid,
+        LPVOID *ppInterface);
+
+typedef HRESULT(__stdcall * CreateInterfaceFnPtr)(
+        REFCLSID clsid,
+        REFIID riid,
+        LPVOID *ppInterface);
+
+// For use in ICLRMetaHost::RequestRuntimeLoadedNotification
+interface ICLRRuntimeInfo;
+
+typedef HRESULT (__stdcall *CallbackThreadSetFnPtr)();
+typedef HRESULT (__stdcall *CallbackThreadUnsetFnPtr)();
+
+typedef void (__stdcall *RuntimeLoadedCallbackFnPtr)(
+    ICLRRuntimeInfo          *pRuntimeInfo,
+    CallbackThreadSetFnPtr    pfnCallbackThreadSet,
+    CallbackThreadUnsetFnPtr  pfnCallbackThreadUnset);
+
+/**************************************************************************************
+ ** ICLRMetaHost                                                                     **
+ ** Activated using mscoree!CLRCreateInstance. Does not do any policy decisions, get **
+ ** ICLRMetaHostPolicy if you need that.                                             **
+ **************************************************************************************/
+[
+    uuid(D332DB9E-B9B3-4125-8207-A14884F53216),
+    version(1.0),
+    helpstring("CLR meta hosting interface"),
+    local
+]
+interface ICLRMetaHost : IUnknown
+{
+    /**********************************************************************************
+     ** Returns installed runtime with the specific version. Fails if not found.     **
+     ** NULL or any other wildcard is not accepted as pwzVersion                     **
+     ** Supersedes: CorBindToRuntimeEx with STARTUP_LOADER_SAFEMODE                  **
+     **********************************************************************************/
+    HRESULT GetRuntime(
+        [in]  LPCWSTR pwzVersion,
+        [in]  REFIID  riid,   // IID_ICLRRuntimeInfo
+        [out, iid_is(riid), retval] LPVOID *ppRuntime);
+
+    /**********************************************************************************
+     ** Returns runtime version burned into a file's metadata.                       **
+     ** Supersedes: GetFileVersion                                                   **
+     **********************************************************************************/
+    HRESULT GetVersionFromFile(
+        [in]      LPCWSTR pwzFilePath,
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_(*pcchBuffer)")] 
+                  LPWSTR pwzBuffer, 
+        [in, out] DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns an enumerator of runtimes installed on the machine.                  **
+     ** Supersedes: (none)                                                           **
+     **********************************************************************************/
+    HRESULT EnumerateInstalledRuntimes(
+        [out, retval] IEnumUnknown **ppEnumerator);
+
+    /**********************************************************************************
+     ** Provides an enumerator of runtimes loaded into the given process.            **
+     ** Supersedes: GetVersionFromProcess                                            **
+     **********************************************************************************/
+    HRESULT EnumerateLoadedRuntimes(
+        [in]  HANDLE hndProcess,
+        [out, retval] IEnumUnknown **ppEnumerator);
+
+    /**********************************************************************************
+     ** Provides a callback when a new runtime version has just been loaded, but not **
+     ** started.                                                                     **
+     **                                                                              **
+     ** The callback works in the following way:                                     **
+     **   - the callback is invoked only when a runtime is loaded for the first time **
+     **   - the callback will not be invoked for reentrant loads of the same runtime **
+     **   - the callback will be for reentrant loads of other runtimes               **
+     **   - it is guaranteed that no other thread may load the runtime until the     **
+     **     callback returns; any thread that does so blocks until this time.        **
+     **   - for non-reentrant multi-threaded runtime loads, callbacks are serialized **
+     **   - if the host intends to load (or cause to be loaded) another runtime in a **
+     **     reentrant fashion, or intends to perform any operations on the runtime   **
+     **     corresponding to the callback instance, the pfnCallbackThreadSet and     **
+     **     pfnCallbackThreadUnset arguments provided in the callback must be used   **
+     **     in the following way:                                                    **
+     **     - pfnCallbackThreadSet must be called by the thread that might cause a   **
+     **       runtime load before such a load is attempted                           **
+     **     - pfnCallbackThreadUnset must be called when the thread will no longer   **
+     **       cause such a runtime load (and before returning from the initial       **
+     **       callback)                                                              **
+     **     - pfnCallbackThreadSet and pfnCallbackThreadUnset are non-reentrant.     **
+     **                                                                              **
+     **   pCallbackFunction: This function is invoked when a new runtime has just    **
+     **                      been loaded. A value of NULL results in a failure       **
+     **                      return value of E_POINTER.                              **
+     **                                                                              **
+     ** Supersedes: LockClrVersion                                                   **
+     **********************************************************************************/
+    HRESULT RequestRuntimeLoadedNotification(
+        [in] RuntimeLoadedCallbackFnPtr pCallbackFunction);
+
+    /**********************************************************************************
+     ** Returns interface representing the runtime to which the legacy activation    **
+     ** policy has been bound (for example, by a useLegacyV2RuntimeActivationPolicy  **
+     ** config entry or by a call to ICLRRuntimeInfo::BindAsLegacyV2Runtime).        **
+     **********************************************************************************/
+    HRESULT QueryLegacyV2RuntimeBinding(
+        [in] REFIID riid,
+        [out, iid_is(riid), retval] LPVOID *ppUnk);
+
+    /**********************************************************************************
+     ** Shuts down the current process.                                              **
+     ** Supersedes: CorExitProcess                                                   **
+     **********************************************************************************/
+    HRESULT ExitProcess(
+        [in] INT32 iExitCode);
+} // interface ICLRMetaHost
+
+typedef enum
+{
+    /**********************************************************************************
+     ** Functions will not take into account runtimes already loaded into the        **
+     ** process (thus guaranteed to give the same answer regardless of load order).  **
+     **********************************************************************************/
+    METAHOST_POLICY_HIGHCOMPAT                  = 0x00000000,
+
+    /**********************************************************************************
+     ** 0x00000000 - 0x00000004 reserved for future policies.                        **
+     **********************************************************************************/
+
+    /**********************************************************************************
+     ** Applies upgrade policy when an exact match is not found.                     **
+     **********************************************************************************/
+    METAHOST_POLICY_APPLY_UPGRADE_POLICY        = 0x00000008,
+
+    /**********************************************************************************
+     ** Binds as if the provided information were being use in a new process. This   **
+     ** allows a host to determine what runtime an EXE will bind to when launched.   **
+     **********************************************************************************/
+    METAHOST_POLICY_EMULATE_EXE_LAUNCH          = 0x00000010,
+
+    /**********************************************************************************
+     ** Produces an error dialog if GetRequestedRuntime is unable to find a runtime  **
+     ** compatible with the input parameters. This error dialog can take the form    **
+     ** of a dialog box that takes a user to an fwlink, or as a Windows feature      **
+     ** dialog asking if the user would like to enable the appropriate feature (when **
+     ** available, this dialog is preferred over the fwlink dialog).                 **
+     **********************************************************************************/
+    METAHOST_POLICY_SHOW_ERROR_DIALOG           = 0x00000020,
+
+    /**********************************************************************************
+     ** By default, GetRequestedRuntime will not fall back to the process image path **
+     ** (typically the EXE that was used to launch the process) when determining the **
+     ** runtime to bind to. Specify this flag to have GetRequestedRuntime implicitly **
+     ** use the process image (and any corresponding configuration file) as          **
+     ** additional input to the binding process.                                     **
+     **********************************************************************************/
+    METAHOST_POLICY_USE_PROCESS_IMAGE_PATH      = 0x00000040,
+
+    /**********************************************************************************
+     ** By default, we will not check whether the appropriate SKU is installed       **
+     ** unless SKU is specified in the config file entry.                            **
+     ** Setting this flag forces the check when no information is available in the   **
+     ** config file, allowing applications without config files to fail gracefully   **
+     ** on smaller SKUs than the default install of .NET                             **
+     **********************************************************************************/
+     METAHOST_POLICY_ENSURE_SKU_SUPPORTED       = 0x00000080,
+
+    /**********************************************************************************
+     ** By default, we ignore METAHOST_POLICY_SHOW_ERROR_DIALOG if                   **
+     ** SEM_FAILCRITICALERRORS is set                                                **
+     ** This flag tell us that a silent failure would be so undesirable that         **
+     ** the METAHOST_POLICY_SHOW_ERROR_DIALOG should be honored, even if for some    **
+     ** reason (e.g. inheritance from another process) SEM_FAILCRITICALERRORS is set **
+     **********************************************************************************/
+     METAHOST_POLICY_IGNORE_ERROR_MODE       = 0x00001000,
+
+}
+METAHOST_POLICY_FLAGS;
+
+/**************************************************************************************
+ ** This enum describes the possible flags returned in GetRequestedRuntinme's        **
+ ** pdwConfigFlags out parameter.
+ **************************************************************************************/
+typedef enum
+{
+    /**********************************************************************************
+     ** If a config file is used during GetRequestedRuntime's binding process, these **
+     ** values indicate whether or not the startup tag has the                       **
+     ** useLegacyV2RuntimeActivationPolicy attribute set, and if so to what value.   **
+     **********************************************************************************/
+
+    // Indicates presence and value of useLegacyV2RuntimeActivationPolicy <startup> attr
+    METAHOST_CONFIG_FLAGS_LEGACY_V2_ACTIVATION_POLICY_UNSET  = 0x00000000,
+    METAHOST_CONFIG_FLAGS_LEGACY_V2_ACTIVATION_POLICY_TRUE   = 0x00000001,
+    METAHOST_CONFIG_FLAGS_LEGACY_V2_ACTIVATION_POLICY_FALSE  = 0x00000002,
+    METAHOST_CONFIG_FLAGS_LEGACY_V2_ACTIVATION_POLICY_MASK   = 0x00000003,
+}
+METAHOST_CONFIG_FLAGS;
+
+/**************************************************************************************
+ ** ICLRMetaHostPolicy                                                               **
+ ** Activated using mscoree!CLRCreateInstance. Implements a policy for determining   **
+ ** a runtime based on various inputs (metadata, config stream, ...).                **
+ **************************************************************************************/
+[
+    uuid(E2190695-77B2-492e-8E14-C4B3A7FDD593),
+    version(1.0),
+    helpstring("CLR meta hosting policy"),
+    local
+]
+interface ICLRMetaHostPolicy : IUnknown
+{
+    /**********************************************************************************
+     ** Returns requested runtime version and runtime (not necessarily of that       **
+     ** version) based on a managed binary, version, and config file.                **
+     ** The return value is S_OK if a compatible runtime was found and S_FALSE if    **
+     ** not. *ppRuntime will be NULL in the latter case.                             **
+     ** Supersedes: GetRequestedRuntimeInfo, GetRequestedRuntimeVersion,             **
+     **             CorBindToRuntimeHost, CorBindToRuntimeByCfg,                     **
+     **             GetCORRequiredVersion                                            **
+     **********************************************************************************/
+    HRESULT GetRequestedRuntime(
+        [in]  METAHOST_POLICY_FLAGS dwPolicyFlags,
+        [in]  LPCWSTR pwzBinary,                              // optional
+        [in]  IStream *pCfgStream,                            // optional
+        [in, out, size_is(*pcchVersion), annotation("_Inout_updates_all_opt_(*pcchVersion)")] 
+              LPWSTR pwzVersion,   // optional
+        [in, out]  DWORD *pcchVersion, 
+        [out, size_is(*pcchImageVersion), annotation("_Out_writes_all_opt_(*pcchImageVersion)")] 
+              LPWSTR pwzImageVersion, // image version to be used by compilers
+        [in, out]  DWORD *pcchImageVersion,
+        [out] DWORD *pdwConfigFlags,
+        [in]  REFIID  riid,   // IID_ICLRRuntimeInfo
+        [out, iid_is(riid), retval] LPVOID *ppRuntime);
+} // interface ICLRMetaHostPolicy
+
+/***************************************************************************************
+ ** ICLRProfiling                                                                     **
+ ** Activated using mscoree!CLRCreateInstance. Export AttachProfiler API to profilers **
+ ***************************************************************************************/
+[
+    uuid(B349ABE3-B56F-4689-BFCD-76BF39D888EA),
+    version(1.0),
+    helpstring("CLR profiling interface for MetaHost interface"),
+    local
+]
+interface ICLRProfiling : IUnknown
+{
+    HRESULT AttachProfiler(
+        [in] DWORD dwProfileeProcessID,
+        [in] DWORD dwMillisecondsMax,                        // optional
+        [in] const CLSID * pClsidProfiler,
+        [in] LPCWSTR wszProfilerPath,                        // optional
+        [in, size_is(cbClientData)] void * pvClientData,     // optional
+        [in] UINT cbClientData);                             // optional
+}
+
+/*************************************************************************************
+ ** This structure defines the version of a CLR for debugging purposes.             **
+ ** The wStructVersion field allows for future revisions to this structure to be    **
+ ** made. Currently it must be set to 0. The remaining fields represent the         **
+ ** typical major.minor.build.revision product version information.                 **
+ *************************************************************************************/
+typedef struct _CLR_DEBUGGING_VERSION
+{
+    WORD wStructVersion;
+    WORD wMajor;
+    WORD wMinor;
+    WORD wBuild;
+    WORD wRevision;
+}
+CLR_DEBUGGING_VERSION;
+
+typedef enum
+{
+    /**********************************************************************************
+     ** This runtime has a non-catchup managed debug event to send                   **
+     ** Catchup events include process, app domain, assembly, module, and thread     **
+     ** creation notifications that bring the debugger up to the current state after **
+     ** attaching. Non-catchup events are everything else.                           **
+     **********************************************************************************/
+    CLR_DEBUGGING_MANAGED_EVENT_PENDING  = 1,
+
+    /**********************************************************************************
+     ** The managed event that is pending is a Debugger.Launch request               **
+     **********************************************************************************/
+    CLR_DEBUGGING_MANAGED_EVENT_DEBUGGER_LAUNCH = 2,
+}
+CLR_DEBUGGING_PROCESS_FLAGS;
+
+ /**************************************************************************************
+ ** ICLRDebuggingLibraryProvider                                                     **
+ ** Implemented by API user                                                          **
+ ** This interface allows the debugger to provide modules which are needed for       **
+ ** debugging a particular CLR such as mscordbi and mscordacwks. The module handles  **
+ ** need to remain valid until a call to ICLRDebugging::CanUnloadNow indicates they  **
+ ** may be freed, at which point it is the caller’s responsibility to free the       **
+ ** handles.                                                                         **
+ **************************************************************************************/
+[
+    uuid(3151C08D-4D09-4f9b-8838-2880BF18FE51),
+    version(1.0),
+    helpstring("CLR debugging LibraryProvider callback interface"),
+    local
+]
+interface ICLRDebuggingLibraryProvider : IUnknown
+{
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a  handle to a    **
+    ** module which is needed for debugging. The debugger may use any available means**
+    ** to locate and/or procure the module. See the security note below for important**
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwzFileName - The name of the module being requested                          **
+    ** dwTimeStamp - The date time stamp stored in the COFF file header of PE files  **
+    ** dwSizeOfImage - The SizeOfImage field stored in the COFF optional file header **
+    **                 of PE files                                                   **
+    ** phModule - Set this to the handle to the requested module on success. On      **
+    **            failure leave it untouched. See security note below!               **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideLibrary(
+        [in] const WCHAR* pwszFileName,
+        [in] DWORD dwTimestamp,
+        [in] DWORD dwSizeOfImage,
+        [out] HMODULE* phModule);
+}
+
+/**************************************************************************************
+ ** ICLRDebugging                                                                    **
+ ** Activated using mscoree!CLRCreateInstance.                                       **
+ **************************************************************************************/
+[
+    uuid(D28F3C5A-9634-4206-A509-477552EEFB10),
+    version(1.0),
+    helpstring("CLR debugging interface for MetaHost interface"),
+    local
+]
+interface ICLRDebugging : IUnknown
+{
+    /**********************************************************************************
+    ** Get the ICorDebugProcess and other information corresponding to a clr module  **
+    ** loaded in the process                                                         **
+    ** Arguments:                                                                    **
+    ** moduleBaseAddress - The base address of a module in the target process.       **
+    **                     COR_E_NOT_CLR will be returned if the indicated module is **
+    **                     not a clr.                                                **
+    ** pDataTarget       - A data target abstraction which allows the managed        **
+    **                     debugger to inspect process state. It must implement      **
+    **                     at least ICorDebugDataTarget.                             **
+    ** pLibraryProvider  - A library provider callback interface that allows version **
+    **                     specific debugging libraries to be located and loaded on  **
+    **                     demand. This parameter is only required if ppProcess or   **
+    **                     pFlags is non-NULL.                                       **
+    ** pMaxDebuggerSupportedVersion - The version of the CLR this debugger is        **
+    **                     designed to support.  The debugger should specify the     **
+    **                     major and minor versions from the newest CLR version this **
+    **                     debugger supports.  The function may still succeed with   **
+    **                     a newer version of the CLR than this if the CLR           **
+    **                     determines that it should be compatible.  The build and   **
+    **                     revision values are currently ignored.                    **
+    ** riidProcess       - The interface ID of the desired ICorDebugProcess          **
+    **                     interface. Currently the only legal values are            **
+    **                     IID_CORDEBUGPROCESS3, IID_CORDEBUGPROCESS2, and           **
+    **                     IID_CORDEBUGPROCESS.                                      **
+    ** ppProcess         - Returns a pointer to a COM interface identified by        **
+    **                     riidProcess. Future versions of the runtime may implement **
+    **                     other interfaces.                                         **
+    ** pwszVersion       - On input this is either null, or points to a              **
+    **                     CLR_DEBUGGING_VERSION structure. The wStructVersion field **
+    **                     must be initialized to 0. On output the structure will be **
+    **                     filled in with the CLR version information.               **
+    ** pFlags            - Informational flags about the specified runtime, see      **
+    **                     CLR_DEBUGGING_PROCESS_FLAGS for a description of the      **
+    **                     flags.                                                    **
+    **                                                                               **
+    ** The return value is S_OK if succeeded or:                                     **
+    **   E_POINTER                       if pDataTarget is NULL                      **
+    **   CORDBG_E_LIBRARY_PROVIDER_ERROR if the ICLRDebuggingLibraryProvider callback**
+    **                                   returns an error or does not provide a valid**
+    **                                   handle                                      **
+    **    CORDBG_E_MISSING_DATA_TARGET_INTERFACE if the pDataTarget argument does not**
+    **                                   implement the required data target          **
+    **                                   interfaces for this version of the runtime. **
+    **    CORDBG_E_NOT_CLR               if the indicated module is not a clr. It is **
+    **                                   possible that modules which do represent a  **
+    **                                   CLR will not be detected if memory has been **
+    **                                   corrupted, is not available, or the CLR is  **
+    **                                   of a newer version than the shim.           **
+    **    CORDBG_E_UNSUPPORTED_DEBUGGING_MODEL if this runtime version does not      **
+    **                                   support this debugging model. Currently v4  **
+    **                                   supports this model and no previous version **
+    **                                   does. The pVersion output argument will     **
+    **                                   still be set to the correct value after     **
+    **                                   receiving this error.                       **
+    **    CORDBG_E_UNSUPPORTED_FORWARD_COMPAT if the version of the CLR is not       **
+    **                                   compatible with the version this debugger   **
+    **                                   claims to support. The pVersion output      **
+    **                                   argument will still be set to the correct   **
+    **                                   value after receiving this error.           **
+    **    E_NO_INTERFACE                 if the riidProcess interface is not         **
+    **                                   available.                                  **
+    **    CORDBG_E_UNSUPPORTED_VERSION_STRUCT if the version struct does not have a  **
+    **                                   recognized value for wStructVersion. The    **
+    **                                   only accepted value at this time is 0.      **
+    **    Any other convenient HRESULT error, depending on the execution.            **
+    **********************************************************************************/
+    HRESULT OpenVirtualProcess(
+        [in] ULONG64 moduleBaseAddress,
+        [in] IUnknown * pDataTarget,
+        [in] ICLRDebuggingLibraryProvider * pLibraryProvider,
+        [in] CLR_DEBUGGING_VERSION * pMaxDebuggerSupportedVersion,
+        [in] REFIID riidProcess,
+        [out, iid_is(riidProcess)] IUnknown ** ppProcess,
+        [in, out] CLR_DEBUGGING_VERSION * pVersion,
+        [out] CLR_DEBUGGING_PROCESS_FLAGS * pdwFlags);
+
+    /**********************************************************************************
+    ** Determines if a library provided via an ICLRDebuggingLibraryProvider is still **
+    ** in use. Functionally this checks to see if all instances of ICorDebug*        **
+    ** interfaces have been released and no thread is currently within a call to     **
+    ** OpenVirtualProcess.                                                           **
+    ** Arguments:                                                                    **
+    **   hModule - A module handle previously provided by the                        ** 
+    **             ICLRDebuggingLibraryProvider used in OpenVirtualProcess           **
+    ** Returns:                                                                      **
+    **   S_OK if the module can be unloaded now                                      **
+    **   S_FALSE if the module is still in use                                       **
+    **   Any other error HRESULT if a failure occurs                                 **
+    **                                                                               **
+    ** Notes: As of the V4.0 implementation unloading is still not fully supported   **
+    **   and all calls to this method will return S_FALSE.                           **
+    **********************************************************************************/
+    HRESULT CanUnloadNow(HMODULE hModule);
+} // interface ICLRDebugging
+
+/**************************************************************************************
+ ** ICLRRuntimeInfo                                                                  **
+ ** Represents a runtime - installed on the machine and/or loaded into a process.    **
+ ** Includes functionality for obtaining various properties and for loading the      **
+ ** runtime into the current process. The same installed runtime can be loaded       **
+ ** multiple times in the same process (may not be supported in Dev10).              **
+ **************************************************************************************/
+[
+    uuid(BD39D1D2-BA2F-486a-89B0-B4B0CB466891),
+    version(1.0),
+    helpstring("CLR runtime instance"),
+    local
+]
+interface ICLRRuntimeInfo : IUnknown
+{
+    // Methods that query information:
+
+    /**********************************************************************************
+     ** Returns the version of this runtime in the usual v-prefixed dotted form.     **
+     ** Supersedes: GetRequestedRuntimeInfo, GetRequestedRuntimeVersion,             **
+     **     GetCORVersion                                                            **
+     **********************************************************************************/
+    HRESULT GetVersionString(
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_opt_(*pcchBuffer)")] 
+                   LPWSTR pwzBuffer, 
+        [in, out]  DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns the directory where this runtime is installed.                       **
+     ** Supersedes: GetCORSystemDirectory                                            **
+     **********************************************************************************/
+    HRESULT GetRuntimeDirectory(
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_(*pcchBuffer)")] 
+                   LPWSTR pwzBuffer, 
+        [in, out]  DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns TRUE if this runtime is loaded into the specified process.           **
+     ** Supersedes: GetCORSystemDirectory                                            **
+     **********************************************************************************/
+    HRESULT IsLoaded(
+        [in]  HANDLE hndProcess,
+        [out, retval] BOOL *pbLoaded);
+
+    // Methods that may load the runtime:
+
+    /**********************************************************************************
+     ** Translates an HRESULT value into an error message. Use iLocaleID -1 for the  **
+     ** default culture of the current thread.                                       **
+     ** Supersedes: LoadStringRC, LoadStringRCEx                                     **
+     **********************************************************************************/
+    HRESULT LoadErrorString(
+        [in]       UINT iResourceID, 
+        [out, size_is(*pcchBuffer), annotation("_Out_writes_all_(*pcchBuffer)")] 
+                   LPWSTR pwzBuffer, 
+        [in, out]  DWORD *pcchBuffer,
+        [in, lcid] LONG iLocaleID);
+
+    /**********************************************************************************
+     ** Loads a library located alongside this runtime.                              **
+     ** Supersedes: LoadLibraryShim                                                  **
+     **********************************************************************************/
+    HRESULT LoadLibrary(
+        [in]  LPCWSTR pwzDllName, 
+        [out, retval] HMODULE *phndModule);
+
+    /**********************************************************************************
+     ** Gets the address of the specified function exported from this runtime.       **
+     ** It should NOT be documented what module the function lives in. We may want   **
+     ** to implement some forwarding policy here. The reason for exposing            **
+     ** GetProcAddress are functions like mscorwks!GetCLRIdentityManager.            **
+     ** Supersedes: GetRealProcAddress                                               **
+     **********************************************************************************/
+    HRESULT GetProcAddress(
+        [in]  LPCSTR pszProcName, 
+        [out, retval] LPVOID *ppProc);
+
+    /**********************************************************************************
+     ** Loads the runtime into the current process and returns an interface through  **
+     ** which runtime functionality is provided.                                     **
+     **                                                                              **
+     ** Supported CLSIDs/IIDs:                                                       **
+     ** CLSID_CorMetaDataDispenser   IID_IMetaDataDispenser,IID_IMetaDataDispenserEx **
+     ** CLSID_CorMetaDataDispenserRuntime  dtto                                      **
+     ** CLSID_CorRuntimeHost         IID_ICorRuntimeHost                             **
+     ** CLSID_CLRRuntimeHost         IID_ICLRRuntimeHost                             **
+     ** CLSID_TypeNameFactory        IID_ITypeNameFactory                            **
+     ** CLSID_CLRStrongName          IID_ICLRStrongName                              **
+     ** CLSID_CLRDebuggingLegacy     IID_ICorDebug                                   **
+     ** CLSID_CLRProfiling           IID_ICLRProfiling                               **
+     **                                                                              **
+     ** Supersedes: CorBindTo* and others                                            **
+     **********************************************************************************/
+    HRESULT GetInterface(
+        [in]  REFCLSID rclsid,
+        [in]  REFIID   riid,
+        [out, iid_is(riid), retval] LPVOID *ppUnk);
+
+    // Does not load runtime
+
+    /**********************************************************************************
+     ** Returns TRUE if this runtime could be loaded into the current process. Note  **
+     ** that this method is side-effect free, and thus does not represent a			 **
+     ** commitment to be able to load this runtime if it sets *pbLoadable to be TRUE.**
+     ** Supersedes: none                                                             **
+     **********************************************************************************/
+    HRESULT IsLoadable(
+        [out, retval] BOOL *pbLoadable);
+
+    /**********************************************************************************
+     ** Sets startup flags and host config file that will be used at startup.        **
+     ** Supersedes: The startupFlags parameter in CorBindToRuntimeEx/Host            **
+     **********************************************************************************/
+    HRESULT SetDefaultStartupFlags(
+        [in]  DWORD dwStartupFlags,
+        [in]  LPCWSTR pwzHostConfigFile);
+
+    /**********************************************************************************
+     ** Gets startup flags and host config file that will be used at startup.        **
+     ** Supersedes: GetStartupFlags, GetHostConfigurationFile                        **
+     **********************************************************************************/
+    HRESULT GetDefaultStartupFlags(
+        [out]      DWORD *pdwStartupFlags,
+        [out, size_is(*pcchHostConfigFile), annotation("_Out_writes_all_opt_(*pcchHostConfigFile)")]
+                   LPWSTR pwzHostConfigFile, 
+        [in, out]  DWORD *pcchHostConfigFile);
+
+    /**********************************************************************************
+     ** If not already bound (for example, with a useLegacyV2RuntimeActivationPolicy **
+     ** config setting), binds this runtime for all legacy V2 activation policy      **
+     ** decisions. If a different runtime was already bound to the legacy V2         **
+     ** activation policy, returns CLR_E_SHIM_LEGACYRUNTIMEALREADYBOUND. If this     **
+     ** runtime was already bound as the legacy V2 activation policy runtime,        **
+     ** returns S_OK.                                                                **
+     **********************************************************************************/
+    HRESULT BindAsLegacyV2Runtime();
+
+    /**********************************************************************************
+     ** Returns TRUE if the runtime has been started, i.e. Start() has been called.  **
+     ** If it has been started, its STARTUP_FLAGS are returned.                      **
+     **                                                                              **
+     ** IMPORTANT: This method is valid only for v4+ runtimes. This method will      **
+     ** return E_NOTIMPL for all pre-v4 runtimes.                                    **
+     **********************************************************************************/
+    HRESULT IsStarted(
+        [out] BOOL *pbStarted,
+        [out] DWORD *pdwStartupFlags);
+};
+
+/**************************************************************************************
+ ** ICLRStrongName                                                                   **
+ ** These are the strong name APIs exposed by mscoree refactored into an interface.  **
+ ** The only change is the omission of StrongNameErrorInfo and having all methods    **
+ ** return the COM standard HRESULT. TODO (low-pri):                                 **
+ ** ideas what could be done here - we have an opportunity to make breaking changes, **
+ ** cleanup etc.
+ **************************************************************************************/
+[
+    uuid(9FD93CCF-3280-4391-B3A9-96E1CDE77C8D),
+    version(1.0),
+    helpstring("CLR strong name interface"),
+    local
+]
+interface ICLRStrongName : IUnknown
+{
+    /**********************************************************************************
+     ** Gets a hash of the specified assembly file, using the specified hash         **
+     ** algorithm.                                                                   **
+     ** Supersedes: GetHashFromAssemblyFile                                          **
+     **********************************************************************************/
+    HRESULT GetHashFromAssemblyFile(
+        [in] LPCSTR pszFilePath,
+        [in, out] unsigned int *piHashAlg,
+        [out, size_is(cchHash), length_is(*pchHash)] BYTE *pbHash,
+        [in]  DWORD cchHash,
+        [out] DWORD *pchHash);
+
+    /**********************************************************************************
+     ** Gets a hash of the specified assembly file, using the specified hash         **
+     ** algorithm (Unicode version).                                                 **
+     ** Supersedes: GetHashFromAssemblyFileW                                         **
+     **********************************************************************************/
+    HRESULT GetHashFromAssemblyFileW(
+        [in]  LPCWSTR pwzFilePath,
+        [in, out] unsigned int *piHashAlg,
+        [out, size_is(cchHash), length_is(*pchHash)] BYTE *pbHash,
+        [in]  DWORD     cchHash,
+        [out] DWORD     *pchHash);
+
+    /**********************************************************************************
+     ** Gets a hash of the assembly at the specified memory address, using the       **
+     ** specified hash algorithm.                                                    **
+     ** Supersedes: GetHashFromBlob                                                  **
+     **********************************************************************************/
+    HRESULT GetHashFromBlob(
+        [in]  BYTE    *pbBlob,
+        [in]  DWORD   cchBlob,
+        [in, out] unsigned int   *piHashAlg,
+        [out, size_is(cchHash), length_is(*pchHash)] BYTE *pbHash,
+        [in]  DWORD   cchHash,
+        [out] DWORD   *pchHash);
+
+    /**********************************************************************************
+     ** Generates a hash over the contents of the specified file.                    **
+     ** Supersedes: GetHashFromFile                                                  **
+     **********************************************************************************/
+    HRESULT GetHashFromFile(
+        [in]  LPCSTR   pszFilePath,
+        [in, out] unsigned int   *piHashAlg, 
+        [out, size_is(cchHash), length_is(*pchHash)] BYTE *pbHash,
+        [in]  DWORD    cchHash,    
+        [out] DWORD    *pchHash);
+
+    /**********************************************************************************
+     ** Generates a hash over the contents of the specified file (Unicode version).  **
+     ** Supersedes: GetHashFromFileW                                                 **
+     **********************************************************************************/
+    HRESULT GetHashFromFileW(
+        [in]  LPCWSTR   pwzFilePath,
+        [in, out] unsigned int   *piHashAlg,
+        [out, size_is(cchHash), length_is(*pchHash)] BYTE *pbHash,
+        [in]  DWORD     cchHash,
+        [out] DWORD     *pchHash);
+
+    /**********************************************************************************
+     ** Generates a hash over the contents of the file with the specified file       **
+     ** handle, using the specified hash algorithm.                                  **
+     ** Supersedes: GetHashFromHandle                                                **
+     **********************************************************************************/
+    HRESULT GetHashFromHandle(
+        [in]  HANDLE   hFile,
+        [in, out] unsigned int   *piHashAlg,
+        [out, size_is(cchHash), length_is(*pchHash)] BYTE *pbHash,
+        [in]  DWORD    cchHash,
+        [out] DWORD    *pchHash);
+
+    /**********************************************************************************
+     ** Determines whether two assemblies differ only by their strong name           **
+     ** signatures.                                                                  **
+     ** Supersedes: StrongNameCompareAssemblies                                      **
+     **********************************************************************************/
+    HRESULT StrongNameCompareAssemblies(
+        [in]  LPCWSTR   pwzAssembly1,
+        [in]  LPCWSTR   pwzAssembly2,
+        [out, retval] DWORD *pdwResult);
+
+    /**********************************************************************************
+     ** Frees memory that was allocated with a previous call to a strong name        **
+     ** function such as StrongNameGetPublicKey, StrongNameTokenFromPublicKey, or    **
+     ** StrongNameSignatureGeneration.                                               **
+     ** Supersedes: StrongNameFreeBuffer                                             **
+     **********************************************************************************/
+    HRESULT StrongNameFreeBuffer(
+        [in] BYTE *pbMemory);
+
+    /**********************************************************************************
+     ** Fills the specified buffer with the binary representation of the executable. **
+     ** Supersedes: StrongNameGetBlob                                                **
+     **********************************************************************************/
+    HRESULT StrongNameGetBlob(
+        [in]  LPCWSTR    pwzFilePath,
+        [in, out, size_is(*pcbBlob), length_is(*pcbBlob)] BYTE *pbBlob,
+        [in, out] DWORD  *pcbBlob);
+
+    /**********************************************************************************
+     ** Gets a binary representation of the assembly image at the specified memory   **
+     ** address.                                                                     **
+     ** Supersedes: StrongNameGetBlobFromImage                                       **
+     **********************************************************************************/
+    HRESULT StrongNameGetBlobFromImage(
+        [in, size_is(dwLength)] BYTE *pbBase,
+        [in] DWORD dwLength,
+        [out, size_is(*pcbBlob), length_is(*pcbBlob)] BYTE *pbBlob,
+        [in, out] DWORD *pcbBlob);
+
+    /**********************************************************************************
+     ** Gets the public key from a private/public key pair.                          **
+     ** Supersedes: StrongNameGetPublicKey                                           **
+     **********************************************************************************/
+    HRESULT StrongNameGetPublicKey(
+        [in]  LPCWSTR   pwzKeyContainer,
+        [in]  BYTE      *pbKeyBlob,
+        [in]  ULONG     cbKeyBlob,
+        [out] BYTE      **ppbPublicKeyBlob,
+        [out] ULONG     *pcbPublicKeyBlob);
+
+    /**********************************************************************************
+     ** Gets the buffer size required for a hash, using the specified hash           **
+     ** algorithm.                                                                   **
+     ** Supersedes: StrongNameHashSize                                               **
+     **********************************************************************************/
+    HRESULT StrongNameHashSize(
+        [in]  ULONG   ulHashAlg,
+        [out, retval] DWORD *pcbSize);
+
+    /**********************************************************************************
+     ** Deletes the specified key container.                                         **
+     ** Supersedes: StrongNameKeyDelete                                              **
+     **********************************************************************************/
+    HRESULT StrongNameKeyDelete(
+        [in] LPCWSTR pwzKeyContainer);
+
+    /**********************************************************************************
+     ** Creates a new public/private key pair for strong name use.                   **
+     ** Supersedes: StrongNameKeyGen                                                 **
+     **********************************************************************************/
+    HRESULT StrongNameKeyGen(
+        [in]  LPCWSTR   pwzKeyContainer,
+        [in]  DWORD     dwFlags,
+        [out] BYTE      **ppbKeyBlob,
+        [out] ULONG     *pcbKeyBlob);
+
+    /**********************************************************************************
+     ** Generates a new public/private key pair with the specified key size, for     **
+     ** strong name use.                                                             **
+     ** Supersedes: StrongNameKeyGenEx                                               **
+     **********************************************************************************/
+    HRESULT StrongNameKeyGenEx(
+        [in]  LPCWSTR   pwzKeyContainer,
+        [in]  DWORD     dwFlags,
+        [in]  DWORD     dwKeySize,
+        [out] BYTE      **ppbKeyBlob,
+        [out] ULONG     *pcbKeyBlob);
+
+    /**********************************************************************************
+     ** Imports a public/private key pair into a container.                          **
+     ** Supersedes: StrongNameKeyInstall                                             **
+     **********************************************************************************/
+    HRESULT StrongNameKeyInstall(
+        [in]  LPCWSTR   pwzKeyContainer,
+        [in]  BYTE      *pbKeyBlob,
+        [in]  ULONG     cbKeyBlob);
+
+    /**********************************************************************************
+     ** Generates a strong name signature for the specified assembly.                **
+     ** Supersedes: StrongNameSignatureGeneration                                    **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureGeneration(
+        [in]  LPCWSTR   pwzFilePath,
+        [in]  LPCWSTR   pwzKeyContainer,
+        [in]  BYTE      *pbKeyBlob,
+        [in]  ULONG     cbKeyBlob,
+        [out] BYTE      **ppbSignatureBlob,
+        [out] ULONG     *pcbSignatureBlob);
+
+    /**********************************************************************************
+     ** Generates a strong name signature for the specified assembly, according to   **
+     ** the specified flags.                                                         **
+     ** Supersedes: StrongNameSignatureGenerationEx                                  **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureGenerationEx(
+        [in]  LPCWSTR   wszFilePath,
+        [in]  LPCWSTR   wszKeyContainer,
+        [in]  BYTE      *pbKeyBlob,
+        [in]  ULONG     cbKeyBlob,
+        [out] BYTE      **ppbSignatureBlob,
+        [out] ULONG     *pcbSignatureBlob,
+        [in]  DWORD     dwFlags);
+
+    /**********************************************************************************
+     ** Returns the size of the strong name signature.                               **
+     ** Supersedes: StrongNameSignatureSize                                          **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureSize(
+        [in]  BYTE   *pbPublicKeyBlob,
+        [in]  ULONG  cbPublicKeyBlob, 
+        [in]  DWORD  *pcbSize);
+
+    /**********************************************************************************
+     ** Gets a value indicating whether the assembly manifest at the supplied path   **
+     ** contains a strong name signature, which is verified according to the         **
+     ** specified flags.                                                             **
+     ** Supersedes: StrongNameSignatureVerification                                  **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureVerification(
+        [in]  LPCWSTR   pwzFilePath,
+        [in]  DWORD     dwInFlags,
+        [out, retval] DWORD *pdwOutFlags);
+
+    /**********************************************************************************
+     ** Gets a value indicating whether the assembly manifest at the supplied path   **
+     ** contains a strong name signature.                                            **
+     ** Supersedes: StrongNameSignatureVerificationEx                                **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureVerificationEx(
+        [in]  LPCWSTR   pwzFilePath,
+        [in]  BOOLEAN   fForceVerification,
+        [out, retval] BOOLEAN *pfWasVerified);
+
+    /**********************************************************************************
+     ** Verifies that an assembly that has already been mapped to memory is valid    **
+     ** for the associated public key.                                               **
+     ** Supersedes: StrongNameSignatureVerificationFromImage                         **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureVerificationFromImage(
+        [in]  BYTE    *pbBase,
+        [in]  DWORD   dwLength,
+        [in]  DWORD   dwInFlags,
+        [out, retval] DWORD *pdwOutFlags);
+
+    /**********************************************************************************
+     ** Creates a strong name token from the specified assembly file.                **
+     ** Supersedes: StrongNameTokenFromAssembly                                      **
+     **********************************************************************************/
+    HRESULT StrongNameTokenFromAssembly(
+        [in]  LPCWSTR   pwzFilePath,
+        [out] BYTE      **ppbStrongNameToken,
+        [out] ULONG     *pcbStrongNameToken);
+
+    /**********************************************************************************
+     ** Creates a strong name token from the specified assembly file, and returns    **
+     ** the public key that the token represents.                                    **
+     ** Supersedes: StrongNameTokenFromAssemblyEx                                    **
+     **********************************************************************************/
+    HRESULT StrongNameTokenFromAssemblyEx(
+        [in]  LPCWSTR   pwzFilePath,
+        [out] BYTE      **ppbStrongNameToken,
+        [out] ULONG     *pcbStrongNameToken,
+        [out] BYTE      **ppbPublicKeyBlob,
+        [out] ULONG     *pcbPublicKeyBlob);
+    /**********************************************************************************
+     ** Gets a token representing a public key. A strong name token is the shortened **
+     ** form of a public key.                                                        **
+     ** Supersedes: StrongNameTokenFromPublicKey                                     **
+     **********************************************************************************/
+    HRESULT StrongNameTokenFromPublicKey(
+        [in]  BYTE    *pbPublicKeyBlob,
+        [in]  ULONG   cbPublicKeyBlob,
+        [out] BYTE    **ppbStrongNameToken,
+        [out] ULONG   *pcbStrongNameToken);
+};  // interface ICLRStrongName
+
+/**************************************************************************************
+ ** ICLRStrongName2                                                                  **
+ ** Strongname Api's                                                                 **
+ **************************************************************************************/
+[
+    uuid(C22ED5C5-4B59-4975-90EB-85EA55C0069B),
+    version(1.0),
+    helpstring("CLR strong name interface 2"),
+    local
+]
+interface ICLRStrongName2 : IUnknown
+{
+    /**********************************************************************************
+     ** Gets the public key from a private/public key pair, specifying a hash        **
+     ** algorithm and a signature algorithm.                                         **
+     **********************************************************************************/
+    HRESULT StrongNameGetPublicKeyEx(
+        [in]      LPCWSTR   pwzKeyContainer,
+        [in]      BYTE      *pbKeyBlob,
+        [in]      ULONG     cbKeyBlob,
+        [out]     BYTE      **ppbPublicKeyBlob,
+        [out]     ULONG     *pcbPublicKeyBlob,
+        [in]      ULONG     uHashAlgId, // specify algorithm, or set to 0 for default
+        [in]      ULONG     uReserved); // reserved for future use, always set to 0
+
+    /**********************************************************************************
+     ** Verify the signature of a strongly named assembly, providing a mapping from  **
+     ** the ECMA key to a real key                                                   **
+     **********************************************************************************/
+    HRESULT StrongNameSignatureVerificationEx2(
+        [in] LPCWSTR    wszFilePath,
+        [in] BOOLEAN    fForceVerification,
+        [in] BYTE      *pbEcmaPublicKey,
+        [in] DWORD      cbEcmaPublicKey,
+        [out] BOOLEAN   *pfWasVerified);
+};  // interface ICLRStrongName2
+
+/*************************************************************************************
+** ICLRStrongName3                                                                  **
+** StrongName digest signing APIs                                                   **
+**************************************************************************************/
+[
+    uuid(22c7089b-bbd3-414a-b698-210f263f1fed),
+    version(1.0),
+    helpstring("CLR strong name digest signing interface"),
+    local
+]
+interface ICLRStrongName3 : IUnknown
+{
+    // Generate the digest of an input assembly, which can be signed with StrongNameDigestSign
+    HRESULT StrongNameDigestGenerate(
+        [in] LPCWSTR    wszFilePath,
+        [out] BYTE**    ppbDigestBlob,
+        [out] ULONG*    pcbDigestBlob,
+        [in] DWORD      dwFlags);
+
+    // Sign an the digest of an assembly calculated by StrongNameDigestGenerate
+    HRESULT StrongNameDigestSign(
+        [in] LPCWSTR                        wszKeyContainer,
+        [in, size_is(cbKeyBlob)] BYTE*      pbKeyBlob,
+        [in] ULONG                          cbKeyBlob,
+        [in, size_is(cbDigestBlob)] BYTE*   pbDigestBlob,
+        [in] ULONG                          cbDigestBlob,
+        [in] DWORD                          hashAlgId,
+        [out] BYTE**                        ppbSignatureBlob,
+        [out] ULONG*                        pcbSignatureBlob,
+        [in] DWORD dwFlags);
+
+    // Embed a digest signature generated with StrongNameDigestSign into an assembly
+    HRESULT StrongNameDigestEmbed(
+        [in] LPCWSTR                          wszFilePath,
+        [in, size_is(cbSignatureBlob)] BYTE*  pbSignatureBlob,
+        [in] ULONG                            cbSignatureBlob);
+};
+
+[
+    uuid(5288DA6A-A8D3-43a1-8365-37DB0E7D5943),
+    version(1.0),
+]
+library CLRMetaHost
+{
+    interface ICLRMetaHost;
+    interface ICLRMetaHostPolicy;
+    interface ICLRProfiling;
+    interface ICLRDebuggingLibraryProvider;
+    interface ICLRDebugging;
+    interface ICLRRuntimeInfo;
+    interface ICLRStrongName;
+
+    // Scenario: EXE activation
+    // 1. ICLRMetaHostPolicy::GetRequestedRuntime
+    // 2. ICLRRuntimeInfo::GetProcAddress("ExeMain")
+    // 3. ExeMain() - TODO: Add a hosting API to execute an EXE?
+
+    // Scenario: COM activation
+    // 1. <get version info from registry>
+    // 2. ICLRMetaHostPolicy::GetRequestedRuntime
+    // 3. ICLRRuntimeInfo::GetInterface(IID_ICLRRuntimeHost)
+    // 4. ICLRRuntimeHost::Start
+    // 5. ICLRRuntimeInfo::GetProcAddress("ClrCreateManagedInstance")
+    // 6. pClrCreateManagedInstance()
+
+    // Scenario: Hosting with custom policy
+    // 1. ICLRMetaHost::GetFileVersion
+    // 2. ICLRMetaHost::EnumerateInstalledRuntimes
+    // 3. ICLRRuntimeInfo::IsLoaded/IsStarted
+    // ...
+
+    // Scenario: Debugger attach for v1.0 to v4 using v2 lookalike interface
+    // ICLRMetaHost::EnumerateLoadedRuntimes
+    // ICLRRuntimeInfo::GetInterface(CLSID_CLRDebuggingLegacy, IID_ICorDebug)
+    
+    // Scenario: Profiler attach for v4
+    // ICLRMetaHost::EnumerateLoadedRuntimes
+    // ICLRRuntimeInfo::GetInterface(CLSID_CLRProfiling, IID_ICLRProfiling)
+    
+    // Scenario: An installer needs to modify configuration of supported runtimes
+    // 1. ICLRMetaHost::EnumerateInstalledRuntimes
+    // 2. ICLRRuntimeInfo::GetVersionString
+    // 3. <policy>
+    // 4. ICLRRuntimeInfo::GetRuntimeDirectory
+    // 5. <modify the config file under the runtime dir>
+
+};  // library CLRMetaHost
+
+cpp_quote("#endif // WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)")

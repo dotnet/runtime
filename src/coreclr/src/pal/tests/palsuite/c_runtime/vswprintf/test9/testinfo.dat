@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = vswprintf
+Name = Positive Test for vswprintf
+TYPE = DEFAULT
+EXE1 = test9
+Description
+= Tests the PAL implementation of the vswprintf function.
+= Tests vswprintf with integer numbers
+= This test is modeled after _snwprintf.

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = iswprint
+Name = Positive Test for iswprint
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests iswprint with all wide characters, ensuring they are 
+=consistent with GetStringTypeExW.

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _strlwr
+Name = Positive Test for _strlwr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Using memcmp, check to see that after changing a string into all lowercase
+= that it is the lowercase string that was expected.

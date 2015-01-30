@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = TLS
+Name = Test for TlsAlloc and TlsFree
+TYPE = DEFAULT
+EXE1 = tls
+Description 
+= Test to ensure TlsAlloc and TlsFree are working when we try 
+= to allocate the guaranted minimum number of index.

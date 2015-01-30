@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = LockFile
+Name = Positive test for LockFile API
+TYPE = DEFAULT
+EXE1 = test3
+EXE2 = helper
+Description
+= Open a file, lock a region in the middle.  Create a new process
+= and attempt to read and write directly before and after that region, which
+= should succeed.  Also, check to see that reading/writing in the locked
+= region fails.

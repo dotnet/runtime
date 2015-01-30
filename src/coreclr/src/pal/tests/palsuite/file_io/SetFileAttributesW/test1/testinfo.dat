@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFileAttributesW
+Name = Positive Test for SetFileAttributesW
+TYPE = DEFAULT
+EXE1 = setfileattributesw
+Description 
+= Test the SetFileAttributesW function. Set a file as READONLY and
+= attempt to open it with WRITE access, to ensure that this doesn't work.
+= Then switch to NORMAL attributes, and try again -- it should work.

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Threading
+Function = DuplicateHandle
+Name = Test for DuplicateHandle (CreatePipe)
+TYPE = DEFAULT
+EXE1 = test5
+Description
+= Tests the PAL implementation of the DuplicateHandle function,
+= with CreatePipe. This test will create a pipe and write to it,
+= then duplicate the read handle and read what was written.

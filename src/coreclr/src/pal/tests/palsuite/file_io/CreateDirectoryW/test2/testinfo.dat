@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CreateDirectoryW
+Name = Test for CreateDirectoryW
+Type = DEFAULT
+EXE1 = createdirectoryW
+Description
+= Call CreateDirectoryW with a path in which more than just 
+= the last component doesn't exist.

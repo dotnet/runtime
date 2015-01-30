@@ -1,0 +1,30 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ResGenCommand Condition="'$(ResGenCommand)'==''">$(FrameworkSDKDir)bin\NETFX 4.5.1 Tools\ResGen.exe</ResGenCommand>
+    <PrepareResourcesDependsOn>GenerateSplitStringResources;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
+  </PropertyGroup>
+    
+  <Target Name="GenerateSplitStringResources"
+          Inputs="$(MSBuildThisFileFullPath);$(MSBuildProjectFile)"
+          Outputs="@(SplitTextStringResource->'$(IntermediateOutputPath)%(Filename).resources')">
+         
+    <ItemGroup>
+      <Internal_ResGenDefines Remove="" />
+      <Internal_ResGenDefines Include="%(SplitTextStringResource.ResGenDefines)" />
+    </ItemGroup>    
+
+    <Exec Command="&quot;$(ResGenCommand)&quot; %(SplitTextStringResource.Identity) $(IntermediateOutputPath)%(SplitTextStringResource.Filename).resources /D:INCLUDE_DEBUG /D:INCLUDE_RUNTIME @(Internal_ResGenDefines->'/D:%(Identity)', ' ')" />
+
+    <ItemGroup>
+      <EmbeddedResource Include="@(SplitTextStringResource->'$(IntermediateOutputPath)%(Filename).resources')">
+        <WithCulture>false</WithCulture>           
+        <ManifestResourceName>%(Filename)</ManifestResourceName>
+      </EmbeddedResource>
+      <Clean Include="$(IntermediateOutputPath)%(SplitTextStringResource.Filename).resources" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Internal_ResGenDefines Remove="" />
+    </ItemGroup>
+  </Target>
+</Project>

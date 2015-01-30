@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = SetThreadLocale
+Name = Test #1 for SetThreadLocale
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests SetThreadLocale with every valid locale to see that it passes
+=and that it actually sets the locale.

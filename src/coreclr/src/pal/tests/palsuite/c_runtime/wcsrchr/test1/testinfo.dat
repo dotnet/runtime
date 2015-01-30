@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcsrchr
+Name = Positive Test for wcsrchr
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests to see that wcsrchr correctly returns a pointer to the last occurence 
+= of a character in a a string.

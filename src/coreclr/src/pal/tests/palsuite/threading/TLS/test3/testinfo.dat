@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = TLS
+Name = TlsGetValue, TlsSetValue and TlsFree
+TYPE = DEFAULT
+EXE1 = tls
+Description 
+= Test to ensure TlsGetValue, TlsSetValue and TlsFree 
+= are not working with an invalid index

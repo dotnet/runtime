@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcsncmp
+Name = Positive Test for wcsncmp
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests that wcsncmp case-sensitively compares wide strings, making sure that
+= the count argument is handled correctly.

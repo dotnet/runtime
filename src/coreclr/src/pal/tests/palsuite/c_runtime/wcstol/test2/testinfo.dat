@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = wcstol
+Name = Positive Test for wcstol
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Tests wcstol with base 10 and a completely valid string.

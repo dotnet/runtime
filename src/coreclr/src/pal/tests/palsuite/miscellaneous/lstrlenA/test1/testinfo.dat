@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = lstrlenA
+Name = Positive test of lstrlenA
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test a standard NULL terminated string and a NULL pointer
+= to ensure values are correct.
+
+
+

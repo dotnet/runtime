@@ -1,0 +1,255 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+//+---------------------------------------------------------------------------
+//
+//  File:       binderngen.idl
+//
+//  Contents:   Binder to Native Binder Interfaces
+//
+//  Classes:
+//
+//  Functions:
+//
+//
+//----------------------------------------------------------------------------
+
+cpp_quote("")
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma comment(lib,\"uuid.lib\")")
+cpp_quote("#endif")
+cpp_quote("")
+cpp_quote("//---------------------------------------------------------------------------=")
+cpp_quote("// Binder Interfaces")
+cpp_quote("interface INativeImageInstallInfo;")
+cpp_quote("interface IILFingerprint;")
+cpp_quote("interface IILFingerprintFactory;")
+
+import "objidl.idl";
+import "fusion.idl";
+import "fusionpriv.idl";
+
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma once")
+cpp_quote("#endif")
+
+// interface IAssemblyName defined in fusion.idl
+// interface IAssemblyEnum defined in fusion.idl
+// interface IFusionBindLog defined in fusionpriv.idl
+// interface ICorSvcLogger defined in mscorsvc.idl
+
+interface IAssemblyLocation;
+interface IBindResult;
+interface IBindContext;
+interface INativeImageInstallInfo;
+interface IILFingerprint;
+
+typedef enum
+{
+    PRE_BIND_NONE         = 0x00,
+    PRE_BIND_APPLY_POLICY = 0x80
+} PRE_BIND_FLAGS;
+
+
+typedef enum
+{
+    ASSEMBLY_LOCATION_PATH       = 0x01,
+    ASSEMBLY_LOCATION_GAC        = 0x02,
+    ASSEMBLY_LOCATION_HAS        = 0x04,
+    ASSEMBLY_LOCATION_BYTE_ARRAY = 0x08
+} ASSEMBLY_LOCATION_FLAGS;
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IAssemblyLocation
+//
+///////////////////////////////////////////////////////////////////////////////
+
+cpp_quote("// {6970aad6-d5fb-469b-9098-a03ddc65a4bd}")
+cpp_quote("EXTERN_GUID(IID_IAssemblyLocation, 0x6970aad6, 0xd5fb, 0x469b, 0x90, 0x98, 0xa0, 0x3d, 0xdc, 0x65, 0xa4, 0xbd);")
+
+[
+        local,
+        object,
+        uuid(6970aad6-d5fb-469b-9098-a03ddc65a4bd),
+        pointer_default(unique)
+]
+interface IAssemblyLocation : IUnknown
+{
+    typedef [unique] IAssemblyLocation *LPASSEMBLYLOCATION;
+
+    HRESULT GetLocationType([in] DWORD *pdwLocationType);
+
+    HRESULT GetPath([in, annotation("__inout_ecount(*pdwccAssemblyPath)")]  LPWSTR  pwzAssemblyPath,
+		    [in, annotation("__inout")]  LPDWORD pdwccAssemblyPath);
+
+    HRESULT GetHostID(UINT64 *puiHostID);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IBindResult
+//
+//   IBindResult was added mid-Dev10 when the native binder was split off
+//   from Fusion. It seeks to provide a unified view of filepath-based assemblies (IAssembly),
+//   host assemblies (IHostAssembly), NI images (the now-defunct CNativeImageAssembly) and
+//   other things such as byte array assemblies (currently not expressible in Fusion at all.)
+//
+//   At this time, it has not yet been widely adopted outside the native binder.
+//
+//   @todo: Is it necessary for IBindResult to be a separately allocated object?
+//          Why not create a base interface for the existing IAssembly/IHostAssembly?
+//
+//
+// Changes from Dev10:
+//   Removed a bunch of methods that were added as expediencies and would
+//   be long term liabilities if IBindResult is adopted as a universal assembly interface.
+//
+//   In particular, it is no longer permitted to create IBindResult's that wrap
+//   nothing more than an assembly name.
+//
+///////////////////////////////////////////////////////////////////////////////
+cpp_quote("// {82cff42f-55c2-45d2-aa6b-ff96e4de889c}")
+cpp_quote("EXTERN_GUID(IID_IBindResult, 0x82cff42f, 0x55c2, 0x45d2, 0xaa, 0x6b, 0xff, 0x96, 0xe4, 0xde, 0x88, 0x9c);")
+
+[
+        local,
+        object,
+        uuid(82cff42f-55c2-45d2-aa6b-ff96e4de889c),
+        pointer_default(unique)
+]
+interface IBindResult : IUnknown
+{
+     typedef [unique] IBindResult *LPBINDRESULT;
+
+     //--------------------------------------------------------------------------------
+     // These methods are good candidates for a "universal" Assembly interface.
+     //--------------------------------------------------------------------------------
+     HRESULT GetAssemblyNameDef([out] IAssemblyName **ppIAssemblyNameDef);
+
+     HRESULT GetNextAssemblyModuleName([in]      DWORD   dwNIndex,
+				       [in, out, annotation("__inout_ecount(*pdwCCModuleName)")]  LPWSTR  pwzModuleName,
+				       [in, out, annotation("__inout")]  LPDWORD pdwCCModuleName);
+
+     HRESULT GetAssemblyLocation([out] IAssemblyLocation **ppIAssemblyLocation);
+
+
+     //--------------------------------------------------------------------------------
+     // Native image binding.
+     //
+     // @todo: Do these need to be on IBindResult? I'd say it's cleaner for
+     // these to be exposed as methods on the load context as was done pre-split.
+     //--------------------------------------------------------------------------------
+     HRESULT GetNativeImage([out] IBindResult **ppINativeImage,
+			    [out] BOOL         *pfNativeImageProbed);
+
+     HRESULT SetNativeImage([in]  IBindResult  *pINativeImage,
+			    [out] IBindResult **ppINativeImageFinal);
+
+
+     //--------------------------------------------------------------------------------
+     // This is needed because IBindResults in Dev10 are not "interned" objects
+     // so we can't do pointer comparison on them as is done with IAssembly.
+     //--------------------------------------------------------------------------------
+     HRESULT IsEqual([in] IUnknown *pIUnk);
+
+
+     //--------------------------------------------------------------------------------
+     // These are used by the closure code only. We may want to rework these further
+     // post Dev10-MQ.
+     //--------------------------------------------------------------------------------
+     HRESULT GetNextAssemblyNameRef([in]  DWORD           dwNIndex,
+				    [out] IAssemblyName **ppIAssemblyNameRef);
+
+     HRESULT GetNextDependentAssembly([in]  DWORD      dwNIndex,
+				      [out] IUnknown **ppIUnknownAssembly);
+
+     // Ad-hoc method that gives the closure code the info it needs without native IBindResults
+     // actually having to maintain a reference to its partnered IL IBindResult.
+     HRESULT GetAssemblyLocationOfILImage([out] IAssemblyLocation **ppAssemblyLocation);
+
+
+     //--------------------------------------------------------------------------------
+     // For use on IL's only: Obtain information about IL timestamps/MVIDs/SNHashes, etc.
+     // Note that the MVID/SNHashes may be speculative (as we avoid opening the IL
+     // for workset reasons.) However, everyone in the process will see the same MVID/SNHashs
+     // for a given IL file.
+     //--------------------------------------------------------------------------------
+     HRESULT GetILFingerprint([out] IILFingerprint **ppFingerprint);
+     HRESULT GetSourceILTimestamp([out] FILETIME* pFileTime);
+     HRESULT GetSourceILSize([out] DWORD* pSize);
+
+     //--------------------------------------------------------------------------------
+     // For use on NI's only: Obtain information about NI version and dependencies.
+     //--------------------------------------------------------------------------------
+     HRESULT GetNIInfo([out] INativeImageInstallInfo** pInfo);
+
+     enum
+     {
+        IBindResultFlag_Default                    = 0x00,
+        IBindResultFlag_AssemblyNameDefIncomplete  = 0x01,
+     };
+
+     //--------------------------------------------------------------------------------
+     // Returns the set of flags, defined in IBindResultFlags, that apply to this
+     // IBindResult object.
+     //--------------------------------------------------------------------------------
+     HRESULT GetFlags(DWORD * pdwFlags);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// IBindContext
+//
+//   IBindContext represents a Fusion load context. It is an interface
+//   via which Fusion provides services to the native binder.
+//
+//   Note: This should *not* be adopted as a general interface for Fusion
+//    load contexts. The services exposed here are quite specific to the native
+//    binder's needs and it would be a liability to make them widely available.
+//
+///////////////////////////////////////////////////////////////////////////////
+cpp_quote("// {88db0d1a-460e-4341-96d7-a7c9b68f4679}")
+cpp_quote("EXTERN_GUID(IID_IBindContext, 0x88db0d1a, 0x460e, 0x4341, 0x96, 0xd7, 0xa7, 0xc9, 0xb6, 0x8f, 0x46, 0x79);")
+
+[
+        local,
+        object,
+        uuid(88db0d1a-460e-4341-96d7-a7c9b68f4679),
+        pointer_default(unique)
+]
+interface IBindContext : IUnknown
+{
+    typedef [unique] IBindContext *LPBINDCONTEXT;
+
+    HRESULT PreBind([in]  IAssemblyName  *pIAssemblyName,
+		    [in]  DWORD           dwPreBindFlags,
+		    [out] IBindResult  **ppIBindResult);
+
+    HRESULT IsDefaultContext();
+}
+
+
+
+#pragma midl_echo("STDAPI GetBindResultFromPath(LPCWSTR pwzFilePath, DWORD dwMetaDataImportFlags, DWORD dwAssemblyLocation, IBindContext *pBindContext, IBindResult **ppIBindResult, HANDLE hFile = INVALID_HANDLE_VALUE); ")
+//
+// Interface fraction implemented by ngen binder folks.
+//
+
+typedef struct
+{
+    WCHAR *pwzZapConfigString;
+    DWORD dwZapConfigMask;
+} NativeConfigData;
+
+#pragma midl_echo("interface ICorSvcLogger;")
+#pragma midl_echo("STDAPI InitializeNativeBinder(); ")
+#pragma midl_echo("STDAPI GetZapDir(__deref_out LPCWSTR *pszZapDir); ")
+#pragma midl_echo("STDAPI InstallNativeAssembly(LPCWSTR pwzAssemblyPath, HANDLE hFile, LPCWSTR pwzZapSet, IBindContext* pBindCtx, IAssemblyName **ppAssemblyName, IAssemblyLocation **ppAssemblyLocation);")
+#pragma midl_echo("STDAPI UninstallNativeAssembly(IAssemblyName *pIAssemblyName, ICorSvcLogger *pLogSink); ")
+#pragma midl_echo("STDAPI QueryNativeAssemblyInfo(IAssemblyName *pIAssemblyName, __out_ecount(*pdwSize) LPWSTR pwzFilePath, __inout LPDWORD pdwSize); ")
+#pragma midl_echo("STDAPI GetAssemblyNameFromNIPath(LPCWSTR wszNIPath, IAssemblyName ** ppAssemblyName); ")
+#pragma midl_echo("STDAPI CreateNativeAssemblyEnum(IAssemblyEnum **ppIAssemblyEnum, IAssemblyName  *pIAssemblyName);")
+#pragma midl_echo("STDAPI BindToNativeAssembly(IBindResult *pGivenILAsm, const NativeConfigData *pNativeConfigData, IBindContext *pBindContext, IFusionBindLog *pFusionBindLog); ")
+#pragma midl_echo("struct IMDInternalImport;")

@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = atol
+Name = Positive Test for atol
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the atol function.
+= Check to ensure that the different ints (normal, negative, decimal,
+= exponent), all work as expected with this function.
+
+
+

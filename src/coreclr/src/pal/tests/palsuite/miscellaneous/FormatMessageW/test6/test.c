@@ -1,0 +1,79 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+//
+
+/*============================================================
+**
+** Source : test.c
+**
+** Purpose: Test for FormatMessageW() function
+**
+**
+**=========================================================*/
+
+
+#define UNICODE
+#include <palsuite.h>
+
+
+int __cdecl main(int argc, char *argv[]) {
+
+
+    LPWSTR OutBuffer;
+    int ReturnResult;
+
+    /*
+     * Initialize the PAL and return FAILURE if this fails
+     */
+
+    if(0 != (PAL_Initialize(argc, argv)))
+    {
+        return FAIL;
+    }
+
+
+    /* This is testing the use of FROM_SYSTEM.  We can't check to ensure
+       the error message it extracts is correct, only that it does place some
+       information into the buffer when it is called.
+    */
+  
+    /*
+        
+        ERROR_SUCCESS (0L) is normally returned by GetLastError,
+        But, the  ERROR_SUCCESS is removed from messages for Unix based Systems
+        To ensure that we have some information into the buffer we are using the message
+        identifier value 10093L (WSANOTINITIALISED)
+    */
+    ReturnResult = FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_ALLOCATE_BUFFER,  /* source and processing options */
+        NULL,                            /* message source */
+        10093L,                          /* message identifier */
+        0,                               /* language identifier */
+        (LPWSTR)&OutBuffer,              /* message buffer */
+        0,                               /* maximum size of message buffer */
+        NULL                            /* array of message inserts */
+        );
+  
+    if(ReturnResult == 0) 
+    {
+        Fail("ERROR: The return value was 0, which indicates failure. The "
+             "function failed when trying to Format a FROM_SYSTEM message.");
+    }
+  
+    if(wcslen(OutBuffer) <= 0) 
+    {
+        Fail("ERROR: There are no characters in the buffer, and when the "
+             "FORMAT_MESSAGE_FROM_SYSTEM flag is used with WSANOTINITIALISED error, "
+             "something should be put into the buffer.");
+    }
+  
+    LocalFree(OutBuffer);
+  
+    PAL_Terminate();
+    return PASS;
+ 
+}
+
+

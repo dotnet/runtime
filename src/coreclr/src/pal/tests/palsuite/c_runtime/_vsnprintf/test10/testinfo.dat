@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _vsnprintf
+Name = Positive Test for _vsnprintf
+TYPE = DEFAULT
+EXE1 = test10
+Description
+= Tests the PAL implementation of the _vsnprintf function.
+= Tests _vsnprintf with octal numbers.
+= This test is modeled after _snprintf.

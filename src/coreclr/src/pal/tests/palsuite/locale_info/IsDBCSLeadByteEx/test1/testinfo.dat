@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = IsDBCSLeadByteEx
+Name = Test #1 for IsDBCSLeadByteEx
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests that IsDBCSLeadByteEx does not find any lead-bytes in the 
+=current ansi code page or the default code page.  Also tests that 
+=it correctly handles an invalid codepage.

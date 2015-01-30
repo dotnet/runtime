@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = QueueUserAPC
+Name = Test #2 for QueueUserAPC
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+=Tests that APCs are not executed if a thread never enters an 
+=alertable state after they are queued.

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = SleepEx
+Name = Test #2 for SleepEx
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+=Tests that a child thread in the middle of a SleepEx call will be
+=interrupted by QueueUserAPC if the alert flag was set.
+

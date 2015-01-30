@@ -1,0 +1,9 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+
+#include "mscorrc.rc"
+#include "fuslog.rc"
+#include "nativelog.rc"

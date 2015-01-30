@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = pal_specific
+Function = PAL_RegisterLibraryW and PAL_UnregisterLibraryW API
+Name = Positive test PAL_RegisterLibraryW and PAL_UnregisterLibaryW API
+TYPE = DEFAULT
+EXE1 = pal_registerlibraryw_unregisterlibraryw
+Description
+=Test the PAL_RegisterLibraryW and PAL_UnregisterLibraryW to map an executable
+=module into calling process address space and unmap this module

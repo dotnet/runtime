@@ -1,0 +1,52 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+//+---------------------------------------------------------------------------
+//
+//  File:       assemblyusageloginterface.idl
+//
+//  Contents:   COM interface for assembly usage log.
+//
+//  Classes:
+//
+//  Functions:
+//
+//
+//----------------------------------------------------------------------------
+
+cpp_quote("")
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma comment(lib,\"uuid.lib\")")
+cpp_quote("#endif")
+cpp_quote("")
+cpp_quote("//---------------------------------------------------------------------------=")
+cpp_quote("// Assembly Usage Log Interfaces")
+cpp_quote("")
+
+import "objidl.idl";
+
+cpp_quote("#ifdef _MSC_VER")
+cpp_quote("#pragma once")
+cpp_quote("#endif")
+
+cpp_quote("// {ec2b5f70-d576-4d33-876f-6e3caeb0a7ba}")
+cpp_quote("EXTERN_GUID(IID_IAssemblyUsageLog, 0xec2b5f70, 0xd576, 0x4d33, 0x87, 0x6f, 0x6e, 0x3c, 0xae, 0xb0, 0xa7, 0xba);")
+
+typedef enum
+{
+    ASSEMBLY_USAGE_LOG_FLAGS_NI   = 1,
+    ASSEMBLY_USAGE_LOG_FLAGS_IL   = 2,
+} ASSEMBLY_USAGE_LOG_FLAGS;
+
+[
+        local,
+        object,
+        uuid(ec2b5f70-d576-4d33-876f-6e3caeb0a7ba),
+        pointer_default(unique)
+]
+interface IAssemblyUsageLog : IUnknown
+{
+    HRESULT LogFile(LPCWSTR pwszILFile, LPCWSTR pwszNIFile, ASSEMBLY_USAGE_LOG_FLAGS flags);
+};
+

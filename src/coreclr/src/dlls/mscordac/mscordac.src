@@ -1,0 +1,18 @@
+; ==++==
+; 
+;   Copyright (c) Microsoft Corporation.  All rights reserved.
+; 
+; ==--==
+
+EXPORTS
+    OutOfProcessFunctionTableCallback
+    OutOfProcessFunctionTableCallbackEx
+    DacDbiInterfaceInstance
+    
+#ifndef FEATURE_PAL
+    OutOfProcessExceptionEventCallback
+    OutOfProcessExceptionEventSignatureCallback
+#endif // FEATURE_PAL
+    OutOfProcessExceptionEventDebuggerLaunchCallback
+
+    CLRDataCreateInstance

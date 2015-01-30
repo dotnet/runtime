@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = ReleaseSemaphore
+Name = Positive Test for ReleaseSemaphore
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Check that ReleaseSemaphore fails when using a semaphore handle 
+= which has been closed by a call to CloseHandle.  Check that
+= ReleaseSemaphore fails when using a ReleaseCount of zero or less than 
+= zero.

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = CreateEvent
+Name = Positive Test for CreateEvent 
+TYPE = DEFAULT
+EXE1 = test2
+Description 
+= Test for CreateEvent.  Create the event with the
+= initial state being not signaled.  Check to ensure that it
+= times out when the event is triggered.

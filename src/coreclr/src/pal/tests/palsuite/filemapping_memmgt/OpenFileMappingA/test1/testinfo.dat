@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = OpenFileMappingA
+Name = Positive test for OpenFileMappingA API with FILE_MAP_ALL_ACCESS access
+TYPE = DEFAULT
+EXE1 = openfilemappinga
+Description
+=Test the OpenFileMappingA with FILE_MAP_ALL_ACCESS access

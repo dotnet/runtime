@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = CreateThread
+Name = Positive Test for CreateThread
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+= Test for CreateThread.  Call CreateThread and ensure
+= that it succeeds.  Also check to ensure the paramater is passed
+= properly.

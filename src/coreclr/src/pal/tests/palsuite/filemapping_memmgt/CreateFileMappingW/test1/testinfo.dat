@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = CreateFileMappingW
+Name = CreateFileMappingW with PAGE_READONLY
+TYPE = DEFAULT
+EXE1 = createfilemappingw
+Description
+=Test the CreateFileMappingW to create a unnamed file-mapping object
+=and with PAGE_READONLY protection

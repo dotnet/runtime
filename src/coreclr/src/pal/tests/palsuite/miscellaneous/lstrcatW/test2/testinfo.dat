@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = lstrcatW
+Name = Negtive test of lstrcatW
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Test to see lstrcat reports error with failing situations.

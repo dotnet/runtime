@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFileAttributesA
+Name = Test SetFileAttributesA on an invalid file
+TYPE = DEFAULT
+EXE1 = setfileattributesa
+Description 
+= Test the SetFileAttributesA function
+= Try the function on a file that doesn't exist.  It should fail.

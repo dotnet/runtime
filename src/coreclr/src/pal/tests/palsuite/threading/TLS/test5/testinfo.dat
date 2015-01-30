@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = TLS
+Name = TlsAlloc and TlsGetValue
+TYPE = DEFAULT
+EXE1 = test5
+Description 
+= Test that creates a key, sets its value, deletes the key, 
+= creates a new key, and gets its value to make sure its NULL.

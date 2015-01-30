@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = bsearch
+Name = Negative Test for bsearch
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Calls bsearch to find a character in a sorted buffer, 
+= that does not exist.
+

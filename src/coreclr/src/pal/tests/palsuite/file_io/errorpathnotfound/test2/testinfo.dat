@@ -1,0 +1,34 @@
+#
+
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+
+#
+
+
+
+Version = 1.0
+
+Section = file_io
+
+Function = some File_io functions
+
+Name = errorpathnotfound - checking GetLastError.
+
+Type = DEFAULT 
+
+EXE1 = test2
+
+Description
+
+= Test the return value of GetLastError() after calling 
+
+= some file_io functions with an invalid path. 
+
+= Functions covered by this test are: 
+
+= MoveFileW, FindFirstFileA, FindFirstFileW,
+
+= GetFileAttributesA, GetFileAttributesW,
+
+= SetFileAttributesA, SetFileAttributesW.
+

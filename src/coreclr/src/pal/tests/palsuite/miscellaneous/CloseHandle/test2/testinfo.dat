@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = CloseHandle
+Name = Positive Test for CloseHandle
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Attempt to close an unintialized HANDLE, should be unable to do this.
+
+
+

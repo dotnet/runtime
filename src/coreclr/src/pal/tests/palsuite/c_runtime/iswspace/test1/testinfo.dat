@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = iswspace
+Name = Positive Test for iswspace
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests iswspace with a range of wide characters.

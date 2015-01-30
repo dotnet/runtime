@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CreateDirectoryA
+Name = Test for CreateDirectoryA
+Type = DEFAULT
+EXE1 = createdirectorya
+Description
+= Create a directory that exists (should fail) and create 
+= a directory that doesn't exist and verify results.

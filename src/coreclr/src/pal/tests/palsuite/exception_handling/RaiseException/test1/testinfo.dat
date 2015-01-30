@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = exception_handling
+Function = RaiseException
+Name = RaiseException test #1
+TYPE = DEFAULT
+EXE1 = test1
+LANG = cpp
+Description
+=Tests that RaiseException throws a catchable exception

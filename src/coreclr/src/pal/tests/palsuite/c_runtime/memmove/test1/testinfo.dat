@@ -1,0 +1,19 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = memmove
+Name = Positive Test for memmove
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Test that memmove correctly copies text from one buffer to another
+= even when the buffers overlap.
+
+
+
+
+
+

@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fwprintf
+Name = Positive Test for fwprintf
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= A single, basic, test case with no formatting.
+= Test modeled after the sprintf series.

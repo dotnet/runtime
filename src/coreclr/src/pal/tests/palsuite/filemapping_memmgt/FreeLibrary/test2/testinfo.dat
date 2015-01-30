@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = FreeLibrary
+Name = Negative test for FreeLibrary
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Tests the PAL implementation of the FreeLibrary function.
+= This is a negative test that will pass an invalid and a
+= null handle to FreeLibrary.

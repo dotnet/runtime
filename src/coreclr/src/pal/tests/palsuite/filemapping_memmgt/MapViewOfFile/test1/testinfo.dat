@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = MapViewOfFile
+Name = Positive test MapViewOfFile API with access FILE_MAP_READ
+TYPE = DEFAULT
+EXE1 = mapviewoffile
+Description
+=Test the MapViewOfFile with access FILE_MAP_READ

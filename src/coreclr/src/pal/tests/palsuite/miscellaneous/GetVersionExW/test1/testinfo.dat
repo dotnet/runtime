@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetVersionExW
+Name = Positive Test for GetVersionExW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test that all the values in the OSVERSION structure are set properly
+= for the current environment.
+
+
+

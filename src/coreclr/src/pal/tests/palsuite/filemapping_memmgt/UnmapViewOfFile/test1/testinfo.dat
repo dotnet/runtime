@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = UnmapViewOfFile
+Name = Positive test UnmapViewOfFile API to unmap a view of file
+TYPE = DEFAULT
+EXE1 = unmapviewoffile
+LANG = cpp
+Description
+= Test the UnmapViewOfFile to unmap a view of file.

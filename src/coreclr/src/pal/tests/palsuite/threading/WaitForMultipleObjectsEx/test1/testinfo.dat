@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = WaitForMultipleObjectsEx
+Name = Test #1 for WaitForMultipleObjectsEx
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+= Test for WaitForMultipleObjectsEx. Call the function
+= on an array of 4 events, and ensure that it returns correct
+= results when we do so.

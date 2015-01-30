@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = CharNextA
+Name = Positive Test for CharNextA
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to ensure it returns an LPTSTR when called on a string

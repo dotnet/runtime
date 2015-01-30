@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = PAL_Specific
+Function = PAL_get_stdout
+Name = Positive test PAL_get_stdout to retrieve PAL standard output stream pointer
+TYPE = DEFAULT
+EXE1 = pal_get_stdout
+Description
+=Test the PAL_get_stdout to retrieve the PAL standard output stream pointer
+=This test case will be run both manually and automatically

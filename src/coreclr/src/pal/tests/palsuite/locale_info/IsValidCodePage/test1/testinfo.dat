@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Locale Information
+Function = IsValidCodePage
+Name = Test #1 for IsValidCodePage
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests IsValidCodePage with a collection of valid and invalid code pages.

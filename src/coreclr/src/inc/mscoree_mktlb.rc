@@ -1,0 +1,14 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Runtime CLR Loading and Configuration Interfaces\0"
+#define FX_VER_INTERNALNAME_STR MSCOREE.DLL
+#define FX_VFT VFT_DLL
+
+#include <fxver.h>
+#include <fxver.rc>
+
+1 typelib REAL_TLB_FILE

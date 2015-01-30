@@ -1,0 +1,11 @@
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <ms_asmv3:trustInfo xmlns:ms_asmv3="urn:schemas-microsoft-com:asm.v3">
+    <ms_asmv3:security>
+      <ms_asmv3:requestedPrivileges>
+        <ms_asmv3:requestedExecutionLevel
+          level="asInvoker"
+          uiAccess="false"/>
+      </ms_asmv3:requestedPrivileges>
+    </ms_asmv3:security>
+  </ms_asmv3:trustInfo>
+</assembly>

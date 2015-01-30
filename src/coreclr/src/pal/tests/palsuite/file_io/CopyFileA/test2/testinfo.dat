@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CopyFileA
+Name = CopyFileA - checking copying to itself (test2)
+Type = DEFAULT 
+EXE1 = test2
+Description
+= Test the CopyFileA function's behaviour
+= for copying a file to itself.
+

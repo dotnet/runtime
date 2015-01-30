@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = FileTimeToDosDateTime
+Name = Positive Test #1 for FileTimeToDosDateTime
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+=Tests that FileTimeToDosDateTime successfully converts values.
+=Makes sure values are rounded up, and the limits of the function
+=pass.  Also tests that values outside the valid range fail.
+

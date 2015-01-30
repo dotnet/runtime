@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fwrite
+Name = Positive Test for fwrite
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Write a short string to a file and check that it was written properly.

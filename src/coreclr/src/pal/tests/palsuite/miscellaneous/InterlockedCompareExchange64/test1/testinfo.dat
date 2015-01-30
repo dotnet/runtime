@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = InterlockedCompareExchange64
+Name = Positive test of InterlockedCompareExchange64
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to see if both successful and unsuccessful compare exchanges workp
+= roperly -- ie. Exchange and don't exchange.
+
+
+

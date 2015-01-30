@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetEnvironmentVariableW
+Name = Positive Test for GetEnvironmentVariableW
+TYPE = DEFAULT
+EXE1 = test5
+Description
+= Set an Environment Variable, then use GetEnvironmentVariable
+= to retrieve it.  Then set another environment variable that differs
+= from the original variable only by case and verify that 
+= GetEnvironmnetVariable returns the correct value.
+
+

@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetCommandLineW
+Name = Positive test for GetCommandLineW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Ensure that this function returns the correct CommandLine
+
+
+

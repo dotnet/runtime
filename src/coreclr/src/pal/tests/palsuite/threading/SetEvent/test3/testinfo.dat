@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = SetEvent
+Name = Negative test for SetEvent
+TYPE = DEFAULT
+EXE1 = test3
+Description 
+= Test to ensure proper operation of the SetEvent()
+= API by calling it on an event handle that's been
+= closed. We expect it to return an appropriate error
+= result.

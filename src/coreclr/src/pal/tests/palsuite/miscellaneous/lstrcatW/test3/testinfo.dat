@@ -1,0 +1,26 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+
+Section = Miscellaneous
+
+Function = lstrcatW
+
+Name = Negative testing for lstrcatW
+
+TYPE = DEFAULT
+
+EXE1 = test3
+
+Description
+
+= Testing the behaviour after sending two strings contained NULL
+
+
+
+
+
+
+

@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = vprintf
+Name = Positive Test for vprintf
+TYPE = DEFAULT
+EXE1 = test18
+Description
+= Tests vprintf with compact format doubles (uppercase)
