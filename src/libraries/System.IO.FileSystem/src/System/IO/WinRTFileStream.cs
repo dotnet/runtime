@@ -18,7 +18,8 @@ namespace System.IO
         private readonly FileOptions _options;
         private static readonly SafeFileHandle s_invalidHandle = new SafeFileHandle(IntPtr.Zero, false);
 
-        internal WinRTFileStream(Stream innerStream, StorageFile file, FileAccess access, FileOptions options)
+        internal WinRTFileStream(Stream innerStream, StorageFile file, FileAccess access, FileOptions options, FileStream parent) 
+            : base(parent)
         {
             Debug.Assert(innerStream != null);
             Debug.Assert(file != null);
@@ -147,7 +148,7 @@ namespace System.IO
 
         public override void Flush()
         {
-            _innerStream.Flush();
+            _parent.Flush(false);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
