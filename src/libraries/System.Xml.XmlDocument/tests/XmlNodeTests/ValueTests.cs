@@ -10,7 +10,6 @@ namespace XmlDocumentTests.XmlNodeTests
     public static class ValueTests
     {
         [Fact]
-        [ActiveIssue(208)]
         public static void OnDocumentNode()
         {
             var xmlDocument = new XmlDocument();
@@ -32,7 +31,6 @@ namespace XmlDocumentTests.XmlNodeTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void ElementWithNoDescendents()
         {
             var xmlDocument = new XmlDocument();
@@ -43,7 +41,6 @@ namespace XmlDocumentTests.XmlNodeTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void ElementWithDescendents()
         {
             var xmlDocument = new XmlDocument();
@@ -134,7 +131,6 @@ namespace XmlDocumentTests.XmlNodeTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void DocumentFragment()
         {
             var xmlDocument = new XmlDocument();
