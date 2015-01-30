@@ -2223,18 +2223,8 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgInIReg;
 			break;
 		case RegTypeStructByVal:
-			// FIXME: Passing entirely on the stack or split reg/stack
-			if (ainfo->vtsize == 0 && ainfo->size <= 2) {
-				linfo->args [i].storage = LLVMArgVtypeInReg;
-				linfo->args [i].pair_storage [0] = LLVMArgInIReg;
-				if (ainfo->size == 2)
-					linfo->args [i].pair_storage [1] = LLVMArgInIReg;
-				else
-					linfo->args [i].pair_storage [1] = LLVMArgNone;
-			} else {
-				cfg->exception_message = g_strdup_printf ("vtype-by-val on stack");
-				cfg->disable_llvm = TRUE;
-			}
+			linfo->args [i].storage = LLVMArgAsIArgs;
+			linfo->args [i].nslots = ainfo->struct_size / sizeof (gpointer);
 			break;
 		default:
 			cfg->exception_message = g_strdup_printf ("ainfo->storage (%d)", ainfo->storage);

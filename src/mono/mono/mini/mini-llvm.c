@@ -1192,12 +1192,14 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (vretaddr && vret_arg_pindex == pindex)
 		param_types [pindex ++] = IntPtrType ();
 	for (i = 0; i < sig->param_count; ++i) {
+		LLVMArgInfo *ainfo = cinfo ? &cinfo->args [i + sig->hasthis] : NULL;
+
 		if (vretaddr && vret_arg_pindex == pindex)
 			param_types [pindex ++] = IntPtrType ();
 		pindexes [i] = pindex;
-		if (cinfo && cinfo->args [i + sig->hasthis].storage == LLVMArgVtypeInReg) {
+		if (ainfo && ainfo->storage == LLVMArgVtypeInReg) {
 			for (j = 0; j < 2; ++j) {
-				switch (cinfo->args [i + sig->hasthis].pair_storage [j]) {
+				switch (ainfo->pair_storage [j]) {
 				case LLVMArgInIReg:
 					param_types [pindex ++] = LLVMIntType (sizeof (gpointer) * 8);
 					break;
@@ -1207,10 +1209,13 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 					g_assert_not_reached ();
 				}
 			}
-		} else if (cinfo && cinfo->args [i + sig->hasthis].storage == LLVMArgVtypeByVal) {
+		} else if (ainfo && ainfo->storage == LLVMArgVtypeByVal) {
 			param_types [pindex] = type_to_llvm_arg_type (ctx, sig->params [i]);
 			CHECK_FAILURE (ctx);
 			param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
+			pindex ++;
+		} else if (ainfo && ainfo->storage == LLVMArgAsIArgs) {
+			param_types [pindex] = LLVMArrayType (IntPtrType (), ainfo->nslots);
 			pindex ++;
 		} else {
 			param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
@@ -1924,6 +1929,13 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				/* Treat these as normal values */
 				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "");
 			}
+		} else if (ainfo->storage == LLVMArgAsIArgs) {
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, ctx->pindexes [i]);
+
+			ctx->addresses [reg] = build_alloca (ctx, sig->params [i]);
+
+			/* The argument is received as an array of ints, store it into the real argument */
+			LLVMBuildStore (ctx->builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
 		} else {
 			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (type_to_llvm_type (ctx, sig->params [i])), type_is_unsigned (ctx, sig->params [i]));
 		}
@@ -2227,6 +2239,9 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		} else if (ainfo->storage == LLVMArgVtypeByVal) {
 			g_assert (addresses [reg]);
 			args [pindex] = addresses [reg];
+		} else if (ainfo->storage == LLVMArgAsIArgs) {
+			g_assert (addresses [reg]);
+			args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (IntPtrType (), ainfo->nslots), 0)), "");
 		} else {
 			g_assert (args [pindex]);
 			if (i == 0 && sig->hasthis)
@@ -4995,6 +5010,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 		case LLVMArgVtypeByVal:
 		case LLVMArgVtypeInReg:
+		case LLVMArgAsIArgs:
 			MONO_INST_NEW (cfg, ins, OP_LLVM_OUTARG_VT);
 			ins->dreg = mono_alloc_ireg (cfg);
 			ins->sreg1 = in->dreg;

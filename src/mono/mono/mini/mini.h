@@ -704,6 +704,8 @@ typedef enum {
 	LLVMArgVtypeByVal,
 	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
 	LLVMArgGSharedVt,
+	/* Argument passed as a set of int args */
+	LLVMArgAsIArgs
 } LLVMArgStorage;
 
 typedef struct {
@@ -711,6 +713,8 @@ typedef struct {
 
 	/* Only if storage == ArgValuetypeInReg */
 	LLVMArgStorage pair_storage [2];
+	/* Only if storage == LLVMArgAsIArgs */
+	int nslots;
 } LLVMArgInfo;
 
 typedef struct {
