@@ -237,4 +237,9 @@ Temporary Items
 .apdisk
 
 # vim temporary files
-.*.swp
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
