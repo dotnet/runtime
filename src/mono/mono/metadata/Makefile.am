@@ -194,6 +194,7 @@ common_sources = \
 	threadpool.c		\
 	threadpool.h		\
 	threadpool-internals.h	\
+	tpool-poll.c	\
 	verify.c		\
 	verify-internals.h	\
 	wrapper-types.h	\

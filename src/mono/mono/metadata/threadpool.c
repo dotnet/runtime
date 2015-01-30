@@ -83,18 +83,6 @@ enum {
 	MONITOR_STATE_SLEEPING
 };
 
-typedef struct {
-	mono_mutex_t io_lock; /* access to sock_to_state */
-	int inited; // 0 -> not initialized , 1->initializing, 2->initialized, 3->cleaned up
-	MonoGHashTable *sock_to_state;
-
-	gint event_system;
-	gpointer event_data;
-	void (*modify) (gpointer p, int fd, int operation, int events, gboolean is_new);
-	void (*wait) (gpointer sock_data);
-	void (*shutdown) (gpointer event_data);
-} SocketIOData;
-
 static SocketIOData socket_io_data;
 
 /* Keep in sync with the System.MonoAsyncCall class which provides GC tracking */
@@ -148,11 +136,7 @@ static void threadpool_kill_idle_threads (ThreadPool *tp);
 static gboolean threadpool_start_thread (ThreadPool *tp);
 static void threadpool_kill_thread (ThreadPool *tp);
 static void monitor_thread (gpointer data);
-static void socket_io_cleanup (SocketIOData *data);
-static MonoObject *get_io_event (MonoMList **list, gint event);
-static int get_events_from_list (MonoMList *list);
 static int get_event_from_state (MonoSocketAsyncResult *state);
-static void check_for_interruption_critical (void);
 
 static MonoClass *async_call_klass;
 static MonoClass *socket_async_call_klass;
@@ -196,7 +180,7 @@ enum {
 	AIO_OP_LAST
 };
 
-#include <mono/metadata/tpool-poll.c>
+// #include <mono/metadata/tpool-poll.c>
 #ifdef HAVE_EPOLL
 #include <mono/metadata/tpool-epoll.c>
 #elif defined(USE_KQUEUE_FOR_THREADPOOL)
@@ -300,7 +284,10 @@ is_sdp_asyncreadhandler (MonoDomain *domain, MonoClass *klass)
 
 #ifdef DISABLE_SOCKETS
 
-#define socket_io_cleanup(x)
+void
+socket_io_cleanup (SocketIOData *data)
+{
+}
 
 static int
 get_event_from_state (MonoSocketAsyncResult *state)
@@ -309,7 +296,7 @@ get_event_from_state (MonoSocketAsyncResult *state)
 	return -1;
 }
 
-static int
+int
 get_events_from_list (MonoMList *list)
 {
 	return 0;
@@ -317,7 +304,7 @@ get_events_from_list (MonoMList *list)
 
 #else
 
-static void
+void
 socket_io_cleanup (SocketIOData *data)
 {
 	mono_mutex_lock (&data->io_lock);
@@ -355,7 +342,7 @@ get_event_from_state (MonoSocketAsyncResult *state)
 	}
 }
 
-static int
+int
 get_events_from_list (MonoMList *list)
 {
 	MonoSocketAsyncResult *state;
@@ -404,7 +391,7 @@ threadpool_jobs_dec (MonoObject *obj)
 	return FALSE;
 }
 
-static MonoObject *
+MonoObject *
 get_io_event (MonoMList **list, gint event)
 {
 	MonoObject *state;
@@ -1237,6 +1224,12 @@ threadpool_append_job (ThreadPool *tp, MonoObject *ar)
 	threadpool_append_jobs (tp, &ar, 1);
 }
 
+void
+threadpool_append_async_io_jobs (MonoObject **jobs, gint njobs)
+{
+	threadpool_append_jobs (&async_io_tp, jobs, njobs);
+}
+
 static void
 threadpool_append_jobs (ThreadPool *tp, MonoObject **jobs, gint njobs)
 {
@@ -1529,7 +1522,7 @@ clear_thread_state (void)
 		ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 }
 
-static void
+void
 check_for_interruption_critical (void)
 {
 	MonoInternalThread *thread;
