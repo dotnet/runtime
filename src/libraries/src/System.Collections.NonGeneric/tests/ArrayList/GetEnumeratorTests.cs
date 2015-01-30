@@ -216,7 +216,6 @@ namespace System.Collections.ArrayListTests
                         }
 
                         Assert.False(enu.MoveNext());
-
                         enu.Reset();
                     }
 

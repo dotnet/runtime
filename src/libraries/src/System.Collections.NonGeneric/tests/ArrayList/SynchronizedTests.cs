@@ -51,10 +51,10 @@ namespace System.Collections.ArrayListTests
 
             workers = new Task[iNumberOfWorkers];
             ts1 = new Action(AddElements);
-            // LongRunning will have problem when running under xUint
+            // 
             for (int i = 0; i < workers.Length; i++)
             {
-                workers[i] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
+                workers[i] = Task.Run(ts1);
             }
 
             Task.WaitAll(workers);
@@ -77,10 +77,10 @@ namespace System.Collections.ArrayListTests
 
             workers = new Task[iNumberOfWorkers];
             ts1 = new Action(RemoveElements);
-            // LongRunning will have problem with xUnit run
+            // 
             for (int i = 0; i < workers.Length; i++)
             {
-                workers[i] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
+                workers[i] = Task.Run(ts1);
             }
 
             Task.WaitAll(workers);
@@ -123,7 +123,7 @@ namespace System.Collections.ArrayListTests
             {
                 var name = "ThreadID " + i.ToString();
                 Action delegStartMethod = () => AddElems(name);
-                workers[i] = Task.Factory.StartNew(delegStartMethod, TaskCreationOptions.LongRunning);
+                workers[i] = Task.Run(delegStartMethod);
             }
 
             Task.WaitAll(workers);

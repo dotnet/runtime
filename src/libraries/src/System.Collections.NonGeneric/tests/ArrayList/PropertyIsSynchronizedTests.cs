@@ -34,10 +34,10 @@ namespace System.Collections.ArrayListTests
 
             workers = new Task[iNumberOfWorkers];
             ts1 = new Action(AddElements);
-            // LongRunning will have problem when run in xUnit
+
             for (int i = 0; i < workers.Length; i++)
             {
-                workers[i] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
+                workers[i] = Task.Run(ts1);
             }
 
             Task.WaitAll(workers);
@@ -64,7 +64,7 @@ namespace System.Collections.ArrayListTests
             ts1 = new Action(RemoveElements);
             for (int i = 0; i < workers.Length; i++)
             {
-                workers[i] = Task.Factory.StartNew(ts1, TaskCreationOptions.LongRunning);
+                workers[i] = Task.Run(ts1);
             }
 
             Task.WaitAll(workers);
