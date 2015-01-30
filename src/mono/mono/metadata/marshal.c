@@ -7368,13 +7368,18 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 {
 	MonoMethodSignature *csig;
 
+	SignaturePointerPair key, *new_key;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
+	gboolean found;
 	char *name;
 
-	cache = get_cache (&image->native_wrapper_cache, mono_aligned_addr_hash, NULL);
-	if ((res = mono_marshal_find_in_cache (cache, func)))
+	key.sig = sig;
+	key.pointer = func;
+
+	cache = get_cache (&image->native_func_wrapper_cache, signature_pointer_pair_hash, signature_pointer_pair_equal);
+	if ((res = mono_marshal_find_in_cache (cache, &key)))
 		return res;
 
 	name = g_strdup_printf ("wrapper_native_%p", func);
@@ -7387,8 +7392,13 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 
 	csig = signature_dup (image, sig);
 	csig->pinvoke = 0;
-	res = mono_mb_create_and_cache (cache, func,
-									mb, csig, csig->param_count + 16);
+
+	new_key = g_new (SignaturePointerPair,1);
+	*new_key = key;
+	res = mono_mb_create_and_cache_full (cache, new_key, mb, csig, csig->param_count + 16, NULL, &found);
+	if (found)
+		g_free (new_key);
+
 	mono_mb_free (mb);
 
 	mono_marshal_set_wrapper_info (res, NULL);
