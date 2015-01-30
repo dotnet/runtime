@@ -15,6 +15,41 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ArrayList\AdapterTests.cs" />
+    <Compile Include="ArrayList\AddRangeTests.cs" />
+    <Compile Include="ArrayList\AddTests.cs" />
+    <Compile Include="ArrayList\BinarySearchTests.cs" />
+    <Compile Include="ArrayList\ClearTests.cs" />
+    <Compile Include="ArrayList\CloneTests.cs" />
+    <Compile Include="ArrayList\ContainsTests.cs" />
+    <Compile Include="ArrayList\CopyToTests.cs" />
+    <Compile Include="ArrayList\CtorTests.cs" />
+    <Compile Include="ArrayList\DerivedClassTests.cs" />
+    <Compile Include="ArrayList\FixedSizeTests.cs" />
+    <Compile Include="ArrayList\GetEnumeratorTests.cs" />
+    <Compile Include="ArrayList\GetSetRangeTests.cs" />
+    <Compile Include="ArrayList\IndexOfTests.cs" />
+    <Compile Include="ArrayList\InsertRangeTests.cs" />
+    <Compile Include="ArrayList\InsertTests.cs" /> 
+    <Compile Include="ArrayList\LastIndexOfTests.cs" />
+    <Compile Include="ArrayList\PropertyCapacityTests.cs" />
+    <Compile Include="ArrayList\PropertyCountTests.cs" />
+    <Compile Include="ArrayList\PropertyIsFixedSizeTests.cs" />
+    <Compile Include="ArrayList\PropertyIsReadOnlyTests.cs" />
+    <Compile Include="ArrayList\PropertyIsSynchronizedTests.cs" />
+    <Compile Include="ArrayList\PropertyItemTests.cs" />
+    <Compile Include="ArrayList\PropertySyncRootTests.cs" />
+    <Compile Include="ArrayList\ReadOnlyTests.cs" />
+    <Compile Include="ArrayList\RemoveAtTests.cs" />
+    <Compile Include="ArrayList\RemoveRangeTests.cs" />
+    <Compile Include="ArrayList\RemoveTests.cs" />
+    <Compile Include="ArrayList\RepeatTests.cs" />
+    <Compile Include="ArrayList\ReverseTests.cs" />
+    <Compile Include="ArrayList\SortTests.cs" />
+    <Compile Include="ArrayList\SynchronizedTests.cs" />
+    <Compile Include="ArrayList\ToArrayTests.cs" />
+    <Compile Include="ArrayList\TrimToSizeTests.cs" />
+    <Compile Include="ArrayList\WrapperTests.cs" />
     <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_ctor.cs" />
     <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_CultureInfo.cs" />
     <Compile Include="CaseInsensitiveComparer\CaseInsensitiveComparer_Default.cs" />
