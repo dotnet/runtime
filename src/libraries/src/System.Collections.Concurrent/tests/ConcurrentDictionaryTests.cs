@@ -19,7 +19,7 @@ namespace System.Collections.Concurrent.Tests
             ConcurrentDictionary<int, int> cd = new ConcurrentDictionary<int, int>();
 
             Task[] tks = new Task[2];
-            tks[0] = Task.Factory.StartNew(() =>
+            tks[0] = Task.Run(() =>
             {
                 var ret = cd.TryAdd(1, 11);
                 if (!ret)
@@ -34,9 +34,9 @@ namespace System.Collections.Concurrent.Tests
                     ret = cd.TryUpdate(2, 22, 222);
                     Assert.True(ret);
                 }
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
-            tks[1] = Task.Factory.StartNew(() =>
+            tks[1] = Task.Run(() =>
             {
                 var ret = cd.TryAdd(2, 222);
                 if (!ret)
@@ -51,7 +51,7 @@ namespace System.Collections.Concurrent.Tests
                     ret = cd.TryUpdate(1, 111, 11);
                     Assert.True(ret);
                 }
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
             Task.WaitAll(tks);
         }

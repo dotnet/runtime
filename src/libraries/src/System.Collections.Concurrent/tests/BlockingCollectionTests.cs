@@ -22,7 +22,7 @@ namespace System.Collections.Concurrent.Tests
             Task[] tks = new Task[2];
             // A simple blocking consumer with no cancellation.
             int expect = 1;
-            tks[0] = Task.Factory.StartNew(() =>
+            tks[0] = Task.Run(() =>
             {
                 while (!bc.IsCompleted)
                 {
@@ -34,17 +34,17 @@ namespace System.Collections.Concurrent.Tests
                     }
                     catch (InvalidOperationException) { } // throw when CompleteAdding called
                 }
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
             // A simple blocking producer with no cancellation.
-            tks[1] = Task.Factory.StartNew(() =>
+            tks[1] = Task.Run(() =>
             {
                 bc.Add(1);
                 bc.Add(2);
                 bc.Add(3);
                 // Let consumer know we are done.
                 bc.CompleteAdding();
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
             Task.WaitAll(tks);
         }
@@ -161,10 +161,10 @@ namespace System.Collections.Concurrent.Tests
 
             producer2.CompleteAdding();
 
-            Task.Factory.StartNew(() =>
+            Task.Run(() =>
             {
                 producer1.Add(100);
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
             int ignored, index, timeout = 5000;
             index = BlockingCollection<int>.TryTakeFromAny(producerArray, out ignored, timeout);
