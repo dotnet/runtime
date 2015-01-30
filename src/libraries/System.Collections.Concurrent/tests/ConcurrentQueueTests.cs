@@ -20,14 +20,14 @@ namespace System.Collections.Concurrent.Tests
             cq.Enqueue(1);
 
             Task[] tks = new Task[2];
-            tks[0] = Task.Factory.StartNew(() =>
+            tks[0] = Task.Run(() =>
             {
                 cq.Enqueue(2);
                 cq.Enqueue(3);
                 cq.Enqueue(4);
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
-            tks[1] = Task.Factory.StartNew(() =>
+            tks[1] = Task.Run(() =>
             {
                 int item1, item2;
                 var ret1 = cq.TryDequeue(out item1);
@@ -44,7 +44,7 @@ namespace System.Collections.Concurrent.Tests
                 {
                     Assert.Equal(1, item1);
                 }
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
             Task.WaitAll(tks);
         }
@@ -138,8 +138,7 @@ namespace System.Collections.Concurrent.Tests
         {
             var q = new ConcurrentQueue<int?>();
 
-            var t1 = Task.Factory.StartNew(
-             () =>
+            var t1 = Task.Run(() =>
              {
                  for (int i = 0; i < 1000000; i++)
                  {
@@ -148,16 +147,15 @@ namespace System.Collections.Concurrent.Tests
                      
                      Assert.True(q.TryDequeue(out o), "TryDequeue should never return false in this test");
                  }
-             }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+             });
 
-            var t2 = Task.Factory.StartNew(
-             () =>
+            var t2 = Task.Run(() =>
              {
                  foreach (var item in q)
                  {
                      Assert.NotNull(item);
                  }
-             }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+             });
 
             t2.Wait();
         }
@@ -171,13 +169,11 @@ namespace System.Collections.Concurrent.Tests
         public static void TestBugFix484295()
         {
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            Task<InvalidPeekException> peepTask = Task.Factory
-                .StartNew(() => TryPeek(cts.Token), cts.Token)
-                .ContinueWith(task => HandleExceptions(task));
+            Task<InvalidPeekException> peepTask = Task
+                .Run(() => TryPeek(cts.Token), cts.Token)
+                .ContinueWith(task => HandleExceptions(task), TaskScheduler.Default);
 
-            Task queueDequeueTask = Task.Factory.StartNew(
-                () => QueueDequeue(cts.Token),
-                cts.Token, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            Task queueDequeueTask = Task.Run(() => QueueDequeue(cts.Token));
 
             Console.WriteLine("Waiting 15 seconds for both Queue/Dequeue and TryPeek tasks..");
             Task.WaitAll(peepTask, queueDequeueTask);
