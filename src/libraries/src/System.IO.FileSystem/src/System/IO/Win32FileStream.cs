@@ -72,6 +72,7 @@ namespace System.IO
         private SafeFileHandle _handle;
         private long _pos;        // Cache current location in the file.
         private long _appendStart;// When appending, prevent overwriting file.
+
 #if USE_OVERLAPPED
         private static AsyncCallback s_endReadTask;
         private static AsyncCallback s_endWriteTask;
@@ -83,7 +84,7 @@ namespace System.IO
                                                       // behavior previously implemented in Stream
 
         [System.Security.SecuritySafeCritical]
-        public Win32FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        public Win32FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent) : base(parent)
         {
             Interop.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
             Init(path, mode, access, share, bufferSize, options, secAttrs);
@@ -212,7 +213,10 @@ namespace System.IO
             _readPos = 0;
             _readLen = 0;
             _writePos = 0;
-            _streamAsyncHelper = new StreamAsyncHelper(this);
+
+            // We need to pass _parent here to ensure the async implementation falls
+            // back to a derived sync implementation (if it exists).
+            _streamAsyncHelper = new StreamAsyncHelper(_parent);
 
             // For Append mode...
             if (seekToEnd)
@@ -226,24 +230,25 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public Win32FileStream(SafeFileHandle handle, FileAccess access)
-            : this(handle, access, DefaultBufferSize, GetDefaultIsAsync(handle), GetSuppressBindHandle(handle))
+        public Win32FileStream(SafeFileHandle handle, FileAccess access, FileStream parent)
+            : this(handle, access, DefaultBufferSize, GetDefaultIsAsync(handle), GetSuppressBindHandle(handle), parent)
         {
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public Win32FileStream(SafeFileHandle handle, FileAccess access, int bufferSize)
-            : this(handle, access, bufferSize, GetDefaultIsAsync(handle), GetSuppressBindHandle(handle))
+        public Win32FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, FileStream parent)
+            : this(handle, access, bufferSize, GetDefaultIsAsync(handle), GetSuppressBindHandle(handle), parent)
         {
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public Win32FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
-            : this(handle, access, bufferSize, isAsync, GetSuppressBindHandle(handle))
+        public Win32FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync, FileStream parent)
+            : this(handle, access, bufferSize, isAsync, GetSuppressBindHandle(handle), parent)
         {
         }
 
-        private Win32FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync, bool suppressBindHandle)
+        private Win32FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync, bool suppressBindHandle, FileStream parent)
+            : base(parent) 
         {
             // To ensure we don't leak a handle, put it in a SafeFileHandle first
             if (handle.IsInvalid)
@@ -376,7 +381,7 @@ namespace System.IO
             // has been a write on the other end.  We'll just have to deal with it,
             // For the read end of a pipe, you can mess up and 
             // accidentally read synchronously from an async pipe.
-            if (CanRead)
+            if (_canRead)
             {
 #if USE_OVERLAPPED
                 r = ReadFileNative(_handle, bytes, 0, 0, null, out errorCode);
@@ -384,7 +389,7 @@ namespace System.IO
                 r = ReadFileNative(_handle, bytes, 0, 0, out errorCode);
 #endif
             }
-            else if (CanWrite)
+            else if (_canWrite)
             {
 #if USE_OVERLAPPED
                 r = WriteFileNative(_handle, bytes, 0, 0, null, out errorCode);
@@ -436,7 +441,7 @@ namespace System.IO
             get
             {
                 if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-                if (!CanSeek) throw __Error.GetSeekNotSupported();
+                if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
                 Interop.FILE_STANDARD_INFO info = new Interop.FILE_STANDARD_INFO();
 
                 if (!Interop.mincore.GetFileInformationByHandleEx(_handle, Interop.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.FILE_STANDARD_INFO>()))
@@ -468,7 +473,7 @@ namespace System.IO
             get
             {
                 if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-                if (!CanSeek) throw __Error.GetSeekNotSupported();
+                if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
 
                 Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -488,7 +493,7 @@ namespace System.IO
                 if (_writePos > 0) FlushWrite(false);
                 _readPos = 0;
                 _readLen = 0;
-                Seek(value, SeekOrigin.Begin);
+                _parent.Seek(value, SeekOrigin.Begin);
             }
         }
 
@@ -532,29 +537,21 @@ namespace System.IO
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        ~Win32FileStream()
-        {
-            if (_handle != null)
-            {
-                Dispose(false);
-            }
-        }
-
         public override void Flush()
         {
-            Flush(false);
+            // Make sure that we call through the public virtual API
+            _parent.Flush(false);
         }
 
         [System.Security.SecuritySafeCritical]
         public override void Flush(Boolean flushToDisk)
         {
-            // This code is duplicated in Dispose
+            // This code is duplicated in _parent.Dispose
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
 
             FlushInternalBuffer();
 
-            if (flushToDisk && CanWrite)
+            if (flushToDisk && _parent.CanWrite)
             {
                 FlushOSBuffer();
             }
@@ -566,7 +563,7 @@ namespace System.IO
             {
                 FlushWrite(false);
             }
-            else if (_readPos < _readLen && CanSeek)
+            else if (_readPos < _readLen && _parent.CanSeek)
             {
                 FlushRead();
             }
@@ -590,7 +587,7 @@ namespace System.IO
             Contract.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushRead!");
             if (_readPos - _readLen != 0)
             {
-                Contract.Assert(CanSeek, "FileStream will lose buffered read data now.");
+                Contract.Assert(_parent.CanSeek, "FileStream will lose buffered read data now.");
                 SeekCore(_readPos - _readLen, SeekOrigin.Current);
             }
             _readPos = 0;
@@ -626,7 +623,7 @@ namespace System.IO
             }
             else
 #endif
-            WriteCore(_buffer, 0, _writePos);
+                WriteCore(_buffer, 0, _writePos);
 
             _writePos = 0;
         }
@@ -636,7 +633,7 @@ namespace System.IO
             [System.Security.SecurityCritical]  // auto-generated_required
             get
             {
-                Flush();
+                _parent.Flush();
                 // Explicitly dump any buffered data, since the user could move our
                 // position or write to the file.
                 _readPos = 0;
@@ -656,8 +653,8 @@ namespace System.IO
             Contract.EndContractBlock();
 
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-            if (!CanSeek) throw __Error.GetSeekNotSupported();
-            if (!CanWrite) throw __Error.GetWriteNotSupported();
+            if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
+            if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
 
             // Handle buffering updates.
             if (_writePos > 0)
@@ -729,9 +726,9 @@ namespace System.IO
             // buffer, depending on number of bytes user asked for and buffer size.
             if (n == 0)
             {
-                if (!CanRead) throw __Error.GetReadNotSupported();
+                if (!_parent.CanRead) throw __Error.GetReadNotSupported();
                 if (_writePos > 0) FlushWrite(false);
-                if (!CanSeek || (count >= _bufferSize))
+                if (!_parent.CanSeek || (count >= _bufferSize))
                 {
                     n = ReadCore(array, offset, count);
                     // Throw away read buffer.
@@ -787,7 +784,7 @@ namespace System.IO
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
             Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(CanRead, "CanRead");
+            Contract.Assert(_parent.CanRead, "_parent.CanRead");
 
             Contract.Assert(buffer != null, "buffer != null");
             Contract.Assert(_writePos == 0, "_writePos == 0");
@@ -836,10 +833,10 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin origin)
         {
             if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
-                throw new ArgumentException(SR.Argument_InvalidSeekOrigin);
+                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, "origin");
             Contract.EndContractBlock();
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-            if (!CanSeek) throw __Error.GetSeekNotSupported();
+            if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
 
             Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -914,7 +911,7 @@ namespace System.IO
                     _readLen = 0;
                 }
                 Contract.Assert(_readLen >= 0 && _readPos <= _readLen, "_readLen should be nonnegative, and _readPos should be less than or equal _readLen");
-                Contract.Assert(pos == Position, "Seek optimization: pos != Position!  Buffer math was mangled.");
+                Contract.Assert(pos == _parent.Position, "Seek optimization: pos != Position!  Buffer math was mangled.");
             }
             return pos;
         }
@@ -922,10 +919,12 @@ namespace System.IO
         // This doesn't do argument checking.  Necessary for SetLength, which must
         // set the file pointer beyond the end of the file. This will update the 
         // internal position
+        // This is called during construction so it should avoid any virtual
+        // calls
         [System.Security.SecuritySafeCritical]  // auto-generated
         private long SeekCore(long offset, SeekOrigin origin)
         {
-            Contract.Assert(!_handle.IsClosed && CanSeek, "!_handle.IsClosed && CanSeek");
+            Contract.Assert(!_handle.IsClosed && _canSeek, "!_handle.IsClosed && _parent.CanSeek");
             Contract.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin>=SeekOrigin.Begin && origin<=SeekOrigin.End");
             int errorCode = 0;
             long ret = 0;
@@ -948,7 +947,7 @@ namespace System.IO
                 // the client side handle is still open and even valid for certain 
                 // operations.
                 //
-                // Note that Dispose doesn't throw so we don't need to special case. 
+                // Note that _parent.Dispose doesn't throw so we don't need to special case. 
                 // SetHandleAsInvalid only sets _closed field to true (without 
                 // actually closing handle) so we don't need to call that as well.
                 if (errorCode == Interop.ERROR_INVALID_HANDLE)
@@ -965,7 +964,7 @@ namespace System.IO
         // our position updating code is incorrect.
         private void VerifyOSHandlePosition()
         {
-            if (!CanSeek)
+            if (!_parent.CanSeek)
                 return;
 
             // SeekCore will override the current _pos, so save it now
@@ -1005,7 +1004,7 @@ namespace System.IO
             if (_writePos == 0)
             {
                 // Ensure we can write to the stream, and ready buffer for writing.
-                if (!CanWrite) throw __Error.GetWriteNotSupported();
+                if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
                 if (_readPos < _readLen) FlushRead();
                 _readPos = 0;
                 _readLen = 0;
@@ -1068,7 +1067,7 @@ namespace System.IO
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
             Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(CanWrite, "CanWrite");
+            Contract.Assert(_parent.CanWrite, "_parent.CanWrite");
 
             Contract.Assert(buffer != null, "buffer != null");
             Contract.Assert(_readPos == _readLen, "_readPos == _readLen");
@@ -1144,7 +1143,7 @@ namespace System.IO
         {
             Contract.Assert(_isAsync);
 
-            if (!CanRead) throw __Error.GetReadNotSupported();
+            if (!_parent.CanRead) throw __Error.GetReadNotSupported();
 
             Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -1252,7 +1251,7 @@ namespace System.IO
         unsafe private FileStreamAsyncResult BeginReadCore(byte[] bytes, int offset, int numBytes, AsyncCallback userCallback, Object stateObject, int numBufferedBytesRead)
         {
             Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(CanRead, "CanRead");
+            Contract.Assert(_parent.CanRead, "_parent.CanRead");
             Contract.Assert(bytes != null, "bytes != null");
             Contract.Assert(_writePos == 0, "_writePos == 0");
             Contract.Assert(_isAsync, "BeginReadCore doesn't work on synchronous file streams!");
@@ -1269,9 +1268,9 @@ namespace System.IO
             NativeOverlapped* intOverlapped = asyncResult.OverLapped;
 
             // Calculate position in the file we should be at after the read is done
-            if (CanSeek)
+            if (_parent.CanSeek)
             {
-                long len = Length;
+                long len = _parent.Length;
 
                 // Make sure we are reading from the position that we think we are
                 if (_exposedHandle)
@@ -1331,7 +1330,7 @@ namespace System.IO
                 }
                 else if (errorCode != ERROR_IO_PENDING)
                 {
-                    if (!_handle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
+                    if (!_handle.IsClosed && _parent.CanSeek)  // Update Position - It could be anywhere.
                         SeekCore(0, SeekOrigin.Current);
 
                     if (errorCode == ERROR_HANDLE_EOF)
@@ -1400,7 +1399,7 @@ namespace System.IO
         public override int ReadByte()
         {
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-            if (_readLen == 0 && !CanRead) throw __Error.GetReadNotSupported();
+            if (_readLen == 0 && !_parent.CanRead) throw __Error.GetReadNotSupported();
             Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
             if (_readPos == _readLen)
             {
@@ -1445,7 +1444,7 @@ namespace System.IO
         {
             Contract.Assert(_isAsync);
 
-            if (!CanWrite) throw __Error.GetWriteNotSupported();
+            if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
 
             Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
@@ -1501,7 +1500,7 @@ namespace System.IO
         unsafe private FileStreamAsyncResult BeginWriteCore(byte[] bytes, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
             Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(CanWrite, "CanWrite");
+            Contract.Assert(_parent.CanWrite, "_parent.CanWrite");
             Contract.Assert(bytes != null, "bytes != null");
             Contract.Assert(_readPos == _readLen, "_readPos == _readLen");
             Contract.Assert(_isAsync, "BeginWriteCore doesn't work on synchronous file streams!");
@@ -1512,10 +1511,10 @@ namespace System.IO
             FileStreamAsyncResult asyncResult = new FileStreamAsyncResult(0, bytes, _handle, userCallback, stateObject, true);
             NativeOverlapped* intOverlapped = asyncResult.OverLapped;
 
-            if (CanSeek)
+            if (_parent.CanSeek)
             {
                 // Make sure we set the length of the file appropriately.
-                long len = Length;
+                long len = _parent.Length;
                 //Console.WriteLine("BeginWrite - Calculating end pos.  pos: "+pos+"  len: "+len+"  numBytes: "+numBytes);
 
                 // Make sure we are writing to the position that we think we are
@@ -1569,7 +1568,7 @@ namespace System.IO
                 }
                 else if (errorCode != ERROR_IO_PENDING)
                 {
-                    if (!_handle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
+                    if (!_handle.IsClosed && _parent.CanSeek)  // Update Position - It could be anywhere.
                         SeekCore(0, SeekOrigin.Current);
 
                     if (errorCode == ERROR_HANDLE_EOF)
@@ -1638,7 +1637,7 @@ namespace System.IO
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
             if (_writePos == 0)
             {
-                if (!CanWrite) throw __Error.GetWriteNotSupported();
+                if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
                 if (_readPos < _readLen) FlushRead();
                 _readPos = 0;
                 _readLen = 0;
@@ -1828,7 +1827,9 @@ namespace System.IO
             // if this Win32FileStream was not opened with FileOptions.Asynchronous.
             if (!_isAsync)
 #endif
-            return base.ReadAsync(buffer, offset, count, cancellationToken);
+            {
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
+            }
 #if USE_OVERLAPPED
             var asyncState = new FileStreamTaskAsyncState<int>();
             asyncState._cancellationToken = cancellationToken;
@@ -1867,7 +1868,7 @@ namespace System.IO
             // if this Win32FileStream was not opened with FileOptions.Asynchronous.
             if (!_isAsync)
 #endif
-            return base.WriteAsync(buffer, offset, count, cancellationToken);
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
 #if USE_OVERLAPPED
             var asyncState = new FileStreamTaskAsyncState<VoidTaskResult>();
             asyncState._cancellationToken = cancellationToken;
@@ -2040,7 +2041,7 @@ namespace System.IO
                 return Task.FromException(e);
             }
 
-            if (CanWrite)
+            if (_parent.CanWrite)
                 return Task.Factory.StartNew(
                     state => ((Win32FileStream)state).FlushOSBuffer(),
                     this,

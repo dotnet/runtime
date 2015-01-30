@@ -19,15 +19,15 @@ namespace System.Collections.Concurrent.Tests
         {
             ConcurrentBag<int> cb = new ConcurrentBag<int>();
             Task[] tks = new Task[2];
-            tks[0] = Task.Factory.StartNew(() =>
+            tks[0] = Task.Run(() =>
                 {
                     cb.Add(4);
                     cb.Add(5);
                     cb.Add(6);
-                }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                });
 
             // Consume the items in the bag 
-            tks[1] = Task.Factory.StartNew(() =>
+            tks[1] = Task.Run(() =>
                 {
                     int item;
                     while (!cb.IsEmpty)
@@ -40,7 +40,7 @@ namespace System.Collections.Concurrent.Tests
                             Assert.False(true, "Expected: 4|5|6; actual: " + item.ToString());
                         }
                     }
-                }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                });
 
             Task.WaitAll(tks);
         }
@@ -398,12 +398,12 @@ namespace System.Collections.Concurrent.Tests
             Task[] tasks = new Task[10];
             for (int i = 0; i < tasks.Length; i++)
             {
-                tasks[i] = Task.Factory.StartNew(() =>
+                tasks[i] = Task.Run(() =>
                     {
                         int[] array = bag.ToArray();
                         if (array == null || array.Length != 10000)
                             Interlocked.Increment(ref failCount);
-                    }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                    });
             }
 
             Task.WaitAll(tasks);

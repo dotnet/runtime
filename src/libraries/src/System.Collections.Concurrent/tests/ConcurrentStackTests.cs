@@ -21,14 +21,14 @@ namespace System.Collections.Concurrent.Tests
             cs.Push(1);
 
             Task[] tks = new Task[2];
-            tks[0] = Task.Factory.StartNew(() =>
+            tks[0] = Task.Run(() =>
             {
                 cs.Push(2);
                 cs.Push(3);
                 cs.Push(4);
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
-            tks[1] = Task.Factory.StartNew(() =>
+            tks[1] = Task.Run(() =>
             {
                 int item1, item2;
                 var ret1 = cs.TryPop(out item1);
@@ -44,7 +44,7 @@ namespace System.Collections.Concurrent.Tests
                 {
                     Assert.Equal(1, item1);
                 }
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            });
 
             Task.WaitAll(tks);
         }

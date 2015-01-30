@@ -69,7 +69,8 @@ namespace System.IO
         /// <param name="share">What other access to the file should be allowed.  This is currently ignored.</param>
         /// <param name="bufferSize">The size of the buffer to use when buffering.</param>
         /// <param name="options">Additional options for working with the file.</param>
-        internal UnixFileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        internal UnixFileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
+            : base(parent)
         {
             // FileStream performs most of the general argument validation.  We can assume here that the arguments
             // are all checked and consistent (e.g. non-null-or-empty path; valid enums in mode, access, share, and options; etc.)
@@ -117,7 +118,7 @@ namespace System.IO
             // Jump to the end of the file if opened as Append.
             if (_mode == FileMode.Append)
             {
-                _appendStart = Seek(0, SeekOrigin.End);
+                _appendStart = SeekCore(0, SeekOrigin.End);
             }
         }
 
@@ -126,7 +127,8 @@ namespace System.IO
         /// <param name="access">Whether the file will be read, written, or both.</param>
         /// <param name="bufferSize">The size of the buffer to use when buffering.</param>
         /// <param name="useAsyncIO">Whether access to the stream is performed asynchronously.</param>
-        internal UnixFileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool useAsyncIO)
+        internal UnixFileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool useAsyncIO, FileStream parent)
+            : base(parent)
         {
             // Make sure the handle is open
             if (handle.IsInvalid)
@@ -142,7 +144,7 @@ namespace System.IO
             _bufferLength = bufferSize;
             _useAsyncIO = useAsyncIO;
 
-            if (CanSeek)
+            if (_parent.CanSeek)
             {
                 SeekCore(0, SeekOrigin.Current);
             }
@@ -271,7 +273,7 @@ namespace System.IO
                 {
                     throw __Error.GetFileNotOpen();
                 }
-                if (!CanSeek)
+                if (!_parent.CanSeek)
                 {
                     throw __Error.GetSeekNotSupported();
                 }
@@ -303,7 +305,7 @@ namespace System.IO
         {
             get
             {
-                Flush();
+                _parent.Flush();
                 _exposedHandle = true;
                 return _fileHandle;
             }
@@ -332,7 +334,7 @@ namespace System.IO
                 {
                     throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
-                Seek(value, SeekOrigin.Begin);
+                _parent.Seek(value, SeekOrigin.Begin);
             }
         }
 
@@ -361,7 +363,7 @@ namespace System.IO
 #if DEBUG
             verifyPosition = true; // in debug, always make sure our position matches what the OS says it should be
 #endif
-            if (verifyPosition && CanSeek)
+            if (verifyPosition && _parent.CanSeek)
             {
                 long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
                 long curPos = SeekCore(0, SeekOrigin.Current);
@@ -420,7 +422,7 @@ namespace System.IO
         /// <summary>Clears buffers for this stream and causes any buffered data to be written to the file.</summary>
         public override void Flush()
         {
-            Flush(flushToDisk: false);
+            _parent.Flush(flushToDisk: false);
         }
 
         /// <summary>
@@ -435,7 +437,7 @@ namespace System.IO
             }
 
             FlushInternalBuffer();
-            if (flushToDisk && CanWrite)
+            if (flushToDisk && _parent.CanWrite)
             {
                 FlushOSBuffer();
             }
@@ -460,7 +462,7 @@ namespace System.IO
             {
                 FlushWriteBuffer();
             }
-            else if (_readPos < _readLength && CanSeek)
+            else if (_readPos < _readLength && _parent.CanSeek)
             {
                 FlushReadBuffer();
             }
@@ -515,7 +517,7 @@ namespace System.IO
 
             // We then separately flush to disk asynchronously.  This is only 
             // necessary if we support writing; otherwise, we're done.
-            if (CanWrite)
+            if (_parent.CanWrite)
             {
                 return Task.Factory.StartNew(
                     state => ((UnixFileStream)state).FlushOSBuffer(),
@@ -542,11 +544,11 @@ namespace System.IO
             {
                 throw __Error.GetFileNotOpen();
             }
-            if (!CanSeek)
+            if (!_parent.CanSeek)
             {
                 throw __Error.GetSeekNotSupported();
             }
-            if (!CanWrite)
+            if (!_parent.CanWrite)
             {
                 throw __Error.GetWriteNotSupported();
             }
@@ -612,7 +614,7 @@ namespace System.IO
                 // If we're not able to seek, then we're not able to rewind the stream (i.e. flushing
                 // a read buffer), in which case we don't want to use a read buffer.  Similarly, if
                 // the user has ssked for more data than we can buffer, we also want to skip the buffer.
-                if (!CanSeek || (count >= _bufferLength))
+                if (!_parent.CanSeek || (count >= _bufferLength))
                 {
                     // Read directly into the user's buffer
                     int bytesRead = ReadCore(array, offset, count);
@@ -719,7 +721,7 @@ namespace System.IO
             {
                 throw __Error.GetFileNotOpen();
             }
-            if (_readLength == 0 && !CanRead)
+            if (_readLength == 0 && !_parent.CanRead)
             {
                 throw __Error.GetReadNotSupported();
             }
@@ -860,7 +862,7 @@ namespace System.IO
             // this checking and flushing.
             if (_writePos == 0)
             {
-                if (!CanWrite) throw __Error.GetWriteNotSupported();
+                if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
                 FlushReadBuffer();
             }
         }
@@ -910,7 +912,7 @@ namespace System.IO
             {
                 throw __Error.GetFileNotOpen();
             }
-            if (!CanSeek)
+            if (!_parent.CanSeek)
             {
                 throw __Error.GetSeekNotSupported();
             }
@@ -955,7 +957,7 @@ namespace System.IO
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(long offset, SeekOrigin origin)
         {
-            Contract.Assert(!_fileHandle.IsClosed && CanSeek);
+            Contract.Assert(!_fileHandle.IsClosed && _canSeek);
             Contract.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = SysCall((fd, off, or) => Interop.libc.lseek64(fd, off, or), offset, (Interop.libc.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values

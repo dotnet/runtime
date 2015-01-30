@@ -65,14 +65,12 @@ namespace System.Linq.Parallel
             Contract.Assert(sharedkeys != null);
             Contract.Assert(sharedValues != null);
             Contract.Assert(sharedBarriers != null);
-            Contract.Assert(groupState.CancellationState.MergedCancellationToken != null);
             Contract.Assert(sharedIndices.Length <= sharedkeys.Length);
             Contract.Assert(sharedIndices.Length == sharedValues.Length);
             // Multi-dim arrays are simulated using jagged arrays.
             // Because of that, when phaseCount == 0, we end up with an empty sharedBarrier array.
             // Since there are no cases when phaseCount == 0 where we actually access the sharedBarriers, I am removing this check.
             // Contract.Assert(sharedIndices.Length == sharedBarriers[0].Length);
-            Contract.Assert(groupState.CancellationState.MergedCancellationToken != null);
 
             _source = source;
             _partitionCount = partitionCount;

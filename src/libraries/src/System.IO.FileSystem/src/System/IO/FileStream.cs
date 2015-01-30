@@ -113,7 +113,7 @@ namespace System.IO
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
                 throw new ArgumentException(SR.Argument_InvalidAppendMode);
 
-            this._innerStream = FileSystem.Current.Open(fullPath, mode, access, share, bufferSize, options);
+            this._innerStream = FileSystem.Current.Open(fullPath, mode, access, share, bufferSize, options, this);
         }
 
         private static bool HasAdditionalInvalidCharacters(string path)
@@ -216,9 +216,10 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && _innerStream != null)
+            if (_innerStream != null)
             {
-                _innerStream.Dispose();
+                // called even during finalization
+                _innerStream.DisposeInternal(disposing);
             }
             base.Dispose(disposing);
         }
@@ -282,11 +283,6 @@ namespace System.IO
             _innerStream.SetLength(value);
         }
 
-        public override string ToString()
-        {
-            return _innerStream.ToString();
-        }
-
         public override void Write(byte[] buffer, int offset, int count)
         {
             _innerStream.Write(buffer, offset, count);
@@ -320,5 +316,14 @@ namespace System.IO
         }
         #endregion Methods
         #endregion Stream members
+
+        [Security.SecuritySafeCritical]
+        ~FileStream()
+        {
+            // Preserved for compatibility since FileStream has defined a 
+            // finalizer in past releases and derived classes may depend
+            // on Dispose(false) call.
+            Dispose(false);
+        }
     }
 }
