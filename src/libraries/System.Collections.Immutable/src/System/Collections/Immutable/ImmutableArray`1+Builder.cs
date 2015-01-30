@@ -103,7 +103,6 @@ namespace System.Collections.Immutable
                     {
                         // truncation mode
                         // Clear the elements of the elements that are effectively removed.
-                        var e = _elements;
 
                         // PERF: Array.Clear works well for big arrays, 
                         //       but may have too much overhead with small ones (which is the common case here)
