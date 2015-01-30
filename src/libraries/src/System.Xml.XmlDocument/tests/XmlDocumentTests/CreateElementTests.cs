@@ -61,7 +61,6 @@ namespace XmlDocumentTests.XmlDocumentTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void NamespaceWithNoLocalName()
         {
             var xmlDocument = new XmlDocument();
@@ -69,7 +68,6 @@ namespace XmlDocumentTests.XmlDocumentTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void NamespaceAndLocalNameWithColon()
         {
             var xmlDocument = new XmlDocument();
