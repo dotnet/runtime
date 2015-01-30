@@ -23,7 +23,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
             foreach (var block in blocks)
             {
                 Assert.NotNull(block.Completion);
-                Assert.False(block.Completion.IsCompleted);
                 int item;
                 Assert.False(block.TryReceive(out item));
             }

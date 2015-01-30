@@ -24,7 +24,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 Assert.Equal(expected: i + 1, actual: blocks[i].BatchSize);
                 Assert.Equal(expected: 0, actual: blocks[i].OutputCount);
                 Assert.NotNull(blocks[i].Completion);
-                Assert.False(blocks[i].Completion.IsCompleted);
             }
         }
 
