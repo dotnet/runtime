@@ -912,10 +912,6 @@ namespace System.Collections.Concurrent
     /// </summary>
     struct VolatileBool
     {
-        public VolatileBool(bool value)
-        {
-            _value = value;
-        }
         public volatile bool _value;
     }
 }
