@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = acos
+Name = Positive Test for acos
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Passes a series of values to the acos() function,
+= checking each for the expected result. Also checks
+= for proper handling of out-of-range values.
+
+
+

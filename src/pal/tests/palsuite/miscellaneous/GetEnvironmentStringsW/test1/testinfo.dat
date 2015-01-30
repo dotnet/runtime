@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetEnvironmentStringsW
+Name = Test for correct return of GetEnvironmentStringsW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Get a set of strings, and check to make sure it contains a predetermined
+= string that was placed there.
+
+
+

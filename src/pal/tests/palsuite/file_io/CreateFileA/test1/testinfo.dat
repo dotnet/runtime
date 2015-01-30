@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CreateFileA
+Name = test for CreateFileA
+Type = DEFAULT 
+EXE1 = createfilea
+Description
+= Attempts to create files based on all combinations of 
+= options of CreateFileA

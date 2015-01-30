@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = sinh
+Name = Positive Test for sinh
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Passes to sinh() a series of angle value, checking that
+= each one return to correct value.
+
+
+

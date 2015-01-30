@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = QueueUserAPC
+Name = Negative test for QueueUserAPC
+TYPE = DEFAULT
+EXE1 = test6
+Description
+= Test to ensure proper operation of the QueueUserAPC()
+= API by trying to queue APC functions on a thread that
+= has already terminated.

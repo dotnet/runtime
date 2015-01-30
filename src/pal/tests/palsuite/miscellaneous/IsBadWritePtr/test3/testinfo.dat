@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = IsBadWritePtr
+Name = Return Value test IsBadWritePtr
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Check that IsBadWritePtr returns non-zero on Read-only memory.
+
+
+
+
+

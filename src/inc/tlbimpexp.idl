@@ -1,0 +1,73 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// .Net Developer Platform TypeLib importer/exporter event notification 
+//   interface definitions.
+// 
+// NOTE:  This IDL must remain synchronized with the definitions in
+//        BCL/System/Runtime/InteropServices/ITypeLibConverter.cs.
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[
+    uuid(20BC1825-06F0-11d2-8CF4-00A0C9B0A063),
+    version(1.0)
+]
+library TlbImpLib
+{
+    importlib("stdole32.tlb") ;
+
+    typedef [uuid(F82895D2-1338-36A8-9A89-F9B0AFBE7801)]
+    enum {
+        NOTIF_TYPECONVERTED         = 0,
+        NOTIF_CONVERTWARNING        = 1,
+        ERROR_REFTOINVALIDTYPELIB   = 2
+    } ImporterEventKind;
+
+    [
+        odl,
+        uuid(F1C3BF76-C3E4-11D3-88E7-00902754C43A),
+        oleautomation
+    ]
+    interface ITypeLibImporterNotifySink : IUnknown {
+        HRESULT _stdcall ReportEvent(
+                        [in] ImporterEventKind EventKind, 
+                        [in] long EventCode, 
+                        [in] BSTR EventMsg);
+        HRESULT _stdcall ResolveRef(
+                        [in] IUnknown* Typelib, 
+                        [out, retval] IUnknown** pRetVal);
+    };
+
+    [
+        odl,
+        uuid(F1C3BF77-C3E4-11D3-88E7-00902754C43A),
+        oleautomation
+    ]
+    interface ITypeLibExporterNotifySink : IUnknown {
+        HRESULT _stdcall ReportEvent(
+                        [in] ImporterEventKind EventKind, 
+                        [in] long EventCode, 
+                        [in] BSTR EventMsg);
+        HRESULT _stdcall ResolveRef(
+                        [in] IUnknown* Asm, 
+                        [out, retval] IUnknown** pRetVal);
+    };
+
+    [
+        odl,
+        uuid(FA1F3615-ACB9-486d-9EAC-1BEF87E36B09),
+        oleautomation
+    ]
+    interface ITypeLibExporterNameProvider : IUnknown {
+        HRESULT _stdcall GetNames (
+                        [out, retval] SAFEARRAY(BSTR) *Names); 
+    };
+
+	
+
+};
+
+
+

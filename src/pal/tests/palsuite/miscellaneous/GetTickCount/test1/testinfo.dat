@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = GetTickCount
+Name = Positive Test for GetTickCount
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Grab two Tick Counts with this function, and ensure that
+= the second is larger to show that the tick count is increasing.
+
+
+

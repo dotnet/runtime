@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = SwitchToThread
+Name = Test for SwitchToThread
+TYPE = DEFAULT
+EXE1 = test
+Description 
+= Purpose: Test to ensure SwitchToThread is 
+= working properly on supported platforms

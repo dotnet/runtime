@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = strpbrk
+Name = Test #1 for strpbrk
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Search a string for characters in a given character set and ensure the 
+= pointer returned points to the first occurance.  Check to see that the
+= function returns NULL if the character is not found.

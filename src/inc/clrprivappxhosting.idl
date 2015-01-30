@@ -1,0 +1,67 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+import "unknwn.idl";
+
+// Forward declarations
+interface ICLRPrivAppXDomain;
+interface ICLRPrivAppXRuntime;
+
+/**************************************************************************************
+ ** ICLRPrivAppXRuntime
+ **************************************************************************************/
+[
+    uuid(6D2DF5A4-FA3A-4481-8BA0-0422FD21720F), 
+    version(1.0),
+    local
+] 
+interface ICLRPrivAppXRuntime : IUnknown
+{
+    /**********************************************************************************
+     ** Use to create and initialize the AppX domain. Should only be called once; all
+     ** subsequent calls will fail. Thread safe.
+     **
+     ** wzFriendlyName - the domain friendly name.
+     **********************************************************************************/
+    HRESULT InitializeAppXDomain(
+        [in]  LPCWSTR  wzFriendlyName);
+
+    /**********************************************************************************
+     ** Use to retrieve the AppX domain. InitializeAppXDomain must have been
+     ** successfully called previously. May be called multiple times. Thread safe.
+     **
+     ** riidDomain - the IID of the interface to be returned in ppvDomain.
+     ** ppIAppXDomain - receives the ICLRPrivAppXDomain interface.
+     **********************************************************************************/
+    HRESULT GetAppXDomain(
+        [in]  REFIID   riidDomain,
+        [out] LPVOID * ppvDomain);
+}
+
+/**************************************************************************************
+ ** ICLRPrivAppXDomain
+ **************************************************************************************/
+[
+    uuid(6633398E-823D-4361-B30E-824043BD4686), 
+    version(1.0),
+    local
+] 
+interface ICLRPrivAppXDomain : IUnknown
+{
+    /**********************************************************************************
+     ** Use to create a delegate to a static method.
+     **
+     ** wzAssemblyName - the name of the assembly that contains the target type.
+     ** wzTypeName - the name of the type that contains the target method.
+     ** wzMethodName - the static method for which to create a delegate.
+     ** ppvDelegate - receives the native-callable function pointer corresponding to
+     **     the specified static method.
+     **********************************************************************************/
+    HRESULT CreateDelegate(
+        [in] LPCWSTR wzAssemblyName,
+        [in] LPCWSTR wzTypeName,
+        [in] LPCWSTR wzMethodName,
+        [out] LPVOID * ppvDelegate);
+};

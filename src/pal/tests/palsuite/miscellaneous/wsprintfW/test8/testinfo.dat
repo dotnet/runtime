@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = wsprintfW
+Name = Positive test of wsprintfW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test %d formatter with wsprintfW.
+
+

@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = errno
+Name = Positive Test for errno
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Test that errno is 'per-thread' as noted in the documentation.

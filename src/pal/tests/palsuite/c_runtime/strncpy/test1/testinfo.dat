@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = strncpy
+Name = Test #1 for strncpy
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Test to see that you can copy a portion of a string into a new buffer.
+= Also check that the strncpy function doesn't overflow when it is used.
+= Finally check that if the number of characters given is greater than the 
+= amount to copy, that the destination buffer is padded with NULLs.

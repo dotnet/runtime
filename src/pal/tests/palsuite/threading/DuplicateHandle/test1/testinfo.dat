@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Threading
+Function = DuplicateHandle
+Name = Positive Test for DuplicateHandle
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Tests the PAL implementation of the DuplicateHandle function.
+= This test will create two handles to file, one to write and
+= one to read what was written. Test on a closed handle and a 
+= NULL handle, both should fail.

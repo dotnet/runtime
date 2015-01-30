@@ -1,0 +1,13 @@
+// ==++==
+// 
+//   Copyright (c) Microsoft Corporation.  All rights reserved.
+// 
+// ==--==
+
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Runtime Metahosting Interfaces\0"
+#define FX_VER_INTERNALNAME_STR METAHOST.IDL
+
+#include <fxver.h>
+#include <fxver.rc>
+
+1 typelib REAL_METAHOST_TLB_FILE

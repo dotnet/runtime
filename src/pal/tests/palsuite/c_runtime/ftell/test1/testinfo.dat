@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = c_runtime
+Function = ftell
+Name = test for ftell (test 1)
+Type = DEFAULT
+EXE1 = ftell
+Description
+= Use fseek and a static list of distances to move, direction
+= to move and expected results to test the ftell function. A typical
+= test will move the file pointer with fseek then call ftell. The 
+= results from ftell will then be compared to the expected result to
+= determine whether the test passed or failed.

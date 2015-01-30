@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = PAL_Specific
+Function = PAL_errno
+Name = Positive test PAL_errno API to retrieve the pre-thread errno value
+TYPE = DEFAULT
+EXE1 = pal_errno
+Description
+=Test the PAL_errno to retrieve a pointer to per-thread errno value

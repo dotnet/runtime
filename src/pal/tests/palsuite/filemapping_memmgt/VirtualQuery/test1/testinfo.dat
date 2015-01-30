@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = VirtualQuery
+Name = Positive test for VirtualQuery API
+TYPE = DEFAULT
+EXE1 = virtualquery
+Description
+=Test the VirtualQuery to get the virtual page info

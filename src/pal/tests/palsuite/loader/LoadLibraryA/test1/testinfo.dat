@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Loader
+Function = LoadLibraryA
+Name = Positive test for LoadLibraryA API to load Dynamic library module
+TYPE = DEFAULT
+EXE1 = loadlibrarya
+Description
+=Test the LoadLibraryA to map module into calling process address space
+

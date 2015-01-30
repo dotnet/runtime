@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = HeapAlloc
+Name = Positive test for HeapAlloc API
+TYPE = DEFAULT
+EXE1 = heapalloc
+Description
+=Test the HeapAlloc with HEAP_ZERO_MEMORY control flag

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+  <ItemGroup>
+    <CCompile Include="$(IntermediateOutputDirectory)/cordebug_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/xcordebug_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/clrdata_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/clrinternal_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/xclrdata_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/corprof_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/corpub_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/IValidator_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/IVEHandler_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/gchost_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/fusionpriv_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/mscorsvc_i.c" Condition="'$(FeaturePrejit)'=='true'" />
+    <CCompile Include="$(IntermediateOutputDirectory)/tlbimpexp_i.c" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivAppXHosting_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivBinding_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivHosting_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <CCompile Include="$(IntermediateOutputDirectory)/CLRPrivRuntimeBinders_i.c" Condition="'$(FeatureHostedBinder)'=='true'" />
+  </ItemGroup>
+  <ItemGroup>
+    <Idl Include="$(Clrbase)\src\inc\metahost.idl" />
+    <Idl Include="$(Clrbase)\src\inc\mscoree.idl" />
+    <Idl Include="$(Clrbase)\src\inc\clrinternal.idl" />
+    <Idl Include="$(Clrbase)\src\inc\mscoree_tlb.idl" />
+    <Idl Include="$(Clrbase)\src\inc\fusion.idl" />
+    <Idl Include="$(Clrbase)\src\inc\fusionpriv.idl" />
+    <Idl Include="$(Clrbase)\src\inc\binderngen.idl" Condition="'$(FeatureFusion)'=='true'" />
+    <Idl Include="$(Clrbase)\src\inc\clrdata.idl" />
+    <Idl Include="$(Clrbase)\src\inc\xclrdata.idl" />
+    <Idl Include="$(Clrbase)\src\inc\cordebug.idl" />
+    <Idl Include="$(Clrbase)\src\inc\xcordebug.idl" />
+    <Idl Include="$(Clrbase)\src\inc\sospriv.idl" />
+    <Idl Include="$(Clrbase)\src\inc\corprof.idl" />
+    <Idl Include="$(Clrbase)\src\inc\corpub.idl" />
+    <Idl Include="$(Clrbase)\src\inc\IVEHandler.idl" />
+    <Idl Include="$(Clrbase)\src\inc\IValidator.idl" />
+    <Idl Include="$(Clrbase)\src\inc\mscorsvc.idl" Condition="'$(FeaturePrejit)'=='true'" />
+    <Idl Include="$(Clrbase)\src\inc\TlbImpExp.idl" />
+    <Idl Include="$(Clrbase)\src\inc\gchost.idl" />
+    <Idl Include="$(Clrbase)\src\inc\mscoruef.idl" />
+    <Idl Include="$(Clrbase)\src\inc\assemblyusagelog.idl" Condition="'$(FeatureCoreclr)'!='true'" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivAppXHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivBinding.idl" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivHosting.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <Idl Include="$(Clrbase)\src\inc\CLRPrivRuntimeBinders.idl" Condition="'$(FeatureHostedBinder)'=='true'" />
+    <Idl Include="$(ClrBase)\src\inc\corsym.idl">
+      <CompileInterface>true</CompileInterface>
+      <CompileProxy>false</CompileProxy>
+    </Idl>
+  </ItemGroup>
+</Project>

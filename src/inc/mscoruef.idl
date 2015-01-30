@@ -1,0 +1,118 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+//
+
+//
+/**************************************************************************************
+ **                                                                                  **
+ ** Mscoruef.idl - interface definitions for internal UEF chain management.          **
+ **                                                                                  **
+ **************************************************************************************/
+
+//
+// Interface descriptions
+//
+import "unknwn.idl";
+
+cpp_quote("#ifdef FEATURE_UEF_CHAINMANAGER")
+
+// IID IUEFManager :     uuid(F4D25DF3-E9B3-439c-8B2B-C814E36F9404)
+cpp_quote("EXTERN_GUID(IID_IUEFManager, 0xf4d25df3, 0xe9b3, 0x439c, 0x8b, 0x2b, 0xc8, 0x14, 0xe3, 0x6f, 0x94, 0x4);")
+
+// IID IWatsonSxSManager :uuid(A269593A-51E2-46bf-B914-8DCC5C39B5A5)
+cpp_quote("EXTERN_GUID(IID_IWatsonSxSManager, 0xa269593a, 0x51e2, 0x46bf, 0xb9, 0x14, 0x8d, 0xcc, 0x5c, 0x39, 0xb5, 0xa5);")
+
+cpp_quote("#ifdef __midl")
+
+#define EXCEPTION_MAXIMUM_PARAMETERS 15
+
+typedef struct _EXCEPTION_RECORD {
+    DWORD ExceptionCode;
+    DWORD ExceptionFlags;
+    struct _EXCEPTION_RECORD *ExceptionRecord;
+    PVOID ExceptionAddress;
+    DWORD NumberParameters;
+    ULONG_PTR ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
+} EXCEPTION_RECORD, *PEXCEPTION_RECORD;
+
+typedef struct _EXCEPTION_POINTERS {
+    PEXCEPTION_RECORD ExceptionRecord;
+    PVOID ContextRecord; // not using PCONTEXT here to avoid pulling extra definitions into this file
+} EXCEPTION_POINTERS, *PEXCEPTION_POINTERS, *LPEXCEPTION_POINTERS;
+
+typedef LONG (__stdcall *PTOP_LEVEL_EXCEPTION_FILTER)(
+    struct _EXCEPTION_POINTERS * pExceptionPointers);
+
+typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
+
+cpp_quote("#endif // __midl")
+
+typedef BOOL (__stdcall * IsExceptionFromManagedCodeFnPtr)(EXCEPTION_RECORD * pExceptionRecord);
+
+//*****************************************************************************
+// Interface for Watson SxS management to the VM.
+//*****************************************************************************
+[
+    uuid(A269593A-51E2-46bf-B914-8DCC5C39B5A5),
+    helpstring("CLR Watson SxS Management Interface"),
+    pointer_default(unique),
+    local
+]
+interface IWatsonSxSManager : IUnknown
+{
+    // Used to register an exception claiming callback
+    BOOL RegisterExceptionClaimingCallback(
+        [in] IsExceptionFromManagedCodeFnPtr pCallback);
+
+    // Used to unregister an exception claiming callback
+    BOOL UnregisterExceptionClaimingCallback(
+        [in] IsExceptionFromManagedCodeFnPtr pCallback);
+
+    // Used to determine if the exception pointed by pExceptionRecord was thrown by a registered runtime
+    BOOL IsExceptionClaimed(
+        [in] EXCEPTION_RECORD * pExceptionRecord);
+
+    // Used to check if Watson has been triggered
+    BOOL HasWatsonBeenTriggered(void);
+
+    // Used to bestow the permission to report Watson to only one of its callers
+    BOOL IsCurrentRuntimeAllowedToReportWatson(void);
+
+    // Used to wait for the Watson SxS completion event
+    BOOL WaitForWatsonSxSCompletionEvent(void);
+
+    // Used to signal Watson SxS completion event
+    BOOL SignalWatsonSxSCompletionEvent(void);
+};
+
+//*****************************************************************************
+// Interface for UEF chain management to the VM.
+//*****************************************************************************
+[
+    uuid(F4D25DF3-E9B3-439c-8B2B-C814E36F9404),
+    helpstring("CLR UEF Chain Management Interface"),
+    pointer_default(unique),
+    local
+]
+interface IUEFManager : IUnknown
+{
+    // Used to register the function to be invoked upon unhandled exception
+    // notification from the OS
+    BOOL AddUnhandledExceptionFilter(
+        [in] LPTOP_LEVEL_EXCEPTION_FILTER uefCallbackFunc,
+        [in] BOOL firstHandler);
+
+    // Used to unregister a previously registered UEF callback 
+    BOOL RemoveUnhandledExceptionFilter(
+        [in] LPTOP_LEVEL_EXCEPTION_FILTER uefCallbackFunc);
+
+    // Used to explicitly invoke the registered UEF callbacks
+    LONG InvokeUEFCallbacks(LPEXCEPTION_POINTERS pExceptionInfo);
+
+    // Used to return the WatsonSxSManager singleton instance
+    IWatsonSxSManager * GetWastonSxSManagerInstance(void);
+};
+
+cpp_quote("#endif // FEATURE_UEF_CHAINMANAGER")

@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CopyFileW
+Name = CopyFileW - checking file attributes maintained (test3)
+Type = DEFAULT 
+EXE1 = test3
+Description
+= Copy a file from a different user, belonging to a different group to
+= the the current user, who is a member of the current group.  Then check
+= to see that the current user has the basic access rights to the copied
+= file.
+

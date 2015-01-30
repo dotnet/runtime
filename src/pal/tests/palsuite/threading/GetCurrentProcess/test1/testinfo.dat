@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = GetCurrentProcess
+Name = Positive Test for GetCurrentProcess
+TYPE = DEFAULT
+EXE1 = process
+Description 
+= Test to see if the function GetCurrentProcess returns a handle to the
+= current process or not.

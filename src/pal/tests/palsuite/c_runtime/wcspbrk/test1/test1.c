@@ -1,0 +1,62 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+//
+
+/*============================================================================
+**
+** Source:  test1.c
+**
+** Purpose:
+** Tests that wcspbrk returns a pointer to the first element in the first 
+** string that matches a character in the second (or NULL).
+**
+**
+**==========================================================================*/
+
+#include <palsuite.h>
+
+int __cdecl main(int argc, char *argv[])
+{
+    WCHAR *string;
+    WCHAR *key1;
+    WCHAR *key2;
+    WCHAR key3[] = {0};
+    WCHAR *result;
+            
+    if (PAL_Initialize(argc, argv))
+    {
+        return FAIL;
+    }
+
+    string = convert("foo bar baz bar");
+    key1 = convert("z ");
+    key2 = convert("Q");
+
+    result = wcspbrk(string, key1);
+    if (result != string + 3)
+    {
+        Fail("ERROR: Got incorrect result in scanning \"%s\" with the set \"%s\".\n"
+            "Expected to get pointer to %#p, got %#p\n", convertC(string),
+            convertC(key1), string + 3, result);
+    }
+
+    result = wcspbrk(string, key2);
+    if (result != NULL)
+    {
+        Fail("ERROR: Got incorrect result in scanning \"%s\" with the set \"%s\".\n"
+            "Expected to get pointer to %#p, got %#p\n", convertC(string),
+            convertC(key2), NULL, result);
+    }
+
+    result = wcspbrk(string, key3);
+    if (result != NULL)
+    {
+        Fail("ERROR: Got incorrect result in scanning \"%s\" with the set \"%s\".\n"
+            "Expected to get pointer to %#p, got %#p\n", convertC(string),
+            convertC(key3), NULL, result);
+    }
+
+    PAL_Terminate();
+    return PASS;
+}

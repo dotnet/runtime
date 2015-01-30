@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = IsBadWritePtr
+Name = Return Value test IsBadWritePtr
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to ensure that the function returns true and
+= false when it is supposed to.
+
+
+

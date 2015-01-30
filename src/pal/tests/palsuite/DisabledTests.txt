@@ -1,0 +1,273 @@
+Disabled Test Cases
+~~~~~~~~~~~~~~~~~~~
+
+Below is a list of all disabled test cases currently listed in
+testconfig.dat and an explanation as to why they are disabled.
+
+debug_api/debugbreak/test1
+debug_api/outputdebugstringa/test1
+debug_api/outputdebugstringw/test1
+debug_api/writeprocessmemory/test1
+debug_api/writeprocessmemory/test2
+debug_api/writeprocessmemory/test3
+debug_api/writeprocessmemory/test4
+=======================================
+The above testcases were disabled in the palsuite, because they depend heavily on
+WaitForDebugEvent,DebugActiveProcess and ContinueDebugEvent, where these api's have been removed from the PAL and listed in the rotor_pal.doc (6.0)
+
+
+file_io/gettempfilenamea/test2 :
+=======================================
+This test takes longer than 60 seconds to run. The test creates
+about 65000 files and then deletes them. The test that takes longer
+than 60 seconds will be flagged as an error and so in such a case
+the test will have to be run manually.
+
+file_io/gettempfilenamew/test2 :
+=======================================
+This test takes longer than 60 seconds to run. The test creates
+about 65000 files and then deletes them. The test that takes longer
+than 60 seconds will be flagged as an error and so in such a case
+the test will have to be run manually.
+
+locale_info/getcpinfo/test2:
+=======================================
+This test will be useful in future versions for testing various
+languages (code pages).  Currently only U.S. English (tested by -
+test1) is supported.
+
+locale_info/getcpinfo/test3:
+=======================================
+This test will be useful in future versions for testing various
+languages (code pages).  Currently only U.S. English (tested by -
+test1) is supported.
+
+locale_info/isvalidcodepage/test2:
+=======================================
+This test will be useful in future versions for testing various
+languages (code pages).  Currently only U.S. English (tested by -
+test1) is supported.
+
+miscellaneous/getcalendarinfow/test2:
+=======================================
+Currently the only calendars that are supported are CAL_GREGORIAN
+and CAL_GREGORIAN_US, which are tested by test1.  This test will
+be useful when full calendar support is implemented.
+
+miscellaneous/getdateformatw/test1:
+===================================
+Currently the only calendars that are supported are CAL_GREGORIAN
+and CAL_GREGORIAN_US.  The GetDateFormatW function will only be 
+called when the calendar is CAL_TAIWAN. Since this calendar is not
+currently supported in this release of the PAL, the GetDateFormatW
+function is not implemented except to return an error. This test
+will be useful when full calendar support is implemented.
+
+miscellaneous/getdateformatw/getdateformatw_neg1:
+================================================
+Currently the only calendars that are supported are CAL_GREGORIAN
+and CAL_GREGORIAN_US.  The GetDateFormatW function will only be 
+called when the calendar is CAL_TAIWAN. Since this calendar is not
+currently supported in this release of the PAL, the GetDateFormatW
+function is not implemented except to return an error. This test
+will be useful when full calendar support is implemented.
+
+miscellaneous/getdateformatw/getdateformatw_neg2:
+================================================
+Currently the only calendars that are supported are CAL_GREGORIAN
+and CAL_GREGORIAN_US.  The GetDateFormatW function will only be 
+called when the calendar is CAL_TAIWAN. Since this calendar is not
+currently supported in this release of the PAL, the GetDateFormatW
+function is not implemented except to return an error. This test
+will be useful when full calendar support is implemented.
+
+
+networking/accept_connect/connect_neg1
+=======================================
+Currently disable, since there is a discrepancy between what is documented in
+MSDN and the rotor_pal.doc. Connection of a datagram socket to a broadcast
+address should return an error, yet under WIN32 and FreeBSD, there is no error.
+
+networking/accept_connect/connect_neg6
+networking/accept_connect/connect_neg9
+=======================================
+PAL specifications now dictate that a pass for this test is not required.
+
+
+networking/gethostbyname/gethostbyname_neg2
+=======================================
+These test are temporarily disabled because they hang when executed under
+Windows.
+
+
+networking/send_recv/send_neg5
+networking/send_recv/sendto_neg6
+networking/wsasend_wsarecv/wsasend4
+networking/wsasendto_wsarecvfrom/wsasendto5
+===========================================
+Calling send after shutdown on a given socket raises an unhandled SIGPIPE
+signal in FreeBSD 4.4 and FreeBSD 4.5. Microsoft confirmed they could
+live with that problem, so these tests are not required.
+
+
+
+networking/send_recv/send_neg6
+=======================================
+PAL specifications now dictate that a pass for this test is not required.
+
+
+networking/send_recv/send_neg7(Bug #1722)
+=======================================
+Currently disable, since there is a discrepancy between what is documented in
+MSDN and the rotor_pal.doc. Send with MSG_OOB flag with socket option 
+SO_OOBINLINE enabled should return an error, yet under WIN32 and FreeBSD, 
+there is no error.
+
+networking/sendto_recvfrom/sendto_neg7(Bug #1723)
+=======================================
+Currently disable, since there is a discrepancy between what is documented in
+MSDN and the rotor_pal.doc. Sendto with a non-blocking socket should return
+and error, yet under WIN32 and FreeBSD, there is no error.
+
+networking/sendto_recvfrom/recvfrom_neg7
+networking/sendto_recvfrom/recvfrom_neg10
+networking/sendto_recvfrom/recvfrom_neg11
+networking/sendto_recvfrom/sendto_neg2
+networking/sendto_recvfrom/sendto_neg3
+networking/sendto_recvfrom/sendto_neg5
+networking/sendto_recvfrom/sendto_neg8
+networking/sendto_recvfrom/sendto_recvfrom2
+networking/socket/socket_neg4
+=========================================
+PAL specifications now dictate that a pass for these tests is not required.
+
+networking/wsasend_wsarecv/wsasendrecv1
+=========================================
+Disabling this test because it is severely crippling our FreeBSD test
+macines. Bug 1791 covers this issue and the test is being moved into
+the severebug.dat file. dm
+
+networking/wsasocketw/test5
+networking/wsasocketw/test7
+========================================
+Currently disabled, since there is a difference in the validation order of
+socket()'s parameters between WIN32 and FREEBSD (implies a wrong last error code).
+In rotor_pal.doc, that difference is tolerated.
+
+
+pal_specific/pal_get_stdin/test1 :
+=======================================
+This test case should be run manually.  Requires user input.
+
+
+threading/setconsolectrlhandler/test1
+threading/setconsolectrlhandler/test2
+threading/setconsolectrlhandler/test3
+threading/setconsolectrlhandler/test4
+=======================================
+These tests cases should be run manually.  Requires user input.
+
+
+networking/gethostbyaddr/gethostbyaddr_neg2
+=======================================
+This test case is written according to the MSDN doc: testing gethostbyaddr
+with an invalid type, an error WSAEAFNOSUPPORT is expected, the test result is:
+no error occured with PAL library.
+no error occured with win32 base library.
+
+networking/gethostbyaddr/gethostbyaddr_neg3
+=======================================
+This test case is written according to the MSDN doc: testing gethostbyaddr
+with a small len parameter, an error WSAEFAULT is expected, the test result is:
+no error occured with PAL library 
+and correct hostent struct data is retrieved 
+
+no error occured with win32 base library 
+and correct hostent struct data is retrieved
+
+
+networking/closesocket/closesocket_neg3
+=======================================
+This test case is written according to the MSDN doc: testing closesocket to 
+close a non-blocking stream socket with SO_LINGER setting to a nonzero 
+time-out value, an error WSAEWOULDBLOCK is expected, the test result is:
+
+no error occured with PAL library 
+
+no error occured with win32 base library 
+
+
+networking/send_recv/recv_neg7
+=======================================
+This test case is designd according to MSDN, test recv API by passing a
+smaller buf size, the revceiving data will be truncated and an error
+WSAEMSGSIZE will be detected. the test result is:
+
+link to PAL library. No error is detected and data is truncated.
+
+link to Win32 base library. No error is detected and data is truncated.
+
+So, Windows 2000 is assumed right, and disable this negative test case
+
+
+networking/accept_connect/connect_neg11
+=======================================
+This test case is designd according to MSDN, test connect API to connect 
+a broadcast address with setting this socket option as broadcast, an error
+WSAEACCESS is expected, the test result is:
+
+link to PAL library. No error is detected
+
+link to Win32 base library. No error is detected 
+
+So, Windows 2000 is assumed right, and disable this negative test case
+
+networking/sendto_recvfrom/recvfrom_neg8
+networking/send_recv/recv_neg5
+=======================================
+In Windows recv, recvfrom and WSARecv will return WSAESHUTDOWN when the 
+connection has been shutdown, in BSD recv return 0 bytes read with no error 
+when the connection has been shutdown. This difference is considered as 
+acceptable.
+
+networking/send_recv/recv_neg10
+=======================================
+On win32, depending on the value returned by recv(), 0 or -1, we can distinguish
+between a *graceful* (0) and *abortive* (-1) socket  remote closure.
+Unfortunately on bsd, there's no way to distinguish between the two cases, 
+in fact, recv returns 0, with no error, for both *graceful* and *abortive* closure.
+This difference is considered as acceptable (similar to the issue when recv() 
+called after shutdown()).
+
+threading/getprocesstimes/test1
+=======================================
+According to rotor_pal.doc, GetProcessTimes() should be supported for the current 
+process only. I've removed this test because it tests GetProcessTimes() with 
+invalid process handle value.
+
+threading/getthreadcontext/test1,1
+=======================================
+According to rotor_pal.doc, when GetThreadContext is call for a thread within 
+the same process, it could only be called for te current thread. I've removed
+this test, because it tests GetThreadContext() with a non current thread handle 
+belong the current procees.
+
+loader/loadlibrarya/test4
+loader/loadlibraryw/test4
+=======================================
+PAL BSD should not append the .so extension in LoadLibrary if the extension is 
+omitted.
+file_io/deletefilea/test3
+file_io/deletefilew/test3
+=======================================
+No code in Rotor depends on DeleteFile[A/W] failing on readonly files so we 
+don't need to exactly emulate this feature of the Win32 filesystems on FreeBSD.
+
+networking/select/select5,0
+=======================================
+This is a difference between Windows & FreeBSD : in FreeBSD, no socket 
+exceptions are reported for a failed connection. No code in Rotor depends on 
+the Windows behavior, and it has been decided that the networking API should 
+be as thin a layer as possible over the native implementation. Managed apps 
+will have to take such differences into account.
+

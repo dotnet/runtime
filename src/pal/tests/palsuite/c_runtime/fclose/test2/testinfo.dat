@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fclose
+Name = Test for fclose
+TYPE = DEFAULT
+EXE1 = test2
+LANG = cpp
+Description
+= Tests the PAL implementation of the fclose function. 
+= fclose will be passed a closed file handle to 
+= make sure it handles it accordingly.

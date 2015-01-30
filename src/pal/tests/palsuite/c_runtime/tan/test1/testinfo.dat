@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = tan
+Name = Positive Test for tan
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Passes to tan() a series of angle value, checking that
+= each one return to correct value.
+
+
+

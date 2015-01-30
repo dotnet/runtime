@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = DeleteFileW
+Name = Test for DeleteFileW (test 1)
+Type = DEFAULT 
+EXE1 = deletefilew
+Description
+= Tests DeleteFileW on various file names
+

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = WaitForSingleObject
+Name = Positive Test for WaitForSingleObject
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+= Test for WaitForSingleObject. Create two events, one
+= with a TRUE and one with FALSE intial state.  Ensure that WaitForSingle
+= returns correct values for each of these.

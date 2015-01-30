@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = LockFile
+Name = Positive test for LockFile API
+TYPE = DEFAULT
+EXE1 = test1
+EXE2 = helper
+Description
+= Open a file, and lock it from start to EOF.  Then create a 
+= new process, which will attempt to Read and Write from the file.  Check
+= to ensure both of these operations fail.

@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFileAttributesA
+Name = Tests SetFileAttributesA properly overrides NORMAL
+TYPE = DEFAULT
+EXE1 = setfileattributesa
+Description 
+= Test the SetFileAttributesA function. Check that using two flags 
+= (READONLY and NORMAL) only sets the file as READONLY, as MSDN 
+= notes that everything else overrides NORMAL.

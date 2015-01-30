@@ -1,0 +1,4 @@
+#define FX_VER_FILEDESCRIPTION_STR "Microsoft CoreCLR EXE launcher\0"
+
+#include <fxver.h>
+#include <fxver.rc>

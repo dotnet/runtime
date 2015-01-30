@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = FreeEnvironmentStringsW
+Name = Return value test for FreeEnvironmentStringsW
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Get a set of strings and then free it to see if function returns success
+
+
+

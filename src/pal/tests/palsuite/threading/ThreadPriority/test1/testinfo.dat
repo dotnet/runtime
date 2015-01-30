@@ -1,0 +1,17 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = ThreadPriority
+Name = Test for GetThreadPriority and SetThreadPriority
+TYPE = DEFAULT
+EXE1 = threadpriority
+Description 
+= Test to ensure proper operation of the GetThreadPriority
+= and SetThreadPriority APIs. The test launches several threads
+= of varying priorities, and verifies that the correct priority
+= is reported for each. It also verifies that the processing
+= time for each test thread is consistent with the priority
+= that's set for it.

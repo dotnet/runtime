@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = threading
+Function = SleepEx
+Name = Test #1 for SleepEx
+TYPE = DEFAULT
+EXE1 = test1
+Description 
+=Tests that SleepEx correctly sleeps for a given amount of time,
+=regardless of the alertable flag.

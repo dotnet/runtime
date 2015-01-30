@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = ReadProcessMemory
+Name = Negative test ReadProcessMemory API to read unreadable memory area
+TYPE = DEFAULT
+EXE1 = readprocessmemory_neg
+Description
+=Test the ReadProcessMemory to read unreadable memory area

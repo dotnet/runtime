@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = CreateFileMapping
+Name = CreateFileMappingA - with PAGE_COPYWRITE
+TYPE = DEFAULT
+EXE1 = createfilemapping
+Description
+=Test the CreateFileMapping to create a named file-mapping object
+=and with PAGE_READONLY protection

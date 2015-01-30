@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = strlen
+Name = Positive Test for strlen
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Check the length of a string and the length of a 0 character string to 
+= see that this function returns the correct values for each.

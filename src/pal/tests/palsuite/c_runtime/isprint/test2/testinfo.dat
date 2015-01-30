@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = miscellaneous
+Function = isprint
+Name = Test isprint API to check if out of range characters are not printable.
+TYPE = DEFAULT
+EXE1 = test2
+Description
+=Test the isprint function to verify that out of range characters
+=are not printable.

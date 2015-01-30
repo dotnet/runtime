@@ -1,0 +1,117 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="dogfood">
+
+    <PropertyGroup>
+        <ClWarningLevel>4</ClWarningLevel>
+
+        <UserIncludes>
+            $(UserIncludes);
+            $(VCToolsIncPath);
+            ..;
+            ..\jitstd\;
+            ..\ssa\;
+        </UserIncludes>
+
+        <!-- PCH baloney -->
+        <EnableCxxPCHHeaders>true</EnableCxxPCHHeaders>
+        <PCHCompile>..\jitpch.cpp</PCHCompile>
+        <PCHHeader>jitpch.h</PCHHeader>
+
+        <ClDefines Condition="'$(DebugBuild)' == 'false'">$(ClDefines);FAST=1</ClDefines>
+        <ClDefines>$(ClDefines);JIT_BUILD=1</ClDefines>
+        <ClDefines Condition="'$(DebugBuild)' == 'true'">$(ClDefines);DEBUG=1</ClDefines>
+    </PropertyGroup>
+
+    <!-- Leaf Project Items -->
+    <ItemGroup>
+        <CppCompile Include="..\alloc.cpp" />
+        <CppCompile Include="..\bitset.cpp" />
+        <CppCompile Include="..\block.cpp" />
+        <CppCompile Include="..\Compiler.cpp" />
+        <CppCompile Include="..\DisAsm.cpp" />
+        <CppCompile Include="..\eeInterface.cpp" />
+        <CppCompile Include="..\ee_il_dll.cpp" />
+        <CppCompile Include="..\jiteh.cpp" />
+        <CppCompile Include="..\error.cpp" />
+        <CppCompile Include="..\FlowGraph.cpp" />
+        <CppCompile Include="..\GCInfo.cpp" />
+        <CppCompile Include="..\GCDecode.cpp" />
+        <CppCompile Include="..\GCEncode.cpp" />
+        <CppCompile Include="..\GenTree.cpp" />
+        <CppCompile Include="..\GSChecks.cpp" />
+        <CppCompile Include="..\hashbv.cpp" />
+        <CppCompile Include="..\Importer.cpp" />
+        <CppCompile Include="..\Instr.cpp" />
+        <CppCompile Include="..\LclVars.cpp" />
+        <CppCompile Include="..\Liveness.cpp" />
+        <CppCompile Include="..\Morph.cpp" />
+        <CppCompile Include="..\Optimizer.cpp" />
+        <CppCompile Include="..\OptCSE.cpp" />
+        <CppCompile Include="..\rationalize.cpp" />
+        <CppCompile Include="..\RegAlloc.cpp" />
+        <CppCompile Include="..\RegSet.cpp" />
+        <CppCompile Include="..\register_arg_convention.cpp" />
+        <CppCompile Include="..\emit.cpp" />
+        <CppCompile Include="..\ScopeInfo.cpp" />
+        <CppCompile Include="..\SharedFloat.cpp" />
+        <CppCompile Include="..\SM.cpp" />
+        <CppCompile Include="..\SMData.cpp" />
+        <CppCompile Include="..\SMWeights.cpp" />
+        <CppCompile Include="..\typeInfo.cpp" />
+        <CppCompile Include="..\unwind.cpp" />
+        <CppCompile Include="..\Utils.cpp" />
+        <CppCompile Include="..\SsaBuilder.cpp" />
+        <CppCompile Include="..\SsaRenameState.cpp" />
+        <CppCompile Include="..\ValueNum.cpp" />
+        <CppCompile Include="..\CopyProp.cpp" />
+        <CppCompile Include="..\CodeGenCommon.cpp" />
+        <CppCompile Include="..\AssertionProp.cpp" />
+        <CppCompile Include="..\RangeCheck.cpp" />
+        <CppCompile Include="..\LoopCloning.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\CodeGenLegacy.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\Lower.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LSRA.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='i386'">
+        <CppCompile Include="..\emitXArch.cpp" />
+        <CppCompile Include="..\TargetX86.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\stackfp.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerXArch.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenXArch.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\SIMD.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\SIMDCodeGenXArch.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='amd64'">
+        <!-- AMD64 target is always RyuJIT backend -->
+        <CppCompile Include="..\emitXArch.cpp" />
+        <CppCompile Include="..\TargetAmd64.cpp" />
+        <CppCompile Include="..\LowerXArch.cpp" />
+        <CppCompile Include="..\CodeGenXArch.cpp" />
+        <CppCompile Include="..\SIMD.cpp" />
+        <CppCompile Include="..\SIMDCodeGenXArch.cpp" />
+        <CppCompile Include="..\unwindAmd64.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='arm'">
+        <CppCompile Include="..\emitarm.cpp" />
+        <CppCompile Include="..\TargetArm.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='True'" Include="..\registerfp.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\LowerArm.cpp" />
+        <CppCompile Condition="'$(ClDefines.Contains(`LEGACY_BACKEND`))'=='False'"  Include="..\CodeGenArm.cpp" />
+        <CppCompile Include="..\unwindArm.cpp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetArch)'=='arm64'">
+        <!-- ARM64 target is always RyuJIT backend -->
+        <CppCompile Include="..\emitarm64.cpp" />
+        <CppCompile Include="..\TargetArm64.cpp" />
+        <CppCompile Include="..\LowerArm64.cpp" />
+        <CppCompile Include="..\CodeGenArm64.cpp" />
+        <CppCompile Include="..\unwindArm.cpp" />
+        <CppCompile Include="..\unwindArm64.cpp" />
+    </ItemGroup>
+    <ItemGroup>
+        <ClDisableSpecificWarnings Include="4480"/>
+    </ItemGroup>
+
+    <!-- Import the targets - this actually contains the full build rules -->
+    <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
+
+</Project>

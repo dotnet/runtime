@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = pow
+Name = Positive Test for pow
+TYPE = DEFAULT
+EXE1 = test3
+Description
+= Passes a series of values to the pow() function,
+= checking each for the expected result. Also checks
+= for proper handling of out-of-range values.

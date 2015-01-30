@@ -1,0 +1,145 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+/* -------------------------------------------------------------------------- *
+ * Common Language Runtime Profiling interfaces
+ *
+ * The IGCHost allows a host environment to get statistics about the
+ * garbage collector as well as to gain some limited control over collections.
+ * This interface can be QueryInterface'd for on from the CorHost object.
+ * -------------------------------------------------------------------------- */
+import "unknwn.idl";
+
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES
+typedef enum
+{
+    COR_GC_COUNTS                 = 0x00000001,         // Fill out count values.
+    COR_GC_MEMORYUSAGE            = 0x00000002,         // Fill out memory usage values.
+} COR_GC_STAT_TYPES;
+
+typedef enum
+{
+    COR_GC_THREAD_HAS_PROMOTED_BYTES  = 0x00000001      // Thread has bytes promoted in the last GC
+                                                        // if flags set to this value.
+} COR_GC_THREAD_STATS_TYPES;
+
+#endif // FEATURE_INCLUDE_ALL_INTERFACES
+
+#if defined(FEATURE_INCLUDE_ALL_INTERFACES) || defined(FEATURE_WINDOWSPHONE)
+/*
+ * This structure is used to return statics for the GC system.  Set the Flags
+ * value to a bitmask of values that should be returned.  Only those values which
+ * are requested are calculated and returned to the caller.
+ */
+typedef struct _COR_GC_STATS
+{
+    ULONG       Flags;                                  // What values to get.
+
+    // Value when COR_GC_COUNTS is specified.
+    SIZE_T       ExplicitGCCount;                        // How many times was GC forced to run by external request.
+    SIZE_T       GenCollectionsTaken[3];                    // Number of collections done for each generation
+
+    // Memory sizes, valid for COR_GC_MEMORYUSAGE.
+    SIZE_T       CommittedKBytes;                        // Total committed bytes from all heaps.    
+    SIZE_T       ReservedKBytes;                         // Total reserved bytes from all heaps.    
+    SIZE_T       Gen0HeapSizeKBytes;                     // Size of gen 0 heap.
+    SIZE_T       Gen1HeapSizeKBytes;                     // Size of gen 1 heap.
+    SIZE_T       Gen2HeapSizeKBytes;                     // Size of gen 2 heap.
+    SIZE_T       LargeObjectHeapSizeKBytes;              // Size of large object heap.
+    SIZE_T       KBytesPromotedFromGen0;                 // How many bytes promoted to next generation.
+    SIZE_T       KBytesPromotedFromGen1;
+
+} COR_GC_STATS;
+#endif // FEATURE_INCLUDE_ALL_INTERFACES || FEATURE_WINDOWSPHONE
+
+#ifdef FEATURE_INCLUDE_ALL_INTERFACES 
+/*
+ * This structure is used to return per-thread statistics related to GC.
+ */
+typedef struct _COR_GC_THREAD_STATS
+{
+    ULONGLONG   PerThreadAllocation;                    // Amount of memory allocated on this
+                                                        // thread.  Cleared to 0 on each Gen 0 collection.
+    ULONG       Flags;                                  // Thread has bytes promoted in the last GC?
+} COR_GC_THREAD_STATS;
+
+
+/*
+ * This interface is used to get information about the GC system and
+ * control some aspects of the GC.  This interface is for expert usage
+ * only, and can severely impact the performance of an application if
+ * used improperly!!
+ */
+[
+	object,
+	uuid(FAC34F6E-0DCD-47b5-8021-531BC5ECCA63),
+	pointer_default(unique),
+	local
+]
+interface IGCHost : IUnknown
+{
+
+    /*
+     * Sets the segment size and gen 0 maximum size.  This value may only be
+     * specified once and will not change if called later.
+     */
+    HRESULT SetGCStartupLimits([in] DWORD SegmentSize, [in] DWORD MaxGen0Size);
+    
+    /*
+     * Forces a collection to occur for the given generation, regardless of
+     * current GC statistics.  A value of -1 means collect all generations.
+     */
+    HRESULT Collect([in] LONG Generation);
+    
+    /*
+     * Returns a set of current statistics about the state of the GC system.
+     * These values can then be used by a smart allocation system to help the
+     * GC run, by say adding more memory or forcing a collection.
+     */
+    HRESULT GetStats([in][out] COR_GC_STATS *pStats);
+    
+    /*
+     * This method returns the per-thread statics gathered by the GC. 
+     */
+    HRESULT GetThreadStats([in] DWORD *pFiberCookie, [in][out] COR_GC_THREAD_STATS *pStats);
+    
+    /*
+     * This method allows the caller to set virtual memory limit (MB) of the runtime. This limit
+     * can be changed dynamically.
+     */
+    HRESULT SetVirtualMemLimit ([in] SIZE_T sztMaxVirtualMemMB);
+}
+
+[
+	object,
+	uuid(A1D70CEC-2DBE-4E2F-9291-FDF81438A1DF),
+	pointer_default(unique),
+	local
+]
+interface IGCHost2 : IGCHost
+{
+    /*
+     * Sets the segment size and gen 0 maximum size.  This value may only be
+     * specified once and will not change if called later.
+     */
+    HRESULT SetGCStartupLimitsEx([in] SIZE_T SegmentSize, [in] SIZE_T MaxGen0Size);
+}
+
+#else // FEATURE_INCLUDE_ALL_INTERFACES
+cpp_quote("/*")
+cpp_quote(" * WARNING - This is a dummy interface that should never be used.")
+cpp_quote(" * The code is written this way because Midl requires a CoClass, Interface, etc... that generates")
+cpp_quote(" * a guid.  Removing the IGCHost interface for FEATURE_INCLUDE_ALL_INTERFACES removes the only guid")
+cpp_quote(" * This option was selected because ifdefs are not simple to implement for excluding files in SOURCES")
+cpp_quote("*/")
+[
+	object,
+	uuid(F9423916-2A35-4f03-9EE9-DDAFA3C8AEE0),
+	pointer_default(unique),
+	local
+]
+interface IDummyDoNotUse : IUnknown
+{
+}
+#endif // FEATURE_INCLUDE_ALL_INTERFACES

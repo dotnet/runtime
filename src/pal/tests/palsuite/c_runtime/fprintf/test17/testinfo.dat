@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = fprintf
+Name = Positive Test for fprintf
+TYPE = DEFAULT
+EXE1 = test17
+Description
+= Tests the lowercase shorthand notation double specifier (%g).
+= This test is modeled after the fprintf series.

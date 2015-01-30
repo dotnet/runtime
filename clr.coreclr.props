@@ -1,0 +1,124 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(ClrProduct)'=='core_clr'">
+    <BuildTypeRet Condition="'$(_BuildType)'=='ret'">true</BuildTypeRet>
+    <DebuggingSupported>true</DebuggingSupported>
+    <DebuggingSupportedBuild>true</DebuggingSupportedBuild>
+    <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
+    <EnableDownlevelForNls Condition="'$(CrossTargetArchitecture)' != ''">true</EnableDownlevelForNls>
+    <FeatureAppdomainResourceMonitoring>true</FeatureAppdomainResourceMonitoring>
+    <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
+    <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
+    <FeatureBclFormatting>true</FeatureBclFormatting>
+    <FeatureCollectibleTypes>true</FeatureCollectibleTypes>
+    <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
+    <FeatureCoreclr>true</FeatureCoreclr>
+    <FeatureCorruptingExceptions>true</FeatureCorruptingExceptions>
+    <FeatureDbiDebugging>true</FeatureDbiDebugging>
+    <FeatureDbiOopDebugging_HostLocal>false</FeatureDbiOopDebugging_HostLocal>
+    <FeatureDbiOopDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureDbiOopDebugging_HostWindowsx86>
+    <FeatureDbiOopDebugging_HostWindowsamd64 Condition="'$(TargetArch)' == 'amd64' or '$(TargetArch)' == 'arm64'">true</FeatureDbiOopDebugging_HostWindowsamd64>
+    <FeatureDbiOopDebugging_HostOneCorex86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureDbiOopDebugging_HostOneCorex86>
+    <FeatureDbiOopDebugging_HostOneCoreamd64 Condition="'$(TargetArch)' == 'amd64'">true</FeatureDbiOopDebugging_HostOneCoreamd64>
+    <FeatureEventTrace>true</FeatureEventTrace>
+    <FeatureExceptionDispatchInfo>true</FeatureExceptionDispatchInfo>
+    <FeatureFrameworkInternal>true</FeatureFrameworkInternal>
+    <FeatureHijack>true</FeatureHijack>
+    <FeatureInteropDebugging Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureInteropDebugging>
+    <FeatureIsostore>true</FeatureIsostore>
+    <FeatureIsostoreLight>true</FeatureIsostoreLight>
+    <FeatureIsymReader>true</FeatureIsymReader>
+    <!-- This is here for testing purposes only, and only on checked builds for x86/ARM -->
+    <FeatureLazyCOWPages Condition="'$(_BuildType)'!='ret' and (('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm'))">true</FeatureLazyCOWPages>
+    <FeatureLoaderOptimization>true</FeatureLoaderOptimization>
+    <FeatureMainClrModuleUsesCoreName>true</FeatureMainClrModuleUsesCoreName>
+    <FeatureMergeCultureSupportAndEngine>true</FeatureMergeCultureSupportAndEngine>
+    <FeatureMergeJitAndEngine>true</FeatureMergeJitAndEngine>
+    <FeatureMulticoreJIT Condition="'$(TargetArch)'!='arm'">true</FeatureMulticoreJIT>
+    <FeatureNormIdnaOnly>true</FeatureNormIdnaOnly>
+    <FeaturePrejit>true</FeaturePrejit>
+    <FeatureStandaloneSn>true</FeatureStandaloneSn>
+    <FeatureStrongnameDelaySigningAllowed>true</FeatureStrongnameDelaySigningAllowed>
+    <FeatureStrongnameMigration>true</FeatureStrongnameMigration>
+    <FeatureStrongnameTestkeyAllowed>true</FeatureStrongnameTestkeyAllowed>
+    <FeatureSyntheticCultures>true</FeatureSyntheticCultures>
+    <FeatureVersioning>true</FeatureVersioning>
+    <FeatureVersioningLog>true</FeatureVersioningLog>
+    <FeatureWin32Registry>true</FeatureWin32Registry>
+    <FeatureX509>true</FeatureX509>
+    <FeatureX509Securestrings>true</FeatureX509Securestrings>
+    <FeatureXPlatDacDebugging_HostWindowsx86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostWindowsx86>
+    <FeatureXPlatDacDebugging_HostWindowsAMD64 Condition="'$(TargetArch)' == 'amd64' or '$(TargetArch)' == 'arm64'">true</FeatureXPlatDacDebugging_HostWindowsAMD64>
+    <FeatureXPlatDacDebugging_HostOneCorex86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostOneCorex86>
+    <FeatureXPlatDacDebugging_HostOneCoreAMD64 Condition="'$(TargetArch)' == 'amd64'">true</FeatureXPlatDacDebugging_HostOneCoreAMD64>
+    <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+    <FeatureUseAsmGCWriteBarriers>true</FeatureUseAsmGCWriteBarriers>
+    <!-- Setting this to "false" works only for workstation GC, not server. -->
+    <FeatureSymDiff>true</FeatureSymDiff>
+    <FeatureReadyToRun Condition="'$(TargetArch)'!='arm64'">true</FeatureReadyToRun>
+
+    <FeatureCoreSystem>true</FeatureCoreSystem>
+    <FeatureClassicCominterop>true</FeatureClassicCominterop>
+    <FeatureLegacySurface>true</FeatureLegacySurface>
+    <FeatureCominterop>true</FeatureCominterop>
+    <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
+    <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
+    <FeatureCrypto>true</FeatureCrypto>
+    <FeatureHostAssemblyResolver>true</FeatureHostAssemblyResolver>
+    <FeatureLazyCOWPages Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'arm')">true</FeatureLazyCOWPages>
+    <FeatureLegacyNetCFCrypto>true</FeatureLegacyNetCFCrypto>
+    <FeatureLatin1>true</FeatureLatin1>
+    <FeatureEncodingNls>true</FeatureEncodingNls>
+    <FeatureAscii>true</FeatureAscii>
+    <FeatureUtf7>true</FeatureUtf7>
+    <FeatureUtf32>true</FeatureUtf32>
+    <FeatureLegacyNetCFDbgHostControl>true</FeatureLegacyNetCFDbgHostControl>
+    <FeatureLegacyNetCFFAS>true</FeatureLegacyNetCFFAS>
+    <FeatureLegacyNetCF>true</FeatureLegacyNetCF>
+    <FeatureRandomizedStringHashing>true</FeatureRandomizedStringHashing>
+    <!-- The rejit feature is available only on supported architectures (x86 & x64) -->
+    <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
+    <FeatureWindowsPhone>true</FeatureWindowsPhone>
+    <FeatureManagedEtw>true</FeatureManagedEtw>
+    <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
+    <FeatureHostedBinder>true</FeatureHostedBinder>
+    <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
+    <FeatureAppX>true</FeatureAppX>
+    <FeatureWinMDResilient>true</FeatureWinMDResilient>
+    <!-- 
+        FeatureImplicitTls has been verified to be functionally correct on x86 & amd64.
+        However there is still work to make it on par in terms of performance. So currently only
+        enabling for arm64 
+     -->
+    <FeatureImplicitTls Condition="'$(TargetArch)' == 'arm64'">true</FeatureImplicitTls>
+    <FeatureSvrGc Condition="'$(TargetArch)' != 'arm'">true</FeatureSvrGc>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(OS)' == 'Unix'">
+    <FeaturePal>true</FeaturePal>
+
+    <FeatureStubsAsIL>true</FeatureStubsAsIL>
+
+    <!-- UNIXTODO Enable randomized string hashing -->
+    <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
+
+    <!-- Windows specific features -->
+    <FeatureWin32Registry>false</FeatureWin32Registry>
+    <FeatureAppX>false</FeatureAppX>
+    <FeatureCominteropApartmentSupport>false</FeatureCominteropApartmentSupport>
+    <FeatureClassicCominterop>false</FeatureClassicCominterop>
+    <FeatureCominterop>false</FeatureCominterop>
+    <FeatureCominteropUnmanagedActivation>false</FeatureCominteropUnmanagedActivation>
+    <FeatureCominteropWinRTManagedActivation>false</FeatureCominteropWinRTManagedActivation>
+
+    <!-- Features implemented by fxcore -->
+    <FeatureLegacySurface>false</FeatureLegacySurface>
+    <FeatureCrypto>false</FeatureCrypto>
+    <FeatureLegacyNetCFCrypto>false</FeatureLegacyNetCFCrypto>
+    <FeatureX509>false</FeatureX509>
+    <FeatureX509Securestrings>false</FeatureX509Securestrings>
+    <FeatureIsostore>false</FeatureIsostore>
+    <FeatureIsostoreLight>false</FeatureIsostoreLight>
+
+    <FeatureCoreFxGlobalization>true</FeatureCoreFxGlobalization>
+  </PropertyGroup>
+</Project>

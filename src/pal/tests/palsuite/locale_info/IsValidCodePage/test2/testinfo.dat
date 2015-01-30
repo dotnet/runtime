@@ -1,0 +1,8 @@
+Version = 1.0
+Section = Locale Information
+Function = IsValidCodePage
+Name = Test #2 for IsValidCodePage
+TYPE = DEFAULT
+EXE1 = test2
+Description
+=Tests IsValidCodePage with all the code pages valid on W2K.

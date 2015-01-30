@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = FlushInstructionCache
+Name = Positive Test #1 for FlushInstructionCache
+TYPE = DEFAULT
+EXE1 = test1
+Description
+=Tests that FlushInstructionCache returns the correct value for a 
+=number of different inputs.

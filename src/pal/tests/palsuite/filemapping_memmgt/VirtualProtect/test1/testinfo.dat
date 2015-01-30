@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = VirtualProtect
+Name = Positive test for VirtualProtect - with PAGE_READWRITE
+TYPE = DEFAULT
+EXE1 = virtualprotect
+Description
+=Test the VirtualProtect to set new access protection 
+=as PAGE_READWRITE

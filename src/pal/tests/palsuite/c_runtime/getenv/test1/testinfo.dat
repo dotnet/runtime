@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = getenv
+Name = Test retrieval of variables correctly, and failure if they don't exist
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Create an environment variable and then use getenv to get
+= a pointer to it.  Check that the pointer is valid and that the string
+= is what we expected.  Also check that searching for a non-existent 
+= variable will cause getenv to return NULL.  Also check that changing
+= the case (upper or lower) of a variable does not effect functionality.

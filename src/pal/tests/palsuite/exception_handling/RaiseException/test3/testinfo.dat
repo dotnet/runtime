@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = exception_handling
+Function = RaiseException
+Name = RaiseException test #3
+TYPE = DEFAULT
+EXE1 = test
+LANG = cpp
+Description
+= Tests that the exception code passed to
+= RaiseException makes it to the filter.

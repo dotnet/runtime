@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _gcvt
+Name = Positive test for _gcvt API to convert a floatable value to a string
+TYPE = DEFAULT
+EXE1 = _gcvt
+Description
+=Test the _gcvt to convert a floatable value to a string
+=with specified sigficant digits stored

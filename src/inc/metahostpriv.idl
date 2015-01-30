@@ -1,0 +1,213 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+/**************************************************************************************
+ ** NOTE: This file should be removed before 4.0 RTM. Specifically, when we decide   **
+ ** that enough time has elapsed that there should be no binaries left depending on  **
+ ** this old interface version.
+ **************************************************************************************/
+
+import "metahost.idl";
+
+// IID ICLRMetaHostCompat1 : uuid(D332DB9E-B9B3-4125-8207-A14884F53215)
+cpp_quote("EXTERN_GUID(IID_ICLRMetaHostCompat1, 0xD332DB9E, 0xB9B3, 0x4125, 0x82, 0x07, 0xA1, 0x48, 0x84, 0xF5, 0x32, 0x15);")
+
+// IID ICLRMetaHostPolicyCompat1 : uuid(E2190695-77B2-492e-8E14-C4B3A7FDD592)
+cpp_quote("EXTERN_GUID(IID_ICLRMetaHostPolicyCompat1, 0xE2190695, 0x77B2, 0x492e, 0x8E, 0x14, 0xC4, 0xB3, 0xA7, 0xFD, 0xD5, 0x92);")
+
+// IID ICLRRuntimeHost3 : uuid(F4A7AE38-3213-4057-85FC-3DA54AFD0CFC)
+cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost3, 0xF4A7AE38, 0x3213, 0x4057, 0x85, 0xFC, 0x3D, 0xA5, 0x4A, 0xFD, 0x0C, 0xFC);")
+
+[
+    uuid(D332DB9E-B9B3-4125-8207-A14884F53215),
+    version(1.0),
+    helpstring("CLR meta hosting interface"),
+    local
+]
+interface ICLRMetaHostCompat1 : IUnknown
+{
+    /**********************************************************************************
+     ** Returns installed runtime with the specific version. Fails if not found.     **
+     ** NULL or any other wildcard is not accepted as pwzVersion                     **
+     ** Supersedes: CorBindToRuntimeEx with STARTUP_LOADER_SAFEMODE                  **
+
+
+     **********************************************************************************/
+    HRESULT GetRuntime(
+        [in]  LPCWSTR pwzVersion,
+        [in]  REFIID  riid,   // IID_ICLRRuntimeInfo
+        [out, iid_is(riid), retval] LPVOID *ppRuntime);
+
+    /**********************************************************************************
+     ** Returns runtime version burned into a file's metadata.                       **
+     ** Supersedes: GetFileVersion                                                   **
+     **********************************************************************************/
+    HRESULT GetVersionFromFile(
+        [in]      LPCWSTR pwzFilePath,
+        [out, size_is(*pcchBuffer), annotation("__out_ecount_full(*pcchBuffer)")] 
+                  LPWSTR pwzBuffer, 
+        [in, out] DWORD *pcchBuffer);
+
+    /**********************************************************************************
+     ** Returns an enumerator of runtimes installed on the machine.                  **
+     ** Supersedes: (none)                                                           **
+     **********************************************************************************/
+    HRESULT EnumerateInstalledRuntimes(
+        [out, retval] IEnumUnknown **ppEnumerator);
+
+    /**********************************************************************************
+     ** Provides an enumerator of runtimes loaded into the given process.            **
+     ** Supersedes: GetVersionFromProcess                                            **
+
+     **********************************************************************************/
+    HRESULT EnumerateLoadedRuntimes(
+        [in]  HANDLE hndProcess,
+        [out, retval] IEnumUnknown **ppEnumerator);
+
+    /**********************************************************************************
+     ** Provides a callback when a new runtime version has just been loaded, but not **
+     ** started.                                                                     **
+     **                                                                              **
+     ** The callback works in the following way:                                     **
+     **   - the callback is invoked only when a runtime is loaded for the first time **
+     **   - the callback will not be invoked for reentrant loads of the same runtime **
+     **   - the callback will be for reentrant loads of other runtimes               **
+     **   - it is guaranteed that no other thread may load the runtime until the     **
+     **     callback returns; any thread that does so blocks until this time.        **
+     **   - for non-reentrant multi-threaded runtime loads, callbacks are serialized **
+     **   - if the host intends to load (or cause to be loaded) another runtime in a **
+     **     reentrant fashion, or intends to perform any operations on the runtime   **
+     **     corresponding to the callback instance, the pfnCallbackThreadSet and     **
+     **     pfnCallbackThreadUnset arguments provided in the callback must be used   **
+     **     in the following way:                                                    **
+     **     - pfnCallbackThreadSet must be called by the thread that might cause a   **
+     **       runtime load before such a load is attempted                           **
+     **     - pfnCallbackThreadUnset must be called when the thread will no longer   **
+     **       cause such a runtime load (and before returning from the initial       **
+     **       callback)                                                              **
+     **     - pfnCallbackThreadSet and pfnCallbackThreadUnset are non-reentrant.     **
+     **                                                                              **
+     **   pCallbackFunction: This function is invoked when a new runtime has just    **
+     **                      been loaded. A value of NULL results in a failure       **
+     **                      return value of E_POINTER.                              **
+     **                                                                              **
+     ** Supersedes: LockClrVersion                                                   **
+     **********************************************************************************/
+    HRESULT RequestRuntimeLoadedNotification(
+        [in] RuntimeLoadedCallbackFnPtr pCallbackFunction);
+
+    /**********************************************************************************
+     ** Provides a mechanism to set the process wide config file settings.           **
+     ** Supersedes: none                                                             **
+     **********************************************************************************/
+    HRESULT SetProcessConfig(
+        [in]  IStream * pstmConfig);
+} // interface ICLRMetaHost
+
+
+/**************************************************************************************
+ ** ICLRMetaHostPolicyCompat1                                                        **
+ ** Activated using mscoree!CreateInterface. Implements a policy for determining     **
+ ** a runtime based on various inputs (metadata, config stream, ...).                **
+ **************************************************************************************/
+[
+    uuid(E2190695-77B2-492e-8E14-C4B3A7FDD592),
+    version(1.0),
+    helpstring("CLR meta hosting policy"),
+    local
+]
+interface ICLRMetaHostPolicyCompat1 : IUnknown
+{
+    /**********************************************************************************
+     ** Returns requested runtime version and runtime (not necessarily of that       **
+     ** version) based on a managed binary, version, and config file.                **
+     ** The return value is S_OK if a compatible runtime was found and S_FALSE if    **
+     ** not. *ppRuntime will be NULL in the latter case.                             **
+     ** Supersedes: GetRequestedRuntimeInfo, GetRequestedRuntimeVersion,             **
+     **             CorBindToRuntimeHost, CorBindToRuntimeByCfg,                     **
+     **             GetCORRequiredVersion                                            **
+     **********************************************************************************/
+    HRESULT GetRequestedRuntime(
+        [in]  METAHOST_POLICY_FLAGS dwPolicyFlags,
+        [in]  LPCWSTR pwzBinary,                              // optional
+        [in]  IStream *pCfgStream,                            // optional
+        [in, out, size_is(*pcchVersion), annotation("__inout_ecount_full(*pcchVersion)")] 
+              LPWSTR pwzVersion,   // optional
+        [in, out]  DWORD *pcchVersion, 
+        [out, size_is(*pcchImageVersion), annotation("__out_ecount_full(*pcchImageVersion)")] 
+              LPWSTR pwzImageVersion, // image version to be used by compilers
+        [in, out]  DWORD *pcchImageVersion,
+        [in]  REFIID  riid,   // IID_ICLRRuntimeInfo
+        [out, iid_is(riid), retval] LPVOID *ppRuntime);
+} // interface ICLRMetaHostPolicy
+
+/**************************************************************************************
+ ** ICLRRuntimeHost3                                                                 **
+ ** This is the functionality that moved from being flat APIs (loading the latest    **
+ ** runtime) to something that is runtime-specific and requires the runtime to be    **
+ ** loaded.
+ **************************************************************************************/
+[
+    uuid(F4A7AE38-3213-4057-85FC-3DA54AFD0CFC),
+    version(1.0),
+    helpstring("CLR hosting interface for V4.0"),
+    local
+]
+interface ICLRRuntimeHost3 : ICLRRuntimeHost
+{
+    /**********************************************************************************
+     ** Creates an instance of the type specified by a fully qualified name.         **
+     ** Returns a CCW wrapping the managed object. This method is intended to be     **
+     ** used primarily by the COM host. TODO: Specify the AppDomain?                 **
+     **
+     ** Supersedes: ClrCreateManagedInstance                                         **
+     **********************************************************************************/
+    HRESULT CreateManagedObject(
+        [in]  LPCWSTR  pwzTypeName, 
+        [in]  REFIID   riid, 
+        [out, iid_is(riid), retval] LPVOID *ppObject);
+
+    /**********************************************************************************
+     ** Releases all cached RCWs.                                                    **
+     ** Supersedes: CoEEShutDownCOM                                                  **
+     **********************************************************************************/
+    HRESULT ShutdownCOMInterop();
+
+    /**********************************************************************************
+     ** Shuts down the current process.                                              **
+     ** Supersedes: CorExitProcess                                                   **
+     **********************************************************************************/
+    HRESULT ExitProcess(
+        [in]  INT32 iExitCode);
+
+    /**********************************************************************************
+     ** Returns TRUE if the runtime has been started, i.e. Start() has been called.  **
+     ** If it has been started, its STARTUP_FLAGS are returned.                      **
+     ** Supersedes: (none)                                                           **
+     **********************************************************************************/
+    HRESULT IsStarted(
+        [out] BOOL *pbStarted,
+        [out] DWORD *pdwStartupFlags);
+
+    /**********************************************************************************
+     ** Starts the runtime with the given STARTUP_FLAGS and host config file.        **
+     ** Supersedes: ICLRRuntimeHost::Start                                           **
+     **********************************************************************************/
+    HRESULT StartWithFlags(
+        [in]  DWORD dwStartupFlags,
+        [in]  LPCWSTR pwzHostConfigFile);
+};  // interface ICLRRuntimeHost3
+
+[
+    uuid(5288DA6A-A8D3-43a1-8365-37DB0E7D5944),
+    version(1.0),
+]
+library CLRMetaHostCompat
+{
+    interface ICLRMetaHostCompat1;
+    interface ICLRMetaHostPolicyCompat1;
+    interface ICLRRuntimeHost3;
+};
+

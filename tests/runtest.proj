@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="src\dir.props" />
+
+  <PropertyGroup>
+    <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
+    <XunitWrapperGeneratedCSDirBase>$(SourceDir)\TestWrappers_$(Platform)_$(Configuration)\</XunitWrapperGeneratedCSDirBase>
+    <XunitWrapperOutputIntermediatedDirBase>$(XunitTestBinBase)\Tests\</XunitWrapperOutputIntermediatedDirBase>
+    <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <DisabledTestDir Include="Common" />
+    <_SkipTestDir Include="@(DisabledTestDir)" />
+  </ItemGroup>
+  
+
+  <Target Name="FindCmdDirectories"
+          DependsOnTargets="GetListOfTestCmds"
+          >
+
+    <Error Condition="!Exists('$(XunitTestBinBase)')" 
+	Text="$(XunitTestBinBase) does not exists. Please run buildtest.cmd from the (repo root)\tests at least once to get the tests built." />
+    <ItemGroup>            
+  
+      <AllTestDirsNonCanonicalPaths Include="$([System.IO.Directory]::GetDirectories(`$(XunitTestBinBase)`))" />
+
+      <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)">
+        <Path>$([System.IO.Path]::GetFullPath(%(Identity)))</Path>
+      </AllTestDirsPaths>
+
+      <NonExcludedTestDirectories Include="@(AllTestDirsPaths -> '%(Path)')" Exclude="@(_SkipTestDir -> '$(XunitTestBinBase)%(Identity)')">
+        <Path>$([System.IO.Path]::GetFullPath(%(AllRunnableTestPaths.Identity)))</Path>
+      </NonExcludedTestDirectories>
+      
+      <TestDirectoriesWithDup Include="@(NonExcludedTestDirectories -> '%(Identity)')" Condition="$([System.String]::new('%(Path)').StartsWith('%(Identity)'))" />
+
+    </ItemGroup>
+
+      <RemoveDuplicates
+            Inputs="@(TestDirectoriesWithDup)">
+            <Output
+                TaskParameter="Filtered"
+                ItemName="TestDirectories"/>
+        </RemoveDuplicates>
+    <Message Text= "TestDirectories= @(TestDirectories)"/>
+    <Message Text= "NonExcludedTestDirectories= @(NonExcludedTestDirectories)"/>
+  </Target>
+
+  
+
+
+  <Target Name="CreateXunitWrapper"
+           DependsOnTargets="CreateXunitFacts">
+
+    <PropertyGroup>
+      <_XunitWrapperGen >
+        <![CDATA[
+        
+$(_XunitProlog)
+@(AllXUnitFacts)
+$(_XunitEpilog)
+
+]]>
+      </_XunitWrapperGen>
+      <XunitVersionCompiled>2.0.0-beta5-build2785</XunitVersionCompiled>
+      <XunitWrapperGenCsProj>
+        <![CDATA[
+        <?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    
+    <Import Project="$(SourceDir)\dir.common.props" />
+    <Import Project="$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props" Condition="Exists('$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" />
+    <Import Project="%24(MSBuildExtensionsPath)\%24(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('%24(MSBuildExtensionsPath)\%24(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '%24(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '%24(Platform)' == '' ">AnyCPU</Platform>
+    <AssemblyName>$(XunitWrapper)</AssemblyName>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB}%3B{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ReferencePath>%24(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
+    <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
+    <GenerateRunScript>false</GenerateRunScript>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <CodeAnalysisDependentAssemblyPaths Condition=" '%24(VS100COMNTOOLS)' != '' " Include="%24(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
+      <Visible>False</Visible>
+    </CodeAnalysisDependentAssemblyPaths>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(XunitWrapper).cs" />
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+   <ItemGroup>
+    <ProjectReference Include="$(SourceDir)\Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj">
+      <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
+      <Name>coreclr</Name>
+    </ProjectReference>
+  </ItemGroup>
+ 
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="xunit.abstractions">
+      <HintPath>$(SourceDir)\packages\xunit.abstractions.$(XunitVersionCompiled)\lib\net35\xunit.abstractions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.assert">
+      <HintPath>$(SourceDir)\packages\xunit.assert.$(XunitVersionCompiled)\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10\xunit.assert.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.core">
+      <HintPath>$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\lib\portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid\xunit.core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <PropertyGroup>
+     <OutDir>$(XunitWrapperOutputIntermediatedDirBase)\XunitRunner\</OutDir>
+     <OutputPath>$(XunitWrapperOutputIntermediatedDirBase)\XunitRunner\</OutputPath>
+  </PropertyGroup>
+  <Import Project="%24(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SourceDir)\packages\xunit.core.$(XunitVersionCompiled)\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid\xunit.core.props'))" />
+  </Target>
+</Project>
+
+
+  ]]>
+      </XunitWrapperGenCsProj>
+      <XunitWrapperGenPackConfig>
+        <![CDATA[
+        <?xml version="1.0" encoding="utf-8"?>
+       <packages>
+       <packages>
+      <package id="xunit" version="2.0.0-beta5-build2785" targetFramework="net45" />
+     <package id="xunit.abstractions" version="2.0.0-beta5-build2785" targetFramework="net45" />
+     <package id="xunit.assert" version="2.0.0-beta5-build2785" targetFramework="net45" />
+     <package id="xunit.core" version="2.0.0-beta5-build2785" targetFramework="net45" />
+</packages>
+      </packages>
+      ]]>
+      </XunitWrapperGenPackConfig>
+
+    </PropertyGroup>
+
+    <!-- <Exec Command="md" -->
+    <MakeDir  Directories="$(XunitWrapperGeneratedCSDirBase)$(Category)"/>
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(XunitWrapperSrcDir)\$(XunitWrapper).cs"
+      Lines="$(_XunitWrapperGen)"
+      Overwrite="true" />
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj"
+      Lines="$(XunitWrapperGenCsProj)"
+      Overwrite="true" />
+
+    <!-- Write the file -->
+    <WriteLinesToFile
+      File="$(XunitWrapperSrcDir)\packages.config"
+      Lines="$(XunitWrapperGenPackConfig)"
+      Overwrite="true" />
+
+  <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" />
+  </Target>
+  <Target Name="CreateXunitFacts">
+    <!-- NOTE! semicolons must be escaped with %3B boooo -->
+   
+    <PropertyGroup>
+      <_CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR_Parent>
+      <Category>$([System.String]::Copy('$(_CMDDIR)').Replace($(_CMDDIR_Parent)\,''))</Category>
+      <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
+      <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
+      <XunitWrapperOutputDir>$(XunitWrapperOutputIntermediatedDirBase)$(Category)</XunitWrapperOutputDir>
+    </PropertyGroup>
+    <PropertyGroup>
+      <_XunitProlog Condition=" '$(_XunitProlog)'=='' ">
+        <![CDATA[
+using Xunit%3B
+using System%3B
+using System.Collections.Generic%3B
+using System.Diagnostics%3B
+using CoreclrTestLib%3B
+
+namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
+{
+public class $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
+    {
+               static bool category_initlialized = false%3B
+               static bool runningInWindows = false%3B
+               static string reportbase%3B
+               static string TestBinaryBase%3B
+               static string core_root%3B
+               static void init()
+               {
+                   if (!category_initlialized)
+                   {
+                       reportbase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22))%3B
+                       TestBinaryBase = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22XunitTestBinBase%22))%3B
+                       core_root = System.IO.Path.GetFullPath(System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22))%3B
+                       if (String.IsNullOrEmpty(reportbase)){
+                      
+                           throw new ArgumentException("Env variables XunitTestReportDirBase is not set") %3B
+                       }
+                           
+                       if (String.IsNullOrEmpty(TestBinaryBase)){
+                        
+                           throw new ArgumentException("Env variables XunitTestBinBase is not set")%3B
+                       }
+                       
+                       if (String.IsNullOrEmpty(core_root)){
+                        
+                           throw new ArgumentException("Env variables CORE_ROOT is not set")%3B
+                       }
+                       runningInWindows = System.Environment.GetEnvironmentVariable("OS").StartsWith("Windows")%3B
+
+                       
+                       category_initlialized = true%3B
+                   }
+               }
+
+]]>
+      </_XunitProlog>
+    <_XunitEpilog Condition=" '$(_XunitEpilog)'=='' ">
+      <![CDATA[
+       }
+}
+
+]]>
+       </_XunitEpilog>
+    </PropertyGroup>
+    <ItemGroup>
+        <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
+        <AllCMDExcludeFilter Include="@(AllCMDsPresent)" Exclude="@AllRunnableTestPaths"/>
+        <AllCMDs Include="@(AllCMDsPresent)" Exclude="@AllCMDExcludeFilter"/>
+        
+      <AllCommamds Include="@(AllCMDs)" >
+
+        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_"))</_FactName>
+        <_XunitFact >
+          <![CDATA[
+             
+    
+                [Fact]
+                public void $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))()
+                {
+                    int ret = -100%3B
+                    string msg ="Test Infrastructure Failure :\n"%3B
+                    try
+                    {
+                      init()%3B
+                      CoreclrTestWrapperLib wrapper = new CoreclrTestWrapperLib()%3B
+                      string testsubfolder = @"\$(Category)\$([System.String]::Copy('%(AllCMDs.RelativeDir)').Replace("$(_CMDDIR)\",''))"%3B
+                      string outputfile = System.IO.Path.GetFullPath(reportbase + testsubfolder + @"%(AllCMDs.FileName).output.txt")%3B
+                      string errorfile = System.IO.Path.GetFullPath(reportbase + testsubfolder + @"%(AllCMDs.FileName).error.txt")%3B
+                      string test_cmd = System.IO.Path.GetFullPath(TestBinaryBase + @"\$(Category)\$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",''))")%3B
+
+                    
+                      if (!runningInWindows){
+                    
+                          test_cmd = test_cmd.Replace(".cmd", ".sh")%3B
+                      }
+                    
+                      System.IO.Directory.CreateDirectory(reportbase + testsubfolder)%3B
+                    
+                      ret = wrapper.RunTest(test_cmd, outputfile, errorfile)%3B
+                    
+                      string err_text = System.IO.File.ReadAllText(errorfile)%3B
+                      msg = err_text + 
+                            @"Raw Output          :"+ outputfile + "\n" +
+                            @"To Run the test     :Step 1. set Core_Root="+ core_root + "\n" +
+                             "                     Step 2. "+test_cmd + "\n"%3B
+                      
+                    
+                    }
+                    catch (Exception Ex)
+                    {
+                       msg = msg  + Ex.Message%3B
+                    }
+                    
+                    Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, msg)%3B
+                }
+                    
+   
+
+        ]]>
+        </_XunitFact>
+      </AllCommamds>
+      <AllXUnitFacts Include= "%(AllCommamds._XunitFact)" />
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="CreateAllWrappers"
+          DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+  </Target>
+
+  <Target Name="GetListOfTestCmds">
+  <ItemGroup>
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" />
+  </ItemGroup>
+  </Target> 
+  
+  <Import Project="tests.targets" />
+  <Import Project="publishdependency.targets" />
+  <Target Name="CreateXunitWrappers"
+          DependsOnTargets="Clean"
+          AfterTargets="Build">
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="CreateAllWrappers"
+             Properties="_CMDDIR=%(TestDirectories.Identity)"
+             Condition=" '$(NoBuild)'!='true' "/>
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyDependecyToCoreRoot" 
+             Condition=" '$(NoRun)'!='true' "/>
+         
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests" 
+             Condition=" '$(NoRun)'!='true' "/>
+  </Target>
+ 
+  <Target Name="Build" />
+  <Target Name="Clean">
+    <RemoveDir Condition=" '$(NoBuild)'!='true'" Directories="$(XunitWrapperGeneratedCSDirBase);$(XunitWrapperOutputIntermediatedDirBase)" ContinueOnError="WarnAndContinue" /> 
+  </Target>
+</Project>

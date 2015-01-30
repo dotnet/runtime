@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = InterlockedIncrement64
+Name = Positive test of InterlockedIncrement64
+TYPE = DEFAULT
+EXE1 = test
+Description
+= Test to see if this increments the variable correctly and
+= has the correct return value.
+
+
+

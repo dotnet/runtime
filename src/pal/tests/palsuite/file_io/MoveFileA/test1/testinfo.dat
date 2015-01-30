@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = MoveFileA
+Name = Positive Test for MoveFileA
+TYPE = DEFAULT
+EXE1 = movefilea
+Description
+=Performs a number of MoveFileA tests and uses the 
+=file ExpectedResults.txt to determine if the test passed/failed

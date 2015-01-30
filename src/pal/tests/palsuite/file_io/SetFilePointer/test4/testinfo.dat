@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = SetFilePointer
+Name = Positive Test for SetFilePointer (test 4)
+Type = DEFAULT 
+EXE1 = setfilepointer
+Description
+=Tests the FILE_END option
+

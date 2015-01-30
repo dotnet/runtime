@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = miscellaneous
+Function = _ui64tow
+Name = Positive test _ui64tow to convert an integer to a wide character string
+TYPE = DEFAULT
+EXE1 = _ui64tow
+Description
+=Test the _ui64tow API to convert an integer to a wide character string
+=Test the limits. and 0.

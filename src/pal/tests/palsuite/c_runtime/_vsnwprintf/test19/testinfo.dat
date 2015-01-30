@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = _vsnwprintf
+Name = Positive Test for _vsnwprintf
+TYPE = DEFAULT
+EXE1 = test19
+Description
+= Tests the PAL implementation of the _vsnwprintf function.
+= Tests _vsnwprintf with argument specified precision.
+= This test is modeled after _snwprintf.

@@ -1,0 +1,15 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = RtlMoveMemory
+Name = Positive test for RtlMoveMemory API
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Simple test -- have two 128 blocks of memory allocated.  Then
+= move one block to the other and check to see that the data was not
+= corrupted.
+

@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = CreateFileMappingW
+Name = CreateFileMappingW negative testing
+TYPE = DEFAULT
+EXE1 = createfilemapping
+Description
+= Negative test the CreateFileMapping API.

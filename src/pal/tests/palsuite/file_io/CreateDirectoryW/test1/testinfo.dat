@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CreateDirectoryW
+Name = Positive Test for CreateDirectoryW
+Type = DEFAULT
+EXE1 = createdirectoryw
+Description
+= Test the CreateDirctoryW function

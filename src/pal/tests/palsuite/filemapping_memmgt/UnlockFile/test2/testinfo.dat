@@ -1,0 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = UnlockFile
+Name = Positive test for UnlockFile API
+TYPE = DEFAULT
+EXE1 = test2
+Description
+= Open a file, and call Unlock on the file, even though it has yet
+= to be locked.  Then lock a portion of the file, and attempt to call unlock
+= on a larger portion of the file.  Also, try to unlock a smaller portion
+= than was locked.
+

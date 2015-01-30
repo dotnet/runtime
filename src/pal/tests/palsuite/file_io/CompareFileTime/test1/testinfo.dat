@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = CompareFileTime
+Name = Positive Test for CompareFileTime
+TYPE = DEFAULT
+EXE1 = comparefiletime
+Description 
+= Test the CompareFileTime function.
+= Defines a large and small file time, and compares them in all fashions
+= to ensure proper return values.

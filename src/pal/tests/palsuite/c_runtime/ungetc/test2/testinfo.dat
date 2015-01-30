@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = c_runtime
+Function = ungetc
+Name = test for ungetc (test 2)
+Type = DEFAULT
+EXE1 = ungetc
+Description
+= Push characters back onto the stream and verify

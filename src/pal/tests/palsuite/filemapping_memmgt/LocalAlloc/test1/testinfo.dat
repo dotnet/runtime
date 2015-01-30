@@ -1,0 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Filemapping_memmgt
+Function = LocalAlloc
+Name = Positive test LocalAlloc API to Allocate the specified number of bytes from the heap
+TYPE = DEFAULT
+EXE1 = localalloc
+Description
+=Test the LocalAlloc with zero ad  allocation attribute
