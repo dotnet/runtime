@@ -1129,8 +1129,8 @@ void SyncBlockCache::Grow()
         COMPlusThrowOM();
     }
 
-    newSyncTable = new(SyncTableEntry[newSyncTableSize]);
-    newBitMap = new(DWORD[BitMapSize (newSyncTableSize)]);
+    newSyncTable = new SyncTableEntry[newSyncTableSize];
+    newBitMap = new DWORD[BitMapSize (newSyncTableSize)];
 
 
     {
