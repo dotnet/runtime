@@ -529,6 +529,34 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
 
         /// <summary>
         /// Verify result.
+        /// normalize-space("") = ""
+        /// </summary>
+        [Fact]
+        public static void StringFunctionsTest2473()
+        {
+            var xml = "dummy.xml";
+            var testExpression = @"normalize-space("""")";
+            var expected = @"";
+
+            Utils.XPathStringTest(xml, testExpression, expected);
+        }        
+        
+        /// <summary>
+        /// Verify result.
+        /// normalize-space(" \t\n\r") = ""
+        /// </summary>
+        [Fact]
+        public static void StringFunctionsTest2474()
+        {
+            var xml = "dummy.xml";
+            var testExpression = "normalize-space(\" \t\n\r\")";
+            var expected = @"";
+
+            Utils.XPathStringTest(xml, testExpression, expected);
+        }
+
+        /// <summary>
+        /// Verify result.
         /// normalize-space(" AB") = "AB"
         /// </summary>
         [Fact]
@@ -723,6 +751,20 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var expected = @"A B";
 
             Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+        }
+
+        /// <summary>
+        /// Verify result.
+        /// translate("", "abc", "ABC") = ""
+        /// </summary>
+        [Fact]
+        public static void StringFunctionsTest2472()
+        {
+            var xml = "dummy.xml";
+            var testExpression = @"translate("""", ""abc"", ""ABC"")";
+            var expected = @"";
+
+            Utils.XPathStringTest(xml, testExpression, expected);
         }
 
         /// <summary>
