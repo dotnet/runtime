@@ -3894,9 +3894,6 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
     g_lowest_address = MAX_PTR;
     g_highest_address = 0;
 
-    // Try to get the data all at once
-    ptrdiff_t allatonce_delta;
-
     if (((size_t)MAX_PTR - large_size) < normal_size)
     {
         // we are already overflowing with just one heap.
