@@ -496,7 +496,7 @@ public:
     class ItemIterator
     {
 
-    typedef typename StructArrayList<ELEMENT_TYPE, INITIAL_CHUNK_LENGTH, CHUNK_LENGTH_GROWTH_FACTOR, ALLOCATOR>
+    typedef StructArrayList<ELEMENT_TYPE, INITIAL_CHUNK_LENGTH, CHUNK_LENGTH_GROWTH_FACTOR, ALLOCATOR>
         SAList;
     
     typedef typename StructArrayList<ELEMENT_TYPE, INITIAL_CHUNK_LENGTH, CHUNK_LENGTH_GROWTH_FACTOR, ALLOCATOR>::ArrayIterator

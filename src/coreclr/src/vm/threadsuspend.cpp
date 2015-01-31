@@ -1098,7 +1098,7 @@ BOOL Thread::IsExecutingWithinCer()
     pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext);
 
 #ifdef STRESS_LOG
-    if (sContext.fWithinCer && StressLog::StressLogOn(~0ul, 0))
+    if (sContext.fWithinCer && StressLog::StressLogOn(~0u, 0))
     {
         // If stress log is on, write info to stress log
         StackCrawlContext sContext1 = { pThread,
@@ -1459,7 +1459,7 @@ BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
 
 #ifdef STRESS_LOG
     REGDISPLAY rd1;
-    if (StressLog::StressLogOn(~0ul, 0))
+    if (StressLog::StressLogOn(~0u, 0))
     {
         CONTEXT ctx1;
         CopyRegDisplay(&rd, &rd1, &ctx1);
@@ -1494,7 +1494,7 @@ BOOL Thread::ReadyForAsyncException(ThreadInterruptMode mode)
     }
 
 #ifdef STRESS_LOG
-    if (StressLog::StressLogOn(~0ul, 0) &&
+    if (StressLog::StressLogOn(~0u, 0) &&
         (IsRudeAbort() || !TAContext.fWithinEHClause))
     {
         //Save into stresslog.

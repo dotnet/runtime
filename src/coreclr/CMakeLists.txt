@@ -203,10 +203,44 @@ add_definitions(-DDISABLE_CONTRACTS)
 # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
 # after hitting just about 20 errors.
 add_compile_options(-ferror-limit=4096)
-# The -w option disables warnings for now, there are hundreds of them and it is hard to
-# find the errors in the output. We need to reenable them later though to make sure we don't`
-# miss any real issues.
-add_compile_options(-w)
+
+# Disabled warnings
+add_compile_options(-Wno-reorder)
+add_compile_options(-Wno-ignored-attributes)
+add_compile_options(-Wno-unknown-pragmas)
+add_compile_options(-Wno-unused-private-field)
+add_compile_options(-Wno-new-returns-null)
+add_compile_options(-Wno-dangling-else)
+add_compile_options(-Wno-implicit-exception-spec-mismatch)
+add_compile_options(-Wno-deprecated-register)
+add_compile_options(-Wno-parentheses)
+add_compile_options(-Wno-overloaded-virtual)
+add_compile_options(-Wno-unused-variable)
+add_compile_options(-Wno-missing-declarations)
+add_compile_options(-Wno-switch)
+add_compile_options(-Wno-extern-initializer)
+add_compile_options(-Wno-microsoft)
+add_compile_options(-Wno-mismatched-tags)
+add_compile_options(-Wno-ignored-qualifiers)
+add_compile_options(-Wno-tautological-constant-out-of-range-compare)
+add_compile_options(-Wno-c++11-compat-deprecated-writable-strings)
+add_compile_options(-Wno-unneeded-internal-declaration)
+add_compile_options(-Wno-tautological-compare)
+add_compile_options(-Wno-constant-logical-operand)
+add_compile_options(-Wno-unused-function)
+add_compile_options(-Wno-extra-tokens)
+add_compile_options(-Wno-self-assign)
+add_compile_options(-Wno-bitfield-constant-conversion)
+add_compile_options(-Wno-unused-value)
+
+#These seem to indicate real issues
+add_compile_options(-Wno-invalid-offsetof)
+add_compile_options(-Wno-return-type)
+add_compile_options(-Wno-dynamic-class-memaccess)
+add_compile_options(-Wno-int-to-pointer-cast)
+add_compile_options(-Wno-delete-non-virtual-dtor)
+add_compile_options(-Wno-enum-compare)
+
 # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
 add_compile_options(-fms-extensions )
 #-fms-compatibility      Enable full Microsoft Visual C++ compatibility

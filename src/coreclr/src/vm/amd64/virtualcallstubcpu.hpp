@@ -623,7 +623,7 @@ void ResolveHolder::InitializeStatic()
 #pragma warning(disable:4305 4309)
 #endif // defined(_MSC_VER)
 
-    resolveInit._hashedToken           = 0xcccccccccccccccc;
+    resolveInit._hashedToken           = 0xcccccccc;
 
 #if defined(_MSC_VER)    
 #pragma warning(pop)
