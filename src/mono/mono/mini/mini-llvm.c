@@ -2323,7 +2323,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	LLVMValueRef method = ctx->lmethod;
 	LLVMValueRef *values = ctx->values;
 	LLVMValueRef *addresses = ctx->addresses;
-	int i;
 	LLVMCallInfo *linfo = ctx->linfo;
 	LLVMModuleRef module = ctx->module;
 	BBInfo *bblocks = ctx->bblocks;
@@ -3993,6 +3992,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_EXPAND_R8: {
 			LLVMTypeRef t = simd_op_to_llvm_type (ins->opcode);
 			LLVMValueRef mask [16], v;
+			int i;
 
 			for (i = 0; i < 16; ++i)
 				mask [i] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
