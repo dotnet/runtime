@@ -7,12 +7,12 @@ if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&got
 
 if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
-if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=yes&shift&goto Arg_Loop)
+if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
 
 if /i "%1" == "/?"      (goto Usage)
 
 set Core_Root=%1
-
+shift 
 :ArgsDone
 :: Check prerequisites
 
@@ -38,7 +38,7 @@ if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=debug
 if not defined __BinDir    set  __BinDir=%__ProjectFilesDir%..\binaries\Product\%__BuildArch%\%__BuildType%
 if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%..\binaries\tests\%__BuildArch%\%__BuildType%
-if not defined __LogsDir        set  __LogsDir=%CD%
+if not defined __LogsDir        set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs\
 
 :: Default global test environmet variables
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
@@ -53,15 +53,17 @@ set Core_Root=%__BinDir%
 if not exist %XunitTestBinBase% echo Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%, Run - buildtest.cmd %__BuildArch% %__BuildType% to build the tests first. && exit /b 1
 if "%Core_Root%" == ""             echo Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}. && exit /b 1
 if not exist %Core_Root%\coreclr.dll echo Error: Ensure you have done a successful build of the Product and %Core_Root% contains runtime binaries. && exit /b 1
-
+if not exist %__LogsDir%           md  %__LogsDir%
 
 :SkipDefaultCoreRootSetup
 set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log
 set __TestRunBuildLog=%__LogsDir%\TestRunResults_%__BuildArch%__%__BuildType%.log
-set __TestRunHtmlLog=%__LogsDir%\\TestRun_%__BuildArch%__%__BuildType%.html
+set __TestRunHtmlLog=%CD%\TestRun_%__BuildArch%__%__BuildType%.html
 
-echo "Core_Root to be used will be %Core_Root%"
+echo "Core_Root that will be used is : %Core_Root%"
 echo "Starting The Test Run .. "
+if  "%__SkipWrapperGeneration%"=="true" goto :preptests
+
 :: Log build command line
 set _buildprefix=echo
 set _buildpostfix=^> "%__TestRunBuildLog%"
@@ -74,28 +76,51 @@ set _buildpostfix=
 set _buildappend=
 call :PerformXunitWrapperBuild 
 
+IF %BUILDERRORLEVEL% NEQ 0 echo XunitWrapperBuild build failed. Refer %__XunitWrapperBuildLog% for details. && exit /b %BUILDERRORLEVEL%
+
+call :preptests
 goto :eof
 
 :PerformXunitWrapperBuild
-if  "%__SkipWrapperGeneration%"=="true" goto :preptests
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoRun=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__XunitWrapperBuildLog%";Append %* %_buildappend%%_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoRun=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__XunitWrapperBuildLog%";Append %1  %_buildappend%%_buildpostfix%
 
-IF  ERRORLEVEL 1 echo XunitWrapperBuild build failed. Refer %__XunitWrapperBuildLog% for details. && exit /b 1
+set BUILDERRORLEVEL=%ERRORLEVEL%
+
+goto :eof
+
 :preptests
-%_buildprefix% if not "%noCore_RootSet%"=="true" goto :runtests %_buildpostfix%
-%_buildprefix% set Core_Root=%XunitTestBinBase%\Tests\Core_Root %_buildpostfix%
-%_buildprefix% rd /s /q %Core_Root% %_buildpostfix%
-%_buildprefix% md %Core_Root% %_buildpostfix%
-%_buildprefix% echo d | xcopy /s %__BinDir% %Core_Root% %_buildpostfix%
+:: Log build command line
+set _buildprefix=echo
+set _buildpostfix=^> "%__TestRunBuildLog%"
+set _buildappend=^>
+call :runtests 
+
+:: Build
+set _buildprefix=
+set _buildpostfix=
+set _buildappend=
+if not "%noCore_RootSet%"=="true" goto :runtests 
+set Core_Root=%XunitTestBinBase%\Tests\Core_Root
+echo "Using Default Core_Root as %Core_Root% " 
+echo "Copying Built binaries from  %__BinDir% to %Core_Root%"
+if exist %Core_Root% rd /s /q %Core_Root%
+md %Core_Root%
+echo d | xcopy /s %__BinDir% %Core_Root%
+call :runtests 
+
+IF %BUILDERRORLEVEL% NEQ 0 echo Test Run  failed. Refer %__TestRunBuildLog% for details. && exit /b %BUILDERRORLEVEL%
+goto :eof
 
 :runtests
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %* %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix%
+
+set BUILDERRORLEVEL=%ERRORLEVEL%
+goto :eof
 
 %_buildprefix% echo "Core_Root that was used is %Core_Root%" %_buildpostfix%
 echo "Find details of the run in %__TestRunHtmlLog%
 
-IF  ERRORLEVEL 1 echo Test Run  failed. Refer %__TestRunBuildLog% for details. && exit /b 1
 
 goto :eof
 
@@ -109,3 +134,4 @@ echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter this will run the same set of tests as the last time it was run
 echo CORE_ROOT The path to the runtime  
 goto :eof
+
