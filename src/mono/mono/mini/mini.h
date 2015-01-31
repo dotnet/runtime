@@ -704,17 +704,28 @@ typedef enum {
 	LLVMArgVtypeByVal,
 	LLVMArgVtypeRetAddr, /* On on cinfo->ret */
 	LLVMArgGSharedVt,
-	/* Argument passed as a set of int args */
-	LLVMArgAsIArgs
+	/* Vtype passed as one int array argument */
+	LLVMArgAsIArgs,
+	/* Vtype passed as a set of fp arguments */
+	LLVMArgAsFpArgs
 } LLVMArgStorage;
 
 typedef struct {
 	LLVMArgStorage storage;
 
-	/* Only if storage == ArgValuetypeInReg */
-	LLVMArgStorage pair_storage [2];
-	/* Only if storage == LLVMArgAsIArgs */
+	/*
+	 * Only if storage == ArgValuetypeInReg/LLVMArgAsFpArgs.
+	 * This contains how the parts of the vtype are passed.
+	 */
+	LLVMArgStorage pair_storage [8];
+	/*
+	 * Only if storage == LLVMArgAsIArgs/LLVMArgAsFpArgs.
+	 * If storage == LLVMArgAsFpArgs, this is the number of arguments
+	 * used to pass the value.
+	 */
 	int nslots;
+	/* Only if storage == LLVMArgAsFpArgs (4/8) */
+	int esize;
 } LLVMArgInfo;
 
 typedef struct {
