@@ -32,7 +32,7 @@ public:
     double r;
     double i;
 
-    Complex() : r(0), i(i) {}
+    Complex() : r(0), i(0) {}
     Complex(double real) : r(real), i(0) {}
     Complex(double real, double imag) : r(real), i(imag) {}
     Complex(const Complex& other) : r(other.r), i(other.i) {}

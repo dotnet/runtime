@@ -165,7 +165,7 @@ extern "C" {
 #endif // !_MSC_VER
 
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__llvm__)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
 #define DECLSPEC_ALIGN(x) 
@@ -6169,7 +6169,6 @@ PAL_CppRethrow();
 #define DBG_TERMINATE_THREAD             ((DWORD   )0x40010003L)    
 #define DBG_TERMINATE_PROCESS            ((DWORD   )0x40010004L)    
 #define DBG_CONTROL_C                    ((DWORD   )0x40010005L)    
-#define DBG_PRINTEXCEPTION_C             ((DWORD   )0x40010006L)    
 #define DBG_RIPEXCEPTION                 ((DWORD   )0x40010007L)    
 #define DBG_CONTROL_BREAK                ((DWORD   )0x40010008L)    
 #define DBG_COMMAND_EXCEPTION            ((DWORD   )0x40010009L)    

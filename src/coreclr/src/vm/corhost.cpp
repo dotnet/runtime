@@ -7830,7 +7830,7 @@ void CExecutionEngine::SetupTLSForThread(Thread *pThread)
         pThread->AddFiberInfo(Thread::ThreadTrackInfo_Lifetime);
 #endif
 #ifdef STRESS_LOG
-    if (StressLog::StressLogOn(~0ul, 0))
+    if (StressLog::StressLogOn(~0u, 0))
     {
         StressLog::CreateThreadStressLog();
     }
