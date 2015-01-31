@@ -16132,8 +16132,18 @@ void gc_heap::enque_pinned_plug (BYTE* plug,
 
     if (save_pre_plug_info_p)
     {
+#ifdef SHORT_PLUGS
+        BOOL is_padded = is_plug_padded (last_object_in_last_plug);
+        if (is_padded)
+            clear_plug_padded (last_object_in_last_plug);
+#endif //SHORT_PLUGS
         memcpy (&(m.saved_pre_plug), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
-        memcpy (&(m.saved_pre_plug_reloc), &(m.saved_pre_plug), sizeof (gap_reloc_pair));
+#ifdef SHORT_PLUGS
+        if (is_padded)
+            set_plug_padded (last_object_in_last_plug);
+#endif //SHORT_PLUGS
+
+        memcpy (&(m.saved_pre_plug_reloc), &(((plug_and_gap*)plug)[-1]), sizeof (gap_reloc_pair));
 
         // If the last object in the last plug is too short, it requires special handling.
         size_t last_obj_size = plug - last_object_in_last_plug;
@@ -16175,8 +16185,19 @@ void gc_heap::save_post_plug_info (BYTE* last_pinned_plug, BYTE* last_object_in_
     mark& m = mark_stack_array[mark_stack_tos - 1];
     assert (last_pinned_plug == m.first);
     m.saved_post_plug_info_start = (BYTE*)&(((plug_and_gap*)post_plug)[-1]);
+
+#ifdef SHORT_PLUGS
+    BOOL is_padded = is_plug_padded (last_object_in_last_plug);
+    if (is_padded)
+        clear_plug_padded (last_object_in_last_plug);
+#endif //SHORT_PLUGS
     memcpy (&(m.saved_post_plug), m.saved_post_plug_info_start, sizeof (gap_reloc_pair));
-    memcpy (&(m.saved_post_plug_reloc), &(m.saved_post_plug), sizeof (gap_reloc_pair));
+#ifdef SHORT_PLUGS
+    if (is_padded)
+        set_plug_padded (last_object_in_last_plug);
+#endif //SHORT_PLUGS
+
+    memcpy (&(m.saved_post_plug_reloc), m.saved_post_plug_info_start, sizeof (gap_reloc_pair));
 
     // This is important - we need to clear all bits here except the last one.
     m.saved_post_p = TRUE;
