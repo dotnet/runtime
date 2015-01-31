@@ -28,13 +28,28 @@ To run stress:
 
 (or if you copied testmix_gc.config somewhere else you need to tell it so, eg, c:\TestConfigs\testmix_gc.config)
 
+We recommand to run it for 48 hours (see the comments below on maximumExecutionTime in test config for more detail).
+
 4. Test config
 
 There are a few interesting things in this config:
 
-suppressConsoleOutputFromTests <-- set this to true if you want to see the console output from tests. 
-concurrentCopies="1" <-- if you specify this to something >1 it will load that many concurrent copies.
+  suppressConsoleOutputFromTests
+
+Set this to true if you want to see the console output from tests. 
+
+  concurrentCopies
+
+If you specify this to something >1 it will load that many concurrent copies.
+
+  maximumExecutionTime
+
+Right now I set it to about 15 hours (instead of 48) because some of the tests will keep growing in memory usage. If you don't have a machine with a decent amount of memory you can change this to a smaller amount. You can always run this in a loop in a .cmd file for 48 hours:
+
+:test
+%CORE_ROOT%\corerun ReliabilityFramework.exe testmix_gc.config
+goto test
 
 Feel free to write your own tests and put them in the Tests directory and specify them in the config to run.
 
-
+If you get an AV, often you would see it in different tests. But if you do get one that's consistently in one test, it's a good sign - it means it's likely that running that one test will give you the AV sooner because it exhibits a certain pattern that causes the AV. 
