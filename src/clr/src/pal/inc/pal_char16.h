@@ -44,6 +44,8 @@ typedef char16_t wchar_t;
 typedef unsigned short wchar_t;
 #endif // __cplusplus
 #endif // PLATFORM_UNIX
+#ifndef _WCHAR_T_DEFINED
 #define _WCHAR_T_DEFINED
+#endif // !_WCHAR_T_DEFINED
 #endif // !_WCHAR_T_DEFINED || !_MSC_VER
 

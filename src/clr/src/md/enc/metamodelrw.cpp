@@ -3511,7 +3511,7 @@ CMiniMdRW::SaveFullTablesToStream(
     // For each table...
     for (ixTbl=0; ixTbl<m_TblCount; ++ixTbl)
     {
-        headerOffset[ixTbl] = ~0UL;
+        headerOffset[ixTbl] = ~0U;
 
         ULONG itemCount = GetCountRecs(ixTbl);
         if (itemCount)
