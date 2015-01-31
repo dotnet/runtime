@@ -101,85 +101,44 @@ namespace Test
         //
 
         [Fact]
-        public static void RunConcatTest1()
+        public static void RunConcatTest()
         {
-            // W/ pipelining.
-            RunConcatTest1Core(0, 0);
-            RunConcatTest1Core(0, 1);
-            RunConcatTest1Core(1, 0);
-            RunConcatTest1Core(1, 1);
-            RunConcatTest1Core(1024, 1024);
-            RunConcatTest1Core(0, 1024);
-            RunConcatTest1Core(1024, 0);
-            // @TODO: reenable this test when deadlock problem is solved.
-            // RunConcatTest1(1023 * 1024, 1023 * 1024);
+            bool[] booleanValues = new[] { true, false };
+            foreach (bool usePipelining in booleanValues)
+            {
+                foreach (bool useParallelRange in booleanValues)
+                {
+                    RunConcatTestCore(usePipelining, useParallelRange, 0, 0);
+                    RunConcatTestCore(usePipelining, useParallelRange, 0, 1);
+                    RunConcatTestCore(usePipelining, useParallelRange, 1, 0);
+                    RunConcatTestCore(usePipelining, useParallelRange, 1, 1);
+                    RunConcatTestCore(usePipelining, useParallelRange, 4, 4);
+                    RunConcatTestCore(usePipelining, useParallelRange, 1024, 1024);
+                    RunConcatTestCore(usePipelining, useParallelRange, 0, 1024);
+                    RunConcatTestCore(usePipelining, useParallelRange, 1024, 0);
+                    RunConcatTestCore(usePipelining, useParallelRange, 1023 * 1024, 1023 * 1024);
+                }
+            }
         }
 
-        [Fact]
-        public static void RunConcatTest2()
+        private static void RunConcatTestCore(bool usePipelining, bool useParallelRange, int leftSize, int rightSize)
         {
-            // W/out pipelining.
-            RunConcatTest2Core(0, 0);
-            RunConcatTest2Core(0, 1);
-            RunConcatTest2Core(1, 0);
-            RunConcatTest2Core(1, 1);
-            RunConcatTest2Core(1024, 1024);
-            RunConcatTest2Core(0, 1024);
-            RunConcatTest2Core(1024, 0);
-            RunConcatTest2Core(1023 * 1024, 1023 * 1024);
-        }
-
-        private static void RunConcatTest1Core(int leftSize, int rightSize)
-        {
-            string method = string.Format("RunConcatTest1(leftSize={0}, rightSize={1}) -- pipelined", leftSize, rightSize);
+            string method = string.Format("RunConcatTest1(usePipelining={0}, useParallelRange={1}, leftSize={2}, rightSize={3})", 
+                usePipelining, useParallelRange, leftSize, rightSize);
 
             int[] leftData = new int[leftSize];
             for (int i = 0; i < leftSize; i++) leftData[i] = i;
             int[] rightData = new int[rightSize];
             for (int i = 0; i < rightSize; i++) rightData[i] = i;
 
-            ParallelQuery<int> q = leftData.AsParallel().AsOrdered().Concat(rightData.AsParallel());
 
-            int cnt = 0;
+            ParallelQuery<int> q = useParallelRange ? 
+                ParallelEnumerable.Range(0, leftSize) :
+                leftData.AsParallel();
 
-            foreach (int x in q)
-            {
-                if (cnt < leftSize)
-                {
-                    if (x != leftData[cnt])
-                    {
-                        Assert.True(false, string.Format(method + "  > FAILED.  Expected element {0} to == {1} (from left)); got {2} instead",
-                            cnt, leftData[cnt], x));
-                    }
-                }
-                else
-                {
-                    if (x != rightData[cnt - leftSize])
-                    {
-                        Assert.True(false, string.Format(method + "  > FAILED.  Expected element {0} to == {1} (from right)); got {2} instead",
-                            cnt, rightData[cnt - leftSize], x));
-                    }
-                }
-
-                cnt++;
-            }
-
-            if (!(cnt == leftSize + rightSize))
-            {
-                Assert.True(false, string.Format(method + "  > FAILED.  Expect: {0}, real: {1}", leftSize + rightSize, cnt));
-            }
-        }
-
-        private static void RunConcatTest2Core(int leftSize, int rightSize)
-        {
-            string method = string.Format("RunConcatTest2(leftSize={0}, rightSize={1}) -- w/out pipelining:  ", leftSize, rightSize);
-            int[] leftData = new int[leftSize];
-            for (int i = 0; i < leftSize; i++) leftData[i] = i;
-            int[] rightData = new int[rightSize];
-            for (int i = 0; i < rightSize; i++) rightData[i] = i;
-
-            ParallelQuery<int> q = leftData.AsParallel().AsOrdered().Concat(rightData.AsParallel());
-            List<int> r = q.ToList();
+            IEnumerable<int> r = usePipelining ?
+                (IEnumerable<int>)q.AsOrdered().Concat(rightData.AsParallel()) :
+                (IEnumerable<int>)q.AsOrdered().Concat(rightData.AsParallel()).ToList();
 
             int cnt = 0;
 
