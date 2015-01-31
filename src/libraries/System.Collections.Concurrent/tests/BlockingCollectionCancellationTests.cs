@@ -123,53 +123,55 @@ namespace Test
         [Fact]
         public static void ExternalCancel_AddToAny()
         {
-            BlockingCollection<int> bc1 = new BlockingCollection<int>(1);
-            BlockingCollection<int> bc2 = new BlockingCollection<int>(1);
-            bc1.Add(1); //fill the bc.
-            bc2.Add(1); //fill the bc.
-
-            CancellationTokenSource cs = new CancellationTokenSource();
-            Task.Run(() =>
+            for (int test = 0; test < 3; test++)
             {
-                cs.Cancel();
-            });
+                BlockingCollection<int> bc1 = new BlockingCollection<int>(1);
+                BlockingCollection<int> bc2 = new BlockingCollection<int>(1);
+                bc1.Add(1); //fill the bc.
+                bc2.Add(1); //fill the bc.
 
-            Assert.False(cs.IsCancellationRequested,
-               "ExternalCancel_AddToAny:  At this point the cancel should not have occurred.");
-        }
-
-        [Fact]
-        public static void ExternalCancel_TryAddToAny()
-        {
-            BlockingCollection<int> bc1 = new BlockingCollection<int>(1);
-            BlockingCollection<int> bc2 = new BlockingCollection<int>(1);
-            bc1.Add(1); //fill the bc.
-            bc2.Add(1); //fill the bc.
-
-            CancellationTokenSource cs = new CancellationTokenSource();
-            Task.Run(() =>
-            {
-                cs.Cancel();
-            });
-
-            Assert.False(cs.IsCancellationRequested,
-               "ExternalCancel_AddToAny:  At this point the cancel should not have occurred.");
+                // This may or may not cancel before {Try}AddToAny executes, but either way the test should pass.
+                // A delay could be used to attempt to force the right timing, but not for an inner loop test.
+                CancellationTokenSource cs = new CancellationTokenSource();
+                Task.Run(() => cs.Cancel()); 
+                Assert.Throws<OperationCanceledException>(() =>
+                {
+                    switch (test)
+                    {
+                        case 0:
+                            BlockingCollection<int>.AddToAny(new[] { bc1, bc2 }, 42, cs.Token);
+                            break;
+                        case 1:
+                            BlockingCollection<int>.TryAddToAny(new[] { bc1, bc2 }, 42, Timeout.Infinite, cs.Token);
+                            break;
+                        case 2:
+                            BlockingCollection<int>.TryAddToAny(new[] { bc1, bc2 }, 42, (int)TimeSpan.FromDays(1).TotalMilliseconds, cs.Token);
+                            break;
+                    }
+                });
+                Assert.True(cs.IsCancellationRequested);
+            }
         }
 
         [Fact]
         public static void ExternalCancel_GetConsumingEnumerable()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>();
-            CancellationTokenSource cs = new CancellationTokenSource();
-            Task.Run(() =>
+            bc.Add(1);
+            bc.Add(2);
+
+            var cs = new CancellationTokenSource();
+            int total = 0;
+            Assert.Throws<OperationCanceledException>(() =>
             {
-                Task.WaitAll(Task.Delay(100));
-                cs.Cancel();
+                foreach (int item in bc.GetConsumingEnumerable(cs.Token))
+                {
+                    total += item;
+                    cs.Cancel();
+                }
             });
-
-            IEnumerable<int> enumerable = bc.GetConsumingEnumerable(cs.Token);
-
-            Assert.False(cs.IsCancellationRequested, "ExternalCancel_GetConsumingEnumerable:  At this point the cancel should not have occurred.");
+            Assert.True(cs.IsCancellationRequested);
+            Assert.Equal(expected: 1, actual: total);
         }
 
         #region Helper Methods
