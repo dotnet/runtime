@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{20a2ba2c-5517-483f-8ffe-643441a59852}</ProjectGuid>
+    <ProjectGuid>{20A2BA2C-5517-483F-8FFE-643441A59852}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Microsoft.Win32.Registry.Tests</RootNamespace>
     <AssemblyName>Microsoft.Win32.Registry.Tests</AssemblyName>
@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="RegistryKey\RegistryKeyTypes.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc.cs" />
