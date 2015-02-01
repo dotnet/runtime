@@ -435,16 +435,16 @@ namespace System.IO
         [System.Security.SecurityCritical]
         private static byte[] InternalReadAllBytes(String path)
         {
-            byte[] bytes;
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            // bufferSize == 1 used to avoid unnecessary buffer in FileStream
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
             {
-                // Do a blocking read
-                int index = 0;
                 long fileLength = fs.Length;
                 if (fileLength > Int32.MaxValue)
                     throw new IOException(SR.IO_FileTooLong2GB);
+
+                int index = 0;
                 int count = (int)fileLength;
-                bytes = new byte[count];
+                byte[] bytes = new byte[count];
                 while (count > 0)
                 {
                     int n = fs.Read(bytes, index, count);
@@ -453,8 +453,8 @@ namespace System.IO
                     index += n;
                     count -= n;
                 }
+                return bytes;
             }
-            return bytes;
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
