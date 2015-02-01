@@ -58,7 +58,7 @@ if not exist %__LogsDir%           md  %__LogsDir%
 :SkipDefaultCoreRootSetup
 set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log
 set __TestRunBuildLog=%__LogsDir%\TestRunResults_%__BuildArch%__%__BuildType%.log
-set __TestRunHtmlLog=%CD%\TestRun_%__BuildArch%__%__BuildType%.html
+set __TestRunHtmlLog=%CD%\TestRun_%__BuildArch%_%__BuildType%.html
 
 echo "Core_Root that will be used is : %Core_Root%"
 echo "Starting The Test Run .. "
