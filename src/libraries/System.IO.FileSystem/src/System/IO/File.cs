@@ -381,7 +381,7 @@ namespace System.IO
             Contract.Requires(encoding != null);
             Contract.Requires(path.Length > 0);
 
-            Stream stream = FileStream.InternalOpen(path);
+            Stream stream = FileStream.InternalOpen(path, useAsync: false);
 
             using (StreamReader sr = new StreamReader(stream, encoding, true))
                 return sr.ReadToEnd();
@@ -420,7 +420,7 @@ namespace System.IO
             Contract.Requires(encoding != null);
             Contract.Requires(path.Length > 0);
 
-            Stream stream = FileStream.InternalCreate(path);
+            Stream stream = FileStream.InternalCreate(path, useAsync: false);
 
             using (StreamWriter sw = new StreamWriter(stream, encoding))
                 sw.Write(contents);
@@ -436,7 +436,7 @@ namespace System.IO
         private static byte[] InternalReadAllBytes(String path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+            using (FileStream fs = FileStream.InternalOpen(path, bufferSize: 1, useAsync: false))
             {
                 long fileLength = fs.Length;
                 if (fileLength > Int32.MaxValue)
@@ -478,7 +478,7 @@ namespace System.IO
             Contract.Requires(path.Length != 0);
             Contract.Requires(bytes != null);
 
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (FileStream fs = FileStream.InternalCreate(path, useAsync: false))
             {
                 fs.Write(bytes, 0, bytes.Length);
             }
@@ -516,7 +516,7 @@ namespace System.IO
             String line;
             List<String> lines = new List<String>();
 
-            Stream stream = FileStream.InternalOpen(path);
+            Stream stream = FileStream.InternalOpen(path, useAsync: false);
 
             using (StreamReader sr = new StreamReader(stream, encoding))
                 while ((line = sr.ReadLine()) != null)
@@ -559,7 +559,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath);
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path);
+            Stream stream = FileStream.InternalCreate(path, useAsync: false);
 
             InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
         }
@@ -576,7 +576,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath);
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalCreate(path);
+            Stream stream = FileStream.InternalCreate(path, useAsync: false);
 
             InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
         }
@@ -626,7 +626,7 @@ namespace System.IO
             Contract.Requires(encoding != null);
             Contract.Requires(path.Length > 0);
 
-            Stream stream = FileStream.InternalAppend(path);
+            Stream stream = FileStream.InternalAppend(path, useAsync: false);
 
             using (StreamWriter sw = new StreamWriter(stream, encoding))
                 sw.Write(contents);
@@ -642,7 +642,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath);
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path);
+            Stream stream = FileStream.InternalAppend(path, useAsync: false);
 
             InternalWriteAllLines(new StreamWriter(stream, UTF8NoBOM), contents);
         }
@@ -659,7 +659,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath);
             Contract.EndContractBlock();
 
-            Stream stream = FileStream.InternalAppend(path);
+            Stream stream = FileStream.InternalAppend(path, useAsync: false);
 
             InternalWriteAllLines(new StreamWriter(stream, encoding), contents);
         }
