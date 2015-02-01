@@ -377,7 +377,7 @@ namespace System.Linq.Parallel
                             CancellationState.ThrowIfCanceled(_cancellationToken);
 
                         ConcatKey key =
-                            ConcatKey.MakeLeft<TLeftKey, TRightKey>(_rightOrdered ? rightKey : default(TRightKey));
+                            ConcatKey.MakeRight<TLeftKey, TRightKey>(_rightOrdered ? rightKey : default(TRightKey));
                         Pair oldEntry;
                         Wrapper<TInputOutput> wrappedElem = new Wrapper<TInputOutput>((TInputOutput)elem.First);
 
