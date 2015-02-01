@@ -1,10 +1,10 @@
 # .NET Core Runtime (CoreCLR)
 
-The coreclr repo contains the runtime implementation for [.NET Core](http://github.com/dotnet/core), also known as "CoreCLR". CoreCLR is used in ASP.NET 5 and is a subset of the .NET Framework CLR. You can learn more about CoreCLR and how and where you can use it in the [CoreCLR is Open Source][coreclr blog post] blog post. 
+The coreclr repo contains the complete runtime implementation (called "CoreCLR") for [.NET Core](http://github.com/dotnet/core). It includes RyuJIT, the .NET GC, native interop and many other components. It builds and runs on Windows. You can 'watch' the repo to see Linux and Mac support being added over the next few months.
 
-The repo contains the complete implementation of CoreCLR, including RyuJIT and the .NET GC. It builds and runs on Windows. You can 'watch' the repo to see Linux and Mac support being added over the next few months.
+.NET Core is part of ASP.NET 5 and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post. 
 
-The [.NET Core Libraries][corefx] repo contains the base class libraries, which run on top of CoreCLR. The two repos together make up .NET Core. The [.NET Core is Open Source][blog post] blog post describes our .NET Core OSS strategy and road map in more detail.
+The [.NET Core Libraries][corefx] repo contains the base class libraries, which provides data types and base functionality (ex: String, Collections, HttpClient) on top of CoreCLR. The two repos together make up .NET Core. The [.NET Core is Open Source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts describes our .NET Core OSS strategy and road map in more detail.
 
 ## How to Engage, Contribute and Provide Feedback
 
@@ -49,7 +49,7 @@ Contributions made to the coreclr repo are integrated to the Microsoft TFS serve
 .NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
 
 ## Related Projects
-There are many .NET related projects on GitHub.
+There are many .NET projects on GitHub.
 
 - The
 [.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
@@ -57,6 +57,8 @@ There are many .NET related projects on GitHub.
 - The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about ASP.NET 5.
 - [dotnet.github.io](http://dotnet.github.io) is a good place to discover .NET Foundation projects.
 
-[blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
+[.NET Core oss]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
+[Introducing .NET Core]: http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx
 [coreclr blog post]: http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-open-source.aspx
 [corefx]: http://github.com/dotnet/corefx
+[coreclr]: http://github.com/dotnet/coreclr
