@@ -5578,18 +5578,23 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig)
 	}
 #endif
 	ldstr_lock ();
-	if ((interned = mono_g_hash_table_lookup (domain->ldstr_table, o))) {
-		ldstr_unlock ();
-		/* o will get garbage collected */
-		return interned;
-	}
+	interned = mono_g_hash_table_lookup (domain->ldstr_table, o);
+	ldstr_unlock ();
+	if (interned)
+		return interned; /* o will get garbage collected */
 
 	o = mono_string_get_pinned (o);
-	if (o)
-		mono_g_hash_table_insert (domain->ldstr_table, o, o);
-	ldstr_unlock ();
+	if (o) {
+		ldstr_lock ();
+		interned = mono_g_hash_table_lookup (domain->ldstr_table, o);
+		if (!interned) {
+			mono_g_hash_table_insert (domain->ldstr_table, o, o);
+			interned = o;
+		}
+		ldstr_unlock ();
+	}
 
-	return o;
+	return interned;
 }
 
 /**
