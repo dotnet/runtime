@@ -49,8 +49,10 @@ namespace System.IO
             // has varying degrees of support on different systems.
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process
-            using (Stream src = File.OpenRead(sourceFullPath))
-            using (Stream dst = File.Open(destFullPath, overwrite ? FileMode.CreateNew : FileMode.Create))
+            const int bufferSize = FileStream.DefaultBufferSize;
+            const bool useAsync = false;
+            using (Stream src = new FileStream(sourceFullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync))
+            using (Stream dst = new FileStream(destFullPath, overwrite ? FileMode.CreateNew : FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, useAsync))
             {
                 src.CopyTo(dst);
             }
