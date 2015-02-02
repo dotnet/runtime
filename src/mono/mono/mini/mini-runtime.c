@@ -925,9 +925,9 @@ free_jit_tls_data (MonoJitTlsData *jit_tls)
 static void
 mono_thread_start_cb (intptr_t tid, gpointer stack_start, gpointer func)
 {
-	MonoInternalThread *thread;
+	MonoThreadInfo *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort);
-	thread = mono_thread_internal_current ();
+	thread = mono_thread_info_current_unchecked ();
 	if (thread)
 		thread->jit_data = jit_tls;
 
@@ -948,9 +948,9 @@ mono_thread_abort_dummy (MonoObject *obj)
 static void
 mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 {
-	MonoInternalThread *thread;
+	MonoThreadInfo *thread;
 	void *jit_tls = setup_jit_tls_data (stack_start, mono_thread_abort_dummy);
-	thread = mono_thread_internal_current ();
+	thread = mono_thread_info_current_unchecked ();
 	if (thread)
 		thread->jit_data = jit_tls;
 	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
@@ -960,30 +960,41 @@ mono_thread_attach_cb (intptr_t tid, gpointer stack_start)
 }
 
 static void
-mini_thread_cleanup (MonoInternalThread *thread)
+mini_thread_cleanup (MonoNativeThreadId tid)
 {
-	MonoJitTlsData *jit_tls = thread->jit_data;
+	MonoJitTlsData *jit_tls = NULL;
+	MonoThreadInfo *info;
 
-	if (jit_tls) {
-		/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
-		 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
-		 * not a trivial thing.
-		 *
-		 * The current offender is mono_thread_manage which cleanup threads from the outside.
-		 */
-		if (thread == mono_thread_internal_current ())
-			mono_set_jit_tls (NULL);
+	info = mono_thread_info_current_unchecked ();
+
+	/* We can't clean up tls information if we are on another thread, it will clean up the wrong stuff
+	 * It would be nice to issue a warning when this happens outside of the shutdown sequence. but it's
+	 * not a trivial thing.
+	 *
+	 * The current offender is mono_thread_manage which cleanup threads from the outside.
+	 */
+	if (mono_thread_info_get_tid (info) == tid) {
+		jit_tls = info->jit_data;
+		info->jit_data = NULL;
+
+		mono_set_jit_tls (NULL);
 
 		/* If we attach a thread but never call into managed land, we might never get an lmf.*/
 		if (mono_get_lmf ()) {
 			mono_set_lmf (NULL);
 			mono_set_lmf_addr (NULL);
 		}
-
-		free_jit_tls_data (jit_tls);
-
-		thread->jit_data = NULL;
+	} else {
+		info = mono_thread_info_lookup (tid);
+		if (info) {
+			jit_tls = info->jit_data;
+			info->jit_data = NULL;
+		}
+		mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
 	}
+
+	if (jit_tls)
+		free_jit_tls_data (jit_tls);
 }
 
 int

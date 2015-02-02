@@ -176,7 +176,6 @@ typedef struct {
 	MonoSemType suspend_semaphore;
 	int suspend_count;
 
-	// MonoSemType suspend_semaphore;
 	MonoSemType resume_semaphore;
 
 	/* only needed by the posix backend */ 
@@ -229,6 +228,8 @@ typedef struct {
 	 * In the future the signaling should be part of the API, but for now, it's only for massaging the bits.
 	 */
 	volatile gint32 service_requests;
+
+	void *jit_data;
 } MonoThreadInfo;
 
 typedef struct {

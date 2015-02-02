@@ -758,7 +758,7 @@ void
 mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data)
 {
 	MonoContext extra_ctx;
-	MonoInternalThread *thread = mono_thread_internal_current ();
+	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
 	MONO_ARCH_CONTEXT_DEF
 
 	if (!thread || !thread->jit_data)
@@ -2628,9 +2628,10 @@ gboolean
 mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 {
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	if (!thread || !thread->jit_data) {
+	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
+	if (!thread) {
 		ctx->valid = FALSE;
+		G_BREAKPOINT ();
 		return FALSE;
 	}
 
@@ -2657,8 +2658,8 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 gboolean
 mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mctx)
 {
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	if (!thread || !thread->jit_data) {
+	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
+	if (!thread) {
 		ctx->valid = FALSE;
 		return FALSE;
 	}
@@ -2675,7 +2676,7 @@ mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mc
 gboolean
 mono_thread_state_init_from_current (MonoThreadUnwindState *ctx)
 {
-	MonoInternalThread *thread = mono_thread_internal_current ();
+	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
 	MONO_ARCH_CONTEXT_DEF
 
 	mono_arch_flush_register_windows ();

@@ -389,7 +389,7 @@ struct _MonoInternalThread {
 	HANDLE	    start_notify;
 	gpointer stack_ptr;
 	gpointer *static_data;
-	gpointer jit_data;
+	gpointer dead_field_remove_me; /* This used to be jit_data, but that was moved to MonoThreadInfo. */
 	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
 	MonoAppContext *current_appcontext;
 	MonoException *pending_exception;
