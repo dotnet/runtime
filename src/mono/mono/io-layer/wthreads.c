@@ -356,7 +356,7 @@ wapi_prepare_interrupt_thread (gpointer thread_handle)
 	WapiHandle_thread *thread;
 	gpointer prev_handle, wait_handle;
 
-	thread = lookup_thread (thread_handle);
+	thread = lookup_thread (thread_handle); /* FIXME this is wrong, move this whole thing to MonoThreads where it can be done lockfree */
 
 	while (TRUE) {
 		wait_handle = thread->wait_handle;

@@ -2707,6 +2707,24 @@ reset_native_thread_suspend_state (gpointer key, gpointer value, gpointer user_d
 	}
 }
 
+typedef struct {
+	DebuggerTlsData *tls;
+	gboolean valid_info;
+} InterruptData;
+
+static SuspendThreadResult
+debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
+{
+	InterruptData *data = user_data;
+	MonoJitInfo *ji;
+
+	data->valid_info = TRUE;
+	ji = mono_jit_info_table_find (mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
+
+	thread_interrupt (data->tls, info, NULL, ji);
+	return ResumeThread;
+}
+
 /*
  * notify_thread:
  *
@@ -2747,22 +2765,16 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 	if (mono_thread_info_new_interrupt_enabled ()) {
-		MonoThreadInfo *info;
-		MonoJitInfo *ji;
+		InterruptData interrupt_data = { 0 };
+		interrupt_data.tls = tls;
 
-		info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
-		if (!info) {
+		mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
+		if (!interrupt_data.valid_info) {
 			DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid);
 			/* 
 			 * Attached thread which died without detaching.
 			 */
 			tls->terminated = TRUE;
-		} else {
-			ji = mono_jit_info_table_find (mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
-
-			thread_interrupt (tls, info, NULL, ji);
-
-			mono_thread_info_finish_suspend_and_resume (info);
 		}
 	} else {
 #ifdef HOST_WIN32

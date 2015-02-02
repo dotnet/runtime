@@ -262,6 +262,14 @@ typedef struct {
 	gboolean (*thread_state_init_from_handle) (MonoThreadUnwindState *tctx, MonoThreadInfo *info);
 } MonoThreadInfoRuntimeCallbacks;
 
+//Not using 0 and 1 to ensure callbacks are not returning bad data
+typedef enum {
+	ResumeThread = 0x1234,
+	KeepSuspended = 0x4321,
+} SuspendThreadResult;
+
+typedef SuspendThreadResult (*MonoSuspendThreadCallback) (THREAD_INFO_TYPE *info, gpointer user_data);
+
 static inline gboolean
 mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
 {
@@ -333,10 +341,7 @@ void
 mono_thread_info_set_name (MonoNativeThreadId tid, const char *name);
 
 void
-mono_thread_info_finish_suspend (MonoThreadInfo *info);
-
-void
-mono_thread_info_finish_suspend_and_resume (MonoThreadInfo *info);
+mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt_kernel, MonoSuspendThreadCallback callback, gpointer user_data);
 
 //XXX new API, fix the world
 void

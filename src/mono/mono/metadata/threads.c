@@ -3224,9 +3224,10 @@ print_stack_frame_to_string (MonoStackFrameInfo *frame, MonoContext *ctx, gpoint
 	return FALSE;
 }
 
-static void
-print_thread_dump (MonoInternalThread *thread, MonoThreadInfo *info)
+static SuspendThreadResult
+print_thread_dump (MonoThreadInfo *info, gpointer ud)
 {
+	MonoInternalThread *thread = ud;
 	GString* text = g_string_new (0);
 	char *name;
 	GError *error = NULL;
@@ -3252,7 +3253,6 @@ print_thread_dump (MonoInternalThread *thread, MonoThreadInfo *info)
 #endif
 
 	mono_get_eh_callbacks ()->mono_walk_stack_with_state (print_stack_frame_to_string, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, text);
-	mono_thread_info_finish_suspend_and_resume (info);
 
 	fprintf (stdout, "%s", text->str);
 
@@ -3262,13 +3262,13 @@ print_thread_dump (MonoInternalThread *thread, MonoThreadInfo *info)
 
 	g_string_free (text, TRUE);
 	fflush (stdout);
+	return ResumeThread;
 }
 
 static void
 dump_thread (gpointer key, gpointer value, gpointer user)
 {
 	MonoInternalThread *thread = (MonoInternalThread *)value;
-	MonoThreadInfo *info;
 
 	if (thread == mono_thread_internal_current ())
 		return;
@@ -3280,12 +3280,7 @@ dump_thread (gpointer key, gpointer value, gpointer user)
 	We probably should loop a bit around trying to get it to either managed code
 	or WSJ state.
 	*/
-	info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE);
-
-	if (!info)
-		return;
-
-	print_thread_dump (thread, info);
+	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gsize)thread->tid, FALSE, print_thread_dump, thread);
 }
 
 void
@@ -4594,13 +4589,63 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 	return ji;
 }
 
+typedef struct {
+	MonoInternalThread *thread;
+	gboolean install_async_abort;
+	gpointer interrupt_handle;
+} AbortThreadData;
+
+static SuspendThreadResult
+abort_thread_critical (MonoThreadInfo *info, gpointer ud)
+{
+	AbortThreadData *data = ud;
+	MonoInternalThread *thread = data->thread;
+	MonoJitInfo *ji = NULL;
+	gboolean protected_wrapper;
+	gboolean running_managed;
+
+	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
+		return ResumeThread;
+
+	/*someone is already interrupting it*/
+	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
+		return ResumeThread;
+
+	InterlockedIncrement (&thread_interruption_requested);
+
+	ji = mono_thread_info_get_last_managed (info);
+	protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
+	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
+
+	if (!protected_wrapper && running_managed) {
+		/*We are in managed code*/
+		/*Set the thread to call */
+		if (data->install_async_abort)
+			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
+		return ResumeThread;
+	} else {
+		if (mono_thread_notify_pending_exc_fn)
+			/* The JIT will notify the thread about the interruption */
+			mono_thread_notify_pending_exc_fn (info);
+
+		/* 
+		 * This will cause waits to be broken.
+		 * It will also prevent the thread from entering a wait, so if the thread returns
+		 * from the wait before it receives the abort signal, it will just spin in the wait
+		 * functions in the io-layer until the signal handler calls QueueUserAPC which will
+		 * make it return.
+		 */
+		data->interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
+		return ResumeThread;
+	}
+}
+
 static void
 abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort)
 {
-	MonoJitInfo *ji;
-	MonoThreadInfo *info = NULL;
-	gboolean protected_wrapper;
-	gboolean running_managed;
+	AbortThreadData data = { 0 };
+	data.thread = thread;
+	data.install_async_abort = install_async_abort;
 
 	if (!mono_thread_info_new_interrupt_enabled ()) {
 		signal_thread_state_change (thread);
@@ -4620,71 +4665,48 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		return;
 	}
 
-	/*FIXME we need to check 2 conditions here, request to interrupt this thread or if the target died*/
-	if (!(info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, TRUE))) {
-		return;
-	}
-
-	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info))) {
-		mono_thread_info_finish_suspend_and_resume (info);
-		return;
-	}
-
-	/*someone is already interrupting it*/
-	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1) {
-		mono_thread_info_finish_suspend_and_resume (info);
-		return;
-	}
-	InterlockedIncrement (&thread_interruption_requested);
-
-	ji = mono_thread_info_get_last_managed (info);
-	protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
-	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
-
-	if (!protected_wrapper && running_managed) {
-		/*We are in managed code*/
-		/*Set the thread to call */
-		if (install_async_abort)
-			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
-		mono_thread_info_finish_suspend_and_resume (info);
-	} else {
-		/* 
-		 * This will cause waits to be broken.
-		 * It will also prevent the thread from entering a wait, so if the thread returns
-		 * from the wait before it receives the abort signal, it will just spin in the wait
-		 * functions in the io-layer until the signal handler calls QueueUserAPC which will
-		 * make it return.
-		 */
-		gpointer interrupt_handle;
-
-		if (mono_thread_notify_pending_exc_fn)
-			/* The JIT will notify the thread about the interruption */
-			mono_thread_notify_pending_exc_fn (info);
-
-		interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
-		mono_thread_info_finish_suspend_and_resume (info);
-		mono_thread_info_finish_interrupt (interrupt_handle);
-	}
+	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gsize)thread->tid, TRUE, abort_thread_critical, &data);
+	if (data.interrupt_handle)
+		mono_thread_info_finish_interrupt (data.interrupt_handle);
 	/*FIXME we need to wait for interruption to complete -- figure out how much into interruption we should wait for here*/
 }
 
-static void
-transition_to_suspended (MonoInternalThread *thread, MonoThreadInfo *info)
+typedef struct{
+	MonoInternalThread *thread;
+	gboolean interrupt;
+	gpointer interrupt_handle;
+} SuspendThreadData;
+
+static SuspendThreadResult
+suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 {
-	if ((thread->state & ThreadState_SuspendRequested) == 0) {
-		g_assert (0); /*FIXME we should not reach this */
-		/*Make sure we balance the suspend count.*/
-		if (info)
-			mono_thread_info_finish_suspend_and_resume (info);
-	} else {
+	SuspendThreadData *data = ud;
+	MonoInternalThread *thread = data->thread;
+	MonoJitInfo *ji = NULL;
+	gboolean protected_wrapper;
+	gboolean running_managed;
+
+	ji = mono_thread_info_get_last_managed (info);
+	protected_wrapper = ji && !ji->async && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
+	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
+
+	if (running_managed && !protected_wrapper) {
 		thread->state &= ~ThreadState_SuspendRequested;
 		thread->state |= ThreadState_Suspended;
-		if (info)
-			mono_thread_info_finish_suspend (info);
+		return KeepSuspended;
+	} else {
+		if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
+			InterlockedIncrement (&thread_interruption_requested);
+		if (data->interrupt)
+			data->interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
+		
+		if (mono_thread_notify_pending_exc_fn && !running_managed)
+			/* The JIT will notify the thread about the interruption */
+			mono_thread_notify_pending_exc_fn (info);
+		return ResumeThread;
 	}
-	UNLOCK_THREAD (thread);
 }
-
+	
 static void
 suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 {
@@ -4696,41 +4718,20 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 	LOCK_THREAD (thread);
 	if (thread == mono_thread_internal_current ()) {
 		mono_thread_info_begin_self_suspend ();
-		transition_to_suspended (thread, NULL);
+		//XXX replace this with better named functions
+		thread->state &= ~ThreadState_SuspendRequested;
+		thread->state |= ThreadState_Suspended;
+		UNLOCK_THREAD (thread);
 		mono_thread_info_end_self_suspend ();
 	} else {
-		MonoThreadInfo *info;
-		MonoJitInfo *ji;
-		gboolean protected_wrapper;
-		gboolean running_managed;
+		SuspendThreadData data = { 0 };
+		data.thread = thread;
+		data.interrupt = interrupt;
 
-		/*A null info usually means the thread is already dead. */
-		if (!(info = mono_thread_info_safe_suspend_sync ((MonoNativeThreadId)(gsize)thread->tid, interrupt))) {
-			UNLOCK_THREAD (thread);
-			return;
-		}
-
-		ji = mono_thread_info_get_last_managed (info);
-		protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
-		running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
-
-		if (running_managed && !protected_wrapper) {
-			transition_to_suspended (thread, info);
-		} else {
-			gpointer interrupt_handle;
-
-			if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 0)
-				InterlockedIncrement (&thread_interruption_requested);
-			if (interrupt)
-				interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
-			if (mono_thread_notify_pending_exc_fn && !running_managed)
-				/* The JIT will notify the thread about the interruption */
-				mono_thread_notify_pending_exc_fn (info);
-			mono_thread_info_finish_suspend_and_resume (info);
-			if (interrupt)
-				mono_thread_info_finish_interrupt (interrupt_handle);
-			UNLOCK_THREAD (thread);
-		}
+		mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gsize)thread->tid, interrupt, suspend_thread_critical, &data);
+		if (data.interrupt_handle)
+			mono_thread_info_finish_interrupt (data.interrupt_handle);
+		UNLOCK_THREAD (thread);
 	}
 }
 
@@ -4775,7 +4776,9 @@ self_suspend_internal (MonoInternalThread *thread)
 	}
 
 	mono_thread_info_begin_self_suspend ();
-	transition_to_suspended (thread, NULL);
+	thread->state &= ~ThreadState_SuspendRequested;
+	thread->state |= ThreadState_Suspended;
+	UNLOCK_THREAD (thread);
 	mono_thread_info_end_self_suspend ();
 }
 
