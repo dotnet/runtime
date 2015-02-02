@@ -1735,12 +1735,16 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 								"Probing '%s'.", mangled_name2);
 
 					error_msg = mono_dl_symbol (module, mangled_name2, &piinfo->addr);
-					g_free (error_msg);
-					error_msg = NULL;
 
 					if (piinfo->addr)
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 									"Found as '%s'.", mangled_name2);
+					else
+						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+									"Could not find '%s' due to '%s'.", mangled_name2, error_msg);
+
+					g_free (error_msg);
+					error_msg = NULL;
 
 					if (mangled_name != mangled_name2)
 						g_free (mangled_name2);
