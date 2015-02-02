@@ -68,7 +68,7 @@ build_coreclr()
     cd $__CMakeSlnDir
     
     # Regenerate the CMake solution
-    $__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh $__VBL_ROOT
+    $__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh $__VBL_ROOT $__CMakeArgs
     
     # Check that the makefiles were created.
     
@@ -79,6 +79,7 @@ build_coreclr()
     
     # Build CoreCLR
     
+    echo Executing make $__UnprocessedBuildArgs
     make $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
         echo Failed to build coreclr components.
@@ -101,6 +102,7 @@ __VBL_ROOT="$__ProjectRoot"
 __BuildArch=amd64
 __MSBuildBuildArch=x64
 __BuildType=debug
+__CMakeArgs=DEBUG
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
@@ -129,6 +131,7 @@ for i in "$@"
         ;;
         release)
         __BuildType=release
+        __CMakeArgs=RELEASE
         ;;
         clean)
         __CleanBuild=true
