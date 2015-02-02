@@ -17,8 +17,9 @@ typedef struct {
 	const char *exception_name;
 	MonoClass *klass;
 	const char *full_message;
+	const char *full_message_with_fields;
 
-	void *padding [5];
+	void *padding [4];
     char message [128];
 } MonoErrorInternal;
 
