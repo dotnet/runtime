@@ -305,7 +305,6 @@ static sigset_t suspend_ack_signal_mask;
 #define DEFAULT_SUSPEND_SIGNAL SIGPWR
 #endif
 #define DEFAULT_RESTART_SIGNAL SIGXCPU
-#define DEFAULT_ABORT_SIGNAL SIGWINCH
 
 static int
 mono_thread_search_alt_signal (int min_signal)
@@ -361,6 +360,26 @@ mono_thread_get_alt_resume_signal (void)
 	if (resume_signum == -1)
 		resume_signum = mono_thread_search_alt_signal (mono_thread_get_alt_suspend_signal () + 1);
 	return resume_signum;
+#endif /* SIGRTMIN */
+}
+
+
+static int
+mono_threads_get_abort_signal (void)
+{
+#if defined(PLATFORM_ANDROID)
+	return SIGTTIN;
+#elif !defined (SIGRTMIN)
+#ifdef SIGTTIN
+	return SIGTTIN;
+#else
+	return -1;
+#endif /* SIGRTMIN */
+#else
+	static int abort_signum = -1;
+	if (abort_signum == -1)
+		abort_signum = mono_thread_search_alt_signal (mono_thread_get_alt_resume_signal () + 1);
+	return abort_signum;
 #endif /* SIGRTMIN */
 }
 
@@ -486,7 +505,7 @@ mono_threads_init_platform (void)
 {
 	sigset_t signal_set;
 
-	abort_signal_num = DEFAULT_ABORT_SIGNAL;
+	abort_signal_num = mono_threads_get_abort_signal ();
 	if (mono_thread_info_unified_management_enabled ()) {
 		suspend_signal_num = DEFAULT_SUSPEND_SIGNAL;
 		restart_signal_num = DEFAULT_RESTART_SIGNAL;
