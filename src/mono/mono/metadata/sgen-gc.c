@@ -3841,6 +3841,7 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->info.thread_state);
 			continue;
 		}
+		g_assert (info->suspend_done);
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
 		if (gc_callbacks.thread_mark_func && !conservative_stack_mark) {
 			UserCopyOrMarkData data = { NULL, queue };

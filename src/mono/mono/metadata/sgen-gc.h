@@ -81,7 +81,7 @@ struct _SgenThreadInfo {
 	This is set to TRUE when STW fails to suspend a thread, most probably because the
 	underlying thread is dead.
 	*/
-	int skip;
+	gboolean skip, suspend_done;
 	volatile int in_critical_region;
 
 	/*
