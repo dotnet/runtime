@@ -956,10 +956,10 @@ SGEN_BRIDGE_CONFIGURATIONS =	\
 	"minor=split|ms-split"	\
 	"bridge-implementation=new|plain-new-bridge"	\
 	"bridge-implementation=new,major=marksweep-conc|ms-conc-new-bridge"	\
-	"bridge-implementation=new,minor=split|ms-split-new-bridge"
-	"bridge-implementation=tarjan|plain-new-bridge"	\
-	"bridge-implementation=tarjan,major=marksweep-conc|ms-conc-new-bridge"	\
-	"bridge-implementation=tarjan,minor=split|ms-split-new-bridge"
+	"bridge-implementation=new,minor=split|ms-split-new-bridge"	\
+	"bridge-implementation=tarjan|plain-tarjan-bridge"	\
+	"bridge-implementation=tarjan,major=marksweep-conc|ms-conc-tarjan-bridge"	\
+	"bridge-implementation=tarjan,minor=split|ms-split-tarjan-bridge"
 
 sgen-regular-tests: $(SGEN_TESTS)
 	@failed=0; \
