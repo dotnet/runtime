@@ -617,6 +617,7 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 {
 	MonoMethod *method;
 	MonoJitInfo *ji;
+	gpointer stack_start;
 
 	/* Are we inside a system critical region? */
 	if (info->inside_critical_region)
@@ -630,6 +631,11 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	/* The target thread might be shutting down and the domain might be null, which means no managed code left to run. */
 	if (!info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN])
 		return FALSE;
+
+	stack_start = MONO_CONTEXT_GET_SP (&info->suspend_state.ctx);
+	/* altstack signal handler, sgen can't handle them, so we treat them as critical */
+	if (stack_start < info->stack_start_limit || stack_start >= info->stack_end)
+		return TRUE;
 
 	ji = mono_jit_info_table_find (
 		info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN],
