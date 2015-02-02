@@ -137,9 +137,10 @@ enum {
 	STATE_SELF_SUSPENDED			= 0x04,
 	STATE_ASYNC_SUSPEND_REQUESTED	= 0x05,
 	STATE_SELF_SUSPEND_REQUESTED 	= 0x06,
-	// STATE_SUSPEND_IN_PROGRESS		= 0x07,
-	// STATE_SUSPEND_PROMOTED_TO_ASYNC	= 0x08,
-	STATE_MAX						= 0x06,
+	STATE_BLOCKING					= 0x07,
+	STATE_BLOCKING_AND_SUSPENDED	= 0x8,
+
+	STATE_MAX						= 0x08,
 
 	THREAD_STATE_MASK			= 0x00FF,
 	THREAD_SUSPEND_COUNT_MASK	= 0xFF00,
@@ -553,6 +554,7 @@ typedef enum {
 	ResumeOk,
 	ResumeInitSelfResume,
 	ResumeInitAsyncResume,
+	ResumeInitBlockingResume,
 } MonoResumeResult;
 
 typedef enum {
@@ -567,6 +569,26 @@ typedef enum {
 	AsyncSuspendInitSuspend,
 } MonoRequestAsyncSuspendResult;
 
+typedef enum {
+	DoBlockingContinue, //in blocking mode, continue
+	DoBlockingPollAndRetry, //async suspend raced blocking and won, pool and retry
+} MonoDoBlockingResult;
+
+typedef enum {
+	DoneBlockingAborted, //blocking was aborted and not properly restored, poll the state
+	DoneBlockingOk, //exited blocking fine
+	DoneBlockingWait, //thread should end suspended
+} MonoDoneBlockingResult;
+
+
+typedef enum {
+	AbortBlockingIgnore, //Ignore
+	AbortBlockingIgnoreAndPoll, //Ignore and pool
+	AbortBlockingOk, //Abort worked
+	AbortBlockingOkAndPool, //Abort worked, but pool before
+} MonoAbortBlockingResult;
+
+
 void mono_threads_transition_attach (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
 void mono_threads_transition_request_self_suspension (THREAD_INFO_TYPE *info);
@@ -575,6 +597,9 @@ MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info)
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_finish_async_suspend (THREAD_INFO_TYPE* info);
 void mono_threads_transition_async_suspend_compensation (THREAD_INFO_TYPE* info);
+MonoDoBlockingResult mono_threads_transition_do_blocking (THREAD_INFO_TYPE* info);
+MonoDoneBlockingResult mono_threads_transition_done_blocking (THREAD_INFO_TYPE* info);
+MonoAbortBlockingResult mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info);
 
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 

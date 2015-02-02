@@ -98,6 +98,13 @@ resume_async_suspended (MonoThreadInfo *info)
 	g_assert (mono_threads_core_begin_async_resume (info));
 }
 
+static void
+resume_blocking_suspended (MonoThreadInfo* info)
+{
+	THREADS_SUSPEND_DEBUG ("**BEGIN blocking-resume %p\n", mono_thread_info_get_tid (info));
+	MONO_SEM_POST (&info->resume_semaphore);
+}
+
 void
 mono_threads_add_to_pending_operation_set (MonoThreadInfo* info)
 {
@@ -675,6 +682,10 @@ mono_thread_info_core_resume (MonoThreadInfo *info)
 		break;
 	case ResumeInitAsyncResume:
 		resume_async_suspended (info);
+		res = TRUE;
+		break;
+	case ResumeInitBlockingResume:
+		resume_blocking_suspended (info);
 		res = TRUE;
 		break;
 	}
