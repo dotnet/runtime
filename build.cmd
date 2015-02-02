@@ -6,7 +6,7 @@ set __BuildArch=x64
 set __BuildType=debug
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
-set __ProjectDir=%CD%
+set __ProjectDir=%~dp0
 set __ProjectFilesDir=%~dp0
 set __SourceDir=%__ProjectDir%\src
 set __PackagesDir=%__SourceDir%\.nuget
