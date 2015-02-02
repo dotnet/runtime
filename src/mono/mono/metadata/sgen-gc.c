@@ -4634,7 +4634,7 @@ parse_double_in_interval (const char *env_var, const char *opt_name, const char 
 	return TRUE;
 }
 
-gboolean
+static gboolean
 thread_in_critical_region (SgenThreadInfo *info)
 {
 	return info->in_critical_region;

@@ -233,6 +233,9 @@ sgen_os_init (void)
 {
 	struct sigaction sinfo;
 
+	if (mono_thread_info_unified_management_enabled ())
+		return;
+
 	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
 	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
 
