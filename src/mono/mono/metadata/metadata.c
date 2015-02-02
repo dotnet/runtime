@@ -3165,9 +3165,32 @@ compare_type_literals (int class_type, int type_type)
 	/* NET 1.1 assemblies might encode string and object in a denormalized way.
 	 * See #675464.
 	 */
-	if (type_type == MONO_TYPE_CLASS && (class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT))
+	if (class_type == type_type)
 		return TRUE;
-	return class_type == type_type;
+
+	if (type_type == MONO_TYPE_CLASS)
+		return class_type == MONO_TYPE_STRING || class_type == MONO_TYPE_OBJECT;
+
+	g_assert (type_type == MONO_TYPE_VALUETYPE);
+	switch (class_type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TRUE;
+	default:
+		return FALSE;
+	}
 }
 
 /* 
