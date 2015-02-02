@@ -433,11 +433,11 @@ sgen_unified_suspend_stop_world (void)
 		info->suspend_done = FALSE;
 		if (sgen_is_thread_in_current_stw (info)) {
 			info->skip = !mono_thread_info_begin_suspend (info, FALSE);
-			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] SUSPEND thread %p skip %d\n", info, info->skip);
+			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] SUSPEND thread %p skip %d\n", mono_thread_info_get_tid (info), info->skip);
 			if (!info->skip)
 				++count;
 		} else {
-			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] IGNORE thread %p skip %d\n", info, info->skip);
+			THREADS_STW_DEBUG ("[GC-STW-BEGIN-SUSPEND] IGNORE thread %p skip %d\n", mono_thread_info_get_tid (info), info->skip);
 		}
 	} END_FOREACH_THREAD_SAFE
 
@@ -448,7 +448,7 @@ sgen_unified_suspend_stop_world (void)
 		restart_counter = 0;
 		FOREACH_THREAD_SAFE (info) {
 			if (info->suspend_done || !sgen_is_thread_in_current_stw (info)) {
-				THREADS_STW_DEBUG ("[GC-STW-RESTART] IGNORE thread %p not been processed done %d current %d\n", info, info->suspend_done, !sgen_is_thread_in_current_stw (info));
+				THREADS_STW_DEBUG ("[GC-STW-RESTART] IGNORE thread %p not been processed done %d current %d\n", mono_thread_info_get_tid (info), info->suspend_done, !sgen_is_thread_in_current_stw (info));
 				continue;
 			}
 
@@ -459,19 +459,19 @@ sgen_unified_suspend_stop_world (void)
 			- We haven't gave up on it for this STW (it's either bad or asked not to)
 			*/
 			if (!mono_threads_core_check_suspend_result (info)) {
-				THREADS_STW_DEBUG ("[GC-STW-RESTART] SKIP thread %p failed to finish to suspend\n", info);
+				THREADS_STW_DEBUG ("[GC-STW-RESTART] SKIP thread %p failed to finish to suspend\n", mono_thread_info_get_tid (info));
 				info->skip = TRUE;
 			} else if (mono_thread_info_in_critical_location (info)) {
 				gboolean res;
 				g_assert (mono_thread_info_suspend_count (info) == 1);
 				res = mono_thread_info_begin_resume (info);
-				THREADS_STW_DEBUG ("[GC-STW-RESTART] RESTART thread %p skip %d\n", info, res);
+				THREADS_STW_DEBUG ("[GC-STW-RESTART] RESTART thread %p skip %d\n", mono_thread_info_get_tid (info), res);
 				if (res)
 					++restart_counter;
 				else
 					info->skip = TRUE;
 			} else {
-				THREADS_STW_DEBUG ("[GC-STW-RESTART] DONE thread %p deemed fully suspended\n", info);
+				THREADS_STW_DEBUG ("[GC-STW-RESTART] DONE thread %p deemed fully suspended\n", mono_thread_info_get_tid (info));
 				g_assert (!info->in_critical_region);
 				info->suspend_done = TRUE;
 			}
@@ -496,7 +496,7 @@ sgen_unified_suspend_stop_world (void)
 		FOREACH_THREAD_SAFE (info) {
 			if (sgen_is_thread_in_current_stw (info) && mono_thread_info_is_running (info)) {
 				gboolean res = mono_thread_info_begin_suspend (info, FALSE);
-				THREADS_STW_DEBUG ("[GC-STW-RESTART] SUSPEND thread %p skip %d\n", info, res);
+				THREADS_STW_DEBUG ("[GC-STW-RESTART] SUSPEND thread %p skip %d\n", mono_thread_info_get_tid (info), res);
 				if (!res)
 					info->skip = TRUE;
 			}
@@ -507,7 +507,7 @@ sgen_unified_suspend_stop_world (void)
 
 	FOREACH_THREAD_SAFE (info) {
 		if (sgen_is_thread_in_current_stw (info)) {
-			THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is suspended\n", info);
+			THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is suspended\n", mono_thread_info_get_tid (info));
 			g_assert (info->suspend_done);
 			update_sgen_info (info);
 		} else {
@@ -528,10 +528,10 @@ sgen_unified_suspend_restart_world (void)
 	FOREACH_THREAD_SAFE (info) {
 		if (sgen_is_thread_in_current_stw (info)) {
 			g_assert (mono_thread_info_begin_resume (info));
-			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] RESUME thread %p\n", info);
+			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] RESUME thread %p\n", mono_thread_info_get_tid (info));
 			++count;
 		} else {
-			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] IGNORE thread %p\n", info);
+			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] IGNORE thread %p\n", mono_thread_info_get_tid (info));
 		}
 	} END_FOREACH_THREAD_SAFE
 
