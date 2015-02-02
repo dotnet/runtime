@@ -127,9 +127,11 @@ sgen_thread_handshake (BOOL suspend)
 	SgenThreadInfo *current = mono_thread_info_current ();
 	int count = 0;
 
+	current->suspend_done = TRUE;
 	FOREACH_THREAD_SAFE (info) {
 		if (info == current)
 			continue;
+		info->suspend_done = FALSE;
 		if (info->gc_disabled)
 			continue;
 		if (suspend) {

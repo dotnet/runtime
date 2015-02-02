@@ -203,10 +203,12 @@ sgen_thread_handshake (BOOL suspend)
 	MonoNativeThreadId me = mono_native_thread_id_get ();
 
 	count = 0;
+	mono_thread_info_current ()->suspend_done = TRUE;
 	FOREACH_THREAD_SAFE (info) {
 		if (mono_native_thread_id_equals (mono_thread_info_get_tid (info), me)) {
 			continue;
 		}
+		info->suspend_done = FALSE;
 		if (info->gc_disabled)
 			continue;
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)

@@ -117,7 +117,7 @@ restart_threads_until_none_in_managed_allocator (void)
 		   allocator */
 		FOREACH_THREAD_SAFE (info) {
 			gboolean result;
-			if (info->skip || info->gc_disabled)
+			if (info->skip || info->gc_disabled || info->suspend_done)
 				continue;
 			if (mono_thread_info_is_live (info) && (!info->stack_start || info->in_critical_region || info->info.inside_critical_region ||
 					is_ip_in_managed_allocator (info->stopped_domain, info->stopped_ip))) {
@@ -137,6 +137,7 @@ restart_threads_until_none_in_managed_allocator (void)
 				   the others */
 				info->stopped_ip = NULL;
 				info->stopped_domain = NULL;
+				info->suspend_done = TRUE;
 			}
 		} END_FOREACH_THREAD_SAFE
 		/* if no threads were restarted, we're done */
