@@ -205,6 +205,16 @@ void * ClrVirtualAlloc(
     return VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 }
 
+void * ClrVirtualAllocAligned(
+    void * lpAddress,
+    size_t dwSize,
+    uint32_t flAllocationType,
+    uint32_t flProtect,
+    size_t dwAlignment)
+{
+    return VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
+}
+
 bool ClrVirtualFree(
     void * lpAddress,
     size_t dwSize,
