@@ -3837,8 +3837,8 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
-		if (mono_thread_info_run_state (info) != STATE_RUNNING) {
-			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %d)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, mono_thread_info_run_state (info));
+		if (!mono_thread_info_is_live (info)) {
+			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->info.thread_state);
 			continue;
 		}
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());

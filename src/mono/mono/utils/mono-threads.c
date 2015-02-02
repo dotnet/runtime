@@ -57,6 +57,9 @@ static gboolean mono_threads_inited = FALSE;
 
 static void mono_threads_unregister_current_thread (MonoThreadInfo *info);
 
+#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & RUN_STATE_MASK)
+#define mono_thread_info_suspend_state(info) (((MonoThreadInfo*)info)->thread_state & SUSPEND_STATE_MASK)
+
 
 static inline void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
@@ -977,4 +980,14 @@ mono_threads_consume_async_jobs (void)
 		return 0;
 
 	return InterlockedExchange (&info->service_requests, 0);
+}
+
+
+/**
+ * Return TRUE is the thread is in an usable (suspendable) state
+ */
+gboolean
+mono_thread_info_is_live (MonoThreadInfo *info)
+{
+	return mono_thread_info_run_state (info) == STATE_RUNNING;
 }

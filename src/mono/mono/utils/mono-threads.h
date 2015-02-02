@@ -101,9 +101,6 @@ typedef enum {
 	MONO_SERVICE_REQUEST_SAMPLE = 1,
 } MonoAsyncJob;
 
-#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & RUN_STATE_MASK)
-#define mono_thread_info_suspend_state(info) (((MonoThreadInfo*)info)->thread_state & SUSPEND_STATE_MASK)
-
 typedef struct {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
@@ -338,6 +335,9 @@ mono_thread_info_self_interrupt (void);
 
 void
 mono_thread_info_clear_interruption (void);
+
+gboolean
+mono_thread_info_is_live (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
