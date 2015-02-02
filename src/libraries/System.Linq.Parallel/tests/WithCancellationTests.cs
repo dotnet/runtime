@@ -1,13 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Test
 {
@@ -185,17 +185,15 @@ namespace Test
             Assert.NotNull(caughtException);
         }
 
-        
-
         /// <summary>
-        /// 
+        ///
         /// [Regression Test]
-        ///   This issue occured because the QuerySettings structure was not being deep-cloned during 
+        ///   This issue occured because the QuerySettings structure was not being deep-cloned during
         ///   query-opening.  As a result, the concurrent inner-enumerators (for the RHS operators)
         ///   that occur in SelectMany were sharing CancellationState that they should not have.
-        ///   The result was that enumerators could falsely believe they had been canceled when 
+        ///   The result was that enumerators could falsely believe they had been canceled when
         ///   another inner-enumerator was disposed.
-        ///   
+        ///
         ///   Note: the failure was intermittent.  this test would fail about 1 in 2 times on mikelid1 (4-core).
         /// </summary>
         /// <returns></returns>
@@ -227,7 +225,7 @@ namespace Test
         // Use of the async channel can block both the consumer and producer threads.. before the cancellation work
         // these had no means of being awoken.
         //
-        // However, only the producers need to wake up on cancellation as the consumer 
+        // However, only the producers need to wake up on cancellation as the consumer
         // will wake up once all the producers have gone away (via AsynchronousOneToOneChannel.SetDone())
         //
         // To specifically verify this test, we want to know that the Async channels were blocked in TryEnqueChunk before Dispose() is called
@@ -237,7 +235,6 @@ namespace Test
         public static void ChannelCancellation_ProducerBlocked()
         {
             Console.WriteLine("PlinqCancellationTests.ChannelCancellation_ProducerBlocked()");
-
 
             Console.WriteLine("        Query running (should be few seconds max)..");
             var query1 = Enumerable.Range(0, 100000000)  //provide 100million elements to ensure all the cores get >64K ints. Good up to 1600cores
@@ -484,9 +481,8 @@ namespace Test
             }
             catch (OperationCanceledException)
             {
-                //This is expected.                
+                //This is expected.
             }
-
             catch (Exception e)
             {
                 Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_1:  OperationCanceledException was expected, but a different exception occured.  " + e.ToString()));
@@ -521,7 +517,7 @@ namespace Test
             }
         }
 
-        // Changes made to hash-partitioning (April'09) lost the cancellation checks during the 
+        // Changes made to hash-partitioning (April'09) lost the cancellation checks during the
         // main repartitioning loop (matrix building).
         [Fact]
         public static void HashPartitioningCancellation()
@@ -625,8 +621,8 @@ namespace Test
             Assert.NotNull(oce);
         }
 
-        // To help the user, we will check if a cancellation token passed to WithCancellation() is 
-        // not backed by a disposed CTS.  This will help them identify incorrect cts.Dispose calls, but 
+        // To help the user, we will check if a cancellation token passed to WithCancellation() is
+        // not backed by a disposed CTS.  This will help them identify incorrect cts.Dispose calls, but
         // doesn't solve all their problems if they don't manage CTS lifetime correctly.
         // We test via a few random queries that have shown inconsistent behavior in the past.
         [Fact]
@@ -680,7 +676,7 @@ namespace Test
                 ae3 = (ArgumentException)ex;
             }
 
-            Assert.Null(ae1); 
+            Assert.Null(ae1);
             Assert.Null(ae2);
             Assert.Null(ae3);
         }

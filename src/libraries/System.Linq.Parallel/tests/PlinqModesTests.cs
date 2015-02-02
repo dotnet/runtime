@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Xunit;
 
 namespace Test
 {
@@ -18,7 +18,7 @@ namespace Test
             {
                 // Test doesn't apply to DOP == 1.  It verifies that work is actually
                 // happening in parallel, which won't be the case with DOP == 1.
-                return; 
+                return;
             }
 
             Action<ParallelExecutionMode, Verifier>[] hardQueries = {
@@ -95,7 +95,6 @@ namespace Test
                     .Where(x => true).Select(x => verifier.Verify(x)).OrderBy(x=>x).Take(10000).Iterate(),
             };
 
-
             // Verify that all queries in 'easyQueries' run in parallel in default mode
 
             for (int i = 0; i < easyQueries.Length; i++)
@@ -142,6 +141,7 @@ namespace Test
         private abstract class Verifier
         {
             internal abstract int Verify(int x);
+
             internal abstract bool Passed { get; }
         }
 
@@ -180,6 +180,7 @@ namespace Test
                 get { return _passed; }
             }
         }
-        #endregion
+
+        #endregion Helper Methods / Classes
     }
 }
