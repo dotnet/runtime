@@ -143,6 +143,8 @@ mono_thread_info_register_small_id (void)
 static void*
 register_thread (MonoThreadInfo *info, gpointer baseptr)
 {
+	size_t stsize = 0;
+	guint8 *staddr = NULL;
 	int small_id = mono_thread_info_register_small_id ();
 	gboolean result;
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
@@ -164,6 +166,12 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 			return NULL;
 		}
 	}
+
+	mono_thread_info_get_stack_bounds (&staddr, &stsize);
+	g_assert (staddr);
+	g_assert (stsize);
+	info->stack_start_limit = staddr;
+	info->stack_end = staddr + stsize;
 
 	mono_threads_platform_register (info);
 	info->thread_state = STATE_RUNNING;

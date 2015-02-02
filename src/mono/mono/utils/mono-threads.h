@@ -113,6 +113,9 @@ typedef struct {
 	/* Tells if this thread should be ignored or not by runtime services such as GC and profiling */
 	gboolean tools_thread;
 
+	/* Max stack bounds, all valid addresses must be between [stack_start_limit, stack_end[ */
+	void *stack_start_limit, *stack_end;
+
 	/* suspend machinery, fields protected by suspend_semaphore */
 	MonoSemType suspend_semaphore;
 	int suspend_count;
