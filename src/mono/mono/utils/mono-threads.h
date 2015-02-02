@@ -322,6 +322,9 @@ mono_thread_info_is_exiting (void);
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
 
+THREAD_INFO_TYPE*
+mono_thread_info_current_unchecked (void);
+
 int
 mono_thread_info_get_small_id (void);
 

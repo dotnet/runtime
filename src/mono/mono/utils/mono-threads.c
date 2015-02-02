@@ -375,7 +375,7 @@ mono_threads_unregister_current_thread (MonoThreadInfo *info)
 	g_assert (result);
 }
 
-static inline MonoThreadInfo*
+MonoThreadInfo*
 mono_thread_info_current_unchecked (void)
 {
 	return (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key);
