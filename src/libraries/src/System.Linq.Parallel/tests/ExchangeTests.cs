@@ -1,11 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using Xunit;
 
 namespace Test
 {
@@ -39,7 +38,7 @@ namespace Test
                 data[i] = i;
 
             var whereOp = data.AsParallel()
-                .Where(delegate(int x) { return (x % 2) == 0; }); // select only even elements
+                .Where(delegate (int x) { return (x % 2) == 0; }); // select only even elements
 
             IEnumerator<int> stream = whereOp.GetEnumerator();
 
@@ -69,9 +68,9 @@ namespace Test
                 data[i] = i;
 
             var whereOp = data.AsParallel().Where(
-                delegate(int x) { return (x % 2) == 0; }); // select only even elements
+                delegate (int x) { return (x % 2) == 0; }); // select only even elements
             var selectOp = whereOp.Select(
-                delegate(int x) { return x * 2; }); // just double the elements
+                delegate (int x) { return x * 2; }); // just double the elements
 
             // Now verify the output is what we expect.
 
@@ -188,21 +187,6 @@ namespace Test
             {
                 Assert.True(false, string.Format("OrderedPipeliningTest2: buffered={0}:  > FAILED.  Caught an exception - {1}", buffered, e));
             }
-        }
-
-        /// <summary>
-        /// Verifies that AsEnumerable causes subsequent LINQ operators to bind to LINQ-to-objects
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public static void RunAsEnumerableTest()
-        {
-            IEnumerable<int> src = Enumerable.Range(0, 100).AsParallel().AsEnumerable().Select(x => x);
-
-            bool passed = !(src is ParallelQuery<int>);
-
-            if (!passed)
-                Assert.True(false, string.Format("AsEnumerableTest:  > Failed. AsEnumerable() didn't prevent the Select operator from binding to PLINQ."));
         }
     }
 }

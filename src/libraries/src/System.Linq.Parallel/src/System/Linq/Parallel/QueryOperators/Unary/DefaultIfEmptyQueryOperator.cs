@@ -8,8 +8,8 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Threading;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.Linq.Parallel
 {
@@ -93,12 +93,11 @@ namespace System.Linq.Parallel
             get { return false; }
         }
 
-
         //---------------------------------------------------------------------------------------
         // The enumerator type responsible for executing the default-if-empty operation.
         //
 
-        class DefaultIfEmptyQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, TKey>
+        private class DefaultIfEmptyQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, TKey>
         {
             private QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private bool _lookedForEmpty; // Whether this partition has looked for empty yet.
@@ -108,6 +107,7 @@ namespace System.Linq.Parallel
 
             // Data shared among partitions.
             private Shared<int> _sharedEmptyCount; // The number of empty partitions.
+
             private CountdownEvent _sharedLatch; // Shared latch, signaled when partitions process the 1st item.
             private CancellationToken _cancelToken; // Token used to cancel this operator.
 
