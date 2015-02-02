@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using System.Text;
 
 namespace System.Diagnostics.ProcessTests
 {
@@ -221,10 +222,13 @@ namespace System.Diagnostics.ProcessTests
             try
             {
                 ProcessModule pMainModule = p.MainModule;
+                Assert.Equal(s_ProcessName, pMainModule.ModuleName);
+                Assert.True(pMainModule.FileName.Contains(pMainModule.ModuleName), "MainModule FileName invalid. " + GetModuleDescription(pMainModule));
 
                 // Check that the mainModule is present in the modules list.
+                ProcessModuleCollection allModules = p.Modules;
                 bool foundMainModule = false;
-                foreach (ProcessModule pModule in p.Modules)
+                foreach (ProcessModule pModule in allModules)
                 {
                     if ((pModule.BaseAddress == pMainModule.BaseAddress) && pModule.FileName.Equals(pMainModule.FileName))
                     {
@@ -232,20 +236,30 @@ namespace System.Diagnostics.ProcessTests
                         break;
                     }
                 }
-
-                Assert.True(foundMainModule, "Process_MainModule set to incorrect module");
-                Assert.Equal("ProcessTest_ConsoleApp.exe", pMainModule.ModuleName);
-                Assert.True(pMainModule.FileName.Contains(pMainModule.ModuleName), "MainModule.FileName failed");
-            }
-            catch (Exception)
-            {
-                Assert.True(false, "Process_MainModule failed");
+                Assert.True(foundMainModule, "MainModule incorrect: " + GetModuleDescription(pMainModule) + Environment.NewLine + GetModulesDescription(allModules));
             }
             finally
             {
                 p.Kill();
                 p.WaitForExit();
             }
+        }
+
+        private static string GetModuleDescription(ProcessModule module)
+        {
+            return string.Format("Module: Base:{0} FileName:{1} ModuleName:{2}", module.BaseAddress, module.FileName, module.ModuleName);
+        }
+
+        private static string GetModulesDescription(ProcessModuleCollection modules)
+        {
+            var text = new StringBuilder();
+            text.AppendLine("Modules Collection:");
+            foreach (ProcessModule module in modules)
+            {
+                text.Append("    ");
+                text.AppendLine(GetModuleDescription(module));
+            }
+            return text.ToString();
         }
 
         [Fact]
