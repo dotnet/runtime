@@ -41,8 +41,6 @@ state_name (int state)
 		"SELF_SUSPENDED",
 		"ASYNC_SUSPEND_REQUESTED",
 		"SELF_SUSPEND_REQUESTED",
-		"SUSPEND_IN_PROGRESS",
-		"SUSPEND_PROMOTED_TO_ASYNC",
 	};
 	return state_names [get_thread_state (state)];
 }
@@ -68,8 +66,6 @@ check_thread_state (MonoThreadInfo* info)
 	case STATE_SELF_SUSPENDED:
 	case STATE_ASYNC_SUSPEND_REQUESTED:
 	case STATE_SELF_SUSPEND_REQUESTED:
-	case STATE_SUSPEND_IN_PROGRESS:
-	case STATE_SUSPEND_PROMOTED_TO_ASYNC:
 		g_assert (suspend_count > 0);
 		break;
 	default:
@@ -140,8 +136,6 @@ retry_state_change:
 STATE_ASYNC_SUSPENDED: Code should not be running while suspended.
 STATE_SELF_SUSPENDED: Code should not be running while suspended.
 STATE_SELF_SUSPEND_REQUESTED: This is a bug in the self suspend code that didn't execute the second part of it
-STATE_SUSPEND_IN_PROGRESS: This is an internal state of suspension
-STATE_SUSPEND_PROMOTED_TO_ASYNC: This is an internal state of suspension
 */
 	default:
 		g_error ("Cannot transition current thread %p from %s with DETACH", info, state_name (cur_state));
@@ -179,8 +173,6 @@ Other states:
 STATE_ASYNC_SUSPENDED: Code should not be running while suspended.
 STATE_SELF_SUSPENDED: Code should not be running while suspended.
 STATE_SELF_SUSPEND_REQUESTED: Self suspends should not nest as begin/end should be paired. [1]
-STATE_SUSPEND_IN_PROGRESS: This in an internal state of the self suspend finish protocol. A new self suspend request must not happen during it
-STATE_SUSPEND_PROMOTED_TO_ASYNC: This in an internal state of the self suspend finish protocol. A new self suspend request must not happen during it
 
 [1] This won't trap this sequence of requests: self suspend, async suspend and self suspend. 
 If this turns to be an issue we can introduce a new suspend request state for when both have been requested.
@@ -229,26 +221,13 @@ retry_state_change:
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, 1);
-		return AsyncSuspendInitSuspend; //This is the first async suspend request against the target [1]
-
-	case STATE_SUSPEND_IN_PROGRESS: //Self suspend has already initiated, we need to tell it to inform us in the end
-		g_assert (suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX);
-		g_assert (info != mono_thread_info_current ()); // if this is a self suspend request, which can't happen in this state, as this is the middle of the self suspend protocol.
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SUSPEND_PROMOTED_TO_ASYNC, suspend_count + 1), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_SUSPEND_PROMOTED_TO_ASYNC, 1);
-		return AsyncSuspendWait; //This is a self suspend in progress that now needs to notify the initiator
-		break;
+		return AsyncSuspendWait; //This is the first async suspend request, change the thread and let it notify us [1]
 /*
 
 [1] It's questionable on what to do if we hit the beginning of a self suspend.
 The expected behavior is that the target should poll its state very soon so the the suspend latency should be minimal.
-OTOH, an async suspend will speed this and could lead to this happening sooner. This is not set in stone, so we can back out from the current behavior if it shows
-to be a problem.
-
 
 STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in progress and it must finish, it should not be possible to witness this.
-STATE_SUSPEND_PROMOTED_TO_ASYNC: This is a self suspend that was promoted to an async suspend, which should not be possible to witness due to async suspends happening one at a time.
 */
 	default:
 		g_error ("Cannot transition thread %p from %s with ASYNC_SUSPEND_REQUESTED", info, state_name (cur_state));
@@ -258,11 +237,17 @@ STATE_SUSPEND_PROMOTED_TO_ASYNC: This is a self suspend that was promoted to an 
 
 /*
 Check the current state of the thread and try to init a self suspend.
+This must be called with self state saved.
 
-Returns TRUE is self suspend should start.
+Returns one of the following values:
+
+- Resumed: Async resume happened and current thread should keep running
+- Suspend: Caller should wait for a resume signal
+- SelfSuspendNotifyAndWait: Notify the suspend initiator and wait for a resume signals
+ suspend should start.
 
 */
-gboolean
+MonoSelfSupendResult
 mono_threads_transition_state_poll (MonoThreadInfo *info)
 {
 	int raw_state, cur_state, suspend_count;
@@ -274,27 +259,22 @@ retry_state_change:
 	case STATE_RUNNING:
 		g_assert (suspend_count == 0);
 		trace_state_change ("STATE_POLL", info, raw_state, cur_state, 0);
-		return FALSE; //We're fine, don't suspend
+		return SelfSuspendResumed; //We're fine, don't suspend
 
 	case STATE_ASYNC_SUSPEND_REQUESTED: //Async suspend requested, service it with a self suspend
-		g_assert (suspend_count > 0);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SUSPEND_PROMOTED_TO_ASYNC, suspend_count), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("STATE_POLL", info, raw_state, STATE_SUSPEND_PROMOTED_TO_ASYNC, 0);
-		return TRUE;
-
 	case STATE_SELF_SUSPEND_REQUESTED: //Start the self suspend process
 		g_assert (suspend_count > 0);
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SUSPEND_IN_PROGRESS, suspend_count), raw_state) != raw_state)
+		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
 			goto retry_state_change;
-		trace_state_change ("STATE_POLL", info, raw_state, STATE_SUSPEND_IN_PROGRESS, 0);
-		return TRUE;
+		trace_state_change ("STATE_POLL", info, raw_state, STATE_SELF_SUSPENDED, 0);
+		if (cur_state == STATE_SELF_SUSPEND_REQUESTED)
+			return SelfSuspendWait; //Caller should wait for resume
+		else
+			return SelfSuspendNotifyAndWait; //Caller should notify suspend initiator and wait for resume
 
 /*
 STATE_ASYNC_SUSPENDED: Code should not be running while suspended.
 STATE_SELF_SUSPENDED: Code should not be running while suspended.
-STATE_SUSPEND_IN_PROGRESS: State polling should not happen while self suspend is finishing
-STATE_SUSPEND_PROMOTED_TO_ASYNC: State polling should not happen while self suspend is finishing
 */
 	default:
 		g_error ("Cannot transition thread %p from %s with STATE_POLL", info, state_name (cur_state));
@@ -356,7 +336,7 @@ retry_state_change:
 		}
 
 	case STATE_SELF_SUSPEND_REQUESTED: //Self suspend was requested but another thread decided to resume it.
-	case STATE_SUSPEND_IN_PROGRESS: //Self suspend is in progress but another thread decided to resume it. [4]
+	// case STATE_SUSPEND_IN_PROGRESS: //Self suspend is in progress but another thread decided to resume it. [4]
 		g_assert (suspend_count > 0);
 		if (suspend_count > 1) {
 			if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count - 1), raw_state) != raw_state)
@@ -389,52 +369,6 @@ If this turns to be a problem we should either implement [2] or make this an inv
 }
 
 /*
-Last part of the self suspend protocol.
-
-This must only happens in the context of a self suspend request. This means that the thread must be on one of the
-valid self suspend states.
-
-Returns one of the following values:
-
-- Resumed: Async resume happened and current thread should keep running
-- Suspend: Caller should wait for a resume signal
-- SelfSuspendNotifyAndWait: Notify the suspend initiator and wait for a resume signals
-*/
-MonoSelfSupendResult
-mono_threads_transition_finish_self_suspend (MonoThreadInfo* info)
-{
-	int raw_state, cur_state, suspend_count;
-	g_assert (info ==  mono_thread_info_current ());
-
-retry_state_change:
-	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
-	switch (cur_state) {
-	case STATE_RUNNING: //An async resume hit us and we should keep running
-		trace_state_change ("FINISH_SELF_SUSPEND", info, raw_state, cur_state, 0);
-		return SelfSuspendResumed; //Caller should not suspend
-
-	case STATE_SUSPEND_IN_PROGRESS: //Self suspend finished
-	case STATE_SUSPEND_PROMOTED_TO_ASYNC: //Async suspend happened during the second step of self suspend so the caller needs to notify the initiator.
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SELF_SUSPENDED, suspend_count), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("FINISH_SELF_SUSPEND", info, raw_state, STATE_SELF_SUSPENDED, 0);
-		if (cur_state == STATE_SUSPEND_IN_PROGRESS)
-			return SelfSuspendWait; //Caller should wait for resume
-		else
-			return SelfSuspendNotifyAndWait; //Caller should notify suspend initiator and wait for resume
-/*
-STATE_ASYNC_SUSPENDED: Code should not be running while suspended.
-STATE_SELF_SUSPENDED: Code should not be running while suspended.
-STATE_ASYNC_SUSPEND_REQUESTED: This state should one be witnessed by the state poll transition
-STATE_SELF_SUSPEND_REQUESTED: This state should one be witnessed by the state poll transition
-*/
-	default:
-		g_error ("Cannot transition thread %p from %s with FINISH_SELF_SUSPEND", info, state_name (cur_state));
-
-	}
-}
-
-/*
 This performs the last step of async suspend.
 
 Returns TRUE if the caller should wait for resume.
@@ -457,12 +391,12 @@ retry_state_change:
 			goto retry_state_change;
 		trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_ASYNC_SUSPENDED, 0);
 		return TRUE; //Async suspend worked, now wait for resume
-
-	case STATE_SUSPEND_IN_PROGRESS:
-		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SUSPEND_PROMOTED_TO_ASYNC, suspend_count), raw_state) != raw_state)
-			goto retry_state_change;
-		trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_SUSPEND_PROMOTED_TO_ASYNC, 0);
-		return FALSE; //async suspend race with self suspend and lost, let the other finish it
+	// 
+	// case STATE_SUSPEND_IN_PROGRESS:
+	// 	if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SUSPEND_PROMOTED_TO_ASYNC, suspend_count), raw_state) != raw_state)
+	// 		goto retry_state_change;
+	// 	trace_state_change ("FINISH_ASYNC_SUSPEND", info, raw_state, STATE_SUSPEND_PROMOTED_TO_ASYNC, 0);
+	// 	return FALSE; //async suspend race with self suspend and lost, let the other finish it
 /*
 STATE_RUNNING: A thread cannot escape suspension once requested.
 STATE_ASYNC_SUSPENDED: There can be only one suspend initiator at a given time, meaning this state should have been visible on the first stage of suspend.
@@ -520,6 +454,20 @@ STATE_SUSPEND_IN_PROGRESS: All those are invalid end states of a sucessfull fini
 	}
 }
 
+MonoThreadUnwindState*
+mono_thread_info_get_suspend_state (MonoThreadInfo *info)
+{
+	int raw_state, cur_state, suspend_count;
+	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
+	switch (cur_state) {
+	case STATE_ASYNC_SUSPENDED:
+		return &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX];
+	case STATE_SELF_SUSPENDED:
+		return &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
+	default:
+		g_error ("Cannot read suspend state when the target is in the %s state", state_name (cur_state));
+	}
+}
 
 
 

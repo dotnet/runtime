@@ -633,14 +633,10 @@ mono_thread_info_end_self_suspend (void)
 		return;
 	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", info);
 
-	/* Begin stage two which allows us to save our state */
-	if (!mono_threads_transition_state_poll (info))
-		return;
-
-	g_assert (mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->suspend_state, NULL));
+	g_assert (mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&info->thread_saved_state [SELF_SUSPEND_STATE_INDEX], NULL));
 
 	/* commit the saved state and notify others if needed */
-	switch (mono_threads_transition_finish_self_suspend (info)) {
+	switch (mono_threads_transition_state_poll (info)) {
 	case SelfSuspendResumed:
 		return;
 	case SelfSuspendWait:
@@ -770,6 +766,7 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	MonoMethod *method;
 	MonoJitInfo *ji;
 	gpointer stack_start;
+	MonoThreadUnwindState *state;
 
 	/* Are we inside a system critical region? */
 	if (info->inside_critical_region)
@@ -785,17 +782,18 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	}
 
 	/* The target thread might be shutting down and the domain might be null, which means no managed code left to run. */
-	if (!info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN])
+	state = mono_thread_info_get_suspend_state (info);
+	if (!state->unwind_data [MONO_UNWIND_DATA_DOMAIN])
 		return FALSE;
 
-	stack_start = MONO_CONTEXT_GET_SP (&info->suspend_state.ctx);
+	stack_start = MONO_CONTEXT_GET_SP (&state->ctx);
 	/* altstack signal handler, sgen can't handle them, so we treat them as critical */
 	if (stack_start < info->stack_start_limit || stack_start >= info->stack_end)
 		return TRUE;
 
 	ji = mono_jit_info_table_find (
-		info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN],
-		MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+		state->unwind_data [MONO_UNWIND_DATA_DOMAIN],
+		MONO_CONTEXT_GET_IP (&state->ctx));
 
 	if (!ji)
 		return FALSE;

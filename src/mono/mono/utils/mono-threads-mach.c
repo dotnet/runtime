@@ -73,7 +73,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 		return TRUE;
 	}
 	res = mono_threads_get_runtime_callbacks ()->
-		thread_state_init_from_handle (&info->suspend_state, info);
+		thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
 	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)info->native_handle, res);
 	if (res) {
 		if (interrupt_kernel)
@@ -98,7 +98,7 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 	kern_return_t ret;
 
 	if (info->async_target) {
-		MonoContext tmp = info->suspend_state.ctx;
+		MonoContext tmp = info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx;
 		mach_msg_type_number_t num_state;
 		thread_state_t state;
 		ucontext_t uctx;

@@ -402,15 +402,15 @@ update_sgen_info (SgenThreadInfo *info)
 
 	/* Once we remove the old suspend code, we should move sgen to directly access the state in MonoThread */
 	info->stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
-	info->stopped_ip = (gpointer) MONO_CONTEXT_GET_IP (&info->info.suspend_state.ctx);
-	stack_start = (char*)MONO_CONTEXT_GET_SP (&info->info.suspend_state.ctx) - REDZONE_SIZE;
+	info->stopped_ip = (gpointer) MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx);
+	stack_start = (char*)MONO_CONTEXT_GET_SP (&mono_thread_info_get_suspend_state (info)->ctx) - REDZONE_SIZE;
 
 	/* altstack signal handler, sgen can't handle them, mono-threads should have handled this. */
 	if (stack_start < (char*)info->stack_start_limit || stack_start >= (char*)info->stack_end)
 		g_error ("BAD STACK");
 
 	info->stack_start = stack_start;
-	info->ctx = info->info.suspend_state.ctx;
+	info->ctx = mono_thread_info_get_suspend_state (info)->ctx;
 }
 
 static int

@@ -1018,8 +1018,8 @@ mono_arch_notify_pending_exc (MonoThreadInfo *info)
 	if (!info) {
 		lmf = mono_get_lmf ();
 	} else {
-		g_assert (info->suspend_state.valid);
-		lmf = info->suspend_state.unwind_data [MONO_UNWIND_DATA_LMF];
+		g_assert (info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].valid);
+		lmf = info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].unwind_data [MONO_UNWIND_DATA_LMF];
 	}
 
 	if (!lmf)

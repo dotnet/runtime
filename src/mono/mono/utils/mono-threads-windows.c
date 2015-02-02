@@ -79,7 +79,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
-	res = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->suspend_state, info);
+	res = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info);
 	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)id, res);
 	if (res) {
 		//FIXME do we need to QueueUserAPC on this case?
@@ -116,7 +116,7 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 		CONTEXT context;
 		gboolean res;
 
-		ctx = info->suspend_state.ctx;
+		ctx = info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx;
 		mono_threads_get_runtime_callbacks ()->setup_async_callback (&ctx, info->async_target, info->user_data);
 		info->async_target = info->user_data = NULL;
 

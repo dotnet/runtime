@@ -3251,7 +3251,7 @@ print_thread_dump (MonoInternalThread *thread, MonoThreadInfo *info)
 #endif
 #endif
 
-	mono_get_eh_callbacks ()->mono_walk_stack_with_state (print_stack_frame_to_string, &info->suspend_state, MONO_UNWIND_SIGNAL_SAFE, text);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_state (print_stack_frame_to_string, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, text);
 	mono_thread_info_finish_suspend_and_resume (info);
 
 	fprintf (stdout, "%s", text->str);
@@ -4564,7 +4564,7 @@ self_interrupt_thread (void *_unused)
 	MonoThreadInfo *info = mono_thread_info_current ();
 	MonoException *exc = mono_thread_execute_interruption (mono_thread_internal_current ()); 
 	if (exc) /*We must use _with_context since we didn't trampoline into the runtime*/
-		mono_raise_exception_with_context (exc, &info->suspend_state.ctx);
+		mono_raise_exception_with_context (exc, &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx); /* FIXME using thread_saved_state [ASYNC_SUSPEND_STATE_INDEX] can race with another suspend coming in. */
 	g_assert_not_reached (); /*this MUST not happen since we can't resume from an async call*/
 }
 
@@ -4590,7 +4590,7 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 	MonoJitInfo *ji = NULL;
 	if (!info)
 		return NULL;
-	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, &info->suspend_state, MONO_UNWIND_SIGNAL_SAFE, &ji);
+	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &ji);
 	return ji;
 }
 
@@ -4625,7 +4625,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 		return;
 	}
 
-	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (&info->suspend_state)) {
+	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info))) {
 		mono_thread_info_finish_suspend_and_resume (info);
 		return;
 	}
@@ -4639,7 +4639,7 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 
 	ji = mono_thread_info_get_last_managed (info);
 	protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
-	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 
 	if (!protected_wrapper && running_managed) {
 		/*We are in managed code*/
@@ -4712,7 +4712,7 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 
 		ji = mono_thread_info_get_last_managed (info);
 		protected_wrapper = ji && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
-		running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&info->suspend_state.ctx));
+		running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 
 		if (running_managed && !protected_wrapper) {
 			transition_to_suspended (thread, info);

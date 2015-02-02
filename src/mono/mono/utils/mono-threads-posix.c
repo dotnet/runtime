@@ -342,7 +342,6 @@ mono_thread_get_alt_suspend_signal (void)
 #endif /* SIGUSR1 */
 #else
 	static int suspend_signum = -1;
-	int i;
 	if (suspend_signum == -1)
 		suspend_signum = mono_thread_search_alt_signal (-1);
 	return suspend_signum;
@@ -362,7 +361,6 @@ mono_thread_get_alt_resume_signal (void)
 #endif /* SIGUSR1 */
 #else
 	static int resume_signum = -1;
-	int i;
 	if (resume_signum == -1)
 		resume_signum = mono_thread_search_alt_signal (mono_thread_get_alt_suspend_signal ());
 	return resume_signum;
@@ -406,7 +404,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 		goto done;
 	}
 
-	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->suspend_state, context);
+	ret = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], context);
 
 	/* thread_state_init_from_sigctx return FALSE if the current thread is detaching and suspend can't continue. */
 	current->suspend_can_continue = ret;
@@ -442,7 +440,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 	if (current->async_target) {
 #if MONO_ARCH_HAS_MONO_CONTEXT
-		MonoContext tmp = current->suspend_state.ctx;
+		MonoContext tmp = current->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx;
 		mono_threads_get_runtime_callbacks ()->setup_async_callback (&tmp, current->async_target, current->user_data);
 		current->async_target = current->user_data = NULL;
 		mono_monoctx_to_sigctx (&tmp, context);

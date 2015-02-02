@@ -137,14 +137,17 @@ enum {
 	STATE_SELF_SUSPENDED			= 0x04,
 	STATE_ASYNC_SUSPEND_REQUESTED	= 0x05,
 	STATE_SELF_SUSPEND_REQUESTED 	= 0x06,
-	STATE_SUSPEND_IN_PROGRESS		= 0x07,
-	STATE_SUSPEND_PROMOTED_TO_ASYNC	= 0x08,
-	STATE_MAX						= 0x08,
+	// STATE_SUSPEND_IN_PROGRESS		= 0x07,
+	// STATE_SUSPEND_PROMOTED_TO_ASYNC	= 0x08,
+	STATE_MAX						= 0x06,
 
 	THREAD_STATE_MASK			= 0x00FF,
 	THREAD_SUSPEND_COUNT_MASK	= 0xFF00,
 	THREAD_SUSPEND_COUNT_SHIFT	= 8,
-	THREAD_SUSPEND_COUNT_MAX	= 0xFF
+	THREAD_SUSPEND_COUNT_MAX	= 0xFF,
+
+	SELF_SUSPEND_STATE_INDEX = 0,
+	ASYNC_SUSPEND_STATE_INDEX = 1,
 };
 
 /*
@@ -186,7 +189,7 @@ typedef struct {
 #endif
 
 	/*In theory, only the posix backend needs this, but having it on mach/win32 simplifies things a lot.*/
-	MonoThreadUnwindState suspend_state;
+	MonoThreadUnwindState thread_saved_state [2]; //0 is self suspend, 1 is async suspend.
 
 	/*async call machinery, thread MUST be suspended before accessing those fields*/
 	void (*async_target)(void*);
@@ -559,12 +562,12 @@ void mono_threads_transition_attach (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
 void mono_threads_transition_request_self_suspension (THREAD_INFO_TYPE *info);
 MonoRequestAsyncSuspendResult mono_threads_transition_request_async_suspension (THREAD_INFO_TYPE *info);
-gboolean mono_threads_transition_state_poll (THREAD_INFO_TYPE *info);
+MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info);
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
-MonoSelfSupendResult mono_threads_transition_finish_self_suspend (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_finish_async_suspend (THREAD_INFO_TYPE* info);
-void mono_threads_transition_async_suspend_compensation (MonoThreadInfo* info);
+void mono_threads_transition_async_suspend_compensation (THREAD_INFO_TYPE* info);
 
+MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
 /* Advanced suspend API, used for suspending multiple threads as once. */
 gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
