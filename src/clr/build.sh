@@ -68,7 +68,8 @@ build_coreclr()
     cd $__CMakeSlnDir
     
     # Regenerate the CMake solution
-    $__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh $__VBL_ROOT
+    echo Invoking cmake with arguments: $__ProjectRoot $__CMakeArgs
+    $__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh $__ProjectRoot $__CMakeArgs
     
     # Check that the makefiles were created.
     
@@ -79,6 +80,7 @@ build_coreclr()
     
     # Build CoreCLR
     
+    echo Executing make $__UnprocessedBuildArgs
     make $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
         echo Failed to build coreclr components.
@@ -97,10 +99,10 @@ echo Commencing CoreCLR Repo build
 
 # Obtain the location of the bash script to figure out whether the root of the repo is.
 __ProjectRoot=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-__VBL_ROOT="$__ProjectRoot"
 __BuildArch=amd64
 __MSBuildBuildArch=x64
 __BuildType=debug
+__CMakeArgs=DEBUG
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
@@ -129,6 +131,7 @@ for i in "$@"
         ;;
         release)
         __BuildType=release
+        __CMakeArgs=RELEASE
         ;;
         clean)
         __CleanBuild=true
