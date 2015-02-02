@@ -4633,6 +4633,12 @@ parse_double_in_interval (const char *env_var, const char *opt_name, const char 
 	return TRUE;
 }
 
+gboolean
+thread_in_critical_region (SgenThreadInfo *info)
+{
+	return info->in_critical_region;
+}
+
 void
 mono_gc_base_init (void)
 {
@@ -4682,6 +4688,7 @@ mono_gc_base_init (void)
 	cb.thread_unregister = sgen_thread_unregister;
 	cb.thread_attach = sgen_thread_attach;
 	cb.mono_method_is_critical = (gpointer)is_critical_method;
+	cb.mono_thread_in_critical_region = thread_in_critical_region;
 #ifndef HOST_WIN32
 	cb.thread_exit = mono_gc_pthread_exit;
 	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;

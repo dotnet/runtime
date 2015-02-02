@@ -610,8 +610,14 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	MonoMethod *method;
 	MonoJitInfo *ji;
 
+	/* Are we inside a system critical region? */
 	if (info->inside_critical_region)
 		return TRUE;
+
+	/* Are we inside a GC critical region? */
+	if (threads_callbacks.mono_thread_in_critical_region && threads_callbacks.mono_thread_in_critical_region (info)) {
+		return TRUE;
+	}
 
 	/* The target thread might be shutting down and the domain might be null, which means no managed code left to run. */
 	if (!info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN])
