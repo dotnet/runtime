@@ -772,13 +772,15 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 
 			num_sregs = mono_inst_get_src_registers (ins, sregs);
 			for (j = 0; j < num_sregs; ++j) {
-				if (sregs [i] == var->dreg)
+				if (sregs [j] == var->dreg)
 					found = TRUE;
 			}
 			/*We can avoid inserting the XZERO if the first use doesn't depend on the zero'ed value.*/
 			if (ins->dreg == var->dreg && !found) {
+				DEBUG (printf ("[simd-simplify] INGORING R%d on BB %d because first op is a def", i, target_bb [var->dreg]->block_num););
 				break;
 			} else if (found) {
+				DEBUG (printf ("[simd-simplify] Adding XZERO for R%d on BB %d: ", i, target_bb [var->dreg]->block_num); );
 				MonoInst *tmp;
 				MONO_INST_NEW (cfg, tmp, OP_XZERO);
 				tmp->dreg = var->dreg;
@@ -791,8 +793,10 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 	}
 
 	for (ins = first_bb->code; ins; ins = ins->next) {
-		if (ins->opcode == OP_XZERO && (vreg_flags [ins->dreg] & VREG_SINGLE_BB_USE))
+		if (ins->opcode == OP_XZERO && (vreg_flags [ins->dreg] & VREG_SINGLE_BB_USE)) {
+			DEBUG (printf ("[simd-simplify] Nullify %d on first BB: ", ins->dreg); mono_print_ins(ins));
 			NULLIFY_INS (ins);
+		}
 	}
 
 	g_free (vreg_flags);
