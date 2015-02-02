@@ -501,10 +501,12 @@ CreateProcessWithLogonW (const gunichar2 *username,
 }
 
 static gboolean
-is_readable (const char *prog)
+is_readable_or_executable (const char *prog)
 {
 	struct stat buf;
-	if (access (prog, R_OK) != 0)
+	int a = access (prog, R_OK);
+	int b = access (prog, X_OK);
+	if (a != 0 && b != 0)
 		return FALSE;
 	if (stat (prog, &buf))
 		return FALSE;
@@ -645,7 +647,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			prog = g_strdup (unquoted);
 
 			/* Executable existing ? */
-			if (!is_readable (prog)) {
+			if (!is_readable_or_executable (prog)) {
 				DEBUG ("%s: Couldn't find executable %s",
 					   __func__, prog);
 				g_free (unquoted);
@@ -662,7 +664,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			g_free (curdir);
 
 			/* And make sure it's readable */
-			if (!is_readable (prog)) {
+			if (!is_readable_or_executable (prog)) {
 				DEBUG ("%s: Couldn't find executable %s",
 					   __func__, prog);
 				g_free (unquoted);
@@ -753,7 +755,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			prog = g_strdup (token);
 			
 			/* Executable existing ? */
-			if (!is_readable (prog)) {
+			if (!is_readable_or_executable (prog)) {
 				DEBUG ("%s: Couldn't find executable %s",
 					   __func__, token);
 				g_free (token);
@@ -777,7 +779,7 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 			 *
 			 * X_OK is too strict *if* the target is a CLR binary
 			 */
-			if (!is_readable (prog)) {
+			if (!is_readable_or_executable (prog)) {
 				g_free (prog);
 				prog = g_find_program_in_path (token);
 				if (prog == NULL) {
