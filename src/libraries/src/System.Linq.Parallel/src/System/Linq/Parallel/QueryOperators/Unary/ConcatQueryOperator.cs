@@ -205,7 +205,7 @@ namespace System.Linq.Parallel
                 TRightKey rightKey = default(TRightKey);
                 if (_secondSource.MoveNext(ref currentElement, ref rightKey))
                 {
-                    currentKey = ConcatKey.MakeLeft<TLeftKey, TRightKey>(rightKey);
+                    currentKey = ConcatKey.MakeRight<TLeftKey, TRightKey>(rightKey);
                     return true;
                 }
 

@@ -801,7 +801,6 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
-        [Fact(Skip = "Issue #387")] // Require TaskCreationOptions.LongRunning which will cause deadlock when running under xUnit
         public static void TestTryUpdate()
         {
             var dictionary = new ConcurrentDictionary<string, int>();

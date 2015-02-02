@@ -46,7 +46,6 @@ namespace XmlDocumentTests.XmlAttributeTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void OwnerDocumentOnImportedTree()
         {
             var tempDoc = new XmlDocument();
