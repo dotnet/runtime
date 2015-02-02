@@ -580,15 +580,19 @@ mono_thread_info_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel
 		return NULL;
 	}
 
-	if (!mono_threads_transition_request_async_suspension (info)) {
+	switch (mono_threads_transition_request_async_suspension (info)) {
+	case AsyncSuspendAlreadySuspended:
 		mono_hazard_pointer_clear (hp, 1); //XXX this is questionable we got to clean the suspend/resume nonsense of critical sections
 		return info;
-	}
-
-	if (!mono_threads_core_begin_async_suspend (info, interrupt_kernel)) {
-		mono_hazard_pointer_clear (hp, 1);
-		*error_condition = "Could not suspend thread";
-		return NULL;
+	case AsyncSuspendWait:
+		mono_threads_add_to_pending_operation_set (info);
+		break;
+	case AsyncSuspendInitSuspend:
+		if (!mono_threads_core_begin_async_suspend (info, interrupt_kernel)) {
+			mono_hazard_pointer_clear (hp, 1);
+			*error_condition = "Could not suspend thread";
+			return NULL;
+		}
 	}
 
 	//Wait for the pending suspend to finish
@@ -713,12 +717,15 @@ cleanup:
 gboolean
 mono_thread_info_begin_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
-	gboolean res;
-	if (!mono_threads_transition_request_async_suspension (info))
-		return TRUE; //already suspended
-
-	res = mono_threads_core_begin_async_suspend (info, interrupt_kernel);
-	return res;
+	switch (mono_threads_transition_request_async_suspension (info)) {
+	case AsyncSuspendAlreadySuspended:
+		return TRUE;
+	case AsyncSuspendWait:
+		mono_threads_add_to_pending_operation_set (info);
+		return TRUE;
+	case AsyncSuspendInitSuspend:
+		return mono_threads_core_begin_async_suspend (info, interrupt_kernel);
+	}
 }
 
 gboolean

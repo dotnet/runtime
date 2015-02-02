@@ -193,9 +193,13 @@ If this turns to be an issue we can introduce a new suspend request state for wh
 /*
 This transition initiates the suspension of another thread.
 
-Returns TRUE if suspension notification will happen and FALSE if the target is already suspended.
+Returns one of the following values:
+
+- AsyncSuspendInitSuspend: Thread suspend requested, async suspend needs to be done.
+- AsyncSuspendAlreadySuspended: Thread already suspended, nothing to do.
+- AsyncSuspendWait: Self suspend in progress, asked it to notify us. Caller must add target to the notification set.
 */
-gboolean
+MonoRequestAsyncSuspendResult
 mono_threads_transition_request_async_suspension (MonoThreadInfo *info)
 {
 	int raw_state, cur_state, suspend_count;
@@ -210,7 +214,7 @@ retry_state_change:
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, 1);
-		return TRUE; //This is the first async suspend request against the target
+		return AsyncSuspendInitSuspend; //This is the first async suspend request against the target
 
 	case STATE_ASYNC_SUSPENDED:
 	case STATE_SELF_SUSPENDED: //Async suspend can suspend the same thread multiple times as it starts from the outside
@@ -218,14 +222,14 @@ retry_state_change:
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (cur_state, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, cur_state, 1);
-		return FALSE; //Thread is already suspended so we don't need to wait it to suspend
+		return AsyncSuspendAlreadySuspended; //Thread is already suspended so we don't need to wait it to suspend
 
 	case STATE_SELF_SUSPEND_REQUESTED: //This suspend needs to notify the initiator, so we need to promote the suspend to async
 		g_assert (suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX);
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_ASYNC_SUSPEND_REQUESTED, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_ASYNC_SUSPEND_REQUESTED, 1);
-		return TRUE; //This is the first async suspend request against the target
+		return AsyncSuspendInitSuspend; //This is the first async suspend request against the target [1]
 
 	case STATE_SUSPEND_IN_PROGRESS: //Self suspend has already initiated, we need to tell it to inform us in the end
 		g_assert (suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX);
@@ -233,9 +237,16 @@ retry_state_change:
 		if (InterlockedCompareExchange (&info->thread_state, build_thread_state (STATE_SUSPEND_PROMOTED_TO_ASYNC, suspend_count + 1), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("ASYNC_SUSPEND_REQUESTED", info, raw_state, STATE_SUSPEND_PROMOTED_TO_ASYNC, 1);
-		return TRUE; //This is a self suspend in progress that now needs to notify the initiator
+		return AsyncSuspendWait; //This is a self suspend in progress that now needs to notify the initiator
 		break;
 /*
+
+[1] It's questionable on what to do if we hit the beginning of a self suspend.
+The expected behavior is that the target should poll its state very soon so the the suspend latency should be minimal.
+OTOH, an async suspend will speed this and could lead to this happening sooner. This is not set in stone, so we can back out from the current behavior if it shows
+to be a problem.
+
+
 STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in progress and it must finish, it should not be possible to witness this.
 STATE_SUSPEND_PROMOTED_TO_ASYNC: This is a self suspend that was promoted to an async suspend, which should not be possible to witness due to async suspends happening one at a time.
 */
