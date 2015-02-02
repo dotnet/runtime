@@ -5,8 +5,6 @@
 |Debug|[![Build status](http://dotnet-ci.cloudapp.net/job/zzztest_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/zzztest_windows_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/zzztest_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/zzztest_windows_debug/)|
 |Release||[![Build status](http://dotnet-ci.cloudapp.net/job/zzztest_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/zzztest_windows_release/)|
 
-[![Build status](http://dotnet-ci.cloudapp.net/job/zzztest_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/zzztest_windows_release/)
-
 The coreclr repo contains the complete runtime implementation (called "CoreCLR") for [.NET Core](http://github.com/dotnet/core). It includes RyuJIT, the .NET GC, native interop and many other components. It builds and runs on Windows. You can 'watch' the repo to see Linux and Mac support being added over the next few months.
 
 .NET Core is part of ASP.NET 5 and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post. 
