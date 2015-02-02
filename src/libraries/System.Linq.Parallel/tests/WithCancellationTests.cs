@@ -42,7 +42,6 @@ namespace Test
         }
 
         [Fact]
-        [ActiveIssue(240)]
         public static void PreCanceledToken_SimpleEnumerator()
         {
             OperationCanceledException caughtException = null;
@@ -92,34 +91,22 @@ namespace Test
         }
 
         [Fact]
-        [ActiveIssue(176)]
         public static void CTT_Sorting_ToArray()
         {
             int size = 10000;
             CancellationTokenSource tokenSource = new CancellationTokenSource();
 
-            Task.Run(
-                () =>
-                {
-                    //Thread.Sleep(500);
-                    tokenSource.Cancel();
-                });
-
             OperationCanceledException caughtException = null;
             try
             {
-                // This query should run for at least a few seconds due to the sleeps in the select-delegate
-                var query =
-                    Enumerable.Range(1, size).AsParallel()
+                Enumerable.Range(1, size).AsParallel()
                         .WithCancellation(tokenSource.Token)
-                        .Select(
-                        i =>
+                        .Select(i =>
                         {
-                            //Thread.Sleep(1);
+                            tokenSource.Cancel();
                             return i;
-                        });
-
-                query.ToArray();
+                        })
+                        .ToArray();
             }
             catch (OperationCanceledException ex)
             {
@@ -131,35 +118,25 @@ namespace Test
         }
 
         [Fact]
-        [ActiveIssue(176)]
         public static void CTT_NonSorting_AsynchronousMergerEnumeratorDispose()
         {
             int size = 10000;
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             Exception caughtException = null;
 
-            var query =
-                    Enumerable.Range(1, size).AsParallel()
+            IEnumerator<int> enumerator = null;
+            ParallelQuery<int> query = null;
+            query = Enumerable.Range(1, size).AsParallel()
                         .WithCancellation(tokenSource.Token)
-                        .Select(
-                        i =>
+                        .Select(i =>
                         {
-                            //Thread.Sleep(1000);
+                            enumerator.Dispose();
                             return i;
                         });
 
-            IEnumerator<int> enumerator = query.GetEnumerator();
-
-            Task.Run(
-                () =>
-                {
-                    //Thread.Sleep(500);
-                    enumerator.Dispose();
-                });
-
+            enumerator = query.GetEnumerator();
             try
             {
-                // This query should run for at least a few seconds due to the sleeps in the select-delegate
                 for (int j = 0; j < 1000; j++)
                 {
                     enumerator.MoveNext();
@@ -173,8 +150,6 @@ namespace Test
             Assert.NotNull(caughtException);
         }
 
-
-
         [Fact]
         public static void CTT_NonSorting_SynchronousMergerEnumeratorDispose()
         {
@@ -182,25 +157,18 @@ namespace Test
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             Exception caughtException = null;
 
+            IEnumerator<int> enumerator = null;
             var query =
                     Enumerable.Range(1, size).AsParallel()
                         .WithCancellation(tokenSource.Token)
                         .Select(
                         i =>
                         {
-                            SimulateThreadSleep(100);
+                            enumerator.Dispose();
                             return i;
                         }).WithMergeOptions(ParallelMergeOptions.FullyBuffered);
 
-            IEnumerator<int> enumerator = query.GetEnumerator();
-
-            Task.Run(
-                () =>
-                {
-                    SimulateThreadSleep(200);
-                    enumerator.Dispose();
-                });
-
+            enumerator = query.GetEnumerator();
             try
             {
                 // This query should run for at least a few seconds due to the sleeps in the select-delegate
@@ -217,40 +185,7 @@ namespace Test
             Assert.NotNull(caughtException);
         }
 
-        [Fact]
-        [ActiveIssue(176)]
-        public static void CTT_NonSorting_ToArray_ExternalCancel()
-        {
-            int size = 10000;
-            CancellationTokenSource tokenSource = new CancellationTokenSource();
-            OperationCanceledException caughtException = null;
-
-            Task.Run(
-                () =>
-                {
-                    //Thread.Sleep(1000);
-                    tokenSource.Cancel();
-                });
-
-            try
-            {
-                int[] output = Enumerable.Range(1, size).AsParallel()
-                   .WithCancellation(tokenSource.Token)
-                   .Select(
-                   i =>
-                   {
-                       //Thread.Sleep(100);
-                       return i;
-                   }).ToArray();
-            }
-            catch (OperationCanceledException ex)
-            {
-                caughtException = ex;
-            }
-
-            Assert.NotNull(caughtException);
-            Assert.Equal(tokenSource.Token, caughtException.CancellationToken);
-        }
+        
 
         /// <summary>
         /// 
@@ -298,6 +233,7 @@ namespace Test
         // To specifically verify this test, we want to know that the Async channels were blocked in TryEnqueChunk before Dispose() is called
         //  -> this was verified manually, but is not simple to automate
         [Fact]
+        [OuterLoop]  // explicit timeouts / delays
         public static void ChannelCancellation_ProducerBlocked()
         {
             Console.WriteLine("PlinqCancellationTests.ChannelCancellation_ProducerBlocked()");
@@ -310,7 +246,6 @@ namespace Test
             var enumerator1 = query1.GetEnumerator();
             enumerator1.MoveNext();
             Task.Delay(1000).Wait();
-            //Thread.Sleep(1000); // give the pipelining time to fill up some buffers.
             enumerator1.MoveNext();
             enumerator1.Dispose(); //can potentially hang
 
@@ -403,6 +338,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop] // explicit timeouts / delays
         public static void CancellationSequentialWhere()
         {
             IEnumerable<int> src = Enumerable.Repeat(0, int.MaxValue);
@@ -440,6 +376,7 @@ namespace Test
         }
 
         [Fact]
+        [OuterLoop] // explicit timeouts / delays
         public static void CancellationSequentialElementAt()
         {
             IEnumerable<int> src = Enumerable.Repeat(0, int.MaxValue);
@@ -469,13 +406,13 @@ namespace Test
             // would occur at the query opening time. The goal of this test is to test cancellation
             // at query execution time.
             Task.Delay(100).Wait();
-            //Thread.Sleep(100);
 
             tokenSrc.Cancel();
             task.Wait();
         }
 
         [Fact]
+        [OuterLoop]  // explicit timeouts / delays
         public static void CancellationSequentialDistinct()
         {
             IEnumerable<int> src = Enumerable.Repeat(0, int.MaxValue);
@@ -506,7 +443,6 @@ namespace Test
             // would occur at the query opening time. The goal of this test is to test cancellation
             // at query execution time.
             Task.Delay(100).Wait();
-            //Thread.Sleep(100);
 
             tokenSrc.Cancel();
             task.Wait();
@@ -514,7 +450,6 @@ namespace Test
 
         // Regression test for an issue causing ODE if a queryEnumator is disposed before moveNext is called.
         [Fact]
-        [ActiveIssue(240)]
         public static void ImmediateDispose()
         {
             var queryEnumerator = Enumerable.Range(1, 10).AsParallel().Select(x => x).GetEnumerator();
@@ -523,39 +458,28 @@ namespace Test
 
         // REPRO 1 -- cancellation
         [Fact]
-        [ActiveIssue(176)]
         public static void SetOperationsThrowAggregateOnCancelOrDispose_1()
         {
-            var mre = new ManualResetEvent(false);
+            CancellationTokenSource cs = new CancellationTokenSource();
             var plinq_src =
                 Enumerable.Range(0, 5000000).Select(x =>
                 {
-                    if (x == 0) mre.Set();
+                    cs.Cancel();
                     return x;
                 });
 
-            Task t = null;
             try
             {
-                CancellationTokenSource cs = new CancellationTokenSource();
                 var plinq = plinq_src
                     .AsParallel().WithCancellation(cs.Token)
                     .WithDegreeOfParallelism(1)
                     .Union(Enumerable.Range(0, 10).AsParallel());
 
                 var walker = plinq.GetEnumerator();
-
-                t = Task.Run(() =>
-                {
-                    mre.WaitOne();
-                    cs.Cancel();
-                });
                 while (walker.MoveNext())
                 {
-                    //Thread.Sleep(1);
                     var item = walker.Current;
                 }
-                walker.MoveNext();
                 Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_1:  OperationCanceledException was expected, but no exception occured."));
             }
             catch (OperationCanceledException)
@@ -567,13 +491,10 @@ namespace Test
             {
                 Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_1:  OperationCanceledException was expected, but a different exception occured.  " + e.ToString()));
             }
-
-            if (t != null) t.Wait();
         }
 
         // throwing a fake OCE(ct) when the ct isn't canceled should produce an AggregateException.
         [Fact]
-        [ActiveIssue(240)]
         public static void SetOperationsThrowAggregateOnCancelOrDispose_2()
         {
             try
@@ -587,20 +508,13 @@ namespace Test
                 var walker = plinq.GetEnumerator();
                 while (walker.MoveNext())
                 {
-                    //Thread.Sleep(1);
                 }
-                walker.MoveNext();
                 Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2:  failed.  AggregateException was expected, but no exception occured."));
-            }
-            catch (OperationCanceledException)
-            {
-                Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2:  FAILED.  AggregateExcption was expected, but an OperationCanceledException occured."));
             }
             catch (AggregateException)
             {
                 // expected
             }
-
             catch (Exception e)
             {
                 Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2.  failed.  AggregateExcption was expected, but some other exception occured." + e.ToString()));
@@ -677,38 +591,6 @@ namespace Test
             {
                 Assert.True(false, string.Format("PlinqCancellationTests.CancelThenDispose:  > Failed. Expected no exception, got " + e.GetType()));
             }
-        }
-
-        [Fact]
-        [ActiveIssue(240)]
-        public static void CancellationCausingNoDataMustThrow()
-        {
-            OperationCanceledException oce = null;
-
-            CancellationTokenSource cs = new CancellationTokenSource();
-
-            var query = Enumerable.Range(0, 100000000)
-            .Select(x =>
-            {
-                if (x == 0) cs.Cancel();
-                return x;
-            })
-            .AsParallel()
-            .WithCancellation(cs.Token)
-            .Select(x => x);
-
-            try
-            {
-                foreach (var item in query) //We expect an OperationCancelledException during the MoveNext
-                {
-                }
-            }
-            catch (OperationCanceledException ex)
-            {
-                oce = ex;
-            }
-
-            Assert.NotNull(oce);
         }
 
         [Fact]
