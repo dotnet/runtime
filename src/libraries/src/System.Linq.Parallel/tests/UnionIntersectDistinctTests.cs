@@ -83,7 +83,6 @@ namespace Test
         }
 
         [Fact]
-        [ActiveIssue(176)]
         public static void RunOrderedUnionTest1()
         {
             for (int len = 1; len <= 300; len += 3)
@@ -100,7 +99,6 @@ namespace Test
                     .Concat(Enumerable.Repeat(0, len))
                     .Concat(new int[] { 3 })
                     .Concat(Enumerable.Repeat(0, len));
-
 
                 int[][] outputs = {
                     data.AsParallel().AsOrdered().Union(Enumerable.Empty<int>().AsParallel()).ToArray(),
