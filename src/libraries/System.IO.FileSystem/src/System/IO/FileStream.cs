@@ -134,19 +134,19 @@ namespace System.IO
         // InternalOpen, InternalCreate, and InternalAppend:
         // Factory methods for FileStream used by File, FileInfo, and ReadLinesIterator
         // Specifies default access and sharing options for FileStreams created by those classes
-        internal static FileStream InternalOpen(String path)
+        internal static FileStream InternalOpen(String path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultUseAsync)
         {
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize, DefaultUseAsync);
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
         }
 
-        internal static FileStream InternalCreate(String path)
+        internal static FileStream InternalCreate(String path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultUseAsync)
         {
-            return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, DefaultUseAsync);
+            return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
 
-        internal static FileStream InternalAppend(String path)
+        internal static FileStream InternalAppend(String path, int bufferSize = DefaultBufferSize, bool useAsync = DefaultUseAsync)
         {
-            return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, DefaultBufferSize, DefaultUseAsync);
+            return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
 
         #region FileStream members

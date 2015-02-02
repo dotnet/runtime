@@ -30,8 +30,6 @@ public class UmsSecurityTests
                         //change via PositionPointer
                         fixed (byte* invalidbytePtr = positionPointerByteArrays[positionLoop])
                         {
-                            // This depends on the layout of pinned memory
-                            Assert.True((long)invalidbytePtr > ((long)bytePtr + data.Length), String.Format("{0} > {1} + {2}", (long)invalidbytePtr, (long)bytePtr, data.Length));
                             // not throw currently
                             stream.PositionPointer = invalidbytePtr;
                             VerifyNothingCanBeReadOrWritten(stream, data);

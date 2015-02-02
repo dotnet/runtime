@@ -12,18 +12,14 @@ namespace Test
     public static class PlinqModesTests
     {
         [Fact]
-        [ActiveIssue(176)]
         public static void RunPlinqModesTests()
         {
-            // I would assume that this gets the number of processors (ie. Environment.ProcessorCount)
-            // but since we are trying to exclude dependencies that aren't part of the contract, we
-            // can't use System.Runtime.Extensions.  So we had to remove this check.
-
-            //            if (SchedulingProxy.GetDefaultDegreeOfParallelism() == 1)
-            //            {
-            //                Console.WriteLine("   - Test does not apply to the DOP=1 case.");
-            //                return true;
-            //            }
+            if (Environment.ProcessorCount == 1)
+            {
+                // Test doesn't apply to DOP == 1.  It verifies that work is actually
+                // happening in parallel, which won't be the case with DOP == 1.
+                return; 
+            }
 
             Action<ParallelExecutionMode, Verifier>[] hardQueries = {
                 (mode,verifier) => ParallelEnumerable.Range(0, 1000).WithExecutionMode(mode)
@@ -156,7 +152,7 @@ namespace Test
         {
             private int _counter = 0;
             private bool _passed = false;
-            private const int TIMEOUT_LIMIT = 5000;
+            private const int TIMEOUT_LIMIT = 30000;
 
             internal override int Verify(int x)
             {

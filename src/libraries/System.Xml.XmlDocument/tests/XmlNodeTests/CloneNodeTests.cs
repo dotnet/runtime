@@ -28,7 +28,6 @@ namespace XmlDocumentTests.XmlNodeTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void CloneComplexDocumentTrue()
         {
             var xmlDocument = new XmlDocument();
@@ -104,7 +103,6 @@ namespace XmlDocumentTests.XmlNodeTests
         }
 
         [Fact]
-        [ActiveIssue(208)]
         public static void CloneComplexDocumentTrueAndManipulate()
         {
             var xmlDocument = new XmlDocument();

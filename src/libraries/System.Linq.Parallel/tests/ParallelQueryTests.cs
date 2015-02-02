@@ -11,7 +11,6 @@ namespace Test
     public static class ParallelQueryTests
     {
         [Fact]
-        [ActiveIssue(235)]
         public static void RunTests()
         {
             LeftOperator[] leftOps = new LeftOperator[] {
