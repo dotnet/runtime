@@ -27,55 +27,39 @@ namespace Test
             // "InternalCancellation_WakingUpTryAdd:  an InvalidOpEx should be thrown if CompleteAdding occurs during blocking Add()");
         }
 
-        //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while the taker is waiting.
+        //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while waiting
         [Fact]
-        public static void InternalCancellation_WakingUpTryTake()
+        public static void InternalCancellation_WakingUp()
         {
-            BlockingCollection<int> coll1 = new BlockingCollection<int>();
+            for (int test = 0; test < 2; test++)
+            {
+                BlockingCollection<int> coll1 = new BlockingCollection<int>(1);
+                coll1.Add(1); //fills the collection.
+                Assert.False(coll1.IsAddingCompleted,
+                   "InternalCancellation_WakingUp:  At this point CompleteAdding should not have occurred.");
 
-            Task.Run(
-                () =>
+                // This is racy on what we want to test, in that it's possible this queued work could execute
+                // so quickly that CompleteAdding happens before the tested method gets invoked, but the test
+                // should still pass in such cases, we're just testing something other than we'd planned.
+                Task t = Task.Run(() => coll1.CompleteAdding());
+
+                // Try different methods that should wake up once CompleteAdding has been called
+                int item = coll1.Take(); // remove the existing item in the collection
+                switch (test)
                 {
-                    coll1.CompleteAdding();
-                });
+                    case 0:
+                        Assert.Throws<InvalidOperationException>(() => coll1.Take());
+                        break;
+                    case 1:
+                        Assert.False(coll1.TryTake(out item));
+                        break;
+                }
 
-            int item;
-            bool tookItem = coll1.TryTake(out item, 1000000); // wait essentially indefinitely. 1000seconds.
-            Assert.False(tookItem,
-               "InternalCancellation_WakingUpTryTake:  TryTake should wake up with tookItem=false.");
-        }
+                t.Wait();
 
-        //This tests that Take/TryTake wake up correctly if CompleteAdding() is called while the taker is waiting.
-        [Fact]
-        public static void InternalCancellation_WakingUpAdd()
-        {
-            BlockingCollection<int> coll1 = new BlockingCollection<int>(1);
-            coll1.Add(1); //fills the collection.
-
-            Task.Run(
-                () =>
-                {
-                    coll1.CompleteAdding();
-                });
-
-            Assert.False(coll1.IsAddingCompleted, "InternalCancellation_WakingUpAdd:  (1) At this point CompleteAdding should not have occurred.");
-        }
-
-        //This tests that TryAdd wake up correctly if CompleteAdding() is called while the taker is waiting.
-        [Fact]
-        public static void InternalCancellation_WakingUpTryAdd()
-        {
-            BlockingCollection<int> coll1 = new BlockingCollection<int>(1);
-            coll1.Add(1); //fills the collection.
-
-            Task.Run(
-                () =>
-                {
-                    coll1.CompleteAdding();
-                });
-
-            Assert.False(coll1.IsAddingCompleted,
-               "InternalCancellation_WakingUpTryAdd:  At this point CompleteAdding should not have occurred.");
+                Assert.True(coll1.IsAddingCompleted,
+                   "InternalCancellation_WakingUp:  At this point CompleteAdding should have occurred.");
+            }
         }
 
         [Fact]
@@ -123,53 +107,55 @@ namespace Test
         [Fact]
         public static void ExternalCancel_AddToAny()
         {
-            BlockingCollection<int> bc1 = new BlockingCollection<int>(1);
-            BlockingCollection<int> bc2 = new BlockingCollection<int>(1);
-            bc1.Add(1); //fill the bc.
-            bc2.Add(1); //fill the bc.
-
-            CancellationTokenSource cs = new CancellationTokenSource();
-            Task.Run(() =>
+            for (int test = 0; test < 3; test++)
             {
-                cs.Cancel();
-            });
+                BlockingCollection<int> bc1 = new BlockingCollection<int>(1);
+                BlockingCollection<int> bc2 = new BlockingCollection<int>(1);
+                bc1.Add(1); //fill the bc.
+                bc2.Add(1); //fill the bc.
 
-            Assert.False(cs.IsCancellationRequested,
-               "ExternalCancel_AddToAny:  At this point the cancel should not have occurred.");
-        }
-
-        [Fact]
-        public static void ExternalCancel_TryAddToAny()
-        {
-            BlockingCollection<int> bc1 = new BlockingCollection<int>(1);
-            BlockingCollection<int> bc2 = new BlockingCollection<int>(1);
-            bc1.Add(1); //fill the bc.
-            bc2.Add(1); //fill the bc.
-
-            CancellationTokenSource cs = new CancellationTokenSource();
-            Task.Run(() =>
-            {
-                cs.Cancel();
-            });
-
-            Assert.False(cs.IsCancellationRequested,
-               "ExternalCancel_AddToAny:  At this point the cancel should not have occurred.");
+                // This may or may not cancel before {Try}AddToAny executes, but either way the test should pass.
+                // A delay could be used to attempt to force the right timing, but not for an inner loop test.
+                CancellationTokenSource cs = new CancellationTokenSource();
+                Task.Run(() => cs.Cancel()); 
+                Assert.Throws<OperationCanceledException>(() =>
+                {
+                    switch (test)
+                    {
+                        case 0:
+                            BlockingCollection<int>.AddToAny(new[] { bc1, bc2 }, 42, cs.Token);
+                            break;
+                        case 1:
+                            BlockingCollection<int>.TryAddToAny(new[] { bc1, bc2 }, 42, Timeout.Infinite, cs.Token);
+                            break;
+                        case 2:
+                            BlockingCollection<int>.TryAddToAny(new[] { bc1, bc2 }, 42, (int)TimeSpan.FromDays(1).TotalMilliseconds, cs.Token);
+                            break;
+                    }
+                });
+                Assert.True(cs.IsCancellationRequested);
+            }
         }
 
         [Fact]
         public static void ExternalCancel_GetConsumingEnumerable()
         {
             BlockingCollection<int> bc = new BlockingCollection<int>();
-            CancellationTokenSource cs = new CancellationTokenSource();
-            Task.Run(() =>
+            bc.Add(1);
+            bc.Add(2);
+
+            var cs = new CancellationTokenSource();
+            int total = 0;
+            Assert.Throws<OperationCanceledException>(() =>
             {
-                Task.WaitAll(Task.Delay(100));
-                cs.Cancel();
+                foreach (int item in bc.GetConsumingEnumerable(cs.Token))
+                {
+                    total += item;
+                    cs.Cancel();
+                }
             });
-
-            IEnumerable<int> enumerable = bc.GetConsumingEnumerable(cs.Token);
-
-            Assert.False(cs.IsCancellationRequested, "ExternalCancel_GetConsumingEnumerable:  At this point the cancel should not have occurred.");
+            Assert.True(cs.IsCancellationRequested);
+            Assert.Equal(expected: 1, actual: total);
         }
 
         #region Helper Methods
