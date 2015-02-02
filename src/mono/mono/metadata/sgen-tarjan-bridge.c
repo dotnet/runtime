@@ -661,7 +661,7 @@ push_all (ScanData *data)
 {
 	MonoObject *obj = data->obj;
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor (start);
+	mword desc = sgen_obj_get_descriptor_safe (start);
 
 #if DUMP_GRAPH
 	printf ("**scanning %p %s\n", obj, safe_name_bridge (obj));
@@ -713,7 +713,7 @@ compute_low (ScanData *data)
 {
 	MonoObject *obj = data->obj;
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor (start);
+	mword desc = sgen_obj_get_descriptor_safe (start);
 
 	#include "sgen-scan-object.h"
 }

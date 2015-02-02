@@ -526,7 +526,7 @@ dfs1 (HashEntry *obj_entry)
 
 			obj = obj_entry->obj;
 			start = (char*)obj;
-			desc = sgen_obj_get_descriptor (start);
+			desc = sgen_obj_get_descriptor_safe (start);
 
 			if (src) {
 				//g_print ("link %s -> %s\n", sgen_safe_name (src->obj), sgen_safe_name (obj));
