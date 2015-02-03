@@ -188,10 +188,10 @@ namespace _GCStress
     {
         // no definition provided so that absence of concrete implementations cause compiler errors
         template <enum gcs_trigger_points>
-        static bool IsEnabled();
+        bool IsEnabled();
 
         template<> FORCEINLINE
-        static bool IsEnabled<cfg_any>()
+        bool IsEnabled<cfg_any>()
         {
             // Most correct would be to test for each specific bits, but we've
             // always only tested against 0...
@@ -203,7 +203,7 @@ namespace _GCStress
 
         #define DefineIsEnabled(cfg_enum, eeconfig_bits)                    \
         template<> FORCEINLINE                                              \
-        static bool IsEnabled<cfg_enum>()                                   \
+        bool IsEnabled<cfg_enum>()                                   \
         {                                                                   \
             return (g_pConfig->GetGCStressLevel() & (eeconfig_bits)) != 0;  \
         }

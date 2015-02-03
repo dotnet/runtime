@@ -10765,7 +10765,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     // If we need to fault, let's generate an access violation.
     if (s_fDbgFaultInHandleIPCEvent)
     {
-        *((BYTE *)0) = 0;
+        *((volatile BYTE *)0) = 0;
     }
 #endif
 

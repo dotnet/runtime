@@ -4451,9 +4451,6 @@ VOID DoAccessibilityCheckForConstraints(MethodTable *pAskingMT, TypeVarTypeDesc 
 //              walked. Note that it would be just as correct to always defer to the pending list -
 //              however, that is a little less performant.
 //
-//   pInstContext - instantiation context created in code:SigPointer.GetTypeHandleThrowing and
-//                  ultimately passed down to code:TypeVarTypeDesc.SatisfiesConstraints.
-//
 
 
 // Closure of locals necessary for implementing CheckForEquivalenceAndFullyLoadType.
@@ -4463,7 +4460,6 @@ struct DoFullyLoadLocals
     DoFullyLoadLocals(DFLPendingList *pPendingParam, ClassLoadLevel levelParam, MethodTable *pMT, Generics::RecursionGraph *pVisited) :
         newVisited(pVisited, TypeHandle(pMT)),
         pPending(pPendingParam),
-        pInstContext(pInstContext),
         level(levelParam),
         fBailed(FALSE)
 #ifdef FEATURE_COMINTEROP
@@ -4477,7 +4473,6 @@ struct DoFullyLoadLocals
 
     Generics::RecursionGraph newVisited;
     DFLPendingList * const pPending;
-    const InstantiationContext * const pInstContext;
     const ClassLoadLevel level;
     BOOL fBailed;
 #ifdef FEATURE_COMINTEROP
@@ -4507,7 +4502,7 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
         TypeHandle th = sigPtr.GetTypeHandleThrowing(pModule, pTypeContext, ClassLoader::LoadTypes, (ClassLoadLevel)(pLocals->level - 1));
         CONSISTENCY_CHECK(!th.IsNull());
 
-        th.DoFullyLoad(&pLocals->newVisited, pLocals->level, pLocals->pPending, &pLocals->fBailed, pLocals->pInstContext);
+        th.DoFullyLoad(&pLocals->newVisited, pLocals->level, pLocals->pPending, &pLocals->fBailed, NULL);
         pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
         pLocals->fHasEquivalentStructParameter = TRUE;
     }
