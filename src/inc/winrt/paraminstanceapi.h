@@ -77,7 +77,7 @@ namespace Ro { namespace detail {
 
     // 
     // Debugging aide.  Set breakpoint on _FailedHR 
-    //  to see HRESULT propogation.
+    //  to see HRESULT propagation.
     // 
     #ifdef DBG
     inline HRESULT __declspec(noinline) _FailedHR(HRESULT hr) { static HRESULT _hr = hr; return hr; }
@@ -88,7 +88,7 @@ namespace Ro { namespace detail {
 
 #undef CHKHR
 // 
-// Call HRESULT returning code and propogate any errors.
+// Call HRESULT returning code and propagate any errors.
 // Note: only use in code that is exception-safe / uses RAII.
 // 
 #define CHKHR(expr) \
@@ -98,7 +98,7 @@ namespace Ro { namespace detail {
 
 #undef CHKNT
 // 
-// Call NTSTATUS returning code and propogate any errors, as HRESULTs.
+// Call NTSTATUS returning code and propagate any errors, as HRESULTs.
 // Note: 
 //   - only use in code that is exception-safe / uses RAII / RRID.
 //   - HRESULT_FROM_NT does safely convert STATUS_SUCCESS into 
@@ -642,7 +642,7 @@ namespace Ro { namespace detail {
     private:
         
         // 
-        // growth factor (does not check for overflow) -- returns ammount to grow by
+        // growth factor (does not check for overflow) -- returns amount to grow by
         // 
         
         static size_t _GrowthIncrement(size_t n)
@@ -735,7 +735,7 @@ namespace Ro { namespace detail {
         HRESULT _CommonInterfaceGroupSimple(PCWSTR name, PCWSTR defaultInterfaceName, __in_opt const GUID *defaultInterfaceIID);
 
          
-        // Called at the begining of every 'Set' method.  Set must only be called once. 
+        // Called at the beginning of every 'Set' method.  Set must only be called once. 
         
         HRESULT _OnSet();
 
@@ -928,14 +928,14 @@ namespace Ro { namespace detail {
         //     eg, RoGetParameterizedInstanceIID arguments, or
         //         SetIG..Parameterized
         //     : will 0) note nesting level
-        //            1) iteratate calling Locate on the compound arguments.
+        //            1) iterate calling Locate on the compound arguments.
         //            2) the above should cause exactly one push of _nestingLevel
-        //            3) reduce nexting level back to original nesting level, 
+        //            3) reduce nesting level back to original nesting level, 
         //               inserting the difference in closing parens
-        //  - Compount types that do know number of arguments (eg SetStruct)
+        //  - Compound types that do know number of arguments (eg SetStruct)
         //     : will 1) increase nesting level by 1
-        //            2) iteratate calling Locate on arguments
-        //            3) decreate nesting level again
+        //            2) iterate calling Locate on arguments
+        //            3) decrease nesting level again
         // 
         // 
         
@@ -1070,7 +1070,7 @@ namespace Ro { namespace detail
     // Computes the rfc4122 v5 UUID from GUID,name pair.
     // 
     // Notes:
-    //   - see copyright at begining of file.
+    //   - see copyright at beginning of file.
     // 
     
     inline HRESULT
@@ -1234,7 +1234,7 @@ namespace Ro { namespace detail
             
             // Note, buffers aren't reusable, so it's fine that we don't
             // unwind this value on return.  Also note, we do not unwind
-            // this value if the user provides inconsitent data either 
+            // this value if the user provides inconsistent data either 
             // (eg, if they provide only 1 argument to a 2 parameter
             // parameterized type).
             
@@ -1474,8 +1474,8 @@ namespace Ro { namespace detail
         CHKHR(_OnSet());
 
         
-        // If an inteface group or runtime class has a compount type as its default, and that 
-        // type directly or indirectly refers to itself, the second occurance instead used '*'
+        // If an interface group or runtime class has a compound type as its default, and that 
+        // type directly or indirectly refers to itself, the second occurrence instead used '*'
         // to signal that the default interface has already been specified earlier up the call
         // stack.  This prevents unbounded recursion.
         
