@@ -5793,7 +5793,7 @@ inline
 BOOL grow_mark_stack (mark*& m, size_t& len, size_t init_len)
 {
     size_t new_size = max (init_len, 2*len);
-    mark* tmp = new (nothrow) (mark [new_size]);
+    mark* tmp = new (nothrow) mark [new_size];
     if (tmp)
     {
         memcpy (tmp, m, len * sizeof (mark));
@@ -8122,7 +8122,7 @@ public:
             MAX_NUM_BUCKETS * sizeof (free_space_bucket) +
             MAX_NUM_FREE_SPACES * sizeof (seg_free_space);
 
-        free_space_buckets = (free_space_bucket*) new (nothrow) (BYTE[total_prealloc_size]);
+        free_space_buckets = (free_space_bucket*) new (nothrow) BYTE[total_prealloc_size];
 
         return (!!free_space_buckets);
     }
@@ -16807,7 +16807,7 @@ gc_heap::ha_mark_object_simple (BYTE** po THREAD_NUMBER_DCL)
 {
     if (!internal_root_array)
     {
-        internal_root_array = new (nothrow) (BYTE* [internal_root_array_length]);
+        internal_root_array = new (nothrow) BYTE* [internal_root_array_length];
         if (!internal_root_array)
         {
             heap_analyze_success = FALSE;
@@ -16826,7 +16826,7 @@ gc_heap::ha_mark_object_simple (BYTE** po THREAD_NUMBER_DCL)
         }
         else
         {
-            BYTE** tmp = new (nothrow) (BYTE* [new_size]);
+            BYTE** tmp = new (nothrow) BYTE* [new_size];
             if (tmp)
             {
                 memcpy (tmp, internal_root_array,
@@ -17712,7 +17712,7 @@ recheck:
             {
                 dprintf (2, ("h%d: ov grow to %Id", heap_number, new_size));
 
-                BYTE** tmp = new (nothrow) (BYTE* [new_size]);
+                BYTE** tmp = new (nothrow) BYTE* [new_size];
                 if (tmp)
                 {
                     delete background_mark_stack_array;
@@ -17818,7 +17818,7 @@ recheck:
         if ((mark_stack_array_length < new_size) && 
             ((new_size - mark_stack_array_length) > (mark_stack_array_length / 2)))
         {
-            mark* tmp = new (nothrow) (mark [new_size]);
+            mark* tmp = new (nothrow) mark [new_size];
             if (tmp)
             {
                 delete mark_stack_array;
@@ -25132,7 +25132,7 @@ void gc_heap::background_grow_c_mark_list()
         }
         else
         {
-            new_c_mark_list = new (nothrow) (BYTE*[c_mark_list_length*2]);
+            new_c_mark_list = new (nothrow) BYTE*[c_mark_list_length*2];
             if (new_c_mark_list == 0)
             {
                 should_drain_p = TRUE;
@@ -35081,7 +35081,7 @@ CFinalize::GrowArray()
     size_t oldArraySize = (m_EndArray - m_Array);
     size_t newArraySize =  (size_t)(((float)oldArraySize / 10) * 12);
 
-    Object** newArray = new (nothrow)(Object*[newArraySize]);
+    Object** newArray = new (nothrow) Object*[newArraySize];
     if (!newArray)
     {
         // It's not safe to throw here, because of the FinalizeLock.  Tell our caller
