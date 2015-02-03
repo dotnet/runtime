@@ -2776,6 +2776,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <typeparam name="TInput">The type of the messages this block can accept.</typeparam>
         private class NullTargetBlock<TInput> : ITargetBlock<TInput>
         {
+            private Task _completion;
+
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
             DataflowMessageStatus ITargetBlock<TInput>.OfferMessage(DataflowMessageHeader messageHeader, TInput messageValue, ISourceBlock<TInput> source, Boolean consumeToAccept)
             {
@@ -2802,7 +2804,10 @@ namespace System.Threading.Tasks.Dataflow
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
             void IDataflowBlock.Fault(Exception exception) { } // No-op
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
-            Task IDataflowBlock.Completion { get { return Common.NeverCompletingTask; } }
+            Task IDataflowBlock.Completion
+            {
+                get { return LazyInitializer.EnsureInitialized(ref _completion, () => new TaskCompletionSource<VoidResult>().Task); }
+            }
         }
         #endregion
     }
