@@ -7,14 +7,14 @@ namespace System.ComponentModel
 
     public class RunWorkerCompletedEventArgs : AsyncCompletedEventArgs
     {
-        private object result;
+        private readonly object _result;
 
         public RunWorkerCompletedEventArgs(object result,
                                            Exception error,
                                            bool cancelled)
             : base(error, cancelled, null)
         {
-            this.result = result;
+            _result = result;
         }
 
         public object Result
@@ -22,7 +22,7 @@ namespace System.ComponentModel
             get
             {
                 base.RaiseExceptionIfNecessary();
-                return result;
+                return _result;
             }
         }
 
