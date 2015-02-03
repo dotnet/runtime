@@ -64,6 +64,6 @@ There are many .NET projects on GitHub.
 
 [.NET Core oss]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
 [Introducing .NET Core]: http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx
-[coreclr blog post]: http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-open-source.aspx
+[coreclr blog post]: http://blogs.msdn.com/b/dotnet/archive/2015/02/03/coreclr-is-now-open-source.aspx
 [corefx]: http://github.com/dotnet/corefx
 [coreclr]: http://github.com/dotnet/coreclr
