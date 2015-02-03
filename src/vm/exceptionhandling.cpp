@@ -106,7 +106,7 @@ static ExceptionTracker* GetTrackerMemory()
     return g_theTrackerAllocator.GetTrackerMemory();
 }
 
-static void FreeTrackerMemory(ExceptionTracker* pTracker, TrackerMemoryType mem)
+void FreeTrackerMemory(ExceptionTracker* pTracker, TrackerMemoryType mem)
 {
     CONTRACTL
     {
@@ -380,8 +380,10 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
 
     UPDATEREG(Rbx);
     UPDATEREG(Rbp);
+#ifndef UNIX_AMD64_ABI
     UPDATEREG(Rsi);
     UPDATEREG(Rdi);
+#endif    
     UPDATEREG(R12);
     UPDATEREG(R13);
     UPDATEREG(R14);
