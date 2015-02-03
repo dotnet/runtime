@@ -12,17 +12,17 @@
     </project>
     <project dir="class/corlib" library="corlib-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/mscorlib.dll</library_output>
       <fx_version>4.0</fx_version>
       <profile>basic</profile>
-      <response>./../../build/deps/basic_corlib.dll.sources</response>
+      <response>corlib.dll.sources</response>
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -42,7 +42,7 @@
     </project>
     <project dir="class/System" library="System-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:BOOTSTRAP_BASIC -nowarn:1699 -d:DISABLE_CAS_USE -lib:./../../class/lib/basic -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/basic/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.dll</library_output>
@@ -72,7 +72,7 @@
     </project>
     <project dir="class/corlib" library="corlib-build">
       <boot>true</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/mscorlib.dll</library_output>
@@ -82,7 +82,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -92,7 +92,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -102,7 +102,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -132,7 +132,7 @@
     </project>
     <project dir="class/System" library="System-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.dll</library_output>
@@ -142,7 +142,7 @@
     </project>
     <project dir="class/System" library="System-bare-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/bare/System.dll</library_output>
@@ -152,7 +152,7 @@
     </project>
     <project dir="class/System" library="System-secxml-build">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/build/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/build -r:mscorlib.dll -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/build/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/secxml/System.dll</library_output>
@@ -242,17 +242,17 @@
     </project>
     <project dir="class/corlib" library="corlib-net_4_5">
       <boot>true</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize /noconfig -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize /noconfig -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -resource:resources/collation.core.bin -resource:resources/collation.tailoring.bin -resource:resources/collation.cjkCHS.bin -resource:resources/collation.cjkCHT.bin -resource:resources/collation.cjkJA.bin -resource:resources/collation.cjkKO.bin -resource:resources/collation.cjkKOlv2.bin --runtime:v4</flags>
       <output>mscorlib.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/mscorlib.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
-      <response>corlib.dll.sources</response>
+      <response>./../../build/deps/net_4_5_corlib.dll.sources</response>
     </project>
     <project dir="class/corlib" library="corlib-tests-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize -r:./../../class/lib/net_4_5/mscorlib.dll -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
+      <flags>/codepage:65001 -unsafe -nostdlib -nowarn:612,618 -d:INSIDE_CORLIB -d:LIBC -d:FEATURE_PAL,GENERICS_WORK,FEATURE_LIST_PREDICATES -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -debug -optimize -r:./../../class/lib/net_4_5/mscorlib.dll -debug -nowarn:168,219,618,672 -unsafe -r:Mono.Posix.dll -r:System.Core.dll -define:MONO_DATACONVERTER_STATIC_METHODS -resource:Test/resources/Resources.resources</flags>
       <output>corlib_test_net_4_5.dll</output>
       <built_sources></built_sources>
       <library_output>corlib_test_net_4_5.dll</library_output>
@@ -262,7 +262,7 @@
     </project>
     <project dir="class/System" library="System-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_5/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_5/secxml/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll -r:System.Configuration.dll -d:CONFIGURATION_DEP</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/System.dll</library_output>
@@ -282,7 +282,7 @@
     </project>
     <project dir="class/System" library="System-bare-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
+      <flags>/codepage:65001 -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/bare/System.dll</library_output>
@@ -302,7 +302,7 @@
     </project>
     <project dir="class/System" library="System-secxml-net_4_5">
       <boot>false</boot>
-      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_5/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
+      <flags>/codepage:65001 -lib:./../../class/lib/net_4_5/bare -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig -nowarn:618 -d:CONFIGURATION_2_0 -d:FEATURE_PAL,SYSTEM_NAMESPACE,MONO,PLATFORM_UNIX -unsafe -resource:resources/Asterisk.wav -resource:resources/Beep.wav -resource:resources/Exclamation.wav -resource:resources/Hand.wav -resource:resources/Question.wav -d:SECURITY_DEP -d:XML_DEP -r:PrebuiltSystem=./../../class/lib/net_4_5/bare/System.dll -r:System.Xml.dll -r:MonoSecurity=Mono.Security.dll</flags>
       <output>System.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_5/secxml/System.dll</library_output>
@@ -3469,6 +3469,16 @@
       <fx_version>4.5</fx_version>
       <profile>net_4_5</profile>
       <response>ikdasm.exe.sources</response>
+    </project>
+    <project dir="tools/symbolicate" library="symbolicate-net_4_5">
+      <boot></boot>
+      <flags>/codepage:65001 /r:Mono.Cecil.dll /r:Mono.CompilerServices.SymbolWriter.dll /r:System.Xml -d:NET_1_1 -d:NET_2_0 -d:NET_3_0 -d:NET_3_5 -d:NET_4_0 -d:NET_4_5 -d:MONO -d:DISABLE_CAS_USE -nowarn:1699 -nostdlib -lib:./../../class/lib/net_4_5 -r:mscorlib.dll -debug -optimize /noconfig</flags>
+      <output>symbolicate.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_5/symbolicate.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_5</profile>
+      <response>symbolicate.exe.sources</response>
     </project>
     <project dir="class/Microsoft.Build.Framework" library="Microsoft.Build.Framework-xbuild_12">
       <boot>false</boot>
