@@ -33,7 +33,7 @@ The repository is configured to allow Git to make the right decision about handl
 This will do a clean x64/Debug build of CoreCLR, its native components, Mscorlib and the tests. 
 
 
-- Binaries will be dropped in `<repo_root>\Binaries\Product\<arch>\&lt;flavor>` folder. 
+- Product Binaries will be dropped in `<repo_root>\Binaries\Product\<arch>\<flavor>` folder. 
 - A Nuget package, Microsoft.Dotnet.CoreCLR, will also be created under `<repo_root>\Binaries\Product\<arch>\<flavor>\.nuget` folder. 
 - Test binaries will be dropped under `<repo_root>\Binaries\Tests\<arch>\<flavor>` folder
 
@@ -74,13 +74,13 @@ There are 2 files of interest:
 If you wish to re-run a failed test, please follow the following steps:
 
 1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd. The command to set this environment variable is also specified in the test report for a failed test.
-2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd`.
+2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd`.
 
 If you wish to run the test under a debugger (e.g. [WinDbg](http://msdn.microsoft.com/en-us/library/windows/hardware/ff551063(v=vs.85).aspx)), append `-debug <debuggerFullPath>` to the test command. For example:
 
 
-    <repo root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
-
+     <repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
+    
 **Modifying a test**
 
 If test changes are needed, make the change and build the test project. This will binplace the binaries in test binaries folder (e.g. `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization`). At this point, follow the steps to re-run a failed test to re-run the modified test.
