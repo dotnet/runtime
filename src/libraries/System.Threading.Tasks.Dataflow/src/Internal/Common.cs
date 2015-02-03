@@ -330,9 +330,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             else list.Add(exception);
         }
 
-        /// <summary>A task that never completes.</summary>
-        internal static readonly Task NeverCompletingTask = new TaskCompletionSource<VoidResult>().Task;
-
         /// <summary>Creates a task we can cache for the desired Boolean result.</summary>
         /// <param name="value">The value of the Boolean.</param>
         /// <returns>A task that may be cached.</returns>
