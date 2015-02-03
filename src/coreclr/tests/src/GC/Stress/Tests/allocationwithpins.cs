@@ -489,7 +489,7 @@ class FreeListTest
         }
     }
 
-    public static void Main(String[] args) 
+    public static int Main(String[] args)
     {
         if (GCSettings.IsServerGC == true)
         {
@@ -570,7 +570,7 @@ class FreeListTest
 //        Console.WriteLine("Press any key to exit.");
 //        Console.ReadLine();
 
-        Environment.ExitCode = 100;
+        return 100;
     }
 
 };
