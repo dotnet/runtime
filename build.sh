@@ -81,7 +81,7 @@ build_coreclr()
     # Build CoreCLR
     
     echo Executing make $__UnprocessedBuildArgs
-    make $__UnprocessedBuildArgs
+    make -j `nproc` $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
         echo Failed to build coreclr components.
         exit 1
