@@ -11,9 +11,10 @@
 #define NUM_CALENDARS 4
 
 #define NUM_SHORT_DATE_PATTERNS 14
-#define NUM_LONG_DATE_PATTERNS 8
+#define NUM_LONG_DATE_PATTERNS 10
 #define NUM_SHORT_TIME_PATTERNS 12
 #define NUM_LONG_TIME_PATTERNS 9
+#define NUM_YEAR_MONTH_PATTERNS 8
 
 #define idx2string(idx) (locale_strings + (idx))
 
@@ -21,13 +22,7 @@
 typedef guint16 stridx_t;
 
 typedef struct {
-	const stridx_t long_date_pattern;
-	const stridx_t short_date_pattern;
-	const stridx_t long_time_pattern;
-	const stridx_t short_time_pattern;
-	const stridx_t year_month_pattern;
 	const stridx_t month_day_pattern;
-
 	const stridx_t am_designator;
 	const stridx_t pm_designator;
 
@@ -49,6 +44,7 @@ typedef struct {
 	const stridx_t long_date_patterns [NUM_LONG_DATE_PATTERNS];
 	const stridx_t short_time_patterns [NUM_SHORT_TIME_PATTERNS];
 	const stridx_t long_time_patterns [NUM_LONG_TIME_PATTERNS];
+	const stridx_t year_month_patterns [NUM_YEAR_MONTH_PATTERNS];
 } DateTimeFormatEntry;
 
 typedef struct {

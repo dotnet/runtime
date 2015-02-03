@@ -157,52 +157,76 @@ create_names_array_idx_dynamic (const guint16 *names, int ml)
 	return ret;
 }
 
-void
-ves_icall_System_Globalization_CultureInfo_construct_datetime_format (MonoCultureInfo *this)
+MonoBoolean
+ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData *this, MonoString *name, gint32 calendar_index)
 {
 	MonoDomain *domain;
-	MonoDateTimeFormatInfo *datetime;
+	const DateTimeFormatEntry *dfe;
+	const CultureInfoNameEntry *ne;
+	const CultureInfoEntry *ci;
+	char *n;
+
+	MONO_ARCH_SAVE_REGS;
+
+	n = mono_string_to_utf8 (name);
+	ne = mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
+			sizeof (CultureInfoNameEntry), culture_name_locator);
+	g_free (n);
+	if (ne == NULL) {
+		return FALSE;
+	}
+
+	ci = &culture_entries [ne->culture_entry_index];
+	dfe = &datetime_format_entries [ci->datetime_format_index];
+
+	domain = mono_domain_get ();
+
+	MONO_OBJECT_SETREF (this, NativeName, mono_string_new (domain, idx2string (ci->nativename)));
+	MONO_OBJECT_SETREF (this, ShortDatePatterns, create_names_array_idx_dynamic (dfe->short_date_patterns,
+			NUM_SHORT_DATE_PATTERNS));
+	MONO_OBJECT_SETREF (this, YearMonthPatterns, create_names_array_idx_dynamic (dfe->year_month_patterns,
+			NUM_YEAR_MONTH_PATTERNS));
+
+	MONO_OBJECT_SETREF (this, LongDatePatterns, create_names_array_idx_dynamic (dfe->long_date_patterns,
+			NUM_LONG_DATE_PATTERNS));
+	MONO_OBJECT_SETREF (this, MonthDayPattern, mono_string_new (domain, idx2string (dfe->month_day_pattern)));
+
+	MONO_OBJECT_SETREF (this, DayNames, create_names_array_idx (dfe->day_names, NUM_DAYS));
+	MONO_OBJECT_SETREF (this, AbbreviatedDayNames, create_names_array_idx (dfe->abbreviated_day_names, 
+			NUM_DAYS));
+	MONO_OBJECT_SETREF (this, SuperShortDayNames, create_names_array_idx (dfe->shortest_day_names, NUM_DAYS));
+	MONO_OBJECT_SETREF (this, MonthNames, create_names_array_idx (dfe->month_names, NUM_MONTHS));
+	MONO_OBJECT_SETREF (this, AbbreviatedMonthNames, create_names_array_idx (dfe->abbreviated_month_names,
+			NUM_MONTHS));
+	MONO_OBJECT_SETREF (this, GenitiveMonthNames, create_names_array_idx (dfe->month_genitive_names, NUM_MONTHS));
+	MONO_OBJECT_SETREF (this, GenitiveAbbreviatedMonthNames, create_names_array_idx (dfe->abbreviated_month_genitive_names, NUM_MONTHS));
+
+	return TRUE;
+}
+
+void
+ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *this, gint32 datetime_index)
+{
+	MonoDomain *domain;
 	const DateTimeFormatEntry *dfe;
 
 	MONO_ARCH_SAVE_REGS;
 
-	g_assert (this->datetime_index >= 0);
+	g_assert (datetime_index >= 0);
 
-	datetime = this->datetime_format;
-	dfe = &datetime_format_entries [this->datetime_index];
+	dfe = &datetime_format_entries [datetime_index];
 
 	domain = mono_domain_get ();
 
-	datetime->readOnly = this->is_read_only;
-	MONO_OBJECT_SETREF (datetime, AbbreviatedDayNames, create_names_array_idx (dfe->abbreviated_day_names, 
-			NUM_DAYS));
-	MONO_OBJECT_SETREF (datetime, AbbreviatedMonthNames, create_names_array_idx (dfe->abbreviated_month_names,
-			NUM_MONTHS));
-	MONO_OBJECT_SETREF (datetime, AMDesignator, mono_string_new (domain, idx2string (dfe->am_designator)));
-	datetime->CalendarWeekRule = dfe->calendar_week_rule;
-	MONO_OBJECT_SETREF (datetime, DateSeparator, mono_string_new (domain, idx2string (dfe->date_separator)));
-	MONO_OBJECT_SETREF (datetime, DayNames, create_names_array_idx (dfe->day_names, NUM_DAYS));
-	MONO_OBJECT_SETREF (datetime, ShortestDayNames, create_names_array_idx (dfe->shortest_day_names, NUM_DAYS));
-	datetime->FirstDayOfWeek = dfe->first_day_of_week;
-	MONO_OBJECT_SETREF (datetime, LongDatePattern, mono_string_new (domain, idx2string (dfe->long_date_pattern)));
-	MONO_OBJECT_SETREF (datetime, LongTimePattern, mono_string_new (domain, idx2string (dfe->long_time_pattern)));
-	MONO_OBJECT_SETREF (datetime, MonthDayPattern, mono_string_new (domain, idx2string (dfe->month_day_pattern)));
-	MONO_OBJECT_SETREF (datetime, MonthNames, create_names_array_idx (dfe->month_names, NUM_MONTHS));
-	MONO_OBJECT_SETREF (datetime, PMDesignator, mono_string_new (domain, idx2string (dfe->pm_designator)));
-	MONO_OBJECT_SETREF (datetime, ShortDatePattern, mono_string_new (domain, idx2string (dfe->short_date_pattern)));
-	MONO_OBJECT_SETREF (datetime, ShortTimePattern, mono_string_new (domain, idx2string (dfe->short_time_pattern)));
-	MONO_OBJECT_SETREF (datetime, TimeSeparator, mono_string_new (domain, idx2string (dfe->time_separator)));
-	MONO_OBJECT_SETREF (datetime, YearMonthPattern, mono_string_new (domain, idx2string (dfe->year_month_pattern)));
-	MONO_OBJECT_SETREF (datetime, ShortDatePatterns, create_names_array_idx_dynamic (dfe->short_date_patterns,
-			NUM_SHORT_DATE_PATTERNS));
-	MONO_OBJECT_SETREF (datetime, LongDatePatterns, create_names_array_idx_dynamic (dfe->long_date_patterns,
-			NUM_LONG_DATE_PATTERNS));
-	MONO_OBJECT_SETREF (datetime, ShortTimePatterns, create_names_array_idx_dynamic (dfe->short_time_patterns,
-			NUM_SHORT_TIME_PATTERNS));
-	MONO_OBJECT_SETREF (datetime, LongTimePatterns, create_names_array_idx_dynamic (dfe->long_time_patterns,
+	MONO_OBJECT_SETREF (this, AMDesignator, mono_string_new (domain, idx2string (dfe->am_designator)));
+	MONO_OBJECT_SETREF (this, PMDesignator, mono_string_new (domain, idx2string (dfe->pm_designator)));
+	MONO_OBJECT_SETREF (this, TimeSeparator, mono_string_new (domain, idx2string (dfe->time_separator)));
+	MONO_OBJECT_SETREF (this, LongTimePatterns, create_names_array_idx_dynamic (dfe->long_time_patterns,
 			NUM_LONG_TIME_PATTERNS));
-	MONO_OBJECT_SETREF (datetime, GenitiveMonthNames, create_names_array_idx (dfe->month_genitive_names, NUM_MONTHS));
-	MONO_OBJECT_SETREF (datetime, GenitiveAbbreviatedMonthNames, create_names_array_idx (dfe->abbreviated_month_genitive_names, NUM_MONTHS));
+	MONO_OBJECT_SETREF (this, ShortTimePatterns, create_names_array_idx_dynamic (dfe->short_time_patterns,
+			NUM_SHORT_TIME_PATTERNS));
+	this->FirstDayOfWeek = dfe->first_day_of_week;
+	this->CalendarWeekRule = dfe->calendar_week_rule;
 }
 
 void
