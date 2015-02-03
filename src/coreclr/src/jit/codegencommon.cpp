@@ -4821,7 +4821,15 @@ void CodeGen::genCheckUseBlockInit()
        we waste all the other slots.  Really need to compute the correct
        and compare that against zeroing the slots individually */
 
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4));
+#if defined(UNIX_AMD64_ABI)
+    // For AMD64_UNIX don't use block initialization if there is no FrameRegister.
+    // The RDI and RSI registers are in the block initialization and are also
+    // the first two parameters to a callee. 
+    // Need to push and pop them in the prolog and this will break unwinding.
+    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4)) && isFramePointerUsed();
+#else // UNIX_AMD64_ABI
+	genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4)); 
+#endif // UNIX_AMD64_ABI
 
     if  (genUseBlockInit)
     {
@@ -6072,6 +6080,12 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
 
     if  (genUseBlockInit)
     {
+#ifdef UNIX_AMD64_ABI
+        // Should not be here for Unix AMD64 if there is no Frame Pointer used.
+        // No block initialization in this case.
+        assert(isFramePointerUsed());
+#endif // UNIX_AMD64_ABI
+
         assert(untrLclHi > untrLclLo);
 #ifdef _TARGET_ARMARCH_
         /*
@@ -6266,21 +6280,12 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
         }
 
         noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
-        int disp = untrLclLo;
-#ifdef UNIX_AMD64_ABI
-        // If there is no frame register the pushes above mess up the
-        // RSP, so adjust by adding 0x10 to the offset.
-        if (!isFramePointerUsed())
-        {
-            disp += 0x10;
-        }
-#endif // UNIX_AMD64_ABI
 
         getEmitter()->emitIns_R_AR(INS_lea,
                                  EA_PTRSIZE,
                                  REG_EDI,
                                  genFramePointerReg(),
-                                 disp);
+                                 untrLclLo);
         regTracker.rsTrackRegTrash(REG_EDI);
 
         inst_RV_IV(INS_mov, REG_ECX, (untrLclHi - untrLclLo) / sizeof(int), EA_4BYTE);
@@ -6294,8 +6299,8 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
 
 #ifdef UNIX_AMD64_ABI
         // Restore the RDI and RSI.
-        inst_RV(INS_pop, REG_RSI, TYP_I_IMPL);
-        inst_RV(INS_pop, REG_RDI, TYP_I_IMPL);
+         inst_RV(INS_pop, REG_RSI, TYP_I_IMPL);
+         inst_RV(INS_pop, REG_RDI, TYP_I_IMPL);
 #endif // UNIX_AMD64_ABI
 #else // _TARGET_*
 #error Unsupported or unset target architecture
