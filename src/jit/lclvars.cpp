@@ -4040,10 +4040,15 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
 #if defined(_TARGET_X86_)
         argOffs += sizeof(void *);
 #elif defined(_TARGET_AMD64_)
-#ifndef UNIX_AMD64_ABI
-        varDsc->lvStkOffs = argOffs;
-        argOffs += sizeof(void *);
-#endif // !UNIX_AMD64_ABI
+#ifdef UNIX_AMD64_ABI
+        // Reserve space on the stack only for OnFrame variables.
+        // No need to do that for OutgoingArg. No such thing on Linux.
+        if (varDsc->lvOnFrame)
+#endif // UNIX_AMD64_ABI
+        {
+            varDsc->lvStkOffs = argOffs;
+            argOffs += sizeof(void *);
+        }
 #elif defined(_TARGET_ARM64_)
         // Register arguments don't take stack space.
 #elif defined(_TARGET_ARM_)

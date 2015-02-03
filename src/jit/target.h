@@ -698,6 +698,10 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_FLT_CALLEE_SAVED    (0)
   #define RBM_FLT_CALLEE_TRASH    (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5|RBM_XMM6|RBM_XMM7| \
                                    RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
+  // Use this value to specify how many MustInit vars on Linux would trigger a FramePointer to be used.
+  // If there is no FramePointer blockInit in codegencommon.cpp is not used. There is a limit to the size of the 
+  // prolog (it should not exceed one IG.) Make sure we don't get in such case.
+  #define MAX_VARS_FOR_NO_FRAMEPOINTER 6
 #endif // UNIX_AMD64_ABI
   
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
