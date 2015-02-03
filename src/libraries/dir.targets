@@ -60,7 +60,8 @@
   <PropertyGroup>
     <XunitHost>corerun.exe</XunitHost>
     <XunitCommandLine>xunit.console.netcore.exe $(TargetFileName)</XunitCommandLine>
-    <XunitOptions>$(XunitOptions) -notrait category=outerloop</XunitOptions>
+    <RunOuterLoop Condition="'$(RunOuterLoop)' == ''">False</RunOuterLoop>
+    <XunitOptions Condition="'$(RunOuterLoop)'!='True'">$(XunitOptions) -notrait category=outerloop</XunitOptions>
     <XunitOptions>$(XunitOptions) -notrait category=failing</XunitOptions>
   </PropertyGroup>
   
