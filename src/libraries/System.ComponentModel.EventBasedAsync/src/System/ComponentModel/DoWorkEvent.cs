@@ -7,31 +7,47 @@ namespace System.ComponentModel
 
     public class DoWorkEventArgs : EventArgs
     {
-        private object result;
-        private object argument;
+        private readonly object _argument;
+        private object _result;
         private bool _cancel;
 
         public DoWorkEventArgs(object argument)
         {
-            this.argument = argument;
+            _argument = argument;
         }
 
         public object Argument
         {
-            get { return argument; }
+            get 
+            {
+                return _argument;
+            }
         }
 
         public object Result
         {
-            get { return result; }
-            set { result = value; }
+            get
+            {
+                return _result;
+            }
+
+            set
+            {
+                _result = value;
+            }
         }
 
         public bool Cancel
         {
-            get { return _cancel; }
-            set { _cancel = value; }
+            get
+            {
+                return _cancel;
+            }
+
+            set
+            {
+                _cancel = value; 
+            }
         }
     }
 }
-

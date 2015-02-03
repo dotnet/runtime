@@ -10,30 +10,33 @@ namespace System.ComponentModel
     public class BackgroundWorker : IDisposable
     {
         // Private instance members
-        private bool canCancelWorker = false;
-        private bool workerReportsProgress = false;
-        private bool cancellationPending = false;
-        private bool isRunning = false;
-        private AsyncOperation asyncOperation = null;
-        private readonly SendOrPostCallback operationCompleted;
-        private readonly SendOrPostCallback progressReporter;
+        private bool _canCancelWorker = false;
+        private bool _workerReportsProgress = false;
+        private bool _cancellationPending = false;
+        private bool _isRunning = false;
+        private AsyncOperation _asyncOperation = null;
+        private readonly SendOrPostCallback _operationCompleted;
+        private readonly SendOrPostCallback _progressReporter;
 
         public BackgroundWorker()
         {
-            operationCompleted = new SendOrPostCallback(AsyncOperationCompleted);
-            progressReporter = new SendOrPostCallback(ProgressReporter);
+            _operationCompleted = new SendOrPostCallback(AsyncOperationCompleted);
+            _progressReporter = new SendOrPostCallback(ProgressReporter);
         }
 
         private void AsyncOperationCompleted(object arg)
         {
-            isRunning = false;
-            cancellationPending = false;
+            _isRunning = false;
+            _cancellationPending = false;
             OnRunWorkerCompleted((RunWorkerCompletedEventArgs)arg);
         }
 
         public bool CancellationPending
         {
-            get { return cancellationPending; }
+            get 
+            { 
+                return _cancellationPending; 
+            }
         }
 
         public void CancelAsync()
@@ -43,14 +46,17 @@ namespace System.ComponentModel
                 throw new InvalidOperationException(SR.BackgroundWorker_WorkerDoesntSupportCancellation);
             }
 
-            cancellationPending = true;
+            _cancellationPending = true;
         }
 
         public event DoWorkEventHandler DoWork;
 
         public bool IsBusy
         {
-            get { return isRunning; }
+            get 
+            { 
+                return _isRunning; 
+            }
         }
 
         protected virtual void OnDoWork(DoWorkEventArgs e)
@@ -104,13 +110,13 @@ namespace System.ComponentModel
 
             ProgressChangedEventArgs args = new ProgressChangedEventArgs(percentProgress, userState);
 
-            if (asyncOperation != null)
+            if (_asyncOperation != null)
             {
-                asyncOperation.Post(progressReporter, args);
+                _asyncOperation.Post(_progressReporter, args);
             }
             else
             {
-                progressReporter(args);
+                _progressReporter(args);
             }
         }
 
@@ -121,15 +127,15 @@ namespace System.ComponentModel
 
         public void RunWorkerAsync(object argument)
         {
-            if (isRunning)
+            if (_isRunning)
             {
                 throw new InvalidOperationException(SR.BackgroundWorker_WorkerAlreadyRunning);
             }
 
-            isRunning = true;
-            cancellationPending = false;
+            _isRunning = true;
+            _cancellationPending = false;
 
-            asyncOperation = AsyncOperationManager.CreateOperation(null);
+            _asyncOperation = AsyncOperationManager.CreateOperation(null);
             Task.Factory.StartNew(
                         (arg) => WorkerThreadStart(arg),
                         argument,
@@ -143,14 +149,28 @@ namespace System.ComponentModel
 
         public bool WorkerReportsProgress
         {
-            get { return workerReportsProgress; }
-            set { workerReportsProgress = value; }
+            get 
+            { 
+                return _workerReportsProgress; 
+            }
+            
+            set 
+            { 
+                _workerReportsProgress = value; 
+            }
         }
 
         public bool WorkerSupportsCancellation
         {
-            get { return canCancelWorker; }
-            set { canCancelWorker = value; }
+            get 
+            {
+                return _canCancelWorker; 
+            }
+            
+            set 
+            { 
+                _canCancelWorker = value; 
+            }
         }
 
         private void WorkerThreadStart(object argument)
@@ -180,13 +200,13 @@ namespace System.ComponentModel
             RunWorkerCompletedEventArgs e =
                 new RunWorkerCompletedEventArgs(workerResult, error, cancelled);
 
-            if (asyncOperation != null)
+            if (_asyncOperation != null)
             {
-                asyncOperation.PostOperationCompleted(operationCompleted, e);
+                _asyncOperation.PostOperationCompleted(_operationCompleted, e);
             }
             else
             {
-                operationCompleted(e);
+                _operationCompleted(e);
             }
         }
 

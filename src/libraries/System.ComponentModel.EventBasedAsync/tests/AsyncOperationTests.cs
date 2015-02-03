@@ -3,84 +3,95 @@
 
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.ComponentModel.EventBasedAsync
 {
     public class AsyncOperationTests
     {
-        private const int k_spinTimeoutSeconds = 20;
+        private const int s_spinTimeoutSeconds = 30;
 
         [Fact]
         public static void Noop()
         {
             // Test that a simple AsyncOperation can be dispatched and completed via AsyncOperationManager
-            var operation = new TestAsyncOperation(op => {});
-            operation.Wait();
-            Assert.True(operation.Completed);
-            Assert.False(operation.Cancelled);
-            Assert.Null(operation.Exception);
+            Task.Run(() =>
+                {
+                    var operation = new TestAsyncOperation(op => { });
+                    operation.Wait();
+
+                    Assert.True(operation.Completed);
+                    Assert.False(operation.Cancelled);
+                    Assert.Null(operation.Exception);
+
+                }).Wait();
         }
 
         [Fact]
         public static void ThrowAfterAsyncComplete()
         {
-            var operation = new TestAsyncOperation(op => {});
-            operation.Wait();
+            Task.Run(() =>
+                {
+                    var operation = new TestAsyncOperation(op => { });
+                    operation.Wait();
 
-            SendOrPostCallback noopCallback = state => { };
-            Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.Post(noopCallback, null));
-            Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.PostOperationCompleted(noopCallback, null));
-            Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.OperationCompleted());
+                    SendOrPostCallback noopCallback = state => { };
+                    Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.Post(noopCallback, null));
+                    Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.PostOperationCompleted(noopCallback, null));
+                    Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.OperationCompleted());
+                }).Wait();
         }
 
-        [Fact(Skip="Bug 1092169")]
+        [Fact(Skip = "Bug 1092169")]
         public static void ThrowAfterSynchronousComplete()
         {
-            var operation = AsyncOperationManager.CreateOperation(null);
-            operation.OperationCompleted();
+            Task.Run(() =>
+               {
+                   var operation = AsyncOperationManager.CreateOperation(null);
+                   operation.OperationCompleted();
 
-            SendOrPostCallback noopCallback = state => {};
-            Assert.Throws<InvalidOperationException>(() => operation.Post(noopCallback, null));
-            Assert.Throws<InvalidOperationException>(() => operation.PostOperationCompleted(noopCallback, null));
-            Assert.Throws<InvalidOperationException>(() => operation.OperationCompleted());
+                   SendOrPostCallback noopCallback = state => { };
+                   Assert.Throws<InvalidOperationException>(() => operation.Post(noopCallback, null));
+                   Assert.Throws<InvalidOperationException>(() => operation.PostOperationCompleted(noopCallback, null));
+                   Assert.Throws<InvalidOperationException>(() => operation.OperationCompleted());
+               }).Wait();
         }
 
         [Fact]
         public static void Cancel()
         {
             // Test that cancellation gets passed all the way through PostOperationCompleted(callback, AsyncCompletedEventArgs)
-            var operation = new TestAsyncOperation(op =>
-            {
-                var startTime = DateTime.Now;
-                var timeoutTime = startTime.AddSeconds(k_spinTimeoutSeconds);
-            
-                while (!op.Cancelled)
-                {
-                    if (DateTime.Now > timeoutTime)
-                    {
-                        throw new TestTimeoutException();
-                    }
-                }
-            });
-            
-            operation.Cancel();
-            operation.Wait();
-            Assert.True(operation.Completed);
-            Assert.True(operation.Cancelled);
-            Assert.Null(operation.Exception);
+            Task.Run(() =>
+             {
+                 var cancelEvent = new ManualResetEventSlim();
+                 var operation = new TestAsyncOperation(op =>
+                 {
+                     var ret = cancelEvent.Wait(s_spinTimeoutSeconds*1000);
+                     Assert.True(ret);
+                 }, cancelEvent: cancelEvent);
+
+                 operation.Cancel();
+                 operation.Wait();
+                 Assert.True(operation.Completed);
+                 Assert.True(operation.Cancelled);
+                 Assert.Null(operation.Exception);
+             }).Wait();
         }
 
         [Fact]
         public static void Throw()
         {
             // Test that exceptions get passed all the way through PostOperationCompleted(callback, AsyncCompletedEventArgs)
-            var operation = new TestAsyncOperation(op =>
+            Task.Run(() =>
             {
-                throw new TestException("Test throw");
-            });
-            
-            Assert.Throws<TestException>(() => operation.Wait());
+                var operation = new TestAsyncOperation(op =>
+                {
+                    throw new TestException("Test throw");
+                });
+
+                Assert.Throws<TestException>(() => operation.Wait());
+            }).Wait();
         }
 
         [Fact]
@@ -90,57 +101,57 @@ namespace System.ComponentModel.EventBasedAsync
             // used by AsyncOperation when there is exception thrown -> the SC.OperationCompleted() is not called.
             // use  new SC here to avoid this issue
             var orignal = SynchronizationContext.Current;
-            SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
 
-            // Pass a non-null state just to emphasize we're only testing passing a null delegate
-            var state = new object();
-            var operation = AsyncOperationManager.CreateOperation(state);
-            Assert.Throws<ArgumentNullException>(() => operation.Post(null, state));
-            Assert.Throws<ArgumentNullException>(() => operation.PostOperationCompleted(null, state));
-
-            SynchronizationContext.SetSynchronizationContext(orignal);
+                // Pass a non-null state just to emphasize we're only testing passing a null delegate
+                var state = new object();
+                var operation = AsyncOperationManager.CreateOperation(state);
+                Assert.Throws<ArgumentNullException>(() => operation.Post(null, state));
+                Assert.Throws<ArgumentNullException>(() => operation.PostOperationCompleted(null, state));
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(orignal);
+            }
         }
 
         // A simple wrapper for AsyncOperation which executes the specified delegate and a completion handler asynchronously.
         public class TestAsyncOperation
         {
-            private object operationId;
-            private Action<TestAsyncOperation> executeDelegate;
+            private object _operationId;
+            private Action<TestAsyncOperation> _executeDelegate;
+            private ManualResetEventSlim _cancelEvent, _completeEvent;
 
             public AsyncOperation AsyncOperation { get; private set; }
 
-            public bool Completed { get; private set; }
+            public bool Completed { get { return _completeEvent.Wait(1); } }
 
-            public bool Cancelled { get; private set; }
+            public bool Cancelled { get { return _cancelEvent.Wait(1); } }
 
             public Exception Exception { get; private set; }
 
-            public TestAsyncOperation(Action<TestAsyncOperation> executeDelegate)
+            public TestAsyncOperation(Action<TestAsyncOperation> executeDelegate, ManualResetEventSlim cancelEvent = null)
             {
                 // Create an async operation passing an object as the state so we can
                 // verify that state is passed properly.
-                this.operationId = new object();
-                this.AsyncOperation = AsyncOperationManager.CreateOperation(this.operationId);
+                _operationId = new object();
+                AsyncOperation = AsyncOperationManager.CreateOperation(_operationId);
+                Assert.Equal(AsyncOperation.SynchronizationContext, AsyncOperationManager.SynchronizationContext);
 
-                Assert.Equal(this.AsyncOperation.SynchronizationContext, AsyncOperationManager.SynchronizationContext);
+                _completeEvent = new ManualResetEventSlim(false);
+                _cancelEvent = cancelEvent ?? new ManualResetEventSlim(false); //cancelEvent;
 
                 // Post work to the wrapped synchronization context
-                this.executeDelegate = executeDelegate;
-                this.AsyncOperation.Post((SendOrPostCallback)ExecuteWorker, operationId);
+                _executeDelegate = executeDelegate;
+                AsyncOperation.Post((SendOrPostCallback)ExecuteWorker, _operationId);
             }
 
             public void Wait()
             {
-                var startTime = DateTime.Now;
-                var timeoutTime = startTime.AddSeconds(k_spinTimeoutSeconds);
-            
-                while (!this.Completed)
-                {
-                    if (DateTime.Now > timeoutTime)
-                    {
-                        throw new TestTimeoutException();
-                    }
-                }
+                var ret = _completeEvent.Wait(s_spinTimeoutSeconds*1000);
+                Assert.True(ret);
 
                 if (this.Exception != null)
                 {
@@ -155,13 +166,13 @@ namespace System.ComponentModel.EventBasedAsync
 
             private void ExecuteWorker(object operationId)
             {
-                Assert.True(this.operationId == operationId, "AsyncOperationManager did not pass UserSuppliedState through to the operation.");
+                Assert.True(_operationId == operationId, "AsyncOperationManager did not pass UserSuppliedState through to the operation.");
 
                 Exception exception = null;
-                
+
                 try
                 {
-                    this.executeDelegate(this);
+                    _executeDelegate(this);
                 }
                 catch (Exception e)
                 {
@@ -172,17 +183,17 @@ namespace System.ComponentModel.EventBasedAsync
                     CompleteOperationAsync(exception: exception);
                 }
             }
-            
+
             private void CompleteOperationAsync(Exception exception = null, bool cancelled = false)
             {
-                if (!this.Completed)
+                if (!(Completed || Cancelled))
                 {
-                    this.AsyncOperation.PostOperationCompleted(
+                    AsyncOperation.PostOperationCompleted(
                         (SendOrPostCallback)OnOperationCompleted,
                         new AsyncCompletedEventArgs(
                             exception,
                             cancelled,
-                            this.operationId));
+                            _operationId));
                 }
             }
 
@@ -191,14 +202,16 @@ namespace System.ComponentModel.EventBasedAsync
                 var e = state as AsyncCompletedEventArgs;
 
                 Assert.True(e != null, "The state passed to this operation must be of type AsyncCompletedEventArgs");
-                Assert.Equal(this.operationId, e.UserState);
+                Assert.Equal(_operationId, e.UserState);
 
-                this.Completed = true;
-                this.Cancelled = e.Cancelled;
-                this.Exception = e.Error;
+                Exception = e.Error;
+
+                _completeEvent.Set();
+                if (e.Cancelled)
+                    _cancelEvent.Set();
             }
         }
-        
+
         public class TestException : Exception
         {
             public TestException(string message) :
@@ -206,7 +219,7 @@ namespace System.ComponentModel.EventBasedAsync
             {
             }
         }
-        
+
         public class TestTimeoutException : Exception
         {
         }

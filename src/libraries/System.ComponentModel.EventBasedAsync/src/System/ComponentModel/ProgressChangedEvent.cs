@@ -7,24 +7,29 @@ namespace System.ComponentModel
 
     public class ProgressChangedEventArgs : EventArgs
     {
-        private readonly int progressPercentage;
-        private readonly object userState;
+        private readonly int _progressPercentage;
+        private readonly object _userState;
 
         public ProgressChangedEventArgs(int progressPercentage, object userState)
         {
-            this.progressPercentage = progressPercentage;
-            this.userState = userState;
+            _progressPercentage = progressPercentage;
+            _userState = userState;
         }
 
         public int ProgressPercentage
         {
-            get { return progressPercentage; }
+            get
+            {
+                return _progressPercentage;
+            }
         }
 
         public object UserState
         {
-            get { return userState; }
+            get
+            {
+                return _userState; 
+            }
         }
     }
 }
-

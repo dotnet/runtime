@@ -7,9 +7,9 @@ namespace System.ComponentModel
 {
     public sealed class AsyncOperation
     {
-        private SynchronizationContext syncContext;
-        private object userSuppliedState;
-        private bool alreadyCompleted;
+        private readonly SynchronizationContext _syncContext;
+        private readonly object _userSuppliedState;
+        private bool _alreadyCompleted;
 
         /// <summary>
         ///     Constructor. Protected to avoid unwitting usage - AsyncOperation objects
@@ -17,10 +17,10 @@ namespace System.ComponentModel
         /// </summary>
         private AsyncOperation(object userSuppliedState, SynchronizationContext syncContext)
         {
-            this.userSuppliedState = userSuppliedState;
-            this.syncContext = syncContext;
-            this.alreadyCompleted = false;
-            this.syncContext.OperationStarted();
+            _userSuppliedState = userSuppliedState;
+            _syncContext = syncContext;
+            _alreadyCompleted = false;
+            _syncContext.OperationStarted();
         }
 
         /// <summary>
@@ -28,15 +28,18 @@ namespace System.ComponentModel
         /// </summary>
         ~AsyncOperation()
         {
-            if (!alreadyCompleted && syncContext != null)
+            if (!_alreadyCompleted && _syncContext != null)
             {
-                syncContext.OperationCompleted();
+                _syncContext.OperationCompleted();
             }
         }
 
         public object UserSuppliedState
         {
-            get { return userSuppliedState; }
+            get
+            {
+                return _userSuppliedState; 
+            }
         }
 
         /// <include file='doc\AsyncOperation.uex' path='docs/doc[@for="AsyncOperation.SynchronizationContext"]/*' />
@@ -44,7 +47,7 @@ namespace System.ComponentModel
         {
             get
             {
-                return syncContext;
+                return _syncContext;
             }
         }
 
@@ -52,7 +55,7 @@ namespace System.ComponentModel
         {
             VerifyNotCompleted();
             VerifyDelegateNotNull(d);
-            syncContext.Post(d, arg);
+            _syncContext.Post(d, arg);
         }
 
         public void PostOperationCompleted(SendOrPostCallback d, object arg)
@@ -71,18 +74,18 @@ namespace System.ComponentModel
         {
             try
             {
-                syncContext.OperationCompleted();
+                _syncContext.OperationCompleted();
             }
             finally
             {
-                alreadyCompleted = true;
+                _alreadyCompleted = true;
                 GC.SuppressFinalize(this);
             }
         }
 
         private void VerifyNotCompleted()
         {
-            if (alreadyCompleted)
+            if (_alreadyCompleted)
             {
                 throw new InvalidOperationException(SR.Async_OperationAlreadyCompleted);
             }
@@ -106,4 +109,3 @@ namespace System.ComponentModel
         }
     }
 }
-
