@@ -6,7 +6,7 @@ CoreCLR repo can be built from a regular, non-admin command prompt. Currently, t
 
 - X64 - Debug and Release
 
-We have work in progress to bring more tests online and support more platforms in the near future.
+We have work in progress to bring more tests online and support more platforms in the near future. As can be seen from the repo home page (the Linux build status labels), we are bringing up Linux support. Once the engineering support (e.g. build and validation) is functionally complete, we will share the details on how to build and test the product on Linux.
 
 ## Prerequisites ##
 
