@@ -9,33 +9,28 @@ using Xunit;
 public class UmsSecurityTests
 {
     [Fact]
-    public static void ChangePositioViaPointer()
+    public static void ChangePositionViaPointer()
     {
         byte[] data = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 127, 255 };
-        int positionPointerByteArrayNumber = 3;
-        Byte[][] positionPointerByteArrays = new Byte[positionPointerByteArrayNumber][];
-
         unsafe
         {
             fixed (byte* bytePtr = data)
             {
-                //Scenario 1:ST - change the position via the PositionPointer 
                 using (var stream = new UnmanagedMemoryStream(bytePtr, data.Length, data.Length, FileAccess.ReadWrite))
                 {
-                    //we try positionPointerByteArrayNumber (10) different Byte[] arrays
-                    for (int positionLoop = 0; positionLoop < positionPointerByteArrayNumber; positionLoop++)
-                    {
-                        //New Byte array
-                        positionPointerByteArrays[positionLoop] = ArrayHelpers.CreateByteArray(length: 123, value: 24);
-                        //change via PositionPointer
-                        fixed (byte* invalidbytePtr = positionPointerByteArrays[positionLoop])
-                        {
-                            // not throw currently
-                            stream.PositionPointer = invalidbytePtr;
-                            VerifyNothingCanBeReadOrWritten(stream, data);
-                        }
-                    }
+                    // Make sure the position pointer is where we set it to be
+                    Assert.Equal(expected: (IntPtr)bytePtr, actual: (IntPtr)stream.PositionPointer);
 
+                    // Make sure that moving earlier than the beginning of the stream throws
+                    Assert.Throws<IOException>(() => {
+                        stream.PositionPointer = stream.PositionPointer - 1;
+                    });
+
+                    // Make sure that moving later than the length can be done but then
+                    // fails appropriately during reads and writes, and that the stream's
+                    // data is still intact after the fact
+                    stream.PositionPointer = bytePtr + data.Length;
+                    VerifyNothingCanBeReadOrWritten(stream, data);
                     CheckStreamIntegrity(stream, data);
                 }
             } // fixed
