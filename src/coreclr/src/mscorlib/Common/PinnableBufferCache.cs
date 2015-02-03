@@ -45,7 +45,9 @@ namespace System
         /// This is only used in mscorlib.
         /// </summary>
 #if (ENABLE || MINBUFFERS)
+#pragma warning disable 618
         [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
+#pragma warning restore 618
         [System.Security.SecuritySafeCritical]
 #endif
         internal PinnableBufferCache(string cacheName, Func<object> factory)
