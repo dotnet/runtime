@@ -283,7 +283,7 @@ public class ReliabilityTest
 #if PROJECTK_BUILD
                 string strBVTRoot = Environment.GetEnvironmentVariable("BVT_ROOT");
                 if (String.IsNullOrEmpty(strBVTRoot))
-                    return (Directory.GetCurrentDirectory() + "\\Test");
+                    return (Directory.GetCurrentDirectory() + "\\Tests");
                 else
                     return strBVTRoot;
 #else

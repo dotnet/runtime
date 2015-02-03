@@ -45,6 +45,10 @@
 
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
 
+  <PropertyGroup>
+    <GenerateRunScript Condition="'$(OutputType.ToUpper())' != 'EXE' And '$(GenerateRunScript)' == ''">false</GenerateRunScript>
+  </PropertyGroup>
+
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript" 
           AfterTargets="Build"
