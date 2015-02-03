@@ -20,7 +20,7 @@ The config is at <REPO_ROOT>NDP\clr\tests\src\GC\Stress\testmix_gc.config, this 
 
 3. Running stress
 
-The test .exe's need to be in a directory called Tests next to ReliabilityFramework.exe. So if you keep ReliabilityFramework.exe where it is, you should see the test binaries copied to the <REPO_ROOT>\tests\src\GC\Stress\Framework\Test.
+The test .exe's need to be in a directory called Tests next to ReliabilityFramework.exe. So if you keep ReliabilityFramework.exe where it is, you should see the test binaries copied to the <REPO_ROOT>\tests\src\GC\Stress\Framework\Tests.
 
 To run stress:
 
