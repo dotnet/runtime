@@ -1443,9 +1443,12 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
     if (srcLen < (SIZE_T)srcOffset + (SIZE_T)count || dstLen < (SIZE_T)dstOffset + (SIZE_T)count) {
         FCThrowArgumentVoid(NULL, W("Argument_InvalidOffLen"));
     }
+    
+    PTR_BYTE srcPtr = src->GetDataPtr() + srcOffset;
+    PTR_BYTE dstPtr = dst->GetDataPtr() + dstOffset;
 
-    if (count > 0) {
-        memmove(dst->GetDataPtr() + dstOffset, src->GetDataPtr() + srcOffset, count);
+    if ((srcPtr != dstPtr) && (count > 0)) {
+        memmove(dstPtr, srcPtr, count);
     }
 
     FC_GC_POLL();
