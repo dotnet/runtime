@@ -106,7 +106,7 @@ echo "Using Default Core_Root as %Core_Root% "
 echo "Copying Built binaries from  %__BinDir% to %Core_Root%"
 if exist %Core_Root% rd /s /q %Core_Root%
 md %Core_Root%
-echo d | xcopy /s %__BinDir% %Core_Root%
+xcopy /s %__BinDir% %Core_Root%
 call :runtests 
 
 IF %BUILDERRORLEVEL% NEQ 0 echo Test Run  failed. Refer %__TestRunBuildLog% for details. && exit /b %BUILDERRORLEVEL%
