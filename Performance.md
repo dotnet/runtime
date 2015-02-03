@@ -12,8 +12,8 @@ If you need to convince yourself that the performance characteristics of a desig
 # Creating a Microbenchmark #
 A microbenchmark is an application that executes a specific codepath multiple times with the intention of monitoring that codepath's performance.  The application usually runs many iterations of the code in question using a fine granularity timer, and then divides the total execution time by the number of iterations to determine the average execution time.  You may find times where you'd like to understand the performance of a small piece of code, and in some cases a microbenchmark is the right way to do this.
 
-- **DO** use a microbenmark when you have an isolated piece of code whose performance you want to analyze.
-- **DO NOT** use a microbenchmark for code that has non-deterministic dependences (e.g. network calls, etc.)
+- **DO** use a microbenchmark when you have an isolated piece of code whose performance you want to analyze.
+- **DO NOT** use a microbenchmark for code that has non-deterministic dependences (e.g. network calls, file I/O etc.)
 - **DO** run all performance testing against retail optimized builds.
 - **DO** run many iterations of the code in question to filter out noise.
 - **DO** minimize the effects of other applications on the performance of the microbenchmark by closing as many unnecessary applications as possible.
