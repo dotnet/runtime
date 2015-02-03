@@ -6,6 +6,7 @@
 #include <mono/metadata/mono-hash.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-mutex.h>
 
 typedef struct {
 	mono_mutex_t io_lock; /* access to sock_to_state */
