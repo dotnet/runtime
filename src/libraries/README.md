@@ -63,6 +63,8 @@ Today, the repository contains the following components:
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
 
+* **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
+
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
 
