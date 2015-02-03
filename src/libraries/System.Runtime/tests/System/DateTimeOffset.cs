@@ -144,10 +144,15 @@ public class DateTimeOffsetTests
     public static void TestParsingDateTimeWithTimeDesignator()
     {
         DateTimeOffset result;
+        Assert.True(DateTimeOffset.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
+        Assert.Equal(4, result.Month);
+        Assert.Equal(21, result.Day);
+        Assert.Equal(5, result.Hour);
+
         Assert.True(DateTimeOffset.TryParse("4/21 5pm", new CultureInfo("en-US"), DateTimeStyles.None, out result));
-        Assert.True(result.Month == 4);
-        Assert.True(result.Day == 21);
-        Assert.True(result.Hour == 17);
+        Assert.Equal(4, result.Month);
+        Assert.Equal(21, result.Day);
+        Assert.Equal(17, result.Hour);
     }
 
     public class MyFormatter : IFormatProvider
