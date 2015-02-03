@@ -12,6 +12,8 @@
 #define METHOD_ENTRY_IL_OFFSET -1
 #define METHOD_EXIT_IL_OFFSET 0xffffff
 
+#define SEQ_POINT_AOT_EXT ".msym"
+
 /* Native offset used to mark seq points in dead code */
 #define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1
 

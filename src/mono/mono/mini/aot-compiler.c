@@ -5432,10 +5432,10 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	seq_points = cfg->seq_point_info;
-
-	seq_points_size = (cfg->gen_seq_points)? seq_point_info_get_write_size (seq_points) : 0;
+	seq_points_size = (cfg->gen_seq_points_debug_data)? seq_point_info_get_write_size (seq_points) : 0;
 
 	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + seq_points_size + cfg->gc_map_size;
+
 	p = buf = g_malloc (buf_size);
 
 	use_unwind_ops = cfg->unwind_ops != NULL;
@@ -5641,7 +5641,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
-	if (seq_points)
+	if (seq_points_size)
 		p += seq_point_info_write (seq_points, p);
 
 	g_assert (debug_info_size < buf_size);
@@ -7832,15 +7832,34 @@ emit_exception_info (MonoAotCompile *acfg)
 	int i;
 	char symbol [256];
 	gint32 *offsets;
+	SeqPointData sp_data;
+	gboolean seq_points_to_file = FALSE;
 
 	offsets = g_new0 (gint32, acfg->nmethods);
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			emit_exception_debug_info (acfg, acfg->cfgs [i]);
-			offsets [i] = acfg->cfgs [i]->ex_info_offset;
+			MonoCompile *cfg = acfg->cfgs [i];
+			emit_exception_debug_info (acfg, cfg);
+			offsets [i] = cfg->ex_info_offset;
+
+			if (cfg->gen_seq_points && !cfg->gen_seq_points_debug_data) {
+				if (!seq_points_to_file) {
+					seq_point_data_init (&sp_data, acfg->nmethods);
+					seq_points_to_file = TRUE;
+				}
+				seq_point_data_add (&sp_data, cfg->method->token, cfg->seq_point_info);
+			}
 		} else {
 			offsets [i] = 0;
 		}
+	}
+
+	if (seq_points_to_file) {
+		char *seq_points_aot_file;
+		mono_image_get_aot_seq_point_path (acfg->image, &seq_points_aot_file);
+		seq_point_data_write (&sp_data, seq_points_aot_file);
+		seq_point_data_free (&sp_data);
+		g_free (seq_points_aot_file);
 	}
 
 	sprintf (symbol, "ex_info_offsets");
