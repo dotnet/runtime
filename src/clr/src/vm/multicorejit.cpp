@@ -78,13 +78,6 @@ bool MulticoreJitManager::IsLoadOkay(Module * pModule)
 #endif
 
 
-// #define MCGEN_ENABLE_CHECK(Context, Descriptor) (Context.IsEnabled &&  McGenEventTracingEnabled(&Context, &Descriptor))
-
-// #define FireEtwMulticoreJit(ClrInstanceID, String1, String2, Int1, Int2, Int3)\
-//        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, MulticoreJit) ?\
-//        CoMofTemplate_hzzddd(Microsoft_Windows_DotNETRuntimePrivateHandle, &MulticoreJit, &CLRMulticoreJitId, ClrInstanceID, String1, String2, Int1, Int2, Int3)\
-//        : ERROR_SUCCESS\
-
 void MulticoreJitFireEtw(const wchar_t * pAction, const wchar_t * pTarget, int p1, int p2, int p3)
 {
     LIMITED_METHOD_CONTRACT
