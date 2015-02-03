@@ -80,7 +80,7 @@ echo.
 :: Check presence of CMake on the path
 for %%X in (cmake.exe) do (set FOUNDCMake=%%~$PATH:X)
 if defined FOUNDCMake goto CheckVS
-echo Installation of CMake, and ensuring it is on the path, is a pre-requisite to build this repository.
+echo CMake is a pre-requisite to build this repository but it was not found on the path. Please install CMake from http://www.cmake.org/download/ and ensure it is on your path.
 goto :eof
 
 :CheckVS
