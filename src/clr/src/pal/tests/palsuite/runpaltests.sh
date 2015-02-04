@@ -1,7 +1,7 @@
+#!/bin/bash
 #
 # This script executes PAL tests from the specified build location.
 #
-#!/bin/bash
 
 if [ $# -lt 1 -o $# -gt 3 ]
 then
