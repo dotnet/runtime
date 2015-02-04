@@ -123,11 +123,11 @@ int GetParameters( int argc, char **argv)
     }
 
 /*
-"While the new PAL does support named semaphore it’s unclear 
+"While the new PAL does support named semaphore it's unclear 
 if we should change the Windows PAL, since we share that w/ Rotor 
 and they are still using the old PAL. For the time being it may 
 make the most sense to just skip the named semaphore test on Windows 
-– from an object management perspective it doesn’t really gain 
+- from an object management perspective it doesn't really gain 
 us anything over what we already have."
 */
 #ifdef PLATFORM_UNIX

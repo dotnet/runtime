@@ -3305,7 +3305,7 @@ void FileLockHolder::Acquire(LPCWSTR lockName, HANDLE hInterrupt, BOOL* pInterru
         // Logically we should only expect ERROR_SHARING_VIOLATION, but Windows can also return
         // ERROR_ACCESS_DENIED for underlying NtStatus DELETE_PENDING.  That happens when another process
         // (gacutil.exe or indexer) have the file opened.  Unfortunately there is no public API that would
-        // allow us to detect this NtStatus and distinguish it from ‘real’ access denied (candidates are
+        // allow us to detect this NtStatus and distinguish it from 'real' access denied (candidates are
         // RtlGetLastNtStatus that is not documented on MSDN and NtCreateFile that is internal and can change
         // at any time), so we retry on access denied, but only for a limited number of times.
         if (dwErr == ERROR_SHARING_VIOLATION ||
