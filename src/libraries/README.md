@@ -32,6 +32,9 @@ Today, the repository contains the following components:
   a linked list dictionary, a bit vector, and collections that contain only strings. These collections exist in 
   .NET Core primarily for backwards compatibility and generally should be avoided when writing new code.
 
+* **System.ComponentModel**. Provides types used to implement the run-time and design-time behavior of components 
+  and controls.
+
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
 
@@ -47,6 +50,9 @@ Today, the repository contains the following components:
   file system objects and for reading and writing files via streams.
 
 * **System.IO.FileSystem.DriveInfo**. Provides the System.IO.DriveInfo class, which enables developers to query local drive    information.
+
+* **System.IO.MemoryMappedFiles**. Provides access to memory-mapped files, enabling code to read and write files by
+  reading and writing memory.
 
 * **System.IO.Pipes**. Provides types that enable a means for interprocess communication through anonymous 
   and/or named pipes.
