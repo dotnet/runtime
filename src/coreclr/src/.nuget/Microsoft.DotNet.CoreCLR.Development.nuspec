@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Microsoft.DotNet.CoreCLR.Development</id>
+    <version>1.0.0-prerelease</version>
+    <title>Microsoft DotNet CoreCLR Runtime For Component Development</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</licenseUrl>
+    <projectUrl>https://github.com/dotnet/coreclr</projectUrl>
+    <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Provides the CoreCLR runtime binaries with debug information and interface headers</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright &#169; Microsoft Corporation</copyright>
+  </metadata>
+  <files>
+    <file src="..\clretwrc.dll" target="bin\clretwrc.dll" />
+    <file src="..\coreclr.dll" target="bin\coreclr.dll" />
+    <file src="..\mscordaccore.dll" target="bin\mscordaccore.dll" />
+    <file src="..\mscordbi.dll" target="bin\mscordbi.dll" />
+    <file src="..\mscorrc.dll" target="bin\mscorrc.dll" />
+    <file src="..\mscorrc.debug.dll" target="bin\mscorrc.debug.dll" />
+    <file src="..\corerun.exe" target="bin\corerun.exe" />
+    <file src="..\mscorlib.dll" target="bin\mscorlib.dll" />
+    <file src="..\PDB\clretwrc.pdb" target="bin\clretwrc.pdb" />
+    <file src="..\PDB\coreclr.pdb" target="bin\coreclr.pdb" />
+    <file src="..\PDB\corerun.pdb" target="bin\corerun.pdb" />
+    <file src="..\PDB\mscordaccore.pdb" target="bin\mscordaccore.pdb" />
+    <file src="..\PDB\mscordbi.pdb" target="bin\mscordbi.pdb" />
+    <file src="..\PDB\mscorrc.pdb" target="bin\mscorrc.pdb" />
+    <file src="..\PDB\mscorrc.debug.pdb" target="bin\mscorrc.debug.pdb" />
+    <file src="..\PDB\corerun.pdb" target="bin\corerun.pdb" />
+    <file src="..\mscorlib.pdb" target="bin\mscorlib.pdb" />
+    <file src="..\inc\cor.h" target="inc\cor.h" />
+    <file src="..\inc\corerror.h" target="inc\corerror.h" />
+    <file src="..\inc\corhdr.h" target="inc\corhdr.h" />
+    <file src="..\inc\corinfo.h" target="inc\corinfo.h" />
+    <file src="..\inc\corjit.h" target="inc\corjit.h" />
+  </files>
+</package>
