@@ -33,7 +33,7 @@ function(get_compile_definitions DefinitionName)
         set(DEFINITIONS ${DEFINITIONS} ${DEFINITION})
     endforeach()
     set(${DefinitionName} ${DEFINITIONS} PARENT_SCOPE)
-endfunction(get_compile_definitions DefinitionName)
+endfunction(get_compile_definitions)
 
 # Build a list of include directories by putting -I in front of each include dir.
 function(get_include_directories IncludeDirectories)
@@ -42,7 +42,7 @@ function(get_include_directories IncludeDirectories)
         set(INC_DIRECTORIES ${INC_DIRECTORIES} -I${dir})
     endforeach()
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
-endfunction(get_include_directories IncludeDirectories)
+endfunction(get_include_directories)
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths. 
@@ -78,17 +78,17 @@ if (WIN32)
   # First DEBUG
   foreach (Definition ${CLR_DEFINES_DEBUG_INIT})
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:DEBUG>:${Definition}>)
-  endforeach (Definition ${CLR_DEFINES_DEBUG_INIT})
+  endforeach (Definition)
 
   # Then RELEASE
   foreach (Definition ${CLR_DEFINES_RELEASE_INIT})
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELEASE>:${Definition}>)
-  endforeach (Definition ${CLR_DEFINES_RELEASE_INIT})
+  endforeach (Definition)
 
   # And then RELWITHDEBINFO
   foreach (Definition ${CLR_DEFINES_RELWITHDEBINFO_INIT})
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELWITHDEBINFO>:${Definition}>)
-  endforeach (Definition ${CLR_DEFINES_RELWITHDEBINFO_INIT})
+  endforeach (Definition)
 
 elseif (CLR_CMAKE_PLATFORM_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
@@ -331,7 +331,7 @@ if (IS_64BIT_BUILD EQUAL 1)
   endif (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
   add_definitions(-D_TARGET_AMD64_=1)
   add_definitions(-DDBG_TARGET_AMD64)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
   # TODO: Support this
   message(FATAL_ERROR "Not Implemented!")
 endif (IS_64BIT_BUILD EQUAL 1)
@@ -439,7 +439,7 @@ add_definitions(-D_AMD64_SIMULATOR_PERF_)
 add_definitions(-D_AMD64_WORKAROUND_)
 add_definitions(-D_WIN64)
 add_definitions(-DAMD64)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
 # TODO - Support this
 endif (IS_64BIT_BUILD EQUAL 1)
 
@@ -454,7 +454,7 @@ add_definitions(-D_UNICODE)
 
 if (IS_64BIT_BUILD EQUAL 1)
   set(ARCH_SOURCES_DIR amd64)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
   set(ARCH_SOURCES_DIR i386)
 endif (IS_64BIT_BUILD EQUAL 1)
 

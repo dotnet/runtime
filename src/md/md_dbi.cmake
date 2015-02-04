@@ -11,7 +11,7 @@ if(WIN32)
     # using static crt for dbi
     if (CMAKE_BUILD_TYPE STREQUAL DEBUG)
       add_definitions(-MTd) 
-    else(CMAKE_BUILD_TYPE STREQUAL DEBUG)
+    else()
       add_definitions(-MT) 
     endif(CMAKE_BUILD_TYPE STREQUAL DEBUG)
 endif(WIN32)
