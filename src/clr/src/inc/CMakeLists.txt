@@ -31,7 +31,7 @@ get_include_directories(MIDL_INCLUDE_DIRECTORIES)
 
 # Run custom midl command over each idl file
 FIND_PROGRAM( MIDL midl.exe )
-foreach(GENERATE_IDL ${CORGUIDS_IDL_SOURCES})
+foreach(GENERATE_IDL IN LISTS CORGUIDS_IDL_SOURCES)
    get_filename_component(IDLNAME ${GENERATE_IDL} NAME_WE)
    set(OUT_NAME ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}_i.c)
    set(CORGUIDS_SOURCES ${CORGUIDS_SOURCES} ${OUT_NAME})
@@ -50,7 +50,7 @@ add_compile_options(/TC)
 else()
 
 #The MIDL tool exists for Windows only, so for other systems, we have the prebuilt xxx_i.c files checked in
-foreach(IDL_SOURCE ${CORGUIDS_IDL_SOURCES})
+foreach(IDL_SOURCE IN LISTS CORGUIDS_IDL_SOURCES)
    get_filename_component(IDLNAME ${IDL_SOURCE} NAME_WE)
    set(C_SOURCE ../pal/prebuilt/idl/${IDLNAME}_i.c)
    set(CORGUIDS_SOURCES ${CORGUIDS_SOURCES} ${C_SOURCE})
