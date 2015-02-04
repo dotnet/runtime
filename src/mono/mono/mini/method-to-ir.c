@@ -5652,22 +5652,31 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				case MONO_TYPE_I4:
 				case MONO_TYPE_U4:
 					ins->dreg = mono_alloc_ireg (cfg);
+					ins->type = STACK_I4;
 					break;
 				case MONO_TYPE_I8:
 				case MONO_TYPE_U8:
 					ins->dreg = mono_alloc_lreg (cfg);
+					ins->type = STACK_I8;
 					break;
 				case MONO_TYPE_I:
 				case MONO_TYPE_U:
 					ins->dreg = mono_alloc_ireg (cfg);
+#if SIZEOF_REGISTER == 8
+					ins->type = STACK_I8;
+#else
+					ins->type = STACK_I4;
+#endif
 					break;
 				case MONO_TYPE_R4:
 				case MONO_TYPE_R8:
 					ins->dreg = mono_alloc_freg (cfg);
+					ins->type = STACK_R8;
 					break;
 				default:
 					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
 					ins->dreg = mono_alloc_ireg_ref (cfg);
+					ins->type = STACK_OBJ;
 					break;
 				}
 
@@ -5776,6 +5785,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_INST_NEW (cfg, ins, OP_ATOMIC_LOAD_I8);
 				ins->dreg = mono_alloc_preg (cfg);
 				ins->sreg1 = args [0]->dreg;
+				ins->type = STACK_I8;
 				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_SEQ;
 				MONO_ADD_INS (cfg->cbb, ins);
 			} else {
@@ -5788,6 +5798,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				load_ins->dreg = mono_alloc_preg (cfg);
 				load_ins->inst_basereg = args [0]->dreg;
 				load_ins->inst_offset = 0;
+				load_ins->type = STACK_I8;
 				MONO_ADD_INS (cfg->cbb, load_ins);
 
 				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
@@ -6076,6 +6087,38 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->sreg1 = args [0]->dreg;
 				ins->backend.memory_barrier_kind = MONO_MEMORY_BARRIER_ACQ;
 				MONO_ADD_INS (cfg->cbb, ins);
+
+				switch (fsig->params [0]->type) {
+				case MONO_TYPE_BOOLEAN:
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+					ins->type = STACK_I4;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+					ins->type = STACK_I8;
+					break;
+				case MONO_TYPE_I:
+				case MONO_TYPE_U:
+#if SIZEOF_REGISTER == 8
+					ins->type = STACK_I8;
+#else
+					ins->type = STACK_I4;
+#endif
+					break;
+				case MONO_TYPE_R4:
+				case MONO_TYPE_R8:
+					ins->type = STACK_R8;
+					break;
+				default:
+					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
+					ins->type = STACK_OBJ;
+					break;
+				}
 			}
 		}
 
