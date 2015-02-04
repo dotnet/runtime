@@ -60,3 +60,7 @@ endif(WIN32)
 
 # Compile *_i.c to lib
 add_library(corguids ${CORGUIDS_SOURCES})
+
+# Binplace the inc files for packaging later.
+
+install (FILES cor.h corhdr.h corinfo.h corjit.h DESTINATION inc)
