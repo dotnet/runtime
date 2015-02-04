@@ -36,6 +36,7 @@
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
+    <Compile Include="Interop\Interop.Windows.cs" />
   </ItemGroup>
   <!-- References used -->
   <ItemGroup>
