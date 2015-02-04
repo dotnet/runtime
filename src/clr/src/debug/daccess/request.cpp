@@ -446,7 +446,7 @@ ClrDataAccess::GetJitManagerList(unsigned int count, struct DacpJitManagerInfo m
     {
         *pNeeded = 1;
 #ifdef FEATURE_PREJIT
-        *pNeeded++;
+        (*pNeeded)++;
 #endif
     }
 
