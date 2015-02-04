@@ -309,8 +309,8 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 
 /***************************************************************/
 // A fundamental requirement of managed code is that we need to be able to enumerate all GC references on the
-// stack at GC time. To do this we need to be able to ‘crawl’ the stack. We know how to do this in JIT
-// compiled code (it generates additional information like the frame size etc), but we don’t know how to do
+// stack at GC time. To do this we need to be able to 'crawl' the stack. We know how to do this in JIT
+// compiled code (it generates additional information like the frame size etc), but we don't know how to do
 // this for unmanaged code. For PINVOKE calls, we leave a pointer to the transition boundary between managed
 // and unmanaged code and we simply ignore the lower part of the stack. However setting up this transition is
 // a bit expensive (1-2 dozen instructions), and while that is acceptable for PINVOKE, it is not acceptable
@@ -319,15 +319,15 @@ static bool shouldEnterCall(PTR_BYTE ip) {
 // To get around this, for transitions into the runtime (which we call FCALLS), we DEFER setting up the
 // boundary variables (what we call the transition frame), until we actually need it (we will do an operation
 // that might cause a GC). This allow us to handle the common case (where we might find the thing in a cache,
-// or be service the ‘new’ from a allocation quantum), and only pay the cost of setting up the transition
+// or be service the 'new' from a allocation quantum), and only pay the cost of setting up the transition
 // frame when it will actually be used.
 //
 // The problem is that in order to set up a transition frame we need to be able to find ALL REGISTERS AT THE
 // TIME THE TRANSITION TO UNMANAGED CODE WAS MADE (because we might need to update them if they have GC
 // references). Because we have executed ordinary C++ code (which might spill the registers to the stack at
-// any time), we have a problem. LazyMachState is our ‘solution’ to this problem. We take advantage of the
+// any time), we have a problem. LazyMachState is our 'solution' to this problem. We take advantage of the
 // fact that the C++ code MUST RESTORE the register before returning. Thus we simulate the execution from the
-// current location to the return and ‘watch’ where the registers got restored from. This is what
+// current location to the return and 'watch' where the registers got restored from. This is what
 // unwindLazyState does (determine what the registers would be IF you had never executed and unmanaged C++
 // code).
 // 

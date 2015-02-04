@@ -10900,7 +10900,7 @@ ASG_OP:
 // optimization.  This code is previously from UTC where it notes it was taken from
 // _The_PowerPC_Compiler_Writer's_Guide_, pages 57-58.
 // The paper it is based on is "Division by invariant integers using multiplication"
-// by Torbjörn Granlund and Peter L. Montgomery in PLDI 94
+// by Torbjorn Granlund and Peter L. Montgomery in PLDI 94
 
 template <typename T>
 T GetSignedMagicNumberForDivide(T denom, int *shift /*out*/)

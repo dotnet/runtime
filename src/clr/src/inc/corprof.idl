@@ -771,11 +771,11 @@ interface ICorProfilerCallback : IUnknown
      *
      * NOTE: Shutdown will only fire where the managed application that is being
      * profiled was started running managed code (i.e., the initial frame on the
-     * process’ stack is managed).  If the application being profiled started
-     * life as unmanaged code, which later ‘jumped into’ managed code (thereby
+     * process' stack is managed).  If the application being profiled started
+     * life as unmanaged code, which later 'jumped into' managed code (thereby
      * creating an instance of the CLR), then Shutdown will not fire.  In these
      * cases, the profiler should include a DllMain routine in their library that
-     * uses Win32’s DLL_PROCESS_DETACH call to free any resources and perform tidy-up
+     * uses Win32's DLL_PROCESS_DETACH call to free any resources and perform tidy-up
      * processing of its data (flush traces to disk, etc)
      *
      * NOTE: The profiler must in general cope with unexpected shutdowns, such as

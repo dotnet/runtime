@@ -86,12 +86,12 @@
 //             startup). This will also allow the SetEnterLeaveFunctionHooks(2) info
 //             functions to be called outside of Initialize(). If a profiler later
 //             attaches and calls these functions, then the slow-path wrapper will call
-//             into the profiler’s ELT hooks.
+//             into the profiler's ELT hooks.
 //    * COMPLUS_TestOnlyEnableObjectAllocatedHook:
 //         * If nonzero, then on startup the runtime will act as if a profiler was loaded
 //             on startup and requested ObjectAllocated callback (even if no profiler is loaded
 //             on startup). If a profiler later attaches and calls these functions, then the 
-//             ObjectAllocated notifications will call into the profiler’s ObjectAllocated callback.
+//             ObjectAllocated notifications will call into the profiler's ObjectAllocated callback.
 //    * COMPLUS_TestOnlyEnableICorProfilerInfo:
 //         * If nonzero, then attaching profilers allows to call ICorProfilerInfo inteface, 
 //             which would otherwise be disallowed for attaching profilers
@@ -5395,7 +5395,7 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromTokenAndTypeArgs(ModuleID moduleID,
         if (GetThreadNULLOk() == NULL)
         {
             // Type system will try to validate as part of its contract if the current 
-            // AppDomain returned by GetAppDomain can load types in specified module’s 
+            // AppDomain returned by GetAppDomain can load types in specified module's 
             // assembly.   On a non-EE thread it results in an AV in a check build 
             // since the type system tries to dereference NULL returned by GetAppDomain.  
             // More importantly, loading a type on a non-EE thread is not allowed.

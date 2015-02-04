@@ -267,7 +267,7 @@ namespace ETW
             struct {
                 ULONGLONG SegmentSize; 
                 ULONGLONG LargeObjectSegmentSize; 
-                BOOL ServerGC; // TRUE means it’s server GC; FALSE means it’s workstation.
+                BOOL ServerGC; // TRUE means it's server GC; FALSE means it's workstation.
             } GCSettings;
 
             struct {

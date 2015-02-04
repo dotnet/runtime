@@ -568,7 +568,7 @@ enum DispatchCallSimpleFlags
 // such as END_DOMAIN_TRANSITION or EX_CATCH. Catching exceptions in the managed code is properly instrumented and
 // does not need this notification.
 //
-// The notification is what enables both the managed ‘unhandled exception’ dialog and the ‘user unhandled’ dialog when 
+// The notification is what enables both the managed 'unhandled exception' dialog and the 'user unhandled' dialog when 
 // JMC is turned on. Many things that VS puts up the unhandled exception dialog for are actually cases where the native
 // exception was caught, for example catching exceptions at the thread base. JMC requires further accuracy - in that case
 // VS is checking to see if an exception escaped particular ranges of managed code frames.
