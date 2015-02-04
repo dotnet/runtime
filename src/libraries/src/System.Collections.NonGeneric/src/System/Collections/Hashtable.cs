@@ -61,7 +61,7 @@ namespace System.Collections
     {
         /*
           This Hashtable uses double hashing.  There are hashsize buckets in the 
-          table, and each bucket can contain 0 or 1 element.  We a bit to mark
+          table, and each bucket can contain 0 or 1 element.  We assign a bit to mark
           whether there's been a collision when we inserted multiple elements
           (ie, an inserted item was hashed at least a second time and we probed 
           this bucket, but it was already in use).  Using the collision bit, we
