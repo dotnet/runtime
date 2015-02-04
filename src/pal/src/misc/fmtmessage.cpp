@@ -49,7 +49,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 /* Function pointers and handles. */
 typedef VOID * HSATELLITE;
 static HSATELLITE s_hSatellite = NULL;
-#if !defined(CORECLR) || !defined(__APPLE__)
 static LPVOID s_lpLibRotorPalRt = NULL;
 typedef HSATELLITE (__stdcall *FnLoadSatelliteResource)(LPCWSTR);
 static FnLoadSatelliteResource LoadSatelliteResource;
@@ -57,45 +56,7 @@ typedef BOOL (__stdcall *FnFreeSatelliteResource)(HSATELLITE);
 static FnFreeSatelliteResource FreeSatelliteResource;
 typedef UINT (__stdcall *FnLoadSatelliteStringW)(HSATELLITE, UINT, LPWSTR, UINT);
 static FnLoadSatelliteStringW LoadSatelliteStringW;
-#else // !CORECLR || !__APPLE__
-// Under CoreCLR/Mac both the PAL and PALRT are statically linked. Thus we can reference the resource
-// routines from the runtime without using GetProcAddress.
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW(LPCWSTR SatelliteResourceFileName);
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource(HSATELLITE SatelliteResource);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax);
-#define LoadSatelliteResource PAL_LoadSatelliteResourceW
-#define FreeSatelliteResource PAL_FreeSatelliteResource
-#define LoadSatelliteStringW PAL_LoadSatelliteStringW
 
-// We are still a few build tools that link in rotor_pal before rotor_palrt has even been built. For
-// these guys we have the linker redirect the symbol lookups back here to stubs that will assert an
-// error message (this is no worse than the non-CoreCLR behavior where the runtime dynamic library
-// load would fail if triggered by one of these build tools).
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW_NoRT(LPCWSTR SatelliteResourceFileName)
-{
-    ASSERT("Tried to call PAL_LoadSatelliteResourceW from an image not linked with rotor_palrt\n");
-    return NULL;
-}
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource_NoRT(HSATELLITE SatelliteResource)
-{
-    ASSERT("Tried to call PAL_FreeSatelliteResource from an image not linked with rotor_palrt\n");
-    return FALSE;
-}
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW_NoRT(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax)
-{
-    ASSERT("Tried to call PAL_LoadSatelliteStringW from an image not linked with rotor_palrt\n");
-    return 0;
-}
-
-#endif // !CORECLR || !__APPLE__
-
-#if !defined(CORECLR) || !defined(__APPLE__)
 /*++
 Function :
 
@@ -145,7 +106,6 @@ static LPVOID FMTMSG_LoadLibrary( )
 error:
     return s_lpLibRotorPalRt;
 }
-#endif // !CORECLR || !__APPLE__
 
 
 /*++
@@ -160,9 +120,6 @@ Function :
 static HSATELLITE FMTMSG_FormatMessageInit( void )
 {
     static const WCHAR ROTORPALSATFILE[] = {
-#ifndef CORECLR
-        'r','o','t','o','r','_',
-#endif // !CORECLR
         'p','a','l','.','s','a','t','e','l','l','i','t','e', '\0'
     };
     
@@ -170,7 +127,6 @@ static HSATELLITE FMTMSG_FormatMessageInit( void )
 
     HSATELLITE hSatellite;
 
-#if !defined(CORECLR) || !defined(__APPLE__)
     LPVOID lpLibRotorPalRt;
 
     TRACE( "Initilizing the dynamic library and the satellite files.\n" );
@@ -202,7 +158,6 @@ static HSATELLITE FMTMSG_FormatMessageInit( void )
                 "Reason %s.\n", dlerror() );
         goto error;
     }
-#endif // !CORECLR || !__APPLE__
 
     /* Load the satellite file. */
     if ( !PAL_GetPALDirectoryW( SatPathAndFile, MAX_PATH ) )
@@ -245,23 +200,19 @@ Function :
 BOOL FMTMSG_FormatMessageCleanUp( void )
 {    
     TRACE( "Cleaning up the dynamic library and the satellite files.\n" );
-#if !defined(CORECLR) || !defined(__APPLE__)
     if ( s_lpLibRotorPalRt )
     {
-#endif // !CORECLR || !__APPLE__
         if (s_hSatellite)
         {
             (*FreeSatelliteResource)(s_hSatellite);
             s_hSatellite = NULL;
         }
-#if !defined(CORECLR) || !defined(__APPLE__)
         if ( dlclose( s_lpLibRotorPalRt ) != 0 )
         {
             ASSERT( "Unable to close the dynamic library\n" );
         }
         s_lpLibRotorPalRt = NULL;
     }
-#endif // !CORECLR || !__APPLE__
     return TRUE;
 }
 

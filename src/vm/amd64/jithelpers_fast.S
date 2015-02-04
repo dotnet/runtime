@@ -16,12 +16,11 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 // change at runtime as the GC changes. Initially it should simply be a copy of the 
 // larger of the two functions (JIT_WriteBarrier_PostGrow) to ensure we have created
 // enough space to copy that code in.
-        .align 16
+.balign 16
 LEAF_ENTRY JIT_WriteBarrier, _TEXT
-
 #ifdef _DEBUG
         // In debug builds, this just contains jump to the debug version of the write barrier by default
-        jmp     JIT_WriteBarrier_Debug
+        jmp C_FUNC(JIT_WriteBarrier_Debug)
 #endif
 
         // Do the move into the GC .  It is correct to take an AV here, the EH code
@@ -38,38 +37,41 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         // a special non-volatile calling convention, this should be changed to
         // just one.
 
-        movabs  rax, 0F0F0F0F0F0F0F0F0h
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
 
         // Check the lower and upper ephemeral region bounds
         cmp     rsi, rax
-        jb      Exit
+        // jb      Exit
+        .byte 0x72, 0x36
 
         nop // padding for alignment of constant
 
-        movabs  r8, 0F0F0F0F0F0F0F0F0h
+        movabs  r8, 0xF0F0F0F0F0F0F0F0
 
         cmp     rsi, r8
-        jae     Exit
+        // jae     Exit
+        .byte 0x73, 0x26
 
         nop // padding for alignment of constant
 
-        movabs  rax, 0F0F0F0F0F0F0F0F0h
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
 
         // Touch the card table entry, if not already dirty.
         shr     rdi, 0Bh
         cmp     byte ptr [rdi + rax], 0FFh
-        jne     UpdateCardTable
+        // jne     UpdateCardTable
+        .byte 0x75, 0x02
         REPRET
 
     UpdateCardTable:
         mov     byte ptr [rdi + rax], 0FFh
         ret
 
-    .align 16
+    .balign 16
     Exit:
         REPRET
     // make sure this guy is bigger than any of the other guys
-    .align 16
+    .balign 16
         nop
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT
 
@@ -99,12 +101,15 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
         cmp     rdi, [rax]
-        jb      NotInHeap
+        // jb      NotInHeap
+        .byte 0x72, 0x0e
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
-        jnb     NotInHeap
+        // jnb     NotInHeap
+        .byte 0x73, 0x02
         
-        jmp     JIT_WriteBarrier
+        // call C_FUNC(JIT_WriteBarrier)
+        .byte 0xeb, 0x84
 
     NotInHeap:
         // See comment above about possible AV
@@ -228,7 +233,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     byte ptr [rcx], 0FFh
         ret
 
-    .align 16
+    .balign 16
     NotInHeap_ByRefWriteBarrier:
 // If WRITE_BARRIER_CHECK then we won't have already done the mov and should do it here
 // If !WRITE_BARRIER_CHECK we want _NotInHeap and _Leave to be the same and have both

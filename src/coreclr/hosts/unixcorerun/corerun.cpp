@@ -17,7 +17,11 @@
 #include <set>
 
 // The name of the CoreCLR native runtime DLL.
+#if defined(__APPLE__)
+static const char * const coreClrDll = "libcoreclr.dylib";
+#else
 static const char * const coreClrDll = "libcoreclr.so";
+#endif
 
 // Windows types used by the ExecuteAssembly function
 typedef unsigned int DWORD;

@@ -7,7 +7,15 @@ project(CoreCLR)
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
     set(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64 1)
+    set(CLR_CMAKE_PLATFORM_LINUX 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(CLR_CMAKE_PLATFORM_UNIX 1)
+    set(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64 1)
+    set(CLR_CMAKE_PLATFORM_DARWIN 1)
+    set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> -o <OBJECT> -c <SOURCE>")
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 # Build a list of compiler definitions by putting -D in front of each define.
 function(get_compile_definitions DefinitionName)
@@ -126,7 +134,7 @@ if (WIN32)
   endif (CMAKE_SYSTEM_PROCESSOR STREQUAL AMD64)
   
 elseif (CLR_CMAKE_PLATFORM_UNIX)  
-  # Set flag to indicate if this will be a 64bit Linux build
+  # Set flag to indicate if this will be a 64bit build
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
     set(IS_64BIT_BUILD 1)  
   endif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
@@ -285,17 +293,24 @@ endif (WIN32)
 
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
-  add_definitions(-D__LINUX__=1)
   add_definitions(-DFEATURE_PAL_SXS)
 
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
-    message("Detected Linux x86_64")
-    add_definitions(-DLINUX64)
     add_definitions(-DBIT64=1)
     add_definitions(-DFEATURE_PAL)
   else (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
     message(FATAL_ERROR "error: Detected non x86_64 target processor. Not supported!")
   endif(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+
+  if(CLR_CMAKE_PLATFORM_LINUX)
+    add_definitions(-D__LINUX__=1)
+    message("Detected Linux x86_64")
+    add_definitions(-DLINUX64)
+  endif(CLR_CMAKE_PLATFORM_LINUX)
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    message("Detected OSX x86_64")
+    add_definitions(-D_XOPEN_SOURCE)
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 

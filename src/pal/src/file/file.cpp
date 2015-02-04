@@ -1174,12 +1174,24 @@ DeleteFileA(
         dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpUnixFileName);
         goto done;
     }
+
+    lpFullUnixFileName =  reinterpret_cast<LPSTR>(InternalMalloc(pThread, cchFullUnixFileName));
+    if ( lpFullUnixFileName == NULL )
+    {
+        ERROR("InternalMalloc() failed\n");
+        palError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
+
+    // Initialize the path to zeroes...
+    ZeroMemory(lpFullUnixFileName, cchFullUnixFileName);
     
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
     palError = InternalCanonicalizeRealPath(pThread, lpUnixFileName, lpFullUnixFileName, cchFullUnixFileName);
     if (palError != NO_ERROR)
     {
+        InternalFree(pThread, lpFullUnixFileName);
         lpFullUnixFileName = InternalStrdup(pThread, lpUnixFileName);
         if (!lpFullUnixFileName)
         {

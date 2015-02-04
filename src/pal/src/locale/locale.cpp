@@ -359,7 +359,7 @@ static CFStringRef CFStringCreateMacFormattedLocaleName(LPCWSTR lpLocaleName)
         return NULL;
     }
 
-    CFStringAppendCharacters(cfMutableLocaleName, lpLocaleName, PAL_wcslen(lpLocaleName));
+    CFStringAppendCharacters(cfMutableLocaleName, (const UniChar*)lpLocaleName, PAL_wcslen(lpLocaleName));
 
     CFStringFindAndReplace(cfMutableLocaleName,
                                 CFSTR("-"),
@@ -848,7 +848,7 @@ GetUserDefaultLocaleName(
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
         goto EXIT;
     }
-    CFStringGetCharacters(cfLocaleName,CFRangeMake(0,iStrLen),lpLocaleName);
+    CFStringGetCharacters(cfLocaleName,CFRangeMake(0,iStrLen),(UniChar*)lpLocaleName);
     lpLocaleName[iStrLen]=L'\0';
     iRetVal=iStrLen+1;
 
@@ -1554,7 +1554,7 @@ GetCalendarInfoEx(
         }
         else if (cchData >= length + 1)
         {
-            CFStringGetCharacters(cfString, CFRangeMake(0, length), lpCalData);
+            CFStringGetCharacters(cfString, CFRangeMake(0, length), (UniChar*)lpCalData);
             lpCalData[length] = L'\0';
             nRetval = length + 1;
         }
@@ -1614,7 +1614,7 @@ GetDateFormatHelper(
      * expected by Core Foundation.  However, currently no one calls this
      * with a format where this would actually matter.
      */
-    cfStringFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, lpFormat, PAL_wcslen(lpFormat));
+    cfStringFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
     if (cfStringFormat == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -1645,7 +1645,7 @@ GetDateFormatHelper(
     }
     else if (cchDate >= length + 1)
     {
-        CFStringGetCharacters(cfStringDate, CFRangeMake(0, length), lpDateStr);
+        CFStringGetCharacters(cfStringDate, CFRangeMake(0, length), (UniChar*)lpDateStr);
         lpDateStr[length] = L'\0';
         nRetval = length + 1;
     }
@@ -1945,13 +1945,13 @@ CompareStringHelper(
         cchCount2 = PAL_wcslen( lpString2 );
     }
 
-    cfString1 = CFStringCreateWithCharacters(kCFAllocatorDefault, lpString1, cchCount1);
+    cfString1 = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpString1, cchCount1);
     if (cfString1 == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
-    cfString2 = CFStringCreateWithCharacters(kCFAllocatorDefault, lpString2, cchCount2);
+    cfString2 = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpString2, cchCount2);
     if (cfString2 == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -3841,7 +3841,7 @@ CLEANUP:
     }
     else if (cchData >= length + 1)
     {
-        CFStringGetCharacters(cfString, CFRangeMake(0, length), lpLCData);
+        CFStringGetCharacters(cfString, CFRangeMake(0, length), (UniChar*)lpLCData);
         lpLCData[length] = L'\0';
         nRetval = length + 1;
     }
@@ -4181,7 +4181,7 @@ GetSystemDefaultLocaleName(
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
         goto EXIT;
     }
-    CFStringGetCharacters(cfLocaleName,CFRangeMake(0,iStrLen),lpLocaleName);
+    CFStringGetCharacters(cfLocaleName,CFRangeMake(0,iStrLen),(UniChar*)lpLocaleName);
     lpLocaleName[iStrLen]=L'\0';
     iRetVal=iStrLen+1;
 
@@ -4365,7 +4365,7 @@ static EnumResult EnumDateFormatsExExHelper(DATEFMT_ENUMPROCEXEXW lpDateFmtEnumP
         goto EXIT;
     }
 
-    CFStringGetCharacters(cfString, CFRangeMake(0, length), buffer);
+    CFStringGetCharacters(cfString, CFRangeMake(0, length), (UniChar*)buffer);
     buffer[length] = L'\0';
 
     calid = CFLocaleGetCALID(cfLocale);
@@ -4514,7 +4514,7 @@ static EnumResult EnumTimeFormatsExHelper(TIMEFMT_ENUMPROCEXW lpTimeFmtEnumProc,
         goto EXIT;
     }
 
-    CFStringGetCharacters(cfString, CFRangeMake(0, length), buffer);
+    CFStringGetCharacters(cfString, CFRangeMake(0, length), (UniChar*)buffer);
     buffer[length] = L'\0';
 
     TRACE("EnumTimeFormatsEx invoking callback for \"%S\"\n", buffer);
@@ -4661,7 +4661,7 @@ static BOOL EnumCalendarInfoExEx_Helper(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return FALSE;
     }
-    CFStringGetCharacters(cfString, CFRangeMake(0, length), buffer);
+    CFStringGetCharacters(cfString, CFRangeMake(0, length), (UniChar*)buffer);
 
     buffer[length] = L'\0';
     TRACE("EnumCalendarInfoExEx invoking callback for \"%S\"\n", buffer);
@@ -4916,7 +4916,7 @@ LCMapStringHelper(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
-    CFStringAppendCharacters(cfMutableString, lpSrcStr, cchSrc);
+    CFStringAppendCharacters(cfMutableString, (const UniChar*)lpSrcStr, cchSrc);
 
     switch (dwMapFlags)
     {
@@ -4959,7 +4959,7 @@ LCMapStringHelper(
         }
         else 
         {
-            CFStringGetCharacters(cfMutableString, CFRangeMake(0, nRetval), lpDestStr);
+            CFStringGetCharacters(cfMutableString, CFRangeMake(0, nRetval), (UniChar*)lpDestStr);
         }
     }
 
@@ -5085,7 +5085,7 @@ PAL_NormalizeStringExW(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
-    CFStringAppendCharacters(cfMutableString, lpSrcStr, cchSrc);
+    CFStringAppendCharacters(cfMutableString, (const UniChar*)lpSrcStr, cchSrc);
 
     // TODO: Additionally, we should normalize according to the locale.
     // Unfortunately, Core Foundation has no such function in Mac OS X 10.4.
@@ -5114,7 +5114,7 @@ PAL_NormalizeStringExW(
             nRetval = 0;
             goto EXIT;
         }
-        CFStringGetCharacters(cfMutableString, CFRangeMake(0, nRetval), lpDestStr);
+        CFStringGetCharacters(cfMutableString, CFRangeMake(0, nRetval), (UniChar*)lpDestStr);
         if (nRetval != length)
         {
             lpDestStr[length] = L'\0';
@@ -5180,14 +5180,14 @@ PAL_ParseDateW(
         goto EXIT;
     }
 
-    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, lpFormat, PAL_wcslen(lpFormat));
+    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
     if (cfFormat == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
 
-    cfString = CFStringCreateWithCharacters(kCFAllocatorDefault, lpString, PAL_wcslen(lpString));
+    cfString = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpString, PAL_wcslen(lpString));
     if (cfString == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5208,7 +5208,7 @@ PAL_ParseDateW(
     CFDateFormatterSetFormat(cfFormatter,cfFormat);
 
     // Does format contain 'Z'
-    cfFormatString = CFStringCreateWithCharacters(kCFAllocatorDefault, lpFormat, PAL_wcslen(lpFormat));
+    cfFormatString = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
     if (cfFormatString == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5319,7 +5319,7 @@ PAL_FormatDateW(
         goto EXIT;
     }
 
-    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, lpFormat, PAL_wcslen(lpFormat));
+    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
     if (cfFormat == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5482,7 +5482,7 @@ PAL_FormatDateW(
         goto EXIT;
     }
 
-    CFStringGetCharacters(cfString,CFRangeMake(0, strLen),lpDestStr);
+    CFStringGetCharacters(cfString,CFRangeMake(0, strLen),(UniChar*)lpDestStr);
     lpDestStr[strLen] = L'\0';
     RetVal = strLen;
     
@@ -5723,7 +5723,7 @@ static BOOL CFNumberFormatterSetPropertyString(CFNumberFormatterRef formatter, C
     // NULL means default
     if (sPropertyValue == NULL)
         return TRUE;
-    CFStringRef cfPropertyValue = CFStringCreateWithCharacters(kCFAllocatorDefault, sPropertyValue, PAL_wcslen(sPropertyValue));
+    CFStringRef cfPropertyValue = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)sPropertyValue, PAL_wcslen(sPropertyValue));
     if (cfPropertyValue == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5761,11 +5761,11 @@ static BOOL CFNumberFormatterAdjust(CFNumberFormatterRef formatter, LPCSTR forma
             case ' ': CFStringAppend(sFormat,CFSTR(" ")); break;            
             case '-': 
                 if(sMinus)
-                    CFStringAppendCharacters(sFormat,sMinus,PAL_wcslen(sMinus)); 
+                    CFStringAppendCharacters(sFormat,(const UniChar*)sMinus,PAL_wcslen(sMinus)); 
                 break;
             case '$': 
                 if(sDollar)
-                    CFStringAppendCharacters(sFormat,sDollar,PAL_wcslen(sDollar)); 
+                    CFStringAppendCharacters(sFormat,(const UniChar*)sDollar,PAL_wcslen(sDollar)); 
                 break;
                 
             default:
@@ -5822,7 +5822,7 @@ static int CFNumberFormatHelper(CFNumberFormatterRef formatter, PALNUMBER number
             SetLastError(ERROR_INSUFFICIENT_BUFFER);
             return -1;
         }
-        CFStringGetCharacters(cfFormattedNumber,CFRangeMake(0,iStrLen),pBuffer);
+        CFStringGetCharacters(cfFormattedNumber,CFRangeMake(0,iStrLen),(UniChar*)pBuffer);
         pBuffer[iStrLen]=L'\0';
     }
 

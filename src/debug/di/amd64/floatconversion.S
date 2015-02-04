@@ -9,4 +9,4 @@
 LEAF_ENTRY FPFillR8, _TEXT
             movdqa  xmm0, [rdi]
             ret
-LEAF_END FPFillR8
+LEAF_END FPFillR8, _TEXT
