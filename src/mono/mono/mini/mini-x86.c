@@ -3174,7 +3174,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_push_membase (code, ins->inst_basereg, 0xf0f0f0f0);
 			break;
 		case OP_MOVE:
-			x86_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
+			if (ins->dreg != ins->sreg1)
+				x86_mov_reg_reg (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_TAILCALL: {
 			MonoCallInst *call = (MonoCallInst*)ins;

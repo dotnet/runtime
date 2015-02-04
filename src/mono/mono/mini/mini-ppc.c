@@ -3709,7 +3709,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		CASE_PPC32 (OP_ICONV_TO_I4)
 		CASE_PPC32 (OP_ICONV_TO_U4)
 		case OP_MOVE:
-			ppc_mr (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_SETLRET: {
 			int saved = ins->sreg1;
@@ -3724,7 +3725,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FMOVE:
-			ppc_fmr (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				ppc_fmr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
 			ppc_frsp (code, ins->dreg, ins->sreg1);

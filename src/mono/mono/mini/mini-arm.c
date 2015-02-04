@@ -4830,7 +4830,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FMOVE:
-			if (IS_VFP)
+			if (IS_VFP && ins->dreg != ins->sreg1)
 				ARM_CPYD (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:

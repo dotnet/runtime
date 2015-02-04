@@ -4657,7 +4657,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_reg_imm_size (code, ins->dreg, 0, 8);
 			break;
 		case OP_MOVE:
-			amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof(mgreg_t));
+			if (ins->dreg != ins->sreg1)
+				amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof(mgreg_t));
 			break;
 		case OP_AMD64_SET_XMMREG_R4: {
 			amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
