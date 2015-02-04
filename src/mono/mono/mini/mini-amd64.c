@@ -3574,6 +3574,8 @@ mono_amd64_have_tls_get (void)
 	tls_gs_offset = ins[5];
 
 	return have_tls_get;
+#elif defined(PLATFORM_ANDROID)
+	return FALSE;
 #else
 	return TRUE;
 #endif
