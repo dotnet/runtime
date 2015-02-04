@@ -1,7 +1,7 @@
+#!/bin/bash
 #
 # This file invokes cmake and generates the build system for gcc.
 #
-#!/bin/bash
 
 if [ $# -lt 1 -o $# -gt 2 ]
 then
