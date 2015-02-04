@@ -10,7 +10,7 @@ namespace System.ComponentModel.EventBasedAsync
 {
     public class AsyncOperationTests
     {
-        private const int s_spinTimeoutSeconds = 30;
+        private const int SpinTimeoutSeconds = 30;
 
         [Fact]
         public static void Noop()
@@ -67,7 +67,7 @@ namespace System.ComponentModel.EventBasedAsync
                  var cancelEvent = new ManualResetEventSlim();
                  var operation = new TestAsyncOperation(op =>
                  {
-                     var ret = cancelEvent.Wait(s_spinTimeoutSeconds*1000);
+                     var ret = cancelEvent.Wait(SpinTimeoutSeconds*1000);
                      Assert.True(ret);
                  }, cancelEvent: cancelEvent);
 
@@ -126,9 +126,9 @@ namespace System.ComponentModel.EventBasedAsync
 
             public AsyncOperation AsyncOperation { get; private set; }
 
-            public bool Completed { get { return _completeEvent.Wait(1); } }
+            public bool Completed { get { return _completeEvent.IsSet; } }
 
-            public bool Cancelled { get { return _cancelEvent.Wait(1); } }
+            public bool Cancelled { get { return _cancelEvent.IsSet; } }
 
             public Exception Exception { get; private set; }
 
@@ -141,7 +141,7 @@ namespace System.ComponentModel.EventBasedAsync
                 Assert.Equal(AsyncOperation.SynchronizationContext, AsyncOperationManager.SynchronizationContext);
 
                 _completeEvent = new ManualResetEventSlim(false);
-                _cancelEvent = cancelEvent ?? new ManualResetEventSlim(false); //cancelEvent;
+                _cancelEvent = cancelEvent ?? new ManualResetEventSlim(false);
 
                 // Post work to the wrapped synchronization context
                 _executeDelegate = executeDelegate;
@@ -150,7 +150,7 @@ namespace System.ComponentModel.EventBasedAsync
 
             public void Wait()
             {
-                var ret = _completeEvent.Wait(s_spinTimeoutSeconds*1000);
+                var ret = _completeEvent.Wait(SpinTimeoutSeconds*1000);
                 Assert.True(ret);
 
                 if (this.Exception != null)
