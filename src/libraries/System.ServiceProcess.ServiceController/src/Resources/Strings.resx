@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgsCantBeNull" xml:space="preserve">
+    <value>Arguments within the 'args' array passed to Start cannot be null.</value>
+  </data>
+  <data name="BadMachineName" xml:space="preserve">
+    <value>MachineName value {0} is invalid.</value>
+  </data>
+  <data name="CannotStart" xml:space="preserve">
+    <value>Cannot start service {0} on computer '{1}'.</value>
+  </data>
+  <data name="DisplayName" xml:space="preserve">
+    <value>Display name cannot be null or empty</value>
+  </data>
+  <data name="InvalidEnumArgument" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value {1} for parameter {0}.</value>
+  </data>
+  <data name="NoDisplayName" xml:space="preserve">
+    <value>Display name could not be retrieved for service {0} on computer '{1}'.</value>
+  </data>
+  <data name="NoMachineName" xml:space="preserve">
+    <value>MachineName was not set.</value>
+  </data>
+  <data name="NoService" xml:space="preserve">
+    <value>Service {0} was not found on computer '{1}'.</value>
+  </data>
+  <data name="OpenSC" xml:space="preserve">
+    <value>Cannot open Service Control Manager on computer '{0}'. This operation might require other privileges.</value>
+  </data>
+  <data name="OpenService" xml:space="preserve">
+    <value>Cannot open {0} service on computer '{1}'.</value>
+  </data>
+  <data name="PauseService" xml:space="preserve">
+    <value>Cannot pause {0} service on computer '{1}'.</value>
+  </data>
+  <data name="ResumeService" xml:space="preserve">
+    <value>Cannot resume {0} service on computer '{1}'.</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Service name {0} contains invalid characters, is empty, or is too long (max length = {1}).</value>
+  </data>
+  <data name="StopService" xml:space="preserve">
+    <value>Cannot stop {0} service on computer '{1}'.</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Time out has expired and the operation has not been completed.</value>
+  </data>
+</root>
