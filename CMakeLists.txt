@@ -22,7 +22,7 @@ function(get_compile_definitions DefinitionName)
     # Get the current list of definitions
     get_directory_property(COMPILE_DEFINITIONS_LIST COMPILE_DEFINITIONS)
 
-    foreach(DEFINITION ${COMPILE_DEFINITIONS_LIST})
+    foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
         if (${DEFINITION} MATCHES "^\\$<\\$<CONFIG:([^>]+)>:([^>]+)>$")
             # The entries that contain generator expressions must have the -D inside of the 
             # expression. So we transform e.g. $<$<CONFIG:Debug>:_DEBUG> to $<$<CONFIG:Debug>:-D_DEBUG>
@@ -38,7 +38,7 @@ endfunction(get_compile_definitions)
 # Build a list of include directories by putting -I in front of each include dir.
 function(get_include_directories IncludeDirectories)
     get_directory_property(dirs INCLUDE_DIRECTORIES)
-    foreach(dir ${dirs})
+    foreach(dir IN LISTS dirs)
         set(INC_DIRECTORIES ${INC_DIRECTORIES} -I${dir})
     endforeach()
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
@@ -49,7 +49,7 @@ endfunction(get_include_directories)
 # The parameters after the RetSources are the input files. 
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
-    foreach(Source ${Sources})
+    foreach(Source IN LISTS Sources)
         set(AbsolutePathSources ${AbsolutePathSources} ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
     endforeach()            
     set(${RetSources} ${AbsolutePathSources} PARENT_SCOPE)
@@ -76,17 +76,17 @@ if (WIN32)
   # For multi-configuration toolset (as Visual Studio)
   # set the different configuration defines.
   # First DEBUG
-  foreach (Definition ${CLR_DEFINES_DEBUG_INIT})
+  foreach (Definition IN LISTS CLR_DEFINES_DEBUG_INIT)
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:DEBUG>:${Definition}>)
   endforeach (Definition)
 
   # Then RELEASE
-  foreach (Definition ${CLR_DEFINES_RELEASE_INIT})
+  foreach (Definition IN LISTS CLR_DEFINES_RELEASE_INIT)
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELEASE>:${Definition}>)
   endforeach (Definition)
 
   # And then RELWITHDEBINFO
-  foreach (Definition ${CLR_DEFINES_RELWITHDEBINFO_INIT})
+  foreach (Definition IN LISTS CLR_DEFINES_RELWITHDEBINFO_INIT)
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELWITHDEBINFO>:${Definition}>)
   endforeach (Definition)
 
