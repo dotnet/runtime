@@ -26,7 +26,7 @@ class DictionaryEntryLayout;
 // Generics helper functions
 namespace Generics
 {
-    // Part of the recursive inheritance graph as defined by ECMA part.II §9.2.
+    // Part of the recursive inheritance graph as defined by ECMA part.II Section 9.2.
     // 
     // code:MethodTable.DoFullyLoad and code:TypeDesc.DoFullyLoad declare local variable of
     // this type and initialize it with:

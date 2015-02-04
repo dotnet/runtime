@@ -881,7 +881,7 @@ unsigned Compiler::optCreateAssertion(GenTreePtr op1, GenTreePtr op2,
             //
             // TODO-CQ: Check for Sealed class and change kind to O1K_EXACT_TYPE
             //          And consider the special cases, like CORINFO_FLG_SHAREDINST or CORINFO_FLG_VARIANCE
-            //          where a class can be sealed, but they don’t behave as exact types because casts to 
+            //          where a class can be sealed, but they don't behave as exact types because casts to 
             //          non-base types sometimes still succeed.  
             //
             assertion->op1.kind         = O1K_SUBTYPE;

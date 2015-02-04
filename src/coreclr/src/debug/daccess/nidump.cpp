@@ -861,7 +861,7 @@ NativeImageDumper::DumpNativeImage()
     {
         if (m_decoder.IsStrongNameSigned())
         {
-            DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn’t maintain a clean separation of address spaces (target and host are the same.");
+            DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn't maintain a clean separation of address spaces (target and host are the same.");
             data = reinterpret_cast<void*>(dac_cast<TADDR>(m_decoder.GetStrongNameSignature(&size)));
 
             IF_OPT(COR_INFO)
@@ -893,7 +893,7 @@ NativeImageDumper::DumpNativeImage()
     else
         DisplayWriteElementString( "imageType", "Mixed image", COR_INFO);
 
-    DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn’t maintain a clean separation of address spaces (target and host are the same.");
+    DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn't maintain a clean separation of address spaces (target and host are the same.");
     data = reinterpret_cast<void*>(dac_cast<TADDR>(m_decoder.GetMetadata(&size)));
     OpenMetadata();
     IF_OPT(METADATA)
@@ -919,7 +919,7 @@ NativeImageDumper::DumpNativeImage()
 
     if (m_decoder.HasNativeHeader())
     {
-        DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn’t maintain a clean separation of address spaces (target and host are the same.");
+        DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn't maintain a clean separation of address spaces (target and host are the same.");
         data = reinterpret_cast<void*>(dac_cast<TADDR>(m_decoder.GetNativeManifestMetadata(&size)));
 
         IF_OPT(METADATA)
@@ -1419,7 +1419,7 @@ void NativeImageDumper::OpenMetadata()
 {
     COUNT_T size;
 
-    DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn’t maintain a clean separation of address spaces (target and host are the same.");
+    DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn't maintain a clean separation of address spaces (target and host are the same.");
     const void *data = reinterpret_cast<void*>(dac_cast<TADDR>(m_decoder.GetMetadata(&size)));
 
     ReleaseHolder<IMetaDataDispenserEx> pDispenser;
@@ -1445,7 +1445,7 @@ void NativeImageDumper::OpenMetadata()
 
     if (m_decoder.HasNativeHeader())
     {
-        DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn’t maintain a clean separation of address spaces (target and host are the same.");
+        DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn't maintain a clean separation of address spaces (target and host are the same.");
         data = reinterpret_cast<void*>(dac_cast<TADDR>(m_decoder.GetNativeManifestMetadata(&size)));
 
         IfFailThrow(pDispenser->OpenScopeOnMemory(data, size, ofRead, 
@@ -2749,7 +2749,7 @@ NativeImageDumper::Dependency *NativeImageDumper::OpenDependency(int index)
             const void * data;
             COUNT_T size;
 
-            DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn’t maintain a clean separation of address spaces (target and host are the same.");
+            DACCOP_IGNORE(CastBetweenAddressSpaces,"nidump is in-proc and doesn't maintain a clean separation of address spaces (target and host are the same.");
             data = reinterpret_cast<void*>(dac_cast<TADDR>(decoder.GetMetadata(&size)));
 
             dependency.pMetadataStartTarget = TO_TADDR(data);

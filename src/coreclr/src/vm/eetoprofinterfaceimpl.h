@@ -655,7 +655,7 @@ private:
 
     // ELT3 no long keeps track of FunctionID of current managed method.  Therefore, a hash table of bookkeeping 
     // the mapping from FunctionID to clientID is needed to build up ELT2 on top of ELT3.  When ELT2 (slow-path 
-    // or fast-path) is registered by the profiler and the profiler’s IDFunctionMapper requests to hook up the 
+    // or fast-path) is registered by the profiler and the profiler's IDFunctionMapper requests to hook up the 
     // function being loading, the clientID returned by FunctionIDMapper will be saved as the value to be looked 
     // up by the corresponding FunctionID in the hash table.  FunctionIDs can be recycled after an app domain
     // that contains the function bodies is unloaded so this hash table needs to replace the existing FunctionID 

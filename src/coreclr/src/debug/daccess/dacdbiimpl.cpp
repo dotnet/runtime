@@ -2092,10 +2092,10 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeHandle(TypeHandleRea
 //                             pArrayTypeInfo along with arrayElementTypeArg to FindLoadedArrayType
 //                             to get the type handle for this particular array type.
 //                             Note:
-//                             On entry, we know that pArrayTypeInfo is the same as m_pCurrentData – 1,
+//                             On entry, we know that pArrayTypeInfo is the same as m_pCurrentData - 1,
 //                             but by the time we need to use it, this is no longer true. Because
-//                             we can’t predict how many nodes will be consumed by the call to 
-//                             ReadLoadedTypeArg, we can’t compute this value from the member fields
+//                             we can't predict how many nodes will be consumed by the call to 
+//                             ReadLoadedTypeArg, we can't compute this value from the member fields
 //                             of TypeDataWalk and therefore pass it as a parameter.                   
 //            retrieveWhich -  determines whether we can return the type handle for 
 //                             a canonical type or only for an exact type
@@ -2133,10 +2133,10 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ArrayTypeArg(DebuggerIPCE_TypeArgD
 //                             pPtrOrByRefTypeInfo along with referentTypeArg to FindLoadedPointerOrByrefType
 //                             to get the type handle for this particular pointer or byref type.
 //                             Note:
-//                             On entry, we know that pPtrOrByRefTypeInfo is the same as m_pCurrentData – 1,
+//                             On entry, we know that pPtrOrByRefTypeInfo is the same as m_pCurrentData - 1,
 //                             but by the time we need to use it, this is no longer true. Because
-//                             we can’t predict how many nodes will be consumed by the call to 
-//                             ReadLoadedTypeArg, we can’t compute this value from the member fields
+//                             we can't predict how many nodes will be consumed by the call to 
+//                             ReadLoadedTypeArg, we can't compute this value from the member fields
 //                             of TypeDataWalk and therefore pass it as a parameter.                   
 //            retrieveWhich - determines whether we can return the type handle for 
 //                            a canonical type or only for an exact type
@@ -3213,8 +3213,8 @@ TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(DebuggerIPCE_Expand
 // Notes: 
 // The address is  constant and could be cached.
 // 
-// If this is a context-static, the function uses the thread’s current context.  
-// [This is important because it means that you can’t lookup a context static 
+// If this is a context-static, the function uses the thread's current context.  
+// [This is important because it means that you can't lookup a context static 
 // unless you have a thread in that context. If anybody actually cared about contexts, 
 // we might have to revise this in the future] 
 // 

@@ -1968,7 +1968,7 @@ ProcessFuncletsForGCReporting:
                                     
                                     if (!m_fDidFuncletReportGCReferences)
                                     {
-                                        // we have reached the parent frame of the funclet which didn’t report roots since it was already unwound.
+                                        // we have reached the parent frame of the funclet which didn't report roots since it was already unwound.
                                         // check if the parent frame of the funclet is also handling an exception. if it is, then we will need to
                                         // report roots for it since the catch handler may use references inside it.
                                     

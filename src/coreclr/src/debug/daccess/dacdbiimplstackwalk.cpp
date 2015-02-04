@@ -1003,7 +1003,7 @@ ULONG32 DacDbiInterfaceImpl::GetStackParameterSize(EECodeInfo * pCodeInfo)
 //
 //    There are only two transition cases where we can reliably adjust for the callee stack parameter size:
 //    1) when the debugger calls SetContext() with the CONTEXT of the first managed stack frame in a 
-//       managed stack chain (i.e. SetContext() with M2’s CONTEXT)
+//       managed stack chain (i.e. SetContext() with M2's CONTEXT)
 //      - the M2U transition is protected by an explicit frame (aka Frame-chain frame)
 //    2) when the debugger calls GetContext() on the first native stack frame in a native stack chain 
 //       (i.e. GetContext() at U0)

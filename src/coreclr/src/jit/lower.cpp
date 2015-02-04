@@ -2969,16 +2969,16 @@ void Lowering::LowerInd(GenTreePtr* pTree)
 //    expressions that have side-effects.
 //    We then transform the tree into:
 //                      <offset is null - no accumulated offset for the first index>
-//                   /--*  <arrObj>
-//                   +--*  <index0>
-//                /--*  ArrIndex[i, ]
+//                   /--*  <arrObj>
+//                   +--*  <index0>
+//                /--*  ArrIndex[i, ]
 //                +--*  <arrObj>
-//             /--|  arrOffs[i, ]
+//             /--|  arrOffs[i, ]
 //             |  +--*  <arrObj>
 //             |  +--*  <index1>
-//             +--*  ArrIndex[*,j]
+//             +--*  ArrIndex[*,j]
 //             +--*  <arrObj>
-//          /--|  arrOffs[*,j]
+//          /--|  arrOffs[*,j]
 //          +--*  lclVar NewTemp
 //       /--*  lea (scale = element size, offset = offset of first element)
 //
