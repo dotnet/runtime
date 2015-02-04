@@ -1839,7 +1839,7 @@ tagPROPVARIANT|tagVARIANT|PROPVARIANT|VARIANT{
 				#case 10 ( #("ERROR =  ", $e.scode) )						; VT_ERROR
 				#case 0xB ( #("BOOL =  ", $e.boolVal) )						; VT_BOOL
 				#case 0xC ( #("VARIANT ") )									; VT_VARIANT
-				#case 0xD ( #("UNKNOWN =  ", $e.punkVal) )					; VT_UNKOWN
+				#case 0xD ( #("UNKNOWN =  ", $e.punkVal) )					; VT_UNKNOWN
 				#case 0xE ( #("DECIMAL = ", $e.hVal) )						; VT_DECIMAL
 				#case 0x10 ( #("I1 =  ", $e.cVal) )							; VT_I1
 				#case 0x11 ( #("UI1 =  ", $e.bVal) )							; VT_UI1
@@ -1914,7 +1914,7 @@ tagPROPVARIANT|tagVARIANT|PROPVARIANT|VARIANT{
 				#case 0x4007 ( #("byref of DATE =  ", $e.pdate) )				; VT_DATE|VT_BYREF
 				#case 0x4008 ( #("byref of BSTR = ", $e.pbstrVal) )				; VT_BSTR|VT_BYREF
 				#case 0x400E ( #("byref of DECIMAL = ", $e.pdecVal) )			; VT_DECIMAL|VT_BYREF
-				#case 0x400D ( #("byref of UNKNOWN =  ", $e.ppunkVal) )			; VT_UNKOWN|VT_BYREF
+				#case 0x400D ( #("byref of UNKNOWN =  ", $e.ppunkVal) )			; VT_UNKNOWN|VT_BYREF
 				#case 0x4009 ( #("byref of DISPATCH =  ", $e.ppdispVal) )		; VT_DISPATCH|VT_BYREF
 				#case 0x6000 ( #("byref of ARRAY =  ", $e.pparray) )				; VT_ARRAY|VT_BYREF
 							
@@ -1948,7 +1948,7 @@ tagPROPVARIANT|tagVARIANT|PROPVARIANT|VARIANT{
 				#case 0x9 ( #(DISPATCH   : $e.pdispVal) )						; VT_DISPATCH
 				#case 0xA ( #(ERROR   : $e.scode) )							; VT_ERROR
 				#case 0xB ( #(BOOL   : $e.boolVal) )							; VT_BOOL
-				#case 0xD ( #(UNKNOWN   : $e.punkVal) )						; VT_UNKOWN
+				#case 0xD ( #(UNKNOWN   : $e.punkVal) )						; VT_UNKNOWN
 				#case 0xE ( #(DECIMAL  : $e.hVal) )							; VT_DECIMAL
 				#case 0x10 ( #(I1   : $e.cVal) )								; VT_I1
 				#case 0x11 ( #(UI1   : $e.bVal) )								; VT_UI1
@@ -2015,7 +2015,7 @@ tagPROPVARIANT|tagVARIANT|PROPVARIANT|VARIANT{
 				#case 0x4007 ( #(byref of DATE   : $e.pdate) )				; VT_DATE|VT_BYREF
 				#case 0x4008 ( #(byref of BSTR  : $e.pbstrVal) )				; VT_BSTR|VT_BYREF
 				#case 0x400E ( #(byref of DECIMAL  : $e.pdecVal) )			; VT_DECIMAL|VT_BYREF
-				#case 0x400D ( #(byref of UNKNOWN   : $e.ppunkVal) )			; VT_UNKOWN|VT_BYREF
+				#case 0x400D ( #(byref of UNKNOWN   : $e.ppunkVal) )			; VT_UNKNOWN|VT_BYREF
 				#case 0x4009 ( #(byref of DISPATCH   : $e.ppdispVal) )		; VT_DISPATCH|VT_BYREF
 				#case 0x6000 ( #(byref of ARRAY   : $e.pparray) )			; VT_ARRAY|VT_BYREF
 				
