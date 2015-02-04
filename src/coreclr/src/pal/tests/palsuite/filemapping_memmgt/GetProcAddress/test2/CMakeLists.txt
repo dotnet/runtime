@@ -15,7 +15,6 @@ add_dependencies(paltest_getprocaddress_test2 CoreClrPal)
 
 target_link_libraries(paltest_getprocaddress_test2
   pthread
-  rt
   m
   CoreClrPal
 )

@@ -17,7 +17,6 @@ add_dependencies(paltest_synchronization_nativecs_interlocked CoreClrPal)
 
 target_link_libraries(paltest_synchronization_nativecs_interlocked
   pthread
-  rt
   m
   CoreClrPal
 )

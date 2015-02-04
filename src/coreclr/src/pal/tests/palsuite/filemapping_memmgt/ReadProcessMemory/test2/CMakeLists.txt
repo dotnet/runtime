@@ -14,7 +14,6 @@ add_dependencies(paltest_readprocessmemory_test2 CoreClrPal)
 
 target_link_libraries(paltest_readprocessmemory_test2
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_readprocessmemory_test2_helper CoreClrPal)
 
 target_link_libraries(paltest_readprocessmemory_test2_helper
   pthread
-  rt
   m
   CoreClrPal
 )

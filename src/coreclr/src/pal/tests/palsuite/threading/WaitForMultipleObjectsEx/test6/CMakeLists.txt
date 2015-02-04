@@ -14,7 +14,6 @@ add_dependencies(paltest_waitformultipleobjectsex_test6 CoreClrPal)
 
 target_link_libraries(paltest_waitformultipleobjectsex_test6
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_waitformultipleobjectsex_test6_child CoreClrPal)
 
 target_link_libraries(paltest_waitformultipleobjectsex_test6_child
   pthread
-  rt
   m
   CoreClrPal
 )

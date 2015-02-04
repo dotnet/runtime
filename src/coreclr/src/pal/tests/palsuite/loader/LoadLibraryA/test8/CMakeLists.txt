@@ -14,7 +14,6 @@ add_dependencies(paltest_loadlibrarya_test8 CoreClrPal)
 
 target_link_libraries(paltest_loadlibrarya_test8
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_loadlibrarya_test8_dlltest CoreClrPal)
 
 target_link_libraries(paltest_loadlibrarya_test8_dlltest
   pthread
-  rt
   m
   CoreClrPal
 )

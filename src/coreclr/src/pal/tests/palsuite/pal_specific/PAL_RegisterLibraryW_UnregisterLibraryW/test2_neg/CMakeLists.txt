@@ -14,7 +14,6 @@ add_dependencies(paltest_reg_unreg_libraryw_neg CoreClrPal)
 
 target_link_libraries(paltest_reg_unreg_libraryw_neg
   pthread
-  rt
   m
   CoreClrPal
 )
