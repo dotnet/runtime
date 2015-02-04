@@ -3047,7 +3047,7 @@ void MethodDesc::Save(DataImage *image)
                 // Store signatures that doesn't need restore into a read only section.
                 DataImage::ItemKind sigItemKind = DataImage::ITEM_STORED_METHOD_SIG_READONLY;
                 // Place the signatures for stubs-as-il into hot/cold or writeable section
-                // here since Module::Arrange won’t place them for us.
+                // here since Module::Arrange won't place them for us.
                 if (IsILStub())
                 {
                     PTR_DynamicMethodDesc pDynamicMD = AsDynamicMethodDesc();

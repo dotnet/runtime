@@ -2904,7 +2904,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 lExit:
 #ifdef FEATURE_COMINTEROP
 #ifdef FEATURE_CORECLR
-//Field scenario is not blocked here because we don’t want to block loading structs that 
+//Field scenario is not blocked here because we don't want to block loading structs that 
 //have the types which we are blocking, but never pass it to Interop.
 
     if (AppX::IsAppXProcess() && ms != MarshalInfo::MARSHAL_SCENARIO_FIELD)

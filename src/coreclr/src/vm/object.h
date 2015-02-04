@@ -1939,7 +1939,7 @@ public:
         /* 0x0c0 */ STRINGREF sPositiveInfinity        ; // + Infinity
         /* 0x0c8 */ STRINGREF sNegativeInfinity        ; // - Infinity
         /* 0x0d0 */ STRINGREF sPercent                 ; // Percent (%) symbol
-        /* 0x0d8 */ STRINGREF sPerMille                ; // PerMille (‰) symbol
+        /* 0x0d8 */ STRINGREF sPerMille                ; // PerMille (U+2030) symbol
         /* 0x0e0 */ STRINGREF sCurrency                ; // (user can override) local monetary symbol
         /* 0x0e8 */ STRINGREF sIntlMonetarySymbol      ; // international monetary symbol (RegionInfo)
         /* 0x0f0 */ STRINGREF sEnglishCurrency         ; // English name for this currency
