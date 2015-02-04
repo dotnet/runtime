@@ -3039,6 +3039,18 @@ if test "x$host" != "x$target"; then
 		with_tls=pthread
 		target_mach=no
 		;;
+   x86_64*-linux-*)
+		TARGET=AMD64;
+		arch_target=amd64;
+		AC_DEFINE(TARGET_AMD64, 1, [...])
+		AC_DEFINE(TARGET_ANDROID, 1, [...])
+		CPPFLAGS="$CPPFLAGS"
+		sgen_supported=true
+		# Can't use tls, since it depends on the runtime detection of tls offsets
+		# in mono-compiler.h
+		with_tls=pthread
+		target_mach=no
+		;;
    aarch64*-linux-*)
 		TARGET=ARM64;
 		arch_target=arm64;
