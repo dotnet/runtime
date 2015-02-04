@@ -138,8 +138,7 @@ ICALL_TYPE(TZONE, "System.CurrentSystemTimeZone", TZONE_1)
 ICALL(TZONE_1, "GetTimeZoneData", ves_icall_System_CurrentSystemTimeZone_GetTimeZoneData)
 
 ICALL_TYPE(DTIME, "System.DateTime", DTIME_1)
-ICALL(DTIME_1, "GetNow", mono_100ns_datetime)
-ICALL(DTIME_2, "GetTimeMonotonic", mono_100ns_ticks)
+ICALL(DTIME_1, "GetSystemTimeAsFileTime", mono_100ns_datetime)
 
 #ifndef DISABLE_DECIMAL
 ICALL_TYPE(DECIMAL, "System.Decimal", DECIMAL_1)
@@ -928,6 +927,9 @@ ICALL(THREADP_3, "GetMinThreads", ves_icall_System_Threading_ThreadPool_GetMinTh
 ICALL(THREADP_35, "SetMaxThreads", ves_icall_System_Threading_ThreadPool_SetMaxThreads)
 ICALL(THREADP_4, "SetMinThreads", ves_icall_System_Threading_ThreadPool_SetMinThreads)
 ICALL(THREADP_5, "pool_queue", icall_append_job)
+
+ICALL_TYPE(TTIMER, "System.Threading.Timer", TTIMER_1)
+ICALL(TTIMER_1, "GetTimeMonotonic", mono_100ns_ticks)
 
 ICALL_TYPE(VOLATILE, "System.Threading.Volatile", VOLATILE_28)
 ICALL(VOLATILE_28, "Read(T&)", ves_icall_System_Threading_Volatile_Read_T)
