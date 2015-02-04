@@ -5888,19 +5888,29 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2) {
-			guint32 opcode;
+			MonoInst *f2i = NULL, *i2f;
+			guint32 opcode, f2i_opcode, i2f_opcode;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [0]);
+			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
 
-			if (fsig->params [0]->type == MONO_TYPE_I4) {
+			if (fsig->params [0]->type == MONO_TYPE_I4 ||
+			    fsig->params [0]->type == MONO_TYPE_R4) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
+				f2i_opcode = OP_MOVE_F_TO_I4;
+				i2f_opcode = OP_MOVE_I4_TO_F;
 				cfg->has_atomic_exchange_i4 = TRUE;
 			}
 #if SIZEOF_REGISTER == 8
-			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I8) ||
-					(fsig->params [0]->type == MONO_TYPE_I))
+			else if (is_ref ||
+			         fsig->params [0]->type == MONO_TYPE_I8 ||
+			         fsig->params [0]->type == MONO_TYPE_R8 ||
+			         fsig->params [0]->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_EXCHANGE_I8;
+				f2i_opcode = OP_MOVE_F_TO_I8;
+				i2f_opcode = OP_MOVE_I8_TO_F;
+			}
 #else
-			else if (is_ref || (fsig->params [0]->type == MONO_TYPE_I)) {
+			else if (is_ref || fsig->params [0]->type == MONO_TYPE_I) {
 				opcode = OP_ATOMIC_EXCHANGE_I4;
 				cfg->has_atomic_exchange_i4 = TRUE;
 			}
@@ -5911,11 +5921,22 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (!mono_arch_opcode_supported (opcode))
 				return NULL;
 
+			if (is_float) {
+				/* TODO: Decompose these opcodes instead of bailing here. */
+				if (COMPILE_SOFT_FLOAT (cfg))
+					return NULL;
+
+				MONO_INST_NEW (cfg, f2i, f2i_opcode);
+				f2i->dreg = mono_alloc_ireg (cfg);
+				f2i->sreg1 = args [1]->dreg;
+				MONO_ADD_INS (cfg->cbb, f2i);
+			}
+
 			MONO_INST_NEW (cfg, ins, opcode);
 			ins->dreg = is_ref ? mono_alloc_ireg_ref (cfg) : mono_alloc_ireg (cfg);
 			ins->inst_basereg = args [0]->dreg;
 			ins->inst_offset = 0;
-			ins->sreg2 = args [1]->dreg;
+			ins->sreg2 = is_float ? f2i->dreg : args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
 			switch (fsig->params [0]->type) {
@@ -5932,71 +5953,118 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_I4;
 #endif
 				break;
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+				ins->type = STACK_R8;
+				break;
 			default:
 				g_assert (mini_type_is_reference (cfg, fsig->params [0]));
 				ins->type = STACK_OBJ;
 				break;
 			}
 
+			if (is_float) {
+				MONO_INST_NEW (cfg, i2f, i2f_opcode);
+				i2f->dreg = mono_alloc_freg (cfg);
+				i2f->sreg1 = ins->dreg;
+				i2f->type = STACK_R8;
+				MONO_ADD_INS (cfg->cbb, i2f);
+
+				ins = i2f;
+			}
+
 			if (cfg->gen_write_barriers && is_ref)
 				emit_write_barrier (cfg, args [0], args [1]);
 		}
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 3) {
-			int size = 0;
+			MonoInst *f2i_new = NULL, *f2i_cmp = NULL, *i2f;
+			guint32 opcode, f2i_opcode, i2f_opcode;
 			gboolean is_ref = mini_type_is_reference (cfg, fsig->params [1]);
+			gboolean is_float = fsig->params [1]->type == MONO_TYPE_R4 || fsig->params [1]->type == MONO_TYPE_R8;
 
-			if (fsig->params [1]->type == MONO_TYPE_I4)
-				size = 4;
-			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I)
-				size = sizeof (gpointer);
-#if SIZEOF_REGISTER == 8
-			else if (fsig->params [1]->type == MONO_TYPE_I8)
-				size = 8;
-#endif
-
-			if (size == 4) {
-				if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I4))
-					return NULL;
-				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I4);
-				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
-				ins->sreg1 = args [0]->dreg;
-				ins->sreg2 = args [1]->dreg;
-				ins->sreg3 = args [2]->dreg;
-				MONO_ADD_INS (cfg->cbb, ins);
+			if (fsig->params [1]->type == MONO_TYPE_I4 ||
+			    fsig->params [1]->type == MONO_TYPE_R4) {
+				opcode = OP_ATOMIC_CAS_I4;
+				f2i_opcode = OP_MOVE_F_TO_I4;
+				i2f_opcode = OP_MOVE_I4_TO_F;
 				cfg->has_atomic_cas_i4 = TRUE;
-			} else if (size == 8) {
-				if (!mono_arch_opcode_supported (OP_ATOMIC_CAS_I8))
+			}
+#if SIZEOF_REGISTER == 8
+			else if (is_ref ||
+			         fsig->params [1]->type == MONO_TYPE_I8 ||
+			         fsig->params [1]->type == MONO_TYPE_R8 ||
+			         fsig->params [1]->type == MONO_TYPE_I) {
+				opcode = OP_ATOMIC_CAS_I8;
+				f2i_opcode = OP_MOVE_F_TO_I8;
+				i2f_opcode = OP_MOVE_I8_TO_F;
+			}
+#else
+			else if (is_ref || fsig->params [1]->type == MONO_TYPE_I) {
+				opcode = OP_ATOMIC_CAS_I4;
+				cfg->has_atomic_cas_i4 = TRUE;
+			}
+#endif
+			else
+				return NULL;
+
+			if (!mono_arch_opcode_supported (opcode))
+				return NULL;
+
+			if (is_float) {
+				/* TODO: Decompose these opcodes instead of bailing here. */
+				if (COMPILE_SOFT_FLOAT (cfg))
 					return NULL;
-				MONO_INST_NEW (cfg, ins, OP_ATOMIC_CAS_I8);
-				ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
-				ins->sreg1 = args [0]->dreg;
-				ins->sreg2 = args [1]->dreg;
-				ins->sreg3 = args [2]->dreg;
-				MONO_ADD_INS (cfg->cbb, ins);
-			} else {
-				/* g_assert_not_reached (); */
+
+				MONO_INST_NEW (cfg, f2i_new, f2i_opcode);
+				f2i_new->dreg = mono_alloc_ireg (cfg);
+				f2i_new->sreg1 = args [1]->dreg;
+				MONO_ADD_INS (cfg->cbb, f2i_new);
+
+				MONO_INST_NEW (cfg, f2i_cmp, f2i_opcode);
+				f2i_cmp->dreg = mono_alloc_ireg (cfg);
+				f2i_cmp->sreg1 = args [2]->dreg;
+				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
-			if (ins) {
-				switch (fsig->params [0]->type) {
-				case MONO_TYPE_I4:
-					ins->type = STACK_I4;
-					break;
-				case MONO_TYPE_I8:
-					ins->type = STACK_I8;
-					break;
-				case MONO_TYPE_I:
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->dreg = is_ref ? alloc_ireg_ref (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = is_float ? f2i_new->dreg : args [1]->dreg;
+			ins->sreg3 = is_float ? f2i_cmp->dreg : args [2]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+
+			switch (fsig->params [0]->type) {
+			case MONO_TYPE_I4:
+				ins->type = STACK_I4;
+				break;
+			case MONO_TYPE_I8:
+				ins->type = STACK_I8;
+				break;
+			case MONO_TYPE_I:
 #if SIZEOF_REGISTER == 8
-					ins->type = STACK_I8;
+				ins->type = STACK_I8;
 #else
-					ins->type = STACK_I4;
+				ins->type = STACK_I4;
 #endif
-					break;
-				default:
-					g_assert (mini_type_is_reference (cfg, fsig->params [0]));
-					ins->type = STACK_OBJ;
-					break;
-				}
+				break;
+			case MONO_TYPE_R4:
+			case MONO_TYPE_R8:
+				ins->type = STACK_R8;
+				break;
+			default:
+				g_assert (mini_type_is_reference (cfg, fsig->params [0]));
+				ins->type = STACK_OBJ;
+				break;
+			}
+
+			if (is_float) {
+				MONO_INST_NEW (cfg, i2f, i2f_opcode);
+				i2f->dreg = mono_alloc_freg (cfg);
+				i2f->sreg1 = ins->dreg;
+				i2f->type = STACK_R8;
+				MONO_ADD_INS (cfg->cbb, i2f);
+
+				ins = i2f;
 			}
 
 			if (cfg->gen_write_barriers && is_ref)
