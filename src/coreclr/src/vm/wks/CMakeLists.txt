@@ -9,7 +9,7 @@ get_directory_property(COMPILE_DEFINITIONS_LIST COMPILE_DEFINITIONS)
 
 # Extract the definitions for the ASM code. Since there is a bug in the cmake that prevents us from
 # using the generator expressions, we split the definitions into lists based on the configuration.
-foreach(DEFINITION ${COMPILE_DEFINITIONS_LIST})
+foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
     if (${DEFINITION} MATCHES "^\\$<\\$<CONFIG:([^>]+)>:([^>]+)>$")
         # The entry contains generator expression, so insert the definition into a definitions list
         # corresponding to the config
@@ -23,7 +23,7 @@ endforeach()
 # Add defines for the ASM. Unfortunately setting it on the target is ignored for asm by the cmake, so we have
 # to set it on the sources.
 set_property(SOURCE ${VM_SOURCES_WKS_AMD64_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_DEFINITIONS})
-foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES})
+foreach(CONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
     string(TOUPPER ${CONFIG} CONFIG)
     set_property(SOURCE ${VM_SOURCES_WKS_AMD64_ASM} PROPERTY COMPILE_DEFINITIONS_${CONFIG} ${ASM_DEFINITIONS_${CONFIG}})
 endforeach()
