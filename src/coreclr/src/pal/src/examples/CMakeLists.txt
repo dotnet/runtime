@@ -14,7 +14,5 @@ add_executable(palexmpl
 add_dependencies(palexmpl CoreClrPal)
 
 target_link_libraries(palexmpl
-  pthread
-  rt
   CoreClrPal
 )

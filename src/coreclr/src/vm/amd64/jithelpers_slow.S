@@ -92,7 +92,7 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         mov     byte ptr [rdi], 0FFh
         ret
 
-    .align 16
+    .balign 16
     Exit_Debug:
         REPRET
 LEAF_END_MARKED JIT_WriteBarrier_Debug, _TEXT

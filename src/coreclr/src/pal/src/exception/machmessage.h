@@ -53,7 +53,7 @@ typedef	mach_exception_data_type_t	mach_exception_subcode_t;
 #define NONPAL_TRACE(_format, ...)
 #endif // _DEBUG
 
-struct CorUnix::MachExceptionHandler;
+struct MachExceptionHandler;
 
 // Abstraction of a subset of Mach message types. Provides accessors that hide the subtle differences in the
 // message layout of similar message types.
@@ -318,7 +318,7 @@ private:
             exception_raise_state_reply_64_t                    raise_state_reply_64;
             exception_raise_state_identity_reply_64_t           raise_state_identity_reply_64;
         } data;
-    };
+    } __attribute__((packed));;
 
     // Re-initializes this data structure (to the same state as default construction, containing no message).
     void ResetMessage();
