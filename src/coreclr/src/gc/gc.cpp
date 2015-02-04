@@ -120,7 +120,7 @@ const char * const allocation_state_str[] = {
 #endif //TRACE_GC && !DACCESS_COMPILE
 
 
-// Keep this in sync with the definition of gc_reaon
+// Keep this in sync with the definition of gc_reason
 #if (defined(DT_LOG) || defined(TRACE_GC)) && !defined (DACCESS_COMPILE)
 static const char* const str_gc_reasons[] = 
 {
