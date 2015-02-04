@@ -44,19 +44,20 @@
   </Target>
 
   <!-- Setup Nuget properties -->
-  <PropertyGroup>
-    <NuSpecPathSrc>$(PackagesDir)Microsoft.DotNet.CoreCLR.nuspec</NuSpecPathSrc>
-    <NuSpecPathBin>$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec</NuSpecPathBin>
-  </PropertyGroup>
-
   <ItemGroup>
-    <NuSpecs Include="$(NuSpecPathBin)" />
+    <NuSpecSrcs Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.nuspec" />
+    <NuSpecSrcs Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.Development.nuspec" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Backslash appended, see note in dir.props about the PackagesBinDir property -->
+    <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec" />
+    <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
   </ItemGroup>
 
-  <!-- Generate Microsoft.Dotnet.CoreCLR nuget package -->
+  <!-- Generate Microsoft.Dotnet.CoreCLR nuget package and associated development package -->
   <Target Name="BuildNuGetPackages" AfterTargets="Build" Condition="'$(BuildNugetPackage)' != 'false'">
     <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
-    <Copy SourceFiles="$(NuSpecPathSrc)" DestinationFiles="$(NuSpecPathBin)" />
+    <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(PackagesBinDir)" />
     <Exec Command="$(NuGetToolPath) pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
   </Target>
 
