@@ -37,6 +37,7 @@ set(COREDAC_LIBRARIES
     mdruntimerw_dac
     strongname_dac
     utilcode_dac
+    unwinder_dac
 )
 
 if(WIN32)

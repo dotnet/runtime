@@ -40,6 +40,7 @@
         <ProjectFile Include="gcinfo\dirs.proj" />
         <ProjectFile Include="delayimp\delayimp.nativeproj" Condition="'$(BuildProjectName)' != 'CoreSys'"/>
         <ProjectFile Include="dlls\dirs.proj" />
+        <ProjectFile Include="unwinder\dirs.proj" Condition="'$(TargetArch)' != 'i386'" />
         
 	<!-- In FXMain we build RyuJIT only for amd64 and arm64 -->
         <ProjectFile Include="jit32\dirs.proj" Condition="'$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64'"/>
