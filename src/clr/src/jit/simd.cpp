@@ -1670,7 +1670,7 @@ GenTreePtr Compiler::createAddressNodeForSIMDInit(GenTreePtr tree, unsigned simd
             // e.g. s.x x is a field, and s is a struct, then we should set the s's lvUsedInSIMDIntrinsic as true.
             // so that s won't be promoted.
             // Notice that if we have a case like s1.s2.x. s1 s2 are struct, and x is a field, then it is possible that s1 can be promoted, so that s2 can be promoted.
-            // The reason for that is if we don't allow s1 to be promoted, then this will affect the other optimizations which are depend on s1’s struct promotion.
+            // The reason for that is if we don't allow s1 to be promoted, then this will affect the other optimizations which are depend on s1's struct promotion.
             // TODO-CQ:
             //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's address is used for 
             //  initializing the vector, then s1 can be promoted but s2 can't. 

@@ -2205,8 +2205,8 @@ public:
     // node. Edges are reported in bulk, separately from Nodes, but it is expected that
     // the consumer read the Node and Edge streams together. One takes the first node
     // from the Node stream, and then reads EdgeCount entries in the Edge stream, telling
-    // you all of that Node’s targets. Then, one takes the next node in the Node stream,
-    // and reads the next entries in the Edge stream (using this Node’s EdgeCount to
+    // you all of that Node's targets. Then, one takes the next node in the Node stream,
+    // and reads the next entries in the Edge stream (using this Node's EdgeCount to
     // determine how many) to find all of its targets. This continues on until the Node
     // and Edge streams have been fully read.
     // 

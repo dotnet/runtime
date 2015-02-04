@@ -637,12 +637,12 @@ interface ICorDebugSymbolProvider2 : IUnknown
      *    If the high bit is set, the following N entries are sorted by RVA in ascending order.
      *
      *  - N 8 byte wide entries, each entry consisting of 2 4-byte entries:
-     *    1st 4 byte entry - RVA:    the dictionary’s RVA
+     *    1st 4 byte entry - RVA:    the dictionary's RVA
      *    2nd 4 byte entry - Offset: an offset relative to the start of the heap.
      *
      *  - Heap
      *
-     * The heap’s size can be computed be a stream reader by subtracting the directory size + 4.
+     * The heap's size can be computed be a stream reader by subtracting the directory size + 4.
      *
      * The format for each instantiation info in heap is as follows:
      *  - Length of this instantiation info (in bytes, not including this length information) in compressed ECMA metadata format.
@@ -743,7 +743,7 @@ interface ICorDebugDataTarget2 : IUnknown
 
     /*
      * CreateVirtualUnwinder:
-     * Create a new stack unwinder that starts unwinding from initialContext (which isn’t
+     * Create a new stack unwinder that starts unwinding from initialContext (which isn't
      * necessarily the leaf of a thread).
      * Any failing HRESULT received by mscordbi is considered fatal and will cause ICorDebug
      * APIs to return CORDBG_E_DATA_TARGET_ERROR.
@@ -2377,8 +2377,8 @@ interface ICorDebugAssembly3 : IUnknown
 
     /*
      * Gets an enumeration for all the assemblies contained within this assembly
-     * If the assembly isn’t a container, the result is S_FALSE and the enumeration
-     * will be empty. Symbols are needed to compute this result; if they aren’t 
+     * If the assembly isn't a container, the result is S_FALSE and the enumeration
+     * will be empty. Symbols are needed to compute this result; if they aren't 
      * present an error will be returned and no enumeration provided.
      */
     HRESULT EnumerateContainedAssemblies(ICorDebugAssemblyEnum **ppAssemblies);
@@ -2919,7 +2919,7 @@ interface ICorDebugProcess3 : IUnknown
      *  Notifications are disabled by default and the debugger must opt-into
      *  any notification types it knows of and wishes to handle.
      *  Since ICorDebugClass is scoped by appdomains, the debugger needs to 
-     *  call this API for every appdomain in the process if it’s interested in 
+     *  call this API for every appdomain in the process if it's interested in 
      *  receiving the notification across the entire process. 
      */
 
@@ -2987,7 +2987,7 @@ typedef enum CorDebugStateChange
 {
     PROCESS_RUNNING = 0x0000001, // The process reached a new memory state via 
                                  // forward execution.    
-    FLUSH_ALL       = 0x0000002, // The process’ memory might be arbitrarily 
+    FLUSH_ALL       = 0x0000002, // The process' memory might be arbitrarily 
                                  // different than it was before.
 } CorDebugStateChange;
 
@@ -3075,7 +3075,7 @@ interface ICorDebugProcess6 : IUnknown
     // sub-modules or virtual modules. Both container modules and sub-modules are 
     // represented with the ICorDebugModule interface, however the behavior of the 
     // interface is slightly different in each case, as described below.
-    // In addition there may still be modules loaded that weren’t merged during build. 
+    // In addition there may still be modules loaded that weren't merged during build. 
     // These modules, called regular modules, are neither container modules nor
     // sub-modules. 
     //
@@ -3117,19 +3117,19 @@ interface ICorDebugProcess6 : IUnknown
     //
     // Enabling Virtual Module Splitting has the following effects elsewhere in the API:
     // ICorDebugFunction.GetModule
-    //     Disabled – Returns the container module this function was merged into
+    //     Disabled - Returns the container module this function was merged into
     //     Enabled - Returns the sub-module this function was originally defined in
     // ICorDebugClass.GetModule
-    //     Disabled – Returns the container module this class was merged into
-    //     Enabled – Returns the sub-module this class was originally defined in
+    //     Disabled - Returns the container module this class was merged into
+    //     Enabled - Returns the sub-module this class was originally defined in
     // ICorDebugModuleDebugEvent.GetModule
-    //     Enabled OR Disabled – Returns the container module that was loaded.
+    //     Enabled OR Disabled - Returns the container module that was loaded.
     //                           Sub-modules are not given load events regardless of this
     //                           setting.
     // ICorDebugAppDomain.EnumerateAssemblies
-    //     Disabled – Returns a list of container assemblies + regular assemblies
+    //     Disabled - Returns a list of container assemblies + regular assemblies
     //                (no sub-assemblies are shown)
-    //     Enabled – Returns the list of sub-assemblies + regular assemblies
+    //     Enabled - Returns the list of sub-assemblies + regular assemblies
     //                (no container assemblies are shown). 
     //                Note: If any container assembly is missing symbols, none of its
     //                sub-assemblies will be enumerated. If any regular assembly is

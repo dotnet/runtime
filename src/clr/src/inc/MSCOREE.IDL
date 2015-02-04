@@ -339,9 +339,9 @@ typedef enum
     RUNTIME_INFO_REQUEST_IA64           = 0x002, // requesting a CLR for ia64
     RUNTIME_INFO_REQUEST_AMD64          = 0x004, // requesting a CLR for amd64
     RUNTIME_INFO_REQUEST_X86            = 0x008, // requesting a CLR for x86
-    RUNTIME_INFO_DONT_RETURN_DIRECTORY  = 0x010, // don’t return directory information
-    RUNTIME_INFO_DONT_RETURN_VERSION    = 0x020, // don’t return version information
-    RUNTIME_INFO_DONT_SHOW_ERROR_DIALOG = 0x040, // don’t pop up an error dialog on failure
+    RUNTIME_INFO_DONT_RETURN_DIRECTORY  = 0x010, // don't return directory information
+    RUNTIME_INFO_DONT_RETURN_VERSION    = 0x020, // don't return version information
+    RUNTIME_INFO_DONT_SHOW_ERROR_DIALOG = 0x040, // don't pop up an error dialog on failure
     RUNTIME_INFO_IGNORE_ERROR_MODE      = 0x1000,// ignore SEM_FAILCRITICALERRORS 
                                                  // (by default the error dialog is not shown if  SEM_FAILCRITICALERRORS is set)
     // Reserved values here - see mscoreepriv.h

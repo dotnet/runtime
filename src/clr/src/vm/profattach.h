@@ -122,13 +122,13 @@ public:
     // customize its response for the format expected by the trigger.
     VersionBlock    m_triggerVersion;
 
-    // The GUID of the profiler’s COM object to load
+    // The GUID of the profiler's COM object to load
     CLSID           m_clsidProfiler;
 
-    // The path to the profiler’s COM object to load
+    // The path to the profiler's COM object to load
     WCHAR           m_wszProfilerPath[MAX_PATH];
 
-    // Client data is custom data that the profiler’s
+    // Client data is custom data that the profiler's
     // trigger-process wishes to copy into this process.
     // Profiler authors will typically use this as a way to
     // communicate to the profiler DLL what options the profiler

@@ -10736,7 +10736,7 @@ void Module::PlaceMethod(DataImage *image, MethodDesc *pMD, DWORD profilingFlags
        }
 #endif // FEATURE_COMINTEROP
 
-        // Stubs-as-IL have writeable signatures sometimes, so can’t place them
+        // Stubs-as-IL have writeable signatures sometimes, so can't place them
         // into read-only section. We should not get here for stubs-as-il anyway,
         // but we will filter them out just to be sure.
         if (pMD->HasStoredSig() && !pMD->IsILStub())

@@ -643,7 +643,7 @@ bool SecurityTransparent::SecurityCalloutQuickCheck(MethodDesc *pCallerMD)
     CONTRACTL_END;
 
     // In coreclr, we modified the logic in the callout to also do some transparency method access checks
-    // These checks need to happen regardless of trust level and we shouldn’t be bailing out early 
+    // These checks need to happen regardless of trust level and we shouldn't be bailing out early 
     // just because we happen to be in Full Trust
 #ifndef FEATURE_CORECLR
     // See if we need to process this callout for real, or if we can bail out early before setting up a HMF,

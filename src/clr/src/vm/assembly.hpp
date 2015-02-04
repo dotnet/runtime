@@ -898,7 +898,7 @@ public:
     // Checks to see if an assembly has friend access to a particular member.
     //
     // Arguments:
-    //    pAccessingAssembly – the assembly requesting friend access
+    //    pAccessingAssembly - the assembly requesting friend access
     //    pMember            - the member that is attempting to be accessed
     //
     // Return Value:

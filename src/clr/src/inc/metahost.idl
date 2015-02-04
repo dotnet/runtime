@@ -391,7 +391,7 @@ CLR_DEBUGGING_PROCESS_FLAGS;
  ** This interface allows the debugger to provide modules which are needed for       **
  ** debugging a particular CLR such as mscordbi and mscordacwks. The module handles  **
  ** need to remain valid until a call to ICLRDebugging::CanUnloadNow indicates they  **
- ** may be freed, at which point it is the caller’s responsibility to free the       **
+ ** may be freed, at which point it is the caller's responsibility to free the       **
  ** handles.                                                                         **
  **************************************************************************************/
 [

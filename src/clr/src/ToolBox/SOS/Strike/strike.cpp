@@ -12006,7 +12006,7 @@ DECLARE_API(Watch)
     {
         if(nArg != 1)
         {
-             ExtOut("Must provide an old and new name. Usage: !watch –rename <old_name> <new_name>.\n");
+             ExtOut("Must provide an old and new name. Usage: !watch -rename <old_name> <new_name>.\n");
              return S_FALSE;
         }
         WCHAR pOldName[MAX_EXPRESSION];

@@ -2259,7 +2259,7 @@ public:
     // Notes:
     //     This will produce a VMPTR_OBJECTHANDLE regardless of whether handle is 
     //     valid.     
-    //     Ideally we’d be using only strongly-typed variables on the RS, and then this would be unnecessary 
+    //     Ideally we'd be using only strongly-typed variables on the RS, and then this would be unnecessary 
     virtual
     VMPTR_OBJECTHANDLE GetVmObjectHandle(CORDB_ADDRESS handleAddress) = 0;
 
