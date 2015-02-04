@@ -64,7 +64,7 @@ build_coreclr()
 {
     # All set to commence the build
     
-    echo Commencing build of native components for %__BuildArch%/%__BuildType%
+    echo Commencing build of native components for $__BuildArch/$__BuildType
     cd $__CMakeSlnDir
     
     # Regenerate the CMake solution
@@ -134,7 +134,7 @@ for i in "$@"
         __CMakeArgs=RELEASE
         ;;
         clean)
-        __CleanBuild=true
+        __CleanBuild=1
         ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
