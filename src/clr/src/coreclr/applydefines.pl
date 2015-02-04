@@ -55,7 +55,7 @@ while (@ARGV)
     }
     else
     {
-        print "Unknonw argument '$nextArg'\n";
+        print "Unknown argument '$nextArg'\n";
         Usage();
     }
 }
@@ -110,7 +110,7 @@ sub Usage()
 {
     print "Usage: applydefines [options]\n";
     print "\t-s <file>\t: the source file to process\n";
-    print "\t-f <file>\t: the file contatining #define setings\n";
+    print "\t-f <file>\t: the file containing #define settings\n";
     print "\t-o <file>\t: the output file\n";
     print "\t-d <name>=<Value>\t: additional define\n";
     

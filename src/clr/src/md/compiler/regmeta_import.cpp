@@ -862,7 +862,7 @@ RegMeta::GetTypeDefProps(
         goto ErrExit;
     }
     if (td == mdTypeDefNil)
-    {   // Backward compatability with CLR 2.0 implementation
+    {   // Backward compatibility with CLR 2.0 implementation
         if (pdwTypeDefFlags != NULL)
             *pdwTypeDefFlags = 0;
         if (ptkExtends != NULL)
@@ -1013,7 +1013,7 @@ RegMeta::GetTypeRefProps(
         goto ErrExit;
     }
     if (tr == mdTypeRefNil)
-    {   // Backward compatability with CLR 2.0 implementation
+    {   // Backward compatibility with CLR 2.0 implementation
         if (ptkResolutionScope != NULL)
             *ptkResolutionScope = mdTokenNil;
         if (pchTypeRef != NULL)

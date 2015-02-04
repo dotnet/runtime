@@ -2247,7 +2247,7 @@ FCIMPLEND
 #endif
 
 //
-// We implicitely assume these methods are not going to do a LoadLibrary
+// We implicitly assume these methods are not going to do a LoadLibrary
 //
 
 

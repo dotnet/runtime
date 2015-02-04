@@ -3723,7 +3723,7 @@ bool           Compiler::verCheckTailCallConstraint (OPCODE                  opc
         }
         else
         {
-            // Check type compatability of the this argument
+            // Check type compatibility of the this argument
             typeInfo tiDeclaredThis = verMakeTypeInfo(methodClassHnd);
             if (tiDeclaredThis.IsValueClass())
                 tiDeclaredThis.MakeByRef();
@@ -3960,12 +3960,12 @@ DONE_ARGS:
         popCount++;
                 
         // If it is null, we assume we can access it (since it will AV shortly)
-        // If it is anything but a refernce class, there is no hierarchy, so
+        // If it is anything but a reference class, there is no hierarchy, so
         // again, we don't need the precise instance class to compute 'protected' access
         if (tiThis.IsType(TI_REF))
             instanceClassHnd = tiThis.GetClassHandleForObjRef();
         
-        // Check type compatability of the this argument
+        // Check type compatibility of the this argument
         typeInfo tiDeclaredThis = verMakeTypeInfo(pResolvedToken->hClass);
         if (tiDeclaredThis.IsValueClass())
             tiDeclaredThis.MakeByRef();
