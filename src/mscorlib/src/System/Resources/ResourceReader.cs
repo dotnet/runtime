@@ -1373,22 +1373,24 @@ namespace System.Resources {
 
                     String key;
                     Object value = null;
-                    lock (_reader._resCache) {
-                        key = _reader.AllocateStringForNameIndex(_currentName, out _dataPosition);
-                        ResourceLocator locator;
-                        if (_reader._resCache.TryGetValue(key, out locator)) {
-                            value = locator.Value;
-                        }
-                        if (value == null) {
-                            if (_dataPosition == -1) 
-                                value = _reader.GetValueForNameIndex(_currentName);
-                            else 
-                                value = _reader.LoadObject(_dataPosition);
-                            // If enumeration and subsequent lookups happen very
-                            // frequently in the same process, add a ResourceLocator
-                            // to _resCache here.  But WinForms enumerates and
-                            // just about everyone else does lookups.  So caching
-                            // here may bloat working set.
+                    lock (_reader) { // locks should be taken in the same order as in RuntimeResourceSet.GetObject to avoid deadlock
+                        lock (_reader._resCache) {
+                            key = _reader.AllocateStringForNameIndex(_currentName, out _dataPosition); // AllocateStringForNameIndex could lock on _reader
+                            ResourceLocator locator;
+                            if (_reader._resCache.TryGetValue(key, out locator)) {
+                                value = locator.Value;
+                            }
+                            if (value == null) {
+                                if (_dataPosition == -1) 
+                                    value = _reader.GetValueForNameIndex(_currentName);
+                                else 
+                                    value = _reader.LoadObject(_dataPosition);
+                                // If enumeration and subsequent lookups happen very
+                                // frequently in the same process, add a ResourceLocator
+                                // to _resCache here.  But WinForms enumerates and
+                                // just about everyone else does lookups.  So caching
+                                // here may bloat working set.
+                            }
                         }
                     }
                     return new DictionaryEntry(key, value);
