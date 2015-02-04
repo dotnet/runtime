@@ -47,7 +47,7 @@ Contributions made to the coreclr repo are integrated to the Microsoft TFS serve
 
 ## License
 
-.NET Core (including the coreclr repo) is licensed under the [MIT license](LICENSE).
+.NET Core (including the coreclr repo) is licensed under the [MIT license](LICENSE.TXT).
 
 ## .NET Foundation
 
