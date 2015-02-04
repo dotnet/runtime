@@ -5,7 +5,7 @@ set(CLR_SOURCES
 )
 
 if(WIN32)
-set(CLR_SOURCES ${CLR_SOURCES}
+list(APPEND CLR_SOURCES
     comcallunmarshal.cpp
     delayload.cpp
     Native.rc
@@ -16,7 +16,7 @@ set (DEF_SOURCES
 )
 convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
 else()
-set(CLR_SOURCES ${CLR_SOURCES}
+list(APPEND CLR_SOURCES
     unixinterface.cpp
 )
 endif(WIN32)
