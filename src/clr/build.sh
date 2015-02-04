@@ -62,6 +62,21 @@ check_prereqs()
 
 build_coreclr()
 {
+    #determine nproc in a platform independent way
+    NPROCS=1
+    OS=`uname`
+
+    if [ $OS = "Linux" ]; then
+      NPROCS=`grep -c ^processor /proc/cpuinfo`
+    elif [ $OS = "Darwin" ]; then
+      NPROCS=`sysctl hw.ncpu | awk '{print $2}'`
+    else
+      echo Failed to detect build platform.
+      exit 1
+    fi
+
+    NPROCS=1
+
     # All set to commence the build
     
     echo Commencing build of native components for $__BuildArch/$__BuildType

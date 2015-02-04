@@ -27,7 +27,7 @@ LEAF_ENTRY PrecodeFixupThunk, _TEXT
         lea     METHODDESC_REGISTER,[rax+r11*8]
 
         // Tail call to prestub
-        jmp     ThePreStub
+        jmp C_FUNC(ThePreStub)
 
 LEAF_END PrecodeFixupThunk, _TEXT
 
@@ -94,7 +94,7 @@ LEAF_END HelperMethodFrameRestoreState, _TEXT
 //  generation will need to altered accordingly.
 //
 // EXTERN_C VOID __stdcall NDirectImportThunk()//
-NESTED_ENTRY NDirectImportThunk, _TEXT
+NESTED_ENTRY NDirectImportThunk, _TEXT, Handler
 
         //
         // Save integer parameter registers.
@@ -116,7 +116,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT
         // Call NDirectImportWorker w/ the NDirectMethodDesc*
         //
         mov             rdi, METHODDESC_REGISTER
-        call            NDirectImportWorker
+        call            C_FUNC(NDirectImportWorker)
         
         RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
@@ -150,7 +150,7 @@ LEAF_END moveOWord, _TEXT
 //
 // The JIT expects this helper to preserve registers used for return values
 //
-NESTED_ENTRY JIT_RareDisableHelper, _TEXT
+NESTED_ENTRY JIT_RareDisableHelper, _TEXT, Handler
 
     // First integer return register
     push rax
@@ -163,7 +163,7 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT
     // Second float return register
     movdqa              [rsp+0x10], xmm1
 
-    call JIT_RareDisableHelperWorker
+    call                C_FUNC(JIT_RareDisableHelperWorker)
 
     movdqa              xmm0, [rsp]
     movdqa              xmm1, [rsp+0x10]
@@ -173,3 +173,20 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT
     ret
 
 NESTED_END JIT_RareDisableHelper, _TEXT
+
+LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT                                        
+                                                                                      
+        test    rdi, rdi                                                              
+        jz      NullObject                                                            
+                                                                                      
+                                                                                      
+        mov     rax, [rdi + OFFSETOF__DelegateObject___methodPtr]                     
+        mov     rdi, [rdi + OFFSETOF__DelegateObject___target]  // replace "this" pointer
+                                                                                      
+        jmp     rax                                                                   
+                                                                                      
+NullObject:                                                                           
+        mov     rdi, CORINFO_NullReferenceException_ASM                               
+        jmp     C_FUNC(JIT_InternalThrow)
+                                                                                      
+LEAF_END SinglecastDelegateInvokeStub, _TEXT

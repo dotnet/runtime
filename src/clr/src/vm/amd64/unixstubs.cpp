@@ -47,11 +47,6 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    void SinglecastDelegateInvokeStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-    
     void TheUMEntryPrestub()
     {
         PORTABILITY_ASSERT("Implement for PAL");

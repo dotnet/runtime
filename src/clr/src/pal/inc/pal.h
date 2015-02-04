@@ -3280,37 +3280,10 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
-#ifdef __APPLE__
-// Get the base address of a module given an address in that module
-PALAPI
-LPCVOID
-PAL_GetModuleBaseFromAddress(LPCVOID pAddress);
-
-// Retrieve the UUID in the image.
-PALAPI
-BOOL
-PAL_GetUUIDOfImage(LPCVOID pImageBase, BYTE * pUUID);
-
-// Retrieve the version stored in the Info.plist file in the CoreCLR bundle.
-PALAPI
-DWORD
-PAL_GetVersionString(IN WCHAR * pwszCoreClrFullPath, 
-                     IN OUT WCHAR * pwszVersionString, 
-                     IN DWORD cchVersionStringBuffer,
-                     OUT DWORD *pcchVersionStringBufferRequired);
-
-PALAPI
-DWORD
-PAL_GetCoreCLRVersionString(
-                     IN OUT WCHAR * pwszVersionString, 
-                     IN DWORD cchVersionStringBuffer,
-                     OUT DWORD *pcchVersionStringBufferRequired);
-#else // __APPLE__
 // Get base address of the coreclr module
 PALAPI
 LPCVOID
 PAL_GetCoreClrModuleBase();
-#endif // __APPLE__
 
 PALIMPORT
 LPVOID
@@ -6139,7 +6112,7 @@ PAL_CppRethrow();
 // 
 #ifdef PLATFORM_UNIX
 #ifdef __APPLE__
-#define MAKEDLLNAME_W(name) L"lib" name L".dylib"
+#define MAKEDLLNAME_W(name) u"lib" name u".dylib"
 #define MAKEDLLNAME_A(name)  "lib" name  ".dylib"
 #elif defined(_AIX)
 #define MAKEDLLNAME_W(name) L"lib" name L".a"
