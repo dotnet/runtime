@@ -3058,7 +3058,12 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 	a = stack_pop (ctx);
 
 	if (opcode == CEE_CGT_UN) {
-		if (stack_slot_get_type (a) == TYPE_COMPLEX && stack_slot_get_type (b) == TYPE_COMPLEX) {
+		// ECMA-335:
+		// cgt.un is allowed and verifiable on ObjectRefs (O). This is commonly used when
+		// comparing an ObjectRef with null
+		if (stack_slot_get_type (a) == TYPE_COMPLEX && a->type->type == MONO_TYPE_OBJECT &&
+			stack_slot_get_type (b) == TYPE_COMPLEX && b->type->type == MONO_TYPE_OBJECT) {
+
 			stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			return;
 		}
