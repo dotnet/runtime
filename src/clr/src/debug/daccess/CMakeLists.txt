@@ -40,7 +40,7 @@ if(IS_64BIT_BUILD EQUAL 1)
     ${DACCESS_SOURCES}
     amd64/primitives.cpp
   )
-else(IS_64BIT_BUILD EQUAL 1)
+else()
   set(DACCESS_SOURCES
     ${DACCESS_SOURCES}
     i386/primitives.cpp

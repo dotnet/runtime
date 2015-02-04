@@ -9,7 +9,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ENTRY:CoreDllMain")
 set(START_LIBRARY_GROUP)
 set(END_LIBRARY_GROUP)
 
-else(WIN32)
+else()
 
 add_definitions(-DNO_CRT_INIT)
 
@@ -77,7 +77,7 @@ if(WIN32)
         crypt32.lib
         RuntimeObject.lib
     )
-else(WIN32)
+else()
     set(CORECLR_LIBRARIES
         ${CORECLR_LIBRARIES}
         CoreClrPal

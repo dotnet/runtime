@@ -15,7 +15,7 @@ set (DEF_SOURCES
   mscorwks_ntdef.src
 )
 convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
-else(WIN32)
+else()
 set(CLR_SOURCES ${CLR_SOURCES}
     unixinterface.cpp
 )
