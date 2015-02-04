@@ -75,20 +75,11 @@ endfunction()
 if (WIN32)
   # For multi-configuration toolset (as Visual Studio)
   # set the different configuration defines.
-  # First DEBUG
-  foreach (Definition IN LISTS CLR_DEFINES_DEBUG_INIT)
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:DEBUG>:${Definition}>)
-  endforeach (Definition)
-
-  # Then RELEASE
-  foreach (Definition IN LISTS CLR_DEFINES_RELEASE_INIT)
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELEASE>:${Definition}>)
-  endforeach (Definition)
-
-  # And then RELWITHDEBINFO
-  foreach (Definition IN LISTS CLR_DEFINES_RELWITHDEBINFO_INIT)
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELWITHDEBINFO>:${Definition}>)
-  endforeach (Definition)
+  foreach (Config DEBUG RELEASE RELWITHDEBINFO)
+    foreach (Definition IN LISTS CLR_DEFINES_${Config}_INIT)
+      set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:${Definition}>)
+    endforeach (Definition)
+  endforeach (Config)
 
 elseif (CLR_CMAKE_PLATFORM_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
