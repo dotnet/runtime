@@ -782,7 +782,7 @@ mono_thread_info_new_interrupt_enabled (void)
 #if defined (__i386__) || defined(__x86_64__)
 	return !disable_new_interrupt;
 #endif
-#if defined(__arm__)
+#if defined(__arm__) || defined(__aarch64__)
 	return !disable_new_interrupt;
 #endif
 	return FALSE;
