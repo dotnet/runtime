@@ -18,6 +18,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(614)]
         public void RunHardeningTests1()
         {
             // OfferMessage: All single-target source blocks
@@ -48,6 +49,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(614)]
         public void RunHardeningTests2()
         {
             // OfferMessage: All single-target source blocks
@@ -231,29 +233,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
         private class ThrowFromDataException : Exception
         {
             public override IDictionary Data { get { throw new InvalidOperationException(); } }
-        }
-
-        // Tests to make sure we haven't inadvertently started using more closures, which typically
-        // means more allocations.  If we're able to eliminate some of these in the future,
-        // the test will fail, at which point we should update the numbers in the test accordingly
-        // to make the test pass again.
-        [Fact]
-        [OuterLoop]
-        public void TestClosureUsage()
-        {
-            bool isDebug = CheckAssemblyConfiguration(typeof(IDataflowBlock).GetTypeInfo().Assembly);
-
-            {
-                bool localPassed = true;
-                var displayClassesFound = typeof(ActionBlock<>).GetTypeInfo().Assembly.GetTypes().Where(t => t.Name.Contains("DisplayClass"));
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.DataflowBlock")) == 2;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.ActionBlock")) == 2;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.TransformBlock")) == 1;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.TransformManyBlock")) == 1;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.BatchedJoinBlock")) == 2;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.Internal")) == 1;
-                Assert.True(localPassed, string.Format("Found {0} display classes, expected {1}, {2}", displayClassesFound.Count(), (isDebug ? 11 : 9), localPassed ? "Passed" : "FAILED"));
-            }
         }
 
         [Fact]

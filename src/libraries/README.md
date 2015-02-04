@@ -72,6 +72,8 @@ Today, the repository contains the following components:
 * **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
   across common cultural standards, as well as support to create custom Encoding Providers.
 
+* **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
+
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
 
