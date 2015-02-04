@@ -3827,10 +3827,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_LT, "OverflowException");
 			s390_lgfr (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_FMOVE: {
+		case OP_FMOVE:
+		case OP_MOVE_F_TO_I8:
+		case OP_MOVE_I8_TO_F: {
 			if (ins->dreg != ins->sreg1) {
 				s390_ldr   (code, ins->dreg, ins->sreg1);
 			}
+		}
+			break;
+		case OP_MOVE_F_TO_I4: {
+			s390_ledbr (code, ins->dreg, ins->sreg1);
+		}
+			break;
+		case OP_MOVE_I4_TO_F: {
+			s390_ldebr (code, ins->dreg, ins->sreg1);
 		}
 			break;
 		case OP_FCONV_TO_R4: {

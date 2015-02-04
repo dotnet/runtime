@@ -151,6 +151,8 @@ storer8_memindex: dest:b src1:f src2:i len:12
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 fmove: dest:f src1:f len:8
+move_f_to_i4: dest:i src1:f len:4
+move_i4_to_f: dest:f src1:i len:4
 add_imm: dest:i src1:i len:12
 sub_imm: dest:i src1:i len:12
 mul_imm: dest:i src1:i len:20

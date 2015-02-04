@@ -5193,6 +5193,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1)
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_MOVE_F_TO_I4:
+			amd64_sse_cvtsd2ss_reg_reg (code, ins->sreg1, ins->sreg1);
+			amd64_movq_reg_xmm (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_MOVE_I4_TO_F:
+			amd64_movq_xmm_reg (code, ins->dreg, ins->sreg1);
+			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			break;
+		case OP_MOVE_F_TO_I8:
+			amd64_movq_reg_xmm (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_MOVE_I8_TO_F:
+			amd64_movq_xmm_reg (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_FADD:
 			amd64_sse_addsd_reg_reg (code, ins->dreg, ins->sreg2);
 			break;

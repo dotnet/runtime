@@ -171,6 +171,16 @@ MINI_OP(OP_LMOVE,	"lmove", LREG, LREG, NONE)
 MINI_OP(OP_FMOVE,	"fmove", FREG, FREG, NONE)
 MINI_OP(OP_VMOVE,   "vmove", VREG, VREG, NONE)
 
+/*
+ * All 4 of these are only available when soft float isn't active. They
+ * perform no conversions; they simply move values back and forth.
+ */
+MINI_OP(OP_MOVE_F_TO_I4, "move_f_to_i4", IREG, FREG, NONE)
+MINI_OP(OP_MOVE_I4_TO_F, "move_i4_to_f", FREG, IREG, NONE)
+/* These 2 are only available on 64-bit targets. */
+MINI_OP(OP_MOVE_F_TO_I8, "move_f_to_i8", IREG, FREG, NONE)
+MINI_OP(OP_MOVE_I8_TO_F, "move_i8_to_f", FREG, IREG, NONE)
+
 MINI_OP(OP_VZERO,   "vzero", VREG, NONE, NONE)
 
 MINI_OP(OP_ADD_IMM,    "add_imm", IREG, IREG, NONE)

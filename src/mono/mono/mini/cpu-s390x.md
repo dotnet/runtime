@@ -131,6 +131,10 @@ float_rem: dest:f src1:f src2:f len:16
 float_rem_un: dest:f src1:f src2:f len:16
 float_sub: dest:f src1:f src2:f len:6
 fmove: dest:f src1:f len:4
+move_f_to_i4: dest:i src1:f len:4
+move_i4_to_f: dest:f src1:i len:4
+move_f_to_i8: dest:i src1:f len:4
+move_i8_to_f: dest:f src1:i len:4
 i8const: dest:i len:20
 icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:18
