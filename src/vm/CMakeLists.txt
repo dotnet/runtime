@@ -257,8 +257,7 @@ set(VM_SOURCES_DAC_AND_WKS_WIN32
     winrttypenameconverter.cpp
 )
 
-set(VM_SOURCES_WKS 
-    ${VM_SOURCES_WKS}
+list(APPEND VM_SOURCES_WKS 
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     marvin32.cpp # move out of win32 when FEATURE_RANDOMIZED_STRING_HASHING is enabled for linux
     # These should not be included for Linux
@@ -294,8 +293,7 @@ set(VM_SOURCES_WKS
     winrthelpers.cpp    
 )
 
-set(VM_SOURCES_DAC 
-    ${VM_SOURCES_DAC}
+list(APPEND VM_SOURCES_DAC 
     ${VM_SOURCES_DAC_AND_WKS_WIN32}
     # These should not be included for Linux
     clrprivbinderwinrt.cpp
@@ -358,8 +356,7 @@ set(VM_SOURCES_WKS_AMD64
 
 if(CLR_CMAKE_PLATFORM_UNIX)
 
-set(VM_SOURCES_WKS_AMD64
-    ${VM_SOURCES_WKS_AMD64}
+list(APPEND VM_SOURCES_WKS_AMD64
     ${AMD64_SOURCES_DIR}/unixstubs.cpp
 )
 
@@ -371,14 +368,12 @@ set(VM_SOURCES_DAC_AMD64
     exceptionhandling.cpp
 )
 
-set(VM_SOURCES_WKS 
-    ${VM_SOURCES_WKS}
+list(APPEND VM_SOURCES_WKS 
     ${VM_SOURCES_WKS_AMD64}
     ${VM_SOURCES_DAC_AND_WKS_AMD64}
 )
 
-set(VM_SOURCES_DAC
-    ${VM_SOURCES_DAC}
+list(APPEND VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AMD64}
     ${VM_SOURCES_DAC_AND_WKS_AMD64}
 )

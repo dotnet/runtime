@@ -1,7 +1,7 @@
 if (WIN32)
 preprocess_def_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
-set(CLR_SOURCES ${CLR_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ENTRY:CoreDllMain")
 
@@ -59,8 +59,7 @@ set(CORECLR_LIBRARIES
 )
 
 if(WIN32)
-    set(CORECLR_LIBRARIES
-        ${CORECLR_LIBRARIES}
+    list(APPEND CORECLR_LIBRARIES
         mdwinmd_wks
         comnls_wks
         comcrypt_wks
@@ -78,8 +77,7 @@ if(WIN32)
         RuntimeObject.lib
     )
 else()
-    set(CORECLR_LIBRARIES
-        ${CORECLR_LIBRARIES}
+    list(APPEND CORECLR_LIBRARIES
         CoreClrPal
         palrt
     )
@@ -94,8 +92,8 @@ if(WIN32)
     # Add dac table & debug resource to coreclr
     get_include_directories(INC_DIR)
     get_compile_definitions(PREPROCESS_DEFINITIONS)
-    set(INC_DIR ${INC_DIR} -I${CLR_DIR}/src/vm -I${CLR_DIR}/src/vm/amd64 -I${CLR_DIR}/src/debug/ee -I${CLR_DIR}/src/gc)
-    set(PREPROCESS_DEFINITIONS ${PREPROCESS_DEFINITIONS} -DDACCESS_COMPILE -DDBG_TARGET_64BIT=1 -DDBG_TARGET_WIN64=1 -DDBG_TARGET_AMD64=1)
+    list(APPEND INC_DIR -I${CLR_DIR}/src/vm -I${CLR_DIR}/src/vm/amd64 -I${CLR_DIR}/src/debug/ee -I${CLR_DIR}/src/gc)
+    list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DDBG_TARGET_64BIT=1 -DDBG_TARGET_WIN64=1 -DDBG_TARGET_AMD64=1)
     add_custom_command(TARGET coreclr
         POST_BUILD
         COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TP ${PREPROCESS_DEFINITIONS} ${INC_DIR} /Fi${CMAKE_CURRENT_BINARY_DIR}/daccess.i  ${CLR_DIR}/src/debug/daccess/daccess.cpp
