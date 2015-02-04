@@ -3,8 +3,8 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [clean]"
-    echo "BuildType can be: Debug, Release"
-    echo "BuildArch can be: Amd64"
+    echo "BuildArch can be: amd64"
+    echo "BuildType can be: debug, release"
     echo "clean - optional argument to force a clean build."
 
     exit 1
