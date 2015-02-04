@@ -14,7 +14,6 @@ add_dependencies(paltest_snwprintf_test9 CoreClrPal)
 
 target_link_libraries(paltest_snwprintf_test9
   pthread
-  rt
   m
   CoreClrPal
 )

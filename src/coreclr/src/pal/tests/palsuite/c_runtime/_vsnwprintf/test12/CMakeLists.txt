@@ -14,7 +14,6 @@ add_dependencies(paltest_vsnwprintf_test12 CoreClrPal)
 
 target_link_libraries(paltest_vsnwprintf_test12
   pthread
-  rt
   m
   CoreClrPal
 )

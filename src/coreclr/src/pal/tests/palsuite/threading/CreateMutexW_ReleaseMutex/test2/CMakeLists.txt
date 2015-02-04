@@ -14,7 +14,6 @@ add_dependencies(paltest_createmutexw_releasemutex_test2 CoreClrPal)
 
 target_link_libraries(paltest_createmutexw_releasemutex_test2
   pthread
-  rt
   m
   CoreClrPal
 )

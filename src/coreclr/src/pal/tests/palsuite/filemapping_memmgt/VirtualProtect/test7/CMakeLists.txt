@@ -14,7 +14,6 @@ add_dependencies(paltest_virtualprotect_test7 CoreClrPal)
 
 target_link_libraries(paltest_virtualprotect_test7
   pthread
-  rt
   m
   CoreClrPal
 )

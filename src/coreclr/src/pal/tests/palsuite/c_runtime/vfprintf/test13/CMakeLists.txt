@@ -14,7 +14,6 @@ add_dependencies(paltest_vfprintf_test13 CoreClrPal)
 
 target_link_libraries(paltest_vfprintf_test13
   pthread
-  rt
   m
   CoreClrPal
 )

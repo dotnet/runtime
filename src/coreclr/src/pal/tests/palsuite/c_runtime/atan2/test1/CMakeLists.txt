@@ -14,7 +14,6 @@ add_dependencies(paltest_atan2_test1 CoreClrPal)
 
 target_link_libraries(paltest_atan2_test1
   pthread
-  rt
   m
   CoreClrPal
 )

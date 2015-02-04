@@ -14,7 +14,6 @@ add_dependencies(paltest_setfileattributesa_test2 CoreClrPal)
 
 target_link_libraries(paltest_setfileattributesa_test2
   pthread
-  rt
   m
   CoreClrPal
 )
