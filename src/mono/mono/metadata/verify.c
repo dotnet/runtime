@@ -2985,6 +2985,12 @@ stack_slot_is_complex_type_not_reference_type (ILStackDesc *slot)
 	return stack_slot_get_type (slot) == TYPE_COMPLEX && !MONO_TYPE_IS_REFERENCE (slot->type) && !stack_slot_is_boxed_value (slot);
 }
 
+static gboolean
+stack_slot_is_reference_value (ILStackDesc *slot)
+{
+	return stack_slot_get_type (slot) == TYPE_COMPLEX && (MONO_TYPE_IS_REFERENCE (slot->type) || stack_slot_is_boxed_value (slot));
+}
+
 static void
 do_branch_op (VerifyContext *ctx, signed int delta, const unsigned char table [TYPE_MAX][TYPE_MAX])
 {
@@ -3058,7 +3064,8 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 	a = stack_pop (ctx);
 
 	if (opcode == CEE_CGT_UN) {
-		if (stack_slot_get_type (a) == TYPE_COMPLEX && stack_slot_get_type (b) == TYPE_COMPLEX) {
+		if ((stack_slot_is_reference_value (a) && stack_slot_is_null_literal (b)) ||
+			(stack_slot_is_reference_value (b) && stack_slot_is_null_literal (a))) {
 			stack_push_val (ctx, TYPE_I4, &mono_defaults.int32_class->byval_arg);
 			return;
 		}
@@ -3081,7 +3088,11 @@ do_cmp_op (VerifyContext *ctx, const unsigned char table [TYPE_MAX][TYPE_MAX], g
 	}
 
 	if(res == TYPE_INV) {
-		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset));
+		char *left_type = stack_slot_full_name (a);
+		char *right_type = stack_slot_full_name (b);
+		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf("Compare instruction applyed to ill formed stack (%s x %s) at 0x%04x", left_type, right_type, ctx->ip_offset));
+		g_free (left_type);
+		g_free (right_type);
 	} else if (res & NON_VERIFIABLE_RESULT) {
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Compare instruction is not verifiable (%s x %s) at 0x%04x", stack_slot_get_name (a), stack_slot_get_name (b), ctx->ip_offset)); 
  		res = res & ~NON_VERIFIABLE_RESULT;
