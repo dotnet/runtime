@@ -29,6 +29,7 @@ namespace System.IO
 
             public Win32FileSystemObject(string fullPath, Interop.WIN32_FIND_DATA findData, bool asDirectory)
             {
+                _asDirectory = asDirectory;
                 _fullPath = fullPath;
                 // Copy the information to data
                 _data.fileAttributes = (int)findData.dwFileAttributes;

@@ -39,6 +39,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DirectoryInfo\Exists.cs" />
     <Compile Include="FileStream\Flush.Sharing.cs" />
     <Compile Include="FileStream\Flush_toDisk.cs" />
     <Compile Include="FileStream\SafeFileHandle.cs" />
@@ -80,7 +81,6 @@
     <Compile Include="FileSystemTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="DirectoryInfo\" />
     <Folder Include="Directory\" />
     <Folder Include="FileInfo\" />
     <Folder Include="File\" />
