@@ -15,3 +15,5 @@ target_link_libraries(corerun
 add_dependencies(corerun
     coreclr
 )
+
+install (TARGETS corerun DESTINATION .)
