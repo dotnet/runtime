@@ -77,6 +77,9 @@
     <TargetLib Include="$(ClrLibPath)\strongname_dac$(XPlatHostLibSuffix).lib">
       <ProjectReference>$(ClrSrcDirectory)StrongName\api\dac\$(XPlatHostLibBuildDir)\strongname_dac.nativeproj</ProjectReference>
     </TargetLib>
+    <TargetLib Condition="'$(TargetArch)' != 'i386'" Include="$(ClrLibPath)\unwinder_dac$(XPlatHostLibSuffix).lib">
+      <ProjectReference>$(ClrSrcDirectory)unwinder\dac\$(XPlatHostLibBuildDir)\unwinder_dac.nativeproj</ProjectReference>
+    </TargetLib>
     <TargetLib Include="$(ClrLibPath)\dbgutil$(XPlatHostLibSuffix).lib">
       <ProjectReference>$(ClrSrcDirectory)debug\dbgutil\$(XPlatHostLibBuildDir)\dbgutil.nativeproj</ProjectReference>
     </TargetLib>
