@@ -8025,7 +8025,7 @@ void                CodeGen::genFnProlog()
             signed int hiOffs = loOffs + TARGET_POINTER_SIZE;
 
             // If there is a frame pointer used, due to frame pointer chaining it will point to the stored value of the previous
-            // frame pointer. Thus, stkOffs can’t be zero.
+            // frame pointer. Thus, stkOffs can't be zero.
             // However, on amd64 there is no requirement to chain frame pointers.
 #if !defined(_TARGET_AMD64_)
             noway_assert(!isFramePointerUsed() || loOffs != 0);

@@ -1741,7 +1741,7 @@ void *UnlockedLoaderHeap::UnlockedAllocMemForCode_NoThrow(size_t dwHeaderSize, s
     // which address will be handed out which in turn we don't know because we don't
     // know whether the allocation will fit within the current reserved range.
     //
-    // Thus, we'll request as much heap growth as is needed for the worst case (we request an extra dwCodeAlignment – 1 bytes)
+    // Thus, we'll request as much heap growth as is needed for the worst case (we request an extra dwCodeAlignment - 1 bytes)
 
     S_SIZE_T cbAllocSize = S_SIZE_T(dwHeaderSize) + S_SIZE_T(dwCodeSize) + S_SIZE_T(dwCodeAlignment - 1);
     if( cbAllocSize.IsOverflow() )

@@ -2477,7 +2477,7 @@ ObjrefException::ObjrefException(OBJECTREF throwable)
 // --------------------------------------------------------------------------------------------------------------------------------------
 // ObjrefException and CLRLastThrownObjectException are never set as inner exception for an internal CLR exception.
 // As a result, if we invoke DomainBoundClone against an exception, it will never reach these implementations.
-// If someone does set them as inner, it will trigger contract violation – which is valid and should be fixed by whoever
+// If someone does set them as inner, it will trigger contract violation - which is valid and should be fixed by whoever
 // set them as inner since Exception::DomainBoundClone is implemented in utilcode that has to work outside the context of CLR and thus,
 // should never trigger GC. This is also why GC_TRIGGERS is not supported in utilcode (refer to its definition in contracts.h).
 // --------------------------------------------------------------------------------------------------------------------------------------

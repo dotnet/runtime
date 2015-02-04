@@ -253,7 +253,7 @@ int MessageBoxImpl(
 
     if (activatedActivationContext) {
         DeactivateActCtx(0, cookie);
-        ReleaseActCtx(hActCtx);  // perf isn’t important so we won’t bother caching the actctx
+        ReleaseActCtx(hActCtx);  // perf isn't important so we won't bother caching the actctx
     }
  
     return result;

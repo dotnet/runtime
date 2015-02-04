@@ -4720,7 +4720,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         else if (level == CLASS_DEPENDENCIES_LOADED && HasInstantiation())
         {
             // This is a typical instantiation of a generic type. When attaining CLASS_DEPENDENCIES_LOADED, the
-            // recursive inheritance graph (ECMA part.II §9.2) will be constructed and checked for "expanding
+            // recursive inheritance graph (ECMA part.II Section 9.2) will be constructed and checked for "expanding
             // cycles" to detect infinite recursion, e.g. A<T> : B<A<A<T>>>.
             // 
             // The dependencies loaded by this method (parent type, implemented interfaces, generic arguments)
