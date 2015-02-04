@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Runtime.Tests</RootNamespace>
+    <AssemblyName>System.Runtime.Tests</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RestorePackages>true</RestorePackages>
+    <NoWarn>1718</NoWarn>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="System\Activator.cs" />
+    <Compile Include="System\Array.cs" />
+    <Compile Include="System\Array.CustomClassStructTests.cs" />
+    <Compile Include="System\Array.EmptyTests.cs" />
+    <Compile Include="System\Array.RegionSorting.cs" />
+    <Compile Include="System\Array.SystemArrayKeyValueSortTests.cs" />
+    <Compile Include="System\Array.TestTypes.cs" />
+    <Compile Include="System\Array.Util.cs" />
+    <Compile Include="System\ArraySegment.cs" />
+    <Compile Include="System\Boolean.cs" />
+    <Compile Include="System\Buffer.cs" />
+    <Compile Include="System\Buffer.MemoryCopy.cs" />
+    <Compile Include="System\Byte.cs" />
+    <Compile Include="System\Char.cs" />
+    <Compile Include="System\Collections\ObjectModel\Collection.cs" />
+    <Compile Include="System\Collections\ObjectModel\CollectionTestBase.cs" />
+    <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
+    <Compile Include="System\DateTime.cs" />
+    <Compile Include="System\DateTimeOffset.cs" />
+    <Compile Include="System\DateTimeOffset.UnixTimeConversions.cs" />
+    <Compile Include="System\Decimal.cs" />
+    <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\Double.cs" />
+    <Compile Include="System\Enum.cs" />
+    <Compile Include="System\FieldAccessException.cs" />
+    <Compile Include="System\GC.cs" />
+    <Compile Include="System\Guid.cs" />
+    <Compile Include="System\Int16.cs" />
+    <Compile Include="System\Int32.cs" />
+    <Compile Include="System\Int64.cs" />
+    <Compile Include="System\IntPtr.cs" />
+    <Compile Include="System\IO\DirectoryNotFoundException.cs" />
+    <Compile Include="System\IO\DirectoryNotFoundException.Interop.cs" />
+    <Compile Include="System\IO\Exceptions.HResults.cs" />
+    <Compile Include="System\IO\Exceptions.Utility.cs" />
+    <Compile Include="System\IO\FileLoadException.cs" />
+    <Compile Include="System\IO\FileLoadException.Interop.cs" />
+    <Compile Include="System\IO\PathTooLongException.cs" />
+    <Compile Include="System\IO\PathTooLongException.Interop.cs" />
+    <Compile Include="System\Lazy.cs" />
+    <Compile Include="System\MethodAccessException.cs" />
+    <Compile Include="System\MissingFieldException.cs" />
+    <Compile Include="System\MissingMethodException.cs" />
+    <Compile Include="System\MulticastDelegate.cs" />
+    <Compile Include="System\Nullable.cs" />
+    <Compile Include="System\Object.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="System\SByte.cs" />
+    <Compile Include="System\Single.cs" />
+    <Compile Include="System\String.cs" />
+    <Compile Include="System\Text\StringBuilder.cs" />
+    <Compile Include="System\Threading\WaitHandle.cs" />
+    <Compile Include="System\TimeSpan.cs" />
+    <Compile Include="System\TimeZoneInfo.cs" />
+    <Compile Include="System\Tuple.cs" />
+    <Compile Include="System\Type.cs" />
+    <Compile Include="System\UInt16.cs" />
+    <Compile Include="System\UInt32.cs" />
+    <Compile Include="System\UInt64.cs" />
+    <Compile Include="System\UIntPtr.cs" />
+    <Compile Include="System\ValueType.cs" />
+    <Compile Include="System\Version.cs" />
+    <Compile Include="System\WeakReference.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
