@@ -235,33 +235,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
             public override IDictionary Data { get { throw new InvalidOperationException(); } }
         }
 
-        // Tests to make sure we haven't inadvertently started using more closures, which typically
-        // means more allocations.  If we're able to eliminate some of these in the future,
-        // the test will fail, at which point we should update the numbers in the test accordingly
-        // to make the test pass again.
-        [Fact]
-        [OuterLoop]
-        public void TestClosureUsage()
-        {
-            bool isDebug = CheckAssemblyConfiguration(typeof(IDataflowBlock).GetTypeInfo().Assembly);
-
-            // Unfortunately, this test is influenced by changes in the compiler as much (or more than) it is
-            // influenced by changes in the code it is ostensibly testing.
-            // When these numbers get out of alignment again it might be a sign that the test should be retired.
-
-            {
-                bool localPassed = true;
-                var displayClassesFound = typeof(ActionBlock<>).GetTypeInfo().Assembly.GetTypes().Where(t => t.Name.Contains("DisplayClass"));
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.DataflowBlock")) == 17;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.ActionBlock")) == 4;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.TransformBlock")) == 3;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.TransformManyBlock")) == 3;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.BatchedJoinBlock")) == 4;
-                localPassed &= displayClassesFound.Count(t => t.FullName.Contains("Dataflow.Internal")) == 20;
-                Assert.True(localPassed, string.Format("Found {0} display classes, expected {1}, {2}", displayClassesFound.Count(), (isDebug ? 11 : 67), localPassed ? "Passed" : "FAILED"));
-            }
-        }
-
         [Fact]
         [OuterLoop]
         public void TestFaultyTaskScheduler()
