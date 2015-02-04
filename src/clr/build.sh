@@ -64,7 +64,7 @@ build_coreclr()
 {
     # All set to commence the build
     
-    echo Commencing build of native components for %__BuildArch%/%__BuildType%
+    echo Commencing build of native components for $__BuildArch/$__BuildType
     cd $__CMakeSlnDir
     
     # Regenerate the CMake solution
@@ -81,7 +81,7 @@ build_coreclr()
     # Build CoreCLR
     
     echo Executing make $__UnprocessedBuildArgs
-    make -j `nproc` $__UnprocessedBuildArgs
+    make install -j `nproc` $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
         echo Failed to build coreclr components.
         exit 1
@@ -147,6 +147,10 @@ __PackagesBinDir="$__BinDir/.nuget"
 __ToolsDir="$__RootBinDir/tools"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildArch/$__BuildType"
 __IntermediatesDir="$__RootBinDir/intermediates/$__BuildArch/$__BuildType"
+
+# Specify path to be set for CMAKE_INSTALL_PREFIX.
+# This is where all built CoreClr libraries will copied to.
+export __CMakeBinDir="$__BinDir"
 
 # Switch to clean build mode if the binaries output folder does not exist
 if [ ! -d "$__RootBinDir" ]; then
