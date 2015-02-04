@@ -47,7 +47,7 @@ set_source_files_properties(${CORGUIDS_SOURCES}
 # Compile *_i.c as C files
 add_compile_options(/TC)
 
-else(WIN32)
+else()
 
 #The MIDL tool exists for Windows only, so for other systems, we have the prebuilt xxx_i.c files checked in
 foreach(IDL_SOURCE ${CORGUIDS_IDL_SOURCES})

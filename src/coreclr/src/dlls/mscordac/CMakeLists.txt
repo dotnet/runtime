@@ -64,7 +64,7 @@ if(WIN32)
         user32.lib
         ${STATIC_MT_CRT_LIB}
     )
-else(WIN32)
+else()
     set(COREDAC_LIBRARIES
         ${COREDAC_LIBRARIES}
         palrt
