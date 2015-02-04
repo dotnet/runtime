@@ -41,7 +41,9 @@ Abstract:
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#if defined(__powerpc__)
 #include <architecture/ppc/cframe.h>
+#endif
 #include <dlfcn.h>
 #include <mach-o/loader.h>
 
