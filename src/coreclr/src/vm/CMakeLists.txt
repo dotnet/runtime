@@ -326,7 +326,7 @@ set(VM_SOURCES_WKS_AMD64_ASM
     ${AMD64_SOURCES_DIR}/VirtualCallStubAMD64.asm
 )
 
-else(WIN32)
+else()
 set(VM_SOURCES_WKS_AMD64_ASM
     ${AMD64_SOURCES_DIR}/jithelpers_fastwritebarriers.S
     ${AMD64_SOURCES_DIR}/jithelpers_slow.S

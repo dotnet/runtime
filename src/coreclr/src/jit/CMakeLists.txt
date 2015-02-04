@@ -97,7 +97,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
       ${SHARED_LIB_SOURCES}
     )
     add_dependencies(ClrJit CoreClrPal gcinfo)
-else(CLR_CMAKE_PLATFORM_UNIX)
+else()
     add_library(ClrJit
        ${SOURCES}
     )
