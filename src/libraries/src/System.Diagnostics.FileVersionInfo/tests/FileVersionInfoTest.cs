@@ -97,7 +97,7 @@ public class FileVersionInfoTest
         TestStringProperty("SpecialBuild", fvi.SpecialBuild, expected.SpecialBuild);
 
         //ToString
-        String nl = "\r\n";
+        String nl = Environment.NewLine;
         TestStringProperty("ToString()", fvi.ToString(),
                  "File:             " + fvi.FileName + nl +
                  "InternalName:     " + fvi.InternalName + nl +
