@@ -30,6 +30,7 @@ add_subdirectory(strongname)
 add_subdirectory(binder)
 add_subdirectory(classlibnative)
 add_subdirectory(dlls)
+add_subdirectory(unwinder)
 
 if(WIN32)
   add_subdirectory(ipcman)
