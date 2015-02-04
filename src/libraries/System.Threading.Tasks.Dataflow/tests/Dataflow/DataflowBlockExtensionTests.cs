@@ -104,6 +104,33 @@ namespace System.Threading.Tasks.Dataflow.Tests
             target.Complete();
             target.Fault(new Exception());
             Assert.False(target.Completion.IsCompleted);
+
+            Assert.NotSame(
+                DataflowBlock.NullTarget<object>().Completion,
+                DataflowBlock.NullTarget<object>().Completion);
+            Assert.NotSame(
+                DataflowBlock.NullTarget<int>().Completion,
+                DataflowBlock.NullTarget<int>().Completion);
+        }
+
+        [Fact]
+        [OuterLoop] // finalizer/GC interactions
+        public void TestNullTarget_CompletionNoCaching()
+        {
+            // Make sure that the Completion task returned by a NullTarget
+            // is not cached across all NullTargets.  Since it'll never complete,
+            // that would be a potentially huge memory leak.
+
+            var state = new object();
+            var wro = new WeakReference<object>(state);
+            DataflowBlock.NullTarget<int>().Completion.ContinueWith(delegate { }, state);
+            state = null;
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            Assert.False(wro.TryGetTarget(out state));
         }
 
         [Fact]

@@ -8,6 +8,20 @@
     <RootNamespace>System.IO.FileSystem.DriveInfo.Tests</RootNamespace>
     <AssemblyName>System.IO.FileSystem.DriveInfo.Tests</AssemblyName>
     <ProjectGuid>{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}</ProjectGuid>
+
+    <!--
+      Disable running tests for this project as many of them are failing randomly for 
+      different reasons, including but not limited to requiring admin to set/reset drive 
+      labels, doing exact total disk space comparisions while other disk IO on the system 
+      may be changing it actively, and failing on subst drives, etc 
+      There are various github issues covering some of these see:
+      https://github.com/dotnet/corefx/issues/514
+      https://github.com/dotnet/corefx/issues/528
+      https://github.com/dotnet/corefx/issues/549
+      https://github.com/dotnet/corefx/issues/564
+      https://github.com/dotnet/corefx/issues/592
+    -->
+    <RunTestsForProject>False</RunTestsForProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
