@@ -57,7 +57,7 @@
   <Target Name="BuildNuGetPackages" AfterTargets="Build" Condition="'$(BuildNugetPackage)' != 'false'">
     <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
     <Copy SourceFiles="$(NuSpecPathSrc)" DestinationFiles="$(NuSpecPathBin)" />
-    <Exec Command="$(NuGetToolPath) pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
+    <Exec Command="$(NuGetToolPath) pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
   </Target>
 
   <ItemGroup>
