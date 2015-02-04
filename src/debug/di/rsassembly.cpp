@@ -228,7 +228,7 @@ HRESULT CordbAssembly::GetCodeBase(ULONG32 cchName,
 //   not happen unless the target is corrupt.
 //
 // Notes:
-//   In-memory assemblies do not have a filename.  In that case, for compatability
+//   In-memory assemblies do not have a filename.  In that case, for compatibility
 //   this returns success and the string "<unknown>".  We may want to change this
 //   behavior in the future.
 //

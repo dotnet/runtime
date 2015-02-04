@@ -1932,7 +1932,7 @@ RegMeta::GetRVA(
     if (TypeFromToken(tk) == mdtMethodDef)
     {
         if (tk == mdMethodDefNil)
-        {   // Backward compatability with CLR 2.0 implementation
+        {   // Backward compatibility with CLR 2.0 implementation
             if (pulCodeRVA != NULL)
                 *pulCodeRVA = 0;
             if (pdwImplFlags != NULL)

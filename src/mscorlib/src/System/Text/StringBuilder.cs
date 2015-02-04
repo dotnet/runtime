@@ -199,7 +199,7 @@ namespace System.Text {
                         capacityPresent = true;
                         break;
                     default:
-                        // Ignore other fields for forward compatability.
+                        // Ignore other fields for forward compatibility.
                         break;
                 }
 
