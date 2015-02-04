@@ -3217,7 +3217,7 @@ protected:
 
     // The more_space_lock and gc_lock is used for 3 purposes:
     //
-    // 1) to coordinate threads that exceed their quantum (UP & MP) (more_spacee_lock)
+    // 1) to coordinate threads that exceed their quantum (UP & MP) (more_space_lock)
     // 2) to synchronize allocations of large objects (more_space_lock)
     // 3) to synchronize the GC itself (gc_lock)
     //
