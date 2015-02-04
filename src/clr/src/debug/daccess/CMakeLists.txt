@@ -38,9 +38,7 @@ if(IS_64BIT_BUILD EQUAL 1)
 
   set(DACCESS_SOURCES
     ${DACCESS_SOURCES}
-    unwinder.cpp
     amd64/primitives.cpp
-    amd64/unwinder_amd64.cpp
   )
 else(IS_64BIT_BUILD EQUAL 1)
   set(DACCESS_SOURCES

@@ -58,15 +58,9 @@
   </ItemGroup>
   <ItemGroup>
     <CppCompile Condition="'$(TargetArch)' == 'i386'" Include="$(DaccessSrcDirectory)\i386\primitives.cpp" />
-    <CppCompile Condition="'$(TargetArch)' == 'amd64'" Include="$(DaccessSrcDirectory)\unwinder.cpp" />
-    <CppCompile Condition="'$(TargetArch)' == 'amd64'" Include="$(DaccessSrcDirectory)\amd64\unwinder_amd64.cpp" />
     <CppCompile Condition="'$(TargetArch)' == 'amd64'" Include="$(DaccessSrcDirectory)\amd64\primitives.cpp" />
     <CppCompile Condition="'$(TargetArch)' == 'arm'" Include="$(DaccessSrcDirectory)\arm\primitives.cpp" />
-    <CppCompile Condition="'$(TargetArch)' == 'arm'" Include="$(DaccessSrcDirectory)\arm\unwinder_arm.cpp" />
-    <CppCompile Condition="'$(TargetArch)' == 'arm'" Include="$(DaccessSrcDirectory)\unwinder.cpp" />
     <CppCompile Condition="'$(TargetArch)' == 'arm64'" Include="$(DaccessSrcDirectory)\arm64\primitives.cpp" />
-    <CppCompile Condition="'$(TargetArch)' == 'arm64'" Include="$(DaccessSrcDirectory)\arm64\unwinder_arm64.cpp" />
-    <CppCompile Condition="'$(TargetArch)' == 'arm64'" Include="$(DaccessSrcDirectory)\unwinder.cpp" />
   </ItemGroup>
   <!--Import the targets-->
   <Import Project="$(_NTDRIVE)$(_NTROOT)\ndp\clr\clr.targets" />
