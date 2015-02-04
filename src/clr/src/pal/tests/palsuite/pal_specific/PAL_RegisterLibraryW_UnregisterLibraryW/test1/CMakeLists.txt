@@ -14,7 +14,6 @@ add_dependencies(paltest_pal_registerlibraryw_unregisterlibraryw_test1 CoreClrPa
 
 target_link_libraries(paltest_pal_registerlibraryw_unregisterlibraryw_test1
   pthread
-  rt
   m
   CoreClrPal
 )

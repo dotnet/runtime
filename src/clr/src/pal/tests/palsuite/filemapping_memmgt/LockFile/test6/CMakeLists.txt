@@ -14,7 +14,6 @@ add_dependencies(paltest_lockfile_test6 CoreClrPal)
 
 target_link_libraries(paltest_lockfile_test6
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_lockfile_test6_helper CoreClrPal)
 
 target_link_libraries(paltest_lockfile_test6_helper
   pthread
-  rt
   m
   CoreClrPal
 )

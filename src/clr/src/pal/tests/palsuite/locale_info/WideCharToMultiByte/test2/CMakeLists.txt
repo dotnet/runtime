@@ -14,7 +14,6 @@ add_dependencies(paltest_widechartomultibyte_test2 CoreClrPal)
 
 target_link_libraries(paltest_widechartomultibyte_test2
   pthread
-  rt
   m
   CoreClrPal
 )

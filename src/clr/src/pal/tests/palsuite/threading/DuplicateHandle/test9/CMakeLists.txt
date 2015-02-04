@@ -14,7 +14,6 @@ add_dependencies(paltest_duplicatehandle_test9 CoreClrPal)
 
 target_link_libraries(paltest_duplicatehandle_test9
   pthread
-  rt
   m
   CoreClrPal
 )

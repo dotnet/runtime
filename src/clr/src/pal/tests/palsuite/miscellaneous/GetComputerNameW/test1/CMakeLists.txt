@@ -14,7 +14,6 @@ add_dependencies(paltest_getcomputernamew_test1 CoreClrPal)
 
 target_link_libraries(paltest_getcomputernamew_test1
   pthread
-  rt
   m
   CoreClrPal
 )
