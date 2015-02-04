@@ -83,6 +83,8 @@ if (WIN32)
   endforeach (Definition ${CLR_DEFINES_RELWITHDEBINFO_INIT})
 
 elseif (CLR_CMAKE_PLATFORM_UNIX)
+  # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG;RELEASE;RELWITHDEBINFO")
 
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
