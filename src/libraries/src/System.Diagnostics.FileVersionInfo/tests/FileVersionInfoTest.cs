@@ -167,7 +167,7 @@ public class FileVersionInfoTest
         s_fviNativeConsoleApp.IsPrivateBuild = false;
         s_fviNativeConsoleApp.IsPreRelease = true;
         s_fviNativeConsoleApp.IsSpecialBuild = true;
-        s_fviNativeConsoleApp.Language = "English (United States)";
+        s_fviNativeConsoleApp.Language = GetFileVersionLanguage(0x0409);//English (United States)
         s_fviNativeConsoleApp.LegalCopyright = "Copyright (C) 2050";
         s_fviNativeConsoleApp.LegalTrademarks = "";
         s_fviNativeConsoleApp.OriginalFilename = "NativeConsoleApp.exe";
@@ -197,8 +197,8 @@ public class FileVersionInfoTest
         s_fviNativeLibrary.IsPrivateBuild = false;
         s_fviNativeLibrary.IsPreRelease = true;
         s_fviNativeLibrary.IsSpecialBuild = false;
-        s_fviNativeLibrary.Language = "Chinese (Simplified)";
-        s_fviNativeLibrary.Language2 = "Chinese (Simplified, PRC)"; // changed, but not yet on all platforms
+        s_fviNativeLibrary.Language = GetFileVersionLanguage(0x0004);//Chinese (Simplified)
+        s_fviNativeLibrary.Language2 = GetFileVersionLanguage(0x0804);//Chinese (Simplified, PRC) - changed, but not yet on all platforms
         s_fviNativeLibrary.LegalCopyright = "None";
         s_fviNativeLibrary.LegalTrademarks = "";
         s_fviNativeLibrary.OriginalFilename = "NativeLi.dll";
@@ -228,7 +228,7 @@ public class FileVersionInfoTest
         s_fviSecondNativeLibrary.IsPrivateBuild = false;
         s_fviSecondNativeLibrary.IsPreRelease = false;
         s_fviSecondNativeLibrary.IsSpecialBuild = false;
-        s_fviSecondNativeLibrary.Language = "Process Default Language";
+        s_fviSecondNativeLibrary.Language = GetFileVersionLanguage(0x0400);//Process Default Language
         s_fviSecondNativeLibrary.LegalCopyright = "Copyright (C) 1 - 2014";
         s_fviSecondNativeLibrary.LegalTrademarks = "";
         s_fviSecondNativeLibrary.OriginalFilename = "SecondNa.dll";
@@ -258,7 +258,7 @@ public class FileVersionInfoTest
         s_fviAssembly1.IsPrivateBuild = false;
         s_fviAssembly1.IsPreRelease = false;
         s_fviAssembly1.IsSpecialBuild = false;
-        s_fviAssembly1.Language = "Language Neutral";
+        s_fviAssembly1.Language = GetFileVersionLanguage(0x0000);//Language Neutral
         s_fviAssembly1.LegalCopyright = "Copyright, you betcha!";
         s_fviAssembly1.LegalTrademarks = "TM";
         s_fviAssembly1.OriginalFilename = "Assembly1.dll";
@@ -376,5 +376,12 @@ public class FileVersionInfoTest
         }
         buffer.Append("\"");
         return (buffer.ToString());
+    }
+
+    private static string GetFileVersionLanguage(uint langid)
+    {
+        var lang = new StringBuilder(256);
+        Interop.mincore.VerLanguageName(langid, lang, (uint)lang.Capacity);
+        return lang.ToString();
     }
 }
