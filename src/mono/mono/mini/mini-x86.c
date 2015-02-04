@@ -3703,12 +3703,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_MOVE_F_TO_I4:
 			x86_push_reg (code, X86_EAX);
-			x86_fist_pop_membase (code, X86_ESP, 0, FALSE);
+			x86_fst_membase (code, X86_ESP, 0, FALSE, TRUE);
 			x86_pop_reg (code, ins->dreg);
 			break;
 		case OP_MOVE_I4_TO_F:
 			x86_push_reg (code, ins->sreg1);
-			x86_fild_membase (code, X86_ESP, 0, FALSE);
+			x86_fld_membase (code, X86_ESP, 0, FALSE);
 			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
 			break;
 		case OP_FADD:
