@@ -16,7 +16,6 @@ add_dependencies(paltest_synchronization_nativecriticalsection CoreClrPal)
 
 target_link_libraries(paltest_synchronization_nativecriticalsection
   pthread
-  rt
   m
   CoreClrPal
 )

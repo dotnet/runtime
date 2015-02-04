@@ -14,7 +14,6 @@ add_dependencies(paltest_setenvironmentvariablea_test3 CoreClrPal)
 
 target_link_libraries(paltest_setenvironmentvariablea_test3
   pthread
-  rt
   m
   CoreClrPal
 )

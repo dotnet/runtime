@@ -14,7 +14,6 @@ add_dependencies(paltest_createfilemappinga_test6 CoreClrPal)
 
 target_link_libraries(paltest_createfilemappinga_test6
   pthread
-  rt
   m
   CoreClrPal
 )

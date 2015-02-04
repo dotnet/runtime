@@ -14,7 +14,6 @@ add_dependencies(paltest_swscanf_test8 CoreClrPal)
 
 target_link_libraries(paltest_swscanf_test8
   pthread
-  rt
   m
   CoreClrPal
 )

@@ -14,7 +14,6 @@ add_dependencies(paltest_pal_except_test7 CoreClrPal)
 
 target_link_libraries(paltest_pal_except_test7
   pthread
-  rt
   m
   CoreClrPal
 )

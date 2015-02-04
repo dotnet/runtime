@@ -14,7 +14,6 @@ add_dependencies(paltest_duplicatehandle_test11 CoreClrPal)
 
 target_link_libraries(paltest_duplicatehandle_test11
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_duplicatehandle_test11_child CoreClrPal)
 
 target_link_libraries(paltest_duplicatehandle_test11_child
   pthread
-  rt
   m
   CoreClrPal
 )
