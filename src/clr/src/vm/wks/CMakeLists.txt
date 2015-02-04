@@ -16,7 +16,7 @@ foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
         string(TOUPPER ${CMAKE_MATCH_1} CONFIG)
         set(ASM_DEFINITIONS_${CONFIG} ${ASM_DEFINITIONS_${CONFIG}} ${CMAKE_MATCH_2}) 
     else()
-        set(ASM_DEFINITIONS ${ASM_DEFINITIONS} ${DEFINITION})        
+        list(APPEND ASM_DEFINITIONS ${DEFINITION})        
     endif()
 endforeach()
 
