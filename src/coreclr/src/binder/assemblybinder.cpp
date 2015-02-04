@@ -722,7 +722,7 @@ namespace BINDER_SPACE
             if (hr == S_FALSE)
             {
                 // Another bind interfered. We need to retry the entire bind.
-                // This by design loops as long as needed because by constuction we eventually
+                // This by design loops as long as needed because by construction we eventually
                 // will succeed or fail the bind.
                 bindResult.Reset();
                 goto Retry;
@@ -962,7 +962,7 @@ namespace BINDER_SPACE
             if (hr == S_FALSE)
             {
                 // Another bind interfered. We need to retry entire bind.
-                // This by design loops as long as needed because by constuction we eventually
+                // This by design loops as long as needed because by construction we eventually
                 // will succeed or fail the bind.
                 bindResult.Reset();
                 goto Retry;
@@ -2060,7 +2060,7 @@ Retry:
         if (hr == S_FALSE)
         {
             // Another bind interfered. We need to retry entire bind.
-            // This by design loops as long as needed because by constuction we eventually
+            // This by design loops as long as needed because by construction we eventually
             // will succeed or fail the bind.
             bindResult.Reset();
             goto Retry;

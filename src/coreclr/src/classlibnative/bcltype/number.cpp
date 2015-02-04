@@ -2208,9 +2208,9 @@ ParseSection:
         }
         else {
             thousandsSepPos = (INT32 *)thousands.AllocThrows(bufferLen2 * sizeof(INT32));
-            // We need this array to figure out where to insert the thousands seperator. We would have to traverse the string
-            // backwords. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
-            // the thousands seperator so we can get away with traversing forwards. Note we only have to compute upto digPos.
+            // We need this array to figure out where to insert the thousands separator. We would have to traverse the string
+            // backwards. PIC formatting always traverses forwards. These indices are precomputed to tell us where to insert
+            // the thousands separator so we can get away with traversing forwards. Note we only have to compute up to digPos.
             // The max is not bound since you can have formatting strings of the form "000,000..", and this
             // should handle that case too.
 
@@ -2251,14 +2251,14 @@ ParseSection:
 
     // Allocate temp buffer - gotta deal with Schertz' 500 MB strings.
     // Some computations like when you specify Int32.MaxValue-2 %'s and each percent is setup to be Int32.MaxValue in length
-    // will generate a result that will be larget than an unsigned int can hold. This is to protect against overflow.
+    // will generate a result that will be largest than an unsigned int can hold. This is to protect against overflow.
     UINT64 tempLen = str->GetStringLength() + maxStrIncLen + 10;  // Include a healthy amount of temp space.
     if (tempLen > 0x7FFFFFFF)
         COMPlusThrowOM(); // if we overflow
 
     unsigned int bufferLen = (UINT)tempLen;
     if (bufferLen < 250) // Stay under 512 bytes
-        bufferLen = 250; // This is to prevent unneccessary calls to resize
+        bufferLen = 250; // This is to prevent unnecessary calls to resize
     buffer = (wchar *) buf.AllocThrows(bufferLen* sizeof(WCHAR));
     dst = buffer;
 
@@ -2326,7 +2326,7 @@ ParseSection:
         case '.':
             {
                 if (digPos != 0 || decimalWritten) {
-                    // For compatability, don't echo repeated decimals
+                    // For compatibility, don't echo repeated decimals
                     break;
                 }
                 // If the format has trailing zeros or the format has a decimal and digits remain

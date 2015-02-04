@@ -113,7 +113,7 @@ namespace System.Globalization {
 #if !FEATURE_CORECLR
         // Check if NumberFormatInfo was not set up ambiguously for parsing as number and currency
         // eg. if the NumberDecimalSeparator and the NumberGroupSeparator were the same. This check
-        // is solely for backwards compatability / version tolerant serialization
+        // is solely for backwards compatibility / version tolerant serialization
         [OptionalField(VersionAdded = 1)]
         internal bool validForParseAsNumber = true;     // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
         [OptionalField(VersionAdded = 1)]

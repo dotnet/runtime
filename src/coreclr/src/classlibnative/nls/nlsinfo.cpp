@@ -2600,7 +2600,7 @@ INT32 QCALLTYPE COMNlsInfo::InternalCompareStringOrdinalIgnoreCase(
 
 /**
  * This function returns a pointer to this table that we use in System.Globalization.EncodingTable.
- * No error checking of any sort is performed.  Range checking is entirely the responsiblity of the managed
+ * No error checking of any sort is performed.  Range checking is entirely the responsibility of the managed
  * code.
  */
 FCIMPL0(EncodingDataItem *, COMNlsInfo::nativeGetEncodingTableDataPointer)
@@ -2614,7 +2614,7 @@ FCIMPLEND
 
 /**
  * This function returns a pointer to this table that we use in System.Globalization.EncodingTable.
- * No error checking of any sort is performed.  Range checking is entirely the responsiblity of the managed
+ * No error checking of any sort is performed.  Range checking is entirely the responsibility of the managed
  * code.
  */
 FCIMPL0(CodePageDataItem *, COMNlsInfo::nativeGetCodePageTableDataPointer)

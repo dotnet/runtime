@@ -3474,7 +3474,7 @@ lDone: ;
 #include "corexcep.h"
 
 // These functions provide limited support for corrupting exceptions
-// outside the VM folder. Its limited since we dont have access to the
+// outside the VM folder. Its limited since we don't have access to the
 // throwable.
 //
 // These functions are also wrapped by the corresponding CEHelper 
@@ -4061,7 +4061,7 @@ namespace Win32
             wszPathName,
             &wszFileName);
 
-        // Calculate the index while the buffer is open and the string poiner is stable.
+        // Calculate the index while the buffer is open and the string pointer is stable.
         if (dwLengthWritten != 0 && dwLengthWritten < dwLengthRequired && pdwFilePartIdx != NULL)
             *pdwFilePartIdx = static_cast<DWORD>(wszFileName - wszPathName);
 
