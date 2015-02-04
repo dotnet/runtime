@@ -1900,11 +1900,11 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
         OBJECTREF keepAlive = NULL;
 
         // BEGIN_QCALL/END_QCALL define try/catch scopes for potential exceptions thrown when bThrowOnError is enabled.
-        // Originally, in case of an exception the GCFrame was removed from the Thread’s Frame chain in the catch block, in UnwindAndContinueRethrowHelperInsideCatch.
+        // Originally, in case of an exception the GCFrame was removed from the Thread's Frame chain in the catch block, in UnwindAndContinueRethrowHelperInsideCatch.
         // However, the catch block declared some local variables that overlapped the location of the now out of scope GCFrame and OBJECTREF, therefore corrupting
         // those values. Having the GCX_COOP/GCX_PREEMP switching GC modes, allowed a situation where in case of an exception, the thread would wait for a GC to complete
-        // while still having the GCFrame in the Thread’s Frame chain, but with a corrupt OBJECTREF due to stack location reuse in the catch block.
-        // The solution is to force the removal of GCFrame (and the Frames above) from the Thread’s Frame chain before entering the catch block, at the time of 
+        // while still having the GCFrame in the Thread's Frame chain, but with a corrupt OBJECTREF due to stack location reuse in the catch block.
+        // The solution is to force the removal of GCFrame (and the Frames above) from the Thread's Frame chain before entering the catch block, at the time of 
         // FrameWithCookieHolder's destruction.
         GCPROTECT_HOLDER(keepAlive);
 

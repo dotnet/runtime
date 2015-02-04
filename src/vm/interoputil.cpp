@@ -4044,7 +4044,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD)
             {
                 //
                 // However, we do need CCWs for internal interfaces that define protected members of inheritable classes
-                // (for example, Windows.UI.Xaml.Application implements both IApplication, which we don’t need 
+                // (for example, Windows.UI.Xaml.Application implements both IApplication, which we don't need 
                 // a CCW for and IApplicationOverrides, which we do need).
                 //
                 if (!pMT->GetWriteableData()->IsOverridingInterface())

@@ -2597,7 +2597,7 @@ void                emitter::emitIns_R_R_I(instruction ins,
         assert(insOptsNone(opt));
 
         // On ARM, the immediate shift count of LSL and ROR must be between 1 and 31. For LSR and ASR, it is between
-        // 1 and 32, though we don’t ever use 32. Although x86 allows an immediate shift count of 8-bits in instruction
+        // 1 and 32, though we don't ever use 32. Although x86 allows an immediate shift count of 8-bits in instruction
         // encoding, the CPU looks at only the lower 5 bits. As per ECMA, specifying a shift count to the IL SHR, SHL, or SHL.UN
         // instruction that is greater than or equal to the width of the type will yield an undefined value. We choose that
         // undefined value in this case to match x86 behavior, by only using the lower 5 bits of the constant shift count.

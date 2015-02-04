@@ -6364,7 +6364,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
 //
 // The second part:
 //
-//              For verifiable code (see §8.8), there is an additional
+//              For verifiable code (see Section 8.8), there is an additional
 //              requirement that can require a runtime check: the reference
 //              shall be made through an item whose exact type supports
 //              the exact type of the referent. That is, the item whose
