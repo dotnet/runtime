@@ -4833,10 +4833,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (IS_VFP && ins->dreg != ins->sreg1)
 				ARM_CPYD (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_MOVE_R4_TO_I4:
+		case OP_MOVE_F_TO_I4:
 			ARM_FMRS (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_MOVE_I4_TO_R4:
+		case OP_MOVE_I4_TO_F:
 			ARM_FMSR (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
