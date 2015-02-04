@@ -3914,10 +3914,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_MOVE_F_TO_I4:
-			mips_mfc1 (code, ins->dreg, ins->sreg1);
+			mips_cvtsd (code, mips_ftemp, ins->sreg1);
+			mips_mfc1 (code, ins->dreg, mips_ftemp);
 			break;
 		case OP_MOVE_I4_TO_F:
 			mips_mtc1 (code, ins->dreg, ins->sreg1);
+			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
 		case OP_MIPS_CVTSD:
 			/* Convert from double to float and leave it there */
