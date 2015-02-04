@@ -5404,16 +5404,16 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromTokenAndTypeArgs(ModuleID moduleID,
             // try to load a type, so that type system will not try to test type 
             // loadability in the current AppDomain.  However, 
             // ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE does not prevent callers from 
-            // loading a type.   It is profiler's responsiblity not to attempt to load 
+            // loading a type.   It is profiler's responsibility not to attempt to load
             // a type in unsupported ways (e.g. from a non-EE thread).  It doesn't 
             // impact retail builds, in which contracts are not available. 
             ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
             // ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE also defines FAULT_FORBID, which 
             // causes Scanruntime to flag a fault violation in AssemblySpec::InitializeSpec,
-            // which is defined as FAULTS.   It only happneds in a type-loading path, which
+            // which is defined as FAULTS.   It only happens in a type-loading path, which
             // is not supported on a non-EE thread.  Suppressing a contract violation in an
-            // unsupported execution path is more preferable than casuing AV when calling
+            // unsupported execution path is more preferable than causing AV when calling
             // GetClassFromTokenAndTypeArgs on a non-EE thread in a check build.  See Dev10 
             // 682526 for more details.
             FAULT_NOT_FATAL();

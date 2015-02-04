@@ -3119,9 +3119,9 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     }
 
     /* 
-     * If we have a legacy target, it means we're providing compatability for code that used
+     * If we have a legacy target, it means we're providing compatibility for code that used
      * the old ICLRDataTarget interfaces.  There are still a few things (like metadata location,
-     * GetImageBase, and VirtualAlloc) that the implementation may use which we haven't superceded 
+     * GetImageBase, and VirtualAlloc) that the implementation may use which we haven't superseded
      * in ICorDebugDataTarget, so we still need access to the old target interfaces.
      * Any functionality that does exist in ICorDebugDataTarget is accessed from that interface
      * using the DataTargetAdapter on top of the legacy interface (to unify the calling code).
@@ -6926,7 +6926,7 @@ void ClrDataAccess::SetTargetConsistencyChecks(bool fEnableAsserts)
 //     The implementation of ASSERT accesses this via code:DacTargetConsistencyAssertsEnabled
 //     
 //     By default, this is disabled, unless COMPLUS_DbgDACEnableAssert is set (see code:ClrDataAccess::ClrDataAccess).
-//     This is necessary for compatability.  For example, SOS expects to be able to scan for
+//     This is necessary for compatibility.  For example, SOS expects to be able to scan for
 //     valid MethodTables etc. (which may cause ASSERTs), and also doesn't want ASSERTs when working
 //     with targets with corrupted memory.
 //     

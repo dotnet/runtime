@@ -1737,7 +1737,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             int n2 = raw.GetNumber(1);
             String pattern = dtfi.ShortDatePattern;
 
-            // For compatability, don't throw if we can't determine the order, but default to YMD instead
+            // For compatibility, don't throw if we can't determine the order, but default to YMD instead
             int order;
             if (GetYearMonthDayOrder(pattern, dtfi, out order) && order == ORDER_YDM) {
                 if (SetDateYMD(ref result, raw.year, n2, n1)) {

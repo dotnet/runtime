@@ -656,7 +656,7 @@ HRESULT CordbAppDomain::EnumerateSteppers(ICorDebugStepperEnum **ppSteppers)
 //    Prior to V3, we used to keep track of a per-appdomain attached status.
 //    Debuggers were required to explicitly attach to every AppDomain, so this
 //    did not provide any actual functionality.  In V3, there is no longer any
-//    concept of per-AppDomain attach/detach.  This API is provided for compatability.
+//    concept of per-AppDomain attach/detach.  This API is provided for compatibility.
 //
 
 HRESULT CordbAppDomain::IsAttached(BOOL *pfAttached)
@@ -685,7 +685,7 @@ HRESULT CordbAppDomain::IsAttached(BOOL *pfAttached)
 //    Prior to V3, we used to keep track of a per-appdomain attached status.
 //    Debuggers were required to explicitly attach to every AppDomain, so this
 //    did not provide any actual functionality.  In V3, there is no longer any
-//    concept of per-AppDomain attach/detach.  This API is provided for compatability.
+//    concept of per-AppDomain attach/detach.  This API is provided for compatibility.
 //
 
 HRESULT CordbAppDomain::Attach()

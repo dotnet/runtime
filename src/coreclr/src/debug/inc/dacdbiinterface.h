@@ -663,7 +663,7 @@ public:
     //
     // Notes:
     //    This is taken exactly from the IXClrData definition.     
-    //    This is provided for V3 compatability to support Interop-debugging. 
+    //    This is provided for V3 compatibility to support Interop-debugging.
     //    This should eventually be deprecated.
     //
     virtual 
@@ -678,7 +678,7 @@ public:
     //   
     //
     // Return Value:
-    //    true if the adddress is a CLR stub.    
+    //    true if the address is a CLR stub.
     //
     // Notes:
     //    This is used to implement ICorDebugProcess::IsTransitionStub
@@ -1320,7 +1320,7 @@ public:
                                                OUT SequencePoints *  pSequencePoints) = 0;
 
     //
-    // Return the filter CONTEXT on the LS.  Once we move entirely over to the new managed pipepline 
+    // Return the filter CONTEXT on the LS.  Once we move entirely over to the new managed pipeline
     // built on top of the Win32 debugging API, this won't be necessary.
     //
     // Arguments:
@@ -2259,7 +2259,7 @@ public:
     // Notes:
     //     This will produce a VMPTR_OBJECTHANDLE regardless of whether handle is 
     //     valid.     
-    //     Ideally we'd be using only strongly-typed variables on the RS, and then this would be unnecessary 
+    //     Ideally we'd be using only strongly-typed variables on the RS, and then this would be unnecessary
     virtual
     VMPTR_OBJECTHANDLE GetVmObjectHandle(CORDB_ADDRESS handleAddress) = 0;
 

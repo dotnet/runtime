@@ -438,7 +438,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     //  CORECLR_HOST_AUTHENTICATION_KEY_NONGEN  
     hr = host->Authenticate(CORECLR_HOST_AUTHENTICATION_KEY); 
     if (FAILED(hr)) {
-        log << W("Failed autenticate. ") << hr << Logger::endl;
+        log << W("Failed authenticate. ") << hr << Logger::endl;
         return false;
     }
 

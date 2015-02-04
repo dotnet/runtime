@@ -776,7 +776,7 @@ namespace System {
             }
 
             Contract.EndContractBlock();
-            // RoundtripKind does not make sense for DateTimeOffset; ignore this flag for backward compatability with DateTime
+            // RoundtripKind does not make sense for DateTimeOffset; ignore this flag for backward compatibility with DateTime
             style &= ~DateTimeStyles.RoundtripKind; 
         
             // AssumeLocal is also ignored as that is what we do by default with DateTimeOffset.Parse             

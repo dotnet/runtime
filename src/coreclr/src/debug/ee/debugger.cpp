@@ -9876,7 +9876,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
 
     // This event is used to trigger the ICorDebugManagedCallback::UpdateModuleSymbols 
     // callback.  That callback is defined to pass a PDB stream, and so we still use this
-    // only for legacy compatability reasons when we've actually got PDB symbols.  
+    // only for legacy compatibility reasons when we've actually got PDB symbols.
     // New clients know they must request a new symbol reader after ClassLoad events.
     if (pRuntimeModule->GetInMemorySymbolStreamFormat() != eSymbolFormatPDB)
         return; // Non-PDB symbols
