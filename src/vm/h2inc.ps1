@@ -8,9 +8,17 @@
 # C to MASM include file translator
 # This is replacement for the deprecated h2inc tool that used to be part of VS.
 
+#
+# The use of [console]::WriteLine (instead of Write-Output) is intentional.
+# PowerShell 2.0 (installed by default on Windows 7) wraps lines written with
+# Write-Output at whatever column width is being used by the current terminal,
+# even when output is being redirected to a file. We can't have this behavior
+# because it will cause the generated file to be malformed.
+#
+
 Function ProcessFile($filePath) {
 
-    Write-Output "// File start: $filePath"
+    [console]::WriteLine("// File start: $filePath")
 
     Get-Content $filePath | ForEach-Object {
         
@@ -49,17 +57,17 @@ Function ProcessFile($filePath) {
                 if ($value -match $HEX_NUMBER_PATTERN -or $value -match $DECIMAL_NUMBER_PATTERN) {
                     $value = $value -replace $HEX_NUMBER_PATTERN, "0`$1h"    # Convert hex constants
                     $value = $value -replace $DECIMAL_NUMBER_PATTERN, "`$1t" # Convert dec constants
-                    Write-Output "$name EQU $value"
+                    [console]::WriteLine("$name EQU $value")
                 } else {
-                    Write-Output "$name TEXTEQU <$value>"
+                    [console]::WriteLine("$name TEXTEQU <$value>")
                 }
             }            
         }
         
-        Write-Output $_
+        [console]::WriteLine("$_")
     }
 
-    Write-Output "// File end: $filePath"
+    [console]::WriteLine("// File end: $filePath")
 }
 
 ProcessFile $args[0]
