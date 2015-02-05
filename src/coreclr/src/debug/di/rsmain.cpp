@@ -513,6 +513,7 @@ void CordbCommonBase::InitializeCommon()
 // setting this since V1.0 and removing it may be a breaking change.
 void CordbCommonBase::AddDebugPrivilege()
 {
+#ifndef FEATURE_PAL
     HANDLE hToken;
     TOKEN_PRIVILEGES Privileges;
     BOOL fSucc;
@@ -559,6 +560,7 @@ void CordbCommonBase::AddDebugPrivilege()
         }
         CloseHandle(hToken);
     }
+#endif
 } 
 
 
@@ -1882,10 +1884,12 @@ HRESULT Cordb::EnumerateProcesses(ICorDebugProcessEnum **ppProcesses)
 //
 typedef LONG NTSTATUS;
 
+#ifndef FEATURE_PAL
 typedef BOOL (*NTQUERYSYSTEMINFORMATION)(SYSTEM_INFORMATION_CLASS SystemInformationClass,
                                          PVOID SystemInformation,
                                          ULONG SystemInformationLength,
                                          PULONG ReturnLength);
+#endif
 
 // Implementation of ICorDebug::CanLaunchOrAttach
 // @dbgtodo-  this all goes away in V3.
