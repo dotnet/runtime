@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -47,10 +48,16 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Discards any information about the associated process.</summary>
+        private void RefreshCore()
+        {
+            _signaled = false;
+        }
+
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
-        public bool WaitForExit(int milliseconds)
+        private bool WaitForExit(int milliseconds)
         {
             SafeProcessHandle handle = null;
             bool exited;
@@ -85,22 +92,17 @@ namespace System.Diagnostics
                 }
 
                 // If we have a hard timeout, we cannot wait for the streams
-                if (_output != null && milliseconds == -1)
+                if (_output != null && milliseconds == Timeout.Infinite)
                 {
                     _output.WaitUtilEOF();
                 }
 
-                if (_error != null && milliseconds == -1)
+                if (_error != null && milliseconds == Timeout.Infinite)
                 {
                     _error.WaitUtilEOF();
                 }
 
                 ReleaseProcessHandle(handle);
-            }
-
-            if (exited && _watchForExit)
-            {
-                RaiseOnExited();
             }
 
             return exited;
@@ -120,9 +122,8 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>Gets a value indicating whether the associated process has been terminated.</summary>
-        /// <param name="exitCode">The exit code, if it could be determined; otherwise, null.</param>
-        private bool GetHasExited(out int? exitCode)
+        /// <summary>Checks whether the process has exited and updates state accordingly.</summary>
+        private void UpdateHasExited()
         {
             SafeProcessHandle handle = null;
             try
@@ -130,8 +131,7 @@ namespace System.Diagnostics
                 handle = GetProcessHandle(Interop.PROCESS_QUERY_INFORMATION | Interop.SYNCHRONIZE, false);
                 if (handle.IsInvalid)
                 {
-                    exitCode = null;
-                    return true;
+                    _exited = true;
                 }
                 else
                 {
@@ -146,8 +146,8 @@ namespace System.Diagnostics
                     // check to see if we have been signalled.
                     if (Interop.mincore.GetExitCodeProcess(handle, out localExitCode) && localExitCode != Interop.STILL_ACTIVE)
                     {
-                        exitCode = localExitCode;
-                        return true;
+                        _exitCode = localExitCode;
+                        _exited = true;
                     }
                     else
                     {
@@ -167,14 +167,11 @@ namespace System.Diagnostics
                             if (!Interop.mincore.GetExitCodeProcess(handle, out localExitCode))
                                 throw new Win32Exception();
 
-                            exitCode = localExitCode;
-                            return true;
+                            _exitCode = localExitCode;
+                            _exited = true;
                         }
                     }
                 }
-
-                exitCode = null;
-                return false;
             }
             finally
             {
@@ -338,6 +335,21 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the ID of the current process.</summary>
+        private static int GetCurrentProcessId()
+        {
+            return unchecked((int)Interop.mincore.GetCurrentProcessId());
+        }
+
+        /// <summary>
+        /// Gets a short-term handle to the process, with the given access.  If a handle exists,
+        /// then it is reused.  If the process has exited, it throws an exception.
+        /// </summary>
+        private SafeProcessHandle GetProcessHandle()
+        {
+            return GetProcessHandle(Interop.PROCESS_ALL_ACCESS);
+        }
+
         /// <summary>Get the minimum and maximum working set limits.</summary>
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
@@ -359,21 +371,6 @@ namespace System.Diagnostics
             {
                 ReleaseProcessHandle(handle);
             }
-        }
-
-        /// <summary>Gets the ID of the current process.</summary>
-        private static int GetCurrentProcessId()
-        {
-            return unchecked((int)Interop.mincore.GetCurrentProcessId());
-        }
-
-        /// <summary>
-        /// Opens a long-term handle to the process, with all access.  If a handle exists,
-        /// then it is reused.  If the process has exited, it throws an exception.
-        /// </summary>
-        private SafeProcessHandle OpenProcessHandle()
-        {
-            return OpenProcessHandle(Interop.PROCESS_ALL_ACCESS);
         }
 
         /// <summary>Sets one or both of the minimum and maximum working set limits.</summary>
@@ -442,27 +439,11 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
-            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
-            {
-                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-            }
-
-            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
-            {
-                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-            }
-
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as non-inheritable before they are passed to CreateProcess so
             //      that the child process can not close them
             //    * CreateProcess allows you to redirect all or none of the standard IO handles, so we use
             //      GetStdHandle for the handles that are not being redirected
-
-            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.            
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
 
             StringBuilder commandLine = BuildCommandLine(startInfo.FileName, startInfo.Arguments);
 
@@ -583,12 +564,12 @@ namespace System.Diagnostics
             }
             if (startInfo.RedirectStandardOutput)
             {
-                Encoding enc = (startInfo.StandardOutputEncoding != null) ? startInfo.StandardOutputEncoding : GetEncoding((int)Interop.mincore.GetConsoleOutputCP());
+                Encoding enc = startInfo.StandardOutputEncoding ?? GetEncoding((int)Interop.mincore.GetConsoleOutputCP());
                 _standardOutput = new StreamReader(new FileStream(standardOutputReadPipeHandle, FileAccess.Read, 4096, false), enc, true, 4096);
             }
             if (startInfo.RedirectStandardError)
             {
-                Encoding enc = (startInfo.StandardErrorEncoding != null) ? startInfo.StandardErrorEncoding : GetEncoding((int)Interop.mincore.GetConsoleOutputCP());
+                Encoding enc = startInfo.StandardErrorEncoding ?? GetEncoding((int)Interop.mincore.GetConsoleOutputCP());
                 _standardError = new StreamReader(new FileStream(standardErrorReadPipeHandle, FileAccess.Read, 4096, false), enc, true, 4096);
             }
 
@@ -607,6 +588,39 @@ namespace System.Diagnostics
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        private bool _signaled;
+
+        private static StringBuilder BuildCommandLine(string executableFileName, string arguments)
+        {
+            // Construct a StringBuilder with the appropriate command line
+            // to pass to CreateProcess.  If the filename isn't already 
+            // in quotes, we quote it here.  This prevents some security
+            // problems (it specifies exactly which part of the string
+            // is the file to execute).
+            StringBuilder commandLine = new StringBuilder();
+            string fileName = executableFileName.Trim();
+            bool fileNameIsQuoted = (fileName.StartsWith("\"", StringComparison.Ordinal) && fileName.EndsWith("\"", StringComparison.Ordinal));
+            if (!fileNameIsQuoted)
+            {
+                commandLine.Append("\"");
+            }
+
+            commandLine.Append(fileName);
+
+            if (!fileNameIsQuoted)
+            {
+                commandLine.Append("\"");
+            }
+
+            if (!String.IsNullOrEmpty(arguments))
+            {
+                commandLine.Append(" ");
+                commandLine.Append(arguments);
+            }
+
+            return commandLine;
+        }
 
         /// <summary>Gets timing information for the current process.</summary>
         private ProcessThreadTimes GetProcessTimes()
@@ -743,21 +757,6 @@ namespace System.Diagnostics
         private SafeProcessHandle GetProcessHandle(int access)
         {
             return GetProcessHandle(access, true);
-        }
-
-        private SafeProcessHandle OpenProcessHandle(Int32 access)
-        {
-            if (!_haveProcessHandle)
-            {
-                //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.            
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().Name);
-                }
-
-                SetProcessHandle(GetProcessHandle(access));
-            }
-            return _processHandle;
         }
 
         private static void CreatePipeWithSecurityAttributes(out SafeFileHandle hReadPipe, out SafeFileHandle hWritePipe, Interop.SECURITY_ATTRIBUTES lpPipeAttributes, int nSize)

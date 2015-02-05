@@ -8,6 +8,11 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int close(int fd);
+        internal static extern int sysconf(int name);
+
+        internal static class SysConfNames
+        {
+            internal const int _SC_CLK_TCK = 2;
+        }
     }
 }

@@ -1,9 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
-using System.ComponentModel;
-
 namespace System.Diagnostics
 {
     public partial class ProcessThread
@@ -11,7 +8,10 @@ namespace System.Diagnostics
         /// <summary>Sets the processor that this thread would ideally like to run on.</summary>
         public int IdealProcessor
         {
-            set { throw NotImplemented.ByDesign; } // TODO: Implement this
+            set
+            {
+                // Nop.  This is a hint, and there's no good match for the Windows concept.
+            }
         }
 
         /// <summary>
@@ -20,7 +20,7 @@ namespace System.Diagnostics
         /// </summary>
         public void ResetIdealProcessor()
         {
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            // Nop.  This is a hint, and there's no good match for the Windows concept.
         }
 
         /// <summary>
@@ -29,8 +29,8 @@ namespace System.Diagnostics
         /// </summary>
         private bool PriorityBoostEnabledCore
         {
-            get { throw NotImplemented.ByDesign; } // TODO: Implement this
-            set { throw NotImplemented.ByDesign; } // TODO: Implement this
+            get { return false; } // Nop
+            set { } // Nop
         }
 
         /// <summary>
@@ -40,8 +40,24 @@ namespace System.Diagnostics
         /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
-            get { throw NotImplemented.ByDesign; } // TODO: Implement this
-            set { throw NotImplemented.ByDesign; } // TODO: Implement this
+            // This mapping is relatively arbitrary.  0 is normal based on the man page,
+            // and the other values above and below are simply distributed evenly.
+            get
+            {
+                Interop.procfs.ParsedStat stat = GetStat();
+                return
+                    stat.nice < -15 ? ThreadPriorityLevel.TimeCritical :
+                    stat.nice < -10 ? ThreadPriorityLevel.Highest :
+                    stat.nice < -5 ? ThreadPriorityLevel.AboveNormal :
+                    stat.nice == 0 ? ThreadPriorityLevel.Normal :
+                    stat.nice <= 5 ? ThreadPriorityLevel.BelowNormal :
+                    stat.nice <= 10 ? ThreadPriorityLevel.Lowest :
+                    ThreadPriorityLevel.Idle;
+            }
+            set
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         /// <summary>
@@ -52,7 +68,7 @@ namespace System.Diagnostics
         /// </summary>
         public IntPtr ProcessorAffinity
         {
-            set { throw NotImplemented.ByDesign; } // TODO: Implement this
+            set { throw new PlatformNotSupportedException(); } // No ability to change the affinity of a thread in an arbitrary process
         }
 
         /// <summary>
@@ -61,13 +77,17 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan PrivilegedProcessorTime
         {
-            get { throw NotImplemented.ByDesign; } // TODO: Implement this
+            get
+            {
+                Interop.procfs.ParsedStat stat = GetStat();
+                return Process.TicksToTimeSpan(stat.stime);
+            }
         }
 
         /// <summary>Returns the time the associated thread was started.</summary>
         public DateTime StartTime
         {
-            get { throw NotImplemented.ByDesign; } // TODO: Implement this
+            get { return Process.BootTimeToDateTime(GetStat().starttime); }
         }
 
         /// <summary>
@@ -77,7 +97,11 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan TotalProcessorTime
         {
-            get { throw NotImplemented.ByDesign; } // TODO: Implement this
+            get
+            {
+                Interop.procfs.ParsedStat stat = GetStat();
+                return Process.TicksToTimeSpan(stat.utime + stat.stime);
+            }
         }
 
         /// <summary>
@@ -86,12 +110,20 @@ namespace System.Diagnostics
         /// </summary>
         public TimeSpan UserProcessorTime
         {
-            get { throw NotImplemented.ByDesign; } // TODO: Implement this
+            get
+            {
+                Interop.procfs.ParsedStat stat = GetStat();
+                return Process.TicksToTimeSpan(stat.utime);
+            }
         }
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        private Interop.procfs.ParsedStat GetStat()
+        {
+            return Interop.procfs.ReadStat(pid: _processId, tid: Id);
+        }
     }
 }
