@@ -18,8 +18,10 @@ using System.Security;
 namespace Microsoft.Win32.SafeHandles
 {
     [SecurityCritical]
-    internal sealed partial class SafeTokenHandle : SafeHandle
+    internal sealed class SafeTokenHandle : SafeHandle
     {
+        private const int DefaultInvalidHandleValue = 0;
+
         internal static readonly SafeTokenHandle InvalidHandle = new SafeTokenHandle(new IntPtr(DefaultInvalidHandleValue));
 
         internal SafeTokenHandle() : base(new IntPtr(DefaultInvalidHandleValue), true) { }
@@ -40,6 +42,18 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(IsInvalid, "Safe handle should only be set once");
             base.handle = h;
+        }
+
+        public override bool IsInvalid
+        {
+            [SecurityCritical]
+            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
+        }
+
+        [SecurityCritical]
+        protected override bool ReleaseHandle()
+        {
+            return Interop.mincore.CloseHandle(handle);
         }
     }
 }
