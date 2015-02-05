@@ -41,9 +41,6 @@ Abstract:
 
 #include <sys/types.h>
 #include <signal.h>
-#if HAVE_STROPTS_H
-#include <stropts.h>
-#endif  // HAVE_STROPTS_H
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/resource.h>

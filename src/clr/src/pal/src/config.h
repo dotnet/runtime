@@ -55,9 +55,6 @@ because gcc will complain about %I64d and %S
 /* Define as 1 if you have inttypes.h. */
 #define HAVE_INTTYPES_H 1
 
-/* Define as 1 if you have stropts.h. */
-#define HAVE_STROPTS_H 1
-
 /* Define as 1 if you have sys/vmparam.h. */
 #define HAVE_SYS_VMPARAM_H 0
 
