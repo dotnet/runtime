@@ -31,6 +31,6 @@ else(CLR_CMAKE_PLATFORM_UNIX)
     install (TARGETS CoreRun DESTINATION .)
     
     # We will generate PDB only for the debug configuration
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/CoreRun.pdb DESTINATION PDB CONFIGURATIONS Debug)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/CoreRun.pdb DESTINATION PDB)
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
