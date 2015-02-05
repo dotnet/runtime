@@ -117,7 +117,8 @@ __CleanBuild=false
 
 for i in "$@"
     do
-        case $i in
+        lowerI="$(echo $i | awk '{print tolower($0)}')"
+        case $lowerI in
         -?|-h|--help)
         usage
         exit 1
