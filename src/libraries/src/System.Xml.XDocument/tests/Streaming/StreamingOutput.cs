@@ -83,7 +83,6 @@ namespace CoreXml.Test.XLinq
                 public void XNameConstructor()
                 {
                     XStreamingElement streamElement = new XStreamingElement("contact");
-                    TestLog.WriteLine(streamElement.ToString());
                     if (!streamElement.ToString().Equals("<contact />"))
                         throw new TestFailedException("");
                 }
@@ -279,7 +278,6 @@ namespace CoreXml.Test.XLinq
                 {
                     XStreamingElement streamElement = new XStreamingElement("contact");
                     streamElement.Add(null);
-                    TestLog.WriteLine(streamElement.ToString());
                     if (!streamElement.ToString().Equals("<contact />"))
                         throw new TestFailedException("");
                 }
@@ -596,7 +594,6 @@ namespace CoreXml.Test.XLinq
                     XStreamingElement streamElement = new XStreamingElement("contact", "SomeValue");
                     element.Add(streamElement);
                     XElement x = element.Element("contact");
-                    TestLog.WriteLine(x.ToString(SaveOptions.None));
                     getFreshStream();
                     streamElement.Save(_sourceStream); x.Save(_targetStream);
                     resetStreamPos();

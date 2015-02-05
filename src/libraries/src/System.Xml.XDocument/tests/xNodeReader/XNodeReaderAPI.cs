@@ -58,7 +58,6 @@ namespace CoreXml.Test.XLinq
                     {
                         TestLog.Compare(r.ReadState, ReadState.Initial, "r.ReadState before Read()");
                         r.Read();
-                        TestLog.WriteLineIgnore(r.LocalName);
                         TestLog.Compare(r.ReadState, ReadState.Interactive, "r.ReadState after Read()");
                         TestLog.Compare(r.NodeType, (nodeType == XmlNodeType.Text && count == 0) ? XmlNodeType.Whitespace : nodeType, "r.NodeType"); // 
                         switch (nodeType)

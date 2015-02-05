@@ -344,7 +344,7 @@ namespace CoreXml.Test.XLinq
             return base64;
         }
 
-        public bool VerifyNode(XmlReader r, XmlNodeType eExpNodeType, string strExpName, string strExpValue)
+        public static bool VerifyNode(XmlReader r, XmlNodeType eExpNodeType, string strExpName, string strExpValue)
         {
             bool bPassed = true;
 
@@ -382,15 +382,12 @@ namespace CoreXml.Test.XLinq
 
         public void CheckXmlException(string expectedCode, XmlException e, int expectedLine, int expectedPosition)
         {
-            TestLog.WriteLine("***Exception");
             TestLog.Compare(e.LineNumber, expectedLine, "CheckXmlException:LineNumber");
             TestLog.Compare(e.LinePosition, expectedPosition, "CheckXmlException:LinePosition");
         }
 
         public void PositionOnNodeType(XmlReader r, XmlNodeType nodeType)
         {
-            TestLog.WriteLine("Seeking Nodetype : " + nodeType.ToString());
-
             if (nodeType == XmlNodeType.DocumentType)
             {
                 TestLog.Skip("There is no DocumentType");
@@ -422,7 +419,6 @@ namespace CoreXml.Test.XLinq
 
         public void PositionOnElement(XmlReader r, string strElementName)
         {
-            TestLog.WriteLine("Seeking Element : " + strElementName);
             if (r.NodeType == XmlNodeType.Element && r.Name == strElementName)
                 return;
 
@@ -494,9 +490,6 @@ namespace CoreXml.Test.XLinq
             XmlReaderSettings rs = new XmlReaderSettings();
             rs.ConformanceLevel = ConformanceLevel.Fragment;
 
-            TestLog.WriteLine("source: {0}", source);
-            TestLog.WriteLine("target: {0}", target);
-
             XmlReader src = XmlReader.Create(new StringReader(source), rs);
             XmlReader tgt = XmlReader.Create(new StringReader(target), rs);
             bool retVal = _diff.Compare(src, tgt);
@@ -505,10 +498,6 @@ namespace CoreXml.Test.XLinq
                 TestLog.WriteLine("XmlDif failed:");
                 TestLog.WriteLine("DIFF: {0}", _diff.ToXml());
                 throw new TestException(TestResult.Failed, "");
-            }
-            else
-            {
-                TestLog.WriteLine("XmlDiff OK");
             }
         }
 
@@ -803,7 +792,6 @@ namespace CoreXml.Test.XLinq
 
         public static void CreateInvalidDTDTestFile(string strFileName)
         {
-            TestLog.WriteLine("Here Inv DTD");
             TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
 
             tw.WriteLine("<?xml version=\"1.0\"?><!DOCTYPE Root [<!ELEMENT Root ANY><!ELEMENT E ANY><!ATTLIST E	A1 NOTATION (N) #IMPLIED>]>");
@@ -860,7 +848,6 @@ namespace CoreXml.Test.XLinq
             // Create XDR before
             CreateXDRTestFile(pValidXDR);
 
-            TestLog.WriteLine("Here Inv XDR");
             TextWriter tw = new StreamWriter(FilePathUtil.getStream(strFileName));
 
             tw.WriteLine("<?xml version=\"1.0\" ?><e:Root xmlns:e=\"x-schema:xdrfile.xml\">");

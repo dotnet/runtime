@@ -85,7 +85,6 @@ namespace CoreXml.Test.XLinq
                 public void v1()
                 {
                     string type = Variation.Params[0].ToString();
-                    TestLog.WriteLine("Test Type : " + type);
 
                     XmlReader DataReader = GetReader(new StringReader(_xmlStr));
                     PositionOnElement(DataReader, "root");
@@ -125,7 +124,6 @@ namespace CoreXml.Test.XLinq
                 public void v2()
                 {
                     string type = Variation.Params[0].ToString();
-                    TestLog.WriteLine("Test Type : " + type);
 
                     XmlReader DataReader = GetReader(new StringReader(_xmlStr));
                     PositionOnElement(DataReader, "root");
@@ -322,7 +320,6 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (ArgumentNullException)
                     {
-                        TestLog.WriteLine("Caught for single param");
                     }
 
                     try
@@ -331,7 +328,6 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (ArgumentNullException)
                     {
-                        TestLog.WriteLine("Caught for single param");
                     }
 
                     while (DataReader.Read()) ;

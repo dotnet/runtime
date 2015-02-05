@@ -51,9 +51,12 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (Exception e)
                     {
-                        TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
-                        TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
                         bPassed = (e.GetType().ToString() == exceptionType.ToString());
+                        if (!bPassed)
+                        {
+                            TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
+                            TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
+                        }
                     }
 
                     return bPassed;
@@ -144,14 +147,6 @@ namespace CoreXml.Test.XLinq
                     }
 
                     TestLog.Compare(strActBinHex, strTextBinHex, "Compare All Valid BinHex");
-                }
-
-                public void Dump(byte[] bytes)
-                {
-                    for (int i = 0; i < bytes.Length; i++)
-                    {
-                        TestLog.WriteLineIgnore("Byte" + i + ": " + bytes[i]);
-                    }
                 }
 
                 //[Variation("ReadBinHex Element on CDATA", Priority = 0)]
@@ -292,7 +287,6 @@ namespace CoreXml.Test.XLinq
                     {
                         DataReader.ReadContentAsBinHex(BinHex, i, 2);
                         strActbinhex = (System.BitConverter.ToChar(BinHex, i)).ToString();
-                        TestLog.WriteLine("Actual: " + strActbinhex + " Exp: " + strTextBinHex);
                         TestLog.Compare(String.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
                     }
                 }
@@ -336,7 +330,6 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (XmlException e)
                     {
-                        TestLog.WriteLine(e.Message);
                         int idx = e.Message.IndexOf("a&");
                         TestLog.Compare(idx >= 0, "msg");
                         CheckXmlException("Xml_UserException", e, 1, 968);
@@ -459,8 +452,6 @@ namespace CoreXml.Test.XLinq
                         }
                     }
 
-                    TestLog.WriteLine();
-                    TestLog.WriteLine("Length of the output : " + output.ToString().Length);
                     if (TestLog.Compare(output.ToString().Length, 1735, "Expected Length : 1735"))
                         return;
                     else
@@ -524,9 +515,12 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (Exception e)
                     {
-                        TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
-                        TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
                         bPassed = (e.GetType().ToString() == exceptionType.ToString());
+                        if (!bPassed)
+                        {
+                            TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
+                            TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
+                        }
                     }
 
                     return bPassed;
@@ -741,7 +735,6 @@ namespace CoreXml.Test.XLinq
                     {
                         DataReader.ReadElementContentAsBinHex(BinHex, i, 2);
                         strActbinhex = (System.BitConverter.ToChar(BinHex, i)).ToString();
-                        TestLog.WriteLine("Actual: " + strActbinhex + " Exp: " + strTextBinHex);
                         TestLog.Compare(String.Compare(strActbinhex, 0, strTextBinHex, i / 2, 1), 0, "Compare All Valid Base64");
                     }
                 }
@@ -782,7 +775,6 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (XmlException e)
                     {
-                        TestLog.WriteLine(e.Message);
                         int idx = e.Message.IndexOf("a&");
                         TestLog.Compare(idx >= 0, "msg");
                         CheckXmlException("Xml_UserException", e, 1, 968);
@@ -879,8 +871,6 @@ namespace CoreXml.Test.XLinq
                             output.AppendFormat(bbb[i].ToString());
                         }
                     }
-                    TestLog.WriteLine();
-                    TestLog.WriteLine("Length of the output : " + output.ToString().Length);
                     if (TestLog.Compare(output.ToString().Length, 1735, "Expected Length : 1735"))
                         return;
                     else

@@ -64,7 +64,6 @@ namespace CoreXml.Test.XLinq
                             RunInValidTests(nodeType, name);
                         iterations++;
                     }
-                    TestLog.WriteLine("{0}, iterations executed", iterations);
                 }
 
                 // Get valid(Fifth Edition) surrogate characters but since surrogates are not supported in Fourth Edition Xml we still expect an exception.
@@ -93,7 +92,6 @@ namespace CoreXml.Test.XLinq
                         RunInValidTests(nodeType, name);
                         iterations++;
                     }
-                    TestLog.WriteLine("{0}, iterations executed", iterations);
                 }
 
                 //[Variation(Desc = "Xml Version Number Change Test")]
@@ -107,11 +105,10 @@ namespace CoreXml.Test.XLinq
                         XDeclaration xDec = new XDeclaration("1.99999", "utf-16", "false");
                         XDocument xDoc = XDocument.Load(XmlReader.Create(new StringReader(xml)));
                         xDoc.Declaration = xDec;
-                        xDoc.Save(new MemoryStream());//"Save.Xml");
+                        xDoc.Save(new MemoryStream());
                     }
-                    catch (XmlException e)
+                    catch (XmlException)
                     {
-                        TestLog.WriteLine(e.ToString());
                         return;
                     }
                     throw new TestFailedException("Verion number '1.99999' is invalid exception should have been thrown");

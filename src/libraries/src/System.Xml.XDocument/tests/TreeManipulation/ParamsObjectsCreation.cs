@@ -191,7 +191,6 @@ namespace XLinqTests
             int counter = 0;
             for (XNode node = doc.FirstNode; node.NextNode != null; node = node.NextNode)
             {
-                TestLog.WriteLineIgnore("Examining : " + parameters[counter]);
                 TestLog.Compare(node != null, "node != null");
                 TestLog.Compare(node == parameters[counter], "Node identity");
                 TestLog.Compare(XNode.DeepEquals(node, parameters[counter] as XNode), "node equals param");
@@ -273,7 +272,6 @@ namespace XLinqTests
             int counter = 0;
             for (XNode node = doc.FirstNode; node.NextNode != null; node = node.NextNode)
             {
-                TestLog.WriteLineIgnore("Examining : " + paras[counter]);
                 TestLog.Compare(node != null, "node != null");
                 var orig = paras[counter] as XNode;
                 TestLog.Compare(node != orig, "Not the same instance, cloned");
@@ -329,9 +327,8 @@ namespace XLinqTests
                 doc = new XDocument(paras);
                 TestLog.Compare(false, "Should throw exception");
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                TestLog.WriteLineIgnore(ex.Message);
                 TestLog.Compare(doc == null, "Should be null if exception appears");
                 return;
             }
@@ -401,9 +398,8 @@ namespace XLinqTests
                 doc = new XDocument(paras);
                 TestLog.Compare(false, "should throw");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                TestLog.WriteLineIgnore(ex.Message);
                 foreach (object o in paras)
                 {
                     var e = o as XElement;

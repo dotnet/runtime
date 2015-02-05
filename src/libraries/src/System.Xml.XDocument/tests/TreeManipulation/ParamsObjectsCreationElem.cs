@@ -91,7 +91,6 @@ namespace XLinqTests
             IEnumerable<ExpectedValue> expectedAttributes = ExpectedContent(attributes).Where(n => n.Data is XAttribute).ToList();
 
             XElement e = CreateElement(mode, nodes.OfType<object>().Concat(attributes.OfType<object>()));
-            TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
 
             TestLog.Compare(expectedContent.EqualAll(e.Nodes(), XNode.EqualityComparer), "Content");
             TestLog.Compare(expectedAttributes.EqualAllAttributes(e.Attributes(), Helpers.MyAttributeComparer), "Attributes");
@@ -147,9 +146,8 @@ namespace XLinqTests
                 XElement e = CreateElement(mode, paras);
                 TestLog.Compare(false, "Exception expected");
             }
-            catch (InvalidOperationException e)
+            catch (InvalidOperationException)
             {
-                TestLog.WriteLineIgnore(e.Message);
             }
         }
 
@@ -175,9 +173,8 @@ namespace XLinqTests
                 XElement e = CreateElement(mode, paras);
                 TestLog.Compare(false, "Exception expected");
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
-                TestLog.WriteLineIgnore(e.Message);
             }
         }
 
@@ -191,9 +188,8 @@ namespace XLinqTests
                 XElement e = CreateElement(mode, paras);
                 TestLog.Compare(false, "Exception expected");
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
-                TestLog.WriteLineIgnore(e.Message);
             }
         }
 

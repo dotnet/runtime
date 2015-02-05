@@ -213,7 +213,6 @@ namespace CoreXml.Test.XLinq
                     bool ci = Boolean.Parse(Variation.Params[0].ToString());
                     XmlReaderSettings settings = new XmlReaderSettings();
                     settings.CloseInput = ci;
-                    TestLog.WriteLine(ci);
 
                     PositionOnElement(DataReader, "elem2");
                     XmlReader r = DataReader.ReadSubtree();
@@ -230,7 +229,6 @@ namespace CoreXml.Test.XLinq
                     r.Read();
                     if (!(r.Name == "elem0" && r.NodeType == XmlNodeType.Element))
                     {
-                        TestLog.WriteLine(r.Name);
                         NestRead(r.ReadSubtree());
                     }
                     r.Dispose();

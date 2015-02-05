@@ -54,9 +54,13 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (Exception e)
                     {
-                        TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
-                        TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
                         bPassed = (e.GetType().ToString() == exceptionType.ToString());
+
+                        if (!bPassed)
+                        {
+                            TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
+                            TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
+                        }
                     }
 
                     return bPassed;
@@ -89,15 +93,12 @@ namespace CoreXml.Test.XLinq
                     PositionOnNodeType(DataReader, nt);
                     string name = DataReader.Name;
                     string value = DataReader.Value;
-                    TestLog.WriteLine("Name=" + name);
-                    TestLog.WriteLine("Value=" + value);
                     if (!DataReader.CanReadBinaryContent) return;
 
                     byte[] buffer = new byte[1];
                     int nBytes = DataReader.ReadContentAsBase64(buffer, 0, 1);
                     TestLog.Compare(nBytes, 0, "nBytes");
                     TestLog.Compare(VerifyNode(DataReader, nt, name, value), "vn");
-                    TestLog.WriteLine("Succeeded:{0}", nt);
                 }
 
                 //[Variation("ReadBase64 Element with all valid value")]
@@ -476,12 +477,9 @@ namespace CoreXml.Test.XLinq
                 public void RunBase64DoesnNotRunIntoOverflow()
                 {
                     int totalfilesize = Convert.ToInt32(Variation.Params[0].ToString());
-                    TestLog.WriteLine(" totalfilesize = " + totalfilesize);
-
                     string ascii = new string('c', totalfilesize);
 
                     byte[] bits = Encoding.Unicode.GetBytes(ascii);
-                    TestLog.WriteLineIgnore("Count = " + bits.Length);
                     string base64str = Convert.ToBase64String(bits);
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
@@ -501,12 +499,8 @@ namespace CoreXml.Test.XLinq
                     DataReader.Read();
                     if (!DataReader.CanReadBinaryContent) return;
 
-                    TestLog.WriteLine("ReadBase64 method... ");
-                    TestLog.WriteLine(System.Int32.MaxValue);
-
                     byte[] base64 = new byte[SIZE64];
 
-                    TestLog.WriteLine("SIZE64 = {0}", base64.Length);
                     int startPos = 0;
                     int readSize = 4096;
 
@@ -565,9 +559,12 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (Exception e)
                     {
-                        TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
-                        TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
                         bPassed = (e.GetType().ToString() == exceptionType.ToString());
+                        if (!bPassed)
+                        {
+                            TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
+                            TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
+                        }
                     }
 
                     return bPassed;
@@ -946,12 +943,10 @@ namespace CoreXml.Test.XLinq
                 public void ReadBase64DoesNotRunIntoOverflow2()
                 {
                     int totalfilesize = Convert.ToInt32(Variation.Params[0].ToString());
-                    TestLog.WriteLine(" totalfilesize = " + totalfilesize);
 
                     string ascii = new string('c', totalfilesize);
 
                     byte[] bits = Encoding.Unicode.GetBytes(ascii);
-                    TestLog.WriteLineIgnore("Count = " + bits.Length);
                     string base64str = Convert.ToBase64String(bits);
 
                     string fileName = "bug105376_" + Variation.Params[0].ToString() + ".xml";
@@ -970,12 +965,8 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "base64");
                     if (!DataReader.CanReadBinaryContent) return;
 
-                    TestLog.WriteLine("ReadBase64 method... ");
-                    TestLog.WriteLine(System.Int32.MaxValue);
-
                     byte[] base64 = new byte[SIZE64];
 
-                    TestLog.WriteLine("SIZE64 = {0}", base64.Length);
                     int startPos = 0;
                     int readSize = 4096;
 

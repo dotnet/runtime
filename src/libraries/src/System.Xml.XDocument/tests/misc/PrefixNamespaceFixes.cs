@@ -35,7 +35,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                     new XElement("B", new XAttribute(XNamespace.Xmlns + "q", "p"),
                                                             new XElement("{p}C", new XAttribute(XNamespace.Xmlns + "q", "q"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns:p='p'><B xmlns:q='p'><p:C xmlns:q='q' /></B></A>");
                 }
 
@@ -45,7 +44,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                     new XElement("B", new XAttribute(XNamespace.Xmlns + "q", "p"), new XAttribute("{p}a", "a"),
                                                             new XElement("{q}C", new XAttribute(XNamespace.Xmlns + "q", "q"), new XAttribute("{p}a", "a"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns:p='p'><B xmlns:q='p' q:a='a'><q:C xmlns:q='q' p:a='a' /></B></A>");
                 }
 
@@ -56,7 +54,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                     new XElement("{p}B", new XAttribute("xmlns", "p"),
                                                             new XElement("{p}C", new XAttribute("xmlns", "q"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns:p='p'><B xmlns='p'><p:C xmlns='q' /></B></A>");
                 }
 
@@ -66,7 +63,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                     new XElement("{p}B", new XAttribute("xmlns", "p"), new XAttribute("{p}a", "a"),
                                                             new XElement("{q}C", new XAttribute("xmlns", "q"), new XAttribute("{p}a", "a"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns:p='p'><B xmlns='p' p:a='a'><C xmlns='q' p:a='a' /></B></A>");
                 }
 
@@ -77,7 +73,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("{p}A", new XAttribute("xmlns", "p"),
                                                                     new XElement("{p}B", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                                             new XElement("{p}C", new XAttribute(XNamespace.Xmlns + "p", "q"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns='p'><p:B xmlns:p='p'><C xmlns:p='q' /></p:B></A>");
                 }
 
@@ -87,7 +82,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("{p}A", new XAttribute("xmlns", "p"),
                                                                     new XElement("{p}B", new XAttribute(XNamespace.Xmlns + "p", "p"), new XAttribute("{p}a", "a"),
                                                                             new XElement("{q}C", new XAttribute(XNamespace.Xmlns + "p", "q"), new XAttribute("{p}a", "a"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns='p'><p:B xmlns:p='p' p:a='a'><p:C xmlns:p='q' p3:a='a' xmlns:p3='p' /></p:B></A>");
                 }
 
@@ -104,7 +98,6 @@ namespace CoreXml.Test.XLinq
                                                                                      )
                                                                              )
                                                                 );
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns='p'><p:B xmlns:p='p'><C xmlns:p='q'><p:X xmlns:p='p'><p:Y /></p:X></C></p:B></A>");
                 }
 
@@ -113,7 +106,6 @@ namespace CoreXml.Test.XLinq
                 {
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                                                      new XElement("{p}B", new XAttribute("xmlns", "p"), new XAttribute("{p}a", "a")));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns:p='p'><B xmlns='p' p:a='a' /></A>");
                 }
 
@@ -123,7 +115,6 @@ namespace CoreXml.Test.XLinq
                     XElement e = new XElement("A", new XAttribute(XNamespace.Xmlns + "p", "p"),
                                                                                      new XElement("{p}B", new XAttribute("xmlns", "p"), new XAttribute("{p}a", "a"),
                                                                                              new XElement("{p}C", new XAttribute("{p}c", "c"))));
-                    TestLog.WriteLineIgnore(e.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), @"<A xmlns:p='p'><B xmlns='p' p:a='a' ><C p:c='c' /></B></A>");
                 }
 
@@ -138,7 +129,6 @@ namespace CoreXml.Test.XLinq
                                                                                      new XElement("F", new XAttribute("{p}a", "a"), new XAttribute("{q}a", "a"), new XAttribute("a", "a")), // autogenerate xmlns=''
                                                                                      new XElement("{g}G", new XAttribute("xmlns", "g"), new XAttribute("{g}g", "givemeprefix"))));  // autogenerate new prefix
 
-                    TestLog.WriteLineIgnore(e.ToString());
                     string expResult = @"<A xmlns:q='q' xmlns:top='p'>
                                               <B xmlns:p='p' xmlns='q'>
                                                 <q:C xmlns='p' p:a='a' q:a='a' a='a' />
@@ -172,7 +162,6 @@ namespace CoreXml.Test.XLinq
                         e.Add(new XAttribute(XNamespace.Xmlns + newPref, "b"));
                     }
 
-                    TestLog.WriteLineIgnore(root.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(root.ToString(SaveOptions.DisableFormatting), @"<A xmlns:a='a'><B xmlns:b='a'><B xmlns:c='a'><B xmlns:d='a'><a:C xmlns:d='b' xmlns:c='b' xmlns:b='b' /></B></B></B></A>");
                 }
 
@@ -197,7 +186,6 @@ namespace CoreXml.Test.XLinq
                         e.Add(new XAttribute(XNamespace.Xmlns + newPref, "b"));
                     }
 
-                    TestLog.WriteLineIgnore(root.ToString(SaveOptions.DisableFormatting));
                     CompareStringThroughXmlReader(root.ToString(SaveOptions.DisableFormatting), @"<A xmlns:a='a'><B xmlns:b='a'><B xmlns:c='a'><B xmlns:d='a'><a:C xmlns:b='b' xmlns:c='b' xmlns:d='b' /></B></B></B></A>");
                 }
 
@@ -211,18 +199,15 @@ namespace CoreXml.Test.XLinq
                                                                                 new XElement("{a}B", new XAttribute("xmlns", "a"),
                                                                                         new XElement("{ii}C", new XAttribute(XNamespace.Xmlns + "b", "a"),   // This one auto generates xmlns='ii'"
                                                                                                 new XElement("{a}D", new XAttribute(XNamespace.Xmlns + "b", "X")))));
-                    TestLog.WriteLineIgnore("Act Output: " + e.ToString(SaveOptions.DisableFormatting));
                     string expected = @"<A xmlns:a='a'><B xmlns='a'><C xmlns:b='a' xmlns='ii'><a:D xmlns:b='X' /></C></B></A>";
-                    TestLog.WriteLineIgnore("Exp Output: " + expected);
                     try
                     {
                         // This Compare should always fail for this test since this is how our product behaves right now.
                         // If compare passes then we have a regression.
                         CompareStringThroughXmlReader(e.ToString(SaveOptions.DisableFormatting), expected);
                     }
-                    catch (Exception exp)
+                    catch (Exception)
                     {
-                        TestLog.WriteLineIgnore(exp.ToString());
                         return;
                     }
                     throw new TestFailedException("Expected comparsion mismatch and an exception.");

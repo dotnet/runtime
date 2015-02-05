@@ -42,9 +42,12 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (Exception e)
                     {
-                        TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
-                        TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
                         bPassed = (e.GetType().ToString() == exceptionType.ToString());
+                        if (!bPassed)
+                        {
+                            TestLog.WriteLine("Actual   exception:{0}", e.GetType().ToString());
+                            TestLog.WriteLine("Expected exception:{0}", exceptionType.ToString());
+                        }
                     }
 
                     return bPassed;
@@ -158,7 +161,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars");
                     TestLog.Compare("value", new string(buffer), "Strings dont match");
                     TestLog.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 0, "Did read 5 chars");
-                    TestLog.WriteLineIgnore(DataReader.MoveToElement() + "");
+                    DataReader.MoveToElement();
                     DataReader.Read();
                     TestLog.Compare(DataReader.ReadValueChunk(buffer, 0, 5), 5, "Didnt read 5 chars on text node");
                     TestLog.Compare("value", new string(buffer), "Strings dont match");
@@ -711,9 +714,8 @@ namespace CoreXml.Test.XLinq
                         DataReader.Read();
                         while (DataReader.ReadValueChunk(buffer, 0, 1) > 0) ;
                     }
-                    catch (XmlException xe)
+                    catch (XmlException)
                     {
-                        TestLog.WriteLineIgnore(xe.ToString());
                         return;
                     }
 
@@ -888,11 +890,6 @@ namespace CoreXml.Test.XLinq
                         {
                             Random rand = new Random();
 
-                            if (rand.Next(1) == 1)
-                            {
-                                TestLog.WriteLineIgnore(DataReader.Value);
-                            }
-
                             int count;
                             do
                             {
@@ -900,13 +897,10 @@ namespace CoreXml.Test.XLinq
                                 buffer = new char[count];
                                 if (rand.Next(1) == 1)
                                 {
-                                    TestLog.WriteLineIgnore(DataReader.Value);
                                     break;
                                 }
                             }
                             while (DataReader.ReadValueChunk(buffer, 0, count) > 0);
-
-                            TestLog.WriteLineIgnore(DataReader.Value);
                         }
                         else
                         {

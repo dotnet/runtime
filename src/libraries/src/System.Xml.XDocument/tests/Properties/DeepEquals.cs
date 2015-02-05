@@ -235,7 +235,6 @@ namespace CoreXml.Test.XLinq
                             c.Remove();
                             break;
                         case 2:
-                            TestLog.WriteLineIgnore("touching node " + e2.FirstNode.NodeType);
                             break;
                         default:
                             TestLog.Compare(false, "Unexpected value - test failed");

@@ -99,9 +99,8 @@ namespace XLinqTests
                     }
                     TestLog.Compare(false, "Exception has been expected here");
                 }
-                catch (ArgumentException ex)
+                catch (ArgumentException)
                 {
-                    TestLog.WriteLineIgnore(ex.Message);
                 }
             }
         }

@@ -85,7 +85,6 @@ namespace CoreXml.Test.XLinq
 
                             if (rXN.NodeType != rIn.NodeType && !textNodeTypes.Contains(rXN.NodeType))
                             {
-                                TestLog.WriteLine("Test failed: nodetype problem");
                                 continue;
                             }
                             #endregion

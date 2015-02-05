@@ -480,7 +480,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
 
                     TestLog.Compare(DataReader.IsStartElement(), true, "IsStartElement()");
                     TestLog.Compare(DataReader.IsStartElement("check", "1"), true, "IsStartElement(n,ns)");
@@ -543,7 +542,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
 
                     TestLog.Compare(DataReader.IsStartElement(), false, "IsStartElement()");
@@ -642,13 +640,11 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     DataReader.ReadStartElement();
 
                     DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     DataReader.ReadStartElement("check", "1");
 
                     DataReader = GetReader();
@@ -663,7 +659,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
 
                     try
                     {
@@ -682,7 +677,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
 
                     try
                     {
@@ -838,7 +832,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
 
                     try
@@ -858,7 +851,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
 
                     try
@@ -897,7 +889,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
                     DataReader.ReadEndElement();
                     VerifyNode(DataReader, XmlNodeType.EndElement, "bar:check", String.Empty);
@@ -941,7 +932,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
-                    TestLog.WriteLine(DataReader.NamespaceURI);
                     try
                     {
                         DataReader.ReadEndElement();
