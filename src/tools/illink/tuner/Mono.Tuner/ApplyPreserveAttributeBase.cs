@@ -141,6 +141,9 @@ namespace Mono.Tuner {
 
 			Annotations.Mark (type);
 
+			if (!attribute.HasFields)
+				return;
+
 			foreach (var named_argument in attribute.Fields)
 				if (named_argument.Name == "AllMembers" && (bool) named_argument.Argument.Value)
 					Annotations.SetPreserve (type, TypePreserve.All);
