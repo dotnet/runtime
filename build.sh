@@ -134,7 +134,7 @@ for i in "$@"
         __CMakeArgs=RELEASE
         ;;
         clean)
-        __CleanBuild=true
+        __CleanBuild=1
         ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
