@@ -1258,7 +1258,7 @@ DacGetIlMethod(TADDR methAddr)
     ULONG32 methodSize = static_cast<ULONG32>(PEDecoder::ComputeILMethodSize(methAddr));
 
     // Sometimes when reading from dumps and inspect NGEN images, but we end up reading metadata from IL image
-    // the method RVA could not match and we could read from a random address that will translate in inconsistend
+    // the method RVA could not match and we could read from a random address that will translate in inconsistent
     // IL code header. If we see the size of the code bigger than 64 Megs we are probably reading a bad IL code header.
     // For details see issue DevDiv 273199.
     if (methodSize > 0x4000000)

@@ -46,7 +46,7 @@ namespace System.Security.Util {
         [OptionalField(VersionAdded = 3)]
         private bool m_isUncShare;
 
-        // legacy field from v1.x, not used in v2 and beyond. Retained purely for serialization compatability.
+        // legacy field from v1.x, not used in v2 and beyond. Retained purely for serialization compatibility.
         private String m_fullurl;
 
 

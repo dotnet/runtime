@@ -690,7 +690,7 @@ namespace System.Globalization
                 return false;
             }
 
-            // For V2 compatability, handle deprecated alternate sorts
+            // For V2 compatibility, handle deprecated alternate sorts
             string cultureName = this.sRealName;
 
             switch (AnsiToLower(cultureName))
@@ -976,7 +976,7 @@ namespace System.Globalization
             // CHANGE FROM Whidbey
             //
             // We have deprecated CultureTypes.FrameworkCultures.
-            // When this enum is used, we will enumerate Whidbey framework cultures (for compatability).
+            // When this enum is used, we will enumerate Whidbey framework cultures (for compatibility).
             //
 
             // We have deprecated CultureTypes.WindowsOnlyCultures.
@@ -993,7 +993,7 @@ namespace System.Globalization
             // Call nativeEnumCultureNames() to get a string array of culture names based on the specified
             // enumeration type.
             //
-            // nativeEnumCulturNames is a QCall.  We need to use a reference to return the string array
+            // nativeEnumCultureNames is a QCall.  We need to use a reference to return the string array
             // allocated from the QCall.  That ref has to be wrapped as object handle.
             // See vm\qcall.h for details in QCall.
             //

@@ -213,7 +213,7 @@ public:
     }
 public:
 
-    // This method is purely for backward compatability of COM Interop, and its
+    // This method is purely for backward compatibility of COM Interop, and its
     // implementation can be found in ClassCompat.cpp
     InteropMethodTableData *BuildInteropVTable(AllocMemTracker *pamTracker);
     InteropMethodTableData *BuildInteropVTableForArray(AllocMemTracker *pamTracker);

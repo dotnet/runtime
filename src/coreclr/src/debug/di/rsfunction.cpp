@@ -668,7 +668,7 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
 
                 // In the dump case we may not have the backing memory for this. In such a case
                 // we construct an empty ILCode object and leave the signatureToken as mdSignatureNil.
-                // It may also be the case that the memory we read from the dump be inconsistend (huge method size)
+                // It may also be the case that the memory we read from the dump be inconsistent (huge method size)
                 // and we also fallback on creating an empty ILCode object.
                 // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
                 ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(

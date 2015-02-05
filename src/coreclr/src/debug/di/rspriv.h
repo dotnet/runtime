@@ -1282,35 +1282,35 @@ public:
         Member function behavior of a neutered COM object:
 
              1. AddRef(), Release(), QueryInterface() work as normal.
-                 a. This gives folks who are responsable for pairing a Release() with
-                    an AddRef() a chance to dereferance thier pointer and call Release()
+                 a. This gives folks who are responsible for pairing a Release() with
+                    an AddRef() a chance to dereference their pointer and call Release()
                     when they are informed, explicitly or implicitly, that the object is neutered.
 
              2. Any other member function will return an error code unless documented.
-                 a. If a member fuction returns information when the COM object is
+                 a. If a member function returns information when the COM object is
                     neutered then the semantics of that function need to be documented.
-                    (ie. If an AppDomain is unloaded and you have a referance to the COM
+                    (ie. If an AppDomain is unloaded and you have a reference to the COM
                     object representing the AppDomain, how _should_ it behave? That behavior
                     should be documented)
 
 
         Postcondions of Neuter():
 
-             1. All circular referances (aka back-pointers) are "broken". They are broken
-                by calling Release() on all "Weak Referances" to the object. If you're a purist,
+             1. All circular references (aka back-pointers) are "broken". They are broken
+                by calling Release() on all "Weak References" to the object. If you're a purist,
                 these pointers should also be NULLed out.
-                 a. Weak Referances/Strong Referances:
+                 a. Weak References/Strong References:
                      i. If any objects are not "reachable" from the root (ie. stack or from global pointers)
                          they should be reclaimed. If they are not, they are leaked and there is an issue.
                      ii. There must be a partial order on the objects such that if A < B then:
-                         1. A has a referance to B. This referance is a "strong referance"
+                         1. A has a reference to B. This reference is a "strong reference"
                          2. A, and thus B, is reachable from the root
-                     iii. If a referance belongs in the partial order then it is a "strong referance" else
-                         it is a weak referance.
+                     iii. If a reference belongs in the partial order then it is a "strong reference" else
+                         it is a weak reference.
          *** 2. Sufficient conditions to ensure no COM objects are leaked: ***
                 a. When Neuter() is invoked:
-                     i. Calles Release on all its weak referances.
-                     ii. Then, for each strong referance:
+                     i. Calles Release on all its weak references.
+                     ii. Then, for each strong reference:
                          1. invoke Neuter()
                          2. invoke Release()
                      iii. If it's derived from a CordbXXX class, call Neuter() on the base class.
@@ -1319,7 +1319,7 @@ public:
                  a. Members of IUknown, AddRef(), Release(), QueryInterfac()
                  b. Those documented to have functionality when the object is neutered.
                      i. Neuter() still works w/o error. If it is invoke a second time it will have already
-                        released all its strong and weak referances so it could just return.
+                        released all its strong and weak references so it could just return.
 
 
         Alternate design ideas:
@@ -1330,7 +1330,7 @@ public:
                          Which one should call Release()? For now we have CordbFunction call Release() on CordbCode.
 
              DESIGN: It is not a necessary condition in that Neuter() invoke Release() on all
-                     it's strong referances. Instead, it would be sufficent to ensure all object are released, that
+                     it's strong references. Instead, it would be sufficient to ensure all object are released, that
                      each object call Release() on all its strong pointers in its destructor.
                       1. This might be done if its necessary for some member to return "tombstone"
                          information after the object has been netuered() which involves the siblings (wrt poset)
@@ -1345,18 +1345,18 @@ public:
                              1. Assert that it's done after NeuterStrongPointers()
                      2. That would introduce a bunch of functions... but it would be clear.
 
-             DESIGN: CordbBase could provide a function to register strong and weak referances. That way CordbBase
+             DESIGN: CordbBase could provide a function to register strong and weak references. That way CordbBase
                      could implement a general version of ReleaseWeak/ReleaseStrong/NeuterStrongPointers(). This
                      would provide a very error resistant framework for extending the object model plus it would
                      be very explicit about what is going on.
                          One thing that might trip this is idea up is that if an object has two parents,
-                         like the CordbCode might, then either both objects call Neuter or one is referance
+                         like the CordbCode might, then either both objects call Neuter or one is reference
                          is made weak.
 
 
         Our implementation:
 
-           The graph fromed by the strong referances must remain acyclic.
+           The graph formed by the strong references must remain acyclic.
            It's up to the developer (YOU!) to ensure that each Neuter
            function maintains that invariant.
 
@@ -1371,7 +1371,7 @@ public:
                       CordbModule
                           CordbClass
                           CordbFunction
-                              CordbCode (Can we assert a thread will not referance
+                              CordbCode (Can we assert a thread will not reference
                                           the same CordbCode as a CordbFunction?)
                  CordbThread
                      CordbChains
@@ -1381,7 +1381,7 @@ public:
 
             <TODO>TODO: Some Neuter functions have not yet been implemented due to time restrictions.</TODO>
 
-            <TODO>TODO: Some weak referances never have AddRef() called on them. If that's cool then
+            <TODO>TODO: Some weak references never have AddRef() called on them. If that's cool then
                   it should be stated in the documentation. Else it should be changed.</TODO>
 */
 
@@ -1572,7 +1572,7 @@ _____Neuter_Status_Already_Marked = 0; \
 //    - this also means we absolutely can't send IPC events (since that requires a CordbProcess)
 // 3) The only safe data are blittalbe embedded fields (eg, a pid or stack range) 
 //
-// Any usage of this macro should clearly specificy why this is safe.
+// Any usage of this macro should clearly specify why this is safe.
 #define OK_IF_NEUTERED(pThis) \
 int _____Neuter_Status_Already_Marked; \
 _____Neuter_Status_Already_Marked = 0;

@@ -209,7 +209,7 @@ namespace System {
             // type in Assembly A upon A's request:
             //      TypeInAssemblyA.DoWork() { AssemblyB.Create<InternalTypeInAssemblyA>();}
             //      TypeInAssemblyB.Create<T>() {return new T();}
-            // This violates type safety but we saw multiple user apps that have put a dependency on it. So for compatability we allow this if
+            // This violates type safety but we saw multiple user apps that have put a dependency on it. So for compatibility we allow this if
             // the SL app was built against SL2/3.
             // Note that in SL2/3 it is possible for app code to instantiate public transparent types with public critical default constructors.
             // Fortunately we don't have such types in out platform assemblies.
