@@ -949,7 +949,6 @@ enum {
 };
 
 void sgen_pin_object (void *object, SgenGrayQueue *queue);
-void sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue);
 void sgen_set_pinned_from_failed_allocation (mword objsize);
 
 void sgen_ensure_free_space (size_t size);

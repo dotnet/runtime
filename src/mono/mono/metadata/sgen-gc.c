@@ -1109,36 +1109,6 @@ sgen_pin_object (void *object, GrayQueue *queue)
 #endif
 }
 
-void
-sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue)
-{
-	for (;;) {
-		mword vtable_word;
-		gboolean major_pinned = FALSE;
-
-		if (sgen_ptr_in_nursery (obj)) {
-			if (SGEN_CAS_PTR (obj, SGEN_POINTER_TAG_PINNED (vt), vt) == vt) {
-				sgen_pin_object (obj, queue);
-				break;
-			}
-		} else {
-			major_collector.pin_major_object (obj, queue);
-			major_pinned = TRUE;
-		}
-
-		vtable_word = *(mword*)obj;
-		/*someone else forwarded it, update the pointer and bail out*/
-		if (SGEN_POINTER_IS_TAGGED_FORWARDED (vtable_word)) {
-			*ptr = SGEN_POINTER_UNTAG_VTABLE (vtable_word);
-			break;
-		}
-
-		/*someone pinned it, nothing to do.*/
-		if (SGEN_POINTER_IS_TAGGED_PINNED (vtable_word) || major_pinned)
-			break;
-	}
-}
-
 /* Sort the addresses in array in increasing order.
  * Done using a by-the book heap sort. Which has decent and stable performance, is pretty cache efficient.
  */
