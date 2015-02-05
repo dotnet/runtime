@@ -1349,7 +1349,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         // Treat base class as an initial member.
         cbAdjustedParentLayoutNativeSize = pParentLayoutInfo->GetNativeSize();
         // If the parent was originally a zero-sized explicit type but
-        // got bumped up to a size of 1 for compatability reasons, then
+        // got bumped up to a size of 1 for compatibility reasons, then
         // we need to remove the padding, but ONLY for inheritance situations.
         if (pParentLayoutInfo->IsZeroSized()) {
             CONSISTENCY_CHECK(cbAdjustedParentLayoutNativeSize == 1);

@@ -8,7 +8,7 @@
 
 //
 // ZapNode that points into middle of other ZapNode. It is used to create
-// pointers into datastructures that are not convinient to split into smaller zap nodes.
+// pointers into datastructures that are not convenient to split into smaller zap nodes.
 // 
 // ======================================================================================
 

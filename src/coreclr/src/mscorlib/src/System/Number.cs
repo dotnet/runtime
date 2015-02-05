@@ -1027,7 +1027,7 @@ namespace System {
         }
         
         private static Boolean TrailingZeros(String s, Int32 index) {
-            // For compatability, we need to allow trailing zeros at the end of a number string
+            // For compatibility, we need to allow trailing zeros at the end of a number string
             for (int i = index; i < s.Length; i++) {
                 if (s[i] != '\0') {
                     return false;

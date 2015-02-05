@@ -1309,7 +1309,7 @@ void CordbThread::CleanupStack()
     // Neuter outstanding CordbChainEnums, CordbFrameEnums, some CordbTypeEnums, and some CordbValueEnums.
     m_RefreshStackNeuterList.NeuterAndClear(GetProcess());
 
-    m_fContextFresh = false;            // invalide the cached active CONTEXT
+    m_fContextFresh = false;            // invalidate the cached active CONTEXT
     m_vmLeftSideContext = VMPTR_CONTEXT::NullPtr(); // set the LS pointer to the active CONTEXT to NULL
     m_fFramesFresh = false;             // invalidate the cached stack trace (frames & chains)
     m_userState = kInvalidUserState;                // clear the cached user state

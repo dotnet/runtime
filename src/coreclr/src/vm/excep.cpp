@@ -13335,7 +13335,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowWin32(HRESULT hr)
 }
     CONTRACTL_END;
 
-    // Force to ApplicationException for compatability with previous versions.  We would
+    // Force to ApplicationException for compatibility with previous versions.  We would
     //  prefer a "Win32Exception" here.
     EX_THROW(EEMessageException, (kApplicationException, hr, 0 /* resid*/,
                                  NULL /* szArg1 */, NULL /* szArg2 */, NULL /* szArg3 */, NULL /* szArg4 */, 

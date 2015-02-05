@@ -4487,7 +4487,7 @@ protected:
 //    Eg., if we used std::map, we could have efficient lookups and ordered 
 //    enumerations.  However, we do need to be careful about exposing new invariants
 //    through ICorDebug that customers may depend on, which could place a long-term
-//    compatability burden on us.  We could have a simple generic data structure 
+//    compatibility burden on us.  We could have a simple generic data structure
 //    (eg. built on std::hash_map and std::list) which provided efficient look-up
 //    and both in-order and random enumeration.
 //    

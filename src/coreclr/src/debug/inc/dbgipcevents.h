@@ -221,7 +221,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
 
 #if defined(DBG_TARGET_WIN64)
     // 64-bit needs this padding to make the handles after this aligned.
-    // But x86 can't have this padding b/c it breaks binary compatability between v1.1 and v2.0.
+    // But x86 can't have this padding b/c it breaks binary compatibility between v1.1 and v2.0.
     ULONG padding4;
 #endif // DBG_TARGET_WIN64
 
@@ -229,7 +229,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
     RemoteHANDLE               m_rightSideEventAvailable;
     RemoteHANDLE               m_rightSideEventRead;
 
-    // @dbgtodo  inspection - this is where LSEA and LSER used to be. We need to the padding to maintain binary compatability.
+    // @dbgtodo  inspection - this is where LSEA and LSER used to be. We need to the padding to maintain binary compatibility.
     // Eventually, we expect to remove this whole block.
     RemoteHANDLE               m_paddingObsoleteLSEA;
     RemoteHANDLE               m_paddingObsoleteLSER;
@@ -321,7 +321,7 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
 
 #if defined(DBG_TARGET_WIN64)
     // 64-bit needs this padding to make the handles after this aligned.
-    // But x86 can't have this padding b/c it breaks binary compatability between v1.1 and v2.0.
+    // But x86 can't have this padding b/c it breaks binary compatibility between v1.1 and v2.0.
     ULONG padding4;
 #endif // DBG_TARGET_WIN64
 
@@ -895,7 +895,7 @@ template <int nMaxLengthIncludingNull>
 class MSLAYOUT EmbeddedIPCString
 {
 public:
-    // Set, caller responsiblity that wcslen(pData) < nMaxLengthIncludingNull
+    // Set, caller responsibility that wcslen(pData) < nMaxLengthIncludingNull
     void SetString(const WCHAR * pData)
     {
         // If the string doesn't fit into the buffer, that's an issue (and so this is a real
