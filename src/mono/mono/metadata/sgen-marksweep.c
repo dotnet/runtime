@@ -782,18 +782,11 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 static void
 major_finish_sweeping (void)
 {
-	SGEN_TV_DECLARE (tv_begin);
-	SGEN_TV_DECLARE (tv_end);
-
 	if (!sweep_in_progress ())
 		return;
 
-	SGEN_TV_GETTIME (tv_begin);
 	while (sweep_in_progress ())
 		g_usleep (100);
-	SGEN_TV_GETTIME (tv_end);
-
-	g_print ("**** waited for sweep: %d ms\n", SGEN_TV_ELAPSED_MS (tv_begin, tv_end));
 }
 
 static void
@@ -1299,8 +1292,8 @@ static size_t *sweep_slots_available;
 static size_t *sweep_slots_used;
 static size_t *sweep_num_blocks;
 
-static size_t num_major_sections_before_sweep;
-static size_t num_major_sections_freed_in_sweep; /* GUARD */
+static volatile size_t num_major_sections_before_sweep;
+static volatile size_t num_major_sections_freed_in_sweep;
 
 static void
 sweep_start (void)
@@ -1466,7 +1459,6 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 		binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
 		ms_free_block (block);
 
-		++num_major_sections_freed_in_sweep;
 		SGEN_ATOMIC_ADD_P (num_major_sections, -1);
 
 		return FALSE;
@@ -1491,17 +1483,11 @@ static mono_native_thread_return_t
 sweep_loop_thread_func (void *dummy)
 {
 	int block_index;
-	int num_blocks;
+	int num_blocks = num_major_sections_before_sweep;
 	int small_id = mono_thread_info_register_small_id ();
 
 	SGEN_ASSERT (0, sweep_in_progress (), "Sweep thread called with wrong state");
-
-	num_major_sections_before_sweep = num_major_sections;
-	num_major_sections_freed_in_sweep = 0;
-
-	LOCK_ALLOCATED_BLOCKS;
-	num_blocks = allocated_blocks.next_slot;
-	UNLOCK_ALLOCATED_BLOCKS;
+	SGEN_ASSERT (0, num_blocks <= allocated_blocks.next_slot, "How did we lose blocks?");
 
 	/*
 	 * We traverse the block array from high to low.  Nursery collections will have to
@@ -1521,6 +1507,7 @@ sweep_loop_thread_func (void *dummy)
 		 */
 		if (!block) {
 			UNLOCK_ALLOCATED_BLOCKS;
+			++num_major_sections_freed_in_sweep;
 			continue;
 		}
 
@@ -1590,6 +1577,11 @@ major_sweep (void)
 	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_NEED_SWEEPING);
 
 	sweep_start ();
+
+	SGEN_ASSERT (0, num_major_sections == allocated_blocks.next_slot, "We don't know how many blocks we have?");
+
+	num_major_sections_before_sweep = num_major_sections;
+	num_major_sections_freed_in_sweep = 0;
 
 	if (TRUE /*concurrent_mark*/) {
 		/*
