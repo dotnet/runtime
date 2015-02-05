@@ -272,6 +272,7 @@ pin_from_hash (CementHashEntry *hash, gboolean has_been_reset)
 			SGEN_ASSERT (5, hash [i].count >= SGEN_CEMENT_THRESHOLD, "Cementing hash inconsistent");
 
 		sgen_pin_stage_ptr (hash [i].obj);
+		binary_protocol_cement_stage (hash [i].obj);
 		/* FIXME: do pin stats if enabled */
 
 		SGEN_CEMENT_OBJECT (hash [i].obj);
