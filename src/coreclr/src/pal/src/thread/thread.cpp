@@ -48,9 +48,6 @@ Abstract:
 #include "pal/fakepoll.h"
 #endif  // HAVE_POLL
 #include <limits.h>
-#if HAVE_STROPTS_H
-#include <stropts.h>
-#endif  // HAVE_STROPTS_H
 #if HAVE_SYS_LWP_H
 #include <sys/lwp.h>
 // If we don't have sys/lwp.h but do expect to use _lwp_self, declare it to silence compiler warnings

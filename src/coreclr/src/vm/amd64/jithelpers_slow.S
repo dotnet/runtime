@@ -17,7 +17,7 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         // **ALSO update the shadow GC heap if that is enabled**
         // Do not perform the work if g_GCShadow is 0
         PREPARE_EXTERNAL_VAR g_GCShadow, rax
-        cmp     [rax], 0
+        cmp     qword ptr [rax], 0
         je      NoShadow
 
         // If we end up outside of the heap don't corrupt random memory
