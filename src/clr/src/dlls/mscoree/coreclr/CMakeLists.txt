@@ -106,5 +106,7 @@ endif(WIN32)
 
 # add the install targets
 install (TARGETS coreclr DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coreclr.pdb DESTINATION PDB)
+if(WIN32)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/coreclr.pdb DESTINATION PDB)
+endif(WIN32)
 
