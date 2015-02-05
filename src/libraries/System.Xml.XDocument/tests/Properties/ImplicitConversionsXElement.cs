@@ -75,9 +75,8 @@ namespace CoreXml.Test.XLinq
                     {
                         bool r = (bool)elem;
                     }
-                    catch (FormatException fe)
+                    catch (FormatException)
                     {
-                        TestLog.WriteLineIgnore(fe.Message);
                     }
                 }
 
@@ -113,9 +112,8 @@ namespace CoreXml.Test.XLinq
                     {
                         bool? r = (bool?)elem;
                     }
-                    catch (FormatException fe)
+                    catch (FormatException)
                     {
-                        TestLog.WriteLineIgnore(fe.Message);
                     }
                 }
 
@@ -150,9 +148,8 @@ namespace CoreXml.Test.XLinq
                     {
                         int r = (int)elem;
                     }
-                    catch (FormatException fe)
+                    catch (FormatException)
                     {
-                        TestLog.WriteLineIgnore(fe.Message);
                     }
                 }
 
@@ -180,9 +177,8 @@ namespace CoreXml.Test.XLinq
                     {
                         int? r = (int?)elem;
                     }
-                    catch (FormatException fe)
+                    catch (FormatException)
                     {
-                        TestLog.WriteLineIgnore(fe.Message);
                     }
                 }
 
@@ -218,9 +214,8 @@ namespace CoreXml.Test.XLinq
                     {
                         uint r = (uint)elem;
                     }
-                    catch (FormatException fe)
+                    catch (FormatException)
                     {
-                        TestLog.WriteLineIgnore(fe.Message);
                     }
                 }
 
@@ -248,9 +243,8 @@ namespace CoreXml.Test.XLinq
                     {
                         uint? r = (uint?)elem;
                     }
-                    catch (FormatException fe)
+                    catch (FormatException)
                     {
-                        TestLog.WriteLineIgnore(fe.Message);
                     }
                 }
 

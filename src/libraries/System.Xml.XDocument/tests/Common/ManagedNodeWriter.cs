@@ -164,7 +164,6 @@ namespace CoreXml.Test.XLinq
             if (DEBUG)
             {
                 string elem = _elementStack.Pop();
-                Console.WriteLine("Popping : " + elem);
             }
             _nodeQueue.Append(ET + myName + GT);
         }
@@ -317,7 +316,6 @@ namespace CoreXml.Test.XLinq
                         PutWhiteSpace();
                         break;
                     default:
-                        Console.WriteLine("Skipping Character : " + ch);
                         break;
                 }
             }

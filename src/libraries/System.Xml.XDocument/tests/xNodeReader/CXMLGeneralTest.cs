@@ -42,7 +42,6 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.Depth, iDepth, "Element Depth should be " + (iDepth).ToString());
                     while (DataReader.MoveToNextAttribute() == true)
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.Depth, iDepth + 1, "Attr Depth should be " + (iDepth + 1).ToString());
                     }
                 }
@@ -56,7 +55,6 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.Depth, iDepth, "Depth should be " + iDepth);
                     while (true == DataReader.Read())
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         if (DataReader.NodeType == XmlNodeType.Text)
                             TestLog.Compare(DataReader.Depth, iDepth + 1, "Depth should be " + (iDepth + 1).ToString());
 
@@ -74,14 +72,11 @@ namespace CoreXml.Test.XLinq
                 public void TestNamespace1()
                 {
                     XmlReader DataReader = GetReader();
-                    int i = 0;
-
                     PositionOnElement(DataReader, "NAMESPACE0");
 
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NAMESPACE1") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString() + " Loop " + i); i++;
 
                         if (DataReader.NodeType == XmlNodeType.Element)
                         {
@@ -102,7 +97,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NONAMESPACE") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         if ((DataReader.NodeType == XmlNodeType.Element) && (DataReader.LocalName == "check"))
                         {
                             TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
@@ -147,7 +141,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NAMESPACE3") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         if ((DataReader.NodeType == XmlNodeType.Element) && (DataReader.LocalName == "check"))
                         {
                             TestLog.Compare(DataReader.NamespaceURI, "2", "Compare Namespace");
@@ -167,13 +160,11 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NONAMESPACE") break;
-                        TestLog.WriteLine("N=" + DataReader.Name + " NS=" + DataReader.NamespaceURI + " V=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
 
                         if (DataReader.NodeType == XmlNodeType.Element)
                         {
                             if (DataReader.LocalName == "check")
                             {
-                                TestLog.WriteLine("Here1");
                                 TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check", "Compare LocalName");
@@ -181,7 +172,6 @@ namespace CoreXml.Test.XLinq
                             }
                             else if (DataReader.LocalName == "check1")
                             {
-                                TestLog.WriteLine("Here2");
                                 TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check1", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check1", "Compare LocalName");
@@ -189,7 +179,6 @@ namespace CoreXml.Test.XLinq
                             }
                             else if (DataReader.LocalName == "check8")
                             {
-                                TestLog.WriteLine("Here3");
                                 TestLog.Compare(DataReader.NamespaceURI, "8", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "d:check8", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check8", "Compare LocalName");
@@ -197,7 +186,6 @@ namespace CoreXml.Test.XLinq
                             }
                             else if (DataReader.LocalName == "check100")
                             {
-                                TestLog.WriteLine("Here4");
                                 TestLog.Compare(DataReader.NamespaceURI, "100", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check100", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check100", "Compare LocalName");
@@ -205,7 +193,6 @@ namespace CoreXml.Test.XLinq
                             }
                             else if (DataReader.LocalName == "check5")
                             {
-                                TestLog.WriteLine("Here5");
                                 TestLog.Compare(DataReader.NamespaceURI, "5", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "d:check5", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check5", "Compare LocalName");
@@ -213,7 +200,6 @@ namespace CoreXml.Test.XLinq
                             }
                             else if (DataReader.LocalName == "check14")
                             {
-                                TestLog.WriteLine("Here6");
                                 TestLog.Compare(DataReader.NamespaceURI, "14", "Compare Namespace");
                                 TestLog.Compare(DataReader.Name, "check14", "Compare Name");
                                 TestLog.Compare(DataReader.LocalName, "check14", "Compare LocalName");
@@ -221,7 +207,6 @@ namespace CoreXml.Test.XLinq
                             }
                             else if (DataReader.LocalName == "a13")
                             {
-                                TestLog.WriteLine("Here7");
                                 TestLog.Compare(DataReader.NamespaceURI, "1", "Compare Namespace1");
                                 TestLog.Compare(DataReader.Name, "a13", "Compare Name1");
                                 TestLog.Compare(DataReader.LocalName, "a13", "Compare LocalName1");
@@ -257,7 +242,6 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "EMPTY_NAMESPACE");
                     do
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.LookupNamespace("bar"), "1", "Compare LookupNamespace");
                     } while (DataReader.MoveToNextAttribute() == true);
                 }
@@ -269,7 +253,6 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "EMPTY_NAMESPACE1");
                     do
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.LookupNamespace(String.Empty), "14", "Compare LookupNamespace");
                     } while (DataReader.MoveToNextAttribute() == true);
                 }
@@ -278,7 +261,6 @@ namespace CoreXml.Test.XLinq
                 public void LookupNamespace3()
                 {
                     XmlReader DataReader = GetReader();
-                    int i = 0;
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NAMESPACE0") break;
@@ -287,7 +269,6 @@ namespace CoreXml.Test.XLinq
 
                     while (true == DataReader.Read())
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString() + " Loop " + i); i++;
                         TestLog.Compare(DataReader.LookupNamespace("bar"), "1", "Compare LookupNamespace");
                         if (DataReader.Name == "NAMESPACE0" && DataReader.NodeType == XmlNodeType.EndElement) break;
                     }
@@ -300,7 +281,6 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "NAMESPACE1");
                     while (true == DataReader.Read())
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.LookupNamespace("bar"), "1", "Compare LookupNamespace");
                         if (DataReader.Name == "NAMESPACE1" && DataReader.NodeType == XmlNodeType.EndElement)
                         {
@@ -328,8 +308,6 @@ namespace CoreXml.Test.XLinq
                     string strValue = "1";
                     while (true == DataReader.Read())
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
-
                         if (DataReader.Name == "c")
                         {
                             strValue = "2";
@@ -379,7 +357,6 @@ namespace CoreXml.Test.XLinq
                     string strH = null;
                     while (true == DataReader.Read())
                     {
-                        TestLog.WriteLine("N=" + DataReader.Name + " NS=" + DataReader.NamespaceURI + " V=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         if (DataReader.Name == "a")
                         {
                             strA = "2";
@@ -445,7 +422,6 @@ namespace CoreXml.Test.XLinq
                             CompareAllNS(DataReader, strDef, strA, strB, strC, strD, strE, strF, strG, strH);
                             do
                             {
-                                TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                                 CompareAllNS(DataReader, strDef, strA, strB, strC, strD, strE, strF, strG, strH);
                             } while (DataReader.MoveToNextAttribute() == true);
                             strA = null;
@@ -453,7 +429,6 @@ namespace CoreXml.Test.XLinq
                         else if (DataReader.Name == "check14")
                         {
                             strDef = "14";
-                            TestLog.WriteLine(strA + " XXX N=" + DataReader.Name + " NS=" + DataReader.NamespaceURI + " V=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                             CompareAllNS(DataReader, strDef, strA, strB, strC, strD, strE, strF, strG, strH);
                             if (DataReader.NodeType == XmlNodeType.EndElement)
                             {
@@ -531,7 +506,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Element))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.HasValue;
                         if (b)
                             throw new TestFailedException("HasValue returns True");
@@ -555,7 +529,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Attribute))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.HasValue;
                         if (!b)
                             throw new TestFailedException("HasValue for Attribute returns false");
@@ -570,7 +543,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Text))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.HasValue;
                         if (!b)
                             throw new TestFailedException("HasValue for Text returns false");
@@ -586,7 +558,6 @@ namespace CoreXml.Test.XLinq
 
                     while (FindNodeType(DataReader, XmlNodeType.CDATA))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.HasValue;
                         if (!b)
                             throw new TestFailedException("HasValue for CDATA returns false");
@@ -601,7 +572,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.ProcessingInstruction))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.HasValue;
                         if (!b)
                             throw new TestException(TestResult.Failed, "HasValue for PI returns false");
@@ -616,7 +586,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Comment))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.HasValue;
                         if (!b)
                             throw new TestException(TestResult.Failed, "HasValue for Comment returns false");
@@ -769,7 +738,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Element))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.IsEmptyElement;
                         if (b)
                             throw new TestException(TestResult.Failed, "IsEmptyElement returns True");
@@ -793,7 +761,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Text))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.IsEmptyElement;
                         if (b)
                             throw new TestException(TestResult.Failed, "IsEmptyElement returns True");
@@ -808,7 +775,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.CDATA))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.IsEmptyElement;
                         if (b)
                             throw new TestException(TestResult.Failed, "IsEmptyElement returns True");
@@ -823,7 +789,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.ProcessingInstruction))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.IsEmptyElement;
                         if (b)
                             throw new TestException(TestResult.Failed, "IsEmptyElement returns True");
@@ -838,7 +803,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader();
                     while (FindNodeType(DataReader, XmlNodeType.Comment))
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value);
                         bool b = DataReader.IsEmptyElement;
                         if (!b)
                             return;
@@ -928,7 +892,6 @@ namespace CoreXml.Test.XLinq
 
                     do
                     {
-                        TestLog.WriteLine("N=" + DataReader.Name + " V=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlSpace, XmlSpace.Default, "Compare XmlSpace with Default");
                     } while (DataReader.MoveToNextAttribute() == true);
                 }
@@ -937,7 +900,6 @@ namespace CoreXml.Test.XLinq
                 public void TestXmlSpace2()
                 {
                     XmlReader DataReader = GetReader();
-                    int i = 0;
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLSPACE1") break;
@@ -947,7 +909,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLSPACE1" && (DataReader.NodeType == XmlNodeType.EndElement)) break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString() + " Loop " + i); i++;
                         TestLog.Compare(DataReader.XmlSpace, XmlSpace.Default, "Compare XmlSpace with Default");
                     }
                 }
@@ -960,7 +921,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NOSPACE") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlSpace, XmlSpace.Preserve, "Compare XmlSpace with Preserve");
                     }
                     TestLog.Compare(DataReader.XmlSpace, XmlSpace.None, "Compare XmlSpace outside scope");
@@ -983,7 +943,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLSPACE3") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlSpace, XmlSpace.Default, "Compare XmlSpace with Default");
                     }
 
@@ -993,7 +952,6 @@ namespace CoreXml.Test.XLinq
                         {
                             while (true == DataReader.Read())
                             {
-                                TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                                 TestLog.Compare(DataReader.XmlSpace, XmlSpace.Default, "Compare XmlSpace with Default");
                                 if (DataReader.Name == "XMLSPACE4" && DataReader.NodeType == XmlNodeType.EndElement)
                                 {
@@ -1003,7 +961,6 @@ namespace CoreXml.Test.XLinq
                             }
                         }
 
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlSpace, XmlSpace.Preserve, "Compare XmlSpace with Preserve");
 
                         if (DataReader.Name == "XMLSPACE3" && DataReader.NodeType == XmlNodeType.EndElement)
@@ -1015,7 +972,6 @@ namespace CoreXml.Test.XLinq
 
                     do
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlSpace, XmlSpace.Default, "Compare XmlSpace with Default");
                         if (DataReader.Name == "XMLSPACE2A" && DataReader.NodeType == XmlNodeType.EndElement)
                         {
@@ -1037,7 +993,6 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "EMPTY_XMLLANG");
                     do
                     {
-                        TestLog.WriteLine("N=" + DataReader.Name + " V=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlLang, "en-US", "Compare XmlLang with en-US");
                     } while (DataReader.MoveToNextAttribute() == true);
                 }
@@ -1046,7 +1001,6 @@ namespace CoreXml.Test.XLinq
                 public void TestXmlLang2()
                 {
                     XmlReader DataReader = GetReader();
-                    int i = 0;
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLLANG0") break;
@@ -1056,8 +1010,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLLANG0" && (DataReader.NodeType == XmlNodeType.EndElement)) break;
-
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString() + " Loop " + i); i++;
 
                         if (DataReader.NodeType == XmlNodeType.EntityReference)
                         {
@@ -1091,7 +1043,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "NOXMLLANG") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlLang, "en-GB", "Compare XmlLang with en-GB");
                     }
                 }
@@ -1112,7 +1063,6 @@ namespace CoreXml.Test.XLinq
                     while (true == DataReader.Read())
                     {
                         if (DataReader.Name == "XMLLANG1") break;
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlLang, "en-US", "Compare XmlLang with Preserve");
                     }
 
@@ -1122,7 +1072,6 @@ namespace CoreXml.Test.XLinq
                         {
                             while (true == DataReader.Read())
                             {
-                                TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                                 TestLog.Compare(DataReader.XmlLang, "en-US", "Compare XmlLang with en-US");
                                 if (DataReader.Name == "XMLLANG0" && DataReader.NodeType == XmlNodeType.EndElement)
                                 {
@@ -1132,7 +1081,6 @@ namespace CoreXml.Test.XLinq
                             }
                         }
 
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlLang, "en-GB", "Compare XmlLang with en_GB");
 
                         if (DataReader.Name == "XMLLANG1" && DataReader.NodeType == XmlNodeType.EndElement)
@@ -1144,7 +1092,6 @@ namespace CoreXml.Test.XLinq
 
                     do
                     {
-                        TestLog.WriteLine("Name=" + DataReader.Name + " Value=" + DataReader.Value + " NodeType=" + (DataReader.NodeType).ToString());
                         TestLog.Compare(DataReader.XmlLang, "en-US", "Compare XmlLang with en-US");
                         if (DataReader.Name == "XMLLANG2" && DataReader.NodeType == XmlNodeType.EndElement)
                         {

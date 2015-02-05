@@ -906,7 +906,6 @@ namespace XLinqTests
                 {
                     r.Read();
                 }
-                TestLog.WriteLineIgnore(r.NodeType.ToString());
                 XText cdata = nodeType == XmlNodeType.CDATA ? (XCData)XNode.ReadFrom(r) : (XText)XNode.ReadFrom(r);
                 TestLog.Compare(cdata != null, "cdata != null");
                 TestLog.Compare(cdata.NodeType, nodeType, "NodeType");

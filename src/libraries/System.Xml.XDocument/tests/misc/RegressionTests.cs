@@ -57,7 +57,6 @@ namespace CoreXml.Test.XLinq
                 {
                     XElement a = XElement.Parse("<A><B><C/></B></A>");
                     a.Element("B").ReplaceNodes(a.Nodes());
-                    TestLog.WriteLine(a);
                     XElement x = a;
                     foreach (string s in (new string[] { "A", "B", "B" }))
                     {
@@ -73,11 +72,9 @@ namespace CoreXml.Test.XLinq
                     {
                         XElement element = XElement.Parse("<A xmlns:p='ns'/>");
                         element.Add(new XAttribute(XNamespace.Xmlns + "p", "ns"));
-                        TestLog.WriteLine(element);
                     }
-                    catch (InvalidOperationException e)
+                    catch (InvalidOperationException)
                     {
-                        TestLog.WriteLine(e.ToString());
                         return;
                     }
                     throw new TestException(TestResult.Failed, "");
@@ -109,9 +106,8 @@ namespace CoreXml.Test.XLinq
                     {
                         XName.Get(null, null);
                     }
-                    catch (System.ArgumentNullException e)
+                    catch (System.ArgumentNullException)
                     {
-                        TestLog.WriteLine(e.ToString());
                         return;
                     }
                     throw new TestException(TestResult.Failed, "");
@@ -124,9 +120,8 @@ namespace CoreXml.Test.XLinq
                     {
                         XName.Get(null, "MyName");
                     }
-                    catch (System.ArgumentNullException e)
+                    catch (System.ArgumentNullException)
                     {
-                        TestLog.WriteLine(e.ToString());
                         return;
                     }
                     throw new TestException(TestResult.Failed, "");
@@ -142,9 +137,8 @@ namespace CoreXml.Test.XLinq
                             new XElement(XName.Get("e3", "ns-default2"), "e3 should be in ns-default2",
                             new XElement(XName.Get("e4", "ns2"), "e4 should be in ns2"))));
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        TestLog.WriteLine(e.ToString());
                         throw new TestException(TestResult.Failed, "");
                     }
                 }
@@ -157,9 +151,8 @@ namespace CoreXml.Test.XLinq
                         var x = new XElement((XName)null);
                         x = (XElement)XNode.ReadFrom((XmlReader)null);
                     }
-                    catch (ArgumentNullException e)
+                    catch (ArgumentNullException)
                     {
-                        TestLog.WriteLine(e.ToString());
                         return;
                     }
                     throw new TestException(TestResult.Failed, "");
@@ -187,11 +180,9 @@ namespace CoreXml.Test.XLinq
                     {
                         r.Read();
                         r.Read();
-                        TestLog.WriteLine(r.LocalName);
                         using (XmlReader subR = r.ReadSubtree())
                         {
                             subR.Read();
-                            TestLog.WriteLine(subR.LocalName);
                         }
                     }
                 }
@@ -264,7 +255,6 @@ namespace CoreXml.Test.XLinq
                         case 3: t = new Guid(); type = typeof(Guid); break;
                         case 4: t = new Dictionary<int, string>(); ((Dictionary<int, string>)t).Add(7, "a"); type = typeof(Dictionary<int, string>); break;
                     }
-                    TestLog.WriteLine(t);
 
                     XElement e = new XElement("e1",
                         new XElement("e2"), "text1",
@@ -290,28 +280,21 @@ namespace CoreXml.Test.XLinq
                     e.SetValue(t);
 
                     XAttribute a = new XAttribute("a", t);
-                    TestLog.WriteLine(a);
-
                     XStreamingElement se = new XStreamingElement("se", t);
                     se.Add(t);
 
-                    TestLog.WriteLine(e);
-                    TestLog.WriteLine(n);
-                    TestLog.WriteLine(se);
                     try
                     {
                         new XDocument(t);
                     }
-                    catch (ArgumentException ae)
+                    catch (ArgumentException)
                     {
-                        TestLog.WriteLine(ae.Message);
                         try
                         {
                             new XDocument(t);
                         }
-                        catch (ArgumentException ae2)
+                        catch (ArgumentException)
                         {
-                            TestLog.WriteLine(ae2.Message);
                             return;
                         }
                     }

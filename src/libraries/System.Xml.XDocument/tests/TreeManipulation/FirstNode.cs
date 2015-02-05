@@ -52,7 +52,6 @@ namespace XLinqTests
                 }
                 doc.Add(combination);
                 XNode ret = ((bool)Param) ? doc.FirstNode : doc.LastNode;
-                TestLog.WriteLineIgnore(combination[pos].GetType().Name);
 
                 if (combination[pos] is string)
                 {

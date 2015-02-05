@@ -85,7 +85,6 @@ namespace CoreXml.Test.XLinq
                 public void v()
                 {
                     string type = Variation.Params[0].ToString();
-                    TestLog.WriteLine("Test Type : " + type);
 
                     XmlReader DataReader = GetReader(new StringReader(_xmlStr));
                     PositionOnElement(DataReader, "root");
@@ -156,7 +155,6 @@ namespace CoreXml.Test.XLinq
                     XmlReader DataReader = GetReader(new StringReader(mnw.GetNodes()));
 
                     PositionOnElement(DataReader, "ELEMENT_1");
-                    TestLog.WriteLine("Reading to : " + "a");
                     DataReader.ReadToDescendant("a");
 
                     TestLog.Compare(DataReader.Depth, count, "Depth is not correct");
@@ -172,7 +170,6 @@ namespace CoreXml.Test.XLinq
                 public void v3()
                 {
                     string type = Variation.Params[0].ToString();
-                    TestLog.WriteLine("Test Type : " + type);
 
                     XmlReader DataReader = GetReader(new StringReader(_xmlStr));
                     PositionOnElement(DataReader, "root");
@@ -377,7 +374,6 @@ namespace CoreXml.Test.XLinq
                     {
                         if (DataReader.NodeType != XmlNodeType.Element)
                         {
-                            TestLog.WriteLine(DataReader.NodeType.ToString());
                             TestLog.Compare(DataReader.ReadToDescendant("child1"), false, "Fails on node");
                         }
                         else
@@ -417,7 +413,6 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (ArgumentNullException)
                     {
-                        TestLog.WriteLine("Caught for single param");
                     }
 
                     try
@@ -426,7 +421,6 @@ namespace CoreXml.Test.XLinq
                     }
                     catch (ArgumentNullException)
                     {
-                        TestLog.WriteLine("Caught for single param");
                     }
 
                     while (DataReader.Read()) ;
@@ -453,7 +447,6 @@ namespace CoreXml.Test.XLinq
                 public void v18()
                 {
                     string type = Variation.Params[0].ToString();
-                    TestLog.WriteLine("Test Type : " + type);
 
                     XmlReader DataReader = GetReader(new StringReader(_xmlStr));
                     switch (type)

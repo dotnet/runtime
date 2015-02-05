@@ -55,7 +55,6 @@ namespace CoreXml.Test.XLinq
 
                 public void InitReaderPointer(XmlReader DataReader)
                 {
-                    TestLog.WriteLine("InitReaderPointer:{0}", this.Desc);
                     if (this.Desc == "BeforeRead")
                     {
                         IntegrityVer = EINTEGRITY.BEFORE_READ;
@@ -89,7 +88,6 @@ namespace CoreXml.Test.XLinq
                         DataReader.Dispose();
                         TestLog.Compare(DataReader.ReadState, ReadState.Closed, "ReadState=Closed");
                         TestLog.Compare(DataReader.EOF, false, "EOF==true");
-                        TestLog.WriteLine("EOF = " + DataReader.EOF);
                     }
                     else if (this.Desc == "AfterResetState")
                     {
@@ -98,7 +96,6 @@ namespace CoreXml.Test.XLinq
                         PositionOnElement(DataReader, "elem1");
                         TestLog.Compare(DataReader.ReadState, ReadState.Initial, "ReadState=Initial");
                     }
-                    TestLog.WriteLine("ReadState = " + (DataReader.ReadState).ToString());
                 }
 
                 //[Variation("NodeType")]
@@ -541,7 +538,6 @@ namespace CoreXml.Test.XLinq
                     {
                         if (DataReader.LookupNamespace(astr[i]) != null)
                         {
-                            TestLog.WriteLine("Not NULL " + i + " LookupNameSpace " + DataReader.LookupNamespace(astr[i]) + "," + DataReader.NodeType);
                         }
                         TestLog.Compare(DataReader.LookupNamespace(astr[i]), null, Variation.Desc);
                     }

@@ -79,16 +79,6 @@ namespace CoreXml.Test.XLinq
                 this.AddChild(new TCReadToNextSibling() { Attribute = new TestCaseAttribute() { Name = "ReadToNextSibling", Desc = "ReadToNextSibling" } });
                 this.AddChild(new TCReadValue() { Attribute = new TestCaseAttribute() { Name = "ReadValue", Desc = "ReadValue" } });
                 this.AddChild(new XNodeReaderAPI() { Attribute = new TestCaseAttribute() { Name = "API Tests" } });
-                this.AddChild(new TCRegressions1() { Attribute = new TestCaseAttribute() { Name = "Regressions", Desc = "XMLReader" } });
-            }
-            public partial class TCRegressions1 : BridgeHelpers
-            {
-                // Type is CoreXml.Test.XLinq.FunctionalTests+XNodeReaderTests+TCRegressions1
-                // Test Case
-                public override void AddChildren()
-                {
-                    this.AddChild(new TestVariation(IncorrentBehaviorOfReadAttributeValue) { Attribute = new VariationAttribute("Incorrect behavior of ReadAttributeValue ") });
-                }
             }
             public partial class TCDispose : BridgeHelpers
             {
