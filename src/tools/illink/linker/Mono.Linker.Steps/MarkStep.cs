@@ -269,11 +269,19 @@ namespace Mono.Linker.Steps {
 
 		void MarkIfType (CustomAttributeArgument argument)
 		{
-			if (argument.Type.FullName != "System.Type")
-				return;
+			var at = argument.Type;
+			if (at.IsArray) {
+				var et = at.GetElementType ();
+				if (et.Namespace != "System" || et.Name != "Type")
+					return;
 
-			MarkType (argument.Type);
-			MarkType ((TypeReference) argument.Value);
+				MarkType (et);
+				foreach (var cac in (CustomAttributeArgument[]) argument.Value)
+					MarkType ((TypeReference) cac.Value);
+			} else if (at.Namespace == "System" && at.Name == "Type") {
+				MarkType (argument.Type);
+				MarkType ((TypeReference) argument.Value);
+			}
 		}
 
 		protected bool CheckProcessed (IMetadataTokenProvider provider)
