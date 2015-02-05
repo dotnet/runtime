@@ -266,15 +266,21 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		return NULL;
 	}
 
+	/* FIXME this leaks loader errors */
 	res = mono_class_from_name (image->references [idx - 1]->image, nspace, name);
 
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
 	if (!res && mono_error_ok (error)) {
-		char *name = mono_class_name_from_token (image, type_token);
-		char *assembly = mono_assembly_name_from_token (image, type_token);
-		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
+		if (mono_loader_get_last_error ()) { /*FIXME plug the above to not leak errors*/
+			mono_error_set_from_loader_error (error);
+		} else {
+			char *name = mono_class_name_from_token (image, type_token);
+			char *assembly = mono_assembly_name_from_token (image, type_token);
+			mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
+		}
 	}
+	g_assert (!mono_loader_get_last_error ());
 	return res;
 }
 
