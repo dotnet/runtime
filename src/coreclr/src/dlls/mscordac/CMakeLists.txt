@@ -75,4 +75,6 @@ target_link_libraries(mscordaccore ${COREDAC_LIBRARIES})
 
 # add the install targets
 install (TARGETS mscordaccore DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordaccore.pdb DESTINATION PDB)
+if(WIN32)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordaccore.pdb DESTINATION PDB)
+endif(WIN32)
