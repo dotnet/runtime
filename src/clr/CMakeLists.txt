@@ -143,6 +143,7 @@ if (WIN32)
 add_compile_options(/TP) # compile all files as C++
 add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
 add_compile_options(/Zi) # enable debugging information
+add_compile_options(/d2Zi+) # make optimized builds debugging easier
 add_compile_options(/nologo) # Suppress Startup Banner
 add_compile_options(/W3) # set warning level to 3
 add_compile_options(/WX) # treat warnings as errors
@@ -163,7 +164,6 @@ add_compile_options(/FC) # use full pathnames in diagnostics
 add_compile_options(/Zl) # omit default library name in .OBJ
 add_compile_options(/MP) # Build with Multiple Processes (number of processes equal to the number of processors)
 add_compile_options(/GS) # Buffer Security Check
-add_compile_options(/d2Zi+) # make optimized builds debugging easier
 add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
 add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
 
@@ -191,6 +191,8 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE") #Use 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUGTYPE:cv,fixup") #debugging format
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS") #shrink pdb size
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG /INCREMENTAL:NO /OPT:REF /OPT:ICF /IGNORE:4197,4013,4254,4070,4221")
+
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG /PDBCOMPRESS")
 
 # Debug build specific flags
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE")
