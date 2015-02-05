@@ -116,7 +116,6 @@ echo.
 
 :: Set the environment for the native build
 call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
-cd %__CMakeSlnDir%
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
@@ -127,7 +126,9 @@ goto :eof
 
 :GenVSSolution
 :: Regenerate the VS solution
-call ..\..\src\pal\tools\gen-buildsys-win.bat %__ProjectDir%
+pushd %__CMakeSlnDir%
+call %__SourceDir%\pal\tools\gen-buildsys-win.bat %__ProjectDir%
+popd
 
 :BuildComponents
 if exist %__CMakeSlnDir%\install.vcxproj goto BuildCoreCLR
@@ -138,14 +139,15 @@ REM Build CoreCLR
 :BuildCoreCLR
 set __CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildArch%__%__BuildType%.log
 %_msbuildexe% %__CMakeSlnDir%\install.vcxproj %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__CoreCLRBuildLog%"
-pushd %__ProjectDir%
 IF NOT ERRORLEVEL 1 goto PerformMScorlibBuild
 echo Native component build failed. Refer %__CoreCLRBuildLog% for details.
 goto :eof
 
 :PerformMScorlibBuild
+REM endlocal to rid us of environment changes from vcvarsall.bat
 endlocal
 
+REM setlocal to prepare for vsdevcmd.bat
 setlocal
 set __AdditionalMSBuildArgs=
 
@@ -170,8 +172,11 @@ echo.
 echo Commencing build of tests for %__BuildArch%/%__BuildType%
 echo.
 call tests\buildtest.cmd
-endlocal
+IF NOT ERRORLEVEL 1 goto SuccessfulBuild
+echo Test binaries build failed. Refer %__MScorlibBuildLog% for details.
+goto :eof
 
+:SuccessfulBuild
 ::Build complete
 echo Repo successfully built.
 echo.
