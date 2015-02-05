@@ -41,7 +41,7 @@ namespace System {
     // effectively hidden from most users, who just see the 3-state DateTimeKind
     // enumeration.
     //
-    // For compatability, DateTime does not serialize the Kind data when used in
+    // For compatibility, DateTime does not serialize the Kind data when used in
     // binary serialization.
     // 
     // For a description of various calendar issues, look at
@@ -299,7 +299,7 @@ namespace System {
                         foundDateData = true;
                         break;
                     default:
-                        // Ignore other fields for forward compatability.
+                        // Ignore other fields for forward compatibility.
                         break;
                 }
             }
@@ -645,7 +645,7 @@ namespace System {
         }        
 
         // A version of ToBinary that uses the real representation and does not adjust local times. This is needed for
-        // scenarios where the serialized data must maintain compatability
+        // scenarios where the serialized data must maintain compatibility
         internal static DateTime FromBinaryRaw(Int64 dateData) {        
             Int64 ticks = dateData & (Int64)TicksMask;
             if (ticks < MinTicks || ticks > MaxTicks)
@@ -729,7 +729,7 @@ namespace System {
         }        
 
         // Return the underlying data, without adjust local times to the right time zone. Needed if performance
-        // or compatability are important.
+        // or compatibility are important.
         internal Int64 ToBinaryRaw() {
             return (Int64)dateData;
         }        
