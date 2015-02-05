@@ -679,5 +679,132 @@ class Tests
 			return 1;
 		return 0;
 	}
+
+	public static int test_5_r4_fadd () {
+		float f1 = 3.0f;
+		float f2 = 2.0f;
+		return (int)(f1 + f2);
+	}
+
+	public static int test_1_r4_fsub () {
+		float f1 = 3.0f;
+		float f2 = 2.0f;
+		return (int)(f1 - f2);
+	}
+
+	public static int test_6_fmul_r4 () {
+		float f1 = 2.0f;
+		float f2 = 3.0f;
+		return (int)(f1 * f2);
+	}
+
+	public static int test_3_fdiv_r4 () {
+		float f1 = 6.0f;
+		float f2 = 2.0f;
+		return (int)(f1 / f2);
+	}
+
+	public static int test_0_fcmp_eq_r4 () {
+		float f1 = 1.0f;
+		float f2 = 1.0f;
+		return f1 == f2 ? 0 : 1;
+	}
+
+	public static int test_0_fcmp_eq_2_r4 () {
+		float f1 = 1.0f;
+		float f2 = 2.0f;
+		return f1 == f2 ? 1 : 0;
+	}
+
+	public static int test_0_fcmp_eq_r4_mixed () {
+		float f1 = 1.0f;
+		double f2 = 1.0;
+		return f1 == f2 ? 0 : 1;
+	}
+
+	public static int test_3_iconv_to_r4 () {
+		int i = 3;
+		float f = (float)i;
+		return (int)f;
+	}
+
+	public static int test_2_neg_r4 () {
+		float a = -2.0f;
+		return (int)(-a);
+	}
+
+	public static int test_0_fceq_r4 () {
+		float f1 = 1.0f;
+		float f2 = 1.0f;
+		bool res = f1 == f2;
+		return res ? 0 : 1;
+	}
+
+	public static int test_0_fcgt_r4 () {
+		float f1 = 2.0f;
+		float f2 = 1.0f;
+		bool res = f1 > f2;
+		bool res2 = f2 > f1;
+		return res && !res2 ? 0 : 1;
+	}
+
+	public static int test_0_fclt_r4 () {
+		float f1 = 1.0f;
+		float f2 = 2.0f;
+		bool res = f1 < f2;
+		bool res2 = f2 < f1;
+		return res && !res2 ? 0 : 1;
+	}
+
+	public static int test_0_fclt_un_r4 () {
+		float f1 = 2.0f;
+		float f2 = 1.0f;
+		bool res = f1 >= f2;
+		bool res2 = f2 >= f1;
+		return res && !res2 ? 0 : 1;
+	}
+
+	public static int test_0_fcgt_un_r4 () {
+		float f1 = 1.0f;
+		float f2 = 2.0f;
+		bool res = f1 <= f2;
+		bool res2 = f2 <= f1;
+		return res && !res2 ? 0 : 1;
+	}
+
+	public static int test_0_fconv_to_u4_r4 () {
+		float a = 10.0f;
+
+		uint b = (uint)a;
+		return b == 10 ? 0 : 1;
+	}
+
+	public static int test_0_fconv_to_u1_r4 () {
+		float a = 10.0f;
+
+		byte b = (byte)a;
+		return b == 10 ? 0 : 1;
+	}
+
+	public static int test_0_fconv_to_i1_r4 () {
+		float a = 127.0f;
+
+		sbyte b = (sbyte)a;
+		return b == 127 ? 0 : 1;
+	}
+
+	public static int test_0_fconv_to_u2_r4 () {
+		float a = 10.0f;
+
+		ushort b = (ushort)a;
+		return b == 10 ? 0 : 1;
+	}
+
+	public static int test_0_fconv_to_i2_r4 () {
+		float a = 127.0f;
+
+		short b = (short)a;
+		return b == 127 ? 0 : 1;
+	}
 }
 

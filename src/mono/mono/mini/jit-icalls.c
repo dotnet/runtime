@@ -940,6 +940,31 @@ mono_fconv_ovf_u8 (double v)
 	return res;
 }
 
+gint64
+mono_rconv_ovf_i8 (float v)
+{
+	gint64 res;
+
+	res = (gint64)v;
+
+	if (isnan(v) || trunc (v) != res) {
+		mono_raise_exception (mono_get_exception_overflow ());
+	}
+	return res;
+}
+
+guint64
+mono_rconv_ovf_u8 (float v)
+{
+	guint64 res;
+
+	res = (guint64)v;
+	if (isnan(v) || trunc (v) != res) {
+		mono_raise_exception (mono_get_exception_overflow ());
+	}
+	return res;
+}
+
 #ifdef MONO_ARCH_EMULATE_LCONV_TO_R8
 double
 mono_lconv_to_r8 (gint64 a)

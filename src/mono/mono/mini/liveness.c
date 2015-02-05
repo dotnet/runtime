@@ -616,7 +616,7 @@ optimize_initlocals (MonoCompile *cfg)
 				//printf ("DEAD: "); mono_print_ins (ins);
 				if (cfg->disable_initlocals_opt_refs && var->type == STACK_OBJ)
 					continue;
-				if ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST)) {
+				if ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST) || (ins->opcode == OP_R4CONST)) {
 					NULLIFY_INS (ins);
 					MONO_VARINFO (cfg, var->inst_c0)->spill_costs -= 1;
 					/* 

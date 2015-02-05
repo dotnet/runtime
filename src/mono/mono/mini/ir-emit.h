@@ -86,6 +86,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		return alloc_ireg_mp (cfg);
 	case STACK_OBJ:
 		return alloc_ireg_ref (cfg);
+	case STACK_R4:
 	case STACK_R8:
 		return alloc_freg (cfg);
 	case STACK_I8:

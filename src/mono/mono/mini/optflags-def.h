@@ -27,3 +27,5 @@ OPTFLAG(GSHAREDVT,24, "gsharedvt",	"Generic sharing for valuetypes")
 OPTFLAG(SIMD	 ,26, "simd",	    "Simd intrinsics")
 OPTFLAG(UNSAFE	 ,27, "unsafe",	    "Remove bound checks and perform other dangerous changes")
 OPTFLAG(ALIAS_ANALYSIS	 ,28, "alias-analysis",      "Alias analysis of locals")
+OPTFLAG(FLOAT32  ,29, "float32",    "Use 32 bit float arithmetic if possible")
+
