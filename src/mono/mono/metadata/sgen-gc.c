@@ -2275,7 +2275,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	 * as part of which we scan the card table.  Then, later, we scan the mod union
 	 * cardtable.  We should only have to do one.
 	 */
-	sgen_workers_enqueue_job (job_remembered_set_scan, NULL);
+	sgen_workers_enqueue_job ("scan remset", job_remembered_set_scan, NULL);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -2306,7 +2306,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	scrrjd_normal->heap_start = sgen_get_nursery_start ();
 	scrrjd_normal->heap_end = nursery_next;
 	scrrjd_normal->root_type = ROOT_TYPE_NORMAL;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_normal);
+	sgen_workers_enqueue_job ("scan from registered roots normal", job_scan_from_registered_roots, scrrjd_normal);
 
 	scrrjd_wbarrier = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	scrrjd_wbarrier->copy_or_mark_func = current_object_ops.copy_or_mark_object;
@@ -2314,7 +2314,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	scrrjd_wbarrier->heap_start = sgen_get_nursery_start ();
 	scrrjd_wbarrier->heap_end = nursery_next;
 	scrrjd_wbarrier->root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_wbarrier);
+	sgen_workers_enqueue_job ("scan from registered roots wbarrier", job_scan_from_registered_roots, scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_minor_scan_registered_roots += TV_ELAPSED (atv, btv);
@@ -2325,7 +2325,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	stdjd = sgen_alloc_internal_dynamic (sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	stdjd->heap_start = sgen_get_nursery_start ();
 	stdjd->heap_end = nursery_next;
-	sgen_workers_enqueue_job (job_scan_thread_data, stdjd);
+	sgen_workers_enqueue_job ("scan thread data", job_scan_thread_data, stdjd);
 
 	TV_GETTIME (atv);
 	time_minor_scan_thread_data += TV_ELAPSED (btv, atv);
@@ -2336,8 +2336,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	g_assert (!sgen_collection_is_concurrent ());
 
 	/* Scan the list of objects ready for finalization. If */
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, fin_ready_list);
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, critical_fin_list);
+	sgen_workers_enqueue_job ("scan finalizer entries", job_scan_finalizer_entries, fin_ready_list);
+	sgen_workers_enqueue_job ("scan criticial finalizer entries", job_scan_finalizer_entries, critical_fin_list);
 
 	MONO_GC_CHECKPOINT_8 (GENERATION_NURSERY);
 
@@ -2646,7 +2646,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	scrrjd_normal->heap_start = heap_start;
 	scrrjd_normal->heap_end = heap_end;
 	scrrjd_normal->root_type = ROOT_TYPE_NORMAL;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_normal);
+	sgen_workers_enqueue_job ("scan from registered roots normal", job_scan_from_registered_roots, scrrjd_normal);
 
 	scrrjd_wbarrier = sgen_alloc_internal_dynamic (sizeof (ScanFromRegisteredRootsJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	scrrjd_wbarrier->copy_or_mark_func = current_object_ops.copy_or_mark_object;
@@ -2654,7 +2654,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	scrrjd_wbarrier->heap_start = heap_start;
 	scrrjd_wbarrier->heap_end = heap_end;
 	scrrjd_wbarrier->root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (job_scan_from_registered_roots, scrrjd_wbarrier);
+	sgen_workers_enqueue_job ("scan from registered roots wbarrier", job_scan_from_registered_roots, scrrjd_wbarrier);
 
 	TV_GETTIME (btv);
 	time_major_scan_registered_roots += TV_ELAPSED (atv, btv);
@@ -2663,7 +2663,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	stdjd = sgen_alloc_internal_dynamic (sizeof (ScanThreadDataJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	stdjd->heap_start = heap_start;
 	stdjd->heap_end = heap_end;
-	sgen_workers_enqueue_job (job_scan_thread_data, stdjd);
+	sgen_workers_enqueue_job ("scan thread data", job_scan_thread_data, stdjd);
 
 	TV_GETTIME (atv);
 	time_major_scan_thread_data += TV_ELAPSED (btv, atv);
@@ -2675,15 +2675,15 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 		report_finalizer_roots ();
 
 	/* scan the list of objects ready for finalization */
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, fin_ready_list);
-	sgen_workers_enqueue_job (job_scan_finalizer_entries, critical_fin_list);
+	sgen_workers_enqueue_job ("scan finalizer entries", job_scan_finalizer_entries, fin_ready_list);
+	sgen_workers_enqueue_job ("scan critical finalizer entries", job_scan_finalizer_entries, critical_fin_list);
 
 	if (scan_mod_union) {
 		g_assert (finish_up_concurrent_mark);
 
 		/* Mod union card table */
-		sgen_workers_enqueue_job (job_scan_major_mod_union_cardtable, NULL);
-		sgen_workers_enqueue_job (job_scan_los_mod_union_cardtable, NULL);
+		sgen_workers_enqueue_job ("scan mod union cardtable", job_scan_major_mod_union_cardtable, NULL);
+		sgen_workers_enqueue_job ("scan LOS mod union cardtable", job_scan_los_mod_union_cardtable, NULL);
 	}
 
 	TV_GETTIME (atv);

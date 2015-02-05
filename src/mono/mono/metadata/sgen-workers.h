@@ -41,6 +41,7 @@ typedef void (*JobFunc) (WorkerData *worker_data, void *job_data);
 
 typedef struct _JobQueueEntry JobQueueEntry;
 struct _JobQueueEntry {
+	const char *name;
 	JobFunc func;
 	void *data;
 
@@ -52,7 +53,7 @@ void sgen_workers_start_all_workers (void);
 gboolean sgen_workers_have_started (void);
 void sgen_workers_ensure_awake (void);
 void sgen_workers_init_distribute_gray_queue (void);
-void sgen_workers_enqueue_job (JobFunc func, void *data);
+void sgen_workers_enqueue_job (const char *name, JobFunc func, void *data);
 void sgen_workers_wait_for_jobs_finished (void);
 void sgen_workers_distribute_gray_queue_sections (void);
 void sgen_workers_reset_data (void);

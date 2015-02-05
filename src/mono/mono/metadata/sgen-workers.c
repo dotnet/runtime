@@ -223,7 +223,7 @@ collection_needs_workers (void)
 }
 
 void
-sgen_workers_enqueue_job (JobFunc func, void *data)
+sgen_workers_enqueue_job (const char *name, JobFunc func, void *data)
 {
 	int num_entries;
 	JobQueueEntry *entry;
@@ -234,6 +234,7 @@ sgen_workers_enqueue_job (JobFunc func, void *data)
 	}
 
 	entry = sgen_alloc_internal (INTERNAL_MEM_JOB_QUEUE_ENTRY);
+	entry->name = name;
 	entry->func = func;
 	entry->data = data;
 
