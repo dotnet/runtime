@@ -1127,14 +1127,16 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
     STORAGEHEADER  sHdr;            // Header for the storage.
     PSTORAGESTREAM pStream;         // Pointer to each stream.
     ULONG          i;               // Loop control.
+    void          *pData;
+    ULONG          cbData;
 
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     if (m_pStgIO == NULL)
         IfFailGo(COR_E_NOTSUPPORTED);
 #endif
 
-    void *pData = m_pStgIO->m_pData;
-    ULONG cbData = m_pStgIO->m_cbData;
+    pData = m_pStgIO->m_pData;
+    cbData = m_pStgIO->m_cbData;
     
     // Validate the signature of the format, or it isn't ours.
     IfFailGo(MDFormat::VerifySignature((PSTORAGESIGNATURE) pData, cbData));
