@@ -3486,7 +3486,7 @@ HRESULT PrepareExecuteDLLForThunk(HINSTANCE hInst,
 //*****************************************************************************
 // This is the call point to make a DLL that is already loaded into our address
 // space run. There will be other code to actually have us load a DLL due to a
-// class referance.
+// class reference.
 //*****************************************************************************
 BOOL STDMETHODCALLTYPE ExecuteDLL(HINSTANCE hInst,
                                   DWORD dwReason,

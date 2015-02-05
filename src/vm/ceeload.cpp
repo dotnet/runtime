@@ -7413,7 +7413,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 //    
 // Notes:
 //    This fetches PDBs from the host and caches them so that they are available for when the debugger attaches.
-//    This lets Arrowhead tools run against Whidbey hosts in a compatability mode. 
+//    This lets Arrowhead tools run against Whidbey hosts in a compatibility mode.
 //    We expect to add a hosting knob that will allow a host to disable this eager fetching and not run in
 //    compat mode.
 void Module::FetchPdbsFromHost()

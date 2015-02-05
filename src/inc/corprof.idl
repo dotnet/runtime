@@ -74,7 +74,7 @@ typedef struct _COR_IL_MAP
 {
     ULONG32 oldOffset;        // Old IL offset relative to beginning of function
     ULONG32 newOffset;        // New IL offset relative to beginning of function
-    BOOL    fAccurate; //put here for compatability with the Debugger structure.
+    BOOL    fAccurate; //put here for compatibility with the Debugger structure.
 } COR_IL_MAP;
 
 cpp_quote("#endif //_COR_IL_MAP")
