@@ -2201,6 +2201,8 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFun
 
 		obj = first_obj = (char*)MS_BLOCK_OBJ_FAST (block_start, block_obj_size, first_object_index);
 
+		binary_protocol_card_scan (first_obj, end - first_obj);
+
 		while (obj < end) {
 			if (obj < scan_front || !MS_OBJ_ALLOCED_FAST (obj, block_start))
 				goto next_object;
@@ -2227,7 +2229,6 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFun
 		}
 
 		HEAVY_STAT (if (*card_data) ++remarked_cards);
-		binary_protocol_card_scan (first_obj, obj - first_obj);
 
 		if (small_objects)
 			++card_data;
