@@ -4835,13 +4835,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_MOVE_F_TO_I4:
 			code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
-			ARM_CVTS (code, vfp_scratch1, ins->sreg1);
+			ARM_CVTD (code, vfp_scratch1, ins->sreg1);
 			ARM_FMRS (code, ins->dreg, vfp_scratch1);
 			code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
 			break;
 		case OP_MOVE_I4_TO_F:
 			ARM_FMSR (code, ins->dreg, ins->sreg1);
-			ARM_CVTD (code, ins->dreg, ins->dreg);
+			ARM_CVTS (code, ins->dreg, ins->dreg);
 			break;
 		case OP_FCONV_TO_R4:
 			if (IS_VFP) {
