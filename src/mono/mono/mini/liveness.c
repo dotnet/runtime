@@ -20,8 +20,6 @@
 
 #define BITS_PER_CHUNK MONO_BITSET_BITS_PER_CHUNK
 
-#define BB_ID_SHIFT 17
-
 /* 
  * The liveness2 pass can't handle long vars on 32 bit platforms because the component
  * vars have the same 'idx'.
@@ -219,7 +217,7 @@ analyze_liveness_bb (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoInst *ins;
 	int sreg, inst_num;
 	MonoMethodVar *vars = cfg->vars;
-	guint32 abs_pos = (bb->dfn << BB_ID_SHIFT);
+	guint32 abs_pos = (bb->dfn << 16);
 	
 	/* Start inst_num from > 0, so last_use.abs_pos is only 0 for dead variables */
 	for (inst_num = 2, ins = bb->code; ins; ins = ins->next, inst_num += 2) {
@@ -494,7 +492,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 		guint32 max;
-		guint32 abs_pos = (bb->dfn << BB_ID_SHIFT);
+		guint32 abs_pos = (bb->dfn << 16);
 		MonoMethodVar *vars = cfg->vars;
 
 		if (!bb->live_out_set)
@@ -514,7 +512,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 				if (bits_in & 1)
 					update_live_range (&vars [k], abs_pos + 0);
 				if (bits_out & 1)
-					update_live_range (&vars [k], abs_pos + ((1 << BB_ID_SHIFT) - 1));
+					update_live_range (&vars [k], abs_pos + 0xffff);
 				bits_in >>= 1;
 				bits_out >>= 1;
 				k ++;
@@ -888,12 +886,12 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		MonoBasicBlock *bb = cfg->bblocks [bnum];
 		MonoInst *ins;
 
-		block_from = (bb->dfn << BB_ID_SHIFT) + 1; /* so pos > 0 */
+		block_from = (bb->dfn << 16) + 1; /* so pos > 0 */
 		if (bnum < cfg->num_bblocks - 1)
 			/* Beginning of the next bblock */
-			block_to = (cfg->bblocks [bnum + 1]->dfn << BB_ID_SHIFT) + 1;
+			block_to = (cfg->bblocks [bnum + 1]->dfn << 16) + 1;
 		else
-			block_to = (bb->dfn << BB_ID_SHIFT) + ((1 << BB_ID_SHIFT) - 1);
+			block_to = (bb->dfn << 16) + 0xffff;
 
 		LIVENESS_DEBUG (printf ("LIVENESS BLOCK BB%d:\n", bb->block_num));
 
@@ -932,7 +930,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 			reverse [nins] = ins;
 		}
-		g_assert (nins < ((1 << BB_ID_SHIFT) - 1));
 
 		/* Process instructions backwards */
 		for (i = nins - 1; i >= 0; --i) {
