@@ -11,83 +11,55 @@ using Xunit;
 public class SetIn
 {
     [Fact]
-    public static void SetIn01()
+    public static void SetInThrowsOnNull()
     {
-        // Change SetIn=null and verify.
-        TextReader tr = Console.In;
+        TextReader savedIn = Console.In;
         try
         {
-            Console.SetIn(null);
-
-            //SetIn method should throw an exception when you pass null as the stream
-            Assert.True(false, "SetIn doesn't thrown even when null passed");
+            Assert.Throws<ArgumentNullException>(() => Console.SetIn(null));
         }
-        catch (ArgumentNullException)
+        finally
         {
-            //Expected exception thrown.
-            Console.SetIn(tr);
-        }
-        catch (Exception e)
-        {
-            Console.SetIn(tr);
-            Assert.True(false, "Unexpected exception occured :: " + e.ToString());
+            Console.SetIn(savedIn);
         }
     }
 
     [Fact]
-    public static void SetIn02()
+    public static void SetInReadLine()
     {
-        // Verify SetIn method works with a valid input stream.
-        StreamWriter sw = null;
+        const string TextStringFormat = "Test {0}";
+
+        TextReader oldInToRestore = Console.In;
         try
         {
-            String[] strTemp = new String[20];
-
-            // First, save the standard Input.
-            TextReader twTemp = Console.In;
-
             using (MemoryStream memStream = new MemoryStream())
             {
-                //Create a stream writer and write text to MemoryStream
-                sw = new StreamWriter(memStream);
-
-                for (int iLoop = 0; iLoop < 20; iLoop++)
+                using (StreamWriter sw = new StreamWriter(memStream))
                 {
-                    strTemp[iLoop] = String.Format("Test {0}", iLoop);
-                    sw.WriteLine(strTemp[iLoop]);     // Write the string to the stream
-                }
-
-                sw.Flush();
-                memStream.Seek(0, SeekOrigin.Begin);
-
-                //create stream reader to read the text from the MemoryStream
-                using (StreamReader sr = new StreamReader(memStream))
-                {
-                    Console.SetIn(sr);
-
-                    //Verify that input stream works as expected.
-                    TextReader tr = Console.In;
-                    Assert.True(tr != null, "Invalid textReader object.");
-
-                    for (int iLoop = 0; iLoop < 20; iLoop++)
+                    for (int i = 0; i < 20; i++)
                     {
-                        Assert.True(tr.ReadLine().Equals(strTemp[iLoop]), "retrieved string from Input is not right");
+                        sw.WriteLine(string.Format(TextStringFormat, i));
+                    }
+
+                    sw.Flush();
+                    memStream.Seek(0, SeekOrigin.Begin);
+
+                    using (StreamReader sr = new StreamReader(memStream))
+                    {
+                        Console.SetIn(sr);
+                        Assert.NotNull(Console.In);
+
+                        for (int i = 0; i < 20; i++)
+                        {
+                            Assert.Equal(string.Format(TextStringFormat, i), Console.ReadLine());
+                        }
                     }
                 }
             }
-
-            Console.SetIn(twTemp); // Set Input stream back to the default one.
-        }
-        catch (Exception e)
-        {
-            Assert.True(false, "Unexpected exception occured :: " + e.ToString());
         }
         finally
         {
-            if (sw != null)
-            {
-                sw.Dispose();
-            }
+            Console.SetIn(oldInToRestore);
         }
     }
 }
