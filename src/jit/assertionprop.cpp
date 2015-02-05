@@ -3662,7 +3662,7 @@ EXPSET_TP Compiler::optImpliedByTypeOfAssertions(EXPSET_TP activeAssertions)
             // impAssertion must be a Non Null assertion on lclNum
             if (impAssertion->assertionKind != OAK_NOT_EQUAL ||
                 impAssertion->op1.kind != O1K_LCLVAR ||
-                impAssertion->op1.kind != O2K_CONST_INT ||
+                impAssertion->op2.kind != O2K_CONST_INT ||
                 impAssertion->op1.vn != chkAssertion->op1.vn)
             {
                 continue;
