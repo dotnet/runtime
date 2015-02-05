@@ -35,6 +35,10 @@ namespace Mono.Tuner {
 
 		protected virtual bool IsPreservedAttribute (CustomAttribute attribute)
 		{
+			// [assembly: Preserve (type)] does not preserve all the code in the assembly, in fact it might
+			// not preserve anything in _this_ assembly, but something in a separate assembly (reference)
+			if (attribute.HasConstructorArguments)
+				return false;
 			return (attribute.AttributeType.Name == "PreserveAttribute");
 		}
 
