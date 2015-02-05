@@ -1087,18 +1087,27 @@ pin_objects_in_nursery (ScanCopyContext ctx)
 	nursery_section->pin_queue_last_entry = nursery_section->pin_queue_first_entry + reduced_to;
 }
 
-
+/*
+ * This function is only ever called (via `collector_pin_object()` in `sgen-copy-object.h`)
+ * when we can't promote an object because we're out of memory.
+ */
 void
 sgen_pin_object (void *object, GrayQueue *queue)
 {
-	SGEN_PIN_OBJECT (object);
+	/*
+	 * All pinned objects are assumed to have been staged, so we need to stage as well.
+	 * Also, the count of staged objects shows that "late pinning" happened.
+	 */
 	sgen_pin_stage_ptr (object);
+
+	SGEN_PIN_OBJECT (object);
+	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
+
 	++objects_pinned;
 	if (G_UNLIKELY (do_pin_stats))
 		sgen_pin_stats_register_object (object, safe_object_get_size (object));
 
 	GRAY_OBJECT_ENQUEUE (queue, object, sgen_obj_get_descriptor_safe (object));
-	binary_protocol_pin (object, (gpointer)LOAD_VTABLE (object), safe_object_get_size (object));
 
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_OBJ_PINNED_ENABLED ())) {
