@@ -5272,12 +5272,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-			amd64_movd_reg_xreg_size (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG, 8);
+			if (cfg->r4fp) {
+				amd64_movq_reg_xmm (code, ins->dreg, ins->sreg1);
+			} else {
+				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
+				amd64_movq_reg_xmm (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+			}
 			break;
 		case OP_MOVE_I4_TO_F:
-			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 8);
-			amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
+			amd64_movq_xmm_reg (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 		case OP_MOVE_F_TO_I8:
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
