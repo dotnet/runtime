@@ -10,7 +10,6 @@
 //
 // Pending:
 //   DoToCurrency (they look like new methods we do not have)
-//   AddSub, AddSubOverflowed, Divide, DivideOverflowed, 
 //
 #ifndef DISABLE_DECIMAL
 #include "config.h"
@@ -21,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 #include <math.h>
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
@@ -67,6 +67,7 @@ static const uint32_t ten_to_ten_div_4 = 2500000000U;
 
 #define OVFL_MAX_9_HI   4
 #define OVFL_MAX_9_MID  1266874889
+#define OVFL_MAX_9_LO   3047500985u
 
 #define OVFL_MAX_5_HI   42949
 #define OVFL_MAX_5_MID  2890341191
@@ -181,26 +182,25 @@ static const uint64_t long_power10[] = {
 	10000000000000000000ULL};
 
 typedef struct  {
-	uint32_t Hi, Mid; // , Lo;
+	uint32_t Hi, Mid, Lo;
 } DECOVFL;
 
-//
+const DECOVFL power_overflow[] = {
 // This is a table of the largest values that can be in the upper two
-// uint32_ts of a 96-bit number that will not overflow when multiplied
+// ULONGs of a 96-bit number that will not overflow when multiplied
 // by a given power.  For the upper word, this is a table of 
 // 2^32 / 10^n for 1 <= n <= 9.  For the lower word, this is the
 // remaining fraction part * 2^32.  2^32 = 4294967296.
-//
-static DECOVFL PowerOvfl[] = {
-    { 429496729UL, 2576980377UL }, // 10^1 remainder 0.6
-    { 42949672UL,  4123168604UL }, // 10^2 remainder 0.16
-    { 4294967UL,   1271310319UL }, // 10^3 remainder 0.616
-    { 429496UL,    3133608139UL }, // 10^4 remainder 0.1616
-    { 42949UL,     2890341191UL }, // 10^5 remainder 0.51616
-    { 4294UL,      4154504685UL }, // 10^6 remainder 0.551616
-    { 429UL,       2133437386UL }, // 10^7 remainder 0.9551616
-    { 42UL,        4078814305UL }, // 10^8 remainder 0.09991616
-//  { 4UL,         1266874889UL }, // 10^9 remainder 0.709551616
+// 
+    { 429496729u, 2576980377u, 2576980377u }, // 10^1 remainder 0.6
+    { 42949672u,  4123168604u, 687194767u  }, // 10^2 remainder 0.16
+    { 4294967u,   1271310319u, 2645699854u }, // 10^3 remainder 0.616
+    { 429496u,    3133608139u, 694066715u  }, // 10^4 remainder 0.1616
+    { 42949u,     2890341191u, 2216890319u }, // 10^5 remainder 0.51616
+    { 4294u,      4154504685u, 2369172679u }, // 10^6 remainder 0.551616
+    { 429u,       2133437386u, 4102387834u }, // 10^7 remainder 0.9551616
+    { 42u,        4078814305u, 410238783u  }, // 10^8 remainder 0.09991616
+    { 4u,         1266874889u, 3047500985u }, // 10^9 remainder 0.709551616
 };
 
 
@@ -304,31 +304,32 @@ FullDiv64By32 (uint64_t *num, uint32_t den)
 	return tmp.u.Hi;
 }
 
-/*
-* SearchScale:
-*
-* Entry:
-*   ulResHi - Top uint32_t of quotient
-*   ulResLo - Middle uint32_t of quotient
-*   iScale  - Scale factor of quotient, range -DEC_SCALE_MAX to DEC_SCALE_MAX
-*
-* Purpose:
-*   Determine the max power of 10, <= 9, that the quotient can be scaled
-*   up by and still fit in 96 bits.
-*
-* Exit:
-*   Returns power of 10 to scale by, -1 if overflow error.
-*
-***********************************************************************/
+/***
+ * SearchScale
+ *
+ * Entry:
+ *   res_hi - Top uint32_t of quotient
+ *   res_mid - Middle uint32_t of quotient
+ *   res_lo - Bottom uint32_t of quotient
+ *   scale  - Scale factor of quotient, range -DEC_SCALE_MAX to DEC_SCALE_MAX
+ *
+ * Purpose:
+ *   Determine the max power of 10, <= 9, that the quotient can be scaled
+ *   up by and still fit in 96 bits.
+ *
+ * Exit:
+ *   Returns power of 10 to scale by, -1 if overflow error.
+ *
+ ***********************************************************************/
 
 static int
-SearchScale (uint32_t result_hi, uint32_t result_lo, int scale)
+SearchScale(uint32_t res_hi, uint32_t res_mid, uint32_t res_lo, int scale)
 {
 	int   cur_scale;
 
 	// Quick check to stop us from trying to scale any more.
 	//
-	if (result_hi > OVFL_MAX_1_HI || scale >= DEC_SCALE_MAX) {
+	if (res_hi > OVFL_MAX_1_HI || scale >= DEC_SCALE_MAX) {
 		cur_scale = 0;
 		goto HaveScale;
 	}
@@ -339,34 +340,36 @@ SearchScale (uint32_t result_hi, uint32_t result_lo, int scale)
 		// standard search for scale factor.
 		//
 		cur_scale = DEC_SCALE_MAX - scale;
-		if (result_hi < PowerOvfl[cur_scale - 1].Hi)
+		if (res_hi < power_overflow[cur_scale - 1].Hi)
 			goto HaveScale;
 
-		if (result_hi == PowerOvfl[cur_scale - 1].Hi) {
+		if (res_hi == power_overflow[cur_scale - 1].Hi) {
 		UpperEq:
-			if (result_lo >= PowerOvfl[cur_scale - 1].Mid)
+			if (res_mid > power_overflow[cur_scale - 1].Mid ||
+			    (res_mid == power_overflow[cur_scale - 1].Mid && res_lo > power_overflow[cur_scale - 1].Lo)) {
 				cur_scale--;
+			}
 			goto HaveScale;
 		}
-	} else if (result_hi < OVFL_MAX_9_HI || (result_hi == OVFL_MAX_9_HI && result_lo < OVFL_MAX_9_MID))
+	} else if (res_hi < OVFL_MAX_9_HI || (res_hi == OVFL_MAX_9_HI && res_mid < OVFL_MAX_9_MID) || (res_hi == OVFL_MAX_9_HI && res_mid == OVFL_MAX_9_MID && res_lo <= OVFL_MAX_9_LO))
 		return 9;
 
 	// Search for a power to scale by < 9.  Do a binary search
-	// on PowerOvfl[].
+	// on power_overflow[].
 	//
 	cur_scale = 5;
-	if (result_hi < OVFL_MAX_5_HI)
+	if (res_hi < OVFL_MAX_5_HI)
 		cur_scale = 7;
-	else if (result_hi > OVFL_MAX_5_HI)
+	else if (res_hi > OVFL_MAX_5_HI)
 		cur_scale = 3;
 	else
 		goto UpperEq;
 
 	// cur_scale is 3 or 7.
 	//
-	if (result_hi < PowerOvfl[cur_scale - 1].Hi)
+	if (res_hi < power_overflow[cur_scale - 1].Hi)
 		cur_scale++;
-	else if (result_hi > PowerOvfl[cur_scale - 1].Hi)
+	else if (res_hi > power_overflow[cur_scale - 1].Hi)
 		cur_scale--;
 	else
 		goto UpperEq;
@@ -378,10 +381,10 @@ SearchScale (uint32_t result_hi, uint32_t result_lo, int scale)
 	// we can't use this power, the one below it is correct for all cases 
 	// unless it's 10^1 -- we might have to go to 10^0 (no scaling).
 	// 
-	if (result_hi > PowerOvfl[cur_scale - 1].Hi)
+	if (res_hi > power_overflow[cur_scale - 1].Hi)
 		cur_scale--;
 
-	if (result_hi == PowerOvfl[cur_scale - 1].Hi)
+	if (res_hi == power_overflow[cur_scale - 1].Hi)
 		goto UpperEq;
 
 HaveScale:
@@ -1325,6 +1328,44 @@ Div128By96(uint32_t *num, uint32_t *den)
 	return sdlQuo.u.Lo;
 }
 
+// Add a 32 bit unsigned long to an array of 3 unsigned longs representing a 96 integer
+// Returns FALSE if there is an overflow
+static gboolean
+Add32To96(uint32_t *num, uint32_t value)
+{
+	num[0] += value;
+	if (num[0] < value) {
+		if (++num[1] == 0) {                
+			if (++num[2] == 0) {                
+				return FALSE;
+			}            
+		}
+	}
+	return TRUE;
+}
+
+static void
+OverflowUnscale (uint32_t *quo, gboolean remainder)
+{
+	SPLIT64  sdlTmp;
+	
+	// We have overflown, so load the high bit with a one.
+	sdlTmp.u.Hi = 1u;
+	sdlTmp.u.Lo = quo[2];
+	sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10u);
+	quo[2] = sdlTmp.u.Lo;
+	sdlTmp.u.Lo = quo[1];
+	sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10u);
+	quo[1] = sdlTmp.u.Lo;
+	sdlTmp.u.Lo = quo[0];
+	sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10u);
+	quo[0] = sdlTmp.u.Lo;
+	// The remainder is the last digit that does not fit, so we can use it to work out if we need to round up
+	if ((sdlTmp.u.Hi > 5) || ((sdlTmp.u.Hi == 5) && ( remainder || (quo[0] & 1)))) {
+		Add32To96(quo, 1u);
+	}
+}
+
 // VarDecDiv - Decimal divide
 static MonoDecimalStatus
 VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
@@ -1383,7 +1424,7 @@ VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 			// is the largest value in quo[1] (when quo[2] == 4) that is 
 			// assured not to overflow.
 			// 
-			cur_scale = SearchScale(quo[2], quo[1], scale);
+			cur_scale = SearchScale(quo[2], quo[1], quo [0], scale);
 			if (cur_scale == 0) {
 				// No more scaling to be done, but remainder is non-zero.
 				// Round quotient.
@@ -1492,7 +1533,7 @@ VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 				// Remainder is non-zero.  Scale up quotient and remainder by 
 				// powers of 10 so we can compute more significant bits.
 				// 
-				cur_scale = SearchScale(quo[2], quo[1], scale);
+				cur_scale = SearchScale(quo[2], quo[1], quo [0], scale);
 				if (cur_scale == 0) {
 					// No more scaling to be done, but remainder is non-zero.
 					// Round quotient.
@@ -1556,7 +1597,7 @@ VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 				// Remainder is non-zero.  Scale up quotient and remainder by 
 				// powers of 10 so we can compute more significant bits.
 				// 
-				cur_scale = SearchScale(quo[2], quo[1], scale);
+				cur_scale = SearchScale(quo[2], quo[1], quo [0], scale);
 				if (cur_scale == 0) {
 					// No more scaling to be done, but remainder is non-zero.
 					// Round quotient.
@@ -2104,7 +2145,67 @@ VarR4FromDec(MonoDecimal *input, float *result)
 	return MONO_DECIMAL_OK;
 }
 
-// Was: VarDecCmp
+static void
+DecShiftLeft(MonoDecimal* value)
+{
+    g_assert(value != NULL);
+
+    unsigned int c0 = DECIMAL_LO32(*value) & 0x80000000? 1: 0;
+    unsigned int c1 = DECIMAL_MID32(*value) & 0x80000000? 1: 0;
+    DECIMAL_LO32(*value) <<= 1;
+    DECIMAL_MID32(*value) = DECIMAL_MID32(*value) << 1 | c0;
+    DECIMAL_HI32(*value) = DECIMAL_HI32(*value) << 1 | c1;
+}
+
+static int
+D32AddCarry(uint32_t* value, uint32_t i)
+{
+    uint32_t v = *value;
+    uint32_t sum = v + i;
+    *value = sum;
+    return sum < v || sum < i? 1: 0;
+}
+
+static void
+DecAdd(MonoDecimal *value, MonoDecimal* d)
+{
+	g_assert(value != NULL && d != NULL);
+
+	if (D32AddCarry(&DECIMAL_LO32(*value), DECIMAL_LO32(*d))) {
+		if (D32AddCarry(&DECIMAL_MID32(*value), 1)) {
+			D32AddCarry(&DECIMAL_HI32(*value), 1);
+		}
+	}
+	if (D32AddCarry(&DECIMAL_MID32(*value), DECIMAL_MID32(*d))) {
+		D32AddCarry(&DECIMAL_HI32(*value), 1);
+	}
+	D32AddCarry(&DECIMAL_HI32(*value), DECIMAL_HI32(*d));
+}
+
+static void
+DecMul10(MonoDecimal* value)
+{
+	g_assert (value != NULL);
+
+	MonoDecimal d = *value;
+	DecShiftLeft(value);
+	DecShiftLeft(value);
+	DecAdd(value, &d);
+	DecShiftLeft(value);
+}
+
+static void
+DecAddInt32(MonoDecimal* value, unsigned int i)
+{
+	g_assert(value != NULL);
+
+	if (D32AddCarry(&DECIMAL_LO32(*value), i)) {
+		if (D32AddCarry(&DECIMAL_MID32(*value), 1)) {
+			D32AddCarry(&DECIMAL_HI32(*value), 1);
+		}
+	}
+}
+
 MonoDecimalCompareResult
 mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 {
@@ -2312,5 +2413,710 @@ mono_decimal_truncate (MonoDecimal *d)
 	COPYDEC(*d, decRes);
 	FC_GC_POLL();
 }
+
+void
+mono_decimal_addsub (MonoDecimal *left, MonoDecimal *right, uint8_t sign)
+{
+	MonoDecimal result, decTmp;
+	MonoDecimal *pdecTmp, *leftOriginal;
+	uint32_t    num[6], pwr;
+	int         scale, hi_prod, cur;
+	SPLIT64     sdlTmp;
+	
+	MONO_ARCH_SAVE_REGS;
+	g_assert(sign == 0 || sign == DECIMAL_NEG);
+
+	leftOriginal = left;
+
+	sign ^= (DECIMAL_SIGN(*right) ^ DECIMAL_SIGN(*left)) & DECIMAL_NEG;
+
+	if (DECIMAL_SCALE(*right) == DECIMAL_SCALE(*left)) {
+		// Scale factors are equal, no alignment necessary.
+		//
+		DECIMAL_SIGNSCALE(result) = DECIMAL_SIGNSCALE(*left);
+
+	AlignedAdd:
+		if (sign) {
+			// Signs differ - subtract
+			//
+			DECIMAL_LO64_SET(result, (DECIMAL_LO64_GET(*left) - DECIMAL_LO64_GET(*right)));
+			DECIMAL_HI32(result) = DECIMAL_HI32(*left) - DECIMAL_HI32(*right);
+
+			// Propagate carry
+			//
+			if (DECIMAL_LO64_GET(result) > DECIMAL_LO64_GET(*left)) {
+				DECIMAL_HI32(result)--;
+				if (DECIMAL_HI32(result) >= DECIMAL_HI32(*left))
+					goto SignFlip;
+			} else if (DECIMAL_HI32(result) > DECIMAL_HI32(*left)) {
+				// Got negative result.  Flip its sign.
+				// 
+			SignFlip:
+				DECIMAL_LO64_SET(result, -(int64_t)DECIMAL_LO64_GET(result));
+				DECIMAL_HI32(result) = ~DECIMAL_HI32(result);
+				if (DECIMAL_LO64_GET(result) == 0)
+					DECIMAL_HI32(result)++;
+				DECIMAL_SIGN(result) ^= DECIMAL_NEG;
+			}
+
+		} else {
+			// Signs are the same - add
+			//
+			DECIMAL_LO64_SET(result, (DECIMAL_LO64_GET(*left) + DECIMAL_LO64_GET(*right)));
+			DECIMAL_HI32(result) = DECIMAL_HI32(*left) + DECIMAL_HI32(*right);
+
+			// Propagate carry
+			//
+			if (DECIMAL_LO64_GET(result) < DECIMAL_LO64_GET(*left)) {
+				DECIMAL_HI32(result)++;
+				if (DECIMAL_HI32(result) <= DECIMAL_HI32(*left))
+					goto AlignedScale;
+			} else if (DECIMAL_HI32(result) < DECIMAL_HI32(*left)) {
+			AlignedScale:
+				// The addition carried above 96 bits.  Divide the result by 10,
+				// dropping the scale factor.
+				// 
+				if (DECIMAL_SCALE(result) == 0)
+					mono_raise_exception (mono_get_exception_overflow ());
+				DECIMAL_SCALE(result)--;
+
+				sdlTmp.u.Lo = DECIMAL_HI32(result);
+				sdlTmp.u.Hi = 1;
+				sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
+				DECIMAL_HI32(result) = sdlTmp.u.Lo;
+
+				sdlTmp.u.Lo = DECIMAL_MID32(result);
+				sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
+				DECIMAL_MID32(result) = sdlTmp.u.Lo;
+
+				sdlTmp.u.Lo = DECIMAL_LO32(result);
+				sdlTmp.int64 = DivMod64by32(sdlTmp.int64, 10);
+				DECIMAL_LO32(result) = sdlTmp.u.Lo;
+
+				// See if we need to round up.
+				//
+				if (sdlTmp.u.Hi >= 5 && (sdlTmp.u.Hi > 5 || (DECIMAL_LO32(result) & 1))) {
+					DECIMAL_LO64_SET(result, DECIMAL_LO64_GET(result)+1);
+					if (DECIMAL_LO64_GET(result) == 0)
+						DECIMAL_HI32(result)++;
+				}
+			}
+		}
+	} else {
+		// Scale factors are not equal.  Assume that a larger scale
+		// factor (more decimal places) is likely to mean that number
+		// is smaller.  Start by guessing that the right operand has
+		// the larger scale factor.  The result will have the larger
+		// scale factor.
+		//
+		DECIMAL_SCALE(result) = DECIMAL_SCALE(*right);  // scale factor of "smaller"
+		DECIMAL_SIGN(result) = DECIMAL_SIGN(*left);    // but sign of "larger"
+		scale = DECIMAL_SCALE(result)- DECIMAL_SCALE(*left);
+
+		if (scale < 0) {
+			// Guessed scale factor wrong. Swap operands.
+			//
+			scale = -scale;
+			DECIMAL_SCALE(result) = DECIMAL_SCALE(*left);
+			DECIMAL_SIGN(result) ^= sign;
+			pdecTmp = right;
+			right = left;
+			left = pdecTmp;
+		}
+
+		// *left will need to be multiplied by 10^scale so
+		// it will have the same scale as *right.  We could be
+		// extending it to up to 192 bits of precision.
+		//
+		if (scale <= POWER10_MAX) {
+			// Scaling won't make it larger than 4 uint32_ts
+			//
+			pwr = power10[scale];
+			DECIMAL_LO64_SET(decTmp, UInt32x32To64(DECIMAL_LO32(*left), pwr));
+			sdlTmp.int64 = UInt32x32To64(DECIMAL_MID32(*left), pwr);
+			sdlTmp.int64 += DECIMAL_MID32(decTmp);
+			DECIMAL_MID32(decTmp) = sdlTmp.u.Lo;
+			DECIMAL_HI32(decTmp) = sdlTmp.u.Hi;
+			sdlTmp.int64 = UInt32x32To64(DECIMAL_HI32(*left), pwr);
+			sdlTmp.int64 += DECIMAL_HI32(decTmp);
+			if (sdlTmp.u.Hi == 0) {
+				// Result fits in 96 bits.  Use standard aligned add.
+				//
+				DECIMAL_HI32(decTmp) = sdlTmp.u.Lo;
+				left = &decTmp;
+				goto AlignedAdd;
+			}
+			num[0] = DECIMAL_LO32(decTmp);
+			num[1] = DECIMAL_MID32(decTmp);
+			num[2] = sdlTmp.u.Lo;
+			num[3] = sdlTmp.u.Hi;
+			hi_prod = 3;
+		} else {
+			// Have to scale by a bunch.  Move the number to a buffer
+			// where it has room to grow as it's scaled.
+			//
+			num[0] = DECIMAL_LO32(*left);
+			num[1] = DECIMAL_MID32(*left);
+			num[2] = DECIMAL_HI32(*left);
+			hi_prod = 2;
+
+			// Scan for zeros in the upper words.
+			//
+			if (num[2] == 0) {
+				hi_prod = 1;
+				if (num[1] == 0) {
+					hi_prod = 0;
+					if (num[0] == 0) {
+						// Left arg is zero, return right.
+						//
+						DECIMAL_LO64_SET(result, DECIMAL_LO64_GET(*right));
+						DECIMAL_HI32(result) = DECIMAL_HI32(*right);
+						DECIMAL_SIGN(result) ^= sign;
+						goto RetDec;
+					}
+				}
+			}
+
+			// Scaling loop, up to 10^9 at a time.  hi_prod stays updated
+			// with index of highest non-zero uint32_t.
+			//
+			for (; scale > 0; scale -= POWER10_MAX) {
+				if (scale > POWER10_MAX)
+					pwr = ten_to_nine;
+				else
+					pwr = power10[scale];
+
+				sdlTmp.u.Hi = 0;
+				for (cur = 0; cur <= hi_prod; cur++) {
+					sdlTmp.int64 = UInt32x32To64(num[cur], pwr) + sdlTmp.u.Hi;
+					num[cur] = sdlTmp.u.Lo;
+				}
+
+				if (sdlTmp.u.Hi != 0)
+					// We're extending the result by another uint32_t.
+					num[++hi_prod] = sdlTmp.u.Hi;
+			}
+		}
+
+		// Scaling complete, do the add.  Could be subtract if signs differ.
+		//
+		sdlTmp.u.Lo = num[0];
+		sdlTmp.u.Hi = num[1];
+
+		if (sign) {
+			// Signs differ, subtract.
+			//
+			DECIMAL_LO64_SET(result, (sdlTmp.int64 - DECIMAL_LO64_GET(*right)));
+			DECIMAL_HI32(result) = num[2] - DECIMAL_HI32(*right);
+
+			// Propagate carry
+			//
+			if (DECIMAL_LO64_GET(result) > sdlTmp.int64) {
+				DECIMAL_HI32(result)--;
+				if (DECIMAL_HI32(result) >= num[2])
+					goto LongSub;
+			} else if (DECIMAL_HI32(result) > num[2]) {
+			LongSub:
+				// If num has more than 96 bits of precision, then we need to 
+				// carry the subtraction into the higher bits.  If it doesn't, 
+				// then we subtracted in the wrong order and have to flip the 
+				// sign of the result.
+				// 
+				if (hi_prod <= 2)
+					goto SignFlip;
+
+				cur = 3;
+				while(num[cur++]-- == 0);
+				if (num[hi_prod] == 0)
+					hi_prod--;
+			}
+		} else {
+			// Signs the same, add.
+			//
+			DECIMAL_LO64_SET(result, (sdlTmp.int64 + DECIMAL_LO64_GET(*right)));
+			DECIMAL_HI32(result) = num[2] + DECIMAL_HI32(*right);
+
+			// Propagate carry
+			//
+			if (DECIMAL_LO64_GET(result) < sdlTmp.int64) {
+				DECIMAL_HI32(result)++;
+				if (DECIMAL_HI32(result) <= num[2])
+					goto LongAdd;
+			} else if (DECIMAL_HI32(result) < num[2]) {
+			LongAdd:
+				// Had a carry above 96 bits.
+				//
+				cur = 3;
+				do {
+					if (hi_prod < cur) {
+						num[cur] = 1;
+						hi_prod = cur;
+						break;
+					}
+				}while (++num[cur++] == 0);
+			}
+		}
+
+		if (hi_prod > 2) {
+			num[0] = DECIMAL_LO32(result);
+			num[1] = DECIMAL_MID32(result);
+			num[2] = DECIMAL_HI32(result);
+			DECIMAL_SCALE(result) = (int8_t)ScaleResult(num, hi_prod, DECIMAL_SCALE(result));
+			if (DECIMAL_SCALE(result) == (int8_t)-1)
+				mono_raise_exception (mono_get_exception_overflow ());
+
+			DECIMAL_LO32(result) = num[0];
+			DECIMAL_MID32(result) = num[1];
+			DECIMAL_HI32(result) = num[2];
+		}
+	}
+
+RetDec:
+	left = leftOriginal;
+	COPYDEC(*left, result);
+}
+
+void
+mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
+{
+	uint32_t quo[3], quo_save[3],rem[4], divisor[3];
+	uint32_t pwr, tmp, tmp1;
+	SPLIT64  sdlTmp, sdlDivisor;
+	int      scale, cur_scale;
+	gboolean unscale;
+
+	MONO_ARCH_SAVE_REGS;
+	
+	scale = DECIMAL_SCALE(*left) - DECIMAL_SCALE(*right);
+	unscale = FALSE;
+	divisor[0] = DECIMAL_LO32(*right);
+	divisor[1] = DECIMAL_MID32(*right);
+	divisor[2] = DECIMAL_HI32(*right);
+
+	if (divisor[1] == 0 && divisor[2] == 0) {
+		// Divisor is only 32 bits.  Easy divide.
+		//
+		if (divisor[0] == 0)
+			mono_raise_exception (mono_get_exception_divide_by_zero ());
+
+		quo[0] = DECIMAL_LO32(*left);
+		quo[1] = DECIMAL_MID32(*left);
+		quo[2] = DECIMAL_HI32(*left);
+		rem[0] = Div96By32(quo, divisor[0]);
+
+		for (;;) {
+			if (rem[0] == 0) {
+				if (scale < 0) {
+					cur_scale = min(9, -scale);
+					goto HaveScale;
+				}
+				break;
+			}
+			// We need to unscale if and only if we have a non-zero remainder
+			unscale = TRUE;
+
+			// We have computed a quotient based on the natural scale 
+			// ( <dividend scale> - <divisor scale> ).  We have a non-zero 
+			// remainder, so now we should increase the scale if possible to 
+			// include more quotient bits.
+			// 
+			// If it doesn't cause overflow, we'll loop scaling by 10^9 and 
+			// computing more quotient bits as long as the remainder stays 
+			// non-zero.  If scaling by that much would cause overflow, we'll 
+			// drop out of the loop and scale by as much as we can.
+			// 
+			// Scaling by 10^9 will overflow if quo[2].quo[1] >= 2^32 / 10^9 
+			// = 4.294 967 296.  So the upper limit is quo[2] == 4 and 
+			// quo[1] == 0.294 967 296 * 2^32 = 1,266,874,889.7+.  Since 
+			// quotient bits in quo[0] could be all 1's, then 1,266,874,888 
+			// is the largest value in quo[1] (when quo[2] == 4) that is 
+			// assured not to overflow.
+			// 
+			cur_scale = SearchScale(quo[2], quo[1], quo[0], scale);
+			if (cur_scale == 0) {
+				// No more scaling to be done, but remainder is non-zero.
+				// Round quotient.
+				//
+				tmp = rem[0] << 1;
+				if (tmp < rem[0] || (tmp >= divisor[0] &&
+							   (tmp > divisor[0] || (quo[0] & 1)))) {
+				RoundUp:
+					if (!Add32To96(quo, 1)) {
+						if (scale == 0) 
+							mono_raise_exception (mono_get_exception_overflow ());
+						scale--;
+						OverflowUnscale(quo, TRUE);
+						break;
+					}      
+				}
+				break;
+			}
+
+			if (cur_scale < 0) 
+				mono_raise_exception (mono_get_exception_overflow ());
+
+		HaveScale:
+			pwr = power10[cur_scale];
+			scale += cur_scale;
+
+			if (IncreaseScale(quo, pwr) != 0) 
+				mono_raise_exception (mono_get_exception_overflow ());
+
+
+			sdlTmp.int64 = DivMod64by32(UInt32x32To64(rem[0], pwr), divisor[0]);
+			rem[0] = sdlTmp.u.Hi;
+
+			if (!Add32To96(quo, sdlTmp.u.Lo)) {
+				if (scale == 0)
+					mono_raise_exception (mono_get_exception_overflow ());					
+				scale--;
+				OverflowUnscale(quo, (rem[0] != 0));
+				break;
+			}
+		} // for (;;)
+	} else {
+		// Divisor has bits set in the upper 64 bits.
+		//
+		// Divisor must be fully normalized (shifted so bit 31 of the most 
+		// significant uint32_t is 1).  Locate the MSB so we know how much to 
+		// normalize by.  The dividend will be shifted by the same amount so 
+		// the quotient is not changed.
+		//
+		if (divisor[2] == 0)
+			tmp = divisor[1];
+		else
+			tmp = divisor[2];
+
+		cur_scale = 0;
+		if (!(tmp & 0xFFFF0000)) {
+			cur_scale += 16;
+			tmp <<= 16;
+		}
+		if (!(tmp & 0xFF000000)) {
+			cur_scale += 8;
+			tmp <<= 8;
+		}
+		if (!(tmp & 0xF0000000)) {
+			cur_scale += 4;
+			tmp <<= 4;
+		}
+		if (!(tmp & 0xC0000000)) {
+			cur_scale += 2;
+			tmp <<= 2;
+		}
+		if (!(tmp & 0x80000000)) {
+			cur_scale++;
+			tmp <<= 1;
+		}
+    
+		// Shift both dividend and divisor left by cur_scale.
+		// 
+		sdlTmp.int64 = DECIMAL_LO64_GET(*left) << cur_scale;
+		rem[0] = sdlTmp.u.Lo;
+		rem[1] = sdlTmp.u.Hi;
+		sdlTmp.u.Lo = DECIMAL_MID32(*left);
+		sdlTmp.u.Hi = DECIMAL_HI32(*left);
+		sdlTmp.int64 <<= cur_scale;
+		rem[2] = sdlTmp.u.Hi;
+		rem[3] = (DECIMAL_HI32(*left) >> (31 - cur_scale)) >> 1;
+
+		sdlDivisor.u.Lo = divisor[0];
+		sdlDivisor.u.Hi = divisor[1];
+		sdlDivisor.int64 <<= cur_scale;
+
+		if (divisor[2] == 0) {
+			// Have a 64-bit divisor in sdlDivisor.  The remainder 
+			// (currently 96 bits spread over 4 uint32_ts) will be < divisor.
+			// 
+			sdlTmp.u.Lo = rem[2];
+			sdlTmp.u.Hi = rem[3];
+
+			quo[2] = 0;
+			quo[1] = Div96By64(&rem[1], sdlDivisor);
+			quo[0] = Div96By64(rem, sdlDivisor);
+
+			for (;;) {
+				if ((rem[0] | rem[1]) == 0) {
+					if (scale < 0) {
+						cur_scale = min(9, -scale);
+						goto HaveScale64;
+					}
+					break;
+				}
+
+				// We need to unscale if and only if we have a non-zero remainder
+				unscale = TRUE;
+
+				// Remainder is non-zero.  Scale up quotient and remainder by 
+				// powers of 10 so we can compute more significant bits.
+				// 
+				cur_scale = SearchScale(quo[2], quo[1], quo[0], scale);
+				if (cur_scale == 0) {
+					// No more scaling to be done, but remainder is non-zero.
+					// Round quotient.
+					//
+					sdlTmp.u.Lo = rem[0];
+					sdlTmp.u.Hi = rem[1];
+					if (sdlTmp.u.Hi >= 0x80000000 || (sdlTmp.int64 <<= 1) > sdlDivisor.int64 ||
+					    (sdlTmp.int64 == sdlDivisor.int64 && (quo[0] & 1)))
+						goto RoundUp;
+					break;
+				}
+
+				if (cur_scale < 0) 
+					mono_raise_exception (mono_get_exception_overflow ());
+
+			HaveScale64:
+				pwr = power10[cur_scale];
+				scale += cur_scale;
+
+				if (IncreaseScale(quo, pwr) != 0)
+					mono_raise_exception (mono_get_exception_overflow ());
+				
+				rem[2] = 0;  // rem is 64 bits, IncreaseScale uses 96
+				IncreaseScale(rem, pwr);
+				tmp = Div96By64(rem, sdlDivisor);
+				if (!Add32To96(quo, tmp)) {
+					if (scale == 0) 
+						mono_raise_exception (mono_get_exception_overflow ());
+					scale--;
+					OverflowUnscale(quo, (rem[0] != 0 || rem[1] != 0));
+					break;
+				}      
+
+			} // for (;;)
+		} else {
+			// Have a 96-bit divisor in divisor[].
+			//
+			// Start by finishing the shift left by cur_scale.
+			//
+			sdlTmp.u.Lo = divisor[1];
+			sdlTmp.u.Hi = divisor[2];
+			sdlTmp.int64 <<= cur_scale;
+			divisor[0] = sdlDivisor.u.Lo;
+			divisor[1] = sdlDivisor.u.Hi;
+			divisor[2] = sdlTmp.u.Hi;
+
+			// The remainder (currently 96 bits spread over 4 uint32_ts) 
+			// will be < divisor.
+			// 
+			quo[2] = 0;
+			quo[1] = 0;
+			quo[0] = Div128By96(rem, divisor);
+
+			for (;;) {
+				if ((rem[0] | rem[1] | rem[2]) == 0) {
+					if (scale < 0) {
+						cur_scale = min(9, -scale);
+						goto HaveScale96;
+					}
+					break;
+				}
+
+				// We need to unscale if and only if we have a non-zero remainder
+				unscale = TRUE;
+
+				// Remainder is non-zero.  Scale up quotient and remainder by 
+				// powers of 10 so we can compute more significant bits.
+				// 
+				cur_scale = SearchScale(quo[2], quo[1], quo[0], scale);
+				if (cur_scale == 0) {
+					// No more scaling to be done, but remainder is non-zero.
+					// Round quotient.
+					//
+					if (rem[2] >= 0x80000000)
+						goto RoundUp;
+
+					tmp = rem[0] > 0x80000000;
+					tmp1 = rem[1] > 0x80000000;
+					rem[0] <<= 1;
+					rem[1] = (rem[1] << 1) + tmp;
+					rem[2] = (rem[2] << 1) + tmp1;
+
+					if (rem[2] > divisor[2] || (rem[2] == divisor[2] && (rem[1] > divisor[1] || rem[1] == (divisor[1] && (rem[0] > divisor[0] || (rem[0] == divisor[0] && (quo[0] & 1)))))))
+						goto RoundUp;
+					break;
+				}
+
+				if (cur_scale < 0) 
+					mono_raise_exception (mono_get_exception_overflow ());
+				
+			HaveScale96:
+				pwr = power10[cur_scale];
+				scale += cur_scale;
+
+				if (IncreaseScale(quo, pwr) != 0) 
+					mono_raise_exception (mono_get_exception_overflow ());
+				
+				rem[3] = IncreaseScale(rem, pwr);
+				tmp = Div128By96(rem, divisor);
+				if (!Add32To96(quo, tmp)) {
+					if (scale == 0)
+						mono_raise_exception (mono_get_exception_overflow ());
+					
+					scale--;
+					OverflowUnscale(quo, (rem[0] != 0 || rem[1] != 0 || rem[2] != 0 || rem[3] != 0));
+					break;
+				}      
+
+			} // for (;;)
+		}
+	}
+
+	// We need to unscale if and only if we have a non-zero remainder
+	if (unscale) {
+		// Try extracting any extra powers of 10 we may have 
+		// added.  We do this by trying to divide out 10^8, 10^4, 10^2, and 10^1.
+		// If a division by one of these powers returns a zero remainder, then
+		// we keep the quotient.  If the remainder is not zero, then we restore
+		// the previous value.
+		// 
+		// Since 10 = 2 * 5, there must be a factor of 2 for every power of 10
+		// we can extract.  We use this as a quick test on whether to try a
+		// given power.
+		// 
+		while ((quo[0] & 0xFF) == 0 && scale >= 8) {
+			quo_save[0] = quo[0];
+			quo_save[1] = quo[1];
+			quo_save[2] = quo[2];
+
+			if (Div96By32(quo_save, 100000000) == 0) {
+				quo[0] = quo_save[0];
+				quo[1] = quo_save[1];
+				quo[2] = quo_save[2];
+				scale -= 8;
+			} else
+				break;
+		}
+
+		if ((quo[0] & 0xF) == 0 && scale >= 4) {
+			quo_save[0] = quo[0];
+			quo_save[1] = quo[1];
+			quo_save[2] = quo[2];
+
+			if (Div96By32(quo_save, 10000) == 0) {
+				quo[0] = quo_save[0];
+				quo[1] = quo_save[1];
+				quo[2] = quo_save[2];
+				scale -= 4;
+			}
+		}
+
+		if ((quo[0] & 3) == 0 && scale >= 2) {
+			quo_save[0] = quo[0];
+			quo_save[1] = quo[1];
+			quo_save[2] = quo[2];
+
+			if (Div96By32(quo_save, 100) == 0) {
+				quo[0] = quo_save[0];
+				quo[1] = quo_save[1];
+				quo[2] = quo_save[2];
+				scale -= 2;
+			}
+		}
+
+		if ((quo[0] & 1) == 0 && scale >= 1) {
+			quo_save[0] = quo[0];
+			quo_save[1] = quo[1];
+			quo_save[2] = quo[2];
+
+			if (Div96By32(quo_save, 10) == 0) {
+				quo[0] = quo_save[0];
+				quo[1] = quo_save[1];
+				quo[2] = quo_save[2];
+				scale -= 1;
+			}
+		}
+	}
+
+	DECIMAL_SIGN(*left) = DECIMAL_SIGN(*left) ^ DECIMAL_SIGN(*right);
+	DECIMAL_HI32(*left) = quo[2];
+	DECIMAL_MID32(*left) = quo[1];
+	DECIMAL_LO32(*left) = quo[0];
+	DECIMAL_SCALE(*left) = (int8_t)scale;
+}
+
+#define DECIMAL_PRECISION 29
+#define NUMBER_MAXDIGITS 50
+typedef struct  {
+	int32_t precision;
+	int32_t scale;
+	int32_t sign;
+	wchar_t digits[NUMBER_MAXDIGITS + 1];
+	wchar_t* allDigits;
+} CLRNumber;
+
+int
+mono_decimal_from_number (void *from, MonoDecimal *target)
+{
+	MONO_ARCH_SAVE_REGS;
+	CLRNumber *number = (CLRNumber *) from;
+	g_assert(number != NULL);
+	g_assert(target != NULL);
+
+	MonoDecimal d;
+	DECIMAL_SIGNSCALE(d) = 0;
+	DECIMAL_HI32(d) = 0;
+	DECIMAL_LO32(d) = 0;
+	DECIMAL_MID32(d) = 0;
+	wchar_t* p = number->digits;
+	g_assert(p != NULL);
+	int e = number->scale;
+	if (!*p) {
+		// To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
+		// the scale to 0 if the scale was previously positive
+		if (e > 0) {
+			e = 0;
+		}
+	} else {
+		if (e > DECIMAL_PRECISION) return 0;
+		while ((e > 0 || (*p && e > -28)) && (DECIMAL_HI32(d) < 0x19999999 || (DECIMAL_HI32(d) == 0x19999999 && (DECIMAL_MID32(d) < 0x99999999 || (DECIMAL_MID32(d) == 0x99999999 && (DECIMAL_LO32(d) < 0x99999999 || (DECIMAL_LO32(d) == 0x99999999 && *p <= '5'))))))) {
+			DecMul10(&d);
+			if (*p)
+				DecAddInt32(&d, *p++ - '0');
+			e--;
+		}
+		if (*p++ >= '5') {
+			gboolean round = TRUE;
+			if (*(p-1) == '5' && *(p-2) % 2 == 0) { // Check if previous digit is even, only if the when we are unsure whether hows to do Banker's rounding
+				// For digits > 5 we will be roundinp up anyway.
+				int count = 20; // Look at the next 20 digits to check to round
+				while (*p == '0' && count != 0) {
+					p++;
+					count--;
+				}
+				if (*p == '\0' || count == 0) 
+					round = FALSE;// Do nothing
+			}
+			
+			if (round) {
+				DecAddInt32(&d, 1);
+				if ((DECIMAL_HI32(d) | DECIMAL_MID32(d) | DECIMAL_LO32(d)) == 0) {
+					DECIMAL_HI32(d) = 0x19999999;
+					DECIMAL_MID32(d) = 0x99999999;
+					DECIMAL_LO32(d) = 0x9999999A;
+					e++;
+				}
+			}
+		}
+	}
+	if (e > 0)
+		return 0;
+	if (e <= -DECIMAL_PRECISION) {
+		// Parsing a large scale zero can give you more precision than fits in the decimal.
+		// This should only happen for actual zeros or very small numbers that round to zero.
+		DECIMAL_SIGNSCALE(d) = 0;
+		DECIMAL_HI32(d) = 0;
+		DECIMAL_LO32(d) = 0;
+		DECIMAL_MID32(d) = 0;
+		DECIMAL_SCALE(d) = (DECIMAL_PRECISION - 1);
+	} else {
+		DECIMAL_SCALE(d) = (int8_t)(-e);
+	}
+	DECIMAL_SIGN(d) = number->sign? DECIMAL_NEG: 0;
+	*target = d;
+	return 1;
+}
+
 
 #endif

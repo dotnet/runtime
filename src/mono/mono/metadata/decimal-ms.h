@@ -54,5 +54,8 @@ double  mono_decimal_to_double     (MonoDecimal d) MONO_INTERNAL;
 int32_t mono_decimal_to_int32      (MonoDecimal d) MONO_INTERNAL;
 float   mono_decimal_to_float      (MonoDecimal d) MONO_INTERNAL;
 void    mono_decimal_truncate      (MonoDecimal *d) MONO_INTERNAL;
+void    mono_decimal_addsub        (MonoDecimal *left, MonoDecimal *right, uint8_t sign);
+void    mono_decimal_divide        (MonoDecimal *left, MonoDecimal *right);
+int     mono_decimal_from_number   (void *from, MonoDecimal *target);
 
 #endif

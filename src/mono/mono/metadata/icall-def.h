@@ -142,16 +142,18 @@ ICALL(DTIME_1, "GetSystemTimeAsFileTime", mono_100ns_datetime)
 
 #ifndef DISABLE_DECIMAL
 ICALL_TYPE(DECIMAL, "System.Decimal", DECIMAL_1)
-ICALL(DECIMAL_1, "FCallCompare", mono_decimal_compare)
-ICALL(DECIMAL_2, "InitSingle", mono_decimal_init_single)
-ICALL(DECIMAL_3, "InitDouble", mono_decimal_init_double)
+ICALL(DECIMAL_1, "FCallAddSub", mono_decimal_addsub)
+ICALL(DECIMAL_2, "FCallCompare", mono_decimal_compare)
+ICALL(DECIMAL_3, "FCallDivide", mono_decimal_divide)
 ICALL(DECIMAL_4, "FCallFloor", mono_decimal_floor)
-ICALL(DECIMAL_5, "GetHashCode", mono_decimal_get_hash_code)
-ICALL(DECIMAL_6, "FCallMultiply", mono_decimal_multiply)
-ICALL(DECIMAL_7, "ToDouble", mono_decimal_to_double)
-ICALL(DECIMAL_8, "FCallToInt32", mono_decimal_to_int32)
-ICALL(DECIMAL_9, "ToSingle", mono_decimal_to_float)
-ICALL(DECIMAL_10, "FCallTruncate", mono_decimal_truncate)
+ICALL(DECIMAL_5, "FCallMultiply", mono_decimal_multiply)
+ICALL(DECIMAL_6, "FCallToInt32", mono_decimal_to_int32)
+ICALL(DECIMAL_7, "FCallTruncate", mono_decimal_truncate)
+ICALL(DECIMAL_8, "GetHashCode", mono_decimal_get_hash_code)
+ICALL(DECIMAL_9, "InitDouble", mono_decimal_init_double)
+ICALL(DECIMAL_10, "InitSingle", mono_decimal_init_single)
+ICALL(DECIMAL_11, "ToDouble", mono_decimal_to_double)
+ICALL(DECIMAL_12, "ToSingle", mono_decimal_to_float)
 #endif
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
@@ -478,6 +480,8 @@ ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
 ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
 #endif /* !DISABLE_SOCKETS */
 
+ICALL_TYPE(NUMBER, "System.Number", NUMBER_1)
+ICALL(NUMBER_1, "NumberBufferToDecimal", mono_decimal_from_number)
 ICALL_TYPE(NUMBER_FORMATTER, "System.NumberFormatter", NUMBER_FORMATTER_1)
 ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter_GetFormatterTables)
 
