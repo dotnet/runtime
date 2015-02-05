@@ -5,7 +5,6 @@
 
 // 
 
-#include "stdafx.h"
 
 #include "../../shared/i386/primitives.cpp"
 

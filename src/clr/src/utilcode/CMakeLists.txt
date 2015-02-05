@@ -95,6 +95,5 @@ endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(dac)
 add_subdirectory(dyncrt)
-if(WIN32)
-  add_subdirectory(staticnohost)
-endif(WIN32)
+add_subdirectory(staticnohost)
+
