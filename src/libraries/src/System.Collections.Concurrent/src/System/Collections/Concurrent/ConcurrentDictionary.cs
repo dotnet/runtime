@@ -991,8 +991,13 @@ namespace System.Collections.Concurrent
         {
             if (key == null) throw new ArgumentNullException("key");
 
+            int hashcode = _comparer.GetHashCode(key);
+
             TValue resultingValue;
-            TryAddInternal(key, _comparer.GetHashCode(key), value, false, true, out resultingValue);
+            if (!TryGetValueInternal(key, hashcode, out resultingValue))
+            {
+                TryAddInternal(key, hashcode, value, false, true, out resultingValue);
+            }
             return resultingValue;
         }
 
