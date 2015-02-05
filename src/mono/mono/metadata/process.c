@@ -264,11 +264,11 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 				process_set_field_int (filever, "productbuildpart", HIWORD (ffi->dwProductVersionLS));
 				process_set_field_int (filever, "productprivatepart", LOWORD (ffi->dwProductVersionLS));
 
-				process_set_field_bool (filever, "isdebug", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_DEBUG);
-				process_set_field_bool (filever, "isprerelease", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRERELEASE);
-				process_set_field_bool (filever, "ispatched", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PATCHED);
-				process_set_field_bool (filever, "isprivatebuild", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRIVATEBUILD);
-				process_set_field_bool (filever, "isspecialbuild", (ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_SPECIALBUILD);
+				process_set_field_bool (filever, "isdebug", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_DEBUG) != 0);
+				process_set_field_bool (filever, "isprerelease", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRERELEASE) != 0);
+				process_set_field_bool (filever, "ispatched", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PATCHED) != 0);
+				process_set_field_bool (filever, "isprivatebuild", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_PRIVATEBUILD) != 0);
+				process_set_field_bool (filever, "isspecialbuild", ((ffi->dwFileFlags & ffi->dwFileFlagsMask) & VS_FF_SPECIALBUILD) != 0);
 			}
 			g_free (query);
 
