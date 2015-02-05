@@ -2548,9 +2548,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 			 */
 			sgen_pin_cemented_objects ();
 		}
-
-		if (!concurrent_collection_in_progress)
-			sgen_cement_reset ();
 	}
 
 	sgen_optimize_pin_queue ();
@@ -2759,11 +2756,11 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 
 	g_assert (sgen_section_gray_queue_is_empty (sgen_workers_get_distribute_section_gray_queue ()));
 
+	sgen_cement_reset ();
+
 	if (concurrent) {
 		g_assert (major_collector.is_concurrent);
 		concurrent_collection_in_progress = TRUE;
-
-		sgen_cement_concurrent_start ();
 
 		current_object_ops = major_collector.major_concurrent_ops;
 	} else {
@@ -2899,8 +2896,6 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 		sgen_pin_stats_reset ();
 	}
 
-	if (concurrent_collection_in_progress)
-		sgen_cement_concurrent_finish ();
 	sgen_cement_clear_below_threshold ();
 
 	if (check_mark_bits_after_major_collection)
@@ -4771,6 +4766,9 @@ mono_gc_base_init (void)
 
 	sgen_nursery_size = DEFAULT_NURSERY_SIZE;
 
+	if (major_collector.is_concurrent)
+		cement_enabled = FALSE;
+
 	if (opts) {
 		gboolean usage_printed = FALSE;
 
@@ -4950,6 +4948,11 @@ mono_gc_base_init (void)
 		g_free (minor_collector_opt);
 
 	alloc_nursery ();
+
+	if (major_collector.is_concurrent && cement_enabled) {
+		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Ignoring.", "`cementing` is not supported on concurrent major collectors.");
+		cement_enabled = FALSE;
+	}
 
 	sgen_cement_init (cement_enabled);
 

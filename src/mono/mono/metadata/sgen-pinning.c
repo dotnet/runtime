@@ -182,10 +182,8 @@ struct _CementHashEntry {
 };
 
 static CementHashEntry cement_hash [SGEN_CEMENT_HASH_SIZE];
-static CementHashEntry cement_hash_concurrent [SGEN_CEMENT_HASH_SIZE];
 
 static gboolean cement_enabled = TRUE;
-static gboolean cement_concurrent = FALSE;
 
 void
 sgen_cement_init (gboolean enabled)
@@ -196,46 +194,8 @@ sgen_cement_init (gboolean enabled)
 void
 sgen_cement_reset (void)
 {
-	SGEN_ASSERT (1, !cement_concurrent, "Concurrent cementing cannot simply be reset");
-
 	memset (cement_hash, 0, sizeof (cement_hash));
 	binary_protocol_cement_reset ();
-}
-
-/*
- * The reason we cannot simply reset cementing at the start of a
- * concurrent collection is that the nursery collections running
- * concurrently must keep pinning the cemented objects, because we
- * don't have the global remsets that point to them anymore - if the
- * nursery collector moved the cemented objects, we'd have invalid
- * pointers in the major heap.
- *
- * What we do instead is to reset cementing at the start of concurrent
- * collections in such a way that nursery collections happening during
- * the major collection still pin the formerly cemented objects.  We
- * have a shadow cementing table for that purpose.  The nursery
- * collections still work with the old cementing table, while the
- * major collector builds up a new cementing table, adding global
- * remsets whenever needed like usual.  When the major collector
- * finishes, the old cementing table is replaced by the new one.
- */
-
-void
-sgen_cement_concurrent_start (void)
-{
-	SGEN_ASSERT (1, !cement_concurrent, "Concurrent cementing has already been started");
-	cement_concurrent = TRUE;
-
-	memset (cement_hash_concurrent, 0, sizeof (cement_hash));
-}
-
-void
-sgen_cement_concurrent_finish (void)
-{
-	SGEN_ASSERT (1, cement_concurrent, "Concurrent cementing hasn't been started");
-	cement_concurrent = FALSE;
-
-	memcpy (cement_hash, cement_hash_concurrent, sizeof (cement_hash));
 }
 
 gboolean
@@ -262,19 +222,10 @@ sgen_cement_lookup_or_register (char *obj)
 {
 	guint hv;
 	int i;
-	CementHashEntry *hash;
-	gboolean concurrent_cementing = sgen_concurrent_collection_in_progress ();
+	CementHashEntry *hash = cement_hash;
 
 	if (!cement_enabled)
 		return FALSE;
-
-	if (concurrent_cementing)
-		SGEN_ASSERT (5, cement_concurrent, "Cementing wasn't inited with concurrent flag");
-
-	if (concurrent_cementing)
-		hash = cement_hash_concurrent;
-	else
-		hash = cement_hash;
 
 	hv = mono_aligned_addr_hash (obj);
 	i = SGEN_CEMENT_HASH (hv);
@@ -293,6 +244,7 @@ sgen_cement_lookup_or_register (char *obj)
 
 	++hash [i].count;
 	if (hash [i].count == SGEN_CEMENT_THRESHOLD) {
+		SGEN_ASSERT (9, sgen_get_current_collection_generation () >= 0, "We can only cement objects when we're in a collection pause.");
 		SGEN_ASSERT (9, SGEN_OBJECT_IS_PINNED (obj), "Can only cement pinned objects");
 		SGEN_CEMENT_OBJECT (obj);
 
@@ -330,8 +282,6 @@ void
 sgen_pin_cemented_objects (void)
 {
 	pin_from_hash (cement_hash, TRUE);
-	if (cement_concurrent)
-		pin_from_hash (cement_hash_concurrent, FALSE);
 }
 
 void
