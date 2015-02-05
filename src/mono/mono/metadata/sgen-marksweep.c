@@ -214,7 +214,7 @@ static size_t num_empty_blocks = 0;
 #define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped (), "Can't iterate blocks without lock when world is running."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} }
 
-static size_t num_major_sections = 0; /* GUARD */
+static volatile size_t num_major_sections = 0;
 /*
  * One free block list for each block object size.  We add and remove blocks from these
  * lists lock-free via CAS.
@@ -548,7 +548,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
 	UNLOCK_ALLOCATED_BLOCKS;
 
-	++num_major_sections;
+	SGEN_ATOMIC_ADD_P (num_major_sections, 1);
 	return TRUE;
 }
 
@@ -1466,8 +1466,8 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 		binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
 		ms_free_block (block);
 
-		--num_major_sections;
 		++num_major_sections_freed_in_sweep;
+		SGEN_ATOMIC_ADD_P (num_major_sections, -1);
 
 		return FALSE;
 	}
