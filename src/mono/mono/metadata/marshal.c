@@ -7375,7 +7375,10 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	gboolean found;
 	char *name;
 
-	key.sig = sig;
+	csig = signature_dup (image, sig);
+	csig->pinvoke = 0;
+
+	key.sig = csig;
 	key.pointer = func;
 
 	cache = get_cache (&image->native_func_wrapper_cache, signature_pointer_pair_hash, signature_pointer_pair_equal);
@@ -7389,9 +7392,6 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 #ifndef DISABLE_JIT
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, FALSE, TRUE, FALSE);
 #endif
-
-	csig = signature_dup (image, sig);
-	csig->pinvoke = 0;
 
 	new_key = g_new (SignaturePointerPair,1);
 	*new_key = key;
