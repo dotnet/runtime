@@ -29,6 +29,6 @@ else(CLR_CMAKE_PLATFORM_UNIX)
     # Can't compile on linux yet so only add for windows
     # add the install targets
     install (TARGETS CoreConsole DESTINATION .)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$ENV{__BuildType}/CoreConsole.pdb DESTINATION PDB CONFIGURATIONS Debug)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$ENV{__BuildType}/CoreConsole.pdb DESTINATION PDB)
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
