@@ -14,7 +14,6 @@ add_dependencies(paltest_exitprocess_test3 CoreClrPal)
 
 target_link_libraries(paltest_exitprocess_test3
   pthread
-  rt
   m
   CoreClrPal
 )

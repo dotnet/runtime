@@ -14,7 +14,6 @@ add_dependencies(paltest_setfilepointer_test4 CoreClrPal)
 
 target_link_libraries(paltest_setfilepointer_test4
   pthread
-  rt
   m
   CoreClrPal
 )

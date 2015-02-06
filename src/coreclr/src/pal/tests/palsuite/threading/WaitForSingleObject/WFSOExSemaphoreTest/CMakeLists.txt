@@ -14,7 +14,6 @@ add_dependencies(paltest_waitforsingleobject_wfsoexsemaphoretest CoreClrPal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsoexsemaphoretest
   pthread
-  rt
   m
   CoreClrPal
 )
