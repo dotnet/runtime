@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
 #include <math.h>
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
@@ -2331,7 +2330,7 @@ mono_decimal_round (MonoDecimal *d, int32_t decimals)
 	
 	// GC is only triggered for throwing, no need to protect result 
 	if (decimals < 0 || decimals > 28)
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_raise_exception (mono_get_exception_argument_out_of_range ("d"));
 
 	VarDecRound(d, decimals, &decRes);
 
@@ -3042,8 +3041,8 @@ typedef struct  {
 	int32_t precision;
 	int32_t scale;
 	int32_t sign;
-	wchar_t digits[NUMBER_MAXDIGITS + 1];
-	wchar_t* allDigits;
+	uint16_t digits[NUMBER_MAXDIGITS + 1];
+	uint16_t* allDigits;
 } CLRNumber;
 
 int
@@ -3059,7 +3058,7 @@ mono_decimal_from_number (void *from, MonoDecimal *target)
 	DECIMAL_HI32(d) = 0;
 	DECIMAL_LO32(d) = 0;
 	DECIMAL_MID32(d) = 0;
-	wchar_t* p = number->digits;
+	uint16_t* p = number->digits;
 	g_assert(p != NULL);
 	int e = number->scale;
 	if (!*p) {
