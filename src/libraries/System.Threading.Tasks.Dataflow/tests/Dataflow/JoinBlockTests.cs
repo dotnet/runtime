@@ -63,6 +63,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<ArgumentNullException>(() => new JoinBlock<int, int, int>(null));
             Assert.Throws<NotSupportedException>(() => { var ignored = new JoinBlock<int, int>().Target1.Completion; });
             Assert.Throws<NotSupportedException>(() => { var ignored = new JoinBlock<int, int, int>().Target3.Completion; });
+            Assert.Throws<ArgumentNullException>(() => new JoinBlock<int, int>().Target1.Fault(null));
+            Assert.Throws<ArgumentException>(() => new JoinBlock<int, int>().Target1.OfferMessage(default(DataflowMessageHeader), 1, null, false));
+            Assert.Throws<ArgumentException>(() => new JoinBlock<int, int>().Target1.OfferMessage(new DataflowMessageHeader(1), 1, null, true));
 
             DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int>>(new JoinBlock<int, int>());
             DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>());
@@ -370,6 +373,64 @@ namespace System.Threading.Tasks.Dataflow.Tests
             source.Post(1);
             source.LinkTo(joinBlock.Target1);
             joinBlock.Complete();
+            await joinBlock.Completion;
+        }
+
+        [Fact]
+        public async Task TestNonGreedyReleasingFailsAtCompletion()
+        {
+            var joinBlock = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
+            var source = new DelegatePropagator<int, int>
+            {
+                ReserveMessageDelegate = (header, target) => true,
+                ReleaseMessageDelegate = delegate { throw new FormatException(); }
+            };
+
+            joinBlock.Target1.OfferMessage(new DataflowMessageHeader(1), 1, source, consumeToAccept: true);
+            joinBlock.Complete();
+
+            await Assert.ThrowsAsync<FormatException>(() => joinBlock.Completion);
+        }
+
+        [Fact]
+        public async Task TestNonGreedyConsumingFailsWhileJoining()
+        {
+            var joinBlock = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
+            var source1 = new DelegatePropagator<int, int>
+            {
+                ReserveMessageDelegate = (header, target) => true,
+                ConsumeMessageDelegate = delegate(DataflowMessageHeader messageHeader, ITargetBlock<int> target, out bool messageConsumed) {
+                    throw new FormatException();
+                }
+            };
+
+            joinBlock.Target1.OfferMessage(new DataflowMessageHeader(1), 1, source1, consumeToAccept: true);
+
+            var source2 = new BufferBlock<int>();
+            source2.Post(2);
+            source2.LinkTo(joinBlock.Target2);
+
+            await Assert.ThrowsAsync<FormatException>(() => joinBlock.Completion);
+        }
+
+        [Fact]
+        public async Task TestNonGreedyPostponedMessagesNotAvailable()
+        {
+            var joinBlock = new JoinBlock<int, int>(new GroupingDataflowBlockOptions { Greedy = false });
+
+            var cts = new CancellationTokenSource();
+            Task<bool>[] sends = Enumerable.Range(0, 3).Select(i => joinBlock.Target1.SendAsync(i, cts.Token)).ToArray();
+
+            cts.Cancel();
+            foreach (Task<bool> send in sends)
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => send);
+            }
+
+            joinBlock.Target2.Post(1);
+            joinBlock.Target2.Complete();
+            joinBlock.Target1.Complete();
+
             await joinBlock.Completion;
         }
 
