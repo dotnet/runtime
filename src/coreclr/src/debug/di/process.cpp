@@ -1716,8 +1716,8 @@ HRESULT CordbProcess::Init()
         // really shouldn't ever fail. See issue 696511.
         VARIANT optionValue;
         VariantInit(&optionValue);
-        optionValue.vt = VT_UI4;
-        optionValue.ulVal = MDThreadSafetyOn;
+        V_VT(&optionValue) = VT_UI4;
+        V_UI4(&optionValue) = MDThreadSafetyOn;
         m_pMetaDispenser->SetOption(MetaDataThreadSafetyOptions, &optionValue);
 
         //
@@ -7651,6 +7651,8 @@ HRESULT CordbProcess::GetRuntimeOffsets()
             m_hHelperThread = pfnOpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
             CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
         }
+#elif FEATURE_PAL
+        m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
 		m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
 		CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
