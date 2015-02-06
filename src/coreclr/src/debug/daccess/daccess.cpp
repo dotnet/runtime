@@ -4907,7 +4907,7 @@ ClrDataAccess::SetCodeNotifications(
     /* [in, size_is(numTokens)] */ ULONG32 flags[],
     /* [in] */ ULONG32 singleFlags)
 {
-    HRESULT status;
+    HRESULT status = E_UNEXPECTED;
 
     DAC_ENTER();
 
