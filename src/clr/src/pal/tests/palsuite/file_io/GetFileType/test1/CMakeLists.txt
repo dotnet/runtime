@@ -14,7 +14,6 @@ add_dependencies(paltest_getfiletype_test1 CoreClrPal)
 
 target_link_libraries(paltest_getfiletype_test1
   pthread
-  rt
   m
   CoreClrPal
 )

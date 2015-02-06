@@ -14,7 +14,6 @@ add_dependencies(paltest_waitforsingleobject_wfsoprocesstest CoreClrPal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsoprocesstest
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_waitforsingleobject_wfsoprocesstest_child CoreClrPal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsoprocesstest_child
   pthread
-  rt
   m
   CoreClrPal
 )

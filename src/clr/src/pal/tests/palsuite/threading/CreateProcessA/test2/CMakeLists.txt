@@ -14,7 +14,6 @@ add_dependencies(paltest_createprocessa_test2 CoreClrPal)
 
 target_link_libraries(paltest_createprocessa_test2
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_createprocessa_test2_child CoreClrPal)
 
 target_link_libraries(paltest_createprocessa_test2_child
   pthread
-  rt
   m
   CoreClrPal
 )

@@ -14,7 +14,6 @@ add_dependencies(paltest_wsprintfw_test13 CoreClrPal)
 
 target_link_libraries(paltest_wsprintfw_test13
   pthread
-  rt
   m
   CoreClrPal
 )
