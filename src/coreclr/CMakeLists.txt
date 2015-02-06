@@ -241,6 +241,8 @@ add_compile_options(-Wno-self-assign)
 add_compile_options(-Wno-bitfield-constant-conversion)
 add_compile_options(-Wno-unused-value)
 
+add_compile_options(-Wno-unknown-warning-option)
+
 #These seem to indicate real issues
 add_compile_options(-Wno-invalid-offsetof)
 add_compile_options(-Wno-return-type)
