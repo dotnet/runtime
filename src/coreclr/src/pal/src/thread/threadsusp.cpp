@@ -50,9 +50,6 @@ Revision History:
 #include <stddef.h>
 #include <sys/stat.h>
 #include <limits.h>
-#if HAVE_STROPTS_H
-#include <stropts.h>
-#endif  // HAVE_STROPTS_H
 
 #if defined(_AIX)
 // AIX requires explicit definition of the union semun (see semctl man page)
