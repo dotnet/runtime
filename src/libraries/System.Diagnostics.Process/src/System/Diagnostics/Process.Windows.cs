@@ -57,7 +57,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
-        private bool WaitForExit(int milliseconds)
+        private bool WaitForExitCore(int milliseconds)
         {
             SafeProcessHandle handle = null;
             bool exited;
