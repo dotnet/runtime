@@ -54,6 +54,12 @@ namespace System.Diagnostics
             _signaled = false;
         }
 
+        /// <summary>Additional logic invoked when the Process is closed.</summary>
+        private void CloseCore()
+        {
+            // Nop
+        }
+
         /// <summary>
         /// Instructs the Process component to wait the specified number of milliseconds for the associated process to exit.
         /// </summary>
