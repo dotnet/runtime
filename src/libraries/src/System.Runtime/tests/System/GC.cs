@@ -51,6 +51,7 @@ public class GCTests
     }
 
     [Fact]
+    [ActiveIssue(659)]
     public static void TotalMemory()
     {
         GC.Collect();
