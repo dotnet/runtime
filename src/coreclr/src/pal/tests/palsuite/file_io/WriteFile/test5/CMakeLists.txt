@@ -14,7 +14,6 @@ add_dependencies(paltest_writefile_test5 CoreClrPal)
 
 target_link_libraries(paltest_writefile_test5
   pthread
-  rt
   m
   CoreClrPal
 )

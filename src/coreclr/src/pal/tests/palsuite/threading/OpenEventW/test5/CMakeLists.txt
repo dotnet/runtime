@@ -14,7 +14,6 @@ add_dependencies(paltest_openeventw_test5 CoreClrPal)
 
 target_link_libraries(paltest_openeventw_test5
   pthread
-  rt
   m
   CoreClrPal
 )

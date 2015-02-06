@@ -14,7 +14,6 @@ add_dependencies(paltest_getdateformatw_getdateformatw_neg1 CoreClrPal)
 
 target_link_libraries(paltest_getdateformatw_getdateformatw_neg1
   pthread
-  rt
   m
   CoreClrPal
 )

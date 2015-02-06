@@ -14,7 +14,6 @@ add_dependencies(paltest_virtualalloc_test21 CoreClrPal)
 
 target_link_libraries(paltest_virtualalloc_test21
   pthread
-  rt
   m
   CoreClrPal
 )
