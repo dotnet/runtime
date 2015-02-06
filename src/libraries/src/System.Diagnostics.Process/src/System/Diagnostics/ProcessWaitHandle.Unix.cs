@@ -11,7 +11,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Holds a wait state object associated with this handle.
         /// </summary>
-        private readonly ProcessWaitState.Holder _waitStateHolder;
+        private ProcessWaitState.Holder _waitStateHolder;
 
         internal ProcessWaitHandle(SafeProcessHandle processHandle)
         {
@@ -29,6 +29,19 @@ namespace System.Diagnostics
             // on this ProcessWaitHandle and be notified when the wait state's handle completes.
             ManualResetEvent mre = _waitStateHolder._state.EnsureExitedEvent();
             this.SetSafeWaitHandle(mre.GetSafeWaitHandle());
+        }
+
+        protected override void Dispose(bool explicitDisposing)
+        {
+            if (explicitDisposing)
+            {
+                if (_waitStateHolder != null)
+                {
+                    _waitStateHolder.Dispose();
+                    _waitStateHolder = null;
+                }
+            }
+            base.Dispose(explicitDisposing);
         }
     }
 }
