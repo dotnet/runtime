@@ -1787,7 +1787,8 @@ compare_pointers (const void *va, const void *vb) {
 static void
 major_free_swept_blocks (void)
 {
-	size_t section_reserve = sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
+	/* FIXME: use something sensible here. */
+	size_t section_reserve = DEFAULT_NURSERY_SIZE * 2 / MS_BLOCK_SIZE;
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
@@ -1983,6 +1984,7 @@ major_get_used_size (void)
 	return size;
 }
 
+/* FIXME: return number of bytes, not of sections */
 static size_t
 get_num_major_sections (void)
 {
@@ -1990,14 +1992,15 @@ get_num_major_sections (void)
 }
 
 /*
- * Returns the number of major sections that were present when the last sweep was initiated,
- * and were not freed during the sweep.  They are the basis for calculating the allowance.
+ * Returns the number of bytes in blocks that were present when the last sweep was
+ * initiated, and were not freed during the sweep.  They are the basis for calculating the
+ * allowance.
  */
 static size_t
-get_num_major_unswept_old_sections (void)
+get_bytes_survived_last_sweep (void)
 {
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Can only query unswept sections after sweep");
-	return num_major_sections_before_sweep - num_major_sections_freed_in_sweep;
+	return (num_major_sections_before_sweep - num_major_sections_freed_in_sweep) * MS_BLOCK_SIZE;
 }
 
 static gboolean
@@ -2466,7 +2469,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;
 	collector->get_num_major_sections = get_num_major_sections;
-	collector->get_num_major_unswept_old_sections = get_num_major_unswept_old_sections;
+	collector->get_bytes_survived_last_sweep = get_bytes_survived_last_sweep;
 	collector->handle_gc_param = major_handle_gc_param;
 	collector->print_gc_param_usage = major_print_gc_param_usage;
 	collector->post_param_init = post_param_init;

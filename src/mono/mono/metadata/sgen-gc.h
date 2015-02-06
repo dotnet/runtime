@@ -704,7 +704,7 @@ struct _SgenMajorCollector {
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
 	size_t (*get_num_major_sections) (void);
-	size_t (*get_num_major_unswept_old_sections) (void);
+	size_t (*get_bytes_survived_last_sweep) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	gboolean (*is_worker_thread) (MonoNativeThreadId thread);
