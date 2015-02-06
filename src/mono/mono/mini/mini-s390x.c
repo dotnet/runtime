@@ -3828,29 +3828,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lgfr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FMOVE:
-		case OP_MOVE_F_TO_I8:
-		case OP_MOVE_I8_TO_F: {
 			if (ins->dreg != ins->sreg1) {
 				s390_ldr   (code, ins->dreg, ins->sreg1);
 			}
-		}
 			break;
-		case OP_MOVE_F_TO_I4: {
-			s390_ledbr (code, ins->dreg, ins->sreg1);
-		}
+		case OP_MOVE_F_TO_I8: 
+			s390_lgdr (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_MOVE_I4_TO_F: {
-			s390_ldebr (code, ins->dreg, ins->sreg1);
-		}
+		case OP_MOVE_I8_TO_F: 
+			s390_ldgr (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_FCONV_TO_R4: {
+		case OP_MOVE_F_TO_I4:
+			s390_lgdr (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_MOVE_I4_TO_F: 
+			s390_lgfr (code, s390_r0, ins->sreg1);
+			s390_ldgr (code, ins->dreg, s390_r0);
+			break;
+		case OP_FCONV_TO_R4:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
 			s390_ldebr (code, ins->dreg, ins->dreg);
-		}
 			break;
-		case OP_S390_SETF4RET: {
+		case OP_S390_SETF4RET:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
-		}
 			break;
 		case OP_TLS_GET: {
 			if (s390_is_imm16 (ins->inst_offset)) {

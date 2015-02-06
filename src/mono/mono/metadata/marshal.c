@@ -7394,7 +7394,9 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	csig->pinvoke = 0;
 
 	new_key = g_new (SignaturePointerPair,1);
-	*new_key = key;
+	new_key->sig = csig;
+	new_key->pointer = func;
+
 	res = mono_mb_create_and_cache_full (cache, new_key, mb, csig, csig->param_count + 16, NULL, &found);
 	if (found)
 		g_free (new_key);

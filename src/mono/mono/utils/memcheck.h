@@ -13,7 +13,7 @@
    This file is part of MemCheck, a heavyweight Valgrind tool for
    detecting memory errors.
 
-   Copyright (C) 2000-2012 Julian Seward.  All rights reserved.
+   Copyright (C) 2000-2013 Julian Seward.  All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
@@ -95,6 +95,9 @@ typedef
 
       /* Not next to VG_USERREQ__COUNT_LEAKS because it was added later. */
       VG_USERREQ__COUNT_LEAK_BLOCKS,
+
+      VG_USERREQ__ENABLE_ADDR_ERROR_REPORTING_IN_RANGE,
+      VG_USERREQ__DISABLE_ADDR_ERROR_REPORTING_IN_RANGE,
 
       /* This is just for memcheck's internal use - don't use it */
       _VG_USERREQ__MEMCHECK_RECORD_OVERLAP_ERROR 
@@ -282,6 +285,18 @@ typedef
                                     (const char*)(zza),         \
                                     (const char*)(zzvbits),     \
                                     (zznbytes), 0, 0 )
+
+/* Disable and re-enable reporting of addressing errors in the
+   specified address range. */
+#define VALGRIND_DISABLE_ADDR_ERROR_REPORTING_IN_RANGE(_qzz_addr,_qzz_len) \
+    VALGRIND_DO_CLIENT_REQUEST_EXPR(0 /* default return */,    \
+       VG_USERREQ__DISABLE_ADDR_ERROR_REPORTING_IN_RANGE,      \
+       (_qzz_addr), (_qzz_len), 0, 0, 0)
+
+#define VALGRIND_ENABLE_ADDR_ERROR_REPORTING_IN_RANGE(_qzz_addr,_qzz_len) \
+    VALGRIND_DO_CLIENT_REQUEST_EXPR(0 /* default return */,    \
+       VG_USERREQ__ENABLE_ADDR_ERROR_REPORTING_IN_RANGE,       \
+       (_qzz_addr), (_qzz_len), 0, 0, 0)
 
 #endif
 

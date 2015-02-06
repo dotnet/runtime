@@ -28,7 +28,7 @@ TODO add support for fusing a XMOVE into a simd op in mono_spill_global_vars.
 TODO add stuff to man pages
 TODO document this under /docs
 TODO make passing a xmm as argument not cause it to be LDADDR'ed (introduce an OP_XPUSH)
-TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. (or just pinst sse ops) 
+TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like move_i4_to_f. (or just pinst sse ops) 
 TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (the 2nd is for imm operands)
 TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
@@ -853,16 +853,6 @@ load_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src, gboolean *
 	g_assert_not_reached ();
 }
 
-static MonoInst*
-get_int_to_float_spill_area (MonoCompile *cfg)
-{
-	if (!cfg->iconv_raw_var) {
-		cfg->iconv_raw_var = mono_compile_create_var (cfg, &mono_defaults.int32_class->byval_arg, OP_LOCAL);
-		cfg->iconv_raw_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
-	}	
-	return cfg->iconv_raw_var;
-}
-
 /*We share the var with fconv_to_r8_x to save some stack space.*/
 static MonoInst*
 get_double_spill_area (MonoCompile *cfg)
@@ -930,7 +920,7 @@ get_simd_vreg_or_expanded_scalar (MonoCompile *cfg, MonoMethod *cmethod, MonoIns
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (expand_op == OP_EXPAND_R4)
-		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+		ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 	else if (expand_op == OP_EXPAND_R8)
 		ins->backend.spill_var = get_double_spill_area (cfg);
 
@@ -1092,7 +1082,7 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 		ins->sreg2 = args [1]->dreg;
 		ins->inst_c0 = intrinsic->opcode;
 		if (sig->params [0]->type == MONO_TYPE_R4)
-			ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+			ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 		else if (sig->params [0]->type == MONO_TYPE_R8)
 			ins->backend.spill_var = get_double_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -1157,13 +1147,13 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (sig->ret->type == MONO_TYPE_R4) {
-		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_R8_RAW);
+		MONO_INST_NEW (cfg, ins, cfg->r4fp ? OP_ICONV_TO_R4_RAW : OP_MOVE_I4_TO_F);
 		ins->klass = mono_defaults.single_class;
 		ins->sreg1 = vreg;
-		ins->type = STACK_R8;
+		ins->type = cfg->r4_stack_type;
 		ins->dreg = alloc_freg (cfg);
-		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
-		MONO_ADD_INS (cfg->cbb, ins);	
+		ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
+		MONO_ADD_INS (cfg->cbb, ins);
 	}
 	return ins;
 }
@@ -1223,7 +1213,7 @@ simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 
 		MONO_ADD_INS (cfg->cbb, ins);
 		if (sig->params [0]->type == MONO_TYPE_R4)
-			ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+			ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 		else if (sig->params [0]->type == MONO_TYPE_R8)
 			ins->backend.spill_var = get_double_spill_area (cfg);
 

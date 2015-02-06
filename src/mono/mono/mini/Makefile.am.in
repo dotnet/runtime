@@ -749,6 +749,7 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)					\
+	test_op_il_seq_point.sh			\
 	Makefile.am.in
 
 version.h: Makefile

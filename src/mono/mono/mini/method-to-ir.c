@@ -309,7 +309,7 @@ handle_enum:
 		return OP_LMOVE;
 #endif
 	case MONO_TYPE_R4:
-		return OP_FMOVE;
+		return cfg->r4fp ? OP_RMOVE : OP_FMOVE;
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
@@ -459,29 +459,58 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 	} while (0)
 #endif
 
+/* Emit conversions so both operands of a binary opcode are of the same type */
+static void
+add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **arg2_ref)
+{
+	MonoInst *arg1 = *arg1_ref;
+	MonoInst *arg2 = *arg2_ref;
+
+	if (cfg->r4fp &&
+		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
+		MonoInst *conv;
+
+		/* Mixing r4/r8 is allowed by the spec */
+		if (arg1->type == STACK_R4) {
+			int dreg = alloc_freg (cfg);
+
+			EMIT_NEW_UNALU (cfg, conv, OP_RCONV_TO_R8, dreg, arg1->dreg);
+			conv->type = STACK_R8;
+			ins->sreg1 = dreg;
+			*arg1_ref = conv;
+		}
+		if (arg2->type == STACK_R4) {
+			int dreg = alloc_freg (cfg);
+
+			EMIT_NEW_UNALU (cfg, conv, OP_RCONV_TO_R8, dreg, arg2->dreg);
+			conv->type = STACK_R8;
+			ins->sreg2 = dreg;
+			*arg2_ref = conv;
+		}
+	}
+
 #if SIZEOF_REGISTER == 8
-#define ADD_WIDEN_OP(ins, arg1, arg2) do { \
-		/* FIXME: Need to add many more cases */ \
-		if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) {	\
-			MonoInst *widen; \
-			int dr = alloc_preg (cfg); \
-			EMIT_NEW_UNALU (cfg, widen, OP_SEXT_I4, dr, (arg2)->dreg); \
-			(ins)->sreg2 = widen->dreg; \
-		} \
-	} while (0)
-#else
-#define ADD_WIDEN_OP(ins, arg1, arg2)
+	/* FIXME: Need to add many more cases */
+	if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) {
+		MonoInst *widen;
+
+		int dr = alloc_preg (cfg);
+		EMIT_NEW_UNALU (cfg, widen, OP_SEXT_I4, dr, (arg2)->dreg);
+		(ins)->sreg2 = widen->dreg;
+	}
 #endif
+}
 
 #define ADD_BINOP(op) do {	\
 		MONO_INST_NEW (cfg, ins, (op));	\
 		sp -= 2;	\
 		ins->sreg1 = sp [0]->dreg;	\
 		ins->sreg2 = sp [1]->dreg;	\
-		type_from_op (ins, sp [0], sp [1]);	\
+		type_from_op (cfg, ins, sp [0], sp [1]);	\
 		CHECK_TYPE (ins);	\
 		/* Have to insert a widening op */		 \
-        ADD_WIDEN_OP (ins, sp [0], sp [1]); \
+        add_widen_op (cfg, ins, &sp [0], &sp [1]);		 \
         ins->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
         *sp++ = mono_decompose_opcode ((cfg), (ins)); \
@@ -491,7 +520,7 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 		MONO_INST_NEW (cfg, ins, (op));	\
 		sp--;	\
 		ins->sreg1 = sp [0]->dreg;	\
-		type_from_op (ins, sp [0], NULL);	\
+		type_from_op (cfg, ins, sp [0], NULL);	\
 		CHECK_TYPE (ins);	\
         (ins)->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
@@ -504,9 +533,10 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 		MONO_INST_NEW(cfg, cmp, OP_COMPARE);	\
 		cmp->sreg1 = sp [0]->dreg;	\
 		cmp->sreg2 = sp [1]->dreg;	\
-		type_from_op (cmp, sp [0], sp [1]);	\
+		type_from_op (cfg, cmp, sp [0], sp [1]);	\
 		CHECK_TYPE (cmp);	\
-		type_from_op (ins, sp [0], sp [1]);	\
+		add_widen_op (cfg, cmp, &sp [0], &sp [1]);						\
+		type_from_op (cfg, ins, sp [0], sp [1]);							\
 		ins->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);	\
 		GET_BBLOCK (cfg, tblock, target);		\
 		link_bblock (cfg, bblock, tblock);	\
@@ -748,6 +778,8 @@ handle_enum:
 		inst->type = STACK_I8;
 		return;
 	case MONO_TYPE_R4:
+		inst->type = cfg->r4_stack_type;
+		break;
 	case MONO_TYPE_R8:
 		inst->type = STACK_R8;
 		return;
@@ -791,15 +823,16 @@ bin_num_table [STACK_MAX] [STACK_MAX] = {
 	{STACK_INV, STACK_I4,  STACK_INV, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_I8,  STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_PTR, STACK_INV, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
-	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8,  STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8,  STACK_INV, STACK_INV, STACK_INV, STACK_R8},
 	{STACK_INV, STACK_MP,  STACK_INV, STACK_MP,  STACK_INV, STACK_PTR, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV}
+	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8, STACK_INV, STACK_INV, STACK_INV, STACK_R4}
 };
 
 static const char 
 neg_table [] = {
-	STACK_INV, STACK_I4, STACK_I8, STACK_PTR, STACK_R8, STACK_INV, STACK_INV, STACK_INV
+	STACK_INV, STACK_I4, STACK_I8, STACK_PTR, STACK_R8, STACK_INV, STACK_INV, STACK_INV, STACK_R4
 };
 
 /* reduce the size of this table */
@@ -817,15 +850,16 @@ bin_int_table [STACK_MAX] [STACK_MAX] = {
 
 static const char
 bin_comp_table [STACK_MAX] [STACK_MAX] = {
-/*	Inv i  L  p  F  &  O  vt */
+/*	Inv i  L  p  F  &  O  vt r4 */
 	{0},
 	{0, 1, 0, 1, 0, 0, 0, 0}, /* i, int32 */
 	{0, 0, 1, 0, 0, 0, 0, 0}, /* L, int64 */
 	{0, 1, 0, 1, 0, 2, 4, 0}, /* p, ptr */
-	{0, 0, 0, 0, 1, 0, 0, 0}, /* F, R8 */
+	{0, 0, 0, 0, 1, 0, 0, 0, 1}, /* F, R8 */
 	{0, 0, 0, 2, 0, 1, 0, 0}, /* &, managed pointer */
 	{0, 0, 0, 4, 0, 0, 3, 0}, /* O, reference */
 	{0, 0, 0, 0, 0, 0, 0, 0}, /* vt value type */
+	{0, 0, 0, 0, 1, 0, 0, 0, 1}, /* r, r4 */
 };
 
 /* reduce the size of this table */
@@ -848,43 +882,43 @@ shift_table [STACK_MAX] [STACK_MAX] = {
 /* handles from CEE_ADD to CEE_SHR_UN (CEE_REM_UN for floats) */
 static const guint16
 binops_op_map [STACK_MAX] = {
-	0, OP_IADD-CEE_ADD, OP_LADD-CEE_ADD, OP_PADD-CEE_ADD, OP_FADD-CEE_ADD, OP_PADD-CEE_ADD
+	0, OP_IADD-CEE_ADD, OP_LADD-CEE_ADD, OP_PADD-CEE_ADD, OP_FADD-CEE_ADD, OP_PADD-CEE_ADD, 0, 0, OP_RADD-CEE_ADD
 };
 
 /* handles from CEE_NEG to CEE_CONV_U8 */
 static const guint16
 unops_op_map [STACK_MAX] = {
-	0, OP_INEG-CEE_NEG, OP_LNEG-CEE_NEG, OP_PNEG-CEE_NEG, OP_FNEG-CEE_NEG, OP_PNEG-CEE_NEG
+	0, OP_INEG-CEE_NEG, OP_LNEG-CEE_NEG, OP_PNEG-CEE_NEG, OP_FNEG-CEE_NEG, OP_PNEG-CEE_NEG, 0, 0, OP_RNEG-CEE_NEG
 };
 
 /* handles from CEE_CONV_U2 to CEE_SUB_OVF_UN */
 static const guint16
 ovfops_op_map [STACK_MAX] = {
-	0, OP_ICONV_TO_U2-CEE_CONV_U2, OP_LCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, OP_FCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2
+	0, OP_ICONV_TO_U2-CEE_CONV_U2, OP_LCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, OP_FCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, OP_PCONV_TO_U2-CEE_CONV_U2, 0, OP_RCONV_TO_U2-CEE_CONV_U2
 };
 
 /* handles from CEE_CONV_OVF_I1_UN to CEE_CONV_OVF_U_UN */
 static const guint16
 ovf2ops_op_map [STACK_MAX] = {
-	0, OP_ICONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_LCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_FCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN
+	0, OP_ICONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_LCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_FCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, OP_PCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN, 0, 0, OP_RCONV_TO_OVF_I1_UN-CEE_CONV_OVF_I1_UN
 };
 
 /* handles from CEE_CONV_OVF_I1 to CEE_CONV_OVF_U8 */
 static const guint16
 ovf3ops_op_map [STACK_MAX] = {
-	0, OP_ICONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_LCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_FCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1
+	0, OP_ICONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_LCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_FCONV_TO_OVF_I1-CEE_CONV_OVF_I1, OP_PCONV_TO_OVF_I1-CEE_CONV_OVF_I1, 0, 0, OP_RCONV_TO_OVF_I1-CEE_CONV_OVF_I1
 };
 
 /* handles from CEE_BEQ to CEE_BLT_UN */
 static const guint16
 beqops_op_map [STACK_MAX] = {
-	0, OP_IBEQ-CEE_BEQ, OP_LBEQ-CEE_BEQ, OP_PBEQ-CEE_BEQ, OP_FBEQ-CEE_BEQ, OP_PBEQ-CEE_BEQ, OP_PBEQ-CEE_BEQ
+	0, OP_IBEQ-CEE_BEQ, OP_LBEQ-CEE_BEQ, OP_PBEQ-CEE_BEQ, OP_FBEQ-CEE_BEQ, OP_PBEQ-CEE_BEQ, OP_PBEQ-CEE_BEQ, 0, OP_FBEQ-CEE_BEQ
 };
 
 /* handles from CEE_CEQ to CEE_CLT_UN */
 static const guint16
 ceqops_op_map [STACK_MAX] = {
-	0, OP_ICEQ-OP_CEQ, OP_LCEQ-OP_CEQ, OP_PCEQ-OP_CEQ, OP_FCEQ-OP_CEQ, OP_PCEQ-OP_CEQ, OP_PCEQ-OP_CEQ
+	0, OP_ICEQ-OP_CEQ, OP_LCEQ-OP_CEQ, OP_PCEQ-OP_CEQ, OP_FCEQ-OP_CEQ, OP_PCEQ-OP_CEQ, OP_PCEQ-OP_CEQ, 0, OP_RCEQ-OP_CEQ
 };
 
 /*
@@ -896,8 +930,8 @@ ceqops_op_map [STACK_MAX] = {
  * it should set it to invalid for some types (a conv.x on an object)
  */
 static void
-type_from_op (MonoInst *ins, MonoInst *src1, MonoInst *src2) {
-
+type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
+{
 	switch (ins->opcode) {
 	/* binops */
 	case CEE_ADD:
@@ -929,6 +963,8 @@ type_from_op (MonoInst *ins, MonoInst *src1, MonoInst *src2) {
 		ins->type = bin_comp_table [src1->type] [src2->type] ? STACK_I4: STACK_INV;
 		if ((src1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((src1->type == STACK_PTR) || (src1->type == STACK_OBJ) || (src1->type == STACK_MP))))
 			ins->opcode = OP_LCOMPARE;
+		else if (src1->type == STACK_R4)
+			ins->opcode = OP_RCOMPARE;
 		else if (src1->type == STACK_R8)
 			ins->opcode = OP_FCOMPARE;
 		else
@@ -1054,6 +1090,9 @@ type_from_op (MonoInst *ins, MonoInst *src1, MonoInst *src2) {
 		ins->opcode += ovf2ops_op_map [src1->type];
 		break;
 	case CEE_CONV_R4:
+		ins->type = cfg->r4_stack_type;
+		ins->opcode += unops_op_map [src1->type];
+		break;
 	case CEE_CONV_R8:
 		ins->type = STACK_R8;
 		ins->opcode += unops_op_map [src1->type];
@@ -1098,6 +1137,8 @@ type_from_op (MonoInst *ins, MonoInst *src1, MonoInst *src2) {
 		ins->type = STACK_I8;
 		break;
 	case OP_LOADR4_MEMBASE:
+		ins->type = cfg->r4_stack_type;
+		break;
 	case OP_LOADR8_MEMBASE:
 		ins->type = STACK_R8;
 		break;
@@ -1230,6 +1271,7 @@ type_from_stack_type (MonoInst *ins) {
 	case STACK_I4: return &mono_defaults.int32_class->byval_arg;
 	case STACK_I8: return &mono_defaults.int64_class->byval_arg;
 	case STACK_PTR: return &mono_defaults.int_class->byval_arg;
+	case STACK_R4: return &mono_defaults.single_class->byval_arg;
 	case STACK_R8: return &mono_defaults.double_class->byval_arg;
 	case STACK_MP:
 		return &ins->klass->this_arg;
@@ -1242,7 +1284,7 @@ type_from_stack_type (MonoInst *ins) {
 }
 
 static G_GNUC_UNUSED int
-type_to_stack_type (MonoType *t)
+type_to_stack_type (MonoCompile *cfg, MonoType *t)
 {
 	t = mono_type_get_underlying_type (t);
 	switch (t->type) {
@@ -1270,6 +1312,7 @@ type_to_stack_type (MonoType *t)
 	case MONO_TYPE_U8:
 		return STACK_I8;
 	case MONO_TYPE_R4:
+		return cfg->r4_stack_type;
 	case MONO_TYPE_R8:
 		return STACK_R8;
 	case MONO_TYPE_VALUETYPE:
@@ -2095,7 +2138,7 @@ emit_instrumentation_call (MonoCompile *cfg, void *func)
 }
 
 static int
-ret_type_to_call_opcode (MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
+ret_type_to_call_opcode (MonoCompile *cfg, MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
 {
 	if (type->byref)
 		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
@@ -2130,6 +2173,10 @@ handle_enum:
 	case MONO_TYPE_U8:
 		return calli? OP_LCALL_REG: virt? OP_LCALL_MEMBASE: OP_LCALL;
 	case MONO_TYPE_R4:
+		if (cfg->r4fp)
+			return calli? OP_RCALL_REG: virt? OP_RCALL_MEMBASE: OP_RCALL;
+		else
+			return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_R8:
 		return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
@@ -2225,6 +2272,9 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 			return 1;
 		return 0;
 	case MONO_TYPE_R4:
+		if (arg->type != cfg->r4_stack_type)
+			return 1;
+		return 0;
 	case MONO_TYPE_R8:
 		if (arg->type != STACK_R8)
 			return 1;
@@ -2339,6 +2389,9 @@ handle_enum:
 				return 1;
 			continue;
 		case MONO_TYPE_R4:
+			if (args [i]->type != cfg->r4_stack_type)
+				return 1;
+			continue;
 		case MONO_TYPE_R8:
 			if (args [i]->type != STACK_R8)
 				return 1;
@@ -2382,6 +2435,8 @@ callvirt_to_call (int opcode)
 		return OP_VOIDCALL;
 	case OP_FCALL_MEMBASE:
 		return OP_FCALL;
+	case OP_RCALL_MEMBASE:
+		return OP_RCALL;
 	case OP_VCALL_MEMBASE:
 		return OP_VCALL;
 	case OP_LCALL_MEMBASE:
@@ -2552,7 +2607,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 		MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
 	} else
-		MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (sig->ret, calli, virtual, cfg->generic_sharing_context));
+		MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (cfg, sig->ret, calli, virtual, cfg->generic_sharing_context));
 
 	call->args = args;
 	call->signature = sig;
@@ -5476,7 +5531,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg, 
 								   add_reg, MONO_STRUCT_OFFSET (MonoString, chars));
 #endif
-			type_from_op (ins, NULL, NULL);
+			type_from_op (cfg, ins, NULL, NULL);
 			return ins;
 		} else if (strcmp (cmethod->name, "get_Length") == 0 && fsig->param_count == 1) {
 			int dreg = alloc_ireg (cfg);
@@ -5506,7 +5561,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int vt_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, type));
-			type_from_op (ins, NULL, NULL);
+			type_from_op (cfg, ins, NULL, NULL);
 
 			return ins;
 #if !defined(MONO_ARCH_EMULATE_MUL_DIV)
@@ -5586,7 +5641,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 												 args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU1_MEMBASE, dreg,
 								   vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
-			type_from_op (ins, NULL, NULL);
+			type_from_op (cfg, ins, NULL, NULL);
 
 			return ins;
 		} else if (strcmp (cmethod->name, "get_Length") == 0 && fsig->param_count == 1) {
@@ -5594,7 +5649,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, ins, OP_LOADI4_MEMBASE, dreg, 
 										 args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length));
-			type_from_op (ins, NULL, NULL);
+			type_from_op (cfg, ins, NULL, NULL);
 
 			return ins;
 		} else
@@ -5929,6 +5984,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_INST_NEW (cfg, f2i, f2i_opcode);
 				f2i->dreg = mono_alloc_ireg (cfg);
 				f2i->sreg1 = args [1]->dreg;
+				if (f2i_opcode == OP_MOVE_F_TO_I4)
+					f2i->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i);
 			}
 
@@ -5968,6 +6025,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2f->dreg = mono_alloc_freg (cfg);
 				i2f->sreg1 = ins->dreg;
 				i2f->type = STACK_R8;
+				if (i2f_opcode == OP_MOVE_I4_TO_F)
+					i2f->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
@@ -6018,11 +6077,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_INST_NEW (cfg, f2i_new, f2i_opcode);
 				f2i_new->dreg = mono_alloc_ireg (cfg);
 				f2i_new->sreg1 = args [1]->dreg;
+				if (f2i_opcode == OP_MOVE_F_TO_I4)
+					f2i_new->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i_new);
 
 				MONO_INST_NEW (cfg, f2i_cmp, f2i_opcode);
 				f2i_cmp->dreg = mono_alloc_ireg (cfg);
 				f2i_cmp->sreg1 = args [2]->dreg;
+				if (f2i_opcode == OP_MOVE_F_TO_I4)
+					f2i_cmp->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
@@ -6062,6 +6125,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2f->dreg = mono_alloc_freg (cfg);
 				i2f->sreg1 = ins->dreg;
 				i2f->type = STACK_R8;
+				if (i2f_opcode == OP_MOVE_I4_TO_F)
+					i2f->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
@@ -6448,6 +6513,7 @@ static void
 emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 {
 	static double r8_0 = 0.0;
+	static float r4_0 = 0.0;
 	MonoInst *ins;
 	int t;
 
@@ -6460,6 +6526,12 @@ emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_ICONST (cfg, dreg, 0);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_I8CONST (cfg, dreg, 0);
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
+		MONO_INST_NEW (cfg, ins, OP_R4CONST);
+		ins->type = STACK_R4;
+		ins->inst_p0 = (void*)&r4_0;
+		ins->dreg = dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
 	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_INST_NEW (cfg, ins, OP_R8CONST);
 		ins->type = STACK_R8;
@@ -6490,6 +6562,8 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_ICONST);
 	} else if (t == MONO_TYPE_I8 || t == MONO_TYPE_U8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_I8CONST);
+	} else if (cfg->r4fp && t == MONO_TYPE_R4) {
+		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R4CONST);
 	} else if (t == MONO_TYPE_R4 || t == MONO_TYPE_R8) {
 		MONO_EMIT_NEW_DUMMY_INIT (cfg, dreg, OP_DUMMY_R8CONST);
 	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
@@ -8328,10 +8402,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				dreg = alloc_freg (cfg);
 				EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADR4_MEMBASE, dreg, cons->dreg, 0);
-				ins->type = STACK_R8;
+				ins->type = cfg->r4_stack_type;
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_R4CONST);
-				ins->type = STACK_R8;
+				ins->type = cfg->r4_stack_type;
 				ins->dreg = alloc_dreg (cfg, STACK_R8);
 				ins->inst_p0 = f;
 				MONO_ADD_INS (bblock, ins);
@@ -9532,7 +9606,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			MONO_INST_NEW(cfg, cmp, OP_ICOMPARE_IMM);
 			cmp->sreg1 = sp [0]->dreg;
-			type_from_op (cmp, sp [0], NULL);
+			type_from_op (cfg, cmp, sp [0], NULL);
 			CHECK_TYPE (cmp);
 
 #if SIZEOF_REGISTER == 4
@@ -9550,7 +9624,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (bblock, cmp);
 
 			MONO_INST_NEW (cfg, ins, is_true ? CEE_BNE_UN : CEE_BEQ);
-			type_from_op (ins, sp [0], NULL);
+			type_from_op (cfg, ins, sp [0], NULL);
 			MONO_ADD_INS (bblock, ins);
 			ins->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);
 			GET_BBLOCK (cfg, tblock, target);
@@ -9725,6 +9799,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			NEW_LOAD_MEMBASE (cfg, ins, ldind_to_load_membase (*ip), dreg, sp [0]->dreg, 0);
 			ins->type = ldind_type [*ip - CEE_LDIND_I1];
+			if (*ip == CEE_LDIND_R4)
+				ins->type = cfg->r4_stack_type;
 			ins->flags |= ins_flag;
 			MONO_ADD_INS (bblock, ins);
 			*sp++ = ins;
@@ -9771,7 +9847,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			ins->sreg1 = sp [0]->dreg;
 			ins->sreg2 = sp [1]->dreg;
-			type_from_op (ins, sp [0], sp [1]);
+			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
 			ins->dreg = alloc_dreg ((cfg), (ins)->type);
 
@@ -9810,9 +9886,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			sp -= 2;
 			ins->sreg1 = sp [0]->dreg;
 			ins->sreg2 = sp [1]->dreg;
-			type_from_op (ins, sp [0], sp [1]);
+			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
-			ADD_WIDEN_OP (ins, sp [0], sp [1]);
+			add_widen_op (cfg, ins, &sp [0], &sp [1]);
 			ins->dreg = alloc_dreg ((cfg), (ins)->type);
 
 			/* FIXME: Pass opcode to is_inst_imm */
@@ -9842,7 +9918,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins->inst_imm = (gssize)(sp [1]->inst_c0);
 					ins->sreg2 = -1;
 
-					/* Might be followed by an instruction added by ADD_WIDEN_OP */
+					/* Might be followed by an instruction added by add_widen_op */
 					if (sp [1]->next == NULL)
 						NULLIFY_INS (sp [1]);
 				}
@@ -9898,7 +9974,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CONV_OVF_U:
 			CHECK_STACK (1);
 
-			if (sp [-1]->type == STACK_R8) {
+			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				ADD_UNOP (CEE_CONV_OVF_I8);
 				ADD_UNOP (*ip);
 			} else {
@@ -9911,7 +9987,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_CONV_OVF_U4:
 			CHECK_STACK (1);
 
-			if (sp [-1]->type == STACK_R8) {
+			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				ADD_UNOP (CEE_CONV_OVF_U8);
 				ADD_UNOP (*ip);
 			} else {
@@ -12179,8 +12255,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_CGT_UN:
 			case CEE_CLT:
 			case CEE_CLT_UN: {
-				MonoInst *cmp;
+				MonoInst *cmp, *arg1, *arg2;
+
 				CHECK_STACK (2);
+				sp -= 2;
+				arg1 = sp [0];
+				arg2 = sp [1];
+
 				/*
 				 * The following transforms:
 				 *    CEE_CEQ    into OP_CEQ
@@ -12190,25 +12271,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 *    CEE_CLT_UN into OP_CLT_UN
 				 */
 				MONO_INST_NEW (cfg, cmp, (OP_CEQ - CEE_CEQ) + ip [1]);
-				
+
 				MONO_INST_NEW (cfg, ins, cmp->opcode);
-				sp -= 2;
-				cmp->sreg1 = sp [0]->dreg;
-				cmp->sreg2 = sp [1]->dreg;
-				type_from_op (cmp, sp [0], sp [1]);
+				cmp->sreg1 = arg1->dreg;
+				cmp->sreg2 = arg2->dreg;
+				type_from_op (cfg, cmp, arg1, arg2);
 				CHECK_TYPE (cmp);
-				if ((sp [0]->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((sp [0]->type == STACK_PTR) || (sp [0]->type == STACK_OBJ) || (sp [0]->type == STACK_MP))))
+				add_widen_op (cfg, cmp, &arg1, &arg2);
+				if ((arg1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((arg1->type == STACK_PTR) || (arg1->type == STACK_OBJ) || (arg1->type == STACK_MP))))
 					cmp->opcode = OP_LCOMPARE;
-				else if (sp [0]->type == STACK_R8)
+				else if (arg1->type == STACK_R4)
+					cmp->opcode = OP_RCOMPARE;
+				else if (arg1->type == STACK_R8)
 					cmp->opcode = OP_FCOMPARE;
 				else
 					cmp->opcode = OP_ICOMPARE;
 				MONO_ADD_INS (bblock, cmp);
 				ins->type = STACK_I4;
 				ins->dreg = alloc_dreg (cfg, ins->type);
-				type_from_op (ins, sp [0], sp [1]);
+				type_from_op (cfg, ins, arg1, arg2);
 
-				if (cmp->opcode == OP_FCOMPARE) {
+				if (cmp->opcode == OP_FCOMPARE || cmp->opcode == OP_RCOMPARE) {
 					/*
 					 * The backends expect the fceq opcodes to do the
 					 * comparison too.
@@ -13937,7 +14020,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 							ins->inst_destbasereg = var->inst_basereg;
 							ins->inst_offset = var->inst_offset;
 							spec = INS_INFO (ins->opcode);
-						} else if (!lvreg && ((ins->opcode == OP_MOVE) || (ins->opcode == OP_FMOVE) || (ins->opcode == OP_LMOVE))) {
+						} else if (!lvreg && ((ins->opcode == OP_MOVE) || (ins->opcode == OP_FMOVE) || (ins->opcode == OP_LMOVE) || (ins->opcode == OP_RMOVE))) {
 							ins->opcode = store_opcode;
 							ins->inst_destbasereg = var->inst_basereg;
 							ins->inst_offset = var->inst_offset;

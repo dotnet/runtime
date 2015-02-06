@@ -8084,7 +8084,7 @@ mono_lookup_internal_call (MonoMethod *method)
 	g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
 	g_print ("\nYour mono runtime and class libraries are out of sync.\n");
 	g_print ("The out of sync library is: %s\n", method->klass->image->name);
-	g_print ("\nWhen you update one from svn you need to update, compile and install\nthe other too.\n");
+	g_print ("\nWhen you update one from git you need to update, compile and install\nthe other too.\n");
 	g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
 	g_print ("If you see other errors or faults after this message they are probably related\n");
 	g_print ("and you need to fix your mono install first.\n");

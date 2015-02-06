@@ -20,7 +20,7 @@
 
 #define BITS_PER_CHUNK MONO_BITSET_BITS_PER_CHUNK
 
-#define BB_ID_SHIFT 17
+#define BB_ID_SHIFT 18
 
 /* 
  * The liveness2 pass can't handle long vars on 32 bit platforms because the component
@@ -616,7 +616,7 @@ optimize_initlocals (MonoCompile *cfg)
 				//printf ("DEAD: "); mono_print_ins (ins);
 				if (cfg->disable_initlocals_opt_refs && var->type == STACK_OBJ)
 					continue;
-				if ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST)) {
+				if ((ins->opcode == OP_ICONST) || (ins->opcode == OP_I8CONST) || (ins->opcode == OP_R8CONST) || (ins->opcode == OP_R4CONST)) {
 					NULLIFY_INS (ins);
 					MONO_VARINFO (cfg, var->inst_c0)->spill_costs -= 1;
 					/* 
@@ -861,6 +861,23 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	if (disabled)
 		return;
 
+	if (cfg->num_bblocks < (1 << (32 - BB_ID_SHIFT)))
+		/* Ranges would overflow */
+		return;
+
+	for (bnum = cfg->num_bblocks - 1; bnum >= 0; --bnum) {
+		MonoBasicBlock *bb = cfg->bblocks [bnum];
+		MonoInst *ins;
+
+		nins = 0;
+		for (nins = 0, ins = bb->code; ins; ins = ins->next, ++nins)
+			nins ++;
+
+		if (nins >= ((1 << BB_ID_SHIFT) - 1))
+			/* Ranges would overflow */
+			return;
+	}
+
 	LIVENESS_DEBUG (printf ("LIVENESS 2 %s\n", mono_method_full_name (cfg->method, TRUE)));
 
 	/*
@@ -932,7 +949,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 			reverse [nins] = ins;
 		}
-		g_assert (nins < ((1 << BB_ID_SHIFT) - 1));
 
 		/* Process instructions backwards */
 		for (i = nins - 1; i >= 0; --i) {
