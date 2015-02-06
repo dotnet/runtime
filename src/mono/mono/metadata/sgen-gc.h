@@ -632,7 +632,7 @@ sgen_update_reference (void **p, void *o, gboolean allow_null)
 /* Major collector */
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
-void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback, gboolean requires_sweep);
+void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
 
 typedef enum {
 	ITERATE_OBJECTS_SWEEP = 1,
@@ -685,7 +685,7 @@ struct _SgenMajorCollector {
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (gboolean mod_union, SgenGrayQueue *queue);
-	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback, gboolean requires_sweep);
+	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);

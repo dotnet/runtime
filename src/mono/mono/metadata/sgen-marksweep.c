@@ -779,13 +779,68 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 	return FALSE;
 }
 
+static gboolean
+try_set_sweep_state (int new, int expected)
+{
+	int old = SGEN_CAS (&sweep_state, new, expected);
+	return old == expected;
+}
+
+static void
+set_sweep_state (int new, int expected)
+{
+	gboolean success = try_set_sweep_state (new, expected);
+	SGEN_ASSERT (0, success, "Could not set sweep state.");
+}
+
+static gboolean ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gboolean *have_checked);
+
 static void
 major_finish_sweeping (void)
 {
-	if (!sweep_in_progress ())
-		return;
+	int block_index;
 
-	while (sweep_in_progress ())
+ retry:
+	switch (sweep_state) {
+	case SWEEP_STATE_SWEPT:
+	case SWEEP_STATE_NEED_SWEEPING:
+		return;
+	case SWEEP_STATE_SWEEPING:
+		if (try_set_sweep_state (SWEEP_STATE_SWEEPING_AND_ITERATING, SWEEP_STATE_SWEEPING))
+			break;
+		goto retry;
+	case SWEEP_STATE_SWEEPING_AND_ITERATING:
+		SGEN_ASSERT (0, FALSE, "Is there another minor collection running?");
+		goto retry;
+	case SWEEP_STATE_COMPACTING:
+		g_usleep (100);
+		goto retry;
+	default:
+		SGEN_ASSERT (0, FALSE, "Invalid sweep state.");
+		break;
+	}
+
+	/*
+	 * We're running with the world stopped and the only other thread doing work is the
+	 * sweep thread, which doesn't add blocks to the array, so we can safely access
+	 * `next_slot` without locking.
+	 */
+	for (block_index = 0; block_index < allocated_blocks.next_slot; ++block_index) {
+		MSBlockInfo *block;
+
+		LOCK_ALLOCATED_BLOCKS;
+		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
+
+		if (!block) {
+			UNLOCK_ALLOCATED_BLOCKS;
+			continue;
+		}
+
+		ensure_block_is_checked_for_sweeping (block, block_index, NULL);
+	}
+
+	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_SWEEPING_AND_ITERATING);
+	while (sweep_state != SWEEP_STATE_SWEPT)
 		g_usleep (100);
 }
 
@@ -798,7 +853,7 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 	MSBlockInfo *block;
 
 	major_finish_sweeping ();
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
 
@@ -824,7 +879,7 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 			if (MS_OBJ_ALLOCED (obj, block))
 				callback ((char*)obj, block->obj_size, data);
 		}
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 static gboolean
@@ -916,7 +971,7 @@ major_dump_heap (FILE *heap_dump_file)
 		slots_available [i] = slots_used [i] = 0;
 
 	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks during sweep");
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int index = ms_find_block_obj_size_index (block->obj_size);
 		int count = MS_BLOCK_FREE / block->obj_size;
 
@@ -925,7 +980,7 @@ major_dump_heap (FILE *heap_dump_file)
 			if (MS_OBJ_ALLOCED (MS_BLOCK_OBJ (block, i), block))
 				++slots_used [index];
 		}
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	fprintf (heap_dump_file, "<occupancies>\n");
 	for (i = 0; i < num_block_obj_sizes; ++i) {
@@ -934,7 +989,7 @@ major_dump_heap (FILE *heap_dump_file)
 	}
 	fprintf (heap_dump_file, "</occupancies>\n");
 
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
 		int start = -1;
@@ -954,7 +1009,7 @@ major_dump_heap (FILE *heap_dump_file)
 		}
 
 		fprintf (heap_dump_file, "</section>\n");
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
@@ -1465,20 +1520,6 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 	}
 }
 
-static gboolean
-try_set_sweep_state (int new, int expected)
-{
-	int old = SGEN_CAS (&sweep_state, new, expected);
-	return old == expected;
-}
-
-static void
-set_sweep_state (int new, int expected)
-{
-	gboolean success = try_set_sweep_state (new, expected);
-	SGEN_ASSERT (0, success, "Could not set sweep state.");
-}
-
 static mono_native_thread_return_t
 sweep_loop_thread_func (void *dummy)
 {
@@ -1734,22 +1775,22 @@ major_start_major_collection (void)
 	if (lazy_sweep) {
 		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
 
-		FOREACH_BLOCK (block) {
+		FOREACH_BLOCK_NO_LOCK (block) {
 			sweep_block (block);
-		} END_FOREACH_BLOCK;
+		} END_FOREACH_BLOCK_NO_LOCK;
 
 		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 	}
 
 	/* FIXME: Just do one iteration over the blocks in this function. */
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
 		/*
 		 * FIXME: We don't need CAS here because there's still only one thread doing
 		 * stuff.
 		 */
 		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	set_sweep_state (SWEEP_STATE_NEED_SWEEPING, SWEEP_STATE_SWEPT);
 }
@@ -1946,13 +1987,13 @@ major_pin_objects (SgenGrayQueue *queue)
 	MSBlockInfo *block;
 
 	SGEN_ASSERT (0, !sweep_in_progress (), "Cannot iterate blocks during sweep");
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		size_t first_entry, last_entry;
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING, "All blocks must be swept when we're pinning.");
 		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
 				&first_entry, &last_entry);
 		mark_pinned_objects_in_block (block, first_entry, last_entry, queue);
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 static void
@@ -1973,13 +2014,13 @@ major_get_used_size (void)
 	MSBlockInfo *block;
 
 	SGEN_ASSERT (0, !sweep_in_progress (), "Cannot iterate blocks during sweep");
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		void **iter;
 		size += count * block->obj_size;
 		for (iter = block->free_list; iter; iter = (void**)*iter)
 			size -= block->obj_size;
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	return size;
 }
@@ -2040,22 +2081,21 @@ major_print_gc_param_usage (void)
  * This callback is used to clear cards, move cards to the shadow table and do counting.
  */
 static void
-major_iterate_live_block_ranges (sgen_cardtable_block_callback callback, gboolean requires_sweep)
+major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	MSBlockInfo *block;
 	gboolean has_references;
 
-	if (requires_sweep)
-		major_finish_sweeping ();
+	major_finish_sweeping ();
 
 	/*
 	 * FIXME: Don't take the lock for the whole allocated blocks array because we're
 	 * stopping the sweep thread.
 	 */
-	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
+	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 #ifdef HEAVY_STATISTICS
@@ -2236,46 +2276,17 @@ static void
 major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 {
 	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
-	int block_index;
-	gboolean do_sweep_checking = sweep_state == SWEEP_STATE_SWEEPING;
+	MSBlockInfo *block;
+	gboolean has_references;
 
 	if (!concurrent_mark)
 		g_assert (!mod_union);
 
- retry:
-	switch (sweep_state) {
-	case SWEEP_STATE_SWEPT:
-	case SWEEP_STATE_NEED_SWEEPING:
-		break;
-	case SWEEP_STATE_SWEEPING:
-		if (try_set_sweep_state (SWEEP_STATE_SWEEPING_AND_ITERATING, SWEEP_STATE_SWEEPING))
-			break;
-		goto retry;
-	case SWEEP_STATE_SWEEPING_AND_ITERATING:
-		SGEN_ASSERT (0, FALSE, "Is there another minor collection running?");
-		goto retry;
-	case SWEEP_STATE_COMPACTING:
-		g_usleep (100);
-		goto retry;
-	default:
-		SGEN_ASSERT (0, FALSE, "Invalid sweep state.");
-		break;
-	}
+	major_finish_sweeping ();
 
-	//major_finish_sweeping ();
-
-	/*
-	 * We're running with the world stopped and the only other thread doing work is the
-	 * sweep thread, which doesn't add blocks to the array, so we can safely access
-	 * `next_slot` without locking.
-	 */
-	for (block_index = 0; block_index < allocated_blocks.next_slot; ++block_index) {
-		//gboolean has_references;
-		void *tagged_block;
-		MSBlockInfo *block;
-
+	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 #ifdef PREFETCH_CARDS
-		int prefetch_index = block_index + 6;
+		int prefetch_index = __index + 6;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [prefetch_index]);
 			guint8 *prefetch_cards = sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (prefetch_block));
@@ -2285,32 +2296,11 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
                 }
 #endif
 
-		if (do_sweep_checking) {
-			LOCK_ALLOCATED_BLOCKS;
-			tagged_block = allocated_blocks.data [block_index];
-			block = BLOCK_UNTAG_HAS_REFERENCES (tagged_block);
-
-			if (!block || !BLOCK_IS_TAGGED_HAS_REFERENCES (tagged_block)) {
-				UNLOCK_ALLOCATED_BLOCKS;
-				continue;
-			}
-
-			if (!ensure_block_is_checked_for_sweeping (block, block_index, NULL))
-				continue;
-		} else {
-			tagged_block = allocated_blocks.data [block_index];
-			block = BLOCK_UNTAG_HAS_REFERENCES (tagged_block);
-			SGEN_ASSERT (0, block, "Why are there holes in the block array when we're not sweeping?");
-
-			if (!BLOCK_IS_TAGGED_HAS_REFERENCES (tagged_block))
-				continue;
-		}
+		if (!has_references)
+			continue;
 
 		scan_card_table_for_block (block, mod_union, scan_func, queue);
-	}
-
-	if (sweep_state == SWEEP_STATE_SWEEPING_AND_ITERATING)
-		set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_SWEEPING_AND_ITERATING);
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 static void
@@ -2324,9 +2314,10 @@ major_count_cards (long long *num_total_cards, long long *num_marked_cards)
 	if (sweep_in_progress ()) {
 		*num_total_cards = -1;
 		*num_marked_cards = -1;
+		return;
 	}
 
-	FOREACH_BLOCK_HAS_REFERENCES (block, has_references) {
+	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) MS_BLOCK_FOR_BLOCK_INFO (block));
 		int i;
 
@@ -2338,7 +2329,7 @@ major_count_cards (long long *num_total_cards, long long *num_marked_cards)
 			if (cards [i])
 				++marked_cards;
 		}
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 
 	*num_total_cards = total_cards;
 	*num_marked_cards = marked_cards;
@@ -2350,14 +2341,14 @@ update_cardtable_mod_union (void)
 	MSBlockInfo *block;
 
 	SGEN_ASSERT (0, !sweep_in_progress (), "Cannot iterate blocks during sweep");
-	FOREACH_BLOCK (block) {
+	FOREACH_BLOCK_NO_LOCK (block) {
 		size_t num_cards;
 
 		block->cardtable_mod_union = sgen_card_table_update_mod_union (block->cardtable_mod_union,
 				MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE, &num_cards);
 
 		SGEN_ASSERT (0, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
-	} END_FOREACH_BLOCK;
+	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
 static guint8*
