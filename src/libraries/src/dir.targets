@@ -55,14 +55,36 @@
     <!-- Don't run unit tests as post-build in VS, use F5 on test project instead (see below). -->
     <RunTestsForProject Condition="'$(BuildingInsideVisualStudio)' == 'True'">False</RunTestsForProject>
   </PropertyGroup>
-
-  <!-- xUnit command line -->
+  
+  <!-- General xunit options -->
   <PropertyGroup>
-    <XunitHost>corerun.exe</XunitHost>
     <XunitCommandLine>xunit.console.netcore.exe $(TargetFileName)</XunitCommandLine>
     <RunOuterLoop Condition="'$(RunOuterLoop)' == ''">False</RunOuterLoop>
     <XunitOptions Condition="'$(RunOuterLoop)'!='True'">$(XunitOptions) -notrait category=outerloop</XunitOptions>
     <XunitOptions>$(XunitOptions) -notrait category=failing</XunitOptions>
+  </PropertyGroup>
+  
+  <!-- Directory specific coverage options -->
+  <PropertyGroup>
+    <CoverageEnabledForDir>$(_CoverageEnabled)</CoverageEnabledForDir>
+    <CoverageEnabledForDir Condition="'$(CoverageEnabledForProject)' == 'false'">false</CoverageEnabledForDir>
+  </PropertyGroup>
+
+  <!-- xUnit command line without coverage enabled -->
+  <PropertyGroup Condition="!$(CoverageEnabledForDir)">
+    <XunitHost>corerun.exe</XunitHost>
+    <TestHost>$(XunitHost)</TestHost>
+    <TestCommandLine>$(XunitCommandLine) $(XunitOptions)</TestCommandLine>
+  </PropertyGroup>
+  
+  <!-- xUnit command line with coverage enabled -->
+  <PropertyGroup Condition="$(CoverageEnabledForDir)">
+    <CoverageHost>$(CoverageToolPath)</CoverageHost>
+    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters</CoverageOptions>
+    <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user  -target:corerun.exe -output:$(CoverageReportDir)$(TargetFileName).coverage.xml</CoverageCommandLine>
+    <TestHost>$(CoverageHost)</TestHost>
+    <XunitOptions>$(XunitOptions) -parallel none</XunitOptions>
+    <TestCommandLine>$(CoverageCommandLine) -targetargs:"$(XunitCommandLine) $(XunitOptions)"</TestCommandLine>
   </PropertyGroup>
   
   <!-- In VS (2015 Preview or later currently required): Debug to run unit tests on CoreCLR. -->
@@ -70,8 +92,8 @@
     <DebugTestFrameworkFolder>aspnetcore50</DebugTestFrameworkFolder>
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)' == ''">$(TestPath)$(DebugTestFrameworkFolder)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)' == ''">Program</StartAction>
-    <StartProgram Condition="'$(StartProgram)' == ''">$(StartWorkingDirectory)\$(XunitHost)</StartProgram>
-    <StartArguments Condition="'$(StartArguments)' == ''">$(XunitCommandLine) $(XunitOptions)</StartArguments>
+    <StartProgram Condition="'$(StartProgram)' == ''">$(StartWorkingDirectory)\$(TestHost)</StartProgram>
+    <StartArguments Condition="'$(StartArguments)' == ''">$(TestCommandLine)</StartArguments>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
@@ -80,7 +102,9 @@
           AfterTargets="PrepareForRun"
           Condition="'$(RunTestsForProject)'=='True'">
 
-    <Exec Command="$(XunitHost) $(XunitCommandLine) $(XunitOptions)"
+    <MakeDir Condition="$(CoverageEnabledForDir)" Directories="$(CoverageReportDir)" />
+          
+    <Exec Command="$(TestHost) $(TestCommandLine)"
           WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)"
           ContinueOnError="True">
       <Output PropertyName="TestRunExitCode" TaskParameter="ExitCode" />

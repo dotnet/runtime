@@ -54,4 +54,23 @@
   <Target Name="Clean">
     <RemoveDir Directories="$(BinDir);$(PackagesDir)" />
   </Target>
+  
+  <Target Name="GenerateCoverageReport"
+    AfterTargets="Build"
+    Inputs="$(CoverageReportDir)\*.coverage.xml"
+    Outputs="$(CoverageReportDir)*.*"
+    Condition="$(_CoverageEnabled)">
+    
+    <PropertyGroup>
+      <ReportGeneratorVersion>2.0.4.0</ReportGeneratorVersion>
+      <ReportGeneratorCommandLine>$(PackagesDir)ReportGenerator.$(ReportGeneratorVersion)\ReportGenerator.exe</ReportGeneratorCommandLine>
+      <ReportGeneratorOptions>-reports:$(CoverageReportDir)\*.coverage.xml -targetdir:$(CoverageReportDir) -reporttypes:Html</ReportGeneratorOptions>
+    </PropertyGroup>
+    
+    <Exec
+      Command="$(ReportGeneratorCommandLine) $(ReportGeneratorOptions)"
+      ContinueOnError="ErrorAndContinue" />
+    
+  </Target>
+  
 </Project>
