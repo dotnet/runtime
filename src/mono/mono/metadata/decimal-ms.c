@@ -47,7 +47,7 @@ typedef enum {
 static const uint32_t ten_to_nine    = 1000000000U;
 static const uint32_t ten_to_ten_div_4 = 2500000000U;
 #define POWER10_MAX     9
-#define DECIMAL_NEG ((int8_t)0x80)
+#define DECIMAL_NEG ((uint8_t)0x80)
 #define DECMAX 28
 #define DECIMAL_SCALE(dec)       ((dec).u.u.scale)
 #define DECIMAL_SIGN(dec)        ((dec).u.u.sign)
