@@ -5,7 +5,7 @@
 
 
 #include "stdafx.h"
-#include "DataTargetReader.h"
+#include "datatargetreader.h"
 
 
 DataTargetReader::DataTargetReader(CORDB_ADDRESS remoteAddressCursor, ICorDebugDataTarget* pDataTarget, DWORD targetDefines, DWORD mdStructuresVersion) 

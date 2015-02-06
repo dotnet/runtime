@@ -12,7 +12,7 @@
 #ifndef _REMOTE_MDINTERNALRW_SOURCE_
 #define _REMOTE_MDINTERNALRW_SOURCE_
 
-#include "TargetTypes.h"
+#include "targettypes.h"
 
 class RemoteMDInternalRWSource : IMDCustomDataSource
 {

@@ -12,7 +12,7 @@
 #ifndef _MD_TARGET_TYPES_
 #define _MD_TARGET_TYPES_
 
-#include "DataTargetReader.h"
+#include "datatargetreader.h"
 
 class Target_CMiniMdSchemaBase : public TargetObject
 {
