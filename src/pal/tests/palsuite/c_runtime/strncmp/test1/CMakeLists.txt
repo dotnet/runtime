@@ -14,7 +14,6 @@ add_dependencies(paltest_strncmp_test1 CoreClrPal)
 
 target_link_libraries(paltest_strncmp_test1
   pthread
-  rt
   m
   CoreClrPal
 )

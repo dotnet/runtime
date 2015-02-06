@@ -14,7 +14,6 @@ add_dependencies(paltest_interlockedincrement64_test2 CoreClrPal)
 
 target_link_libraries(paltest_interlockedincrement64_test2
   pthread
-  rt
   m
   CoreClrPal
 )

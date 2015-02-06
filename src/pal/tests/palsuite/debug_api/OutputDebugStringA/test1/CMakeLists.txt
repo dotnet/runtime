@@ -14,7 +14,6 @@ add_dependencies(paltest_outputdebugstringa_test1 CoreClrPal)
 
 target_link_libraries(paltest_outputdebugstringa_test1
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_outputdebugstringa_test1_helper CoreClrPal)
 
 target_link_libraries(paltest_outputdebugstringa_test1_helper
   pthread
-  rt
   m
   CoreClrPal
 )

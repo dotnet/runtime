@@ -14,7 +14,6 @@ add_dependencies(paltest_pal_try_leave_finally_test1 CoreClrPal)
 
 target_link_libraries(paltest_pal_try_leave_finally_test1
   pthread
-  rt
   m
   CoreClrPal
 )

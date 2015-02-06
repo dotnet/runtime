@@ -14,7 +14,6 @@ add_dependencies(paltest_writeprocessmemory_test4 CoreClrPal)
 
 target_link_libraries(paltest_writeprocessmemory_test4
   pthread
-  rt
   m
   CoreClrPal
 )
@@ -32,7 +31,6 @@ add_dependencies(paltest_writeprocessmemory_test4_helper CoreClrPal)
 
 target_link_libraries(paltest_writeprocessmemory_test4_helper
   pthread
-  rt
   m
   CoreClrPal
 )

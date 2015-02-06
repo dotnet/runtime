@@ -14,7 +14,6 @@ add_dependencies(paltest_mapviewoffile_test5 CoreClrPal)
 
 target_link_libraries(paltest_mapviewoffile_test5
   pthread
-  rt
   m
   CoreClrPal
 )
