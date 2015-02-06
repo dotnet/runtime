@@ -380,7 +380,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     case 1: ab = new ActionBlock<int>(i => { thrower(); return Task.FromResult(0); }, options); break;
                     case 2: ab = new ActionBlock<int>(i => Task.Run(thrower), options); break;
                 }
-                ab.PostRange(0, 4);
+                for (int i = 0; i < 4; i++)
+                {
+                    ab.Post(i); // Post may return false, depending on race with ActionBlock faulting
+                }
 
                 try
                 {
