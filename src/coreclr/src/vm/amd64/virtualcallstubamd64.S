@@ -10,7 +10,7 @@
 // entry is promoted to the front of the chain. This is declared as extern because
 // the default value (CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT) is defined in the header.
 // extern size_t g_dispatch_cache_chain_success_counter;
-CHAIN_SUCCESS_COUNTER = g_dispatch_cache_chain_success_counter
+#define CHAIN_SUCCESS_COUNTER g_dispatch_cache_chain_success_counter
 
 // The reason for not using .equ or '=' here is that otherwise the assembler compiles e.g. 
 // mov rax, BACKPATCH_FLAG as mov rax, [BACKPATCH_FLAG]
