@@ -81,7 +81,7 @@ build_coreclr()
     # Get the number of processors available to the scheduler
     # Other techniques such as `nproc` only get the number of
     # processors available to a single process.
-    NumProc=$(getconf _NPROCESSORS_ONLN)
+    NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     
     # Build CoreCLR
     
