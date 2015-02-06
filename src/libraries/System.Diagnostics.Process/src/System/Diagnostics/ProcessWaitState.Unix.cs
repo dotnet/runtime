@@ -39,7 +39,7 @@ namespace System.Diagnostics
     //   had waitpid called for it can get at its exit information.
 
     /// <summary>Exit information and waiting capabilities for a process.</summary>
-    internal sealed class ProcessWaitState
+    internal sealed class ProcessWaitState : IDisposable
     {
         /// <summary>
         /// Finalizable holder for a process wait state. Instantiating one
@@ -112,12 +112,14 @@ namespace System.Diagnostics
             lock (ProcessWaitState.s_processWaitStates)
             {
                 ProcessWaitState pws;
-                if (!ProcessWaitState.s_processWaitStates.TryGetValue(_processId, out pws))
+                bool foundState = ProcessWaitState.s_processWaitStates.TryGetValue(_processId, out pws);
+                Contract.Assert(foundState);
+                if (foundState)
                 {
-                    pws._outstandingRefCount--;
-                    if (pws._outstandingRefCount == 0)
+                    if (--pws._outstandingRefCount == 0)
                     {
                         ProcessWaitState.s_processWaitStates.Remove(_processId);
+                        pws.Dispose();
                     }
                 }
             }
@@ -155,6 +157,21 @@ namespace System.Diagnostics
         {
             Contract.Assert(processId >= 0);
             _processId = processId;
+        }
+
+        /// <summary>Releases managed resources used by the ProcessWaitState.</summary>
+        public void Dispose()
+        {
+            Contract.Assert(!Monitor.IsEntered(_gate));
+
+            lock (_gate)
+            {
+                if (_exitedEvent != null)
+                {
+                    _exitedEvent.Dispose();
+                    _exitedEvent = null;
+                }
+            }
         }
 
         /// <summary>Notes that the process has exited.</summary>
@@ -199,15 +216,6 @@ namespace System.Diagnostics
             }
         }
 
-        internal bool HasExited
-        {
-            get
-            {
-                int? ignored;
-                return GetExited(out ignored);
-            }
-        }
-
         internal DateTime ExitTime
         {
             get
@@ -217,6 +225,15 @@ namespace System.Diagnostics
                     Contract.Assert(_exited);
                     return _exitTime;
                 }
+            }
+        }
+
+        internal bool HasExited
+        {
+            get
+            {
+                int? ignored;
+                return GetExited(out ignored);
             }
         }
 

@@ -746,6 +746,7 @@ namespace System.Diagnostics
                 _output = null;
                 _error = null;
 
+                CloseCore();
                 Refresh();
             }
         }
