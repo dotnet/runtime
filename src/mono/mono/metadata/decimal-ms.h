@@ -13,9 +13,9 @@ typedef struct tagDEC {
         } u;
         uint16_t signscale;
     } u;
-    uint16_t wReserved;
+    uint16_t reserved;
 #else
-    uint16_t wReserved;
+    uint16_t reserved;
     union {
         struct {
             uint8_t scale;
@@ -35,8 +35,8 @@ typedef struct tagDEC {
 } MonoDecimal;
 
 typedef enum {
+	MONO_DECIMAL_CMP_LT=-1,
 	MONO_DECIMAL_CMP_EQ,
-	MONO_DECIMAL_CMP_LT,
 	MONO_DECIMAL_CMP_GT
 } MonoDecimalCompareResult;
 	
