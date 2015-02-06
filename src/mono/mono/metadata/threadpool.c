@@ -59,6 +59,22 @@
 #endif
 
 #include "threadpool.h"
+#include "threadpool-microsoft.h"
+
+static gboolean
+use_ms_threadpool (void)
+{
+	static gboolean use_ms_tp = -1;
+	const gchar *mono_threadpool_env;
+	if (use_ms_tp != -1)
+		return use_ms_tp;
+	else if (!(mono_threadpool_env = g_getenv ("MONO_THREADPOOL")))
+		return use_ms_tp = FALSE;
+	else if (strcmp (mono_threadpool_env, "microsoft") == 0)
+		return use_ms_tp = TRUE;
+	else
+		return use_ms_tp = FALSE;
+}
 
 #define THREAD_WANTS_A_BREAK(t) ((t->state & (ThreadState_StopRequested | \
 						ThreadState_SuspendRequested)) != 0)
@@ -432,6 +448,11 @@ mono_thread_pool_remove_socket (int sock)
 	MonoMList *list;
 	MonoSocketAsyncResult *state;
 	MonoObject *ares;
+
+	if (use_ms_threadpool ()) {
+		mono_thread_pool_ms_remove_socket (sock);
+		return;
+	}
 
 	if (socket_io_data.inited == 0)
 		return;
@@ -953,6 +974,11 @@ monitor_thread (gpointer unused)
 void
 mono_thread_pool_init_tls (void)
 {
+	if (use_ms_threadpool ()) {
+		mono_thread_pool_ms_init_tls ();
+		return;
+	}
+
 	mono_wsq_init ();
 }
 
@@ -961,8 +987,15 @@ mono_thread_pool_init (void)
 {
 	gint threads_per_cpu = 1;
 	gint thread_count;
-	gint cpu_count = mono_cpu_count ();
+	gint cpu_count;
 	int result;
+	
+	if (use_ms_threadpool ()) {
+		mono_thread_pool_ms_init ();
+		return;
+	}
+
+	cpu_count = mono_cpu_count ();
 
 	if (tp_inited == 2)
 		return;
@@ -1049,9 +1082,15 @@ MonoAsyncResult *
 mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback,
 		      MonoObject *state)
 {
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *domain;
 	MonoAsyncResult *ares;
 	ASyncCall *ac;
+
+	if (use_ms_threadpool ()) {
+		return mono_thread_pool_ms_add (target, msg, async_callback, state);
+	}
+
+	domain = mono_domain_get ();
 
 	ac = (ASyncCall*)mono_object_new (domain, async_call_klass);
 	MONO_OBJECT_SETREF (ac, msg, msg);
@@ -1080,6 +1119,10 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 {
 	ASyncCall *ac;
 	HANDLE wait_event;
+
+	if (use_ms_threadpool ()) {
+		return mono_thread_pool_ms_finish (ares, out_args, exc);
+	}
 
 	*exc = NULL;
 	*out_args = NULL;
@@ -1132,6 +1175,11 @@ threadpool_kill_idle_threads (ThreadPool *tp)
 void
 mono_thread_pool_cleanup (void)
 {
+	if (use_ms_threadpool ()) {
+		mono_thread_pool_ms_cleanup ();
+		return;
+	}
+
 	if (InterlockedExchange (&async_io_tp.pool_status, 2) == 1) {
 		socket_io_cleanup (&socket_io_data); /* Empty when DISABLE_SOCKETS is defined */
 		threadpool_kill_idle_threads (&async_io_tp);
@@ -1336,8 +1384,15 @@ gboolean
 mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 {
 	HANDLE sem_handle;
-	int result = TRUE;
-	guint32 start_time = 0;
+	int result;
+	guint32 start_time;
+
+	if (use_ms_threadpool ()) {
+		return mono_thread_pool_ms_remove_domain_jobs (domain, timeout);
+	}
+
+	result = TRUE;
+	start_time = 0;
 
 	g_assert (domain->state == MONO_APPDOMAIN_UNLOADING);
 
@@ -1389,6 +1444,10 @@ threadpool_free_queue (ThreadPool *tp)
 gboolean
 mono_thread_pool_is_queue_array (MonoArray *o)
 {
+	if (use_ms_threadpool ()) {
+		return mono_thread_pool_ms_is_queue_array (o);
+	}
+
 	// gpointer obj = o;
 
 	// FIXME: need some fix in sgen code.
@@ -1860,6 +1919,10 @@ mono_internal_thread_unhandled_exception (MonoObject* exc)
 void
 mono_thread_pool_suspend (void)
 {
+	if (use_ms_threadpool ()) {
+		mono_thread_pool_ms_suspend ();
+		return;
+	}
 	suspended = TRUE;
 }
 
@@ -1869,5 +1932,9 @@ mono_thread_pool_suspend (void)
 void
 mono_thread_pool_resume (void)
 {
+	if (use_ms_threadpool ()) {
+		mono_thread_pool_ms_resume ();
+		return;
+	}
 	suspended = FALSE;
 }
