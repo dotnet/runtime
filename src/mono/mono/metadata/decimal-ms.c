@@ -502,6 +502,7 @@ DecFixInt(MonoDecimal * result, MonoDecimal * operand)
 	}
 
 	COPYDEC(*result, *operand);
+	// Odd, the Microsoft code does not set result->reserved to zero on this case
 	return 0;
 }
 
@@ -1112,6 +1113,7 @@ DecAddSub(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result, int8_t sig
 
 RetDec:
 	COPYDEC(*result, decRes);
+	// Odd, the Microsoft code does not set result->reserved to zero on this case
 	return MONO_DECIMAL_OK;
 }
 
@@ -1717,6 +1719,7 @@ VarDecAbs (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	COPYDEC(*result, *pdecOprd);
 	result->u.u.sign &= ~DECIMAL_NEG;
+	// Microsoft does not set reserved here
 }
 
 // VarDecFix - Decimal Fix (chop to integer)
@@ -1750,6 +1753,7 @@ static void
 VarDecNeg (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	COPYDEC(*result, *pdecOprd);
+	// Microsoft does not set result->reserved to zero on this case.
 	result->u.u.sign ^= DECIMAL_NEG;
 }
 
@@ -1757,7 +1761,7 @@ VarDecNeg (MonoDecimal *pdecOprd, MonoDecimal *result)
 // Returns: MONO_DECIMAL_INVALID_ARGUMENT, MONO_DECIMAL_OK
 //
 static MonoDecimalStatus
-VarDecRound(MonoDecimal *pdecIn, int cDecimals, MonoDecimal *result)
+VarDecRound(MonoDecimal *input, int cDecimals, MonoDecimal *result)
 {
 	uint32_t num[3];
 	uint32_t rem;
@@ -1768,12 +1772,12 @@ VarDecRound(MonoDecimal *pdecIn, int cDecimals, MonoDecimal *result)
 	if (cDecimals < 0)
 		return MONO_DECIMAL_INVALID_ARGUMENT;
 
-	scale = pdecIn->u.u.scale - cDecimals;
+	scale = input->u.u.scale - cDecimals;
 	if (scale > 0) {
-		num[0] = pdecIn->v.v.Lo32;
-		num[1] = pdecIn->v.v.Mid32;
-		num[2] = pdecIn->Hi32;
-		result->u.u.sign = pdecIn->u.u.sign;
+		num[0] = input->v.v.Lo32;
+		num[1] = input->v.v.Mid32;
+		num[2] = input->Hi32;
+		result->u.u.sign = input->u.u.sign;
 		rem = sticky = 0;
 
 		do {
@@ -1806,7 +1810,8 @@ VarDecRound(MonoDecimal *pdecIn, int cDecimals, MonoDecimal *result)
 		return MONO_DECIMAL_OK;
 	}
 
-	COPYDEC(*result, *pdecIn);
+	COPYDEC(*result, *input);
+	// Odd, the Microsoft source does not set the result->reserved to zero here.
 	return MONO_DECIMAL_OK;
 }
 
@@ -2255,6 +2260,7 @@ mono_decimal_init_single (MonoDecimal *_this, float value)
 	MONO_ARCH_SAVE_REGS;
 	if (VarDecFromR4 (value, _this) == MONO_DECIMAL_OVERFLOW)
 		mono_raise_exception (mono_get_exception_overflow ());
+	_this->reserved = 0;
 }
 
 void
@@ -2263,6 +2269,7 @@ mono_decimal_init_double (MonoDecimal *_this, double value)
 	MONO_ARCH_SAVE_REGS;
 	if (VarDecFromR8 (value, _this) == MONO_DECIMAL_OVERFLOW)
 		mono_raise_exception (mono_get_exception_overflow ());
+	_this->reserved = 0;
 }
 
 void
@@ -2276,6 +2283,7 @@ mono_decimal_floor (MonoDecimal *d)
 	
 	// copy decRes into d
 	COPYDEC(*d, decRes);
+	d->reserved = 0;
 	FC_GC_POLL ();
 }
 
@@ -2318,6 +2326,8 @@ mono_decimal_multiply (MonoDecimal *d1, MonoDecimal *d2)
 		mono_raise_exception (mono_get_exception_overflow ());
 
 	COPYDEC(*d1, decRes);
+	d1->reserved = 0;
+
 	FC_GC_POLL ();
 }
 
@@ -2336,6 +2346,8 @@ mono_decimal_round (MonoDecimal *d, int32_t decimals)
 
 	// copy decRes into d
 	COPYDEC(*d, decRes);
+	d->reserved = 0;
+
 	FC_GC_POLL();
 }
 
@@ -2410,6 +2422,7 @@ mono_decimal_truncate (MonoDecimal *d)
 
 	// copy decRes into d
 	COPYDEC(*d, decRes);
+	d->reserved = 0;
 	FC_GC_POLL();
 }
 
@@ -2660,8 +2673,8 @@ mono_decimal_addsub (MonoDecimal *left, MonoDecimal *right, uint8_t sign)
 			num[0] = DECIMAL_LO32(result);
 			num[1] = DECIMAL_MID32(result);
 			num[2] = DECIMAL_HI32(result);
-			DECIMAL_SCALE(result) = (int8_t)ScaleResult(num, hi_prod, DECIMAL_SCALE(result));
-			if (DECIMAL_SCALE(result) == (int8_t)-1)
+			DECIMAL_SCALE(result) = (uint8_t)ScaleResult(num, hi_prod, DECIMAL_SCALE(result));
+			if (DECIMAL_SCALE(result) == (uint8_t)-1)
 				mono_raise_exception (mono_get_exception_overflow ());
 
 			DECIMAL_LO32(result) = num[0];
@@ -2673,6 +2686,7 @@ mono_decimal_addsub (MonoDecimal *left, MonoDecimal *right, uint8_t sign)
 RetDec:
 	left = leftOriginal;
 	COPYDEC(*left, result);
+	left->reserved = 0;
 }
 
 void
@@ -3032,7 +3046,9 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 	DECIMAL_HI32(*left) = quo[2];
 	DECIMAL_MID32(*left) = quo[1];
 	DECIMAL_LO32(*left) = quo[0];
-	DECIMAL_SCALE(*left) = (int8_t)scale;
+	DECIMAL_SCALE(*left) = (uint8_t)scale;
+	left->reserved = 0;
+
 }
 
 #define DECIMAL_PRECISION 29
@@ -3054,6 +3070,7 @@ mono_decimal_from_number (void *from, MonoDecimal *target)
 	g_assert(target != NULL);
 
 	MonoDecimal d;
+	d.reserved = 0;
 	DECIMAL_SIGNSCALE(d) = 0;
 	DECIMAL_HI32(d) = 0;
 	DECIMAL_LO32(d) = 0;
@@ -3110,8 +3127,9 @@ mono_decimal_from_number (void *from, MonoDecimal *target)
 		DECIMAL_MID32(d) = 0;
 		DECIMAL_SCALE(d) = (DECIMAL_PRECISION - 1);
 	} else {
-		DECIMAL_SCALE(d) = (int8_t)(-e);
+		DECIMAL_SCALE(d) = (uint8_t)(-e);
 	}
+	
 	DECIMAL_SIGN(d) = number->sign? DECIMAL_NEG: 0;
 	*target = d;
 	return 1;
