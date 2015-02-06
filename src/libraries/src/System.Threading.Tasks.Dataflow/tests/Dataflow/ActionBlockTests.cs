@@ -86,6 +86,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 new ActionBlock<int>(i => { }, new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) }),
 
                 new ActionBlock<int>(i => default(Task)),
+                new ActionBlock<int>(i => default(Task), new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 2 }),
 
                 new ActionBlock<int>(i => default(Task), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1 }),
                 new ActionBlock<int>(i => default(Task), new ExecutionDataflowBlockOptions { MaxMessagesPerTask = 1, CancellationToken = new CancellationToken(true) })

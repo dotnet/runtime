@@ -590,39 +590,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             else PropagateCompletionAsContinuation(sourceCompletionTask, target);
         }
 
-
-        /// <summary>
-        /// Provides a wrapper for use with CloneContextAndRun, alleviating the need for both
-        /// a closure and a delegate to that closure to be allocated.
-        /// </summary>
-        /// <typeparam name="T">Specifies the type of the input and output data.</typeparam>
-        private sealed class CloningFunctionContextState<T>
-        {
-            /// <summary>The input to be cloned.</summary>
-            internal readonly T Input;
-            /// <summary>The cloning function.</summary>
-            internal readonly Func<T, T> CloningFunction;
-            /// <summary>The result of the cloning operation.</summary>
-            internal T Output;
-
-            /// <summary>Initializes the cloning state.</summary>
-            /// <param name="input">The input to be cloned.</param>
-            /// <param name="cloningFunction">The cloning function.</param>
-            internal CloningFunctionContextState(T input, Func<T, T> cloningFunction)
-            {
-                Contract.Requires(cloningFunction != null, "Cloning function is required.");
-                this.Input = input;
-                this.CloningFunction = cloningFunction;
-            }
-
-            /// <summary>Runs the cloning function over the input and stores the result into the output.</summary>
-            internal void Run()
-            {
-                Contract.Requires(CloningFunction != null, "Non-null cloning function required.");
-                Output = CloningFunction(Input);
-            }
-        }
-
         /// <summary>Static class used to cache generic delegates the C# compiler doesn't cache by default.</summary>
         /// <remarks>Without this, we end up allocating the generic delegate each time the operation is used.</remarks>
         static class CachedGenericDelegates<T>
