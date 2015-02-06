@@ -853,16 +853,6 @@ load_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src, gboolean *
 	g_assert_not_reached ();
 }
 
-static MonoInst*
-get_int_to_float_spill_area (MonoCompile *cfg)
-{
-	if (!cfg->iconv_raw_var) {
-		cfg->iconv_raw_var = mono_compile_create_var (cfg, &mono_defaults.int32_class->byval_arg, OP_LOCAL);
-		cfg->iconv_raw_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
-	}	
-	return cfg->iconv_raw_var;
-}
-
 /*We share the var with fconv_to_r8_x to save some stack space.*/
 static MonoInst*
 get_double_spill_area (MonoCompile *cfg)
@@ -930,7 +920,7 @@ get_simd_vreg_or_expanded_scalar (MonoCompile *cfg, MonoMethod *cmethod, MonoIns
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (expand_op == OP_EXPAND_R4)
-		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+		ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 	else if (expand_op == OP_EXPAND_R8)
 		ins->backend.spill_var = get_double_spill_area (cfg);
 
@@ -1092,7 +1082,7 @@ simd_intrinsic_emit_setter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 		ins->sreg2 = args [1]->dreg;
 		ins->inst_c0 = intrinsic->opcode;
 		if (sig->params [0]->type == MONO_TYPE_R4)
-			ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+			ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 		else if (sig->params [0]->type == MONO_TYPE_R8)
 			ins->backend.spill_var = get_double_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -1162,7 +1152,7 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 		ins->sreg1 = vreg;
 		ins->type = STACK_R8;
 		ins->dreg = alloc_freg (cfg);
-		ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+		ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);	
 	}
 	return ins;
@@ -1223,7 +1213,7 @@ simd_intrinsic_emit_ctor (const SimdIntrinsc *intrinsic, MonoCompile *cfg, MonoM
 
 		MONO_ADD_INS (cfg->cbb, ins);
 		if (sig->params [0]->type == MONO_TYPE_R4)
-			ins->backend.spill_var = get_int_to_float_spill_area (cfg);
+			ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 		else if (sig->params [0]->type == MONO_TYPE_R8)
 			ins->backend.spill_var = get_double_spill_area (cfg);
 

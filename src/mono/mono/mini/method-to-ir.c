@@ -5929,6 +5929,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_INST_NEW (cfg, f2i, f2i_opcode);
 				f2i->dreg = mono_alloc_ireg (cfg);
 				f2i->sreg1 = args [1]->dreg;
+				if (f2i_opcode == OP_MOVE_F_TO_I4)
+					f2i->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i);
 			}
 
@@ -5968,6 +5970,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2f->dreg = mono_alloc_freg (cfg);
 				i2f->sreg1 = ins->dreg;
 				i2f->type = STACK_R8;
+				if (i2f_opcode == OP_MOVE_I4_TO_F)
+					i2f->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;
@@ -6018,11 +6022,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_INST_NEW (cfg, f2i_new, f2i_opcode);
 				f2i_new->dreg = mono_alloc_ireg (cfg);
 				f2i_new->sreg1 = args [1]->dreg;
+				if (f2i_opcode == OP_MOVE_F_TO_I4)
+					f2i_new->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i_new);
 
 				MONO_INST_NEW (cfg, f2i_cmp, f2i_opcode);
 				f2i_cmp->dreg = mono_alloc_ireg (cfg);
 				f2i_cmp->sreg1 = args [2]->dreg;
+				if (f2i_opcode == OP_MOVE_F_TO_I4)
+					f2i_cmp->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, f2i_cmp);
 			}
 
@@ -6062,6 +6070,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2f->dreg = mono_alloc_freg (cfg);
 				i2f->sreg1 = ins->dreg;
 				i2f->type = STACK_R8;
+				if (i2f_opcode == OP_MOVE_I4_TO_F)
+					i2f->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 				MONO_ADD_INS (cfg->cbb, i2f);
 
 				ins = i2f;

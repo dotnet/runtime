@@ -1383,6 +1383,20 @@ mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) 
 	dest->klass = dest->inst_i0->klass;
 }
 
+MonoInst*
+mini_get_int_to_float_spill_area (MonoCompile *cfg)
+{
+#ifdef TARGET_X86
+	if (!cfg->iconv_raw_var) {
+		cfg->iconv_raw_var = mono_compile_create_var (cfg, &mono_defaults.int32_class->byval_arg, OP_LOCAL);
+		cfg->iconv_raw_var->flags |= MONO_INST_VOLATILE; /*FIXME, use the don't regalloc flag*/
+	}
+	return cfg->iconv_raw_var;
+#else
+	return NULL;
+#endif
+}
+
 #endif
 
 void
