@@ -35,9 +35,6 @@ Abstract:
 #else
 #include "pal/fakepoll.h"
 #endif // HAVE_POLL
-#if HAVE_STROPTS_H
-#include <stropts.h>
-#endif  // HAVE_STROPTS_H
 
 namespace CorUnix
 {
