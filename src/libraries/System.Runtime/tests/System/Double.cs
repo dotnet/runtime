@@ -176,10 +176,6 @@ public static class DoubleTests
 
         Double i2 = -8249;
         Assert.Equal("-8249", i2.ToString());
-
-        Assert.Equal("NaN", Double.NaN.ToString());
-        Assert.Equal("Infinity", Double.PositiveInfinity.ToString());
-        Assert.Equal("-Infinity", Double.NegativeInfinity.ToString());
     }
 
     [Fact]
@@ -198,6 +194,10 @@ public static class DoubleTests
         // Changing the negative pattern doesn't do anything without also passing in a format string
         numberFormat.NumberNegativePattern = 0;
         Assert.Equal("-2468", i3.ToString(numberFormat));
+
+        Assert.Equal("NaN", Double.NaN.ToString(NumberFormatInfo.InvariantInfo));
+        Assert.Equal("Infinity", Double.PositiveInfinity.ToString(NumberFormatInfo.InvariantInfo));
+        Assert.Equal("-Infinity", Double.NegativeInfinity.ToString(NumberFormatInfo.InvariantInfo));
     }
 
     [Fact]
@@ -291,15 +291,6 @@ public static class DoubleTests
         Assert.True(Double.TryParse("1,000", out i));  // Thousands
         Assert.Equal(1000, i);
 
-        Assert.True(Double.TryParse("Infinity", out i));
-        Assert.True(Double.IsPositiveInfinity(i));
-
-        Assert.True(Double.TryParse("-Infinity", out i));
-        Assert.True(Double.IsNegativeInfinity(i));
-
-        Assert.True(Double.TryParse("NaN", out i));
-        Assert.True(Double.IsNaN(i));
-
         Assert.False(Double.TryParse("$1000", out i));  // Currency
         Assert.False(Double.TryParse("abc", out i));    // Hex digits
         Assert.False(Double.TryParse("(135)", out i));  // Parentheses
@@ -327,6 +318,15 @@ public static class DoubleTests
 
         Assert.True(Double.TryParse("(135)", NumberStyles.AllowParentheses, nfi, out i)); // Parenthese postive
         Assert.Equal(-135, i);
+
+        Assert.True(Double.TryParse("Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
+        Assert.True(Double.IsPositiveInfinity(i));
+
+        Assert.True(Double.TryParse("-Infinity", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
+        Assert.True(Double.IsNegativeInfinity(i));
+
+        Assert.True(Double.TryParse("NaN", NumberStyles.Any, NumberFormatInfo.InvariantInfo, out i));
+        Assert.True(Double.IsNaN(i));
     }
 }
 
