@@ -977,7 +977,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
                 /* prevent annotations from being dropped by optimizations in debug */  \
                 INDEBUG(static bool __alwayszero;)                                      \
-                INDEBUG(if(!VolatileLoad(&__alwayszero)))                               \
+                INDEBUG(VolatileLoad(&__alwayszero);)                                   \
                 {                                                                       \
                     /* this is necessary for Rotor exception handling to work */        \
                     DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
