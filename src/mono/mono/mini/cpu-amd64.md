@@ -257,7 +257,7 @@ float_clt_membase: dest:i src1:f src2:b len:35
 float_clt_un_membase: dest:i src1:f src2:b len:42
 float_conv_to_u: dest:i src1:f len:46
 fmove: dest:f src1:f len:8
-move_f_to_i4: dest:i src1:f clob:1 len:9
+move_f_to_i4: dest:i src1:f len:9
 move_i4_to_f: dest:f src1:i len:9
 move_f_to_i8: dest:i src1:f len:5
 move_i8_to_f: dest:f src1:i len:5
