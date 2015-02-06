@@ -47,9 +47,6 @@
     <Compile Include="..\..\Common\src\System\SR.cs">
       <Link>System\SR.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\ArrayT.cs">
-      <Link>System\ArrayT.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>
     </Compile>
