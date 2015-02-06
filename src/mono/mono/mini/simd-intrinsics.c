@@ -28,7 +28,7 @@ TODO add support for fusing a XMOVE into a simd op in mono_spill_global_vars.
 TODO add stuff to man pages
 TODO document this under /docs
 TODO make passing a xmm as argument not cause it to be LDADDR'ed (introduce an OP_XPUSH)
-TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like iconv_to_r8_raw. (or just pinst sse ops) 
+TODO revamp the .ctor sequence as it looks very fragile, maybe use a var just like move_i4_to_f. (or just pinst sse ops) 
 TODO figure out what's wrong with OP_STOREX_MEMBASE_REG and OP_STOREX_MEMBASE (the 2nd is for imm operands)
 TODO maybe add SSE3 emulation on top of SSE2, or just implement the corresponding functions using SSE2 intrinsics.
 TODO pass simd arguments in registers or, at least, add SSE support for pushing large (>=16) valuetypes 
@@ -1147,13 +1147,12 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (sig->ret->type == MONO_TYPE_R4) {
-		MONO_INST_NEW (cfg, ins, OP_ICONV_TO_R8_RAW);
-		ins->klass = mono_defaults.single_class;
+		MONO_INST_NEW (cfg, ins, OP_MOVE_I4_TO_F);
 		ins->sreg1 = vreg;
 		ins->type = STACK_R8;
 		ins->dreg = alloc_freg (cfg);
 		ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
-		MONO_ADD_INS (cfg->cbb, ins);	
+		MONO_ADD_INS (cfg->cbb, ins);
 	}
 	return ins;
 }

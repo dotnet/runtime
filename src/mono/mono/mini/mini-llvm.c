@@ -4119,11 +4119,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_ICONV_TO_R8_RAW:
-			/* Same as OP_ICONV_TO_R8 */
-			values [ins->dreg] = convert (ctx, LLVMBuildBitCast (builder, lhs, LLVMFloatType (), ""), LLVMDoubleType ());
-			break;
-
 		case OP_COMPPS:
 		case OP_COMPPD: {
 			LLVMValueRef args [3];
