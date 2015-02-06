@@ -1147,9 +1147,10 @@ simd_intrinsic_emit_getter (const SimdIntrinsc *intrinsic, MonoCompile *cfg, Mon
 	MONO_ADD_INS (cfg->cbb, ins);
 
 	if (sig->ret->type == MONO_TYPE_R4) {
-		MONO_INST_NEW (cfg, ins, OP_MOVE_I4_TO_F);
+		MONO_INST_NEW (cfg, ins, cfg->r4fp ? OP_ICONV_TO_R4_RAW : OP_MOVE_I4_TO_F);
+		ins->klass = mono_defaults.single_class;
 		ins->sreg1 = vreg;
-		ins->type = STACK_R8;
+		ins->type = cfg->r4_stack_type;
 		ins->dreg = alloc_freg (cfg);
 		ins->backend.spill_var = mini_get_int_to_float_spill_area (cfg);
 		MONO_ADD_INS (cfg->cbb, ins);

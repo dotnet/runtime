@@ -76,6 +76,7 @@ localloc: dest:i src1:i len:60
 compare: src1:i src2:i len:4
 compare_imm: src1:i len:12
 fcompare: src1:f src2:f len:12
+rcompare: src1:f src2:f len:12
 oparglist: src1:i len:12
 setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
@@ -88,6 +89,9 @@ voidcall_membase: src1:b len:16 clob:c
 fcall: dest:g len:28 clob:c
 fcall_reg: dest:g src1:i len:16 clob:c
 fcall_membase: dest:g src1:b len:24 clob:c
+rcall: dest:g len:28 clob:c
+rcall_reg: dest:g src1:i len:16 clob:c
+rcall_membase: dest:g src1:b len:24 clob:c
 lcall: dest:l len:20 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
 lcall_membase: dest:l src1:b len:16 clob:c
@@ -198,6 +202,31 @@ float_cneq: dest:y src1:f src2:f len:20
 float_cge: dest:y src1:f src2:f len:20
 float_cle: dest:y src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
+
+# R4 opcodes
+r4_conv_to_i1: dest:i src1:f len:88
+r4_conv_to_i2: dest:i src1:f len:88
+r4_conv_to_i4: dest:i src1:f len:88
+r4_conv_to_u1: dest:i src1:f len:88
+r4_conv_to_u2: dest:i src1:f len:88
+r4_conv_to_u4: dest:i src1:f len:88
+r4_conv_to_r4: dest:f src1:f len:16
+r4_conv_to_r8: dest:f src1:f len:16
+r4_add: dest:f src1:f src2:f len:4
+r4_sub: dest:f src1:f src2:f len:4
+r4_mul: dest:f src1:f src2:f len:4
+r4_div: dest:f src1:f src2:f len:4
+r4_rem: dest:f src1:f src2:f len:16
+r4_neg: dest:f src1:f len:4
+r4_ceq: dest:i src1:f src2:f len:16
+r4_cgt: dest:i src1:f src2:f len:16
+r4_cgt_un: dest:i src1:f src2:f len:20
+r4_clt: dest:i src1:f src2:f len:16
+r4_clt_un: dest:i src1:f src2:f len:20
+r4_cneq: dest:y src1:f src2:f len:20
+r4_cge: dest:y src1:f src2:f len:20
+r4_cle: dest:y src1:f src2:f len:20
+
 setfret: src1:f len:12
 aot_const: dest:i len:16
 objc_get_selector: dest:i len:32
