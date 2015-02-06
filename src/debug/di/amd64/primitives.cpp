@@ -7,7 +7,6 @@
 // 
 
 
-#include "stdafx.h"
 
 #include "../../shared/amd64/primitives.cpp"
 

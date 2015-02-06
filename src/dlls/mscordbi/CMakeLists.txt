@@ -1,19 +1,23 @@
 set(MSCORDBI_SOURCES
   mscordbi.cpp
-  Native.rc
 )  
 
-set(DEF_SOURCES
-  mscordbi.src
-)
+if(WIN32)
+    add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
 
-add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
+    set(MSCORDBI_SOURCES ${MSCORDBI_SOURCES}
+        Native.rc
+    )
 
-convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
+    set(DEF_SOURCES
+      mscordbi.src
+    )
+    convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
 
-preprocess_def_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
+    preprocess_def_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
 
-set(MSCORDBI_SOURCES ${MSCORDBI_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
+    set(MSCORDBI_SOURCES ${MSCORDBI_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
+endif(WIN32)
 
 add_library(mscordbi SHARED
   ${MSCORDBI_SOURCES}
@@ -22,13 +26,10 @@ add_library(mscordbi SHARED
 set(COREDBI_LIBRARIES
   cordbdi
   utilcodestaticnohost
-  ipcmanager-staticcrt
   ildbsymlib
   mdcompiler-dbi
-  mdwinmd_dbi
   mdruntime-dbi
   mdruntimerw-dbi
-  mdhotdata-staticcrt
   mddatasource_dbi
   corguids
 ) 
@@ -36,6 +37,9 @@ set(COREDBI_LIBRARIES
 if(WIN32)
     set(COREDBI_LIBRARIES
         ${COREDBI_LIBRARIES}
+        ipcmanager-staticcrt
+        mdhotdata-staticcrt
+        mdwinmd_dbi
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -45,10 +49,28 @@ if(WIN32)
         version.lib
         ${STATIC_MT_CRT_LIB}
     )
+
+    target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
+
+elseif(CLR_CMAKE_PLATFORM_UNIX)
+    set(COREDBI_LIBRARIES
+        ${COREDBI_LIBRARIES}
+        mdhotdata_full
+        palrt
+        CoreClrPal
+    )
+
+    # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
+    # if they are defined after they are used. Having all libs twice makes sure that ld will actually
+    # find all symbols.
+    target_link_libraries(mscordbi ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
+    
 endif(WIN32)
 
-target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
+
 
 # add the install targets
 install (TARGETS mscordbi DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordbi.pdb DESTINATION PDB)
+if(WIN32)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordbi.pdb DESTINATION PDB)
+endif(WIN32)

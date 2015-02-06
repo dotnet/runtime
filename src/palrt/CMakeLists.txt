@@ -13,6 +13,7 @@ set(PALRT_SOURCES
     memorystream.cpp
     path.cpp
     urlpars.cpp
+    variant.cpp
 )
 
 add_compile_options(-fPIC)

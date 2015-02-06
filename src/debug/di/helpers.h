@@ -182,10 +182,10 @@ template<typename TYPE> \
 class NAME : public BaseSmartPtr<TYPE, ADDREF, RELEASE> { \
 public: \
     NAME() { }; \
-    NAME(NAME & other) { Assign(other.GetValue()); } \
+    NAME(NAME & other) { this->Assign(other.GetValue()); } \
     explicit NAME(TYPE * p) : BaseSmartPtr<TYPE, ADDREF, RELEASE>(p) { }; \
     FORCEINLINE NAME * GetAddr() { return this; } \
-    void operator=(NAME & other) { Assign(other.GetValue()); } \
+    void operator=(NAME & other) { this->Assign(other.GetValue()); } \
 }; \
 
 //-----------------------------------------------------------------------------

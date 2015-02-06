@@ -10,7 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include "RemoteMDInternalRWSource.h"
+#include "remotemdinternalrwsource.h"
 
 HRESULT CreateRemoteMDInternalRWSource(TADDR mdInternalRWRemoteAddress, ICorDebugDataTarget* pDataTarget, DWORD defines, DWORD dataStructureVersion, IMDCustomDataSource** ppDataSource)
 {
