@@ -219,7 +219,7 @@ fnDblPower10(int ix)
 } // double fnDblPower10()
 
 
-inline int64_t
+static inline int64_t
 DivMod32by32(int32_t num, int32_t den)
 {
     SPLIT64  sdl;
@@ -229,7 +229,7 @@ DivMod32by32(int32_t num, int32_t den)
     return sdl.int64;
 }
 
-inline int64_t
+static inline int64_t
 DivMod64by32(int64_t num, int32_t den)
 {
     SPLIT64  sdl;
