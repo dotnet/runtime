@@ -2119,7 +2119,7 @@ VarR8FromDec(MonoDecimal *input, double *result)
 	tmp.u.Lo = DECIMAL_LO32(*input);
 	tmp.u.Hi = DECIMAL_MID32(*input);
 	
-	if ( (uint32_t)DECIMAL_MID32(*input) < 0 )
+	if ((int32_t)DECIMAL_MID32(*input) < 0)
 		dbl = (ds2to64.dbl + (double)(int64_t)tmp.int64 +
 		       (double)DECIMAL_HI32(*input) * ds2to64.dbl) / fnDblPower10(DECIMAL_SCALE(*input)) ;
 	else
