@@ -411,8 +411,8 @@ long_conv_to_r4_2: dest:f src1:i src2:i len:14
 long_conv_to_r_un_2: dest:f src1:i src2:i len:40
 
 fmove: dest:f src1:f
-move_f_to_i4: dest:i src1:f len:5
-move_i4_to_f: dest:f src1:i len:7
+move_f_to_i4: dest:i src1:f len:17
+move_i4_to_f: dest:f src1:i len:17
 float_conv_to_r4: dest:f src1:f  len:12
 
 load_mem: dest:i len:9
