@@ -77,11 +77,17 @@ build_coreclr()
         echo Failed to generate native component build project!
         exit 1
     fi
+
+    # Get the number of processors available to the scheduler
+    # Other techniques such as `nproc` only get the number of
+    # processors available to a single process.
+    NumProc=$(getconf _NPROCESSORS_ONLN)
     
     # Build CoreCLR
     
-    echo Executing make $__UnprocessedBuildArgs
-    make install -j `nproc` $__UnprocessedBuildArgs
+    echo Executing make install -j $NumProc $__UnprocessedBuildArgs
+
+    make install -j $NumProc $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
         echo Failed to build coreclr components.
         exit 1
