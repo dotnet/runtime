@@ -10,7 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include "RemoteMDInternalRWSource.h"
+#include "remotemdinternalrwsource.h"
 
 RemoteMDInternalRWSource::RemoteMDInternalRWSource() :
 m_cRef(0)
