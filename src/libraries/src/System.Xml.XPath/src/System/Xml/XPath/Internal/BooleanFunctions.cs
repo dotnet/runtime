@@ -60,7 +60,10 @@ namespace MS.Internal.Xml.XPath
         {
             object result = _arg.Evaluate(nodeIterator);
             if (result is XPathNodeIterator) return _arg.Advance() != null;
-            if (result is string) return toBoolean((string)result);
+
+            string str = result as string;
+            if (str != null) return toBoolean(str);
+
             if (result is double) return toBoolean((double)result);
             if (result is bool) return (bool)result;
             Debug.Assert(result is XPathNavigator, "Unknown value type");

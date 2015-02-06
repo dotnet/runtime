@@ -51,17 +51,22 @@ namespace MS.Internal.Xml.XPath
             // sort makes sense only when we are dealing with a query that
             // returns a nodeset.
             Query evalExpr;
-            if (expr is string)
+            string query = expr as string;
+            if (query != null)
             {
-                evalExpr = new QueryBuilder().Build((string)expr, out _needContext); // this will throw if expr is invalid
-            }
-            else if (expr is CompiledXpathExpr)
-            {
-                evalExpr = ((CompiledXpathExpr)expr).QueryTree;
+                evalExpr = new QueryBuilder().Build(query, out _needContext); // this will throw if expr is invalid
             }
             else
             {
-                throw XPathException.Create(SR.Xp_BadQueryObject);
+                CompiledXpathExpr xpathExpr = expr as CompiledXpathExpr;
+                if (xpathExpr != null)
+                {
+                    evalExpr = xpathExpr.QueryTree;
+                }
+                else
+                {
+                    throw XPathException.Create(SR.Xp_BadQueryObject);
+                }
             }
             SortQuery sortQuery = _query as SortQuery;
             if (sortQuery == null)
