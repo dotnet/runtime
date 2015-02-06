@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 
 namespace System.Diagnostics
@@ -97,6 +98,7 @@ namespace System.Diagnostics
                 int id;
                 if (int.TryParse(procDir.Name, out id))
                 {
+                    Contract.Assert(id >= 0);
                     ids.Add(id);
                 }
             }
@@ -154,6 +156,7 @@ namespace System.Diagnostics
                 case 'W':
                     return ThreadState.Transition;
                 default:
+                    Contract.Assert(false);
                     return ThreadState.Unknown;
             }
         }

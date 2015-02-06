@@ -66,6 +66,7 @@ namespace System.Diagnostics
         public bool WaitForExitCore(int milliseconds)
         {
             bool exited = GetWaitState().WaitForExit(milliseconds);
+            Contract.Assert(exited || milliseconds != Timeout.Infinite);
 
             if (exited)
             {
@@ -177,6 +178,8 @@ namespace System.Diagnostics
                 {
                     throw new Win32Exception(); // match Windows exception
                 }
+
+                Contract.Assert(pri >= -20 && pri <= 20);
                 return 
                     pri < -15 ? ProcessPriorityClass.RealTime :
                     pri < -10 ? ProcessPriorityClass.High :
@@ -283,7 +286,25 @@ namespace System.Diagnostics
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             minWorkingSet = IntPtr.Zero; // no defined limit available
-            maxWorkingSet = (IntPtr)GetStat().rsslim;
+            ulong rsslim = GetStat().rsslim;
+
+            // rsslim is a ulong, but maxWorkingSet is an IntPtr, so we need to cap rsslim
+            // at the max size of IntPtr.  This often happens when there is no configured 
+            // rsslim other than ulong.MaxValue, which without these checks would show up
+            // as a maxWorkingSet == -1.
+            switch (IntPtr.Size)
+            {
+                case 4:
+                    if (rsslim > int.MaxValue)
+                        rsslim = int.MaxValue;
+                    break;
+                case 8:
+                    if (rsslim > long.MaxValue)
+                        rsslim = long.MaxValue;
+                    break;
+            }
+
+            maxWorkingSet = (IntPtr)rsslim;
         }
 
         /// <summary>Sets one or both of the minimum and maximum working set limits.</summary>
@@ -446,6 +467,9 @@ namespace System.Diagnostics
         /// <param name="pipeToClose">The file descriptor to close.</param>
         private static void Redirect(int pipeToUse, int fdToOverwrite, int pipeToClose)
         {
+            Contract.Assert(pipeToUse >= 0 && fdToOverwrite >= 0 && pipeToClose >= 0);
+            Contract.Assert(pipeToUse != fdToOverwrite && pipeToUse != pipeToClose);
+
             // Duplicate the file descriptor.  We may need to retry if the I/O is interrupted.
             int result;
             while ((result = Interop.libc.dup2(pipeToUse, fdToOverwrite)) != 0)
@@ -467,6 +491,7 @@ namespace System.Diagnostics
         /// <returns>The opened stream.</returns>
         private static FileStream OpenStream(int fd, FileAccess access)
         {
+            Contract.Assert(fd >= 0);
             return new FileStream(
                 new SafeFileHandle((IntPtr)fd, ownsHandle: true), 
                 access, StreamBufferSize, isAsync: false);
@@ -491,6 +516,7 @@ namespace System.Diagnostics
                     throw new Win32Exception();
                 }
             }
+            Contract.Assert(fds[0] >= 0 && fds[1] >= 0 && fds[0] != fds[1]);
             return fds;
         }
 
