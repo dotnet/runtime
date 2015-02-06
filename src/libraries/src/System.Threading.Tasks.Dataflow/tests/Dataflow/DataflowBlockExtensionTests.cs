@@ -294,7 +294,14 @@ namespace System.Threading.Tasks.Dataflow.Tests
             {
                 IDisposable[] unlinkers = Enumerable.Range(0, 5).Select(_ => o.Subscribe(new DelegateObserver<int>())).ToArray();
                 foreach (var unlinker in unlinkers) unlinker.Dispose();
+                foreach (var unlinker in unlinkers) unlinker.Dispose(); // make sure it's ok to dispose twice
             }
+
+            // Validate sane behavior with a bad LinkTo
+            Assert.Null(
+                new DelegatePropagator<int, int> {
+                    LinkToDelegate = (_,__) => null
+                }.AsObservable().Subscribe(DataflowBlock.NullTarget<int>().AsObserver()));
         }
 
         [Fact]
@@ -508,6 +515,51 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        public async Task TestLinkTo_DoubleLinking_ValidPropagator()
+        {
+            bool tested = false;
+            var tcs = new TaskCompletionSource<bool>();
+
+            // Link a source to a target
+            var source = new BufferBlock<int>();
+            DelegatePropagator<int, int> target = null;
+            target = new DelegatePropagator<int, int>
+            {
+                OfferMessageDelegate = (header, value, nopPropagator, consumeToAccept) =>
+                {
+                    if (!tested) // just run once; the release below could trigger an addition offering
+                    {
+                        // Make sure the nop propagator's Completion object is the same as that of the source
+                        Assert.Same(expected: source.Completion, actual: nopPropagator.Completion);
+
+                        // Make sure we can reserve and release through the propagator
+                        Assert.True(nopPropagator.ReserveMessage(header, target));
+                        nopPropagator.ReleaseReservation(header, target);
+
+                        // Make sure its LinkTo doesn't work; that wouldn't make sense
+                        Assert.Throws<NotSupportedException>(() => nopPropagator.LinkTo(DataflowBlock.NullTarget<int>(), new DataflowLinkOptions()));
+                    }
+                    return DataflowMessageStatus.Accepted;
+                },
+                CompleteDelegate = () => tcs.SetResult(true)
+            };
+
+            // Link from the source to the target, ensuring that we do so via a nop propagator
+            using (source.LinkTo(target))
+            {
+                source.LinkTo(target, new DataflowLinkOptions { PropagateCompletion = true });
+            }
+
+            // Now put data in the source that it can propagator through the nop link
+            source.Post(42);
+            source.Complete();
+
+            // Wait for everything to shut down.
+            await source.Completion;
+            await tcs.Task;
+        }
+
+        [Fact]
         public async Task TestLinkTo_BasicLinking()
         {
             foreach (bool propagateCompletion in DataflowTestHelpers.BooleanValues)
@@ -564,6 +616,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestLinkTo_MaxMessages()
         {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DataflowLinkOptions { MaxMessages = -2 });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DataflowLinkOptions { MaxMessages = 0 });
+
             const int MaxMessages = 3, ExtraMessages = 2;
 
             for (int mode = 0; mode < 3; mode++)
@@ -1611,6 +1666,28 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
+        public void TestChoose_FaultySource()
+        {
+            var source = new DelegateReceivablePropagator<int, int> {
+                TryReceiveDelegate = delegate(Predicate<int> filter, out int item) {
+                    throw new FormatException();
+                }
+            };
+            Task<int> t = DataflowBlock.Choose(source, i => { }, source, i => { });
+            Assert.Throws<FormatException>(() => t.GetAwaiter().GetResult());
+        }
+
+        [Fact]
+        public async Task TestChoose_ConsumeToAccept()
+        {
+            var bb = new BroadcastBlock<int>(i => i * 2);
+            Task<int> t = DataflowBlock.Choose(bb, i => { }, bb, i => { });
+            Assert.False(t.IsCompleted);
+            bb.Post(42);
+            await t;
+        }
+
+        [Fact]
         public void TestEncapsulate_ArgumentValidation()
         {
             Assert.Throws<ArgumentNullException>(
@@ -1695,12 +1772,15 @@ namespace System.Threading.Tasks.Dataflow.Tests
             encapsulated1.LinkTo(join.Target1, new DataflowLinkOptions { PropagateCompletion = true });
             encapsulated2.LinkTo(join.Target2, new DataflowLinkOptions { PropagateCompletion = true });
 
-            action1.Post(1);
-            action2.Post("2");
-            Tuple<int, string> result = await join.ReceiveAsync();
+            for (int i = 0; i < 2; i++)
+            {
+                encapsulated1.Post(1);
+                encapsulated2.Post("2");
+                Tuple<int, string> result = await join.ReceiveAsync();
+            }
 
-            action1.Complete();
-            action2.Complete();
+            encapsulated1.Complete();
+            encapsulated2.Complete();
             await join.Completion;
         }
 
@@ -1711,29 +1791,29 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var action1 = new ActionBlock<int>(i => buffer.Post(i));
             var action2 = new ActionBlock<int>(i => buffer.Post(i));
             IPropagatorBlock<int, int> encapsulated1 = DataflowBlock.Encapsulate(action1, buffer);
-            IPropagatorBlock<int, int> encapsulated2 = DataflowBlock.Encapsulate(action2, buffer);
 
-            action1.PostItems(1, 2, 3);
-            action1.Complete();
+            encapsulated1.PostItems(1, 2, 3);
+            encapsulated1.Complete();
             await action1.Completion;
 
             IList<int> items;
-            Assert.True(buffer.TryReceiveAll(out items));
+            Assert.True(((IReceivableSourceBlock<int>)encapsulated1).TryReceiveAll(out items));
             Assert.Equal(expected: 3, actual: items.Count);
             Assert.Equal(expected: 1, actual: items[0]);
             Assert.Equal(expected: 2, actual: items[1]);
             Assert.Equal(expected: 3, actual: items[2]);
 
-            action2.PostItems(4, 5, 6);
-            action2.Complete();
+            IPropagatorBlock<int, int> encapsulated2 = DataflowBlock.Encapsulate(action2, buffer);
+            encapsulated2.PostItems(4, 5, 6);
+            encapsulated2.Complete();
             await action2.Completion;
 
             int item;
-            Assert.False(buffer.TryReceive(f => false, out item));
-            Assert.True(buffer.TryReceive(out item));
+            Assert.False(((IReceivableSourceBlock<int>)encapsulated2).TryReceive(f => false, out item));
+            Assert.True(((IReceivableSourceBlock<int>)encapsulated2).TryReceive(out item));
             Assert.Equal(expected: 4, actual: item);
-            Assert.Equal(expected: 5, actual: buffer.Receive());
-            Assert.Equal(expected: 6, actual: await buffer.ReceiveAsync());
+            Assert.Equal(expected: 5, actual: ((IReceivableSourceBlock<int>)encapsulated2).Receive());
+            Assert.Equal(expected: 6, actual: await ((IReceivableSourceBlock<int>)encapsulated2).ReceiveAsync());
         }
 
         [Fact]
