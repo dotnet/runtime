@@ -83,7 +83,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
   </ItemGroup>
   <ItemGroup>
