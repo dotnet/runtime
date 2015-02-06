@@ -76,6 +76,7 @@ localloc: dest:i src1:i len:96
 compare: src1:i src2:i len:4
 compare_imm: src1:i len:20
 fcompare: src1:f src2:f len:12
+rcompare: src1:f src2:f len:12
 oparglist: src1:i len:12
 setlret: src1:i src2:i len:12
 checkthis: src1:b len:4
@@ -88,6 +89,9 @@ voidcall_membase: src1:b len:32 clob:c
 fcall: dest:f len:32 clob:c
 fcall_reg: dest:f src1:i len:32 clob:c
 fcall_membase: dest:f src1:b len:32 clob:c
+rcall: dest:f len:32 clob:c
+rcall_reg: dest:f src1:i len:32 clob:c
+rcall_membase: dest:f src1:b len:32 clob:c
 lcall: dest:l len:32 clob:c
 lcall_reg: dest:l src1:i len:32 clob:c
 lcall_membase: dest:l src1:b len:32 clob:c
@@ -132,6 +136,7 @@ loadu4_memindex: dest:i src1:b src2:i len:4
 loadu4_mem: dest:i len:8
 move: dest:i src1:i len:4
 fmove: dest:f src1:f len:4
+rmove: dest:f src1:f len:4
 move_f_to_i4: dest:i src1:f len:8
 move_i4_to_f: dest:f src1:i len:8
 move_f_to_i8: dest:i src1:f len:4
@@ -198,6 +203,33 @@ float_cge: dest:i src1:f src2:f len:20
 float_cle: dest:i src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 setfret: src1:f len:12
+
+# R4 opcodes
+r4_conv_to_i1: dest:i src1:f len:8
+r4_conv_to_u1: dest:i src1:f len:8
+r4_conv_to_i2: dest:i src1:f len:8
+r4_conv_to_u2: dest:i src1:f len:8
+r4_conv_to_i4: dest:i src1:f len:8
+r4_conv_to_u4: dest:i src1:f len:8
+r4_conv_to_i8: dest:l src1:f len:8
+r4_conv_to_u8: dest:l src1:f len:8
+r4_conv_to_r4: dest:f src1:f len:4
+r4_conv_to_r8: dest:f src1:f len:4
+r4_add: dest:f src1:f src2:f len:4
+r4_sub: dest:f src1:f src2:f len:4
+r4_mul: dest:f src1:f src2:f len:4
+r4_div: dest:f src1:f src2:f len:4
+r4_rem: dest:f src1:f src2:f len:16
+r4_neg: dest:f src1:f len:4
+r4_ceq: dest:i src1:f src2:f len:16
+r4_cgt: dest:i src1:f src2:f len:16
+r4_cgt_un: dest:i src1:f src2:f len:20
+r4_clt: dest:i src1:f src2:f len:16
+r4_clt_un: dest:i src1:f src2:f len:20
+r4_cneq: dest:i src1:f src2:f len:20
+r4_cge: dest:i src1:f src2:f len:20
+r4_cle: dest:i src1:f src2:f len:20
+
 aot_const: dest:i len:16
 objc_get_selector: dest:i len:32
 sqrt: dest:f src1:f len:4
