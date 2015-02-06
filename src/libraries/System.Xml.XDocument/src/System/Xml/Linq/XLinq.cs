@@ -58,9 +58,10 @@ namespace System.Xml.Linq
                 }
                 else if (_text.Length > 0)
                 {
-                    if (_previous is XText && !(_previous is XCData))
+                    XText prevXText = _previous as XText;
+                    if (prevXText != null && !(_previous is XCData))
                     {
-                        ((XText)_previous).Value += _text;
+                        prevXText.Value += _text;
                     }
                     else
                     {
@@ -126,9 +127,10 @@ namespace System.Xml.Linq
             {
                 if (_text.Length > 0)
                 {
-                    if (_previous is XText && !(_previous is XCData))
+                    XText prevXText = _previous as XText;
+                    if (prevXText != null && !(_previous is XCData))
                     {
-                        ((XText)_previous).Value += _text;
+                        prevXText.Value += _text;
                     }
                     else
                     {
