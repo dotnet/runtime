@@ -808,15 +808,17 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         fDebuggeeLoadedNgen = true;
         fDebuggerLoadingNgen = true;
 
+#ifndef FEATURE_PAL
         // NGEN images are large and we shouldn't load them if they won't be shared, therefore fail the NGEN mapping and
         // fallback to IL image if the debugger doesn't have the image loaded already.
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
         // opportunity. Its an acceptable loss from an imperfect heuristic.
-        if(NULL == GetModuleHandleW(szFullPathName))
+        if (NULL == WszGetModuleHandle(szFullPathName))
         {
             szFullPathName = NULL;
             fDebuggerLoadingNgen = false;
         }
+#endif
     }
 
     // If we don't have or decided not to load the NGEN image, check to see if IL image is available

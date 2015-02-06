@@ -4475,7 +4475,7 @@ HRESULT CordbHeapValue3Impl::GetThreadOwningMonitorLock(CordbProcess* pProcess,
                                                         ICorDebugThread **ppThread,
                                                         DWORD *pAcquisitionCount)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
     EX_TRY
     {
         IDacDbiInterface *pDac = pProcess->GetDAC();
