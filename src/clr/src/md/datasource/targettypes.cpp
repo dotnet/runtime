@@ -10,7 +10,7 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include "TargetTypes.h"
+#include "targettypes.h"
 
 
 Target_CMiniMdSchemaBase::Target_CMiniMdSchemaBase() :

@@ -2,8 +2,6 @@ add_definitions(-DDBG_TARGET_AMD64=1 -DDBG_TARGET_WIN64=1 -DDBG_TARGET_64BIT=1)
 add_definitions(-DFEATURE_METADATA_CUSTOM_DATA_SOURCE -DFEATURE_METADATA_DEBUGGEE_DATA_SOURCE -DFEATURE_NO_HOST -DFEATURE_METADATA_LOAD_TRUSTED_IMAGES)
 
 if(WIN32)
-  #use static crt
-  add_definitions(-MT) 
 endif(WIN32)
 
 set(CORDBDI_SOURCES
@@ -33,7 +31,26 @@ set(CORDBDI_SOURCES
   shared.cpp
   symbolinfo.cpp
   valuehome.cpp
-  amd64/floatconversion.asm
 )
+
+if(WIN32)
+    #use static crt
+    add_definitions(-MT) 
+
+    set(CORDBDI_SOURCES
+      ${CORDBDI_SOURCES}
+      amd64/floatconversion.asm
+    )
+elseif(CLR_CMAKE_PLATFORM_UNIX)
+    add_compile_options(-fPIC)
+
+    set(CORDBDI_SOURCES
+      ${CORDBDI_SOURCES}
+      amd64/floatconversion.S
+    )
+
+endif(WIN32)
+
+
 
 add_library(cordbdi STATIC ${CORDBDI_SOURCES})

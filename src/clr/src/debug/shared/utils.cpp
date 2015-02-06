@@ -3,8 +3,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-#include "stdafx.h"
-
 // Type-safe helper wrapper to get an EXCEPTION_RECORD slot as a CORDB_ADDRESS
 // 
 // Arguments:
