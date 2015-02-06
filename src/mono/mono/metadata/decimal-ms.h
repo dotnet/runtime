@@ -8,8 +8,8 @@ typedef struct tagDEC {
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
     union {
         struct {
-            int8_t sign;
-            int8_t scale;
+            uint8_t sign;
+            uint8_t scale;
         } u;
         uint16_t signscale;
     } u;
@@ -18,8 +18,8 @@ typedef struct tagDEC {
     uint16_t wReserved;
     union {
         struct {
-            int8_t scale;
-            int8_t sign;
+            uint8_t scale;
+            uint8_t sign;
         } u;
         uint16_t signscale;
     } u;
