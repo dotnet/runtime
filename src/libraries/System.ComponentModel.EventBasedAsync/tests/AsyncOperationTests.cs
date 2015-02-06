@@ -43,7 +43,7 @@ namespace System.ComponentModel.EventBasedAsync
                 }).Wait();
         }
 
-        [Fact(Skip = "Bug 1092169")]
+        [Fact]
         public static void ThrowAfterSynchronousComplete()
         {
             Task.Run(() =>
