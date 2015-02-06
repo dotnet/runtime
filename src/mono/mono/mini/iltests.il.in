@@ -2718,4 +2718,67 @@ END:
 	   ldc.i4.0
        ret
   }
+
+  .method public hidebysig static int32  test_5_r4_fadd_mixed() cil managed
+  {
+    // Code size       17 (0x11)
+    .maxstack  2
+    .locals init (float32 V_0,
+             float64 V_1)
+    IL_0000:  ldc.r4     3
+    IL_0005:  stloc.0
+    IL_0006:  ldc.r8     2
+    IL_000b:  stloc.1
+    IL_000c:  ldloc.0
+    IL_000d:  ldloc.1
+    IL_000e:  add
+    IL_000f:  conv.i4
+    IL_0010:  ret
+  }
+
+ .method public hidebysig static int32  test_0_fcmp_eq_r4_mixed() cil managed
+  {
+    // Code size       32 (0x20)
+    .maxstack  2
+    .locals init (float32 V_0,
+             float64 V_1)
+    IL_0000:  ldc.r4     1
+    IL_0005:  stloc.0
+    IL_0006:  ldc.r8     1
+    IL_000f:  stloc.1
+    IL_0010:  ldloc.0
+    IL_0012:  ldloc.1
+    IL_0013:  bne.un     IL_001e
+
+    IL_0018:  ldc.i4.0
+    IL_0019:  br         IL_001f
+
+    IL_001e:  ldc.i4.1
+    IL_001f:  ret
+  } // end of method Tests::test_0_fcmp_eq_r4_mixed
+
+  .method public hidebysig static int32  test_0_fceq_r4_mixed() cil managed
+  {
+    // Code size       31 (0x1f)
+    .maxstack  2
+    .locals init (float32 V_0,
+             float64 V_1,
+             bool V_2)
+    IL_0000:  ldc.r4     1
+    IL_0005:  stloc.0
+    IL_0006:  ldc.r8     1
+    IL_000b:  stloc.1
+    IL_000c:  ldloc.0
+    IL_000d:  ldloc.1
+    IL_000e:  ceq
+    IL_0010:  stloc.2
+    IL_0011:  ldloc.2
+    IL_0012:  brfalse    IL_001d
+
+    IL_0017:  ldc.i4.0
+    IL_0018:  br         IL_001e
+
+    IL_001d:  ldc.i4.1
+    IL_001e:  ret
+  } // end of method Tests::test_0_fceq_r4
 }

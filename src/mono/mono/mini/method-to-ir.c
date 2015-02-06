@@ -459,19 +459,48 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 	} while (0)
 #endif
 
+/* Emit conversions so both operands of a binary opcode are of the same type */
+static void
+add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **arg2_ref)
+{
+	MonoInst *arg1 = *arg1_ref;
+	MonoInst *arg2 = *arg2_ref;
+
+	if (cfg->r4fp &&
+		((arg1->type == STACK_R4 && arg2->type == STACK_R8) ||
+		 (arg1->type == STACK_R8 && arg2->type == STACK_R4))) {
+		MonoInst *conv;
+
+		/* Mixing r4/r8 is allowed by the spec */
+		if (arg1->type == STACK_R4) {
+			int dreg = alloc_freg (cfg);
+
+			EMIT_NEW_UNALU (cfg, conv, OP_RCONV_TO_R8, dreg, arg1->dreg);
+			conv->type = STACK_R8;
+			ins->sreg1 = dreg;
+			*arg1_ref = conv;
+		}
+		if (arg2->type == STACK_R4) {
+			int dreg = alloc_freg (cfg);
+
+			EMIT_NEW_UNALU (cfg, conv, OP_RCONV_TO_R8, dreg, arg2->dreg);
+			conv->type = STACK_R8;
+			ins->sreg2 = dreg;
+			*arg2_ref = conv;
+		}
+	}
+
 #if SIZEOF_REGISTER == 8
-#define ADD_WIDEN_OP(ins, arg1, arg2) do { \
-		/* FIXME: Need to add many more cases */ \
-		if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) {	\
-			MonoInst *widen; \
-			int dr = alloc_preg (cfg); \
-			EMIT_NEW_UNALU (cfg, widen, OP_SEXT_I4, dr, (arg2)->dreg); \
-			(ins)->sreg2 = widen->dreg; \
-		} \
-	} while (0)
-#else
-#define ADD_WIDEN_OP(ins, arg1, arg2)
+	/* FIXME: Need to add many more cases */
+	if ((arg1)->type == STACK_PTR && (arg2)->type == STACK_I4) {
+		MonoInst *widen;
+
+		int dr = alloc_preg (cfg);
+		EMIT_NEW_UNALU (cfg, widen, OP_SEXT_I4, dr, (arg2)->dreg);
+		(ins)->sreg2 = widen->dreg;
+	}
 #endif
+}
 
 #define ADD_BINOP(op) do {	\
 		MONO_INST_NEW (cfg, ins, (op));	\
@@ -481,7 +510,7 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 		type_from_op (cfg, ins, sp [0], sp [1]);	\
 		CHECK_TYPE (ins);	\
 		/* Have to insert a widening op */		 \
-        ADD_WIDEN_OP (ins, sp [0], sp [1]); \
+        add_widen_op (cfg, ins, &sp [0], &sp [1]);		 \
         ins->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
         *sp++ = mono_decompose_opcode ((cfg), (ins)); \
@@ -506,6 +535,7 @@ gsharedvt_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 		cmp->sreg2 = sp [1]->dreg;	\
 		type_from_op (cfg, cmp, sp [0], sp [1]);	\
 		CHECK_TYPE (cmp);	\
+		add_widen_op (cfg, cmp, &sp [0], &sp [1]);						\
 		type_from_op (cfg, ins, sp [0], sp [1]);							\
 		ins->inst_many_bb = mono_mempool_alloc (cfg->mempool, sizeof(gpointer)*2);	\
 		GET_BBLOCK (cfg, tblock, target);		\
@@ -793,11 +823,11 @@ bin_num_table [STACK_MAX] [STACK_MAX] = {
 	{STACK_INV, STACK_I4,  STACK_INV, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_I8,  STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_PTR, STACK_INV, STACK_PTR, STACK_INV, STACK_MP,  STACK_INV, STACK_INV},
-	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8,  STACK_INV, STACK_INV, STACK_INV},
+	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8,  STACK_INV, STACK_INV, STACK_INV, STACK_R8},
 	{STACK_INV, STACK_MP,  STACK_INV, STACK_MP,  STACK_INV, STACK_PTR, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
 	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV},
-	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R4}
+	{STACK_INV, STACK_INV, STACK_INV, STACK_INV, STACK_R8, STACK_INV, STACK_INV, STACK_INV, STACK_R4}
 };
 
 static const char 
@@ -825,11 +855,11 @@ bin_comp_table [STACK_MAX] [STACK_MAX] = {
 	{0, 1, 0, 1, 0, 0, 0, 0}, /* i, int32 */
 	{0, 0, 1, 0, 0, 0, 0, 0}, /* L, int64 */
 	{0, 1, 0, 1, 0, 2, 4, 0}, /* p, ptr */
-	{0, 0, 0, 0, 1, 0, 0, 0}, /* F, R8 */
+	{0, 0, 0, 0, 1, 0, 0, 0, 1}, /* F, R8 */
 	{0, 0, 0, 2, 0, 1, 0, 0}, /* &, managed pointer */
 	{0, 0, 0, 4, 0, 0, 3, 0}, /* O, reference */
 	{0, 0, 0, 0, 0, 0, 0, 0}, /* vt value type */
-	{0, 0, 0, 0, 0, 0, 0, 0, 1}, /* r, r4 */
+	{0, 0, 0, 0, 1, 0, 0, 0, 1}, /* r, r4 */
 };
 
 /* reduce the size of this table */
@@ -9858,7 +9888,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
-			ADD_WIDEN_OP (ins, sp [0], sp [1]);
+			add_widen_op (cfg, ins, &sp [0], &sp [1]);
 			ins->dreg = alloc_dreg ((cfg), (ins)->type);
 
 			/* FIXME: Pass opcode to is_inst_imm */
@@ -9888,7 +9918,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						ins->inst_imm = (gssize)(sp [1]->inst_c0);
 					ins->sreg2 = -1;
 
-					/* Might be followed by an instruction added by ADD_WIDEN_OP */
+					/* Might be followed by an instruction added by add_widen_op */
 					if (sp [1]->next == NULL)
 						NULLIFY_INS (sp [1]);
 				}
@@ -12225,8 +12255,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_CGT_UN:
 			case CEE_CLT:
 			case CEE_CLT_UN: {
-				MonoInst *cmp;
+				MonoInst *cmp, *arg1, *arg2;
+
 				CHECK_STACK (2);
+				sp -= 2;
+				arg1 = sp [0];
+				arg2 = sp [1];
+
 				/*
 				 * The following transforms:
 				 *    CEE_CEQ    into OP_CEQ
@@ -12236,25 +12271,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 *    CEE_CLT_UN into OP_CLT_UN
 				 */
 				MONO_INST_NEW (cfg, cmp, (OP_CEQ - CEE_CEQ) + ip [1]);
-				
+
 				MONO_INST_NEW (cfg, ins, cmp->opcode);
-				sp -= 2;
-				cmp->sreg1 = sp [0]->dreg;
-				cmp->sreg2 = sp [1]->dreg;
-				type_from_op (cfg, cmp, sp [0], sp [1]);
+				cmp->sreg1 = arg1->dreg;
+				cmp->sreg2 = arg2->dreg;
+				type_from_op (cfg, cmp, arg1, arg2);
 				CHECK_TYPE (cmp);
-				if ((sp [0]->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((sp [0]->type == STACK_PTR) || (sp [0]->type == STACK_OBJ) || (sp [0]->type == STACK_MP))))
+				add_widen_op (cfg, cmp, &arg1, &arg2);
+				if ((arg1->type == STACK_I8) || ((SIZEOF_VOID_P == 8) && ((arg1->type == STACK_PTR) || (arg1->type == STACK_OBJ) || (arg1->type == STACK_MP))))
 					cmp->opcode = OP_LCOMPARE;
-				else if (sp [0]->type == STACK_R4)
+				else if (arg1->type == STACK_R4)
 					cmp->opcode = OP_RCOMPARE;
-				else if (sp [0]->type == STACK_R8)
+				else if (arg1->type == STACK_R8)
 					cmp->opcode = OP_FCOMPARE;
 				else
 					cmp->opcode = OP_ICOMPARE;
 				MONO_ADD_INS (bblock, cmp);
 				ins->type = STACK_I4;
 				ins->dreg = alloc_dreg (cfg, ins->type);
-				type_from_op (cfg, ins, sp [0], sp [1]);
+				type_from_op (cfg, ins, arg1, arg2);
 
 				if (cmp->opcode == OP_FCOMPARE || cmp->opcode == OP_RCOMPARE) {
 					/*
