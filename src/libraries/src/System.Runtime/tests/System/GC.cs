@@ -51,25 +51,6 @@ public class GCTests
     }
 
     [Fact]
-    [ActiveIssue(659)]
-    public static void TotalMemory()
-    {
-        GC.Collect();
-        GC.Collect();
-
-        int[] array1 = new int[20000];
-        int memOld = (int)GC.GetTotalMemory(false);
-
-        array1 = null;
-        GC.Collect();
-
-        int[] array2 = new int[40000];
-        int memNew = (int)GC.GetTotalMemory(false);
-
-        Assert.True(memNew >= memOld);
-    }
-
-    [Fact]
     public static void Finalizer()
     {
         FinalizerTest.Run();
