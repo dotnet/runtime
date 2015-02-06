@@ -372,26 +372,19 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     wchar_t appNiPath[MAX_PATH * 2] = W("");
     wchar_t managedAssemblyFullName[MAX_PATH] = W("");
 
-    HMODULE managedExeModule = nullptr;
-
-    // Have the OS loader discover the location of the managed exe
-    managedExeModule = ::LoadLibraryExW(programPath, NULL, 0);
+    wchar_t* filePart = NULL;
     
-    if (!managedExeModule) {
-        log << W("Failed to load: ") << programPath << Logger::endl;
+    if (!::GetFullPathName(programPath, MAX_PATH, appPath, &filePart)) {
+        log << W("Failed to get full path: ") << programPath << Logger::endl;
         log << W("Error code: ") << GetLastError() << Logger::endl;
         return false;
     } 
 
-    // If the module was successfully loaded, get the path to where it was found.
-    ::GetModuleFileNameW(managedExeModule, managedAssemblyFullName, MAX_PATH);
-    
-    log << W("Loaded: ") << managedAssemblyFullName << Logger::endl;
+    wcscpy_s(managedAssemblyFullName, appPath);
 
-    wchar_t* filePart = NULL;
-    
-    ::GetFullPathName(managedAssemblyFullName, MAX_PATH, appPath, &filePart);
     *(filePart) = W('\0');
+
+    log << W("Loading: ") << managedAssemblyFullName << Logger::endl;
 
     wcscpy_s(appNiPath, appPath);
     wcscat_s(appNiPath, MAX_PATH * 2, W(";"));
