@@ -477,11 +477,7 @@ DEFAULT_LABEL:
             }
 
             if (!suppress) {
-#ifdef __GNUC_VA_LIST
                 va_copy(arglistsave, arglist);
-#else
-                arglistsave = arglist;
-#endif
                 pointer = va_arg(arglist,void *);
             } else {
                 pointer = NULL;         // doesn't matter what value we use here - we're only using it as a flag
@@ -526,20 +522,12 @@ DEFAULT_LABEL:
 #ifdef _SECURE_SCANF
                 if(!suppress && (comchr == _T('c') || comchr == _T('s') || comchr == LEFT_BRACKET)) {
 
-#ifdef __GNUC_VA_LIST
                     va_copy(arglist, arglistsave);
-#else
-                    arglist = arglistsave;
-#endif
 
                     /* Reinitialize pointer to point to the array to which we write the input */
                     pointer = va_arg(arglist, void*);
 
-#ifdef __GNUC_VA_LIST
                     va_copy(arglistsave, arglist);
-#else
-                    arglistsave = arglist;
-#endif
 
                     /* Get the next argument - size of the array in characters */
 #ifdef _WIN64
@@ -1217,11 +1205,7 @@ f_incwidth2:
                             match--; /* % found, compensate for inc below */
 
                         if (!suppress)
-#ifdef __GNUC_VA_LIST
                             va_copy(arglist, arglistsave);
-#else
-                            arglist = arglistsave;
-#endif
 
                 } /* SWITCH */
 
