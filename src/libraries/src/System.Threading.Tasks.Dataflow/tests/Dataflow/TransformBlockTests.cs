@@ -541,5 +541,24 @@ namespace System.Threading.Tasks.Dataflow.Tests
             tb.Post(42);
             await Assert.ThrowsAsync<InvalidCastException>(() => tb.Completion);
         }
+
+        [Fact]
+        public async Task TestOrdering()
+        {
+            const int iters = 1000;
+            foreach (int mmpt in new[] { DataflowBlockOptions.Unbounded, 1 })
+            foreach (int dop in new[] { 1, 2, DataflowBlockOptions.Unbounded })
+            {
+                var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
+                var tb = new TransformBlock<int, int>(i => i, options);
+                tb.PostRange(0, iters);
+                for (int i = 0; i < iters; i++)
+                {
+                    Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+                }
+                tb.Complete();
+                await tb.Completion;
+            }
+        }
     }
 }

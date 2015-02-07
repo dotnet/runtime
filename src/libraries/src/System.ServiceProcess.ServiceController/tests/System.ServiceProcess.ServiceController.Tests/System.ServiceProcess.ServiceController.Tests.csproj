@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.ServiceProcess.ServiceController.Tests</RootNamespace>
+    <AssemblyName>System.ServiceProcess.ServiceController.Tests</AssemblyName>
+    <ProjectGuid>{F7D9984B-02EB-4573-84EF-00FFFBFB872C}</ProjectGuid>
+    <!-- Tests require admin access to install and uninstall services, to be run in outerloop -->
+    <RunTestsForProject>False</RunTestsForProject>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ServiceControllerTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.ServiceProcess.ServiceController.csproj">
+      <Project>{f4821cb6-91a3-4546-bc4f-e00dbfbdaa05}</Project>
+      <Name>System.ServiceProcess.ServiceController</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NativeTestService\NativeTestService.vcxproj"> 
+       <Project>{ceb0775c-4273-4ac4-b50e-4492718051ae}</Project> 
+       <Name>NativeTestService</Name> 
+     </ProjectReference> 
+  </ItemGroup>
+  <!-- References are resolved from packages.config -->
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

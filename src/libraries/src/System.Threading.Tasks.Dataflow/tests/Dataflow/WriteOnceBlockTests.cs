@@ -36,6 +36,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             Assert.Throws<ArgumentNullException>(() => new WriteOnceBlock<int>(i => i, null));
             DataflowTestHelpers.TestArgumentsExceptions(new WriteOnceBlock<int>(i => i));
+            Assert.Throws<ArgumentNullException>(() => ((ITargetBlock<int>)new WriteOnceBlock<int>(null)).Fault(null));
         }
 
         [Fact]
@@ -334,6 +335,34 @@ namespace System.Threading.Tasks.Dataflow.Tests
             wb = new WriteOnceBlock<int>(i => i * 2);
             wb.Post(2);
             await DataflowTestHelpers.TestReserveAndConsume(wb, reservationIsTargetSpecific: false);
+        }
+
+        [Fact]
+        public async Task TestFaultyTarget()
+        {
+            var wob = new WriteOnceBlock<int>(null);
+            wob.LinkTo(new DelegatePropagator<int, int> {
+                OfferMessageDelegate = delegate {
+                    throw new FormatException();
+                }
+            });
+            wob.Post(42);
+            await Assert.ThrowsAsync<FormatException>(() => wob.Completion);
+        }
+
+        [Fact]
+        public async Task TestFaultyScheduler()
+        {
+            var wob = new WriteOnceBlock<int>(null, new DataflowBlockOptions {
+                TaskScheduler = new DelegateTaskScheduler {
+                    QueueTaskDelegate = delegate {
+                        throw new InvalidCastException();
+                    }
+                }
+            });
+            wob.LinkTo(DataflowBlock.NullTarget<int>());
+            wob.Post(42);
+            await Assert.ThrowsAsync<TaskSchedulerException>(() => wob.Completion);
         }
 
     }

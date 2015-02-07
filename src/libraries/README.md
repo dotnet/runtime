@@ -1,17 +1,47 @@
-# .NET Core
+# .NET Core Libraries (CoreFX)
 
 [![Build status][build-status-image]][build-status]
 
 [build-status-image]: http://dotnet-ci.cloudapp.net/job/dotnet_corefx/badge/icon
 [build-status]: http://dotnet-ci.cloudapp.net/job/dotnet_corefx/
 
-This repository contains the class libraries for .NET Core. This is a
-work in progress, and does not currently contain the entire set of libraries
-that we plan on open sourcing. Make sure to watch this repository in order to be
-notified as we make changes to and expand it. Check out this [blog post] that
-explains our OSS strategy and road map in more detail.
+The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other components. It builds and runs on Windows. You can ['watch'](https://github.com/dotnet/corefx/subscription) the repo to see Linux and Mac support being added over the next few months.
 
-Today, the repository contains the following components:
+.NET Core is a modular implementation of .NET that can be used as the base stack for a wide variety of scenarios, today scaling from console utilities to web apps in the cloud.  You can learn more about .NET Core and how and where you can use it in the [.NET Core is open source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts. 
+
+The [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the  runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, native interop and many other components. 
+
+Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreCLR repo. It needs to be built and version in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime. These characteristics were the primary motivation for the 2-repo structure.
+
+[.NET Core oss]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
+[Introducing .NET Core]: http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx
+[mscorlib]: https://github.com/dotnet/coreclr/tree/master/src/mscorlib
+
+## How to Engage, Contribute and Provide Feedback
+
+Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
+
+Want to get more familiar with what's going on in the code?
+* [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
+
+Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
+
+* [Contributing Guide][Contributing Guide]
+* [Developer Guide]
+
+You are also encouraged to start a discussion by filing an issue or creating a
+gist. See the [contributing guides][Contributing Guide] for more details. 
+
+[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
+[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
+
+You can discuss .NET OSS more generally in the [.NET Foundation forums].
+
+[.NET Foundation forums]: http://forums.dotnetfoundation.org/
+
+## .NET Core Library Components
+
+The repo contains the following components. More libraries are coming soon. ['Watch'](https://github.com/dotnet/corefx/subscription) the repo to be notified.
 
 * **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
 
@@ -74,6 +104,9 @@ Today, the repository contains the following components:
 
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
 
+* **System.ServiceProcess.ServiceController**. Provides the ServiceController class that represents a Windows service
+  and allows you to connect to a running or stopped service, manipulate it, or get information about it.
+
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
 
@@ -85,47 +118,24 @@ Today, the repository contains the following components:
 * **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq, and the corresponding XPath extension methods.
 
-
-More libraries are coming soon. Stay tuned!
-
-[blog post]: http://blogs.msdn.com/b/dotnet/archive/2014/11/12/net-core-is-open-source.aspx
 [roslyn]: https://roslyn.codeplex.com/
 [immutable-msdn]: http://msdn.microsoft.com/en-us/library/dn385366(v=vs.110).aspx
 [simd-post-1]: http://blogs.msdn.com/b/dotnet/archive/2014/04/07/the-jit-finally-proposed-jit-and-simd-are-getting-married.aspx
 [simd-post-2]: http://blogs.msdn.com/b/dotnet/archive/2014/05/13/update-to-simd-support.aspx
 
-## How to Engage, Contribute and Provide Feedback
-
-Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
-
-Want to get more familiar with what's going on in the code?
-* [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
-
-Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
-
-* [How to Contribute][Contributing Guide]
-    * [Contributing Guide][Contributing Guide]
-    * [Developer Guide]
-
-You are also encouraged to start a discussion by filing an issue or creating a
-gist. See the [contributing guides][Contributing Guide] for more details. 
-
-[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
-[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
-
-You can discuss .NET OSS more generally in the [.NET Foundation forums].
-
-[.NET Foundation forums]: http://forums.dotnetfoundation.org/
-
-## Related Projects
-
-For an overview of all the .NET related projects, have a look at the
-[.NET home repository](https://github.com/Microsoft/dotnet).
-
 ## License
 
-This project is licensed under the [MIT license](LICENSE).
+.NET Core (including the corefx repo) is licensed under the [MIT license](LICENSE).
 
 ## .NET Foundation
 
-This project is part of the [.NET Foundation](http://www.dotnetfoundation.org/projects).
+.NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
+
+## Related Projects
+There are many .NET related projects on GitHub.
+
+- The
+[.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
+- The [.NET Core repo](https://github.com/dotnet/core) links to .NET Core related projects from Microsoft.
+- The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about ASP.NET 5.
+- [dotnet.github.io](http://dotnet.github.io) is a good place to discover .NET Foundation projects.

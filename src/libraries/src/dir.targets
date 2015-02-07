@@ -1,18 +1,24 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <PropertyGroup Condition="'$(TargetFrameworkVersion)' != '' and '$(TargetFrameworkProfile)' != ''">
-    <TargetingPortable>true</TargetingPortable>
+  
+  <PropertyGroup Condition=" '$(TargetFrameworkIdentifier)' == '' 
+                         and '$(TargetFrameworkVersion)'    == '' 
+                         and '$(TargetFrameworkProfile)'    == '' ">
+    <TargetingDefaultPlatform>true</TargetingDefaultPlatform>
   </PropertyGroup>
 
-  <!-- Setup the default target for projects not already explicitly targeting portable -->
-  <PropertyGroup Condition="'$(TargetingPortable)' != 'true'">
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
+     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
+  </PropertyGroup>
+
+  <!-- Setup the default target for projects not already explicitly targeting another platform -->
+  <PropertyGroup Condition="'$(TargetingDefaultPlatform)' == 'true'">
     <!-- Setting a default portable profile, although nothing should resolve from there as we want to use the pacakge refs -->
     <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile Condition="'$(TargetFrameworkProfile)' == ''">Profile7</TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
-    <ImplicitlyExpandTargetFramework Condition="'$(ImplicitlyExpandTargetFramework)' == ''">false</ImplicitlyExpandTargetFramework>
+    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
 
     <AssemblySearchPaths>
       {HintPathFromItem};
@@ -29,7 +35,7 @@
 
   <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
   <Target Name="AddDesignTimeFacadeReferences"
-      Condition="'$(TargetingPortable)' != 'true'"
+      Condition="'$(TargetingDefaultPlatform)' == 'true'"
       BeforeTargets="ResolveReferences"
       DependsOnTargets="GetReferenceAssemblyPaths"
   >
@@ -39,7 +45,11 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" 
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETPortable'" />
+          
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"
+          Condition="'$(TargetFrameworkIdentifier)' != '.NETPortable'" />
 
   <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
 

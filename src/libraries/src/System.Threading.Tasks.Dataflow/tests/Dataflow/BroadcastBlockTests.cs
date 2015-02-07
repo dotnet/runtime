@@ -118,11 +118,12 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        public void TestLinkingAfterCompletion()
+        public async Task TestLinkingAfterCompletion()
         {
             var b = new BroadcastBlock<int>(i => i * 2);
             b.Post(1);
             b.Complete();
+            await b.Completion;
             using (b.LinkTo(new ActionBlock<int>(i => { })))
             using (b.LinkTo(new ActionBlock<int>(i => { })))
             {

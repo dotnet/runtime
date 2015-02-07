@@ -1,0 +1,56 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeTestService", "System.ServiceProcess.ServiceController\tests\NativeTestService\NativeTestService.vcxproj", "{CEB0775C-4273-4AC4-B50E-4492718051AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController.Tests", "System.ServiceProcess.ServiceController\tests\System.ServiceProcess.ServiceController.Tests\System.ServiceProcess.ServiceController.Tests.csproj", "{F7D9984B-02EB-4573-84EF-00FFFBFB872C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController", "System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj", "{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|Win32 = Debug|Win32
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Debug|Win32.Build.0 = Debug|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Release|Any CPU.ActiveCfg = Release|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Release|Win32.ActiveCfg = Release|Win32
+		{CEB0775C-4273-4AC4-B50E-4492718051AE}.Release|Win32.Build.0 = Release|Win32
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{F7D9984B-02EB-4573-84EF-00FFFBFB872C}.Release|Win32.ActiveCfg = Release|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{F4821CB6-91A3-4546-BC4F-E00DBFBDAA05}.Release|Win32.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

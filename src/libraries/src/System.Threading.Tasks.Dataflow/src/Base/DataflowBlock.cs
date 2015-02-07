@@ -2410,7 +2410,6 @@ namespace System.Threading.Tasks.Dataflow
                             _observersState.Unlinker = _source.LinkTo(_observersState.Target);
                             if (_observersState.Unlinker == null)
                             {
-                                Contract.Assert(false, "The source could not be linked to the target.");
                                 _observersState.Observers = ImmutableList<IObserver<TOutput>>.Empty;
                                 return null;
                             }
