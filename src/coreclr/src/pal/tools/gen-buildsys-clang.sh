@@ -24,15 +24,27 @@ else
   buildtype=$2
 fi
 
+OS=`uname`
+
 # Locate llvm
 # This can be a little complicated, because the common use-case of Ubuntu with
 # llvm-3.5 installed uses a rather unusual llvm installation with the version
 # number postfixed (i.e. llvm-ar-3.5), so we check for that first.
+# Additionally, OSX doesn't use the llvm- prefix.
+if [ $OS = "Linux" ]; then
+  llvm_prefix="llvm-"
+elif [ $OS = "Darwin" ]; then
+  llvm_prefix=""
+else
+  echo "Unable to determine build platform"
+  exit 1
+fi
+
 desired_llvm_version=3.5
 locate_llvm_exec() {
-  if which $1-$desired_llvm_version > /dev/null 2>&1
+  if which $llvm_prefix$1-$desired_llvm_version > /dev/null 2>&1
   then
-    echo $(which $1-$desired_llvm_version)
+    echo $(which $llvm_prefix$1-$desired_llvm_version)
   elif which $1 > /dev/null 2>&1
   then
     echo $(which $1)
@@ -40,16 +52,18 @@ locate_llvm_exec() {
     exit 1
   fi
 }
-llvm_ar=$(locate_llvm_exec llvm-ar)
+llvm_ar=$(locate_llvm_exec ar)
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-ar"; exit 1; }
-llvm_link=$(locate_llvm_exec llvm-link)
+llvm_link=$(locate_llvm_exec link)
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-link"; exit 1; }
-llvm_nm=$(locate_llvm_exec llvm-nm)
+llvm_nm=$(locate_llvm_exec nm)
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-nm"; exit 1; }
-llvm_objdump=$(locate_llvm_exec llvm-objdump)
-[[ $? -eq 0 ]] || { echo "Unable to locate llvm-objdump"; exit 1; }
-llvm_ranlib=$(locate_llvm_exec llvm-ranlib)
+llvm_ranlib=$(locate_llvm_exec ranlib)
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-ranlib"; exit 1; }
+if [ $OS = "Linux" ]; then
+  llvm_objdump=$(locate_llvm_exec objdump)
+  [[ $? -eq 0 ]] || { echo "Unable to locate llvm-objdump"; exit 1; }
+fi
 
 cmake -DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/clang-compiler-override.txt \
   -DCMAKE_AR=$llvm_ar \

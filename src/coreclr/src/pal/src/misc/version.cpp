@@ -257,7 +257,7 @@ GetVersionExW(
             if (len > static_cast<int>((sizeof(lpVersionInformation->szCSDVersion)/2) - 1))
                 len = (sizeof(lpVersionInformation->szCSDVersion)/2) - 1;
             CFStringGetCharacters(serviceRelease, CFRangeMake(0, len), 
-                lpVersionInformation->szCSDVersion);
+                (UniChar*)lpVersionInformation->szCSDVersion);
             lpVersionInformation->szCSDVersion[len] = 0;
             CFRelease(serviceRelease);
         }

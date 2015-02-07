@@ -1143,7 +1143,7 @@ CONTEXT_SetThreadContextOnPort(
         // the xmm values) then we don't have values for the other set. This is a problem since Mach only
         // supports setting both groups as a single unit. So in this case we'll need to fetch the current
         // values first.
-        if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING !=
+        if ((lpContext->ContextFlags & CONTEXT_ALL_FLOATING) !=
             CONTEXT_ALL_FLOATING)
         {
             mach_msg_type_number_t StateCountGet = StateCount;
@@ -1311,42 +1311,3 @@ DBG_FlushInstructionCache(
     // Intel x86 hardware has cache coherency, so nothing needs to be done.
     return TRUE;
 }
-
-#if _DEBUG && defined(__APPLE__)
-/*++
-Function:
-    DBG_CheckStackAlignment
-    
-    The Apple ABI requires 16-byte alignment on the stack pointer.
-    This function interrupts otherwise.
---*/
-// Bullseye has parsing problems if "asm" comes after VOID
-asm VOID 
-DBG_CheckStackAlignment()
-{
-#ifndef __llvm__
-#ifdef _X86_
-    // Prolog - at this point we are at aligned - 4 (for the call)
-    push ebp                        // aligned - 8
-    mov ebp, esp
-    sub esp,STACK_ALIGN_REQ-8       // aligned (or should be)
-#elif defined(_AMD64_)
-    // Prolog - at this point we are at aligned - 8 (for the call)
-    push rbp                        // aligned -16
-    mov rbp, rsp
-#else
-#error Unexpected architecture.
-#endif
-#endif // !__llvm__
-
-    test esp,STACK_ALIGN_REQ-1      // can get away with esp even on AMD64.
-    jz .+3
-    int 3
-    
-#ifndef __llvm__
-    // Epilog
-    leave
-#endif // !__llvm__
-}
-#endif // DEBUG && APPLE      
-

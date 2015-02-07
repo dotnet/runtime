@@ -60,7 +60,6 @@ BOOL
 PALAPI
 PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN UINT cchDirectoryName ) 
 {
-#if !defined(CORECLR) || !defined(__APPLE__)
     LPWSTR lpFullPathAndName = NULL;
     LPWSTR lpEndPoint = NULL;
     BOOL bRet = FALSE;
@@ -110,68 +109,6 @@ EXIT:
     LOGEXIT( "PAL_GetPALDirectoryW returns BOOL %d.\n", bRet);
     PERF_EXIT(PAL_GetPALDirectoryW);
     return bRet;
-#else // !CORECLR || !__APPLE__
-    BOOL bRet = FALSE;
-    char szDirectory[MAX_PATH + 1];
-
-    PERF_ENTRY(PAL_GetPALDirectoryW);
-    ENTRY( "PAL_GetPALDirectoryW( %p, %d )\n", lpDirectoryName, cchDirectoryName );
-
-    // Under CoreCLR/Mac PAL is not a separate dynamic library, but is statically linked instead. Under normal
-    // circumstances the PAL will be linked into a single binary containing all the CoreCLR code, but there
-    // are still cases where build tools depend upon and statically link the PAL themselves. We can tell the
-    // difference because CoreCLR initialization sets the value of the g_szCoreCLRPath to the very information
-    // we want to return here. If this has not been set we'll assume this is a standalone PAL and derive the
-    // installation directory from the main executable directory.
-    if (g_szCoreCLRPath[0] != '\0')
-    {
-        if (strlen(g_szCoreCLRPath) >= sizeof(szDirectory))
-        {
-            ASSERT("Internal buffer not large enough");
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-            goto EXIT;
-        }
-        strcpy_s(szDirectory, sizeof(szDirectory), g_szCoreCLRPath);
-    }
-    else
-    {
-        // We must be a standalone PAL linked into some application (e.g. the build tools such as build.exe or
-        // fxprun). So our installation directory is simply the directory the executable resides in.
-        uint32_t bufsize = sizeof(szDirectory);
-        if (_NSGetExecutablePath(szDirectory, &bufsize))
-        {
-            ASSERT("_NSGetExecutablePath failure\n");
-            SetLastError(ERROR_INTERNAL_ERROR);
-            goto EXIT;
-        }
-
-        // Strip off executable name (but leave trailing '/').
-        char *pszLastSlash = rindex(szDirectory, '/');
-        if (pszLastSlash == NULL)
-        {
-            ASSERT("_NSGetExecutablePath returned filename without path\n");
-            SetLastError(ERROR_INTERNAL_ERROR);
-            goto EXIT;
-        }
-        pszLastSlash[1] = '\0';
-    }
-
-    // Once we get here we have the directory in 8-bit format in szDirectory, just need to convert
-    // it to wide characters now.
-    if (MultiByteToWideChar(CP_UTF8, 0, szDirectory, -1, lpDirectoryName, cchDirectoryName) == 0)
-    {
-        ASSERT("PAL_GetPALDirectoryW: MultiByteToWideChar failed\n");
-        SetLastError(ERROR_INTERNAL_ERROR);
-        goto EXIT;
-    }
-
-    bRet = TRUE;
-
-EXIT:    
-    LOGEXIT( "PAL_GetPALDirectoryW returns BOOL %d.\n", bRet);
-    PERF_EXIT(PAL_GetPALDirectoryW);
-    return bRet;
-#endif // !CORECLR || !__APPLE__
 }
 
 PALIMPORT
