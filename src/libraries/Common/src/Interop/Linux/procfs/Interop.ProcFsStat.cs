@@ -57,24 +57,28 @@ internal static partial class Interop
 
         internal static ParsedStat ReadStat(int pid)
         {
-            string stat = File.ReadAllText("/proc/" + pid.ToString() + "/stat").Trim();
+            string stat = File.ReadAllText("/proc/" + pid.ToString() + "/stat");
             return ReadStat(stat);
         }
 
         internal static ParsedStat ReadStat(int pid, int tid)
         {
-            string stat = File.ReadAllText("/proc/" + pid.ToString() + "/task/" + tid + "/stat").Trim();
+            string stat = File.ReadAllText("/proc/" + pid.ToString() + "/task/" + tid + "/stat");
             return ReadStat(stat);
         }
 
         private static ParsedStat ReadStat(string stat)
         {
-            string[] parts = stat.Split(null);
-
+            const int ExpectedParts = 44;
+            int index = 0;
+            int i = -1;
             ParsedStat results = default(ParsedStat);
-            for (int i = 0; i < 44 && i < parts.Length; i++)
+
+            while (index < stat.Length && i < ExpectedParts)
             {
-                string part = parts[i];
+                string part = GetNextPart(stat, ref index);
+                i++;
+
                 switch (i)
                 {
                     case 0:
@@ -217,6 +221,23 @@ internal static partial class Interop
                 }
             }
             return results;
+        }
+
+        private static string GetNextPart(string str, ref int index)
+        {
+            string part;
+            int nextSpace = str.IndexOf(' ', index);
+            if (nextSpace < 0)
+            {
+                part = str.Substring(index);
+                index = str.Length;
+            }
+            else
+            {
+                part = str.Substring(index, nextSpace - index);
+                index = nextSpace + 1;
+            }
+            return part;
         }
     }
 }
