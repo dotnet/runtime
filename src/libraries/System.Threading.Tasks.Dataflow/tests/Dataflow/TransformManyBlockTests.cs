@@ -193,7 +193,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             foreach (int elementsPerItem in new[] { 1, 3, 5 })
             foreach (bool sync in DataflowTestHelpers.BooleanValues)
             {
-                const int Messages = 100;
+                const int Messages = 50;
                 var options = new ExecutionDataflowBlockOptions
                 {
                     BoundedCapacity = boundedCapacity,
@@ -446,19 +446,34 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var tb1 = new TransformManyBlock<int, int>((Func<int, IEnumerable<int>>)(i => { throw new InvalidCastException(); }));
             var tb2 = new TransformManyBlock<int, int>((Func<int, Task<IEnumerable<int>>>)(i => { throw new InvalidProgramException(); }));
             var tb3 = new TransformManyBlock<int, int>((Func<int, Task<IEnumerable<int>>>)(i => Task.Run((Func<IEnumerable<int>>)(() => { throw new InvalidTimeZoneException(); }))));
+            var tb4 = new TransformManyBlock<int, int>(i => ExceptionAfter(3));
+            var tb5 = new TransformManyBlock<int, int>(i => Task.Run(() => ExceptionAfter(3)));
 
             for (int i = 0; i < 3; i++)
             {
                 tb1.Post(i);
                 tb2.Post(i);
                 tb3.Post(i);
+                tb4.Post(i);
+                tb5.Post(i);
             }
 
             await Assert.ThrowsAsync<InvalidCastException>(() => tb1.Completion);
             await Assert.ThrowsAsync<InvalidProgramException>(() => tb2.Completion);
             await Assert.ThrowsAsync<InvalidTimeZoneException>(() => tb3.Completion);
+            await Assert.ThrowsAsync<FormatException>(() => tb4.Completion);
+            await Assert.ThrowsAsync<FormatException>(() => tb5.Completion);
 
             Assert.All(new[] { tb1, tb2, tb3 }, tb => Assert.True(tb.InputCount == 0 && tb.OutputCount == 0));
+        }
+
+        private IEnumerable<int> ExceptionAfter(int iterations)
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                yield return i;
+            }
+            throw new FormatException();
         }
 
         [Fact]
@@ -636,5 +651,26 @@ namespace System.Threading.Tasks.Dataflow.Tests
             }
         }
 
+        [Fact]
+        public async Task TestOrdering()
+        {
+            const int iters = 9999;
+            foreach (int mmpt in new[] { DataflowBlockOptions.Unbounded, 1 })
+            foreach (int dop in new[] { 1, 2, DataflowBlockOptions.Unbounded })
+            {
+                var options = new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = dop, MaxMessagesPerTask = mmpt };
+                var tb = new TransformManyBlock<int, int>(i => new[] { i, i + 1, i + 2 }, options);
+                for (int i = 0; i < iters; i += 3)
+                {
+                    Assert.True(tb.Post(i));
+                }
+                for (int i = 0; i < iters; i++)
+                {
+                    Assert.Equal(expected: i, actual: await tb.ReceiveAsync());
+                }
+                tb.Complete();
+                await tb.Completion;
+            }
+        }
     }
 }

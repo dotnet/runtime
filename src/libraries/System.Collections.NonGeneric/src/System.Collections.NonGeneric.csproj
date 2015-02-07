@@ -38,9 +38,6 @@
     <Compile Include="$(CommonPath)\System\SR.cs">
       <Link>Common\System\SR.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-    	<Link>Common\System\ArrayT.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">

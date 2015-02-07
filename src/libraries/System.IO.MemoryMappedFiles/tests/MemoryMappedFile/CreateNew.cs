@@ -125,7 +125,7 @@ public class CreateNew : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            VerifyCreateNew("Loc411", new String('a', 1000), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc411", "CreateNew2" + new String('a', 1000), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // null
             VerifyCreateNew("Loc412", null, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);

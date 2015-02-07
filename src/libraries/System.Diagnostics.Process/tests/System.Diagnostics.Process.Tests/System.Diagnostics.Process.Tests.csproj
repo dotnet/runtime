@@ -33,6 +33,10 @@
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ProcessTest_ConsoleApp\ProcessTest_ConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>ProcessTest_ConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <!--  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
@@ -40,10 +44,5 @@
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup> -->
-  <ItemGroup>
-    <Reference Include="ProcessTest_ConsoleApp">
-      <HintPath>$(BaseOutputPath)\$(Configuration)\$(AssemblyName)\ProcessTest_ConsoleApp.exe</HintPath>
-    </Reference>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
