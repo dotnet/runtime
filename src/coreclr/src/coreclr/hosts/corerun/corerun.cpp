@@ -399,31 +399,20 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     wchar_t appNiPath[MAX_PATH * 2] = W("");
     wchar_t managedAssemblyFullName[MAX_PATH] = W("");
     wchar_t appLocalWinmetadata[MAX_PATH] = W("");
-
-    HMODULE managedExeModule = nullptr;
-
-    wchar_t fullExePath[MAX_PATH];
-    ::GetFullPathName(exeName, MAX_PATH, fullExePath, NULL); // Bizarrely, loading a relative path is failing on Phone OS
-
-    // Have the OS loader discover the location of the managed exe
-    managedExeModule = ::LoadLibraryExW(fullExePath, NULL, 0);
     
-    if (!managedExeModule) {
-        log << W("Failed to load: ") << fullExePath << Logger::endl;
+    wchar_t* filePart = NULL;
+    
+    if (!::GetFullPathName(exeName, MAX_PATH, appPath, &filePart)) {
+        log << W("Failed to get full path: ") << exeName << Logger::endl;
         log << W("Error code: ") << GetLastError() << Logger::endl;
         return false;
     } 
 
-    // If the module was successfully loaded, get the path to where it was found.
-    ::GetModuleFileNameW(managedExeModule, managedAssemblyFullName, MAX_PATH);
-    
-    log << W("Loaded: ") << managedAssemblyFullName << Logger::endl;
+    wcscpy_s(managedAssemblyFullName, appPath);
 
-    wchar_t* filePart = NULL;
-    
-    ::GetFullPathName(managedAssemblyFullName, MAX_PATH, appPath, &filePart);
     *(filePart) = W('\0');
 
+    log << W("Loading: ") << managedAssemblyFullName << Logger::endl;
    
     wcscpy_s(appLocalWinmetadata, appPath);
     wcscat(appLocalWinmetadata, W("\\WinMetadata"));
