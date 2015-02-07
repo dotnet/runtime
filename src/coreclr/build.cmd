@@ -74,16 +74,14 @@ md "%__LogsDir%"
 ::Cleanup intermediates folder
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 
-:: Check prerequisites
 :CheckPrereqs
+:: Check prerequisites
 echo Checking pre-requisites...
 echo.
-::
-:: Check presence of CMake on the path
-for %%X in (cmake.exe) do (set FOUNDCMake=%%~$PATH:X)
-if defined FOUNDCMake goto CheckVS
-echo CMake is a pre-requisite to build this repository but it was not found on the path. Please install CMake from http://www.cmake.org/download/ and ensure it is on your path.
-goto :eof
+:: Eval the output from probe-win1.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
+
+goto CheckVS
 
 :CheckVS
 :: Check presence of VS
