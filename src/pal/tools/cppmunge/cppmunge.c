@@ -35,7 +35,9 @@
 
 #include <assert.h>
 #include <ctype.h>
+#if !defined(__APPLE__)
 #include <linux/limits.h>
+#endif
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>

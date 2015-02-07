@@ -18,7 +18,7 @@
 // increase the size of the function to include a call statement,
 // even though it will never be executed.
 
-#if defined(_AMD64_)
+#if defined(__x86_64__)
 #define PAL_DISPATCHEXCEPTION __Z21PAL_DispatchExceptionmmmmmmP8_CONTEXTP17_EXCEPTION_RECORD
 #else //!defined(_AMD64_)
 #define PAL_DISPATCHEXCEPTION __Z21PAL_DispatchExceptionP8_CONTEXTP17_EXCEPTION_RECORD
