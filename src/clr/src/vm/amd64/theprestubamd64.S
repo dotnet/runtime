@@ -8,14 +8,14 @@
 #include "asmconstants.h"
 
 NESTED_ENTRY ThePreStub, _TEXT, ProcessCLRException
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 0, 0, 0, 0, 0
 
         //
         // call PreStubWorker
         //
         lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
         mov             rsi, METHODDESC_REGISTER
-        call            PreStubWorker
+        call            C_FUNC(PreStubWorker)
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX

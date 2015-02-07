@@ -9,8 +9,22 @@ include_directories(include)
 
 # Compile options
 
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  add_definitions(-D_TARGET_MAC64)
+  set(PLATFORM_SOURCES
+    arch/i386/context.S
+    arch/i386/dispatchexceptionwrapper.S
+    exception/machexception.cpp
+    exception/machmessage.cpp
+    locale/locale.cpp
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  add_definitions(-D__LINUX__=1)
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+
 add_definitions(-DPLATFORM_UNIX=1)
-add_definitions(-D__LINUX__=1)
 add_definitions(-DLP64COMPATIBLE=1)
 add_definitions(-DFEATURE_PAL=1)
 add_definitions(-DCORECLR=1)
@@ -128,14 +142,30 @@ set(SOURCES
 add_library(CoreClrPal
   STATIC
   ${SOURCES}
+  ${PLATFORM_SOURCES}
 )
 
 target_link_libraries(CoreClrPal
-  pthread
-  rt
   dl
   m
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+target_link_libraries(CoreClrPal
+  pthread
+  rt
+)
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  find_library(COREFOUNDATION CoreFoundation)
+  find_library(CORESERVICES CoreServices)
+  find_library(SECURITY Security)
+  target_link_libraries(CoreClrPal
+    ${COREFOUNDATION}
+    ${CORESERVICES}
+    ${SECURITY}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 add_subdirectory(examples)

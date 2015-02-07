@@ -24,21 +24,33 @@
         .byte 0xE0
 .endm
 
+#if defined(__APPLE__)
+#define C_FUNC(name) _##name
+#else
+#define C_FUNC(name) name
+#endif
+
 .macro PATCH_LABEL Name
-        .global \Name
-\Name:
+        .global C_FUNC(\Name)
+C_FUNC(\Name):
 .endm
 
 .macro LEAF_ENTRY Name, Section
-        .global \Name
+        .global C_FUNC(\Name)
+#if defined(__APPLE__)
+        .text
+#else
         .type \Name, %function
-\Name:
+#endif
+C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-\Name\()_End:
-        .global \Name\()_End
+C_FUNC(\Name\()_End):
+        .global C_FUNC(\Name\()_End)
+#if !defined(__APPLE__)
         .size \Name, .-\Name
+#endif
 .endm
 
 .macro LEAF_END Name, Section
@@ -46,7 +58,7 @@
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        mov \HelperReg, [rip + \Name@GOTPCREL]
+        mov \HelperReg, [rip + C_FUNC(\Name)@GOTPCREL]
 .endm
 
 .macro push_nonvol_reg Register

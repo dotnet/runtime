@@ -17,7 +17,7 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, FuncEvalHijackPersonalityRoutine
         END_PROLOGUE
 
         mov     [rsp], rdi
-        call    FuncEvalHijackWorker
+        call    C_FUNC(FuncEvalHijackWorker)
 
         //
         // The following nop is crucial.  It is important that the OS *not* recognize
@@ -67,7 +67,7 @@ NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
         mov     [rsp + 18h], rax
         
         // DD Hijack primitive already set the stack. So just make the call now.
-        call    ExceptionHijackWorker
+        call    C_FUNC(ExceptionHijackWorker)
 
         //
         // The following nop is crucial.  It is important that the OS *not* recognize

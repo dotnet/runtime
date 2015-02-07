@@ -547,13 +547,6 @@ _fullpath(
         goto fullpathExit;
     }
 
-    if ('\0' != path_copy[cPathCopy-1])
-    {
-        TRACE("relPath=%s is larger than %lu characters!\n",
-               relPath ? relPath : "NULL", cPathCopy-1);
-        goto fullpathExit;
-    }
-
     FILEDosToUnixPathA(path_copy);
 
     if(NULL == realpath(path_copy, realpath_buf))
