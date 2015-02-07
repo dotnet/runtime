@@ -695,11 +695,7 @@ FormatMessageW(
                     {
                         va_list TheArgs;
                         
-#ifdef __GNUC_VA_LIST                        
                         va_copy(TheArgs, *Arguments);
-#else // __GNUC_VA_LIST
-                        TheArgs = *Arguments;
-#endif // __GNUC_VA_LIST else
                         UINT i = 0;
                         for ( ; i < Index; i++ )
                         {
@@ -778,11 +774,7 @@ FormatMessageW(
                     else
                     {
                         va_list TheArgs;
-#ifdef __GNUC_VA_LIST                        
                         va_copy(TheArgs, *Arguments);
-#else // __GNUC_VA_LIST
-                        TheArgs = *Arguments;
-#endif // __GNUC_VA_LIST else
                         UINT i = 0;
                         for ( ; i < Index; i++ )
                         {
