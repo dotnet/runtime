@@ -21,8 +21,9 @@ namespace System.Diagnostics
             }
 
             // Iterate through all process IDs to load information about each process
-            var processes = new List<ProcessInfo>();
-            foreach (int id in GetProcessIds(machineName))
+            int[] procIds = GetProcessIds(machineName);
+            var processes = new List<ProcessInfo>(procIds.Length);
+            foreach (int id in procIds)
             {
                 // Read /proc/pid/stat to get information about the process, and churn that into a ProcessInfo
                 Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStat(id);
@@ -50,10 +51,11 @@ namespace System.Diagnostics
                 };
 
                 // Then read through /proc/pid/tasks/ to find each thread in the process...
-                foreach (DirectoryInfo taskDir in new DirectoryInfo("/proc/" + id + "/task/").EnumerateDirectories())
+                foreach (string taskDir in Directory.EnumerateDirectories("/proc/" + id + "/task/"))
                 {
+                    string dirName = Path.GetFileName(taskDir);
                     int threadId;
-                    if (int.TryParse(taskDir.Name, out threadId))
+                    if (int.TryParse(dirName, out threadId))
                     {
                         // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
                         Interop.procfs.ParsedStat stat = Interop.procfs.ReadStat(id, threadId);
@@ -93,10 +95,11 @@ namespace System.Diagnostics
             // Parse /proc for any directory that's named with a number.  Each such
             // directory represents a process.
             var ids = new List<int>();
-            foreach (DirectoryInfo procDir in new DirectoryInfo("/proc/").EnumerateDirectories())
+            foreach (string procDir in Directory.EnumerateDirectories("/proc/"))
             {
+                string dirName = Path.GetFileName(procDir);
                 int id;
-                if (int.TryParse(procDir.Name, out id))
+                if (int.TryParse(dirName, out id))
                 {
                     Contract.Assert(id >= 0);
                     ids.Add(id);

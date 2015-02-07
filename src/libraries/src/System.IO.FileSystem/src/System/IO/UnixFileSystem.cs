@@ -372,18 +372,24 @@ namespace System.IO
         private static IEnumerable<T> EnumerateResults<T>(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget, Func<string, bool, T> translateResult)
         {
             // Maintain a stack of the directories to explore, in the case of SearchOption.AllDirectories
-            var toExplore = new Stack<string>();
-            toExplore.Push(fullPath);
+            // Lazily-initialized only if we find subdirectories that will be explored.
+            Stack<string> toExplore = null;
 
             // Check whether we care about files, directories, or both
             bool includeFiles = (searchTarget & SearchTarget.Files) != 0;
             bool includeDirectories = (searchTarget & SearchTarget.Directories) != 0;
 
             // Process directories until we're out
-            while (toExplore.Count > 0)
+            string dirPath = fullPath;
+            do
             {
-                // Get the next directory to process
-                string dirPath = toExplore.Pop();
+                // First time through the loop (the root directory), we've initialized dirPath to be the initial path,
+                // and toExplore will be null.  If toExplore is non-null, that means this is a subsequent iteration and
+                // it's been initialized to non-null because there are additional directories to traverse.
+                if (toExplore != null)
+                {
+                    dirPath = toExplore.Pop();
+                }
 
                 // Open an enumerator of its contents.
                 IntPtr pdir;
@@ -416,6 +422,10 @@ namespace System.IO
                             }
                             if (searchOption == SearchOption.AllDirectories)
                             {
+                                if (toExplore == null)
+                                {
+                                    toExplore = new Stack<string>();
+                                }
                                 toExplore.Push(fullNewName);
                             }
                         }
@@ -431,6 +441,7 @@ namespace System.IO
                     while (Interop.CheckIo(Interop.libc.closedir(pdir), dirPath)) ;
                 }
             }
+            while (toExplore != null && toExplore.Count > 0); // only loop again if we're recursively processing directories and have more to process
         }
 
         /// <summary>Gets the name of a directory from a dirent*.</summary>
