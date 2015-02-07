@@ -88,11 +88,16 @@ int __cdecl swprintf_s (
         ...
         )
 {
+    int ret;
     va_list arglist;
 
     va_start(arglist, format);
 
-    return _vswprintf_s(string, sizeInWords, format, arglist);
+    ret = _vswprintf_s(string, sizeInWords, format, arglist);
+
+    va_end(arglist);
+
+    return ret;
 }
 
 int __cdecl _snwprintf_s (
@@ -103,9 +108,14 @@ int __cdecl _snwprintf_s (
         ...
         )
 {
+    int ret;
     va_list arglist;
 
     va_start(arglist, format);
 
-    return _vsnwprintf_s(string, sizeInWords, count, format, arglist);
+    ret = _vsnwprintf_s(string, sizeInWords, count, format, arglist);
+
+    va_end(arglist);
+
+    return ret;
 }

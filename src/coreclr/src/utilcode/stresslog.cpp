@@ -672,6 +672,9 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
 
 // Stress Log ETW feature available only on the desktop versions of the runtime
 #if !defined(FEATURE_CORECLR)
+    // The previous LogMsg call could have modified the Args, so we need to reset it
+    va_end(Args);
+    va_start(Args, format);        
     if(InlinedETWLogOn(facility, level))
     {
 #define MAX_STRESSLOG_DATA_ETW_LENGTH 256

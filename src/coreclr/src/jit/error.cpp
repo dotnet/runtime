@@ -389,13 +389,19 @@ void logf(const char* fmt, ...)
     // If it fails to log an LL_INFO1000 message once 
     // it will always fail when logging an LL_INFO1000 message.
     //
-    if (logToEEfailed || !vlogf(LL_INFO1000, fmt, args))
+    if (logToEEfailed)
+    {
+        logf_stdout(fmt, args);
+    }
+    else if (!vlogf(LL_INFO1000, fmt, args))
     {
         logToEEfailed = true;
 
-        // If the EE refuses to log it, we try to send it to stdout
-        //
-        logf_stdout(fmt, args);     
+        // The vlogf call may have modified args, so we need to reset it
+        va_end(args);
+        va_start(args, fmt);
+
+        logf_stdout(fmt, args);
     }
 #if 0  // Enable this only when you need it
     else
@@ -424,6 +430,7 @@ void logf(const char* fmt, ...)
         }
     }
 #endif // 0
+    va_end(args);
 }
 
 
@@ -433,6 +440,7 @@ void logf(unsigned level, const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     vlogf(level, fmt, args);
+    va_end(args);
 }
 
 void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg,
