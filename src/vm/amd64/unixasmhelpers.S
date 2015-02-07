@@ -94,7 +94,7 @@ LEAF_END HelperMethodFrameRestoreState, _TEXT
 //  generation will need to altered accordingly.
 //
 // EXTERN_C VOID __stdcall NDirectImportThunk()//
-NESTED_ENTRY NDirectImportThunk, _TEXT, Handler
+NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
 
         //
         // Save integer parameter registers.
@@ -150,7 +150,7 @@ LEAF_END moveOWord, _TEXT
 //
 // The JIT expects this helper to preserve registers used for return values
 //
-NESTED_ENTRY JIT_RareDisableHelper, _TEXT, Handler
+NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
 
     // First integer return register
     push rax
