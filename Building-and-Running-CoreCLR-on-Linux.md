@@ -34,9 +34,9 @@ ellismg@linux:~/git/coreclr$ cp binaries/Product/amd64/debug/corerun ~/coreclr-d
 ellismg@linux:~/git/coreclr$ cp binaries/Product/amd64/debug/libcoreclr.so ~/coreclr-demo/runtime
 ```
 
-Today, we don't support building the managed components of the runtime on Linux, so you'll need to have a Windows machine with clones of both the CoreCLR and CoreFX projects.
+Today, we don't support building the managed components of the runtime on Linux yet, so you'll need to have a Windows machine with clones of both the CoreCLR and CoreFX projects.
 
-Furthmore, our build system does not segment output based on the target platform, so in order to build the managed components for Linux, you'll first want to remove any versions of the assemblies you have built before.
+Furthmore, our build system does not segment output based on the target platform yet, so in order to build the managed components for Linux, you'll first want to remove any versions of the assemblies you have built before.
 
 ```
 D:\git\corefx> rmdir /q /s bin
