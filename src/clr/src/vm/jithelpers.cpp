@@ -6346,6 +6346,8 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     ULONG_PTR pGCLayout = 0;
     size_t    cbArgArea = INVOKE_COPY_ARGS_HELPER(copyArgs, args, NULL, NULL, (size_t)&pGCLayout);
 
+    va_end(args);
+
     // reset (in case the helper walked them)
     va_start(args, target);
 
@@ -6459,6 +6461,8 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     // arguments
     INVOKE_COPY_ARGS_HELPER(copyArgs, args, &ctx, (DWORD_PTR*)pbTempStackFill, cbArgArea);
     
+    va_end(args);
+
     pbTempStackFill += cbArgArea;
 
     // frame (includes TailCallFrame)

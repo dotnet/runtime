@@ -819,20 +819,24 @@ _CRTIMP int __cdecl _tcprintf_s_l (
 #endif  /* FORMAT_VALIDATIONS */
 
 {
+        int ret;
         va_list arglist;
         va_start(arglist, plocinfo);
 
 #ifndef FORMAT_VALIDATIONS
-        return _vtcprintf_l(format, plocinfo, arglist);
+        ret = _vtcprintf_l(format, plocinfo, arglist);
 #else  /* FORMAT_VALIDATIONS */
 #ifdef POSITIONAL_PARAMETERS
-        return _vtcprintf_p_l(format, plocinfo, arglist);
+        ret = _vtcprintf_p_l(format, plocinfo, arglist);
 #else  /* POSITIONAL_PARAMETERS */
-        return _vtcprintf_s_l(format, plocinfo, arglist);
+        ret = _vtcprintf_s_l(format, plocinfo, arglist);
 #endif  /* POSITIONAL_PARAMETERS */
 
 #endif  /* FORMAT_VALIDATIONS */
 
+        va_end(arglist);
+
+        return ret;
 }
 
 #ifndef FORMAT_VALIDATIONS
@@ -855,21 +859,25 @@ _CRTIMP int __cdecl _tcprintf_s (
 #endif  /* FORMAT_VALIDATIONS */
 
 {
+        int ret;
         va_list arglist;
 
         va_start(arglist, format);
 
 #ifndef FORMAT_VALIDATIONS
-        return _vtcprintf_l(format, NULL, arglist);
+        ret = _vtcprintf_l(format, NULL, arglist);
 #else  /* FORMAT_VALIDATIONS */
 #ifdef POSITIONAL_PARAMETERS
-        return _vtcprintf_p_l(format, NULL, arglist);
+        ret = _vtcprintf_p_l(format, NULL, arglist);
 #else  /* POSITIONAL_PARAMETERS */
-        return _vtcprintf_s_l(format, NULL, arglist);
+        ret = _vtcprintf_s_l(format, NULL, arglist);
 #endif  /* POSITIONAL_PARAMETERS */
 
 #endif  /* FORMAT_VALIDATIONS */
 
+        va_end(arglist);
+
+        return ret;
 }
 
 #endif  /* CPRFLAG */
