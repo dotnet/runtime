@@ -206,9 +206,12 @@ namespace System.ComponentModel.EventBasedAsync
 
                 Exception = e.Error;
 
-                _completeEvent.Set();
+                // Make sure to set _cancelEvent before _completeEvent so that anyone waiting on
+                // _completeEvent will not be at risk of reading Cancelled before it is set.
                 if (e.Cancelled)
                     _cancelEvent.Set();
+
+                _completeEvent.Set();
             }
         }
 
