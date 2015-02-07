@@ -39,7 +39,7 @@ public class CreateOrOpen : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            VerifyCreate("Loc111", new String('a', 1000), 4096);
+            VerifyCreate("Loc111", "CreateOrOpen" + new String('a', 1000), 4096);
 
             // null
             VerifyException<ArgumentNullException>("Loc112", null, 4096);
@@ -168,7 +168,7 @@ public class CreateOrOpen : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            VerifyCreate("Loc411", new String('a', 1000), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreate("Loc411", "CreateOrOpen2" + new String('a', 1000), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // null
             VerifyException<ArgumentNullException>("Loc412", null, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
