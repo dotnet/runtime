@@ -38,6 +38,10 @@ In the framework we have a couple of way to preserve backwards compatibility
 - Using the mechanisms defined in the AppContext class. 
 
 If there is no good way to guard against a breaking change we are going to have to turn down the PR.
+
+###Portability changes
+We are most likely going to accept any good changes to bring CoreCLR to new platforms and operating systems.
+
 ##Non-code changes
 ###Formatting changes
 Because the code is mirrored with our internal source control system we would like to keep these kinds of changes to a minimum to avoid unnecessary merge conflicts.
