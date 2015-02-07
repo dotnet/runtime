@@ -108,8 +108,8 @@ common_sources = \
 	debug-helpers.c		\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
-	decimal.c		\
-	decimal.h		\
+	decimal-ms.c		\
+	decimal-ms.h		\
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\

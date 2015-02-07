@@ -95,7 +95,7 @@
 #include <windows.h>
 #include <shlobj.h>
 #endif
-#include "decimal.h"
+#include "decimal-ms.h"
 
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void) MONO_INTERNAL;
 

@@ -142,20 +142,19 @@ ICALL(DTIME_1, "GetSystemTimeAsFileTime", mono_100ns_datetime)
 
 #ifndef DISABLE_DECIMAL
 ICALL_TYPE(DECIMAL, "System.Decimal", DECIMAL_1)
-ICALL(DECIMAL_1, "decimal2Int64", mono_decimal2Int64)
-ICALL(DECIMAL_2, "decimal2UInt64", mono_decimal2UInt64)
-ICALL(DECIMAL_3, "decimal2double", mono_decimal2double)
-//ICALL(DECIMAL_4, "decimal2string", mono_decimal2string)
-ICALL(DECIMAL_5, "decimalCompare", mono_decimalCompare)
-ICALL(DECIMAL_6, "decimalDiv", mono_decimalDiv)
-ICALL(DECIMAL_7, "decimalFloorAndTrunc", mono_decimalFloorAndTrunc)
-ICALL(DECIMAL_8, "decimalIncr", mono_decimalIncr)
-ICALL(DECIMAL_9, "decimalIntDiv", mono_decimalIntDiv)
-ICALL(DECIMAL_10, "decimalMult", mono_decimalMult)
-ICALL(DECIMAL_11, "decimalRound", mono_decimalRound)
-ICALL(DECIMAL_12, "decimalSetExponent", mono_decimalSetExponent)
-ICALL(DECIMAL_13, "double2decimal", mono_double2decimal) /* FIXME: wrong signature. */
-ICALL(DECIMAL_14, "string2decimal", mono_string2decimal)
+ICALL(DECIMAL_1, ".ctor(double)", mono_decimal_init_double)
+ICALL(DECIMAL_2, ".ctor(single)", mono_decimal_init_single)
+ICALL(DECIMAL_3, "FCallAddSub(System.Decimal&,System.Decimal&,byte)", mono_decimal_addsub)
+ICALL(DECIMAL_4, "FCallCompare", mono_decimal_compare)
+ICALL(DECIMAL_5, "FCallDivide", mono_decimal_divide)
+ICALL(DECIMAL_6, "FCallFloor", mono_decimal_floor)
+ICALL(DECIMAL_7, "FCallMultiply", mono_decimal_multiply)
+ICALL(DECIMAL_8, "FCallRound", mono_decimal_round)
+ICALL(DECIMAL_9, "FCallToInt32", mono_decimal_to_int32)
+ICALL(DECIMAL_10, "FCallTruncate", mono_decimal_truncate)
+ICALL(DECIMAL_11, "GetHashCode", mono_decimal_get_hash_code)
+ICALL(DECIMAL_12, "ToDouble", mono_decimal_to_double)
+ICALL(DECIMAL_13, "ToSingle", mono_decimal_to_float)
 #endif
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
@@ -482,6 +481,8 @@ ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
 ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
 #endif /* !DISABLE_SOCKETS */
 
+ICALL_TYPE(NUMBER, "System.Number", NUMBER_1)
+ICALL(NUMBER_1, "NumberBufferToDecimal", mono_decimal_from_number)
 ICALL_TYPE(NUMBER_FORMATTER, "System.NumberFormatter", NUMBER_FORMATTER_1)
 ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter_GetFormatterTables)
 
