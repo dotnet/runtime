@@ -951,5 +951,7 @@ void PAL_DisplayDialogFormatted(const char *szTitle, const char *szTextFormat, .
     char *szBuffer = (char*)alloca(cchBuffer);
     PAL__vsnprintf(szBuffer, cchBuffer, szTextFormat, args);
     PAL_DisplayDialog(szTitle, szBuffer);
+
+    va_end(args);
 }
 #endif // __APPLE__

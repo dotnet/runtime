@@ -998,8 +998,10 @@ HRESULT DbgTransportTarget::MakeProxyRequest(DbgProxyMessageType eType, ...)
 
     default:
         _ASSERTE(!"Illegal message type for MakeProxyRequest");
+        va_end(args);
         return E_FAIL;
     }
+    va_end(args);
 
     // We must hold the lock in order to send messages, allocate request IDs or touch the request queue.
     {

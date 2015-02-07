@@ -98,10 +98,15 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     if (verbose)
     {
         logf_stdout(fmt, args);
+        // logf_stdout can modify args so we need to reset it
+        va_end(args);
+        va_start(args, fmt);
     }
 #endif
 
     vlogf(level, fmt, args);
+
+    va_end(args);
 }
 
 void                Compiler::compDspSrcLinesByLineNum(unsigned line, bool seek)

@@ -1175,6 +1175,7 @@ void printfToDbgOut(const char* fmt, ...)
     char buffer[4096];
     _vsnprintf_s(buffer, COUNTOF(buffer), _TRUNCATE, fmt, args);
 
+    va_end(args);
     OutputDebugStringA( buffer );
 }
 
