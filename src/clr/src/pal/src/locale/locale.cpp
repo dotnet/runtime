@@ -156,6 +156,16 @@ static const struct CalIdPair requiredCalendars[] =
 
 static CFComparisonResult (*s_CFStringCompareWithOptionsAndLocale)(CFStringRef, CFStringRef, CFRange, CFOptionFlags, CFLocaleRef) = NULL;
 
+static UniChar * ToUniChar(WCHAR *buffer)
+{
+  return (UniChar *) buffer;
+}
+
+static UniChar * ToUniChar(LPCWSTR buffer)
+{
+  return (UniChar *) buffer;
+}
+
 /*
  * TODO: Callers of this function really should be using weak linking to get values that are 10.5 only
  * to do so we need to start building with XCode 3.0 so we have the 10.5 headers.  Once that happens 
@@ -359,7 +369,7 @@ static CFStringRef CFStringCreateMacFormattedLocaleName(LPCWSTR lpLocaleName)
         return NULL;
     }
 
-    CFStringAppendCharacters(cfMutableLocaleName, (const UniChar*)lpLocaleName, PAL_wcslen(lpLocaleName));
+    CFStringAppendCharacters(cfMutableLocaleName, ToUniChar(lpLocaleName), PAL_wcslen(lpLocaleName));
 
     CFStringFindAndReplace(cfMutableLocaleName,
                                 CFSTR("-"),
@@ -1614,7 +1624,7 @@ GetDateFormatHelper(
      * expected by Core Foundation.  However, currently no one calls this
      * with a format where this would actually matter.
      */
-    cfStringFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
+    cfStringFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpFormat), PAL_wcslen(lpFormat));
     if (cfStringFormat == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -1945,13 +1955,13 @@ CompareStringHelper(
         cchCount2 = PAL_wcslen( lpString2 );
     }
 
-    cfString1 = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpString1, cchCount1);
+    cfString1 = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpString1), cchCount1);
     if (cfString1 == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
-    cfString2 = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpString2, cchCount2);
+    cfString2 = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpString2), cchCount2);
     if (cfString2 == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -4916,7 +4926,7 @@ LCMapStringHelper(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
-    CFStringAppendCharacters(cfMutableString, (const UniChar*)lpSrcStr, cchSrc);
+    CFStringAppendCharacters(cfMutableString, ToUniChar(lpSrcStr), cchSrc);
 
     switch (dwMapFlags)
     {
@@ -5085,7 +5095,7 @@ PAL_NormalizeStringExW(
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
-    CFStringAppendCharacters(cfMutableString, (const UniChar*)lpSrcStr, cchSrc);
+    CFStringAppendCharacters(cfMutableString, ToUniChar(lpSrcStr), cchSrc);
 
     // TODO: Additionally, we should normalize according to the locale.
     // Unfortunately, Core Foundation has no such function in Mac OS X 10.4.
@@ -5180,14 +5190,14 @@ PAL_ParseDateW(
         goto EXIT;
     }
 
-    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
+    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpFormat), PAL_wcslen(lpFormat));
     if (cfFormat == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         goto EXIT;
     }
 
-    cfString = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpString, PAL_wcslen(lpString));
+    cfString = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpString), PAL_wcslen(lpString));
     if (cfString == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5208,7 +5218,7 @@ PAL_ParseDateW(
     CFDateFormatterSetFormat(cfFormatter,cfFormat);
 
     // Does format contain 'Z'
-    cfFormatString = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
+    cfFormatString = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpFormat), PAL_wcslen(lpFormat));
     if (cfFormatString == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5319,7 +5329,7 @@ PAL_FormatDateW(
         goto EXIT;
     }
 
-    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)lpFormat, PAL_wcslen(lpFormat));
+    cfFormat = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(lpFormat), PAL_wcslen(lpFormat));
     if (cfFormat == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5723,7 +5733,7 @@ static BOOL CFNumberFormatterSetPropertyString(CFNumberFormatterRef formatter, C
     // NULL means default
     if (sPropertyValue == NULL)
         return TRUE;
-    CFStringRef cfPropertyValue = CFStringCreateWithCharacters(kCFAllocatorDefault, (const UniChar*)sPropertyValue, PAL_wcslen(sPropertyValue));
+    CFStringRef cfPropertyValue = CFStringCreateWithCharacters(kCFAllocatorDefault, ToUniChar(sPropertyValue), PAL_wcslen(sPropertyValue));
     if (cfPropertyValue == NULL)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -5761,11 +5771,11 @@ static BOOL CFNumberFormatterAdjust(CFNumberFormatterRef formatter, LPCSTR forma
             case ' ': CFStringAppend(sFormat,CFSTR(" ")); break;            
             case '-': 
                 if(sMinus)
-                    CFStringAppendCharacters(sFormat,(const UniChar*)sMinus,PAL_wcslen(sMinus)); 
+                    CFStringAppendCharacters(sFormat,ToUniChar(sMinus),PAL_wcslen(sMinus)); 
                 break;
             case '$': 
                 if(sDollar)
-                    CFStringAppendCharacters(sFormat,(const UniChar*)sDollar,PAL_wcslen(sDollar)); 
+                    CFStringAppendCharacters(sFormat,ToUniChar(sDollar),PAL_wcslen(sDollar)); 
                 break;
                 
             default:
