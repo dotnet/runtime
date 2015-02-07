@@ -744,7 +744,7 @@ PAL_RaiseException(
 // SEH Personality
 //----------------------------------------------------------------------
 
-#ifdef __LINUX__
+#if defined(__LINUX__) || defined(__APPLE__)
 // TODO: Enable these routines for Linux.
 EXCEPTION_DISPOSITION
 PAL_RunFilter(

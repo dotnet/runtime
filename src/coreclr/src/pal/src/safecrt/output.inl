@@ -195,7 +195,7 @@ int __cdecl _swoutput_s(wchar_t *_Dst, size_t _Size, const wchar_t *_Format, va_
     CASSERT(sizeof(long) == sizeof(int));
 #endif
 
-#if (defined(__DARWIN_LONG_DOUBLE_IS_DOUBLE) && !__DARWIN_LONG_DOUBLE_IS_DOUBLE) || defined(__LINUX__)
+#if (defined(__DARWIN_LONG_DOUBLE_IS_DOUBLE) && !__DARWIN_LONG_DOUBLE_IS_DOUBLE) || defined(__LINUX__) || defined(__APPLE__)
     #ifdef MBUSAFECRT_SUPPORTS_LONGDOUBLE   // we do not have _cldcvt function to convert long double.
         #define LONGDOUBLE_IS_DOUBLE 0  /* 1 means long double is same as double */
         CASSERT(sizeof(long double) != sizeof(double));
