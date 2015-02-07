@@ -24,7 +24,7 @@
 //                                 or the ResolveCacheElem when r11 has the PROMOTE_CHAIN_FLAG set
 //  [rsp+8] m_ReturnAddress: contains the return address of caller to stub
         
-NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, Handler
+NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 0, 8, rdx, 0, 0
 
