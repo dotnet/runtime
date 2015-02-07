@@ -1,3 +1,4 @@
+#if defined(_DEBUG)
     .text
     .globl _DBG_CheckStackAlignment
 
@@ -13,3 +14,4 @@ _DBG_CheckStackAlignment:
   // Epilog                                                                    
   popq %rbp
   ret                                                                    
+#endif
