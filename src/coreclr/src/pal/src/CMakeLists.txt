@@ -12,7 +12,7 @@ include_directories(include)
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_definitions(-D_TARGET_MAC64)
   set(PLATFORM_SOURCES
-    arch/i386/context.clang.s
+    arch/i386/context.S
     arch/i386/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp

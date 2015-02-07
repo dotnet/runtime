@@ -1322,7 +1322,8 @@ Function:
 --*/
 // Bullseye has parsing problems if "asm" comes after VOID
 
-#ifndef __clang__
+#ifndef __llvm__
+asm
 VOID 
 DBG_CheckStackAlignment()
 {
@@ -1346,6 +1347,6 @@ DBG_CheckStackAlignment()
     // Epilog
     leave
 }
-#endif // !__clang__
+#endif // !__llvm__
 #endif // DEBUG && APPLE      
 
