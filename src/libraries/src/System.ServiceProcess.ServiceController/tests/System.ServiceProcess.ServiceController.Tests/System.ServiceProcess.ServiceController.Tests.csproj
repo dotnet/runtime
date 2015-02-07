@@ -32,11 +32,6 @@
        <Name>NativeTestService</Name> 
      </ProjectReference> 
   </ItemGroup>
-  <ItemGroup>
-     <Content Include="$(BaseOutputPath)\Win32\$(Configuration)\NativeTestService\NativeTestService.exe"> 
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> 
-     </Content> 
-  </ItemGroup>
   <!-- References are resolved from packages.config -->
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
