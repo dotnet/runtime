@@ -18,11 +18,11 @@
   <!-- References are resolved from packages.config -->
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\SR.cs">
-      <Link>System\SR.cs</Link>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\IO\StreamAsyncHelper.cs">
-      <Link>System\IO\StreamAsyncHelper.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\StreamAsyncHelper.cs">
+      <Link>Common\System\IO\StreamAsyncHelper.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -44,8 +44,8 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <Compile Include="..\..\Common\src\System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
@@ -59,8 +59,8 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
-      <Link>System\NotImplemented.cs</Link>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
+      <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Unix.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Unix.cs" />

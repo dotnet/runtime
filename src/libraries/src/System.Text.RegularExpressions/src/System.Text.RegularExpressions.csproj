@@ -44,14 +44,14 @@
   </ItemGroup>
   <!-- Common or Common-branched source files -->
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\SR.cs">
-      <Link>System\SR.cs</Link>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
-      <Link>System\NotImplemented.cs</Link>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\IO\StringBuilderCache.cs">
-      <Link>System\IO\StringBuilderCache.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Resource files -->
