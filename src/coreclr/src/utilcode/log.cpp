@@ -381,8 +381,9 @@ VOID LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
 #endif //!SELF_NO_HOST
     {
         va_list     args;
-        va_start( args, fmt );
+        va_start(args, fmt);
         LogSpewValist (facility, level, fmt, args);
+        va_end(args);
     }
     else
     {
@@ -406,8 +407,9 @@ VOID LogSpew2(DWORD facility2, DWORD level, const char *fmt, ... )
 #endif //!SELF_NO_HOST
     {
         va_list     args;
-        va_start( args, fmt );
+        va_start(args, fmt);
         LogSpew2Valist(facility2, level, fmt, args);
+        va_end(args);
     }
     else
     {
@@ -431,8 +433,9 @@ VOID LogSpewAlways (const char *fmt, ... )
 #endif //!SELF_NO_HOST
     {
         va_list     args;
-        va_start( args, fmt );
+        va_start(args, fmt);
         LogSpewValist (LF_ALWAYS, LL_ALWAYS, fmt, args);
+        va_end(args);
     }
     else
     {

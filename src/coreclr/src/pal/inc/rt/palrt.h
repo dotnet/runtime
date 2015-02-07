@@ -992,9 +992,12 @@ inline int __cdecl _vsnwprintf_unsafe(wchar_t *_Dst, size_t _SizeInWords, size_t
 
 inline int __cdecl _snwprintf_unsafe(wchar_t *_Dst, size_t _SizeInWords, size_t _Count, const wchar_t *_Format, ...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
-    return _vsnwprintf_unsafe(_Dst, _SizeInWords, _Count, _Format, _ArgList);
+    ret = _vsnwprintf_unsafe(_Dst, _SizeInWords, _Count, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 inline int __cdecl _vsnprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Count, const char *_Format, va_list _ArgList)
@@ -1011,13 +1014,17 @@ inline int __cdecl _vsnprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Co
 
 inline int __cdecl _snprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Count, const char *_Format, ...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
-    return _vsnprintf_unsafe(_Dst, _SizeInWords, _Count, _Format, _ArgList);
+    ret = _vsnprintf_unsafe(_Dst, _SizeInWords, _Count, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 inline int __cdecl _swscanf_unsafe(const wchar_t *_Dst, const wchar_t *_Format,...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
     wchar_t *tempFormat;
@@ -1044,11 +1051,14 @@ inline int __cdecl _swscanf_unsafe(const wchar_t *_Dst, const wchar_t *_Format,.
         tempFormat++;
        }
 
-    return swscanf(_Dst, _Format, _ArgList);
+    ret = swscanf(_Dst, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 inline int __cdecl _sscanf_unsafe(const char *_Dst, const char *_Format,...)
 {
+    int ret;
     char *tempFormat;
 
     va_list _ArgList;
@@ -1077,7 +1087,8 @@ inline int __cdecl _sscanf_unsafe(const char *_Dst, const char *_Format,...)
     }
 
 
-    return sscanf(_Dst, _Format, _ArgList);
+    ret = sscanf(_Dst, _Format, _ArgList);
+    va_end(_ArgList);
 }
 
 inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const wchar_t *fileName, const wchar_t *mode)

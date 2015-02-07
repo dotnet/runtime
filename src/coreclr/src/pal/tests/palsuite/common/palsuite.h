@@ -34,6 +34,8 @@ void Trace(char *format, ...)
     va_start(arglist, format);
 
     vprintf(format, arglist);
+
+    va_end(arglist);
 }
 
 void Fail(char *format, ...)
@@ -43,6 +45,8 @@ void Fail(char *format, ...)
     va_start(arglist, format);
 
     vprintf(format, arglist);    
+
+    va_end(arglist);
     printf("\n");
 
     // This will exit the test process

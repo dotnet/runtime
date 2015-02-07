@@ -299,6 +299,9 @@ function_name() to call the system's implementation
 #ifdef va_end
 #undef va_end
 #endif
+#ifdef va_copy
+#undef va_copy
+#endif
 
 
 #ifdef _VAC_
@@ -421,6 +424,7 @@ function_name() to call the system's implementation
 #undef va_list
 #undef va_start
 #undef va_end
+#undef va_copy
 #undef stdin
 #undef stdout
 #undef stderr
