@@ -36,6 +36,7 @@ Abstract:
 #if HAVE_COREFOUNDATION
 #define CF_EXCLUDE_CSTD_HEADERS
 #include <CoreFoundation/CoreFoundation.h>
+#include <wctype.h>
 #else
 #include <wctype.h>
 #endif
@@ -779,7 +780,7 @@ PAL_towlower( wchar_16 c )
                                             kCFAllocatorDefault, 1);
         if (cfString != NULL)
         {
-            CFStringAppendCharacters(cfString, &c, 1);
+            CFStringAppendCharacters(cfString, (const UniChar*)&c, 1);
             CFStringLowercase(cfString, NULL);
             c = CFStringGetCharacterAtIndex(cfString, 0);
             CFRelease(cfString);
@@ -838,7 +839,7 @@ PAL_towupper( wchar_16 c )
                                             kCFAllocatorDefault, 1);
         if (cfString != NULL)
         {
-            CFStringAppendCharacters(cfString, &c, 1);
+            CFStringAppendCharacters(cfString, (const UniChar*)&c, 1);
             CFStringUppercase(cfString, NULL);
             c = CFStringGetCharacterAtIndex(cfString, 0);
             CFRelease(cfString);

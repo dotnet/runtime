@@ -41,7 +41,6 @@ Abstract:
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <architecture/ppc/cframe.h>
 #include <dlfcn.h>
 #include <mach-o/loader.h>
 
@@ -735,22 +734,7 @@ static DWORD exception_from_trap_code(
         }
         switch (*(unsigned *)code)
         {
-#if defined(_PPC_)
-        case EXC_PPC_OVERFLOW:
-            return EXCEPTION_INT_OVERFLOW;
-        case EXC_PPC_ZERO_DIVIDE:
-            return EXCEPTION_INT_DIVIDE_BY_ZERO;
-        case EXC_PPC_FLT_INEXACT:
-            return EXCEPTION_FLT_INEXACT_RESULT;
-        case EXC_PPC_FLT_ZERO_DIVIDE:
-            return EXCEPTION_FLT_DIVIDE_BY_ZERO;
-        case EXC_PPC_FLT_UNDERFLOW:
-            return EXCEPTION_FLT_UNDERFLOW;
-        case EXC_PPC_FLT_OVERFLOW:
-            return EXCEPTION_FLT_OVERFLOW;
-        case EXC_PPC_FLT_NOT_A_NUMBER:
-	    return EXCEPTION_ILLEGAL_INSTRUCTION;
-#elif defined(_X86_) || defined(_AMD64_)
+#if defined(_X86_) || defined(_AMD64_)
         case EXC_I386_DIV:
             return EXCEPTION_INT_DIVIDE_BY_ZERO;
         case EXC_I386_INTO:
@@ -768,14 +752,7 @@ static DWORD exception_from_trap_code(
         break;
 
     case EXC_SOFTWARE:
-#if defined(_PPC_)
-        // Software generated exception; exact exception is in subcode field. Codes 0 - 0xFFFF reserved to hardware; codes 0x10000 - 0x1FFFF reserved for OS emulation. 
-        if (*(unsigned *)code == EXC_PPC_TRAP)
-        {
-            return EXCEPTION_BREAKPOINT;
-        }        
-        return EXCEPTION_ILLEGAL_INSTRUCTION; 
-#elif defined(_X86_) || defined(_AMD64_)
+#if defined(_X86_) || defined(_AMD64_)
         return EXCEPTION_ILLEGAL_INSTRUCTION;
 #else
 #error Trap code to exception mapping not defined for this architecture
@@ -783,16 +760,7 @@ static DWORD exception_from_trap_code(
 
     // Trace, breakpoint, etc. Details in subcode field. 
     case EXC_BREAKPOINT:
-#if defined(_PPC_)
-        if (*(unsigned *)code == EXC_PPC_TRACE)
-        {
-            return EXCEPTION_SINGLE_STEP;
-        }
-        else if (*(unsigned *)code == EXC_PPC_BREAKPOINT)
-        {
-            return EXCEPTION_BREAKPOINT;
-        }
-#elif defined(_X86_) || defined(_AMD64_)
+#if defined(_X86_) || defined(_AMD64_)
         if (*(unsigned *)code == EXC_I386_SGL)
         {
             return EXCEPTION_SINGLE_STEP;
@@ -851,10 +819,7 @@ catch_exception_raise(
    mach_msg_type_number_t code_count)   // [in] The size of the buffer (in natural-sized units). 
 {
     kern_return_t MachRet;
-#if defined(_PPC_)
-    ppc_thread_state_t ThreadState;
-    const thread_state_flavor_t ThreadStateFlavor = MACHINE_THREAD_STATE;
-#elif defined(_X86_)
+#if defined(_X86_)
     x86_thread_state32_t ThreadState;
     const thread_state_flavor_t ThreadStateFlavor = x86_THREAD_STATE32;
 #elif defined(_AMD64_)
@@ -1047,47 +1012,7 @@ catch_exception_raise(
 #endif // (_X86_ || _AMD64_) && __APPLE__
 #endif // CORECLR && _X86_
 
-#if defined(_PPC_)
-    // If we're in single step mode, disable it since we're going to call PAL_DispatchException
-    if (ExceptionRecord.ExceptionCode == EXCEPTION_SINGLE_STEP)
-    {
-        ThreadState.srr1 &= ~0x400UL;
-    }
-
-    ExceptionRecord.ExceptionFlags = EXCEPTION_IS_SIGNAL; 
-    ExceptionRecord.ExceptionRecord = NULL;
-    ExceptionRecord.ExceptionAddress = (void *)ThreadContext.Iar;
-
-    void *FramePointer = (void *) ThreadState.r1;
-
-    // Make sure it's naturally aligned
-    FramePointer = (void *)((ULONG_PTR)FramePointer - ((ULONG_PTR)FramePointer % 16));
-
-    // Move it past the red zone
-    FramePointer = (void *)((ULONG_PTR)FramePointer - C_RED_ZONE);
-
-    // Put the Context on the stack
-    FramePointer = (void *)((ULONG_PTR)FramePointer - sizeof(CONTEXT));
-    *(CONTEXT *)FramePointer = ThreadContext;
-    ThreadState.r3 = (unsigned)FramePointer;
-
-    // Put the exception record on the stack
-    FramePointer = (void *)((ULONG_PTR)FramePointer - sizeof(EXCEPTION_RECORD));
-    *(EXCEPTION_RECORD *)FramePointer = ExceptionRecord;
-    ThreadState.r4 = (unsigned)FramePointer;
-
-    // Add room for the args to spill
-    FramePointer = (void *)((ULONG_PTR)FramePointer - 2*sizeof(void *));
-
-    // Add room for the linking area (24 bytes)
-    FramePointer = (void *)((ULONG_PTR)FramePointer - 24);
-    *(unsigned *)FramePointer = ThreadState.r1;
-
-    // Make the instruction register point to DispatchException
-    ThreadState.lr = (unsigned)ThreadState.srr0;
-    ThreadState.srr0 =(unsigned) &PAL_DispatchException;
-    ThreadState.r1 = (unsigned)FramePointer;
-#elif defined(_X86_)
+#if defined(_X86_)
     // If we're in single step mode, disable it since we're going to call PAL_DispatchException
     if (ExceptionRecord.ExceptionCode == EXCEPTION_SINGLE_STEP)
     {

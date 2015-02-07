@@ -446,7 +446,7 @@ HeapReAlloc(
     {
         CPalThread *pthrCurrent = InternalGetCurrentThread();
         pthrCurrent->suspensionInfo.EnterUnsafeRegion();
-        malloc_zone_realloc((malloc_zone_t *)hHeap, lpmem, fullsize);
+        pMem = (BYTE *) malloc_zone_realloc((malloc_zone_t *)hHeap, lpmem, fullsize);
         pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
     }
 #else // __APPLE__

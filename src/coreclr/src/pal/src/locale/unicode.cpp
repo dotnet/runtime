@@ -1231,7 +1231,7 @@ ReleaseLock:
             goto ReleaseString;
         }
         CFStringGetCharacters(cfString, CFRangeMake(0, length),
-                lpWideCharStr);
+                (UniChar*)lpWideCharStr);
         retval = length;
     }
     else
@@ -1559,7 +1559,7 @@ ReleaseLock:
     }
 
     cfString = CFStringCreateWithCharacters(kCFAllocatorDefault,
-                      lpWideCharStr, charsToConvert);
+                      (const UniChar*)lpWideCharStr, charsToConvert);
     if (cfString == NULL)
     {
         ERROR("CFString creation failed.\n");

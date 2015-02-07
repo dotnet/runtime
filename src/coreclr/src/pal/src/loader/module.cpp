@@ -56,7 +56,9 @@ Abstract:
 #include <sys/types.h>
 #include <sys/mman.h>
 
+#if !defined(__APPLE__)
 #include <gnu/lib-names.h>
+#endif
 
 using namespace CorUnix;
 
@@ -94,13 +96,6 @@ PDLLMAIN g_pRuntimeDllMain = NULL;
 // linked into some utility.
 extern char g_szCoreCLRPath[MAX_PATH];
 
-#if defined(CORECLR) && defined(__APPLE__)
-// Under CoreCLR/Mac the pal_module above actually represents the PAL, the PALRT and mscorwks (they're all
-// linked into one binary). The PAL has no DllMain, but the other two do. Cache their DllMain entrypoints here
-// so we can call them properly (e.g. thread attaches).
-PDLLMAIN g_pPalRTDllMain = NULL;
-#endif // CORECLR && __APPLE__
-
 /* static function declarations ***********************************************/
 
 static BOOL LOADValidateModule(MODSTRUCT *module);
@@ -108,9 +103,7 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module);
 static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic);
 static void LOAD_SEH_CallDllMain(MODSTRUCT *module, DWORD dwReason, LPVOID lpReserved);
 static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name);
-#if !defined(CORECLR) || !defined(__APPLE__)
 static INT FindLibrary(CHAR* pszRelName, CHAR** ppszFullName);
-#endif // !CORECLR || !__APPLE__
 
 /* API function definitions ***************************************************/
 
@@ -298,9 +291,7 @@ GetProcAddress(
 {
     MODSTRUCT *module;
     FARPROC ProcAddress = NULL;
-#if !defined(CORECLR) || !defined(__APPLE__)
     LPCSTR symbolName = lpProcName;
-#endif // !defined(CORECLR) || !defined(__APPLE__)
 
     PERF_ENTRY(GetProcAddress);
     ENTRY("GetProcAddress (hModule=%p, lpProcName=%p (%s))\n",
@@ -341,12 +332,11 @@ GetProcAddress(
     // If we're looking for a symbol inside the PAL, we try the PAL_ variant
     // first because otherwise we run the risk of having the non-PAL_
     // variant preferred over the PAL's implementation.
-#if !defined(CORECLR) || !defined(__APPLE__)
     if (module->dl_handle == pal_module.dl_handle)
     {
         int iLen = 4 + strlen(lpProcName) + 1;
         LPSTR lpPALProcName = (LPSTR) alloca(iLen);
-        
+
         if (strcpy_s(lpPALProcName, iLen, "PAL_") != SAFECRT_SUCCESS)
         {
             ERROR("strcpy_s failed!\n");
@@ -364,62 +354,12 @@ GetProcAddress(
         ProcAddress = (FARPROC) dlsym(module->dl_handle, lpPALProcName);
         symbolName = lpPALProcName;
     }
-#else // !CORECLR || !__APPLE__
-    if (module == &pal_module)
-    {
-        // Attempting to lookup a symbol exported by the PAL/runtime itself.
-
-        // Under CoreCLR/Mac the PAL "module" represents either the entire CoreCLR binary (including PAL,
-        // PALRT and mscorwks) or just the PAL in the (uncommon) case of a standalone PAL. We can tell the
-        // difference in these cases by whether the sys_module field of pal_module was initialized to contain
-        // a non-NULL value: this is only done in the CoreCLR case.
-        if (pal_module.sys_module)
-        {
-            // Trying to locate a symbol in the PAL, PALRT or mscorwks.
-            int iLen = 4 + strlen(lpProcName) + 1;
-            LPSTR lpPALProcName = (LPSTR) alloca(iLen);
-            
-            if (strcpy_s(lpPALProcName, iLen, "PAL_") != SAFECRT_SUCCESS)
-            {
-                ERROR("strcpy_s failed!\n");
-                SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                goto done;
-            }
-
-            if (strcat_s(lpPALProcName, iLen, lpProcName) != SAFECRT_SUCCESS)
-            {
-                ERROR("strcat_s failed!\n");
-                SetLastError(ERROR_INSUFFICIENT_BUFFER);
-                goto done;
-            }
-
-            ProcAddress = (FARPROC)LookupFunctionInCoreCLR(pal_module.sys_module, lpPALProcName);
-        }
-        else
-        {
-            // Trying to locate a symbol in the standalone PAL. We don't support this (it's brittle to lump
-            // the PAL namespace in with some random host code). Just fall through to the failure case.
-            ASSERT("Attempted to lookup proc address in a standalone PAL");
-        }
-    }
-#endif // !CORECLR || !__APPLE__
 
     // If we aren't looking inside the PAL or we didn't find a PAL_ variant
     // inside the PAL, fall back to a normal search.
     if (ProcAddress == NULL)
     {
-#if defined(CORECLR) && defined(__APPLE__)
-        if (module->dl_handle)
-        {
-#endif // CORECLR && __APPLE__
             ProcAddress = (FARPROC) dlsym(module->dl_handle, lpProcName);
-#if defined(CORECLR) && defined(__APPLE__)
-        }
-        else if (module->sys_module)
-        {
-            ProcAddress = (FARPROC)LookupFunctionInCoreCLR(module->sys_module, lpProcName);
-        }
-#endif // CORECLR && __APPLE__
     }
 
     if (ProcAddress)
@@ -834,7 +774,6 @@ PAL_UnregisterLibraryW(
 
 /* Internal PAL functions *****************************************************/
 
-#if !defined(CORECLR) || !defined(__APPLE__)
 /*++
     LOADGetLibRotorPalSoFileName
 
@@ -909,7 +848,6 @@ Done:
     }
     return iRetVal;
 }
-#endif // !CORECLR || !__APPLE__
 
 /*++
 Function :
@@ -931,9 +869,7 @@ Notes :
 extern "C"
 BOOL LOADInitializeModules(LPWSTR exe_name)
 {
-#if !defined(CORECLR) || !defined(__APPLE__)
     LPWSTR  lpwstr = NULL;
-#endif // !defined(CORECLR) || !defined(__APPLE__)
 
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     LPSTR   pszExeName = NULL;
@@ -954,9 +890,6 @@ BOOL LOADInitializeModules(LPWSTR exe_name)
     /* initialize module for main executable */
     TRACE("Initializing module for main executable\n");
     exe_module.self=(HMODULE)&exe_module;
-#if defined(CORECLR) && defined(__APPLE__)
-    exe_module.sys_module = NULL;
-#endif // CORECLR && __APPLE__
     exe_module.dl_handle=dlopen(NULL, RTLD_LAZY);
     if(!exe_module.dl_handle)
     {
@@ -973,7 +906,6 @@ BOOL LOADInitializeModules(LPWSTR exe_name)
     TRACE("Initializing module for PAL library\n");
     pal_module.self=(HANDLE)&pal_module;
 
-#if !defined(CORECLR) || !defined(__APPLE__)
     if (g_szCoreCLRPath[0] == '\0')
     {
         pal_module.lib_name=NULL;
@@ -1002,63 +934,6 @@ BOOL LOADInitializeModules(LPWSTR exe_name)
 #endif
         }
     }
-#else // !CORECLR || !__APPLE__
-    // Under CoreCLR/Mac we have a single binary instead of separate dynamic libraries. Here pal_module
-    // represents all of that dylib (with dl_handle == NULL and sys_module != NULL). We still support some
-    // scenarios with a standalone PAL statically linked into host code. These cases are differented by
-    // sys_module being NULL (and GetProcAddress() will not work on such a module).
-    pal_module.lib_name = UTIL_MBToWC_Alloc("CoreCLR", -1);
-    if(NULL == pal_module.lib_name)
-    {
-        ERROR("MBToWC failure, unable to save full name of PAL module\n");
-        goto Done;
-    }
-    pal_module.dl_handle = NULL;
-
-    // Determine whether we're part of CoreCLR or a standalone PAL. Do this by looking at the g_szCoreCLRPath
-    // global: this is set to a non-zero length string by PAL initialization in the CoreCLR case.
-    if (g_szCoreCLRPath[0] != '\0')
-    {
-        // We're part of a full CoreCLR. Determine our module's handle and cache it for future
-        // GetProcAddress() operations).
-        pal_module.sys_module = FindCoreCLRHandle();
-        if (pal_module.sys_module == NULL)
-        {
-            ASSERT("FindCoreCLRHandle() failure");
-            goto Done;
-        }
-    }
-    else
-    {
-        // We're just a standalone PAL. Disable any functionality that needs to peek into the containing
-        // module (since we know nothing about that module).
-        pal_module.sys_module = NULL;
-    }
-
-    // If we really are running in CoreCLR then we need to locate and remember the DllMain routines for the
-    // PalRT and mscorwks (the PAL itself doesn't have one). We use these to keep the components up to date
-    // with thread attaches and detaches. We can't call them here for the process attach, however, since we
-    // are still partway through PAL initialization. We rely on PAL_InitializeCoreCLR to call us back on
-    // LOADInitCoreCLRModules once PAL initialization is complete.
-    if (pal_module.sys_module)
-    {
-        g_pPalRTDllMain = (PDLLMAIN)LookupFunctionInCoreCLR(pal_module.sys_module, "PalRtDllMain");
-        if (g_pPalRTDllMain == NULL)
-        {
-            ERROR("Failed to locate PalRT DllMain\n");
-            SetLastError(ERROR_INVALID_DLL);
-            goto Done;
-        }
-
-        g_pRuntimeDllMain = (PDLLMAIN)LookupFunctionInCoreCLR(pal_module.sys_module, "CoreDllMain");
-        if (g_pRuntimeDllMain == NULL)
-        {
-            ERROR("Failed to locate Mscorwks DllMain\n");
-            SetLastError(ERROR_INVALID_DLL);
-            goto Done;
-        }
-    }
-#endif // !CORECLR || !__APPLE__
 
     pal_module.refcount=-1;
     pal_module.next=&exe_module;
@@ -1241,30 +1116,6 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
 
     LockModuleList();
 
-#if defined(CORECLR) && defined(__APPLE__)
-    // The CoreCLR needs to simulate PalRT and mscorwks being separate libraries rather
-    // than a single binary.
-    if (InLoadOrder && g_pPalRTDllMain)
-    {
-#if !_NO_DEBUG_MESSAGES_
-        /* reset ENTRY nesting level back to zero while inside the callback... */
-        int old_level;
-        old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
-
-        {
-            PAL_LeaveHolder holder;
-            g_pPalRTDllMain((HMODULE) module, dwReason, lpReserved);
-        }
-        g_pRuntimeDllMain((HMODULE) module, dwReason, lpReserved);
-
-#if !_NO_DEBUG_MESSAGES_
-        /* ...and set nesting level back to what it was */
-        DBG_change_entrylevel(old_level);
-#endif /* !_NO_DEBUG_MESSAGES_ */
-    }
-#endif // CORECLR && __APPLE__
-
     module = &exe_module;
     do {
         if (!InLoadOrder)
@@ -1297,30 +1148,6 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
         if (InLoadOrder)
             module = module->next;
     } while (module != &exe_module);
-
-#if defined(CORECLR) && defined(__APPLE__)
-    // The CoreCLR needs to simulate PalRT and CoreCLR being separate libraries rather
-    // than a single binary.
-    if (!InLoadOrder && g_pPalRTDllMain)
-    {
-#if !_NO_DEBUG_MESSAGES_
-        /* reset ENTRY nesting level back to zero while inside the callback... */
-        int old_level;
-        old_level = DBG_change_entrylevel(0);
-#endif /* !_NO_DEBUG_MESSAGES_ */
-
-        g_pRuntimeDllMain((HMODULE) module, dwReason, lpReserved);
-        {
-            PAL_LeaveHolder holder;
-            g_pPalRTDllMain((HMODULE) module, dwReason, lpReserved);
-        }
-
-#if !_NO_DEBUG_MESSAGES_
-        /* ...and set nesting level back to what it was */
-        DBG_change_entrylevel(old_level);
-#endif /* !_NO_DEBUG_MESSAGES_ */
-    }
-#endif // CORECLR && __APPLE__
 
     UnlockModuleList();
 }
@@ -1502,9 +1329,6 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
     }
 
     module->dl_handle = dl_handle;
-#if defined(CORECLR) && defined(__APPLE__)
-    module->sys_module = NULL;
-#endif // CORECLR && __APPLE__
 #if NEED_DLCOMPAT
     if (isdylib(module))
     {
@@ -1556,7 +1380,11 @@ static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic)
     // As a result, we have to use the full name (i.e. lib.so.6) that is defined by LIBC_SO.
     if (strcmp(ShortAsciiName, LIBC_NAME_WITHOUT_EXTENSION) == 0)
     {
+#if defined(__APPLE__)
+        ShortAsciiName = "libc.dylib";
+#else
         ShortAsciiName = LIBC_SO;
+#endif
     }
 
     LockModuleList();
@@ -1881,7 +1709,6 @@ BOOL PAL_LOADUnloadPEFile(void * ptr)
     return retval;
 }
 
-#if !defined(CORECLR) || !defined(__APPLE__)
 /*++
 Function:
   FindLibrary
@@ -2060,7 +1887,6 @@ Done:
     // *ppszFullName to NULL.
     return iRetVal;
 }
-#endif // !CORECLR || !__APPLE__
 
 /*++
     LOADInitCoreCLRModules
@@ -2077,482 +1903,8 @@ Return value:
 --*/
 BOOL LOADInitCoreCLRModules()
 {
-#ifdef __APPLE__
-    {
-        PAL_LeaveHolder holder;
-        if (!g_pPalRTDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL))
-            return FALSE;
-    }
-#endif // __APPLE__
     return g_pRuntimeDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL);
 }
-
-#if defined(CORECLR) && defined(__APPLE__)
-// Abstract the API used to load and query for functions in the CoreCLR binary to make it easier to change the
-// underlying implementation.
-
-// Load the CoreCLR module into memory given the directory in which it resides. Returns NULL on failure.
-CORECLRHANDLE LoadCoreCLR(const char *szPath)
-{
-    CFStringRef hPath = NULL;
-    CFURLRef    hUrl = NULL;
-    CFBundleRef hBundle = NULL;
-
-    // We're handed the full path to the CoreCLR directory but CFBundleCreate wants the path of the bundle
-    // directory that contains it. So we have to strip two directory components off.
-    int iLen = strlen(szPath) + 1;
-    char *szBundlePath = (char*)alloca(iLen);
-    
-    if (strcpy_s(szBundlePath, iLen, szPath) != SAFECRT_SUCCESS)
-    {
-        ERROR("strcpy_s failed!\n");
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto done;
-    }
-
-    // Null out the last three slashes:
-    //      <foo>/CoreCLR.bundle/Contents/MacOS/ -> <foo>/CoreCLR.bundle/Contents/MacOS
-    //      <foo>/CoreCLR.bundle/Contents/MacOS -> <foo>/CoreCLR.bundle/Contents
-    //      <foo>/CoreCLR.bundle/Contents -> <foo>/CoreCLR.bundle
-    TRACE("LoadCoreCLR: szPath = \"%s\"\n", szPath);
-    for (int i = 0; i < 3; i++)
-    {
-        char *szLastSlash = rindex(szBundlePath, '/');
-        if (szLastSlash == NULL)
-        {
-            ERROR("Got invalid bundle path \"%s\"\n", szPath);
-            SetLastError(ERROR_INVALID_PARAMETER);
-            goto done;
-        }
-        *szLastSlash = '\0';
-    }
-
-    // Convert the pathname provided as a cstring to a CFString.
-    hPath = CFStringCreateWithCString(kCFAllocatorDefault, szBundlePath, kCFStringEncodingUTF8);
-    if (hPath == NULL)
-    {
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto done;
-    }
-
-    // Convert the path into a URL.
-    hUrl = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, hPath, kCFURLPOSIXPathStyle, TRUE);
-    if (hUrl == NULL)
-    {
-        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-        goto done;
-    }
-
-    // Load the bundle from the URL.
-    hBundle = CFBundleCreate(kCFAllocatorDefault, hUrl);
-
-  done:
-    if (hUrl)
-        CFRelease(hUrl);
-    if (hPath)
-        CFRelease(hPath);
-
-    return hBundle;
-}
-
-// Lookup the named function in the given CoreCLR image. Returns NULL on failure.
-void *LookupFunctionInCoreCLR(CORECLRHANDLE hCoreCLR, const char *szFunction)
-{
-    CFStringRef hFunction = NULL;
-    void       *pFunction = NULL;
-
-    // Convert the function name provided as a cstring to a CFString.
-    hFunction = CFStringCreateWithCString(kCFAllocatorDefault, szFunction, kCFStringEncodingUTF8);
-    if (hFunction == NULL)
-        goto done;
-
-    // Look up the function name in the bundle.
-    {
-        // We temporarily leave PAL as a workaround for what is presumably a problem in gdb (as of version 477).
-        // The function we call here may call into dyld for linking new images, and gdb sets a breakpoint deep
-        // in there so that it knows about it, and can load new symbol files. We leave the PAL so that we
-        // unhook the exception port for hardware breakpoints.
-        //
-        // Strictly speaking, we'd expect this to work without leaving the PAL: For a breakpoint exception, if
-        // no managed debugger is attached, our thread-level handler sends back a message to the system that
-        // we do not with to handle it. This causes the system to forward the exception message to the task
-        // and host-level handlers. However, gdb's host-level handler seems to hang in this case.
-        PAL_LeaveHolder holder;
-        pFunction = CFBundleGetFunctionPointerForName(hCoreCLR, hFunction);
-    }
-
-  done:
-    if (hFunction)
-        CFRelease(hFunction);
-
-    return pFunction;
-}
-
-// Locate the CoreCLR module handle associated with the code currently executing. Returns NULL on failure.
-CORECLRHANDLE FindCoreCLRHandle()
-{
-    // Return NULL when we're not really part of CoreCLR (i.e. we're a standalone PAL).
-    if (g_szCoreCLRPath[0] == '\0')
-    {
-        SetLastError(ERROR_NOT_SUPPORTED);
-        return NULL;
-    }
-
-    // Reloading the same bundle will just return a reference to the exiting copy and we know the path from
-    // which the host originally loaded us.
-    return LoadCoreCLR(g_szCoreCLRPath);
-}
-#endif // CORECLR && __APPLE__
-
-/*++
-Function:
-  PAL_GetModuleBaseFromAddress
-
-  Given an address, returns the base address of the dynamic module which contains that address, 
-  or NULL if none.
-
-  Notes:
-    This is a replacement for code that casts HMODULEs to pointers on Windows.
-    Ideally this would take an HMODULE instead of an address, but that is harder - we don't seem to
-    have a way to map it directly to a dyld index or to get an address from it. Eg., we're not 
-    guaranteed toh ave a module name, dllMain or dyld handle.
- */
-#ifdef __APPLE__
-PALAPI
-LPCVOID
-PAL_GetModuleBaseFromAddress(LPCVOID pAddress)
-{
-    LPCVOID retval = NULL;
-
-    PERF_ENTRY(PAL_GetModuleBaseFromAddress);
-    ENTRY("PAL_GetModuleBaseFromAddress (pAddress=%p)\n", pAddress);
-
-    // Given a pointer into the module, get the header at the start of the module
-    retval = _dyld_get_image_header_containing_address(pAddress);
-    if (retval == NULL)
-    {
-        // All modules we load use dyld (even bundles are implemented using this in the OS)
-        TRACE("Address isn't recognized as being in a dyld module: %p\n", pAddress);
-        goto done;
-    }
-
-    TRACE("base address of module with address %p is %p\n", pAddress, retval);
-
-done:
-    LOGEXIT("PAL_GetModuleBaseFromAddress returns %p\n", retval);
-    PERF_EXIT(PAL_GetModuleBaseFromAddress);
-    return retval;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Retrieve the UUID in the image.
-//
-// Arguments:
-//    pImageBase - the base address of where an image is loaded into memory
-//    pUUID      - out parameter; return the UUID in the image
-//
-// Assumptions:
-//    The buffer pointed to by pUUID must have at least 16 bytes.
-//
-// Return Value:
-//    TRUE if this function successfully retrieves the UUID from the specified image
-//
-
-PALAPI
-BOOL
-PAL_GetUUIDOfImage(LPCVOID pImageBase, BYTE * pUUID)
-{
-        PERF_ENTRY(PAL_GetUUIDOfImage);
-    ENTRY("PAL_GetUUIDOfImage (pImageBase=%p, pUUID=%p)\n", pImageBase, pUUID);
-
-    // There should be a Mach-O header at the image base.
-    const mach_header * pHeader;
-    pHeader = reinterpret_cast<const mach_header *>(pImageBase);
-
-    const load_command * pCurCommand = NULL;
-    UINT32 cLoadCommands = 0;
-    BOOL fFoundUUID = FALSE;
-    
-    // The offset to the magic number is the same for both mach_header and for
-    // mach_header_64 (same size too), so it's safe to use it to check for
-    // MH_MAGIC_64.
-    if (pHeader->magic == MH_MAGIC)
-    {
-        // Immediately following the header are the load commands.
-        cLoadCommands = pHeader->ncmds;
-        pCurCommand = reinterpret_cast<const load_command *>(pHeader + 1);
-
-    }
-    else if (pHeader->magic == MH_MAGIC_64)
-    {
-        const mach_header_64 * pHeader64;
-	pHeader64 = reinterpret_cast<const mach_header_64 *>(pImageBase);
-	cLoadCommands = pHeader64->ncmds;
-	pCurCommand = reinterpret_cast<const load_command *>(pHeader64 + 1);
-    }
-
-    if (pCurCommand)
-    {
-        // Loop through the load commmands to find the LC_UUID load command.
-        for (UINT32 i = 0; i < cLoadCommands; i++)
-	{
-            if (pCurCommand->cmd == LC_UUID)
-            {
-                const uuid_command * pUUIDCommand = reinterpret_cast<const uuid_command *>(pCurCommand);
-
-                // sanity check
-                if (pUUIDCommand->cmdsize == sizeof(uuid_command))
-                {
-		    // Copy the 16-byte UUID into the out buffer.
-                    memcpy(pUUID, pUUIDCommand->uuid, sizeof(pUUIDCommand->uuid));
-                    fFoundUUID = TRUE;
-                    break;
-                }
-            }
-            pCurCommand = reinterpret_cast<const load_command *>((SIZE_T)pCurCommand + pCurCommand->cmdsize);
-        }
-    }
-
-    LOGEXIT("PAL_GetUUIDOfImage\n");
-    PERF_EXIT(PAL_GetUUIDOfImage);
-    return fFoundUUID;
-}
-
-//---------------------------------------------------------------------------------------
-// Retrieve the version stored in the Info.plist file in a bundle.
-//
-// Arguments:
-//    bundle                 - Target bundle.
-//    pwszVersionString      - out parameter; buffer to be filled with the version string
-//    cchVersionStringBuffer - size of the buffer in # of characters pointed to by pwszVersionString
-//    pcchVersionStringBufferRequired - required size in characters, including NULL.
-//
-// Return Value:
-//    Return the number of characters in the version string (excluding NULL) or 0 if the operation fails.
-//
-// Notes:
-//    Call GetLastError() to retrieve more information if the function fails.
-//
-static DWORD GetBundleVersionString(IN CFBundleRef bundle,
-                                    IN WCHAR *pwszVersionString,
-                                    IN DWORD cchVersionStringBuffer, 
-                                    IN DWORD *pcchVersionStringBufferRequired)
-{
-    CFTypeRef   hVersionString     = NULL;
-    CFStringRef hRealVersionString = NULL;
-
-    *pcchVersionStringBufferRequired = 0;
-
-    // Get a CFTypeRef to the version string stored in the Info.plist file in the CoreCLR bundle.
-    // CFTypeRef is like an System.Object.  It's the base class in CoreFoundation.
-    hVersionString = CFBundleGetValueForInfoDictionaryKey(bundle, kCFBundleVersionKey);
-    if (hVersionString == NULL || CFGetTypeID(hVersionString) != CFStringGetTypeID())
-    {
-        SetLastError(ERROR_INVALID_DATA);
-        return 0;
-    }
-    hRealVersionString = static_cast<CFStringRef>(hVersionString);
-
-    // Get the length of the version string.
-    S_UINT32 cchRealVersionString(ClrSafeInt<CFIndex>(CFStringGetLength(hRealVersionString)));
-    if (cchRealVersionString.IsOverflow() || 
-        !cchRealVersionString.addition(cchRealVersionString.Value(), 1ul, *pcchVersionStringBufferRequired))
-    {
-        SetLastError(ERROR_INVALID_DATA);
-        return 0;
-    }
-
-    if (*pcchVersionStringBufferRequired > cchVersionStringBuffer)
-    {
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        return 0;
-    }
-
-    // Copy the version string into the output buffer and make sure we put the NULL character at the end.
-    CFStringGetCharacters(hRealVersionString, CFRangeMake(0, cchRealVersionString.Value()), pwszVersionString);
-    pwszVersionString[cchRealVersionString.Value()] = L'\0';
-
-    return cchRealVersionString.Value();
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Retrieve the version stored in the Info.plist file in a bundle containing the passed in executable path.
-//
-// Arguments:
-//    pwszCoreClrFullPath       - full path to CoreCLR
-//    pwszVersionString         - out parameter; buffer to be filled with the version string
-//    cchVersionStringBuffer    - size of the buffer in # of characters pointed to by pwszVersionString
-//    pcchVersionStringBufferRequired - required size in characters, including NULL.
-//
-// Return Value:
-//    Return the number of characters in the version string (excluding NULL) or 0 if the operation fails.
-//
-// Notes:
-//    Call GetLastError() to retrieve more information if the function fails.
-//
-
-PALAPI
-DWORD
-PAL_GetVersionString(IN WCHAR * pwszCoreClrFullPath, 
-                     IN OUT WCHAR * pwszVersionString, 
-                     IN DWORD cchVersionStringBuffer,
-                     OUT DWORD *pcchVersionStringBufferRequired)
-{
-    PERF_ENTRY(PAL_GetVersionString);
-    ENTRY("PAL_GetVersionString (pwszCoreClrFullPath=%p (%S), pwszVersionString=%p, "
-          "cchVersionStringBuffer=%u, pcchVersionStringBufferRequired=%p)\n", 
-          (pwszCoreClrFullPath ? pwszCoreClrFullPath : W16_NULLSTRING),
-          (pwszCoreClrFullPath ? pwszCoreClrFullPath : W16_NULLSTRING),
-          pwszVersionString, cchVersionStringBuffer, pcchVersionStringBufferRequired);
-
-    // various handles for dealing with the Core Foundation APIs
-    CFStringRef hPath   = NULL;
-    CFURLRef    hURL    = NULL;
-    CFBundleRef hBundle = NULL;
-
-    DWORD cchFullPath = PAL_wcslen(pwszCoreClrFullPath);
-    DWORD cchVersionString = 0;
-
-    // Make sure the full path is not too long.
-    if (cchFullPath > MAX_PATH)
-    {
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto LExit;
-    }
-
-    // Include an extra space for the NULL character.
-    WCHAR wszBundlePath[MAX_PATH + 1];
-    if (wcscpy_s(wszBundlePath, cchFullPath + 1, pwszCoreClrFullPath) != SAFECRT_SUCCESS)
-    {
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto LExit;
-    }
-
-    // Null out the last three slashes:
-    //      <foo>/CoreCLR.bundle/Contents/MacOS/ -> <foo>/CoreCLR.bundle/Contents/MacOS
-    //      <foo>/CoreCLR.bundle/Contents/MacOS -> <foo>/CoreCLR.bundle/Contents
-    //      <foo>/CoreCLR.bundle/Contents -> <foo>/CoreCLR.bundle
-    for (int i = 0; i < 3; i++)
-    {
-        WCHAR * pwszLastSlash = PAL_wcsrchr(wszBundlePath, L'/');
-        if (pwszLastSlash == NULL)
-        {
-            SetLastError(ERROR_INVALID_PARAMETER);
-            goto LExit;
-        }
-
-        *pwszLastSlash = '\0';
-    }
-
-    // Create a CFStringRef representation of the bundle path.
-    hPath = CFStringCreateWithCharacters(kCFAllocatorDefault, wszBundlePath, (CFIndex)PAL_wcslen(wszBundlePath));
-    if (hPath == NULL)
-    {
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto LExit;
-    }
-
-    // Create a CFURLRef representation of the bundle path.
-    hURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault, hPath, kCFURLPOSIXPathStyle, true);
-    if (hURL == NULL)
-    {
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto LExit;
-    }
-
-    // Create a handle to the CoreCLR bundle.
-    hBundle = CFBundleCreate(kCFAllocatorDefault, hURL);
-    if (hBundle == NULL)
-    {
-        SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        goto LExit;
-    }
-
-    cchVersionString = GetBundleVersionString(hBundle, pwszVersionString, cchVersionStringBuffer, 
-        pcchVersionStringBufferRequired);
-
-LExit:
-    if (hURL != NULL)
-    {
-        CFRelease(hURL);
-    }
-
-    if (hPath != NULL)
-    {
-        CFRelease(hPath);
-    }
-
-    if (hBundle != NULL)
-    {
-        CFRelease(hBundle);
-    }
-
-    LOGEXIT("PAL_GetVersionString returns %u, pwszVersionString=\"%S\", *pcchVersionStringBufferRequired=%u\n",
-        cchVersionString, (pwszVersionString ? pwszVersionString : W16_NULLSTRING),
-        (pcchVersionStringBufferRequired ? *pcchVersionStringBufferRequired : 0));
-    PERF_EXIT(PAL_GetVersionString);
-    return cchVersionString;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Retrieve the version stored in the Info.plist file in the CoreCLR bundle.
-//
-// Arguments:
-//    pwszVersionString         - out parameter; buffer to be filled with the version string
-//    cchVersionStringBuffer    - size of the buffer in # of characters pointed to by pwszVersionString
-//    pcchVersionStringBufferRequired - required size in characters, including NULL.
-//
-// Return Value:
-//    Return the number of characters in the version string (excluding NULL) or 0 if the operation fails.
-//
-// Notes:
-//    Call GetLastError() to retrieve more information if the function fails.
-//
-
-PALAPI
-DWORD
-PAL_GetCoreCLRVersionString(
-                     IN OUT WCHAR * pwszVersionString, 
-                     IN DWORD cchVersionStringBuffer,
-                     IN DWORD *pcchVersionStringBufferRequired)
-{
-    PERF_ENTRY(PAL_GetCoreCLRVersionString);
-    ENTRY("PAL_GetCoreCLRVersionString (pwszVersionString=%p, cchVersionStringBuffer=%u, "
-          "pcchVersionStringBufferRequired=%p)\n", 
-          pwszVersionString, cchVersionStringBuffer, pcchVersionStringBufferRequired);
-
-    // various handles for dealing with the Core Foundation APIs
-    CFBundleRef hBundle   = NULL;
-
-    DWORD cchVersionString = 0;
-
-    // NOTE: This code knows that CORECLRHANDLE is actually a CFBundleRef
-    hBundle = (CFBundleRef)FindCoreCLRHandle();
-    if (hBundle == NULL)
-    {
-        SetLastError(ERROR_INVALID_DATA);
-        goto LExit;
-    }
-
-    cchVersionString = GetBundleVersionString(hBundle, pwszVersionString, cchVersionStringBuffer, 
-        pcchVersionStringBufferRequired);
-
-LExit:
-    if (hBundle != NULL)
-    {
-        CFRelease(hBundle);
-    }
-
-    LOGEXIT("PAL_GetCoreCLRVersionString returns %u, pwszVersionString=\"%S\", *pcchVersionStringBufferRequired=%u\n",
-        cchVersionString, (pwszVersionString ? pwszVersionString : W16_NULLSTRING),
-        (pcchVersionStringBufferRequired ? *pcchVersionStringBufferRequired : 0));
-    PERF_EXIT(PAL_GetCoreCLRVersionString);
-    return cchVersionString;
-}
-#else // __APPLE__
 
 // Get base address of the coreclr module
 PALAPI
@@ -2598,5 +1950,3 @@ PAL_GetCoreClrModuleBase()
     PERF_EXIT(PAL_GetCoreClrModuleBase);
     return retval;
 }
-
-#endif // __APPLE__
