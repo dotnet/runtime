@@ -11,7 +11,7 @@ class Phase
 {
 public:
     Phase(Compiler *_comp, 
-          char *_name, 
+          const char *_name, 
           Phases _phase=PHASE_NUMBER_OF) 
         : comp(_comp), name(_name), phase(_phase) {}
     virtual void Run();
@@ -21,7 +21,7 @@ public:
 
 protected:
     Compiler *comp;
-    char *name;
+    const char *name;
     Phases phase;
 };
 

@@ -7426,7 +7426,7 @@ LinearScan::insertSwap(BasicBlock* block,
 #ifdef DEBUG
     if (VERBOSE)
     {
-        char * insertionPointString = "top";
+        const char * insertionPointString = "top";
         if (insertionPoint == nullptr)
         {
             insertionPointString = "bottom";
@@ -7595,7 +7595,7 @@ LinearScan::addResolution(BasicBlock* block,
                           regNumber   fromReg)
 {
 #ifdef DEBUG
-    char * insertionPointString = "top";
+    const char * insertionPointString = "top";
 #endif // DEBUG
     if (insertionPoint == nullptr)
     {
@@ -8590,7 +8590,7 @@ LinearScan::lsraDumpIntervals(const char* msg)
 void 
 LinearScan::lsraGetOperandString(GenTreePtr tree, LsraTupleDumpMode mode, char *operandString, unsigned operandStringLength)
 {
-    char* lastUseChar = "";
+    const char* lastUseChar = "";
     if ((tree->gtFlags & GTF_VAR_DEATH) != 0) lastUseChar = "*";
     switch (mode)
     {
@@ -8625,7 +8625,7 @@ LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasDest)
     Compiler*         compiler = GetTlsCompiler();
     const unsigned    operandStringLength = 16;
     char              operandString[operandStringLength];
-    char*             emptyDestOperand = "               ";
+    const char*       emptyDestOperand = "               ";
     char              spillChar = ' ';
 
     if (mode == LinearScan::LSRA_DUMP_POST)
@@ -8683,7 +8683,7 @@ LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasDest)
     else if (tree->OperIsAssignment())
     {
         assert(!tree->gtHasReg());
-        char * isRev = "";
+        const char * isRev = "";
         if ((tree->gtFlags & GTF_REVERSE_OPS) != 0) isRev = "(Rev)";
         printf("  asg%s%s  ", GenTree::NodeName(tree->OperGet()), isRev);
     }
