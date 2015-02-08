@@ -16,7 +16,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
         )
     endif(CAN_BE_COMPILED_ON_LINUX)
 
-else(CLR_CMAKE_PLATFORM_UNIX)
+else()
     add_executable(CoreConsole
       ${CoreConsole_SOURCES}
       ${CoreConsole_RESOURCES}
