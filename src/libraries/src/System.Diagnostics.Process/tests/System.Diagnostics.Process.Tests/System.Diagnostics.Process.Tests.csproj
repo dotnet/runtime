@@ -29,7 +29,7 @@
       <Project>{63634289-90d7-4947-8bf3-dbbe98d76c85}</Project>
       <Name>System.Diagnostics.Process</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
