@@ -3386,6 +3386,43 @@ strdup_tolower (char *s)
 	return s2;
 }
 
+/*
+ * Same as g_path_get_basename () but handles windows paths as well,
+ * which can occur in .mdb files created by pdb2mdb.
+ */
+static char*
+dbg_path_get_basename (const char *filename)
+{
+	char *r;
+
+	if (!filename || strchr (filename, '/') || !strchr (filename, '\\'))
+		return g_path_get_basename (filename);
+
+	/* From gpath.c */
+
+	/* No separator -> filename */
+	r = strrchr (filename, '\\');
+	if (r == NULL)
+		return g_strdup (filename);
+
+	/* Trailing slash, remove component */
+	if (r [1] == 0){
+		char *copy = g_strdup (filename);
+		copy [r-filename] = 0;
+		r = strrchr (copy, '\\');
+
+		if (r == NULL){
+			g_free (copy);
+			return g_strdup ("/");
+		}
+		r = g_strdup (&r[1]);
+		g_free (copy);
+		return r;
+	}
+
+	return g_strdup (&r[1]);
+}
+
 static void
 init_jit_info_dbg_attrs (MonoJitInfo *ji)
 {
@@ -3526,7 +3563,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 								if (g_hash_table_lookup (mod->data.source_files, s))
 									found = TRUE;
 								else {
-									char *s2 = g_path_get_basename (sinfo->source_file);
+									char *s2 = dbg_path_get_basename (sinfo->source_file);
 									char *s3 = strdup_tolower (s2);
 
 									if (g_hash_table_lookup (mod->data.source_files, s3))
@@ -7132,7 +7169,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		fname = decode_string (p, &p, end);
 		ignore_case = decode_byte (p, &p, end);
 
-		basename = g_path_get_basename (fname);
+		basename = dbg_path_get_basename (fname);
 
 		res_classes = g_ptr_array_new ();
 		res_domains = g_ptr_array_new ();
@@ -7151,7 +7188,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 
 					for (i = 0; i < files->len; ++i) {
 						char *s = g_ptr_array_index (files, i);
-						char *s2 = g_path_get_basename (s);
+						char *s2 = dbg_path_get_basename (s);
 						char *s3;
 
 						class_list = g_hash_table_lookup (info->source_file_to_class, s2);
@@ -8181,7 +8218,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			if (command == CMD_TYPE_GET_SOURCE_FILES_2) {
 				buffer_add_string (buf, source_file);
 			} else {
-				base = g_path_get_basename (source_file);
+				base = dbg_path_get_basename (source_file);
 				buffer_add_string (buf, base);
 				g_free (base);
 			}
