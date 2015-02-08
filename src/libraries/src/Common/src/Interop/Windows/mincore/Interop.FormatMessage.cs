@@ -51,7 +51,7 @@ internal partial class Interop
             int result = FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
                                        FORMAT_MESSAGE_FROM_SYSTEM |
                                        FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                                       IntPtr.Zero, (uint)errorCode, 0, sb, sb.Capacity + 1,
+                                       IntPtr.Zero, (uint)errorCode, 0, sb, sb.Capacity,
                                        null);
             if (result != 0)
             {
