@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
-
 namespace System.Diagnostics
 {
     public partial class ProcessThread
@@ -47,7 +45,7 @@ namespace System.Diagnostics
             get
             {
                 Interop.procfs.ParsedStat stat = GetStat();
-                Contract.Assert(stat.nice >= -20 && stat.nice <= 20);
+                Debug.Assert(stat.nice >= -20 && stat.nice <= 20);
                 return
                     stat.nice < -15 ? ThreadPriorityLevel.TimeCritical :
                     stat.nice < -10 ? ThreadPriorityLevel.Highest :
@@ -126,7 +124,7 @@ namespace System.Diagnostics
 
         private Interop.procfs.ParsedStat GetStat()
         {
-            return Interop.procfs.ReadStat(pid: _processId, tid: Id);
+            return Interop.procfs.ReadStatFile(pid: _processId, tid: Id);
         }
     }
 }

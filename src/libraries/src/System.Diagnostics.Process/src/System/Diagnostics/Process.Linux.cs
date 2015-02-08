@@ -4,7 +4,6 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -66,16 +65,15 @@ namespace System.Diagnostics
         public bool WaitForExitCore(int milliseconds)
         {
             bool exited = GetWaitState().WaitForExit(milliseconds);
-            Contract.Assert(exited || milliseconds != Timeout.Infinite);
+            Debug.Assert(exited || milliseconds != Timeout.Infinite);
 
-            if (exited)
+            if (exited && milliseconds == Timeout.Infinite) // if we have a hard timeout, we cannot wait for the streams
             {
-                // If we have a hard timeout, we cannot wait for the streams
-                if (_output != null && milliseconds == Timeout.Infinite)
+                if (_output != null)
                 {
                     _output.WaitUtilEOF();
                 }
-                if (_error != null && milliseconds == Timeout.Infinite)
+                if (_error != null)
                 {
                     _error.WaitUtilEOF();
                 }
@@ -179,7 +177,7 @@ namespace System.Diagnostics
                     throw new Win32Exception(); // match Windows exception
                 }
 
-                Contract.Assert(pri >= -20 && pri <= 20);
+                Debug.Assert(pri >= -20 && pri <= 20);
                 return 
                     pri < -15 ? ProcessPriorityClass.RealTime :
                     pri < -10 ? ProcessPriorityClass.High :
@@ -324,7 +322,7 @@ namespace System.Diagnostics
         {
             // Currently ignored: UseShellExecute, CreateNoWindow
 
-            // TODO: FInish this implementation.  It'll compile and is mostly
+            // TODO: Finish this implementation.  It'll compile and is mostly
             // the right flow of logic, but it's untested and is likely missing
             // some functionality (e.g. what do we need to do for path resolution
             // of the startInfo.FileName) and likely has bugs.
@@ -380,7 +378,8 @@ namespace System.Diagnostics
                 {
                     throw new Win32Exception();
                 }
-                Contract.Assert(false); // should never get here
+
+                Debug.Fail("execve should never return when successful");
                 return false; 
             }
 
@@ -429,7 +428,7 @@ namespace System.Diagnostics
         internal static DateTime BootTimeToDateTime(ulong ticksAfterBoot)
         {
             // Read procfs to determine the system's uptime, aka how long ago it booted
-            string uptimeStr = File.ReadAllText("/proc/uptime");
+            string uptimeStr = File.ReadAllText(Interop.procfs.ProcUptimeFilePath);
             int spacePos = uptimeStr.IndexOf(' ');
             double uptime;
             if (spacePos < 1 || !double.TryParse(uptimeStr.Substring(0, spacePos), out uptime))
@@ -467,8 +466,8 @@ namespace System.Diagnostics
         /// <param name="pipeToClose">The file descriptor to close.</param>
         private static void Redirect(int pipeToUse, int fdToOverwrite, int pipeToClose)
         {
-            Contract.Assert(pipeToUse >= 0 && fdToOverwrite >= 0 && pipeToClose >= 0);
-            Contract.Assert(pipeToUse != fdToOverwrite && pipeToUse != pipeToClose);
+            Debug.Assert(pipeToUse >= 0 && fdToOverwrite >= 0 && pipeToClose >= 0);
+            Debug.Assert(pipeToUse != fdToOverwrite && pipeToUse != pipeToClose);
 
             // Duplicate the file descriptor.  We may need to retry if the I/O is interrupted.
             int result;
@@ -491,7 +490,7 @@ namespace System.Diagnostics
         /// <returns>The opened stream.</returns>
         private static FileStream OpenStream(int fd, FileAccess access)
         {
-            Contract.Assert(fd >= 0);
+            Debug.Assert(fd >= 0);
             return new FileStream(
                 new SafeFileHandle((IntPtr)fd, ownsHandle: true), 
                 access, StreamBufferSize, isAsync: false);
@@ -501,7 +500,7 @@ namespace System.Diagnostics
         private Interop.procfs.ParsedStat GetStat()
         {
             EnsureState(State.HaveId);
-            return Interop.procfs.ReadStat(_processId);
+            return Interop.procfs.ReadStatFile(_processId);
         }
 
         /// <summary>Creates an anonymous pipe, returning the file descriptors for the two ends of the pipe.</summary>
@@ -516,7 +515,7 @@ namespace System.Diagnostics
                     throw new Win32Exception();
                 }
             }
-            Contract.Assert(fds[0] >= 0 && fds[1] >= 0 && fds[0] != fds[1]);
+            Debug.Assert(fds[0] >= 0 && fds[1] >= 0 && fds[0] != fds[1]);
             return fds;
         }
 
