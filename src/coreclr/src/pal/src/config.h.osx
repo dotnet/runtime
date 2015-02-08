@@ -15,13 +15,6 @@ Module Name:
 #define _PAL_CONFIG_H_INCLUDED 1
 
 /*++
-_DEBUG : configure option --disable-debug
-
-This turns off compilation of debug-only code.
---*/
-#define _DEBUG 1
-
-/*++
 _NO_DEBUG_MESSAGES_ : configure option --disable-dbgmsg
 
 This turns off compilation of TRACE, WARN, ERROR and ENTRY debug messages
