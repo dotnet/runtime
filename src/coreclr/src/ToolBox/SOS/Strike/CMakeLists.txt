@@ -43,13 +43,13 @@ set(SOS_SOURCES_AMD64
   disasmX86.cpp
 )
 
-set(SOS_SOURCES ${SOS_SOURCES} ${SOS_SOURCES_AMD64})
+list(APPEND SOS_SOURCES ${SOS_SOURCES_AMD64})
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=SOS.dll)
 
 #Preprocess exports definition file
 preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/sos.def ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
-set(SOS_SOURCES ${SOS_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
+list(APPEND SOS_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
 
 set(SOS_LIBRARY
   corguids
