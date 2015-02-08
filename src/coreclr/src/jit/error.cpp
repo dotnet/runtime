@@ -380,7 +380,6 @@ void logf_stdout(const char* fmt, va_list args)
 void logf(const char* fmt, ...)
 {
     va_list args;
-    va_start(args, fmt);
     static bool logToEEfailed = false;
     //
     // We remember when the EE failed to log, because vlogf()
@@ -389,19 +388,20 @@ void logf(const char* fmt, ...)
     // If it fails to log an LL_INFO1000 message once 
     // it will always fail when logging an LL_INFO1000 message.
     //
+    if (!logToEEfailed)
+    {
+        va_start(args, fmt);
+        if (!vlogf(LL_INFO1000, fmt, args))
+            logToEEfailed = true;
+        va_end(args);
+    }
+    
     if (logToEEfailed)
     {
-        logf_stdout(fmt, args);
-    }
-    else if (!vlogf(LL_INFO1000, fmt, args))
-    {
-        logToEEfailed = true;
-
-        // The vlogf call may have modified args, so we need to reset it
-        va_end(args);
+        // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-
         logf_stdout(fmt, args);
+        va_end(args);
     }
 #if 0  // Enable this only when you need it
     else
