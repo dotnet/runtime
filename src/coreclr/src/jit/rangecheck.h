@@ -217,7 +217,7 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    char* ToString(IAllocator* alloc)
+    const char* ToString(IAllocator* alloc)
     {
         unsigned size = 64;
         char* buf = (char*) alloc->Alloc(size);

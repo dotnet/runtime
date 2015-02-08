@@ -8454,7 +8454,7 @@ GenTreePtr          Compiler::gtDispLinearTree(GenTreeStmt* curStmt,
         }
 
         unsigned listElemNum = 0;
-        char* childMsg = nullptr;
+        const char* childMsg = nullptr;
         if (tree->IsCall())
         {
             if (child == tree->gtCall.gtCallObjp)

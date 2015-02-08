@@ -2468,7 +2468,7 @@ bool Compiler::fgNormalizeEHCase3()
             EHblkDsc* ehOuter = ehGetDsc(ehOuterIndex);
 
             // Debugging: say what type of block we're updating.
-            INDEBUG(char* outerType = ""; char* innerType = "";)
+            INDEBUG(const char* outerType = ""; const char* innerType = "";)
 
             // 'insertAfterBlk' is the place we will insert new "normalization" blocks. We don't know yet if we will
             // insert them after the innermost 'try' or handler's "last" block, so we set it to nullptr. Once we determine
