@@ -455,7 +455,6 @@ void                CodeGenInterface::inst_FN(instruction ins, unsigned stk)
  *  Display a stack frame reference.
  */
 
-inline
 void                CodeGen::inst_set_SV_var(GenTreePtr tree)
 {
 #ifdef  DEBUG
