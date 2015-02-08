@@ -789,11 +789,11 @@ private:
     int regColumnWidth;
     int regTableIndent;
 
-    char* columnSeparator;
-    char* line;
-    char* leftBox;
-    char* middleBox;
-    char* rightBox;
+    const char* columnSeparator;
+    const char* line;
+    const char* leftBox;
+    const char* middleBox;
+    const char* rightBox;
 
     static const int MAX_FORMAT_CHARS = 12;
     char intervalNameFormat[MAX_FORMAT_CHARS];
