@@ -751,7 +751,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	klass = mono_class_from_mono_type (type);
 	size = mini_type_stack_size_full (gsctx, &klass->byval_arg, NULL, sig->pinvoke);
 #ifndef HOST_WIN32
-	if (!sig->pinvoke && !disable_vtypes_in_regs && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
+	if (!sig->pinvoke && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
 	} else if (!sig->pinvoke || (size == 0) || (size > 16)) {
 		pass_on_stack = TRUE;

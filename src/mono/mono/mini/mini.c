@@ -141,9 +141,6 @@ mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
 
-/* Whenever to disable passing/returning small valuetypes in registers for managed methods */
-gboolean disable_vtypes_in_regs = FALSE;
-
 static GSList *tramp_infos;
 
 static void register_icalls (void);
