@@ -184,6 +184,11 @@ public:
         _Alloc<TRUE /*bGrow*/, TRUE /*bThrow*/>(iItems);
     }
 
+#ifdef __llvm__
+    // This makes sure that we will not get an undefined symbol
+    // when building a release version of libcoreclr using LLVM.
+    __attribute__((used))
+#endif // __llvm__
     HRESULT ReSizeNoThrow(SIZE_T iItems);
 
     void Shrink(SIZE_T iItems)

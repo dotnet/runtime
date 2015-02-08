@@ -4515,7 +4515,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
 
 // See the comment above for the overloaded version of this function.
-FORCEINLINE void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pContext, CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL)
+void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pContext, CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL)
 {
     _ASSERTE(pOriginalContext != NULL);
     FixupDispatcherContext(pDispatcherContext, pContext, (LPVOID)::GetIP(pOriginalContext), pUnwindPersonalityRoutine);
