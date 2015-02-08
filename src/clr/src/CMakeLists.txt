@@ -12,7 +12,7 @@ include_directories("classlibnative/inc")
 
 if(WIN32)
 enable_language(ASM_MASM)
-else(WIN32)
+else()
 enable_language(ASM)
 # This prevents inclusion of standard C compiler headers
 add_compile_options(-nostdinc)

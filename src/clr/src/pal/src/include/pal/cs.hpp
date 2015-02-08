@@ -25,7 +25,7 @@
 
 namespace CorUnix
 {   
-    bool CriticalSectionSubSysInitialize(void);
+    void CriticalSectionSubSysInitialize(void);
     
     void InternalInitializeCriticalSectionAndSpinCount(
         PCRITICAL_SECTION pCriticalSection,
