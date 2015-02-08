@@ -529,8 +529,12 @@ namespace CorUnix
 
     Initializes CS subsystem
     --*/
-    bool CriticalSectionSubSysInitialize()    
+    void CriticalSectionSubSysInitialize()    
     {            
+        static_assert(sizeof(CRITICAL_SECTION) >= sizeof(PAL_CRITICAL_SECTION),
+            "PAL fatal internal error: sizeof(CRITICAL_SECTION) is "
+            "smaller than sizeof(PAL_CRITICAL_SECTION)");
+
 #ifdef _DEBUG        
         LONG lRet = InterlockedCompareExchange((LONG *)&csssInitState,
                                                (LONG)CSSubSysInitializing,
@@ -553,21 +557,6 @@ namespace CorUnix
             }
         }
 #endif // _DEBUG        
-
-        // In non-error conditions the optimizer should remove the following
-        // 'if' block, since the tested expression is verifiable at compile time
-        if (sizeof(CRITICAL_SECTION) < sizeof(PAL_CRITICAL_SECTION))
-        {
-            // Too early to log, writing directly to stderr
-            fprintf(stderr,
-                    "PAL fatal internal error: sizeof(CRITICAL_SECTION)=%lu is "
-                    "smaller than sizeof(PAL_CRITICAL_SECTION)=%lu\n",
-                    sizeof(CRITICAL_SECTION), 
-                    sizeof(PAL_CRITICAL_SECTION));
-
-            return false;
-        }
-        return true;
     }
 
     /*++
