@@ -33,8 +33,7 @@ set(CORDBEE_SOURCES_DAC
 )
 
 if(WIN32)
-  set(CORDBEE_SOURCES_WKS
-    ${CORDBEE_SOURCES_WKS}
+  list(APPEND CORDBEE_SOURCES_WKS
     # The following files need to be ported to Linux
     inprocdac.cpp
     dbgtransportproxy.cpp
@@ -43,9 +42,9 @@ if(WIN32)
 endif(WIN32)
 
 if (IS_64BIT_BUILD EQUAL 1)
-  set(CORDBEE_SOURCES_WKS ${CORDBEE_SOURCES_WKS} amd64/amd64walker.cpp)
-else (IS_64BIT_BUILD EQUAL 1)
-  set(CORDBEE_SOURCES_WKS ${CORDBEE_SOURCES_WKS} i386/x86walker.cpp)
+  list(APPEND CORDBEE_SOURCES_WKS amd64/amd64walker.cpp)
+else ()
+  list(APPEND CORDBEE_SOURCES_WKS i386/x86walker.cpp)
 endif (IS_64BIT_BUILD EQUAL 1)
 
 convert_to_absolute_path(CORDBEE_SOURCES_DAC ${CORDBEE_SOURCES_DAC})
