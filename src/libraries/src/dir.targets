@@ -81,7 +81,7 @@
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)' == ''">$(TestPath)$(DebugTestFrameworkFolder)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)' == ''">Program</StartAction>
     <StartProgram Condition="'$(StartProgram)' == ''">$(StartWorkingDirectory)\$(XunitHost)</StartProgram>
-    <StartArguments Condition="'$(StartArguments)' == ''">$(XunitCommandLine) $(XunitOptions)</StartArguments>
+    <StartArguments Condition="'$(StartArguments)' == ''">$(XunitCommandLine) $(XunitOptions) -wait</StartArguments>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
