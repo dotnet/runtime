@@ -3,7 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.IO;
 
 namespace System.Diagnostics
@@ -23,13 +23,13 @@ namespace System.Diagnostics
             // Iterate through all process IDs to load information about each process
             int[] procIds = GetProcessIds(machineName);
             var processes = new List<ProcessInfo>(procIds.Length);
-            foreach (int id in procIds)
+            foreach (int pid in procIds)
             {
                 // Read /proc/pid/stat to get information about the process, and churn that into a ProcessInfo
-                Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStat(id);
+                Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStatFile(pid);
                 var pi = new ProcessInfo 
                 {
-                    _processId = id,
+                    _processId = pid,
                     _processName = procFsStat.comm,
                     _basePriority = (int)procFsStat.nice,
                     _virtualBytes = (long)procFsStat.vsize,
@@ -50,19 +50,20 @@ namespace System.Diagnostics
                     _privateBytes = 0,
                 };
 
-                // Then read through /proc/pid/tasks/ to find each thread in the process...
-                foreach (string taskDir in Directory.EnumerateDirectories("/proc/" + id + "/task/"))
+                // Then read through /proc/pid/task/ to find each thread in the process...
+                string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
+                foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
                 {
                     string dirName = Path.GetFileName(taskDir);
-                    int threadId;
-                    if (int.TryParse(dirName, out threadId))
+                    int tid;
+                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid))
                     {
                         // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
-                        Interop.procfs.ParsedStat stat = Interop.procfs.ReadStat(id, threadId);
+                        Interop.procfs.ParsedStat stat = Interop.procfs.ReadStatFile(pid, tid);
                         pi._threadInfoList.Add(new ThreadInfo
                         {
-                            _processId = id,
-                            _threadId = threadId,
+                            _processId = pid,
+                            _threadId = tid,
                             _basePriority = pi._basePriority,
                             _currentPriority = (int)stat.nice,
                             _startAddress = (IntPtr)stat.startcode,
@@ -94,18 +95,18 @@ namespace System.Diagnostics
         {
             // Parse /proc for any directory that's named with a number.  Each such
             // directory represents a process.
-            var ids = new List<int>();
-            foreach (string procDir in Directory.EnumerateDirectories("/proc/"))
+            var pids = new List<int>();
+            foreach (string procDir in Directory.EnumerateDirectories(Interop.procfs.RootPath))
             {
                 string dirName = Path.GetFileName(procDir);
-                int id;
-                if (int.TryParse(dirName, out id))
+                int pid;
+                if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out pid))
                 {
-                    Contract.Assert(id >= 0);
-                    ids.Add(id);
+                    Debug.Assert(pid >= 0);
+                    pids.Add(pid);
                 }
             }
-            return ids.ToArray();
+            return pids.ToArray();
         }
 
         /// <summary>Gets the ID of a process from a handle to the process.</summary>
@@ -159,7 +160,7 @@ namespace System.Diagnostics
                 case 'W':
                     return ThreadState.Transition;
                 default:
-                    Contract.Assert(false);
+                    Debug.Fail("Unexpected status character");
                     return ThreadState.Unknown;
             }
         }

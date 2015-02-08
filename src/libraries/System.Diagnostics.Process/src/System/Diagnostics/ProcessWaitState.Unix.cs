@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -113,7 +112,7 @@ namespace System.Diagnostics
             {
                 ProcessWaitState pws;
                 bool foundState = ProcessWaitState.s_processWaitStates.TryGetValue(_processId, out pws);
-                Contract.Assert(foundState);
+                Debug.Assert(foundState);
                 if (foundState)
                 {
                     if (--pws._outstandingRefCount == 0)
@@ -155,14 +154,14 @@ namespace System.Diagnostics
         /// <param name="processId">The associated process' ID.</param>
         private ProcessWaitState(int processId)
         {
-            Contract.Assert(processId >= 0);
+            Debug.Assert(processId >= 0);
             _processId = processId;
         }
 
         /// <summary>Releases managed resources used by the ProcessWaitState.</summary>
         public void Dispose()
         {
-            Contract.Assert(!Monitor.IsEntered(_gate));
+            Debug.Assert(!Monitor.IsEntered(_gate));
 
             lock (_gate)
             {
@@ -177,7 +176,7 @@ namespace System.Diagnostics
         /// <summary>Notes that the process has exited.</summary>
         private void SetExited()
         {
-            Contract.Assert(Monitor.IsEntered(_gate));
+            Debug.Assert(Monitor.IsEntered(_gate));
 
             _exited = true;
             _exitTime = DateTime.Now;
@@ -191,7 +190,7 @@ namespace System.Diagnostics
         /// <returns></returns>
         internal ManualResetEvent EnsureExitedEvent()
         {
-            Contract.Assert(!Monitor.IsEntered(_gate));
+            Debug.Assert(!Monitor.IsEntered(_gate));
 
             lock (_gate)
             {
@@ -222,7 +221,7 @@ namespace System.Diagnostics
             {
                 lock (_gate)
                 {
-                    Contract.Assert(_exited);
+                    Debug.Assert(_exited);
                     return _exitTime;
                 }
             }
@@ -269,7 +268,7 @@ namespace System.Diagnostics
 
         private void CheckForExit(bool blockingAllowed = false)
         {
-            Contract.Assert(Monitor.IsEntered(_gate));
+            Debug.Assert(Monitor.IsEntered(_gate));
 
             while (true) // in case of EINTR during system call
             {
@@ -330,12 +329,12 @@ namespace System.Diagnostics
                                 // Don't have permissions to the process; assume it's alive
                                 return;
                             }
-                            else Contract.Assert(false, "Unexpected errno value from kill");
+                            else Debug.Fail("Unexpected errno value from kill");
                         }
                     }
-                    else Contract.Assert(false, "Unexpected errno value from waitpid");
+                    else Debug.Fail("Unexpected errno value from waitpid");
                 }
-                else Contract.Assert(false, "Unexpected process ID from waitpid.");
+                else Debug.Fail("Unexpected process ID from waitpid.");
 
                 SetExited();
                 return;
@@ -347,7 +346,7 @@ namespace System.Diagnostics
         /// <returns>true if the process exited; false if the timeout occurred.</returns>
         internal bool WaitForExit(int millisecondsTimeout)
         {
-            Contract.Assert(!Monitor.IsEntered(_gate));
+            Debug.Assert(!Monitor.IsEntered(_gate));
 
             // Track the time the we start waiting.
             long startTime = GetTimestamp();
@@ -451,8 +450,8 @@ namespace System.Diagnostics
         /// <returns>The task representing the loop.</returns>
         private Task WaitForExitAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Contract.Assert(Monitor.IsEntered(_gate));
-            Contract.Assert(_waitInProgress == null);
+            Debug.Assert(Monitor.IsEntered(_gate));
+            Debug.Assert(_waitInProgress == null);
 
             return _waitInProgress = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForExit
             {

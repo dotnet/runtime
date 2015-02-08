@@ -1,12 +1,32 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Reflection;
 
 internal static partial class Interop
 {
     internal static partial class procfs
     {
+        internal const string RootPath = "/proc/";
+        internal const string ProcUptimeFilePath = RootPath + "uptime";
+        private const int ExpectedStatFileParts = 44;
+
+#if DEBUG
+        static procfs()
+        {
+            var fields = typeof(ParsedStat).GetTypeInfo().DeclaredFields;
+            int fieldCount = 0;
+            foreach (var item in fields)
+            {
+                fieldCount++;
+            }
+            Debug.Assert(ExpectedStatFileParts == fieldCount);
+        }
+#endif
+
         internal struct ParsedStat
         {
             internal int pid;
@@ -55,34 +75,52 @@ internal static partial class Interop
             internal long cguest_time;
         }
 
-        internal static ParsedStat ReadStat(int pid)
+        private static string GetStatFilePathForProcess(int pid)
         {
-            string stat = File.ReadAllText("/proc/" + pid.ToString() + "/stat");
-            return ReadStat(stat);
+            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + "/stat";
         }
 
-        internal static ParsedStat ReadStat(int pid, int tid)
+        internal static string GetTaskDirectoryPathForProcess(int pid)
         {
-            string stat = File.ReadAllText("/proc/" + pid.ToString() + "/task/" + tid + "/stat");
-            return ReadStat(stat);
+            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + "/task/";
         }
 
-        private static ParsedStat ReadStat(string stat)
+        private static string GetStatFilePathForThread(int pid, int tid)
         {
-            const int ExpectedParts = 44;
-            int index = 0;
-            int i = -1;
+            // Perf note: Calling GetTaskDirectoryPathForProcess will allocate a string,
+            // which we then use in another Concat call to produce another string.  The straightforward alternative,
+            // though, since we have five input strings, is to use the string.Concat overload that takes a params array. 
+            // This results in allocating not only the params array but also a defensive copy inside of Concat,
+            // which means allocating two five-element arrays.  This two-string approach will result not only in fewer 
+            // allocations, but also typically in less memory allocated, and it's a bit more maintainable.
+            return GetTaskDirectoryPathForProcess(pid) + tid.ToString(CultureInfo.InvariantCulture) + "/stat";
+        }
+
+        internal static ParsedStat ReadStatFile(int pid)
+        {
+            string stat = File.ReadAllText(GetStatFilePathForProcess(pid));
+            return ParseStatFile(stat);
+        }
+
+        internal static ParsedStat ReadStatFile(int pid, int tid)
+        {
+            string stat = File.ReadAllText(GetStatFilePathForThread(pid, tid));
+            return ParseStatFile(stat);
+        }
+
+        private static ParsedStat ParseStatFile(string statFileContents)
+        {
             ParsedStat results = default(ParsedStat);
 
-            while (index < stat.Length && i < ExpectedParts)
+            int index = 0;
+            int i = 0;
+            for (; i < ExpectedStatFileParts && index < statFileContents.Length; i++)
             {
-                string part = GetNextPart(stat, ref index);
-                i++;
-
+                string part = GetNextPart(statFileContents, ref index);
                 switch (i)
                 {
                     case 0:
-                        int.TryParse(part, out results.pid);
+                        results.pid = ParseInt32(part);
                         break;
                     case 1:
                         string filename = part;
@@ -90,136 +128,144 @@ internal static partial class Interop
                         {
                             filename = filename.Substring(1, filename.Length - 2);
                         }
+                        else
+                        {
+                            Debug.Fail("Unexpected comm format");
+                        }
                         results.comm = filename;
                         break;
-                    case 2:
-                        char.TryParse(part, out results.state);
+                    case 2: 
+                        bool parsed = char.TryParse(part, out results.state);
+                        Debug.Assert(parsed);
                         break;
                     case 3:
-                        int.TryParse(part, out results.ppid);
+                        results.ppid = ParseInt32(part);
                         break;
                     case 4:
-                        int.TryParse(part, out results.pgrp);
+                        results.pgrp = ParseInt32(part);
                         break;
                     case 5:
-                        int.TryParse(part, out results.session);
+                        results.session = ParseInt32(part);
                         break;
                     case 6:
-                        int.TryParse(part, out results.tty_nr);
+                        results.tty_nr = ParseInt32(part);
                         break;
                     case 7:
-                        int.TryParse(part, out results.tpgid);
+                        results.tpgid = ParseInt32(part);
                         break;
                     case 8:
-                        uint.TryParse(part, out results.flags);
+                        results.flags = ParseUInt32(part);
                         break;
                     case 9:
-                        ulong.TryParse(part, out results.majflt);
+                        results.majflt = ParseUInt64(part);
                         break;
                     case 10:
-                        ulong.TryParse(part, out results.cmajflt);
+                        results.cmajflt = ParseUInt64(part);
                         break;
                     case 11:
-                        ulong.TryParse(part, out results.minflt);
+                        results.minflt = ParseUInt64(part);
                         break;
                     case 12:
-                        ulong.TryParse(part, out results.cminflt);
+                        results.cminflt = ParseUInt64(part);
                         break;
                     case 13:
-                        ulong.TryParse(part, out results.utime);
+                        results.utime = ParseUInt64(part);
                         break;
                     case 14:
-                        ulong.TryParse(part, out results.stime);
+                        results.stime = ParseUInt64(part);
                         break;
                     case 15:
-                        long.TryParse(part, out results.cutime);
+                        results.cutime = ParseInt64(part);
                         break;
                     case 16:
-                        long.TryParse(part, out results.cstime);
+                        results.cstime = ParseInt64(part);
                         break;
                     case 17:
-                        long.TryParse(part, out results.priority);
+                        results.priority = ParseInt64(part);
                         break;
                     case 18:
-                        long.TryParse(part, out results.nice);
+                        results.nice = ParseInt64(part);
                         break;
                     case 19:
-                        long.TryParse(part, out results.num_threads);
+                        results.num_threads = ParseInt64(part);
                         break;
                     case 20:
-                        long.TryParse(part, out results.itrealvalue);
+                        results.itrealvalue = ParseInt64(part);
                         break;
                     case 21:
-                        ulong.TryParse(part, out results.starttime);
+                        results.starttime = ParseUInt64(part);
                         break;
                     case 22:
-                        ulong.TryParse(part, out results.vsize);
+                        results.vsize = ParseUInt64(part);
                         break;
                     case 23:
-                        long.TryParse(part, out results.rss);
+                        results.rss = ParseInt64(part);
                         break;
                     case 24:
-                        ulong.TryParse(part, out results.rsslim);
+                        results.rsslim = ParseUInt64(part);
                         break;
                     case 25:
-                        ulong.TryParse(part, out results.startcode);
+                        results.startcode = ParseUInt64(part);
                         break;
                     case 26:
-                        ulong.TryParse(part, out results.endcode);
+                        results.endcode = ParseUInt64(part);
                         break;
                     case 27:
-                        ulong.TryParse(part, out results.startstack);
+                        results.startstack = ParseUInt64(part);
                         break;
                     case 28:
-                        ulong.TryParse(part, out results.kstkesp);
+                        results.kstkesp = ParseUInt64(part);
                         break;
                     case 29:
-                        ulong.TryParse(part, out results.kstkeip);
+                        results.kstkeip = ParseUInt64(part);
                         break;
                     case 30:
-                        ulong.TryParse(part, out results.signal);
+                        results.signal = ParseUInt64(part);
                         break;
                     case 31:
-                        ulong.TryParse(part, out results.blocked);
+                        results.blocked = ParseUInt64(part);
                         break;
                     case 32:
-                        ulong.TryParse(part, out results.sigignore);
+                        results.sigignore = ParseUInt64(part);
                         break;
                     case 33:
-                        ulong.TryParse(part, out results.sigcatch);
+                        results.sigcatch = ParseUInt64(part);
                         break;
                     case 34:
-                        ulong.TryParse(part, out results.wchan);
+                        results.wchan = ParseUInt64(part);
                         break;
                     case 35:
-                        ulong.TryParse(part, out results.nswap);
+                        results.nswap = ParseUInt64(part);
                         break;
                     case 36:
-                        ulong.TryParse(part, out results.cnswap);
+                        results.cnswap = ParseUInt64(part);
                         break;
                     case 37:
-                        int.TryParse(part, out results.exit_signal);
+                        results.exit_signal = ParseInt32(part);
                         break;
                     case 38:
-                        int.TryParse(part, out results.processor);
+                        results.processor = ParseInt32(part);
                         break;
                     case 39:
-                        uint.TryParse(part, out results.rt_priority);
+                        results.rt_priority = ParseUInt32(part);
                         break;
                     case 40:
-                        uint.TryParse(part, out results.policy);
+                        results.policy = ParseUInt32(part);
                         break;
                     case 41:
-                        ulong.TryParse(part, out results.delayacct_blkio_ticks);
+                        results.delayacct_blkio_ticks = ParseUInt64(part);
                         break;
                     case 42:
-                        ulong.TryParse(part, out results.guest_time);
+                        results.guest_time = ParseUInt64(part);
                         break;
                     case 43:
-                        long.TryParse(part, out results.cguest_time);
+                        results.cguest_time = ParseInt64(part);
                         break;
                 }
             }
+
+            Debug.Assert(i == ExpectedStatFileParts);
+
             return results;
         }
 
@@ -238,6 +284,38 @@ internal static partial class Interop
                 index = nextSpace + 1;
             }
             return part;
+        }
+
+        private static int ParseInt32(string str)
+        {
+            int result;
+            bool parsed = int.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            Debug.Assert(parsed);
+            return result;
+        }
+
+        private static uint ParseUInt32(string str)
+        {
+            uint result;
+            bool parsed = uint.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            Debug.Assert(parsed);
+            return result;
+        }
+
+        private static long ParseInt64(string str)
+        {
+            long result;
+            bool parsed = long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            Debug.Assert(parsed);
+            return result;
+        }
+
+        private static ulong ParseUInt64(string str)
+        {
+            ulong result;
+            bool parsed = ulong.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            Debug.Assert(parsed);
+            return result;
         }
     }
 }
