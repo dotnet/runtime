@@ -1,4 +1,4 @@
-//
+
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
@@ -8480,7 +8480,7 @@ void SuspendStatistics::DisplayAndUpdate()
 const char* const str_timeUnit[]   = { "usec", "msec", "sec" };
 const int         timeUnitFactor[] = { 1, 1000, 1000000 };
 
-void MinMaxTot::DisplayAndUpdate(FILE* logFile, __in_z char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit unit /* = usec */)
+void MinMaxTot::DisplayAndUpdate(FILE* logFile, __in_z const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit unit /* = usec */)
 {
     LIMITED_METHOD_CONTRACT;
 
