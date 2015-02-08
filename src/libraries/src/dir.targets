@@ -103,7 +103,7 @@
     <StartWorkingDirectory Condition="'$(StartWorkingDirectory)' == ''">$(TestPath)$(DebugTestFrameworkFolder)</StartWorkingDirectory>
     <StartAction Condition="'$(StartAction)' == ''">Program</StartAction>
     <StartProgram Condition="'$(StartProgram)' == ''">$(StartWorkingDirectory)\$(TestHost)</StartProgram>
-    <StartArguments Condition="'$(StartArguments)' == ''">$(TestCommandLine)</StartArguments>
+    <StartArguments Condition="'$(StartArguments)' == ''">$(TestCommandLine) -wait</StartArguments>
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
