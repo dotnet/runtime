@@ -333,8 +333,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 	MonoClass *klass;
 	gpointer iter;
 	MonoClassField *field;
-	MonoType *ftype;
-	MonoTypeEnum ftype_type, prev_ftype = MONO_TYPE_END;
+	MonoType *ftype, *prev_ftype = NULL;
 	int nfields = 0;
 
 	klass = mono_class_from_mono_type (t);
@@ -351,26 +350,26 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 			if (!is_hfa (ftype, &nested_nfields, &nested_esize))
 				return FALSE;
 			if (nested_esize == 4)
-				ftype_type = MONO_TYPE_R4;
+				ftype = &mono_defaults.single_class->byval_arg;
 			else
-				ftype_type = MONO_TYPE_R8;
-			if (prev_ftype != MONO_TYPE_END && prev_ftype != ftype_type)
+				ftype = &mono_defaults.double_class->byval_arg;
+			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
-			prev_ftype = ftype_type;
+			prev_ftype = ftype;
 			nfields += nested_nfields;
 		} else {
 			if (!(!ftype->byref && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
 				return FALSE;
-			if (prev_ftype != MONO_TYPE_END && prev_ftype != ftype->type)
+			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
-			prev_ftype = ftype->type;
+			prev_ftype = ftype;
 			nfields ++;
 		}
 	}
 	if (nfields == 0 || nfields > 4)
 		return FALSE;
 	*out_nfields = nfields;
-	*out_esize = prev_ftype == MONO_TYPE_R4 ? 4 : 8;
+	*out_esize = prev_ftype->type == MONO_TYPE_R4 ? 4 : 8;
 	return TRUE;
 }
 
