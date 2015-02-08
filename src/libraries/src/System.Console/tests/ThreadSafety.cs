@@ -1,0 +1,125 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
+
+public class ThreadSafety
+{
+    const int NumberOfIterations = 100;
+
+    [Fact]
+    public static void OpenStandardXXXCanBeCalledConcurrently()
+    {
+        Parallel.For(0, NumberOfIterations, i =>
+        {
+            using (Stream s = Console.OpenStandardInput())
+            {
+                Assert.NotNull(s);
+            }
+        });
+
+        Parallel.For(0, NumberOfIterations, i =>
+        {
+            using (Stream s = Console.OpenStandardOutput())
+            {
+                Assert.NotNull(s);
+            }
+        });
+
+        Parallel.For(0, NumberOfIterations, i =>
+        {
+            using (Stream s = Console.OpenStandardError())
+            {
+                Assert.NotNull(s);
+            }
+        });
+    }
+
+    [Fact]
+    public static void SetStandardXXXCanBeCalledConcurrently()
+    {
+        TextReader savedStandardInput = Console.In;
+        TextWriter savedStandardOutput = Console.Out;
+        TextWriter savedStandardError = Console.Error;
+
+        try
+        {
+            using (MemoryStream memStream = new MemoryStream())
+            {
+                using (StreamReader sr = new StreamReader(memStream))
+                {
+                    using (StreamWriter sw = new StreamWriter(memStream))
+                    {
+                        Parallel.For(0, NumberOfIterations, i =>
+                        {
+                            Console.SetIn(sr);
+                        });
+
+                        Parallel.For(0, NumberOfIterations, i =>
+                        {
+                            Console.SetOut(sw);
+                        });
+
+                        Parallel.For(0, NumberOfIterations, i =>
+                        {
+                            Console.SetOut(sw);
+                        });
+                    }
+                        
+                }
+            }
+        }
+        finally
+        {
+            Console.SetIn(savedStandardInput);
+            Console.SetOut(savedStandardOutput);
+            Console.SetError(savedStandardError);
+        }
+    }
+
+    [Fact]
+    public static void ReadMayBeCalledConcurrently()
+    {
+        const char TestChar = '+';
+
+        TextReader savedStandardInput = Console.In;
+        try
+        {
+            using (MemoryStream memStream = new MemoryStream())
+            {
+                using (StreamWriter sw = new StreamWriter(memStream))
+                {
+                    for (int i = 0; i < NumberOfIterations; i++)
+                    {
+                        sw.Write(TestChar);
+                    }
+
+                    sw.Flush();
+
+                    memStream.Seek(0, SeekOrigin.Begin);
+
+                    using (StreamReader sr = new StreamReader(memStream))
+                    {
+                        Console.SetIn(sr);
+
+                        Parallel.For(0, NumberOfIterations, i =>
+                        {
+                            Assert.Equal(TestChar, Console.Read());
+                        });
+
+                        // We should be at EOF now.
+                        Assert.Equal(-1, Console.Read());
+                    }
+                }
+            }
+        }
+        finally
+        {
+            Console.SetIn(savedStandardInput);
+        }
+    }
+}
