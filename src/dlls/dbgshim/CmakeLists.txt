@@ -12,7 +12,7 @@ add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
 
 preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/dbgshim.ntdef ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
 
-set(DBGSHIM_SOURCES ${DBGSHIM_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
+list(APPEND DBGSHIM_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
 
 add_library(dbgshim SHARED ${DBGSHIM_SOURCES})
 

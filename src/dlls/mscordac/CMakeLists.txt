@@ -9,7 +9,7 @@ set(CLR_DAC_SOURCES
 add_definitions(-DFX_VER_INTERNALNAME_STR=mscordaccore.dll)
 
 if(WIN32)
-    set(CLR_DAC_SOURCES ${CLR_DAC_SOURCES}
+    list(APPEND CLR_DAC_SOURCES
         Native.rc
     )
     set(DEF_SOURCES
@@ -64,9 +64,8 @@ if(WIN32)
         user32.lib
         ${STATIC_MT_CRT_LIB}
     )
-else(WIN32)
-    set(COREDAC_LIBRARIES
-        ${COREDAC_LIBRARIES}
+else()
+    list(APPEND COREDAC_LIBRARIES
         palrt
     )
 endif(WIN32)
