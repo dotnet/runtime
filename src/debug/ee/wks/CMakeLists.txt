@@ -3,7 +3,7 @@ if (WIN32)
 
 if (IS_64BIT_BUILD EQUAL 1)
   FIND_PROGRAM(ASM_COMPILER ml64.exe)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
   FIND_PROGRAM(ASM_COMPILER ml.exe)
 endif (IS_64BIT_BUILD EQUAL 1)
 
@@ -21,7 +21,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj PROPERTIE
 
 add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ${CMAKE_CURRENT_BINARY_DIR}/dbghelpers.obj)
 
-else (WIN32)
+else ()
 
 add_compile_options(-fPIC)
 add_library(cordbee_wks ${CORDBEE_SOURCES_WKS} ../amd64/dbghelpers.S)
