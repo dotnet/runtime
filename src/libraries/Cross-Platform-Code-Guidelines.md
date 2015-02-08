@@ -18,7 +18,7 @@ Partial classes is the approach we're currently taking when the managed code nee
 
 #### How should the platform-specific files be named (e.g. FileStream.Windows.cs? Win32FileStream.cs?)
 
-When the whole type is for a particular platform, we've been using the prefix, e.g. _Platform_FileStream.cs. When the file contains a partial class specialized for a particular platform, we've been using the *._Platform_.cs suffix.
+When the whole type is for a particular platform, we've been using the prefix, e.g. PlatformFileStream.cs. When the file contains a partial class specialized for a particular platform, we've been using the *.Platform.cs suffix.
 
 #### When should define statements be used rather than including different source files in the build environment?
 
