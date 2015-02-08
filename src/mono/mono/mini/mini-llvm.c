@@ -327,89 +327,6 @@ type_to_simd_type (int type)
 	}
 }
 
-static gboolean
-is_hfa (MonoType *t, int *out_nfields, int *out_esize)
-{
-	MonoClass *klass;
-	gpointer iter;
-	MonoClassField *field;
-	MonoType *ftype, *prev_ftype = NULL;
-	int nfields = 0;
-
-	klass = mono_class_from_mono_type (t);
-	iter = NULL;
-	while ((field = mono_class_get_fields (klass, &iter))) {
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-		ftype = mono_field_get_type (field);
-		ftype = mini_native_type_replace_type (ftype);
-
-		if (MONO_TYPE_ISSTRUCT (ftype)) {
-			int nested_nfields, nested_esize;
-
-			if (!is_hfa (ftype, &nested_nfields, &nested_esize))
-				return FALSE;
-			if (nested_esize == 4)
-				ftype = &mono_defaults.single_class->byval_arg;
-			else
-				ftype = &mono_defaults.double_class->byval_arg;
-			if (prev_ftype && prev_ftype->type != ftype->type)
-				return FALSE;
-			prev_ftype = ftype;
-			nfields += nested_nfields;
-		} else {
-			if (!(!ftype->byref && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
-				return FALSE;
-			if (prev_ftype && prev_ftype->type != ftype->type)
-				return FALSE;
-			prev_ftype = ftype;
-			nfields ++;
-		}
-	}
-	if (nfields == 0 || nfields > 4)
-		return FALSE;
-	*out_nfields = nfields;
-	*out_esize = prev_ftype->type == MONO_TYPE_R4 ? 4 : 8;
-	return TRUE;
-}
-
-static LLVMTypeRef
-create_llvm_type_for_type (MonoClass *klass)
-{
-	int i, size, nfields, esize;
-	LLVMTypeRef *eltypes;
-	char *name;
-	MonoType *t;
-	LLVMTypeRef ltype;
-
-	t = &klass->byval_arg;
-
-	if (is_hfa (t, &nfields, &esize)) {
-		/*
-		 * This is needed on arm64 where HFAs are returned in
-		 * registers.
-		 */
-		size = nfields;
-		eltypes = g_new (LLVMTypeRef, size);
-		for (i = 0; i < size; ++i)
-			eltypes [i] = esize == 4 ? LLVMFloatType () : LLVMDoubleType ();
-	} else {
-		size = get_vtype_size (t);
-
-		eltypes = g_new (LLVMTypeRef, size);
-		for (i = 0; i < size; ++i)
-			eltypes [i] = LLVMInt8Type ();
-	}
-
-	name = mono_type_full_name (&klass->byval_arg);
-	ltype = LLVMStructCreateNamed (LLVMGetGlobalContext (), name);
-	LLVMStructSetBody (ltype, eltypes, size, FALSE);
-	g_free (eltypes);
-	g_free (name);
-
-	return ltype;
-}
-
 /*
  * type_to_llvm_type:
  *
@@ -481,8 +398,22 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 
 		ltype = g_hash_table_lookup (ctx->lmodule->llvm_types, klass);
 		if (!ltype) {
-			ltype = create_llvm_type_for_type (klass);
+			int i, size;
+			LLVMTypeRef *eltypes;
+			char *name;
+
+			size = get_vtype_size (t);
+
+			eltypes = g_new (LLVMTypeRef, size);
+			for (i = 0; i < size; ++i)
+				eltypes [i] = LLVMInt8Type ();
+
+			name = mono_type_full_name (&klass->byval_arg);
+			ltype = LLVMStructCreateNamed (LLVMGetGlobalContext (), name);
+			LLVMStructSetBody (ltype, eltypes, size, FALSE);
 			g_hash_table_insert (ctx->lmodule->llvm_types, klass, ltype);
+			g_free (eltypes);
+			g_free (name);
 		}
 		return ltype;
 	}
