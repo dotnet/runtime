@@ -22,7 +22,7 @@ function(get_compile_definitions DefinitionName)
     # Get the current list of definitions
     get_directory_property(COMPILE_DEFINITIONS_LIST COMPILE_DEFINITIONS)
 
-    foreach(DEFINITION ${COMPILE_DEFINITIONS_LIST})
+    foreach(DEFINITION IN LISTS COMPILE_DEFINITIONS_LIST)
         if (${DEFINITION} MATCHES "^\\$<\\$<CONFIG:([^>]+)>:([^>]+)>$")
             # The entries that contain generator expressions must have the -D inside of the 
             # expression. So we transform e.g. $<$<CONFIG:Debug>:_DEBUG> to $<$<CONFIG:Debug>:-D_DEBUG>
@@ -30,27 +30,27 @@ function(get_compile_definitions DefinitionName)
         else()
             set(DEFINITION -D${DEFINITION})
         endif()
-        set(DEFINITIONS ${DEFINITIONS} ${DEFINITION})
+        list(APPEND DEFINITIONS ${DEFINITION})
     endforeach()
     set(${DefinitionName} ${DEFINITIONS} PARENT_SCOPE)
-endfunction(get_compile_definitions DefinitionName)
+endfunction(get_compile_definitions)
 
 # Build a list of include directories by putting -I in front of each include dir.
 function(get_include_directories IncludeDirectories)
     get_directory_property(dirs INCLUDE_DIRECTORIES)
-    foreach(dir ${dirs})
-        set(INC_DIRECTORIES ${INC_DIRECTORIES} -I${dir})
+    foreach(dir IN LISTS dirs)
+        list(APPEND INC_DIRECTORIES -I${dir})
     endforeach()
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
-endfunction(get_include_directories IncludeDirectories)
+endfunction(get_include_directories)
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths. 
 # The parameters after the RetSources are the input files. 
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
-    foreach(Source ${Sources})
-        set(AbsolutePathSources ${AbsolutePathSources} ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
+    foreach(Source IN LISTS Sources)
+        list(APPEND AbsolutePathSources ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
     endforeach()            
     set(${RetSources} ${AbsolutePathSources} PARENT_SCOPE)
 endfunction(convert_to_absolute_path)
@@ -75,20 +75,11 @@ endfunction()
 if (WIN32)
   # For multi-configuration toolset (as Visual Studio)
   # set the different configuration defines.
-  # First DEBUG
-  foreach (Definition ${CLR_DEFINES_DEBUG_INIT})
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:DEBUG>:${Definition}>)
-  endforeach (Definition ${CLR_DEFINES_DEBUG_INIT})
-
-  # Then RELEASE
-  foreach (Definition ${CLR_DEFINES_RELEASE_INIT})
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELEASE>:${Definition}>)
-  endforeach (Definition ${CLR_DEFINES_RELEASE_INIT})
-
-  # And then RELWITHDEBINFO
-  foreach (Definition ${CLR_DEFINES_RELWITHDEBINFO_INIT})
-    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:RELWITHDEBINFO>:${Definition}>)
-  endforeach (Definition ${CLR_DEFINES_RELWITHDEBINFO_INIT})
+  foreach (Config DEBUG RELEASE RELWITHDEBINFO)
+    foreach (Definition IN LISTS CLR_DEFINES_${Config}_INIT)
+      set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS $<$<CONFIG:${Config}>:${Definition}>)
+    endforeach (Definition)
+  endforeach (Config)
 
 elseif (CLR_CMAKE_PLATFORM_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
@@ -331,7 +322,7 @@ if (IS_64BIT_BUILD EQUAL 1)
   endif (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
   add_definitions(-D_TARGET_AMD64_=1)
   add_definitions(-DDBG_TARGET_AMD64)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
   # TODO: Support this
   message(FATAL_ERROR "Not Implemented!")
 endif (IS_64BIT_BUILD EQUAL 1)
@@ -439,7 +430,7 @@ add_definitions(-D_AMD64_SIMULATOR_PERF_)
 add_definitions(-D_AMD64_WORKAROUND_)
 add_definitions(-D_WIN64)
 add_definitions(-DAMD64)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
 # TODO - Support this
 endif (IS_64BIT_BUILD EQUAL 1)
 
@@ -454,7 +445,7 @@ add_definitions(-D_UNICODE)
 
 if (IS_64BIT_BUILD EQUAL 1)
   set(ARCH_SOURCES_DIR amd64)
-else (IS_64BIT_BUILD EQUAL 1)
+else ()
   set(ARCH_SOURCES_DIR i386)
 endif (IS_64BIT_BUILD EQUAL 1)
 

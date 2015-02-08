@@ -137,7 +137,7 @@ PAL_Initialize(
             int argc,
             const char *argv[])
 {
-    PAL_ERROR palError = NO_ERROR;
+    PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = NULL;
     CSharedMemoryObjectManager *pshmom = NULL;
     LPWSTR command_line = NULL;
@@ -150,7 +150,7 @@ PAL_Initialize(
        ENTRY will be called after the DBG channels initialization */
     ENTRY_EXTERNAL("PAL_Initialize(argc = %d argv = %p)\n", argc, argv);
     /*Firstly initiate a temporary lastError storage */
-    StartupLastError = 0;
+    StartupLastError = ERROR_GEN_FAILURE;
 
 #ifdef __APPLE__
     if (!RunningNatively())
@@ -160,11 +160,7 @@ PAL_Initialize(
     }
 #endif // __APPLE__
 
-    if (!CriticalSectionSubSysInitialize())
-    {
-        // Too early to log a message
-        goto exit;
-    }
+    CriticalSectionSubSysInitialize();
 
     if(NULL == init_critsec)
     {
@@ -293,6 +289,7 @@ PAL_Initialize(
         if (!SEHInitializeMachExceptions())
         {
             ERROR("SEHInitializeMachExceptions failed!\n");
+            palError = ERROR_GEN_FAILURE;
             goto CLEANUP1;
         }
 #endif // HAVE_MACH_EXCEPTIONS
@@ -367,6 +364,8 @@ PAL_Initialize(
         g_pSynchronizationManager = 
             CPalSynchMgrController::CreatePalSynchronizationManager(pThread);
 
+        palError = ERROR_GEN_FAILURE;
+
         if (NULL == g_pSynchronizationManager)
         {
             ERROR("Failure creating synchronization manager\n");
@@ -440,6 +439,8 @@ PAL_Initialize(
             goto CLEANUP5;
         }
 
+        palError = ERROR_GEN_FAILURE;
+
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread))
         {
@@ -511,6 +512,8 @@ PAL_Initialize(
         (void)PAL_Enter(PAL_BoundaryTop);
 
         TRACE("Initialization count increases to %d\n", init_count.Load());
+
+        SetLastError(NO_ERROR);
         retval = 0;
     }
     goto done;
@@ -575,7 +578,14 @@ done:
         _ASSERTE(pThread->suspensionInfo.IsSuspensionStateSafe());
     }
 
-exit:    
+    if (retval != 0 && GetLastError() == ERROR_SUCCESS)
+    {
+        ASSERT("returning failure, but last error not set\n");
+    }
+
+#ifdef __APPLE__
+exit :
+#endif // __APPLE__
     LOGEXIT("PAL_Initialize returns int %d\n", retval);
     return retval;
 }
