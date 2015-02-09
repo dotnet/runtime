@@ -4209,6 +4209,7 @@ static void DoEHLog(
     }
 
     LogSpewValist(LF_EH, lvl, fmt, args);
+    va_end(args);
 }
 #endif // _DEBUG
 
