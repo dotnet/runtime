@@ -65,6 +65,9 @@ set( SOURCES
 )
 
 if( WIN32 )
+
+  add_precompiled_header(jitpch.h jitpch.cpp SOURCES)
+
   # Create .def file containing a list of exports preceeded by
   # 'EXPORTS'.  The file "ClrJit.exports" already contains the list, so we
   # massage it into the correct format here to create "ClrJit.exports.def".
