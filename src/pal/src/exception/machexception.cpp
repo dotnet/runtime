@@ -123,7 +123,7 @@ enum MachExceptionMode
     MachException_SuppressManaged   = 4,
 
     // Default value to use if environment variable not set.
-    MachException_Default           = 0,
+    MachException_Default           = 2,
 };
 
 static exception_mask_t GetExceptionMask()
