@@ -21,7 +21,7 @@ if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=debug
 if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%\..\binaries\tests\%__BuildArch%\%__BuildType%
 
-if not defined __LogsDir  set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs 
+if not defined __LogsDir  set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs
 
 set __TestBuildLog=%__LogsDir%\Tests_%__BuildArch%__%__BuildType%.log
 set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log
