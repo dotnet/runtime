@@ -3194,9 +3194,12 @@ template <size_t _SizeInBytes>
 inline
 int __cdecl sprintf_s(char (&_Dst)[_SizeInBytes], const char *_Format, ...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
-    return vsprintf_s(_Dst, _SizeInBytes, _Format, _ArgList);
+    ret = vsprintf_s(_Dst, _SizeInBytes, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 template <size_t _SizeInBytes>
@@ -3220,9 +3223,12 @@ template <size_t _SizeInWords>
 inline
 int __cdecl swprintf_s(char (&_Dst)[_SizeInWords], const char *_Format, ...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
-    return vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
+    ret = vswprintf_s(_Dst, _SizeInWords, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 template <size_t _SizeInWords>
@@ -3261,9 +3267,12 @@ template <size_t _SizeInBytes>
 inline
 int __cdecl _snprintf_s(char (&_Dst)[_SizeInBytes], size_t _Count, const char *_Format, ...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
-    return _vsnprintf_s(_Dst, _SizeInBytes, _Count, _Format, _ArgList);
+    ret = _vsnprintf_s(_Dst, _SizeInBytes, _Count, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 template <size_t _SizeInBytes>
@@ -3287,9 +3296,12 @@ template <size_t _SizeInWords>
 inline
 int __cdecl _snwprintf_s(char (&_Dst)[_SizeInWords], size_t _Count, const char *_Format, ...)
 {
+    int ret;
     va_list _ArgList;
     va_start(_ArgList, _Format);
-    return _vsnwprintf_s(_Dst, _SizeInWords, _Count, _Format, _ArgList);
+    ret = _vsnwprintf_s(_Dst, _SizeInWords, _Count, _Format, _ArgList);
+    va_end(_ArgList);
+    return ret;
 }
 
 template <size_t _SizeInWords>

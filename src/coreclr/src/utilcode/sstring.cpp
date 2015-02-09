@@ -2045,13 +2045,16 @@ void SString::VPrintf(const CHAR *format, va_list args)
     }
     CONTRACT_END;
 
+    va_list ap;
     // sprintf gives us no means to know how many characters are written
     // other than guessing and trying
 
     if (GetRawCount() > 0)
     {
         // First, try to use the existing buffer
-        int result = _vsnprintf_s(GetRawANSI(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_copy(ap, args);
+        int result = _vsnprintf_s(GetRawANSI(), GetRawCount()+1, _TRUNCATE, format, ap);
+        va_end(ap);
 
         if (result >=0)
         {
@@ -2080,7 +2083,9 @@ void SString::VPrintf(const CHAR *format, va_list args)
         // Clear errno to avoid false alarms
         errno = 0;
 
-        int result = _vsnprintf_s(GetRawANSI(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_copy(ap, args);
+        int result = _vsnprintf_s(GetRawANSI(), GetRawCount()+1, _TRUNCATE, format, ap);
+        va_end(ap);
 
         if (result >= 0)
         {
@@ -2145,13 +2150,16 @@ void SString::VPrintf(const WCHAR *format, va_list args)
     }
     CONTRACT_END;
 
+    va_list ap;
     // sprintf gives us no means to know how many characters are written
     // other than guessing and trying
 
     if (GetRawCount() > 0)
     {
         // First, try to use the existing buffer
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_copy(ap, args);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
+        va_end(ap);
 
         if (result >= 0)
         {
@@ -2180,7 +2188,9 @@ void SString::VPrintf(const WCHAR *format, va_list args)
         // Clear errno to avoid false alarms
         errno = 0;
 
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        va_copy(ap, args);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
+        va_end(ap);
 
         if (result >= 0)
         {
@@ -2215,17 +2225,20 @@ void SString::PVPrintf(const WCHAR *format, va_list args)
     }
     CONTRACT_END;
 
+    va_list ap;
     // sprintf gives us no means to know how many characters are written
     // other than guessing and trying
 
     if (GetRawCount() > 0)
     {
         // First, try to use the existing buffer
+        va_copy(ap, args);
 #if defined(FEATURE_CORESYSTEM)
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
 #else
-        int result = _vswprintf_p(GetRawUnicode(), GetRawCount()+1, format, args);
+        int result = _vswprintf_p(GetRawUnicode(), GetRawCount()+1, format, ap);
 #endif
+        va_end(ap);
         if (result >= 0)
         {
             // succeeded
@@ -2253,11 +2266,13 @@ void SString::PVPrintf(const WCHAR *format, va_list args)
         // Clear errno to avoid false alarms
         errno = 0;
 
+        va_copy(ap, args);
 #if defined(FEATURE_CORESYSTEM)
-        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, args);
+        int result = _vsnwprintf_s(GetRawUnicode(), GetRawCount()+1, _TRUNCATE, format, ap);
 #else
-        int result = _vswprintf_p(GetRawUnicode(), GetRawCount()+1, format, args);
+        int result = _vswprintf_p(GetRawUnicode(), GetRawCount()+1, format, ap);
 #endif
+        va_end(ap);
 
         if (result >= 0)
         {

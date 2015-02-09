@@ -74,9 +74,12 @@ int sprintf_s (
         ...
         )
 {
+        int ret;
         va_list arglist;
         va_start(arglist, format);
-        return _vsprintf_s(string, sizeInBytes, format, arglist);
+        ret = _vsprintf_s(string, sizeInBytes, format, arglist);
+        va_end(arglist);
+        return ret;
 }
 
 int _snprintf_s (
@@ -87,7 +90,10 @@ int _snprintf_s (
         ...
         )
 {
+        int ret;
         va_list arglist;
         va_start(arglist, format);
-        return _vsnprintf_s(string, sizeInBytes, count, format, arglist);
+        ret = _vsnprintf_s(string, sizeInBytes, count, format, arglist);
+        va_end(arglist);
+        return ret;
 }

@@ -29,6 +29,9 @@ typedef __builtin_va_list va_list;
 #ifndef va_start
 #define va_start __builtin_va_start
 #endif
+#ifndef va_end
+#define va_end __builtin_va_end
+#endif
 
 #include "mbusafecrt.h"
 
