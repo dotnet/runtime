@@ -179,7 +179,7 @@ namespace System.Diagnostics
             Debug.Assert(Monitor.IsEntered(_gate));
 
             _exited = true;
-            _exitTime = DateTime.Now;
+            _exitTime = DateTime.UtcNow; // TODO: Should be DateTime.Now, but that's currently asserting in the JIT in time zone code
             if (_exitedEvent != null)
             {
                 _exitedEvent.Set();
