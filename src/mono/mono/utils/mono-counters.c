@@ -243,7 +243,7 @@ mono_counters_register (const char* name, int type, void *addr)
 	}
 
 	if (!initialized)
-		g_warning ("counters not enabled");
+		g_debug ("counters not enabled");
 	else
 		register_internal (name, type, addr, size);
 }
@@ -272,7 +272,7 @@ void
 mono_counters_register_with_size (const char *name, int type, void *addr, int size)
 {
 	if (!initialized)
-		g_warning ("counters not enabled");
+		g_debug ("counters not enabled");
 	else
 		register_internal (name, type, addr, size);
 }
@@ -287,7 +287,7 @@ void
 mono_counters_on_register (MonoCounterRegisterCallback callback)
 {
 	if (!initialized) {
-		g_warning ("counters not enabled");
+		g_debug ("counters not enabled");
 		return;
 	}
 
@@ -433,7 +433,7 @@ mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
 	MonoCounter *counter;
 
 	if (!initialized) {
-		g_warning ("counters not enabled");
+		g_debug ("counters not enabled");
 		return;
 	}
 
@@ -510,7 +510,7 @@ int
 mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 {
 	if (!initialized) {
-		g_warning ("counters not enabled");
+		g_debug ("counters not enabled");
 		return -1;
 	}
 
