@@ -47,4 +47,6 @@ endif(IS_64BIT_BUILD EQUAL 1)
 
 convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 
+add_precompiled_header(stdafx.h stdafx.cpp DACCESS_SOURCES)
+
 add_library(daccess ${DACCESS_SOURCES})
