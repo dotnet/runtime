@@ -210,8 +210,8 @@ static size_t num_empty_blocks = 0;
 #define FOREACH_BLOCK_HAS_REFERENCES(bl,hr)	{ size_t __index; LOCK_ALLOCATED_BLOCKS; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
 #define END_FOREACH_BLOCK	} UNLOCK_ALLOCATED_BLOCKS; }
 
-#define FOREACH_BLOCK_NO_LOCK(bl)	{ size_t __index; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
-#define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped (), "Can't iterate blocks without lock when world is running."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
+#define FOREACH_BLOCK_NO_LOCK(bl)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
+#define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} }
 
 static volatile size_t num_major_sections = 0;
@@ -445,7 +445,6 @@ consistency_check (void)
 	int i;
 
 	/* check all blocks */
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't examine allocated blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int num_free = 0;
@@ -557,7 +556,6 @@ obj_is_from_pinned_alloc (char *ptr)
 {
 	MSBlockInfo *block;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't examine allocated blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE)
 			return block->pinned;
@@ -760,7 +758,6 @@ major_ptr_is_in_non_pinned_space (char *ptr, char **start)
 {
 	MSBlockInfo *block;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't examine allocated blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		if (ptr >= MS_BLOCK_FOR_BLOCK_INFO (block) && ptr <= MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE) {
 			int count = MS_BLOCK_FREE / block->obj_size;
@@ -887,7 +884,6 @@ major_is_valid_object (char *object)
 {
 	MSBlockInfo *block;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		int idx;
 		char *obj;
@@ -970,7 +966,6 @@ major_dump_heap (FILE *heap_dump_file)
 	for (i = 0; i < num_block_obj_sizes; ++i)
 		slots_available [i] = slots_used [i] = 0;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Can't iterate blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		int index = ms_find_block_obj_size_index (block->obj_size);
 		int count = MS_BLOCK_FREE / block->obj_size;
@@ -1986,7 +1981,6 @@ major_pin_objects (SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Cannot iterate blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		size_t first_entry, last_entry;
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING, "All blocks must be swept when we're pinning.");
@@ -2013,7 +2007,6 @@ major_get_used_size (void)
 	gint64 size = 0;
 	MSBlockInfo *block;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Cannot iterate blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		void **iter;
@@ -2340,7 +2333,6 @@ update_cardtable_mod_union (void)
 {
 	MSBlockInfo *block;
 
-	SGEN_ASSERT (0, !sweep_in_progress (), "Cannot iterate blocks during sweep");
 	FOREACH_BLOCK_NO_LOCK (block) {
 		size_t num_cards;
 
