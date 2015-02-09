@@ -385,7 +385,8 @@ namespace System.Diagnostics
                 return false; 
             }
 
-            // We're the parent process.  Store the child's pid into this Process object.
+            // We're the parent process.  Store the child's information into this Process object.
+            SetProcessHandle(new SafeProcessHandle(pid));
             SetProcessId(pid);
 
             // Configure the parent's ends of the redirection streams.
