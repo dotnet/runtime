@@ -5734,11 +5734,62 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_ATOMIC_EXCHANGE_I4:
 		case OP_ATOMIC_EXCHANGE_I8: {
-			guint32 size = ins->opcode == OP_ATOMIC_EXCHANGE_I4 ? 4 : 8;
+			guchar *br[2];
+			int sreg2 = ins->sreg2;
+			int breg = ins->inst_basereg;
+			guint32 size;
+			gboolean need_push = FALSE, rdx_pushed = FALSE;
 
-			/* LOCK prefix is implied. */
-			amd64_xchg_membase_reg_size (code, ins->sreg1, ins->inst_offset, ins->sreg2, size);
-			amd64_mov_reg_reg (code, ins->dreg, ins->sreg2, size);
+			if (ins->opcode == OP_ATOMIC_EXCHANGE_I8)
+				size = 8;
+			else
+				size = 4;
+
+			/* 
+			 * See http://msdn.microsoft.com/en-us/magazine/cc302329.aspx for
+			 * an explanation of how this works.
+			 */
+
+			/* cmpxchg uses eax as comperand, need to make sure we can use it
+			 * hack to overcome limits in x86 reg allocator 
+			 * (req: dreg == eax and sreg2 != eax and breg != eax) 
+			 */
+			g_assert (ins->dreg == AMD64_RAX);
+
+			if (breg == AMD64_RAX && ins->sreg2 == AMD64_RAX)
+				/* Highly unlikely, but possible */
+				need_push = TRUE;
+
+			/* The pushes invalidate rsp */
+			if ((breg == AMD64_RAX) || need_push) {
+				amd64_mov_reg_reg (code, AMD64_R11, breg, 8);
+				breg = AMD64_R11;
+			}
+
+			/* We need the EAX reg for the comparand */
+			if (ins->sreg2 == AMD64_RAX) {
+				if (breg != AMD64_R11) {
+					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+					sreg2 = AMD64_R11;
+				} else {
+					g_assert (need_push);
+					amd64_push_reg (code, AMD64_RDX);
+					amd64_mov_reg_reg (code, AMD64_RDX, AMD64_RAX, size);
+					sreg2 = AMD64_RDX;
+					rdx_pushed = TRUE;
+				}
+			}
+
+			amd64_mov_reg_membase (code, AMD64_RAX, breg, ins->inst_offset, size);
+
+			br [0] = code; amd64_prefix (code, X86_LOCK_PREFIX);
+			amd64_cmpxchg_membase_reg_size (code, breg, ins->inst_offset, sreg2, size);
+			br [1] = code; amd64_branch8 (code, X86_CC_NE, -1, FALSE);
+			amd64_patch (br [1], br [0]);
+
+			if (rdx_pushed)
+				amd64_pop_reg (code, AMD64_RDX);
+
 			break;
 		}
 		case OP_ATOMIC_CAS_I4:
