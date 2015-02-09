@@ -940,6 +940,8 @@ inline void DbgWPrintf(const LPCWSTR wszFormat, ...)
 
     _vsnwprintf_s(wszBuffer, sizeof(wszBuffer) / sizeof(WCHAR), _TRUNCATE, wszFormat, args);
 
+    va_end(args);
+
     if (IsDebuggerPresent())
         OutputDebugStringW(wszBuffer);
     else

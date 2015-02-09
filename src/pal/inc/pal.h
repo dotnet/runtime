@@ -256,6 +256,7 @@ __extension__                                                   \
 #define va_arg      __builtin_va_arg
 #endif // __GNUC__ == 2
 
+#define va_copy     __builtin_va_copy
 #define va_end      __builtin_va_end
 
 #endif // _AIX
@@ -293,6 +294,8 @@ typedef char * va_list;
 #define va_end(ap)
 
 #endif // _MSC_VER
+
+#define va_copy(dest,src) (dest = src)
 
 #endif // __GNUC__
 

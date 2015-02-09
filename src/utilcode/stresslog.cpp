@@ -655,7 +655,6 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
     _ASSERTE ( cArgs >= 0 && cArgs <= 7 );
 
     va_list Args;
-    va_start(Args, format);        
     
     if(InlinedStressLogOn(facility, level))
     {
@@ -667,17 +666,22 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
             if (msgs == 0)
                 return;
         }
+        va_start(Args, format);
         msgs->LogMsg (facility, cArgs, format, Args);
+        va_end(Args);
     }
 
 // Stress Log ETW feature available only on the desktop versions of the runtime
 #if !defined(FEATURE_CORECLR)
+    // The previous LogMsg call could have modified the Args, so we need to reset it
     if(InlinedETWLogOn(facility, level))
     {
 #define MAX_STRESSLOG_DATA_ETW_LENGTH 256
         CHAR logMessage[MAX_STRESSLOG_DATA_ETW_LENGTH];
 
+        va_start(Args, format);
         ULONG messageLength = (USHORT)_vsnprintf_s(logMessage, COUNTOF(logMessage), MAX_STRESSLOG_DATA_ETW_LENGTH-1, format, Args);
+        va_end(Args);
         
         if(messageLength >= 0 && 
            messageLength < MAX_STRESSLOG_DATA_ETW_LENGTH) // this condition has been added to make prefast happy
@@ -690,8 +694,6 @@ void StressLog::LogMsg (unsigned level, unsigned facility, int cArgs, const char
 #undef MAX_STRESSLOG_DATA_ETW_LENGTH
     }
 #endif // !FEATURE_CORECLR
-
-    va_end(Args);
 #endif //!DACCESS_COMPILE
 }
 

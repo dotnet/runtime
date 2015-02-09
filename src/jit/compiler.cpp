@@ -92,16 +92,19 @@ unsigned            jitCurSrcLine;
 void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
 {
     va_list args;
-    va_start(args, fmt);
 
 #ifndef CROSSGEN_COMPILE
     if (verbose)
     {
+        va_start(args, fmt);
         logf_stdout(fmt, args);
+        va_end(args);
     }
 #endif
 
+    va_start(args, fmt);
     vlogf(level, fmt, args);
+    va_end(args);
 }
 
 void                Compiler::compDspSrcLinesByLineNum(unsigned line, bool seek)

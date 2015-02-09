@@ -19,7 +19,9 @@ void                allocatorCodeSizeBeg(){}
 
 void    __cdecl     debugStop(const char *why, ...)
 {
-    va_list     args; va_start(args, why);
+    va_list     args;
+
+    va_start(args, why);
 
     printf("NOTIFICATION: ");
     if  (why)
@@ -28,6 +30,8 @@ void    __cdecl     debugStop(const char *why, ...)
         printf("debugStop(0)");
 
     printf("\n");
+
+    va_end(args);
 
     BreakIfDebuggerPresent();
 }

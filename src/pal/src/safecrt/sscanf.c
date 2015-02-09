@@ -196,9 +196,12 @@ int __cdecl sscanf_s (
         ...
         )
 {
+        int ret;
         va_list arglist;
         va_start(arglist, format);
-        return vscan_fn(__tinput_s, string, format, arglist);
+        ret = vscan_fn(__tinput_s, string, format, arglist);
+        va_end(arglist);
+        return ret;
 }
 
 int __cdecl _snscanf_s (
@@ -208,9 +211,12 @@ int __cdecl _snscanf_s (
         ...
         )
 {
+        int ret;
         va_list arglist;
         va_start(arglist, format);
-        return vnscan_fn(__tinput_s, string, count, format, arglist);
+        ret = vnscan_fn(__tinput_s, string, count, format, arglist);
+        va_end(arglist);
+        return ret;
 }
 
 int __cdecl swscanf_s (
@@ -219,9 +225,12 @@ int __cdecl swscanf_s (
         ...
         )
 {
+        int ret;
         va_list arglist;
         va_start(arglist, format);
-        return vwscan_fn(__twinput_s, string, format, arglist);
+        ret = vwscan_fn(__twinput_s, string, format, arglist);
+        va_end(arglist);
+        return ret;
 }
 
 int __cdecl _snwscanf_s (
@@ -231,8 +240,11 @@ int __cdecl _snwscanf_s (
         ...
         )
 {
+        int ret;
         va_list arglist;
         va_start(arglist, format);
-        return vnwscan_fn(__twinput_s, string, count, format, arglist);
+        ret = vnwscan_fn(__twinput_s, string, count, format, arglist);
+        va_end(arglist);
+        return ret;
 }
 

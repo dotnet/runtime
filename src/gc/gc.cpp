@@ -447,8 +447,9 @@ void GCLog (const char *fmt, ... )
     if (gc_log_on && (gc_log != INVALID_HANDLE_VALUE))
     {
         va_list     args;
-        va_start( args, fmt );
+        va_start(args, fmt);
         log_va_msg (fmt, args);
+        va_end(args);
     }
 }
 
