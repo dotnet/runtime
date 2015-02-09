@@ -271,9 +271,6 @@ ICALL(GC_8, "register_ephemeron_array", ves_icall_System_GC_register_ephemeron_a
 ICALL_TYPE(CALDATA, "System.Globalization.CalendarData", CALDATA_1)
 ICALL(CALDATA_1, "fill_calendar_data", ves_icall_System_Globalization_CalendarData_fill_calendar_data)
 
-ICALL_TYPE(CHARINFO, "System.Globalization.CharUnicodeInfo", CHARINFO_1)
-ICALL(CHARINFO_1, "GetDataTablePointers", ves_icall_System_Globalization_CharUnicodeInfo_GetDataTablePointers)
-
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 ICALL(COMPINF_1, "assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey)
 ICALL(COMPINF_2, "construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo)

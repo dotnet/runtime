@@ -7421,50 +7421,6 @@ ves_icall_System_NumberFormatter_GetFormatterTables (guint64 const **mantissas,
 	*decHexDigits = Formatter_DecHexDigits;
 }
 
-ICALL_EXPORT void
-get_category_data (int version,
-		   guint8 const **category_data,
-		   guint16 const **category_astral_index)
-{
-	*category_astral_index = NULL;
-
-#ifndef DISABLE_NET_4_0
-	if (version == 4) {
-		*category_data = CategoryData_v4;
-#ifndef DISABLE_ASTRAL
-		*category_astral_index = CategoryData_v4_astral_index;
-#endif
-		return;
-	}
-#endif
-
-	*category_data = CategoryData_v2;
-#ifndef DISABLE_ASTRAL
-	*category_astral_index = CategoryData_v2_astral_index;
-#endif
-}
-
-/* These parameters are "readonly" in corlib/System/Globalization/CharUnicodeInfo.cs */
-ICALL_EXPORT void
-ves_icall_System_Globalization_CharUnicodeInfo_GetDataTablePointers (int category_data_version,
-					    guint8 const **category_data,
-					    guint16 const **category_astral_index,
-					    guint8 const **numeric_data,
-					    gdouble const **numeric_data_values,
-					    guint16 const **to_lower_data_low,
-					    guint16 const **to_lower_data_high,
-					    guint16 const **to_upper_data_low,
-					    guint16 const **to_upper_data_high)
-{
-	get_category_data (category_data_version, category_data, category_astral_index);
-	*numeric_data = NumericData;
-	*numeric_data_values = NumericDataValues;
-	*to_lower_data_low = ToLowerDataLow;
-	*to_lower_data_high = ToLowerDataHigh;
-	*to_upper_data_low = ToUpperDataLow;
-	*to_upper_data_high = ToUpperDataHigh;
-}
-
 /* These parameters are "readonly" in corlib/System/Globalization/TextInfo.cs */
 ICALL_EXPORT void
 ves_icall_System_Globalization_TextInfo_GetDataTablePointersLite (
