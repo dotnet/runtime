@@ -124,6 +124,10 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/coreclr/hosts/unixcorerun)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+# Add this subdir. We install the headers for the jit.
+
+add_subdirectory(src/pal/prebuilt/inc)
+
 # Set to 1 if you want to clear the CMAKE initial compiler flags and set all the flags explicitly
 # or to 0 if the CMake generated flags should be used
 
