@@ -1,6 +1,8 @@
 
 if (WIN32)
 
+add_precompiled_header(stdafx.h ../stdafx.cpp CORDBEE_SOURCES_WKS)
+
 if (IS_64BIT_BUILD EQUAL 1)
   FIND_PROGRAM(ASM_COMPILER ml64.exe)
 else ()
