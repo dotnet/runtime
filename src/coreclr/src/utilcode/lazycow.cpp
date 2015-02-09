@@ -6,6 +6,8 @@
 // LazyCOW.cpp
 //
 
+#include "stdafx.h"
+
 #include "pedecoder.h"
 #include "volatile.h"
 #include "lazycow.h"
