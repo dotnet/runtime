@@ -206,10 +206,6 @@ static mono_mutex_t allocated_blocks_lock;
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
-#define FOREACH_BLOCK(bl)	{ size_t __index; LOCK_ALLOCATED_BLOCKS; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
-#define FOREACH_BLOCK_HAS_REFERENCES(bl,hr)	{ size_t __index; LOCK_ALLOCATED_BLOCKS; for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
-#define END_FOREACH_BLOCK	} UNLOCK_ALLOCATED_BLOCKS; }
-
 #define FOREACH_BLOCK_NO_LOCK(bl)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
 #define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} }
