@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal static partial class Interop
 {
@@ -46,11 +47,17 @@ internal static partial class Interop
                 arrPtr[i] = null;
             }
 
-            // Now copy each string to unmanaged memory referenced from the array
+            // Now copy each string to unmanaged memory referenced from the array.
+            // We need the data to be an unmanaged, null-terminated array of UTF8-encoded bytes.
             for (int i = 0; i < arr.Length; i++)
             {
-                arrPtr[i] = (byte*)Marshal.StringToHGlobalUni(arr[i]);
+                byte[] byteArr = Encoding.UTF8.GetBytes(arr[i]);
+
+                arrPtr[i] = (byte*)Marshal.AllocHGlobal(byteArr.Length + 1); //+1 for null termination
                 Debug.Assert(arrPtr[i] != null);
+
+                Marshal.Copy(byteArr, 0, (IntPtr)arrPtr[i], byteArr.Length); // copy over the data from the managed byte array
+                arrPtr[i][byteArr.Length] = (byte)'\0'; // null terminate
             }
         }
 
