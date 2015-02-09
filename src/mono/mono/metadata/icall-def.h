@@ -271,9 +271,6 @@ ICALL(GC_8, "register_ephemeron_array", ves_icall_System_GC_register_ephemeron_a
 ICALL_TYPE(CALDATA, "System.Globalization.CalendarData", CALDATA_1)
 ICALL(CALDATA_1, "fill_calendar_data", ves_icall_System_Globalization_CalendarData_fill_calendar_data)
 
-ICALL_TYPE(CHARINFO, "System.Globalization.CharUnicodeInfo", CHARINFO_1)
-ICALL(CHARINFO_1, "GetDataTablePointers", ves_icall_System_Globalization_CharUnicodeInfo_GetDataTablePointers)
-
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 ICALL(COMPINF_1, "assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey)
 ICALL(COMPINF_2, "construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo)
@@ -296,6 +293,9 @@ ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureI
 ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_1)
 ICALL(REGINF_1, "construct_internal_region_from_lcid", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid)
 ICALL(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name)
+
+ICALL_TYPE(TXTINF, "System.Globalization.TextInfo", TXTINF_1)
+ICALL(TXTINF_1, "GetDataTablePointersLite", ves_icall_System_Globalization_TextInfo_GetDataTablePointersLite)
 
 #ifndef PLATFORM_NO_DRIVEINFO
 ICALL_TYPE(IODRIVEINFO, "System.IO.DriveInfo", IODRIVEINFO_1)
