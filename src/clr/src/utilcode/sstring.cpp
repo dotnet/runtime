@@ -2034,6 +2034,11 @@ static void CheckForFormatStringGlobalizationIssues(const SString &format, const
 #define ERANGE 34
 #endif
 
+#if defined(_MSC_VER)
+#undef va_copy
+#define va_copy(dest,src) (dest = src)
+#endif
+
 void SString::VPrintf(const CHAR *format, va_list args)
 {
     CONTRACT_VOID
