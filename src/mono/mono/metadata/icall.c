@@ -7465,6 +7465,20 @@ ves_icall_System_Globalization_CharUnicodeInfo_GetDataTablePointers (int categor
 	*to_upper_data_high = ToUpperDataHigh;
 }
 
+/* These parameters are "readonly" in corlib/System/Globalization/TextInfo.cs */
+ICALL_EXPORT void
+ves_icall_System_Globalization_TextInfo_GetDataTablePointersLite (
+					    guint16 const **to_lower_data_low,
+					    guint16 const **to_lower_data_high,
+					    guint16 const **to_upper_data_low,
+					    guint16 const **to_upper_data_high)
+{
+	*to_lower_data_low = ToLowerDataLow;
+	*to_lower_data_high = ToLowerDataHigh;
+	*to_upper_data_low = ToUpperDataLow;
+	*to_upper_data_high = ToUpperDataHigh;
+}
+
 /*
  * We return NULL for no modifiers so the corlib code can return Type.EmptyTypes
  * and avoid useless allocations.
