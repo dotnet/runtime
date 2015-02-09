@@ -149,6 +149,7 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 
         va_start(args, szFormat);
         vsprintf_s(szOutput, sizeof(szOutput), szFormat, args);
+        va_end(args);
 
         printf("%s  %04x: %s\n", DBG_TRANSPORT_LOG_PREFIX, GetCurrentThreadId(), szOutput);
         fflush(stdout);

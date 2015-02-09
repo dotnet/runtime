@@ -455,7 +455,7 @@ void SOLogger::LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
     }
 
     va_list     args;
-    va_start( args, fmt );
+    va_start(args, fmt);
     if (m_SOLogStyle == SO_LOGGING_SEPARATE_LOG)
     {
         vfprintf(m_SOLoggerFile, fmt, args);
@@ -464,6 +464,7 @@ void SOLogger::LogSpew(DWORD facility, DWORD level, const char *fmt, ... )
     {
         LogSpewValist (facility, level, fmt, args);
     }
+    va_end(args);
 }
 
 #define MORE_INFO_STRING             \
