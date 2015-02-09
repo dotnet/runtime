@@ -320,12 +320,11 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
-            // Currently ignored: UseShellExecute, CreateNoWindow
-
-            // TODO: Finish this implementation.  It'll compile and is mostly
-            // the right flow of logic, but it's untested and is likely missing
-            // some functionality (e.g. what do we need to do for path resolution
-            // of the startInfo.FileName) and likely has bugs.
+            // TODO: This implementation supports basic starting of processes.
+            // Still to implement:
+            // - Fix stream redirection.
+            // - Determine if/how to search for filename location to pass to execve
+            // - Re-enable environment variable flow one runtime bug is fixed
 
             // If streams are to be redirected, create a pipe for each that is.
             // int[0] is the read end of the pipe, int[1] is the write end.
@@ -346,15 +345,18 @@ namespace System.Diagnostics
                 // If we're redirecting streams, configure stdin, stdout, stderr
                 if (stdinPipeFds != null)
                 {
-                    Redirect(stdinPipeFds[0], Interop.libc.FileDescriptors.STDIN_FILENO, stdinPipeFds[1]);
+                    Redirect(stdinPipeFds[0], Interop.libc.FileDescriptors.STDIN_FILENO);
+                    Interop.libc.close(stdinPipeFds[1]); // close copy of parent's write end
                 }
                 if (stdoutPipeFds != null)
                 {
-                    Redirect(stdoutPipeFds[1], Interop.libc.FileDescriptors.STDOUT_FILENO, stdoutPipeFds[0]);
+                    Redirect(stdoutPipeFds[1], Interop.libc.FileDescriptors.STDOUT_FILENO);
+                    Interop.libc.close(stdoutPipeFds[0]); // close copy of parent's read end
                 }
                 if (stderrPipeFds != null)
                 {
-                    Redirect(stderrPipeFds[1], Interop.libc.FileDescriptors.STDERR_FILENO, stderrPipeFds[0]);
+                    Redirect(stderrPipeFds[1], Interop.libc.FileDescriptors.STDERR_FILENO);
+                    Interop.libc.close(stderrPipeFds[0]); // close copy of parent's read end
                 }
 
                 // Set the current working directory based on the caller's request
@@ -367,11 +369,11 @@ namespace System.Diagnostics
                 ParseArgumentsIntoList(startInfo.Arguments, argv);
                 
                 // Parse the environment variables
-                var envVars = new List<string>(startInfo.Environment.Count);
-                foreach (var pair in startInfo.Environment)
-                {
-                    envVars.Add(pair.Key + "=" + pair.Value);
-                }
+                var envVars = new List<string>(); // startInfo.Environment.Count);
+                //foreach (var pair in startInfo.Environment)
+                //{
+                //    envVars.Add(pair.Key + "=" + pair.Value);
+                //}
 
                 // Execute. If this succeeds, it won't return.
                 if (Interop.libc.execve(startInfo.FileName, argv.ToArray(), envVars.ToArray()) != 0)
@@ -389,21 +391,21 @@ namespace System.Diagnostics
             // Configure the parent's ends of the redirection streams.
             if (stdinPipeFds != null)
             {
-                Interop.libc.close(stdinPipeFds[1]);
+                Interop.libc.close(stdinPipeFds[0]); // close copy of child's stdin
                 _standardInput = new StreamWriter(
                     OpenStream(stdinPipeFds[1], FileAccess.Write),
                     Encoding.UTF8, StreamBufferSize) { AutoFlush = true };
             }
-            if (startInfo.RedirectStandardOutput)
+            if (stdoutPipeFds != null)
             {
-                Interop.libc.close(stdoutPipeFds[0]);
+                Interop.libc.close(stdoutPipeFds[1]); // close copy of child's stdout
                 _standardOutput = new StreamReader(
                     OpenStream(stdoutPipeFds[0], FileAccess.Read),
                     startInfo.StandardOutputEncoding ?? Encoding.UTF8, true, StreamBufferSize);
             }
-            if (startInfo.RedirectStandardError)
+            if (stderrPipeFds != null)
             {
-                Interop.libc.close(stderrPipeFds[0]);
+                Interop.libc.close(stderrPipeFds[1]); // close copy of child's stderr
                 _standardError = new StreamReader(
                     OpenStream(stderrPipeFds[0], FileAccess.Read),
                     startInfo.StandardErrorEncoding ?? Encoding.UTF8, true, StreamBufferSize);
@@ -459,15 +461,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Duplicates <paramref name="pipeToUse"/> on to <paramref name="fdToOverwrite"/>, then closes <paramref name="pipeToClose"/>.
+        /// Duplicates <paramref name="pipeToUse"/> on to <paramref name="fdToOverwrite"/>.
         /// </summary>
         /// <param name="pipeToUse">The file descriptor to use in place of <paramref name="fdToOverwrite"/>.</param>
         /// <param name="fdToOverwrite">The file descriptor to be overwritten.</param>
-        /// <param name="pipeToClose">The file descriptor to close.</param>
-        private static void Redirect(int pipeToUse, int fdToOverwrite, int pipeToClose)
+        private static void Redirect(int pipeToUse, int fdToOverwrite)
         {
-            Debug.Assert(pipeToUse >= 0 && fdToOverwrite >= 0 && pipeToClose >= 0);
-            Debug.Assert(pipeToUse != fdToOverwrite && pipeToUse != pipeToClose);
+            Debug.Assert(pipeToUse >= 0 && fdToOverwrite >= 0);
+            Debug.Assert(pipeToUse != fdToOverwrite);
 
             // Duplicate the file descriptor.  We may need to retry if the I/O is interrupted.
             int result;
@@ -479,9 +480,6 @@ namespace System.Diagnostics
                     throw new Win32Exception(errno);
                 }
             }
-
-            // Close the other end of the pipe we won't be using in this process.
-            Interop.libc.close(pipeToClose);
         }
 
         /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
