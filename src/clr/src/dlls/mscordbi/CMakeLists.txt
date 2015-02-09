@@ -3,6 +3,8 @@ set(MSCORDBI_SOURCES
 )  
 
 if(WIN32)
+    add_precompiled_header(stdafx.h stdafx.cpp MSCORDBI_SOURCES)
+    
     add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
 
     list(APPEND MSCORDBI_SOURCES
