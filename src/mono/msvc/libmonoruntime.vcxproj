@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_SGen|Win32">
@@ -46,7 +46,7 @@
     <ClCompile Include="..\mono\metadata\coree.c" />
     <ClCompile Include="..\mono\metadata\debug-helpers.c" />
     <ClCompile Include="..\mono\metadata\debug-mono-symfile.c" />
-    <ClCompile Include="..\mono\metadata\decimal.c" />
+    <ClCompile Include="..\mono\metadata\decimal-ms.c" />
     <ClCompile Include="..\mono\metadata\domain.c" />
     <ClCompile Include="..\mono\metadata\environment.c" />
     <ClCompile Include="..\mono\metadata\exception.c" />
