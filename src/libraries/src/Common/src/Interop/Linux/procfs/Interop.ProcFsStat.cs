@@ -66,7 +66,7 @@ internal static partial class Interop
             //internal long cguest_time;
         }
 
-        private static string GetStatFilePathForProcess(int pid)
+        internal static string GetStatFilePathForProcess(int pid)
         {
             return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatFileName;
         }

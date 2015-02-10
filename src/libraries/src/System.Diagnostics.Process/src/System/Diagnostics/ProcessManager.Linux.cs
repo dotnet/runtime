@@ -10,71 +10,53 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        /// <summary>Gets whether the process with the specified ID is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId)
+        {
+            return File.Exists(Interop.procfs.GetStatFilePathForProcess(processId));
+        }
+
+        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId, string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            return IsProcessRunning(processId);
+        }
+
+        /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
+        public static ProcessInfo GetProcessInfo(int processId, string machineName)
+        {
+            ThrowIfRemoteMachine(machineName);
+            return CreateProcessInfo(processId);
+        }
+
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
         public static ProcessInfo[] GetProcessInfos(string machineName)
         {
-            if (IsRemoteMachine(machineName))
-            {
-                throw new PlatformNotSupportedException();
-            }
+            ThrowIfRemoteMachine(machineName);
+            int[] procIds = GetProcessIds(machineName);
 
             // Iterate through all process IDs to load information about each process
-            int[] procIds = GetProcessIds(machineName);
             var processes = new List<ProcessInfo>(procIds.Length);
             foreach (int pid in procIds)
             {
-                // Read /proc/pid/stat to get information about the process, and churn that into a ProcessInfo
-                Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStatFile(pid);
-                var pi = new ProcessInfo 
+                ProcessInfo pi = CreateProcessInfo(pid);
+                if (pi != null)
                 {
-                    _processId = pid,
-                    _processName = procFsStat.comm,
-                    _basePriority = (int)procFsStat.nice,
-                    _virtualBytes = (long)procFsStat.vsize,
-                    _workingSet = procFsStat.rss,
-                    _sessionId = procFsStat.session,
-                    _handleCount = 0, // not a Unix concept
-
-                    // We don't currently fill in the following values.
-                    // A few of these could probably be filled in from getrusage,
-                    // but only for the current process or its children, not for
-                    // arbitrary other processes.
-                    _poolPagedBytes = 0,
-                    _poolNonpagedBytes = 0,
-                    _virtualBytesPeak = 0,
-                    _workingSetPeak = 0,
-                    _pageFileBytes = 0,
-                    _pageFileBytesPeak = 0,
-                    _privateBytes = 0,
-                };
-
-                // Then read through /proc/pid/task/ to find each thread in the process...
-                string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
-                foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
-                {
-                    string dirName = Path.GetFileName(taskDir);
-                    int tid;
-                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid))
-                    {
-                        // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
-                        Interop.procfs.ParsedStat stat = Interop.procfs.ReadStatFile(pid, tid);
-                        pi._threadInfoList.Add(new ThreadInfo
-                        {
-                            _processId = pid,
-                            _threadId = tid,
-                            _basePriority = pi._basePriority,
-                            _currentPriority = (int)stat.nice,
-                            _startAddress = (IntPtr)stat.startstack,
-                            _threadState = ProcFsStateToThreadState(stat.state),
-                            _threadWaitReason = ThreadWaitReason.Unknown
-                        });
-                    }
+                    processes.Add(pi);
                 }
-
-                processes.Add(pi);
             }
+
             return processes.ToArray();
         }
 
@@ -83,10 +65,7 @@ namespace System.Diagnostics
         /// <returns>An array of process IDs from the specified machine.</returns>
         public static int[] GetProcessIds(string machineName)
         {
-            if (IsRemoteMachine(machineName))
-            {
-                throw new PlatformNotSupportedException();
-            }
+            ThrowIfRemoteMachine(machineName);
             return GetProcessIds();
         }
 
@@ -141,6 +120,83 @@ namespace System.Diagnostics
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        private static void ThrowIfRemoteMachine(string machineName)
+        {
+            if (IsRemoteMachine(machineName))
+            {
+                throw new PlatformNotSupportedException();
+            }
+        }
+
+        private static ProcessInfo CreateProcessInfo(int pid)
+        {
+            // Read /proc/pid/stat to get information about the process, and churn that into a ProcessInfo
+            ProcessInfo pi;
+            try
+            {
+                Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStatFile(pid);
+                pi = new ProcessInfo
+                {
+                    _processId = pid,
+                    _processName = procFsStat.comm,
+                    _basePriority = (int)procFsStat.nice,
+                    _virtualBytes = (long)procFsStat.vsize,
+                    _workingSet = procFsStat.rss,
+                    _sessionId = procFsStat.session,
+                    _handleCount = 0, // not a Unix concept
+
+                    // We don't currently fill in the following values.
+                    // A few of these could probably be filled in from getrusage,
+                    // but only for the current process or its children, not for
+                    // arbitrary other processes.
+                    _poolPagedBytes = 0,
+                    _poolNonpagedBytes = 0,
+                    _virtualBytesPeak = 0,
+                    _workingSetPeak = 0,
+                    _pageFileBytes = 0,
+                    _pageFileBytesPeak = 0,
+                    _privateBytes = 0,
+                };
+            }
+            catch (FileNotFoundException)
+            {
+                // Between the time that we get an ID and the time that we try to read the associated stat
+                // file(s), the process could be gone.
+                return null;
+            }
+
+            // Then read through /proc/pid/task/ to find each thread in the process...
+            try
+            {
+                string tasksDir = Interop.procfs.GetTaskDirectoryPathForProcess(pid);
+                foreach (string taskDir in Directory.EnumerateDirectories(tasksDir))
+                {
+                    string dirName = Path.GetFileName(taskDir);
+                    int tid;
+                    if (int.TryParse(dirName, NumberStyles.Integer, CultureInfo.InvariantCulture, out tid))
+                    {
+                        // ...and read its associated /proc/pid/task/tid/stat file to create a ThreadInfo
+                        Interop.procfs.ParsedStat stat = Interop.procfs.ReadStatFile(pid, tid);
+                        pi._threadInfoList.Add(new ThreadInfo
+                        {
+                            _processId = pid,
+                            _threadId = tid,
+                            _basePriority = pi._basePriority,
+                            _currentPriority = (int)stat.nice,
+                            _startAddress = (IntPtr)stat.startstack,
+                            _threadState = ProcFsStateToThreadState(stat.state),
+                            _threadWaitReason = ThreadWaitReason.Unknown
+                        });
+                    }
+                }
+            }
+            catch (FileNotFoundException) { } // process and/or threads may go away by the time we try to read from them
+            catch (DirectoryNotFoundException) { }
+
+            // Finally return what we've built up
+            return pi;
+        }
 
         /// <summary>Gets a ThreadState to represent the value returned from the status field of /proc/pid/stat.</summary>
         /// <param name="c">The status field value.</param>
