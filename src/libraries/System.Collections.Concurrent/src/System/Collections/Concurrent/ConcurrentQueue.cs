@@ -11,7 +11,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -60,7 +59,7 @@ namespace System.Collections.Concurrent
             int index = 0;
             foreach (T element in collection)
             {
-                Contract.Assert(index >= 0 && index < SEGMENT_SIZE);
+                Debug.Assert(index >= 0 && index < SEGMENT_SIZE);
                 localTail.UnsafeAdd(element);
                 index++;
 
@@ -651,7 +650,7 @@ namespace System.Collections.Concurrent
                 _array = new T[SEGMENT_SIZE];
                 _state = new VolatileBool[SEGMENT_SIZE]; //all initialized to false
                 _high = -1;
-                Contract.Assert(index >= 0);
+                Debug.Assert(index >= 0);
                 _index = index;
                 _source = source;
             }
@@ -683,7 +682,7 @@ namespace System.Collections.Concurrent
             /// <param name="value"></param>
             internal void UnsafeAdd(T value)
             {
-                Contract.Assert(_high < SEGMENT_SIZE - 1);
+                Debug.Assert(_high < SEGMENT_SIZE - 1);
                 _high++;
                 _array[_high] = value;
                 _state[_high]._value = true;
@@ -699,7 +698,7 @@ namespace System.Collections.Concurrent
             /// <returns>the reference to the new Segment</returns>
             internal Segment UnsafeGrow()
             {
-                Contract.Assert(_high >= SEGMENT_SIZE - 1);
+                Debug.Assert(_high >= SEGMENT_SIZE - 1);
                 Segment newSegment = new Segment(_index + 1, _source); //_index is Int64, we don't need to worry about overflow
                 _next = newSegment;
                 return newSegment;
@@ -715,7 +714,7 @@ namespace System.Collections.Concurrent
                 //no CAS is needed, since there is no contention (other threads are blocked, busy waiting)
                 Segment newSegment = new Segment(_index + 1, _source);  //_index is Int64, we don't need to worry about overflow
                 _next = newSegment;
-                Contract.Assert(_source._tail == this);
+                Debug.Assert(_source._tail == this);
                 _source._tail = _next;
             }
 
@@ -822,7 +821,7 @@ namespace System.Collections.Concurrent
                             {
                                 spinLocal.SpinOnce();
                             }
-                            Contract.Assert(_source._head == this);
+                            Debug.Assert(_source._head == this);
                             _source._head = _next;
                         }
                         return true;

@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -74,13 +74,13 @@ namespace System.Linq.Parallel
                                                 Func<TIntermediate, TOutput> resultSelector, bool throwIfEmpty, QueryAggregationOptions options)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(intermediateReduce != null, "need an intermediate reduce function");
-            Contract.Assert(finalReduce != null, "need a final reduce function");
-            Contract.Assert(resultSelector != null, "need a result selector function");
-            Contract.Assert(options.IsValidQueryAggregationOption(), "enum out of valid range");
-            Contract.Assert((options & QueryAggregationOptions.Associative) == QueryAggregationOptions.Associative, "expected an associative operator");
-            Contract.Assert(typeof(TIntermediate) == typeof(TInput) || seedIsSpecified, "seed must be specified if TIntermediate differs from TInput");
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(intermediateReduce != null, "need an intermediate reduce function");
+            Debug.Assert(finalReduce != null, "need a final reduce function");
+            Debug.Assert(resultSelector != null, "need a result selector function");
+            Debug.Assert(options.IsValidQueryAggregationOption(), "enum out of valid range");
+            Debug.Assert((options & QueryAggregationOptions.Associative) == QueryAggregationOptions.Associative, "expected an associative operator");
+            Debug.Assert(typeof(TIntermediate) == typeof(TInput) || seedIsSpecified, "seed must be specified if TIntermediate differs from TInput");
 
             _seed = seed;
             _seedFactory = seedFactory;
@@ -101,8 +101,8 @@ namespace System.Linq.Parallel
 
         internal TOutput Aggregate()
         {
-            Contract.Assert(_finalReduce != null);
-            Contract.Assert(_resultSelector != null);
+            Debug.Assert(_finalReduce != null);
+            Debug.Assert(_resultSelector != null);
 
             TIntermediate accumulator = default(TIntermediate);
             bool hadElements = false;
@@ -213,7 +213,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
-            Contract.Assert(false, "This method should never be called. Associative aggregation can always be parallelized.");
+            Debug.Assert(false, "This method should never be called. Associative aggregation can always be parallelized.");
             throw new NotSupportedException();
         }
 
@@ -251,8 +251,8 @@ namespace System.Linq.Parallel
                                                               AssociativeAggregationOperator<TInput, TIntermediate, TOutput> reduceOperator, int partitionIndex,
                                                               CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(reduceOperator != null);
+                Debug.Assert(source != null);
+                Debug.Assert(reduceOperator != null);
 
                 _source = source;
                 _reduceOperator = reduceOperator;
@@ -270,8 +270,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TIntermediate currentElement, ref int currentKey)
             {
-                Contract.Assert(_reduceOperator != null);
-                Contract.Assert(_reduceOperator._intermediateReduce != null, "expected a compiled operator");
+                Debug.Assert(_reduceOperator != null);
+                Debug.Assert(_reduceOperator._intermediateReduce != null, "expected a compiled operator");
 
                 // Only produce a single element.  Return false if MoveNext() was already called before.
                 if (_accumulated)
@@ -295,7 +295,7 @@ namespace System.Linq.Parallel
                 {
                     // If the seed is not specified, then we take the first element as the seed.
                     // Seed may be unspecified only if TInput is the same as TIntermediate.
-                    Contract.Assert(typeof(TInput) == typeof(TIntermediate));
+                    Debug.Assert(typeof(TInput) == typeof(TIntermediate));
 
                     TInput acc = default(TInput);
                     TKey accKeyUnused = default(TKey);
@@ -328,7 +328,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -225,7 +225,7 @@ namespace System
             {
                 long result;
                 while (Interop.CheckIo(result = (long)Interop.libc.read(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
-                Contract.Assert(result <= count);
+                Debug.Assert(result <= count);
                 return (int)result;
             }
         }
@@ -242,7 +242,7 @@ namespace System
             {
                 long result;
                 while (Interop.CheckIo(result = (long)Interop.libc.write(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
-                Contract.Assert(result == count);
+                Debug.Assert(result == count);
                 return (int)result;
             }
         }
@@ -285,8 +285,8 @@ namespace System
             internal UnixConsoleStream(string devPath, FileAccess access)
                 : base(access)
             {
-                Contract.Assert(devPath != null && devPath.StartsWith("/dev/std"));
-                Contract.Assert(access == FileAccess.Read || access == FileAccess.Write);
+                Debug.Assert(devPath != null && devPath.StartsWith("/dev/std"));
+                Debug.Assert(access == FileAccess.Read || access == FileAccess.Write);
 
                 Interop.libc.OpenFlags flags = 0;
                 switch (access)
@@ -525,7 +525,7 @@ namespace System
                 /// <returns>The string if it's in the database; otherwise, null.</returns>
                 public string GetString(int stringTableIndex)
                 {
-                    Contract.Assert(stringTableIndex >= 0);
+                    Debug.Assert(stringTableIndex >= 0);
 
                     if (stringTableIndex >= _stringSectionNumOffsets)
                     {
@@ -550,7 +550,7 @@ namespace System
                 /// <returns>The number if it's in the database; otherwise, -1.</returns>
                 public int GetNumber(int numberIndex)
                 {
-                    Contract.Assert(numberIndex >= 0);
+                    Debug.Assert(numberIndex >= 0);
 
                     if (numberIndex >= _numberSectionNumShorts)
                     {
@@ -745,7 +745,7 @@ namespace System
                             // Stack pushing operations
                             case 'p': // Push the specified parameter (1-based) onto the stack
                                 pos++;
-                                Contract.Assert(format[pos] >= '0' && format[pos] <= '9');
+                                Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
                                 stack.Push(args[format[pos] - '1']);
                                 break;
                             case 'l': // Pop a string and push its length
@@ -756,7 +756,7 @@ namespace System
                                 int intLit = 0;
                                 while (format[pos] != '}')
                                 {
-                                    Contract.Assert(format[pos] >= '0' && format[pos] <= '9');
+                                    Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
                                     intLit = (intLit * 10) + (format[pos] - '0');
                                     pos++;
                                 }
@@ -764,7 +764,7 @@ namespace System
                                 break;
                             case '\'': // Push literal character, enclosed between single quotes
                                 stack.Push((int)format[pos + 1]);
-                                Contract.Assert(format[pos + 2] == '\'');
+                                Debug.Assert(format[pos + 2] == '\'');
                                 pos += 2;
                                 break;
 
@@ -849,7 +849,7 @@ namespace System
                                 {
                                     output.Append(thenResult);
                                 }
-                                Contract.Assert(format[pos] == 'e' || format[pos] == ';');
+                                Debug.Assert(format[pos] == 'e' || format[pos] == ';');
 
                                 // We're past the then; the top of the stack should now be a Boolean
                                 // indicating whether this conditional has more to be processed (an else clause).
@@ -912,7 +912,7 @@ namespace System
                 /// <returns>The formatted string.</returns>
                 private static unsafe string FormatPrintF(string format, object arg)
                 {
-                    Contract.Assert(arg is string || arg is Int32);
+                    Debug.Assert(arg is string || arg is Int32);
 
                     // Determine how much space is needed to store the formatted string.
                     string stringArg = arg as string;

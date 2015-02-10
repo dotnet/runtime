@@ -188,7 +188,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // This message should have only made it to the target if it passes the filter, so we shouldn't need to check again.
                 // The real source will also be doing verifications, so we don't need to validate args here.
-                Contract.Assert(messageHeader.IsValid, "Only valid messages may be consumed.");
+                Debug.Assert(messageHeader.IsValid, "Only valid messages may be consumed.");
                 return _source.ConsumeMessage(messageHeader, this, out messageConsumed);
             }
 
@@ -197,7 +197,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // This message should have only made it to the target if it passes the filter, so we shouldn't need to check again.
                 // The real source will also be doing verifications, so we don't need to validate args here.
-                Contract.Assert(messageHeader.IsValid, "Only valid messages may be consumed.");
+                Debug.Assert(messageHeader.IsValid, "Only valid messages may be consumed.");
                 return _source.ReserveMessage(messageHeader, this);
             }
 
@@ -206,7 +206,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // This message should have only made it to the target if it passes the filter, so we shouldn't need to check again.
                 // The real source will also be doing verifications, so we don't need to validate args here.
-                Contract.Assert(messageHeader.IsValid, "Only valid messages may be consumed.");
+                Debug.Assert(messageHeader.IsValid, "Only valid messages may be consumed.");
                 _source.ReleaseReservation(messageHeader, this);
             }
 
@@ -351,11 +351,11 @@ namespace System.Threading.Tasks.Dataflow
 
 #if DEBUG
                     case DataflowMessageStatus.Postponed:
-                        Contract.Assert(false, "A message should never be postponed when no source has been provided");
+                        Debug.Assert(false, "A message should never be postponed when no source has been provided");
                         break;
 
                     case DataflowMessageStatus.NotAvailable:
-                        Contract.Assert(false, "The message should never be missed, as it's offered to only this one target");
+                        Debug.Assert(false, "The message should never be missed, as it's offered to only this one target");
                         break;
 #endif
                 }
@@ -373,7 +373,7 @@ namespace System.Threading.Tasks.Dataflow
                 return Common.CreateTaskFromException<Boolean>(exc);
             }
 
-            Contract.Assert(source != null, "The SendAsyncSource instance must have been constructed.");
+            Debug.Assert(source != null, "The SendAsyncSource instance must have been constructed.");
             source.OfferToTarget(); // synchronous to preserve message ordering
             return source.Task;
         }
@@ -539,7 +539,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Dispose of the cancellation registration if there is one
                 if (_cancellationState != CANCELLATION_STATE_NONE)
                 {
-                    Contract.Assert(_cancellationRegistration != default(CancellationTokenRegistration),
+                    Debug.Assert(_cancellationRegistration != default(CancellationTokenRegistration),
                         "If we're not in NONE, we must have a cancellation token we've registered with.");
                     _cancellationRegistration.Dispose();
                 }
@@ -579,7 +579,7 @@ namespace System.Threading.Tasks.Dataflow
                 SendAsyncSource<TOutput> source = Common.UnwrapWeakReference<SendAsyncSource<TOutput>>(state);
                 if (source != null)
                 {
-                    Contract.Assert(source._cancellationState != CANCELLATION_STATE_NONE,
+                    Debug.Assert(source._cancellationState != CANCELLATION_STATE_NONE,
                         "If cancellation is in play, we must have already moved out of the NONE state.");
 
                     // Try to reserve completion, and if we can, complete as canceled.  Note that we can only
@@ -621,7 +621,7 @@ namespace System.Threading.Tasks.Dataflow
                             {
                                 // If cancellation is in use, then since the target accepted,
                                 // our state better reflect that we're completing.
-                                Contract.Assert(_cancellationState == CANCELLATION_STATE_COMPLETING,
+                                Debug.Assert(_cancellationState == CANCELLATION_STATE_COMPLETING,
                                     "The message was accepted, so we should have started completion.");
                             }
                             break;
@@ -633,7 +633,7 @@ namespace System.Threading.Tasks.Dataflow
                             break;
 #if DEBUG
                         case DataflowMessageStatus.NotAvailable:
-                            Contract.Assert(false, "The message should never be missed, as it's offered to only this one target");
+                            Debug.Assert(false, "The message should never be missed, as it's offered to only this one target");
                             break;
                             // If the message was postponed, the source may or may not be complete yet.  Nothing to validate.
                             // Treat an improper DataflowMessageStatus as postponed and do nothing.
@@ -677,7 +677,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (validMessage)
                 {
                     int curState = _cancellationState;
-                    Contract.Assert(
+                    Debug.Assert(
                         curState == CANCELLATION_STATE_NONE || curState == CANCELLATION_STATE_REGISTERED ||
                         curState == CANCELLATION_STATE_RESERVED || curState == CANCELLATION_STATE_COMPLETING,
                         "The current cancellation state is not valid.");
@@ -1281,7 +1281,7 @@ namespace System.Threading.Tasks.Dataflow
             private void CleanupAndComplete(ReceiveCoreByLinkingCleanupReason reason)
             {
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
-                Contract.Assert(Volatile.Read(ref _cleanupReserved), "Should only be called once by whomever reserved the right.");
+                Debug.Assert(Volatile.Read(ref _cleanupReserved), "Should only be called once by whomever reserved the right.");
 
                 // Unlink from the source.  If we're cleaning up because the source
                 // completed, this is unnecessary, as the source should have already
@@ -1363,7 +1363,7 @@ namespace System.Threading.Tasks.Dataflow
                         }, this, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                         break;
                     default:
-                        Contract.Assert(false, "Invalid linking cleanup reason specified.");
+                        Debug.Assert(false, "Invalid linking cleanup reason specified.");
                         goto case ReceiveCoreByLinkingCleanupReason.Cancellation;
 
                     // Task final state: Faulted
@@ -1375,7 +1375,7 @@ namespace System.Threading.Tasks.Dataflow
                         goto case ReceiveCoreByLinkingCleanupReason.SourceProtocolError;
                     case ReceiveCoreByLinkingCleanupReason.SourceProtocolError:
                     case ReceiveCoreByLinkingCleanupReason.ErrorDuringCleanup:
-                        Contract.Assert(_receivedException != null, "We need an exception with which to fault the task.");
+                        Debug.Assert(_receivedException != null, "We need an exception with which to fault the task.");
                         System.Threading.Tasks.Task.Factory.StartNew(state =>
                         {
                             // Complete with the received exception
@@ -1540,7 +1540,7 @@ namespace System.Threading.Tasks.Dataflow
             internal readonly static Func<Task<bool>, object, bool> s_handleCompletion = (antecedent, state) =>
             {
                 var target = state as OutputAvailableAsyncTarget<T>;
-                Contract.Assert(target != null, "Expected non-null target");
+                Debug.Assert(target != null, "Expected non-null target");
                 target._ctr.Dispose();
                 return antecedent.GetAwaiter().GetResult();
             };
@@ -1556,7 +1556,7 @@ namespace System.Threading.Tasks.Dataflow
             private static void CancelAndUnlink(object state)
             {
                 var target = state as OutputAvailableAsyncTarget<T>;
-                Contract.Assert(target != null, "Expected a non-null target");
+                Debug.Assert(target != null, "Expected a non-null target");
 
                 // Cancel asynchronously so that we're not completing the task as part of the cts.Cancel() call,
                 // since synchronous continuations off that task would then run as part of Cancel.
@@ -2109,11 +2109,11 @@ namespace System.Threading.Tasks.Dataflow
                             int resultBranchId = task.Result;
                             if (resultBranchId >= 0)
                             {
-                                Contract.Assert(resultBranchId < tasks.Length, "Expected a valid branch ID");
-                                Contract.Assert(successfulBranchId == -1, "There should be at most one successful branch.");
+                                Debug.Assert(resultBranchId < tasks.Length, "Expected a valid branch ID");
+                                Debug.Assert(successfulBranchId == -1, "There should be at most one successful branch.");
                                 successfulBranchId = resultBranchId;
                             }
-                            else Contract.Assert(resultBranchId == -1, "Expected -1 as a signal of a non-successful branch");
+                            else Debug.Assert(resultBranchId == -1, "Expected -1 as a signal of a non-successful branch");
                             break;
                     }
                 }
@@ -2406,7 +2406,7 @@ namespace System.Threading.Tasks.Dataflow
                         _observersState.Observers = _observersState.Observers.Add(observer);
                         if (_observersState.Observers.Count == 1)
                         {
-                            Contract.Assert(_observersState.Unlinker == null, "The source should not be linked to the target.");
+                            Debug.Assert(_observersState.Unlinker == null, "The source should not be linked to the target.");
                             _observersState.Unlinker = _source.LinkTo(_observersState.Target);
                             if (_observersState.Unlinker == null)
                             {
@@ -2437,7 +2437,7 @@ namespace System.Threading.Tasks.Dataflow
                 lock (_SubscriptionLock)
                 {
                     ObserversState currentState = _observersState;
-                    Contract.Assert(currentState != null, "Observer state should never be null.");
+                    Debug.Assert(currentState != null, "Observer state should never be null.");
 
                     // If the observer was already unsubscribed (or is otherwise no longer present in our list), bail.
                     if (!currentState.Observers.Contains(observer)) return;
@@ -2465,9 +2465,9 @@ namespace System.Threading.Tasks.Dataflow
                 Common.ContractAssertMonitorStatus(_SubscriptionLock, held: true);
 
                 ObserversState currentState = _observersState;
-                Contract.Assert(currentState != null, "Observer state should never be null.");
-                Contract.Assert(currentState.Unlinker != null, "The target should be linked.");
-                Contract.Assert(currentState.Canceler != null, "The target should have set up continuations.");
+                Debug.Assert(currentState != null, "Observer state should never be null.");
+                Debug.Assert(currentState.Unlinker != null, "The target should be linked.");
+                Debug.Assert(currentState.Canceler != null, "The target should have set up continuations.");
 
                 // Replace the target with a clean one, unlink and cancel, and return the previous set of observers
                 ImmutableList<IObserver<TOutput>> currentObservers = currentState.Observers;

@@ -10,7 +10,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -45,7 +45,7 @@ namespace System.Linq.Parallel
         internal DefaultMergeHelper(PartitionedStream<TInputOutput, TIgnoreKey> partitions, bool ignoreOutput, ParallelMergeOptions options,
             TaskScheduler taskScheduler, CancellationState cancellationState, int queryId)
         {
-            Contract.Assert(partitions != null);
+            Debug.Assert(partitions != null);
 
             _taskGroupState = new QueryTaskGroupState(cancellationState, queryId);
             _partitions = partitions;
@@ -82,9 +82,9 @@ namespace System.Linq.Parallel
                     _channelEnumerator = new SynchronousChannelMergeEnumerator<TInputOutput>(_taskGroupState, _syncChannels);
                 }
 
-                Contract.Assert(_asyncChannels == null || _asyncChannels.Length == partitions.PartitionCount);
-                Contract.Assert(_syncChannels == null || _syncChannels.Length == partitions.PartitionCount);
-                Contract.Assert(_channelEnumerator != null, "enumerator can't be null if we're not ignoring output");
+                Debug.Assert(_asyncChannels == null || _asyncChannels.Length == partitions.PartitionCount);
+                Debug.Assert(_syncChannels == null || _syncChannels.Length == partitions.PartitionCount);
+                Debug.Assert(_channelEnumerator != null, "enumerator can't be null if we're not ignoring output");
             }
         }
 
@@ -113,7 +113,7 @@ namespace System.Linq.Parallel
             {
                 // The last case is a pipelining merge when DOP = 1. In this case, the consumer thread itself will compute the results,
                 // so we don't need any tasks to compute the results asynchronously.
-                Contract.Assert(_partitions.PartitionCount == 1);
+                Debug.Assert(_partitions.PartitionCount == 1);
             }
         }
 
@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
 
         IEnumerator<TInputOutput> IMergeHelper<TInputOutput>.GetEnumerator()
         {
-            Contract.Assert(_ignoreOutput || _channelEnumerator != null);
+            Debug.Assert(_ignoreOutput || _channelEnumerator != null);
             return _channelEnumerator;
         }
 

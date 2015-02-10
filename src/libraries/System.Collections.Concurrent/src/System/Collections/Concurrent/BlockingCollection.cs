@@ -431,7 +431,7 @@ namespace System.Collections.Concurrent
                         throw new OperationCanceledException(SR.Common_OperationCanceled, cancellationToken);
 
                     //if cancellation was via internal token, this indicates invalid use, hence InvalidOpEx.
-                    //Contract.Assert(_ProducersCancellationTokenSource.Token.IsCancellationRequested);
+                    //Debug.Assert(_ProducersCancellationTokenSource.Token.IsCancellationRequested);
 
                     throw new InvalidOperationException
                         (SR.BlockingCollection_Add_ConcurrentCompleteAdd);

@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -56,7 +56,7 @@ namespace System.Linq.Parallel
 
             internal QueryOperatorClassicEnumerator(QueryOperatorEnumerator<TElement, TKey> operatorEnumerator)
             {
-                Contract.Assert(operatorEnumerator != null);
+                Debug.Assert(operatorEnumerator != null);
                 _operatorEnumerator = operatorEnumerator;
             }
 

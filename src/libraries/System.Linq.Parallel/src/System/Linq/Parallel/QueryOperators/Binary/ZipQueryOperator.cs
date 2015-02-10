@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -57,7 +57,7 @@ namespace System.Linq.Parallel
             Func<TLeftInput, TRightInput, TOutput> resultSelector)
             : base(left.SpecifiedQuerySettings.Merge(right.SpecifiedQuerySettings))
         {
-            Contract.Assert(resultSelector != null, "operator cannot be null");
+            Debug.Assert(resultSelector != null, "operator cannot be null");
 
             _leftChild = left;
             _rightChild = right;
@@ -174,8 +174,8 @@ namespace System.Linq.Parallel
                 _partitionCount = partitionCount;
                 _preferStriping = preferStriping;
 
-                Contract.Assert(_leftChildResults.IsIndexible);
-                Contract.Assert(_rightChildResults.IsIndexible);
+                Debug.Assert(_leftChildResults.IsIndexible);
+                Debug.Assert(_rightChildResults.IsIndexible);
 
                 _count = Math.Min(_leftChildResults.Count, _rightChildResults.Count);
             }

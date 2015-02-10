@@ -117,7 +117,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else // async
             {
-                Contract.Assert(transformAsync != null, "Incorrect delegate type.");
+                Debug.Assert(transformAsync != null, "Incorrect delegate type.");
                 _target = new TargetCore<TInput>(this,
                     messageWithId => ProcessMessageWithTask(transformAsync, messageWithId),
                     _reorderingBuffer, dataflowBlockOptions, TargetCoreOptions.UsesAsyncCompletion);
@@ -142,7 +142,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((TransformBlock<TInput, TOutput>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 

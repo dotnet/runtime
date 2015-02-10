@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -42,8 +42,8 @@ namespace System.Linq.Parallel
                                            Func<TInputOutput, int, bool> predicate)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(predicate != null, "need a filter function");
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(predicate != null, "need a filter function");
 
             _predicate = predicate;
 
@@ -93,7 +93,7 @@ namespace System.Linq.Parallel
             }
             else
             {
-                Contract.Assert(typeof(TKey) == typeof(int));
+                Debug.Assert(typeof(TKey) == typeof(int));
                 inputStreamInt = (PartitionedStream<TInputOutput, int>)(object)inputStream;
             }
 
@@ -148,8 +148,8 @@ namespace System.Linq.Parallel
             internal IndexedWhereQueryOperatorEnumerator(QueryOperatorEnumerator<TInputOutput, int> source, Func<TInputOutput, int, bool> predicate,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(predicate != null);
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
                 _source = source;
                 _predicate = predicate;
                 _cancellationToken = cancellationToken;
@@ -161,7 +161,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInputOutput currentElement, ref int currentKey)
             {
-                Contract.Assert(_predicate != null, "expected a compiled operator");
+                Debug.Assert(_predicate != null, "expected a compiled operator");
 
                 // Iterate through the input until we reach the end of the sequence or find
                 // an element matching the predicate.
@@ -185,7 +185,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

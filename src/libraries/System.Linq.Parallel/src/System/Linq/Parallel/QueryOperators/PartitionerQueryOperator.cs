@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Linq.Parallel;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -126,7 +126,7 @@ namespace System.Linq.Parallel
 
             internal override void GivePartitionedStream(IPartitionedStreamRecipient<TElement> recipient)
             {
-                Contract.Assert(_settings.DegreeOfParallelism.HasValue);
+                Debug.Assert(_settings.DegreeOfParallelism.HasValue);
                 int partitionCount = _settings.DegreeOfParallelism.Value;
 
                 OrderablePartitioner<TElement> orderablePartitioner = _partitioner as OrderablePartitioner<TElement>;
@@ -229,7 +229,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_sourceEnumerator != null);
+                Debug.Assert(_sourceEnumerator != null);
                 _sourceEnumerator.Dispose();
             }
         }
@@ -259,7 +259,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_sourceEnumerator != null);
+                Debug.Assert(_sourceEnumerator != null);
                 _sourceEnumerator.Dispose();
             }
         }

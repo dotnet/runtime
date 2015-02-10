@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // it until we can use it.
                 else
                 {
-                    Contract.Assert((ulong)id > (ulong)_nextReorderedIdToOutput, "Duplicate id.");
+                    Debug.Assert((ulong)id > (ulong)_nextReorderedIdToOutput, "Duplicate id.");
                     _reorderingBuffer.Add(id, new KeyValuePair<bool, TOutput>(itemIsValid, item));
                 }
             }

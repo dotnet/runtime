@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
 
         internal PartitionedStream(int partitionCount, IComparer<TKey> keyComparer, OrdinalIndexState indexState)
         {
-            Contract.Assert(partitionCount > 0);
+            Debug.Assert(partitionCount > 0);
             _partitions = new QueryOperatorEnumerator<TElement, TKey>[partitionCount];
             _keyComparer = keyComparer;
             _indexState = indexState;
@@ -54,15 +54,15 @@ namespace System.Linq.Parallel
         {
             get
             {
-                Contract.Assert(_partitions != null);
-                Contract.Assert(0 <= index && index < _partitions.Length, "index out of bounds");
+                Debug.Assert(_partitions != null);
+                Debug.Assert(0 <= index && index < _partitions.Length, "index out of bounds");
                 return _partitions[index];
             }
             set
             {
-                Contract.Assert(_partitions != null);
-                Contract.Assert(value != null);
-                Contract.Assert(0 <= index && index < _partitions.Length, "index out of bounds");
+                Debug.Assert(_partitions != null);
+                Debug.Assert(value != null);
+                Debug.Assert(0 <= index && index < _partitions.Length, "index out of bounds");
                 _partitions[index] = value;
             }
         }
@@ -75,7 +75,7 @@ namespace System.Linq.Parallel
         {
             get
             {
-                Contract.Assert(_partitions != null);
+                Debug.Assert(_partitions != null);
                 return _partitions.Length;
             }
         }

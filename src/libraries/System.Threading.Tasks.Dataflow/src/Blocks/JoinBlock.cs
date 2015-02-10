@@ -95,7 +95,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((JoinBlock<T1, T2>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -136,8 +136,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
         public void Complete()
         {
-            Contract.Assert(_target1 != null, "_target1 not initialized");
-            Contract.Assert(_target2 != null, "_target2 not initialized");
+            Debug.Assert(_target1 != null, "_target1 not initialized");
+            Debug.Assert(_target2 != null, "_target2 not initialized");
 
             _target1.CompleteCore(exception: null, dropPendingMessages: false, releaseReservedMessages: false);
             _target2.CompleteCore(exception: null, dropPendingMessages: false, releaseReservedMessages: false);
@@ -149,8 +149,8 @@ namespace System.Threading.Tasks.Dataflow
             if (exception == null) throw new ArgumentNullException("exception");
             Contract.EndContractBlock();
 
-            Contract.Assert(_sharedResources != null, "_sharedResources not initialized");
-            Contract.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
+            Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
+            Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
 
             lock (_sharedResources.IncomingLock)
             {
@@ -328,7 +328,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((JoinBlock<T1, T2, T3>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -369,9 +369,9 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
         public void Complete()
         {
-            Contract.Assert(_target1 != null, "_target1 not initialized");
-            Contract.Assert(_target2 != null, "_target2 not initialized");
-            Contract.Assert(_target3 != null, "_target3 not initialized");
+            Debug.Assert(_target1 != null, "_target1 not initialized");
+            Debug.Assert(_target2 != null, "_target2 not initialized");
+            Debug.Assert(_target3 != null, "_target3 not initialized");
 
             _target1.CompleteCore(exception: null, dropPendingMessages: false, releaseReservedMessages: false);
             _target2.CompleteCore(exception: null, dropPendingMessages: false, releaseReservedMessages: false);
@@ -384,8 +384,8 @@ namespace System.Threading.Tasks.Dataflow
             if (exception == null) throw new ArgumentNullException("exception");
             Contract.EndContractBlock();
 
-            Contract.Assert(_sharedResources != null, "_sharedResources not initialized");
-            Contract.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
+            Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
+            Debug.Assert(_sharedResources._exceptionAction != null, "_sharedResources._exceptionAction not initialized");
 
             lock (_sharedResources.IncomingLock)
             {
@@ -543,13 +543,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: true);
             if (_sharedResources._dataflowBlockOptions.Greedy)
             {
-                Contract.Assert(_messages != null, "_messages must have been initialized in greedy mode");
-                Contract.Assert(_messages.Count >= 0, "A message must have been consumed by this point.");
+                Debug.Assert(_messages != null, "_messages must have been initialized in greedy mode");
+                Debug.Assert(_messages.Count >= 0, "A message must have been consumed by this point.");
                 return _messages.Dequeue();
             }
             else
             {
-                Contract.Assert(_nonGreedy.ConsumedMessage.Key, "A message must have been consumed by this point.");
+                Debug.Assert(_nonGreedy.ConsumedMessage.Key, "A message must have been consumed by this point.");
                 T value = _nonGreedy.ConsumedMessage.Value;
                 _nonGreedy.ConsumedMessage = new KeyValuePair<bool, T>(false, default(T));
                 return value;
@@ -574,7 +574,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: true);
                 if (_sharedResources._dataflowBlockOptions.Greedy)
                 {
-                    Contract.Assert(_messages != null, "_messages must have been initialized in greedy mode");
+                    Debug.Assert(_messages != null, "_messages must have been initialized in greedy mode");
                     return _messages.Count > 0;
                 }
                 else
@@ -609,7 +609,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             get
             {
-                Contract.Assert(_sharedResources._dataflowBlockOptions.Greedy, "This is only valid in greedy mode");
+                Debug.Assert(_sharedResources._dataflowBlockOptions.Greedy, "This is only valid in greedy mode");
                 Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: true);
 
                 // Note: If there is a tie, we must return true
@@ -626,14 +626,14 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal override bool ReserveOneMessage()
         {
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: false);
-            Contract.Assert(!_sharedResources._dataflowBlockOptions.Greedy, "This is only used in non-greedy mode");
+            Debug.Assert(!_sharedResources._dataflowBlockOptions.Greedy, "This is only used in non-greedy mode");
 
             KeyValuePair<ISourceBlock<T>, DataflowMessageHeader> next;
 
             lock (_sharedResources.IncomingLock)
             {
                 // The queue must be empty between joins in non-greedy mode
-                Contract.Assert(!HasAtLeastOneMessageAvailable, "The queue must be empty between joins in non-greedy mode");
+                Debug.Assert(!HasAtLeastOneMessageAvailable, "The queue must be empty between joins in non-greedy mode");
 
                 // While we are holding the lock, try to pop a postponed message.
                 // If there are no postponed messages, we can't do anything.
@@ -666,8 +666,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal override bool ConsumeReservedMessage()
         {
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: false);
-            Contract.Assert(!_sharedResources._dataflowBlockOptions.Greedy, "This is only used in non-greedy mode");
-            Contract.Assert(_nonGreedy.ReservedMessage.Key != null, "This target must have a reserved message");
+            Debug.Assert(!_sharedResources._dataflowBlockOptions.Greedy, "This is only used in non-greedy mode");
+            Debug.Assert(_nonGreedy.ReservedMessage.Key != null, "This target must have a reserved message");
 
             bool consumed;
             T consumedValue = _nonGreedy.ReservedMessage.Key.ConsumeMessage(_nonGreedy.ReservedMessage.Value, this, out consumed);
@@ -693,7 +693,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 lock (_sharedResources.IncomingLock)
                 {
                     // Now that we've consumed it, store its data.
-                    Contract.Assert(!_nonGreedy.ConsumedMessage.Key, "There must be no other consumed message");
+                    Debug.Assert(!_nonGreedy.ConsumedMessage.Key, "There must be no other consumed message");
                     _nonGreedy.ConsumedMessage = new KeyValuePair<bool, T>(true, consumedValue);
                     // We don't account bounding per target in non-greedy mode. We do it once per batch (in the loop).
 
@@ -708,8 +708,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal override bool ConsumeOnePostponedMessage()
         {
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: false);
-            Contract.Assert(_sharedResources._dataflowBlockOptions.Greedy, "This is only used in greedy mode");
-            Contract.Assert(_sharedResources._boundingState != null, "This is only used in bounding mode");
+            Debug.Assert(_sharedResources._dataflowBlockOptions.Greedy, "This is only used in greedy mode");
+            Debug.Assert(_sharedResources._boundingState != null, "This is only used in bounding mode");
 
             // We'll bail out of this loop either when we have consumed a message (true)
             // or when we have exhausted the list of postponed messages (false)
@@ -793,7 +793,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal override void ClearReservation()
         {
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: false);
-            Contract.Assert(_nonGreedy != null, "Only valid in non-greedy mode.");
+            Debug.Assert(_nonGreedy != null, "Only valid in non-greedy mode.");
 
             _nonGreedy.ReservedMessage = default(KeyValuePair<ISourceBlock<T>, DataflowMessageHeader>);
         }
@@ -804,7 +804,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Common.ContractAssertMonitorStatus(_sharedResources.IncomingLock, held: false);
 
             // This target must not have an outstanding reservation
-            Contract.Assert(_nonGreedy == null || _nonGreedy.ReservedMessage.Key == null,
+            Debug.Assert(_nonGreedy == null || _nonGreedy.ReservedMessage.Key == null,
                 "Must be in greedy mode, or in non-greedy mode but without any reserved messages.");
 
             // Clean up any messages that may be stragglers left behind
@@ -869,7 +869,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     if (consumeToAccept)
                     {
-                        Contract.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
+                        Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
                         messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
@@ -893,7 +893,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Otherwise, we try to postpone if a source was provided
                 else if (source != null)
                 {
-                    Contract.Assert(_nonGreedy != null, "_nonGreedy must have been initialized during construction in non-greedy mopde.");
+                    Debug.Assert(_nonGreedy != null, "_nonGreedy must have been initialized during construction in non-greedy mopde.");
 
                     // Postpone the message now and kick off an async two-phase consumption.
                     _nonGreedy.PostponedMessages.Push(source, messageHeader);
@@ -925,7 +925,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Drop pending messages if requested
                 if (dropPendingMessages && greedy)
                 {
-                    Contract.Assert(_messages != null, "_messages must be initialized in greedy mode.");
+                    Debug.Assert(_messages != null, "_messages must be initialized in greedy mode.");
                     _messages.Clear();
                 }
             }
@@ -1418,7 +1418,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // We can trigger completion of the JoinBlock by completing one target.
                 // It doesn't matter which one. So we always complete the first one.
-                Contract.Assert(_targets.Length > 0, "A join must have targets.");
+                Debug.Assert(_targets.Length > 0, "A join must have targets.");
                 _targets[0].CompleteCore(exception, dropPendingMessages: true, releaseReservedMessages: true);
                 // The finally section will do the block completion.
             }
@@ -1456,7 +1456,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 lock (IncomingLock)
                 {
                     // Decrement the count, which mirrors the count in the source half
-                    Contract.Assert(_boundingState.CurrentCount - numItemsRemoved >= 0,
+                    Debug.Assert(_boundingState.CurrentCount - numItemsRemoved >= 0,
                         "It should be impossible to have a negative number of items.");
                     _boundingState.CurrentCount -= numItemsRemoved;
 

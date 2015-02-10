@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -37,7 +37,7 @@ namespace System.Linq.Parallel
         internal ReverseQueryOperator(IEnumerable<TSource> child)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(child != null, "child data source cannot be null");
 
             if (Child.OrdinalIndexState == OrdinalIndexState.Indexible)
             {
@@ -52,7 +52,7 @@ namespace System.Linq.Parallel
         internal override void WrapPartitionedStream<TKey>(
             PartitionedStream<TSource, TKey> inputStream, IPartitionedStreamRecipient<TSource> recipient, bool preferStriping, QuerySettings settings)
         {
-            Contract.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexible, "Don't take this code path if the child is indexible.");
+            Debug.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexible, "Don't take this code path if the child is indexible.");
 
             int partitionCount = inputStream.PartitionCount;
             PartitionedStream<TSource, TKey> outputStream = new PartitionedStream<TSource, TKey>(
@@ -114,7 +114,7 @@ namespace System.Linq.Parallel
             internal ReverseQueryOperatorEnumerator(QueryOperatorEnumerator<TSource, TKey> source,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
+                Debug.Assert(source != null);
                 _source = source;
                 _cancellationToken = cancellationToken;
             }
@@ -191,7 +191,7 @@ namespace System.Linq.Parallel
                 QuerySettings settings, bool preferStriping)
                 : base(childQueryResults, op, settings, preferStriping)
             {
-                Contract.Assert(_childQueryResults.IsIndexible);
+                Debug.Assert(_childQueryResults.IsIndexible);
                 _count = _childQueryResults.ElementsCount;
             }
 
@@ -204,16 +204,16 @@ namespace System.Linq.Parallel
             {
                 get
                 {
-                    Contract.Assert(_count >= 0);
+                    Debug.Assert(_count >= 0);
                     return _count;
                 }
             }
 
             internal override TSource GetElement(int index)
             {
-                Contract.Assert(_count >= 0);
-                Contract.Assert(index >= 0);
-                Contract.Assert(index < _count);
+                Debug.Assert(_count >= 0);
+                Debug.Assert(index >= 0);
+                Debug.Assert(index < _count);
 
                 return _childQueryResults.GetElement(_count - index - 1);
             }

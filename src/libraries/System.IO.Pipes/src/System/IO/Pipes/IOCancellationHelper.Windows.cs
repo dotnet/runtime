@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -26,10 +25,10 @@ namespace System.IO.Pipes
         /// </summary>
         public void AllowCancellation(SafeHandle handle, NativeOverlapped* overlapped)
         {
-            Contract.Assert(handle != null, "Handle cannot be null");
-            Contract.Assert(!handle.IsInvalid, "Handle cannot be invalid");
-            Contract.Assert(overlapped != null, "Overlapped cannot be null");
-            Contract.Assert(this._handle == null && this._overlapped == null, "Cancellation is already allowed.");
+            Debug.Assert(handle != null, "Handle cannot be null");
+            Debug.Assert(!handle.IsInvalid, "Handle cannot be invalid");
+            Debug.Assert(overlapped != null, "Overlapped cannot be null");
+            Debug.Assert(this._handle == null && this._overlapped == null, "Cancellation is already allowed.");
 
             if (!_cancellationToken.CanBeCanceled)
             {
