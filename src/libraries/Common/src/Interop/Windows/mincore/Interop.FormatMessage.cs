@@ -34,7 +34,7 @@ internal partial class Interop
                 }
                 else
                 {
-                    // increase the capacity of the StringBuilder by 4.
+                    // increase the capacity of the StringBuilder.
                     sb.Capacity *= BufferSizeIncreaseFactor;
                 }
             }
