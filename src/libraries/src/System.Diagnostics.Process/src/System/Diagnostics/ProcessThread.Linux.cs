@@ -29,8 +29,8 @@ namespace System.Diagnostics
         /// </summary>
         private bool PriorityBoostEnabledCore
         {
-            get { return false; } // Nop
-            set { } // Nop
+            get { return false; }
+            set { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
