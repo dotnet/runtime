@@ -24,16 +24,14 @@ Some of the best ways to contribute are to try things out, file bugs, and join i
 Want to get more familiar with what's going on in the code?
 * [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
 
-Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
+Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start. See some of our guides for more details:
 
-* [Contributing Guide][Contributing Guide]
-* [Developer Guide]
+* [Contributing Guide](https://github.com/dotnet/corefx/wiki/Contributing)
+* [Developer Guide](https://github.com/dotnet/corefx/wiki/Developer-Guide)
+* [Issue Guide](https://github.com/dotnet/corefx/wiki/Issue-Guide)
 
 You are also encouraged to start a discussion by filing an issue or creating a
-gist. See the [contributing guides][Contributing Guide] for more details. 
-
-[Contributing Guide]: https://github.com/dotnet/corefx/wiki/Contributing
-[Developer Guide]: https://github.com/dotnet/corefx/wiki/Developer-Guide
+gist. 
 
 You can discuss .NET OSS more generally in the [.NET Foundation forums].
 
