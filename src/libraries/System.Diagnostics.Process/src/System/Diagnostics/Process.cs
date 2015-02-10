@@ -787,15 +787,7 @@ namespace System.Diagnostics
                 if (_processInfo == null)
                 {
                     if ((state & State.HaveId) == (State)0) EnsureState(State.HaveId);
-                    ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(_machineName);
-                    for (int i = 0; i < processInfos.Length; i++)
-                    {
-                        if (processInfos[i]._processId == _processId)
-                        {
-                            _processInfo = processInfos[i];
-                            break;
-                        }
-                    }
+                    _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
                     if (_processInfo == null)
                     {
                         throw new InvalidOperationException(SR.NoProcessInfo);

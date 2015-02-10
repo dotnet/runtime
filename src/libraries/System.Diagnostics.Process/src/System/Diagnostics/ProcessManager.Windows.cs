@@ -14,6 +14,40 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        /// <summary>Gets whether the process with the specified ID is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId)
+        {
+            return IsProcessRunning(processId, GetProcessIds());
+        }
+
+        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId, string machineName)
+        {
+            return IsProcessRunning(processId, GetProcessIds(machineName));
+        }
+
+        /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
+        public static ProcessInfo GetProcessInfo(int processId, string machineName)
+        {
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(machineName);
+            foreach (ProcessInfo processInfo in processInfos)
+            {
+                if (processInfo._processId == processId)
+                {
+                    return processInfo;
+                }
+            }
+            return null;
+        }
+
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
@@ -127,6 +161,11 @@ namespace System.Diagnostics
                     tokenHandle.Dispose();
                 }
             }
+        }
+
+        private static bool IsProcessRunning(int processId, int[] processIds)
+        {
+            return Array.IndexOf(processIds, processId) >= 0;
         }
 
         public static SafeProcessHandle OpenProcess(int processId, int access, bool throwIfExited)
