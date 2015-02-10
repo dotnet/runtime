@@ -1,5 +1,5 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  
+
   <PropertyGroup Condition=" '$(TargetFrameworkIdentifier)' == '' 
                          and '$(TargetFrameworkVersion)'    == '' 
                          and '$(TargetFrameworkProfile)'    == '' ">
@@ -65,12 +65,13 @@
     <!-- Don't run unit tests as post-build in VS, use F5 on test project instead (see below). -->
     <RunTestsForProject Condition="'$(BuildingInsideVisualStudio)' == 'True'">False</RunTestsForProject>
   </PropertyGroup>
-  
+
   <!-- General xunit options -->
   <PropertyGroup>
     <XunitCommandLine>xunit.console.netcore.exe $(TargetFileName)</XunitCommandLine>
     <RunOuterLoop Condition="'$(RunOuterLoop)' == ''">False</RunOuterLoop>
     <XunitOptions Condition="'$(RunOuterLoop)'!='True'">$(XunitOptions) -notrait category=outerloop</XunitOptions>
+    <XunitOptions>$(XunitOptions) -xml .\testResults.xml</XunitOptions>
     <XunitOptions>$(XunitOptions) -notrait category=failing</XunitOptions>
   </PropertyGroup>
   
