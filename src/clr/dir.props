@@ -1,20 +1,40 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Common properties -->
   <PropertyGroup>
+    <BuildArch Condition="'$(__BuildArch)'==''">amd64</BuildArch>
     <BuildArch Condition="'$(__BuildArch)' == 'x64'">amd64</BuildArch>
+
+    <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
     <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
     <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
+
+
     <ProjectDir>$(__ProjectDir)\</ProjectDir>
+    <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)\</ProjectDir>
+
     <SourceDir>$(__SourceDir)\</SourceDir>
+    <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)\src\</SourceDir>
+
     <PackagesDir>$(__PackagesDir)\</PackagesDir>
+    <PackagesDir Condition="'$(__PackagesDir)'==''">$(SourceDir)\.nuget\</PackagesDir>
+
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)\binaries\</RootBinDir>
+
     <BinDir>$(__BinDir)\</BinDir>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)\Product\$(BuildArch)\$(BuildType)\</BinDir>
+
     <!-- We dont append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
     -->
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
+    <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir)\.nuget</PackagesBinDir>
+
     <ToolsDir>$(__ToolsDir)\</ToolsDir>
+    <ToolsDir Condition="'$(__ToolsDir)'==''">$(RootBinDir)\tools\</ToolsDir>
+
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)\tests\$(BuildArch)\$(BuildType)\</TestWorkingDir>
   </PropertyGroup>
 
   <!-- Common NuGet properties -->
