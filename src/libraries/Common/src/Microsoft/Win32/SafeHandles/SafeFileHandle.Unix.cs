@@ -3,9 +3,7 @@
 
 using System;
 using System.Diagnostics.Contracts;
-using System.Security;
 using System.Runtime.InteropServices;
-using Microsoft.Win32;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -38,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
             try { } finally
             {
                 int fd;
-                while (Interop.CheckIo(fd = Interop.libc.open64(path, flags, mode))) ;
+                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode))) ;
                 Contract.Assert(fd >= 0);
                 handle.SetHandle((IntPtr)fd);
             }

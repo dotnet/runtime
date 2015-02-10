@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int open64(string filename, OpenFlags flags, mode_t mode);
+        internal static extern int open(string filename, OpenFlags flags, mode_t mode);
 
         [Flags]
         internal enum OpenFlags
@@ -23,7 +23,8 @@ internal static partial class Interop
             O_EXCL = 0x80,
             O_TRUNC = 0x200,
             O_SYNC = 0x1000,
-            O_ASYNC = 0x2000
+            O_ASYNC = 0x2000,
+            O_LARGEFILE = 0x8000
         }
     }
 }

@@ -165,8 +165,8 @@ namespace System.IO
         /// <returns>The flags value to be passed to the open system call.</returns>
         private static Interop.libc.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileOptions options)
         {
-            // Translate FileMode.  Most of the values map cleanly to one or more options for open/open64.
-            Interop.libc.OpenFlags flags = 0;
+            // Translate FileMode.  Most of the values map cleanly to one or more options for open.
+            Interop.libc.OpenFlags flags = Interop.libc.OpenFlags.O_LARGEFILE;
             switch (mode)
             {
                 default:
@@ -191,7 +191,7 @@ namespace System.IO
                     break;
             }
 
-            // Translate FileAccess.  All possible values map cleanly to corresponding values for open/open64.
+            // Translate FileAccess.  All possible values map cleanly to corresponding values for open.
             switch (access)
             {
                 case FileAccess.Read:
