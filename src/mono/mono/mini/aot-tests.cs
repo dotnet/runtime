@@ -15,8 +15,8 @@ class Tests
 #endif
 {
 #if !MOBILE
-	static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	static int Main (String[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 #endif
 
@@ -57,6 +57,7 @@ class Tests
 		}
 	}
 
+	[Category ("!AMD64")]
 	static int test_0_arm64_dyncall_double () {
 		double arg1 = 1.0f;
 		double s = 2.0f;
@@ -66,6 +67,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!AMD64")]
 	static int test_0_arm64_dyncall_float () {
 		double arg1 = 1.0f;
 		float s = 2.0f;
@@ -75,6 +77,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!AMD64")]
 	static int test_0_arm64_dyncall_hfa_double () {
 		double arg1 = 1.0f;
 		// HFA with double members
@@ -87,6 +90,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!AMD64")]
 	static int test_0_arm64_dyncall_hfa_float () {
 		double arg1 = 1.0f;
 		var s = new Struct2 ();
@@ -98,6 +102,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("GSHAREDVT")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_double () {
 		/* gsharedvt out trampoline with double hfa argument */
 		double arg1 = 1.0f;
@@ -115,6 +120,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("GSHAREDVT")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_float () {
 		/* gsharedvt out trampoline with double hfa argument */
 		double arg1 = 1.0f;
@@ -146,6 +152,7 @@ class Tests
 		public long o1, o2, o3;
 	}
 
+	[Category ("GSHAREDVT")]
 	public static int test_0_arm64_gsharedvt_out_vtypebyref () {
 		/* gsharedvt out trampoline with vtypebyref argument */
 		var s = new VTypeByRefStruct () { o1 = 1, o2 = 2, o3 = 3 };
