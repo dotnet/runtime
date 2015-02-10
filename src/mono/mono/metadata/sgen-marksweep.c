@@ -1762,19 +1762,13 @@ major_start_major_collection (void)
 		free_block_lists [MS_BLOCK_FLAG_REFS][i] = NULL;
 	}
 
-	// Sweep all unswept blocks
-	if (lazy_sweep) {
+	if (lazy_sweep)
 		MONO_GC_SWEEP_BEGIN (GENERATION_OLD, TRUE);
 
-		FOREACH_BLOCK_NO_LOCK (block) {
-			sweep_block (block);
-		} END_FOREACH_BLOCK_NO_LOCK;
-
-		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
-	}
-
-	/* FIXME: Just do one iteration over the blocks in this function. */
+	/* Sweep all unswept blocks and set them to MARKING */
 	FOREACH_BLOCK_NO_LOCK (block) {
+		if (lazy_sweep)
+			sweep_block (block);
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
 		/*
 		 * FIXME: We don't need CAS here because there's still only one thread doing
@@ -1782,6 +1776,9 @@ major_start_major_collection (void)
 		 */
 		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
 	} END_FOREACH_BLOCK_NO_LOCK;
+
+	if (lazy_sweep)
+		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 
 	set_sweep_state (SWEEP_STATE_NEED_SWEEPING, SWEEP_STATE_SWEPT);
 }
