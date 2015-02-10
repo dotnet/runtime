@@ -31,9 +31,13 @@ Looking for something to work on? The list of [up-for-grabs issues](https://gith
 * [Issue Guide](https://github.com/dotnet/corefx/wiki/Issue-Guide)
 
 You are also encouraged to start a discussion by filing an issue or creating a
-gist. 
+gist.
 
 You can discuss .NET OSS more generally in the [.NET Foundation forums].
+
+Want to chat with other members of the CoreFX community?
+
+[![Join the chat at https://gitter.im/dotnet/corefx](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corefx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [.NET Foundation forums]: http://forums.dotnetfoundation.org/
 
