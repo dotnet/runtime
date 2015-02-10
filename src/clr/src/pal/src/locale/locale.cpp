@@ -2958,7 +2958,7 @@ EXIT:
     return nRetval;
 }
 
-#endif ENABLE_MAC_APIS_WITH_SPOTTY_COVERAGE
+#endif // ENABLE_MAC_APIS_WITH_SPOTTY_COVERAGE
 
 static CALID CFLocaleGetCALID(CFLocaleRef cfLocale)
 {
@@ -3487,7 +3487,7 @@ GetLocaleInfoHelper(
 #else
         // information from OS too spotty; doing this for now
         nRetval = 0; 
-#endif ENABLE_MAC_APIS_WITH_SPOTTY_COVERAGE
+#endif // ENABLE_MAC_APIS_WITH_SPOTTY_COVERAGE
 
         goto RETURN_NUMBER;
 
@@ -3500,7 +3500,7 @@ GetLocaleInfoHelper(
 #else
         // information from OS too spotty; doing this for now
         nRetval = 0; 
-#endif ENABLE_MAC_APIS_WITH_SPOTTY_COVERAGE
+#endif // ENABLE_MAC_APIS_WITH_SPOTTY_COVERAGE
 
         goto RETURN_NUMBER;
 
