@@ -1268,7 +1268,7 @@ sweep_block (MSBlockInfo *block)
 		SGEN_ASSERT (0, FALSE, "How did we get to sweep a block that's being marked or being checked?");
 		goto retry;
 	case BLOCK_STATE_SWEEPING:
-		/* FIXME: Pick another block or whatever */
+		/* FIXME: Do this more elegantly */
 		g_usleep (100);
 		goto retry;
 	case BLOCK_STATE_NEED_SWEEPING:
@@ -1770,10 +1770,6 @@ major_start_major_collection (void)
 		if (lazy_sweep)
 			sweep_block (block);
 		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "All blocks must be swept when we're pinning.");
-		/*
-		 * FIXME: We don't need CAS here because there's still only one thread doing
-		 * stuff.
-		 */
 		set_block_state (block, BLOCK_STATE_MARKING, BLOCK_STATE_SWEPT);
 	} END_FOREACH_BLOCK_NO_LOCK;
 
@@ -1968,7 +1964,6 @@ major_free_swept_blocks (void)
 	}
 }
 
-/* FIXME: Unify `major_find_pin_queue_start_ends` and `major_pin_objects`. */
 static void
 major_pin_objects (SgenGrayQueue *queue)
 {
@@ -2074,10 +2069,6 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 
 	major_finish_sweeping ();
 
-	/*
-	 * FIXME: Don't take the lock for the whole allocated blocks array because we're
-	 * stopping the sweep thread.
-	 */
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
@@ -2462,7 +2453,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	}
 
 #if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
-	/* FIXME: this will not work with evacuation or the split nursery. */
 	if (!is_concurrent)
 		collector->drain_gray_stack = drain_gray_stack;
 
