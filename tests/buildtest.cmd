@@ -1,7 +1,7 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 
-set __ProjectFilesDir=%~dp0
+set "__ProjectFilesDir=%~dp0"
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&shift&goto Arg_Loop)
@@ -19,16 +19,16 @@ goto Usage
 
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=debug
-if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%\..\binaries\tests\%__BuildArch%\%__BuildType%
+if not defined __TestWorkingDir set "__TestWorkingDir=%__ProjectFilesDir%\..\binaries\tests\%__BuildArch%\%__BuildType%"
 
-if not defined __LogsDir  set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs
+if not defined __LogsDir  set  "__LogsDir=%__ProjectFilesDir%..\binaries\Logs"
 
-set __TestBuildLog=%__LogsDir%\Tests_%__BuildArch%__%__BuildType%.log
-set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log
+set "__TestBuildLog=%__LogsDir%\Tests_%__BuildArch%__%__BuildType%.log"
+set "__XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log"
 
 :: Switch to clean build mode if the binaries output folder does not exist
-if not exist %__TestWorkingDir% set __CleanBuild=1
-if not exist %__LogsDir% md %__LogsDir%
+if not exist "%__TestWorkingDir%" set __CleanBuild=1
+if not exist "%__LogsDir%" md "%__LogsDir%"
 
 :: Configure environment if we are doing a clean build.
 if not defined __CleanBuild goto CheckPrereqs
@@ -39,7 +39,7 @@ echo.
 set __MSBCleanBuildArgs=/t:rebuild
 
 :: Cleanup the binaries drop folder
-if exist %__TestWorkingDir% rd /s /q %__TestWorkingDir%
+if exist "%__TestWorkingDir%" rd /s /q "%__TestWorkingDir%"
 
 
 :: Note: We've disabled node reuse because it causes file locking issues.
@@ -87,7 +87,7 @@ goto :eof
 :build
 
 %_buildprefix% %_msbuildexe% "%__ProjectFilesDir%build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestBuildLog%";Append %* %_buildpostfix%
-IF ERRORLEVEL 1 echo Test build failed. Refer %__TestBuildLog% for details && exit /b 1
+IF ERRORLEVEL 1 echo Test build failed. Refer !__TestBuildLog! for details && exit /b 1
 
 
 
