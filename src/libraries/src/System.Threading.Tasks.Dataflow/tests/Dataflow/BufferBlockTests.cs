@@ -551,19 +551,24 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestReleasingFailsAtCompletion()
         {
+            // Create a bounded block that's filled
             var bb = new BufferBlock<int>(new DataflowBlockOptions { BoundedCapacity = 1 });
             bb.Post(1);
 
+            // Create a source that will throw an exception when a message is released,
+            // which should happen when the buffer block drops any postponed messages
             var source = new DelegatePropagator<int, int>
             {
                 ReserveMessageDelegate = (header, target) => true,
                 ReleaseMessageDelegate = delegate { throw new FormatException(); }
             };
+
+            // Offer a message from the source. It'll be postponed.
             ((ITargetBlock<int>)bb).OfferMessage(new DataflowMessageHeader(1), 1, source, consumeToAccept: false);
 
+            // Mark the block as complete.  This should cause the block to reserve/release any postponed messages,
+            // which will cause the block to fault.
             bb.Complete();
-            Assert.Equal(expected: 1, actual: bb.Receive());
-
             await Assert.ThrowsAsync<FormatException>(() => bb.Completion);
         }
     }
