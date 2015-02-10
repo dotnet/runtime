@@ -263,7 +263,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     // Otherwise, release the reservation
                     _nextMessageReservedFor = null;
-                    Contract.Assert(!_enableOffering, "Offering should have been disabled if there was a valid reservation");
+                    Debug.Assert(!_enableOffering, "Offering should have been disabled if there was a valid reservation");
                     _enableOffering = true;
 
                     // Now there is at least one message ready for offering. So offer it.
@@ -575,7 +575,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     // If we've already offered the message to everyone else,
                     // we can just offer it to the newly linked target
-                    Contract.Assert(linkToTarget != null, "Must have a valid target to offer to.");
+                    Debug.Assert(linkToTarget != null, "Must have a valid target to offer to.");
                     OfferMessageToTarget(header, message, linkToTarget, out messageWasAccepted);
                 }
                 else
@@ -624,7 +624,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     if (_nextMessageId.Value != header.Id ||
                         !_messages.TryDequeue(out dropped)) // remove the next message
                     {
-                        Contract.Assert(false, "The target did not follow the protocol.");
+                        Debug.Assert(false, "The target did not follow the protocol.");
                     }
                     _nextMessageId.Value++;
 
@@ -674,7 +674,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
 
             DataflowMessageStatus result = target.OfferMessage(header, message, _owningSource, consumeToAccept: false);
-            Contract.Assert(result != DataflowMessageStatus.NotAvailable, "Messages are not being offered concurrently, so nothing should be missed.");
+            Debug.Assert(result != DataflowMessageStatus.NotAvailable, "Messages are not being offered concurrently, so nothing should be missed.");
             messageWasAccepted = false;
 
             // If accepted, note it, and if the target was linked as "once", remove it
@@ -692,7 +692,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If the message was reserved by the target, stop propagating
             else if (_nextMessageReservedFor != null)
             {
-                Contract.Assert(result == DataflowMessageStatus.Postponed,
+                Debug.Assert(result == DataflowMessageStatus.Postponed,
                     "If the message was reserved, it should also have been postponed.");
                 return true; // the message should not be offered to anyone else
             }
@@ -737,7 +737,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private void OfferAsyncIfNecessary_Slow(bool isReplacementReplica, bool outgoingLockKnownAcquired)
         {
             Common.ContractAssertMonitorStatus(ValueLock, held: true);
-            Contract.Assert(_taskForOutputProcessing == null && _enableOffering && !_messages.IsEmpty,
+            Debug.Assert(_taskForOutputProcessing == null && _enableOffering && !_messages.IsEmpty,
                 "The block must be enabled for offering, not currently be processing, and have messages available to process.");
 
             // This method must not take the outgoing lock, as it will likely be called in situations
@@ -802,7 +802,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void OfferMessagesLoopCore()
         {
-            Contract.Assert(_taskForOutputProcessing != null && _taskForOutputProcessing.Id == Task.CurrentId,
+            Debug.Assert(_taskForOutputProcessing != null && _taskForOutputProcessing.Id == Task.CurrentId,
                 "Must be part of the current processing task.");
             try
             {
@@ -860,7 +860,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     lock (ValueLock)
                     {
                         // We're no longer processing, so null out the processing task
-                        Contract.Assert(_taskForOutputProcessing != null && _taskForOutputProcessing.Id == Task.CurrentId,
+                        Debug.Assert(_taskForOutputProcessing != null && _taskForOutputProcessing.Id == Task.CurrentId,
                             "Must be part of the current processing task.");
                         _taskForOutputProcessing = null;
                         Interlocked.MemoryBarrier(); // synchronize with AddMessage(s) and its read of _taskForOutputProcessing

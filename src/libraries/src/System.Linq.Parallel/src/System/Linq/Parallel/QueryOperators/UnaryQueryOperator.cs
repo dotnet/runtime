@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -107,7 +107,7 @@ namespace System.Linq.Parallel
 
             internal override void GivePartitionedStream(IPartitionedStreamRecipient<TOutput> recipient)
             {
-                Contract.Assert(IsIndexible == (_op.OrdinalIndexState == OrdinalIndexState.Indexible));
+                Debug.Assert(IsIndexible == (_op.OrdinalIndexState == OrdinalIndexState.Indexible));
 
                 if (_settings.ExecutionMode.Value == ParallelExecutionMode.Default && _op.LimitsParallelism)
                 {

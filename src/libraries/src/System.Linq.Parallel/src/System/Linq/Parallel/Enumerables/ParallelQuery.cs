@@ -11,7 +11,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Parallel;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -47,7 +47,7 @@ namespace System.Linq
 
         internal virtual ParallelQuery<TCastTo> Cast<TCastTo>()
         {
-            Contract.Assert(false, "The derived class must override this method.");
+            Debug.Assert(false, "The derived class must override this method.");
             throw new NotSupportedException();
         }
 
@@ -59,7 +59,7 @@ namespace System.Linq
 
         internal virtual ParallelQuery<TCastTo> OfType<TCastTo>()
         {
-            Contract.Assert(false, "The derived class must override this method.");
+            Debug.Assert(false, "The derived class must override this method.");
             throw new NotSupportedException();
         }
 
@@ -71,7 +71,7 @@ namespace System.Linq
 
         internal virtual IEnumerator GetEnumeratorUntyped()
         {
-            Contract.Assert(false, "The derived class must override this method.");
+            Debug.Assert(false, "The derived class must override this method.");
             throw new NotSupportedException();
         }
 
@@ -120,7 +120,7 @@ namespace System.Linq
         /// <returns>An enumerator that iterates through the sequence.</returns>
         public virtual IEnumerator<TSource> GetEnumerator()
         {
-            Contract.Assert(false, "The derived class must override this method.");
+            Debug.Assert(false, "The derived class must override this method.");
             throw new NotSupportedException();
         }
     }

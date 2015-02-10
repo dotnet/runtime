@@ -14,7 +14,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq.Parallel;
 using System.Collections.Concurrent;
 using System.Collections;
@@ -1575,9 +1575,9 @@ namespace System.Linq
         private static T PerformAggregation<T>(this ParallelQuery<T> source,
             Func<T, T, T> reduce, T seed, bool seedIsSpecified, bool throwIfEmpty, QueryAggregationOptions options)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(reduce != null);
-            Contract.Assert(options.IsValidQueryAggregationOption(), "enum is out of range");
+            Debug.Assert(source != null);
+            Debug.Assert(reduce != null);
+            Debug.Assert(options.IsValidQueryAggregationOption(), "enum is out of range");
 
             AssociativeAggregationOperator<T, T, T> op = new AssociativeAggregationOperator<T, T, T>(
                 source, seed, null, seedIsSpecified, reduce, reduce, delegate (T obj) { return obj; }, throwIfEmpty, options);
@@ -1599,9 +1599,9 @@ namespace System.Linq
         private static TAccumulate PerformSequentialAggregation<TSource, TAccumulate>(
             this ParallelQuery<TSource> source, TAccumulate seed, bool seedIsSpecified, Func<TAccumulate, TSource, TAccumulate> func)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(func != null);
-            Contract.Assert(seedIsSpecified || typeof(TSource) == typeof(TAccumulate));
+            Debug.Assert(source != null);
+            Debug.Assert(func != null);
+            Debug.Assert(seedIsSpecified || typeof(TSource) == typeof(TAccumulate));
 
             using (IEnumerator<TSource> enumerator = source.GetEnumerator())
             {
@@ -4929,7 +4929,7 @@ namespace System.Linq
 
             // Now, accumulate the results into a dynamically sized list, stopping if we reach
             // the (optionally specified) maximum length.
-            Contract.Assert(input != null);
+            Debug.Assert(input != null);
             using (input)
             {
                 while (input.MoveNext())
@@ -5205,7 +5205,7 @@ namespace System.Linq
 
             Parallel.Lookup<TKey, TSource> lookup = new Parallel.Lookup<TKey, TSource>(comparer);
 
-            Contract.Assert(groupings is QueryOperator<IGrouping<TKey, TSource>>);
+            Debug.Assert(groupings is QueryOperator<IGrouping<TKey, TSource>>);
             QueryOperator<IGrouping<TKey, TSource>> op = groupings as QueryOperator<IGrouping<TKey, TSource>>;
 
             IEnumerator<IGrouping<TKey, TSource>> input = (op == null) ? groupings.GetEnumerator() : op.GetEnumerator(ParallelMergeOptions.FullyBuffered);
@@ -5292,7 +5292,7 @@ namespace System.Linq
 
             Parallel.Lookup<TKey, TElement> lookup = new Parallel.Lookup<TKey, TElement>(comparer);
 
-            Contract.Assert(groupings is QueryOperator<IGrouping<TKey, TElement>>);
+            Debug.Assert(groupings is QueryOperator<IGrouping<TKey, TElement>>);
             QueryOperator<IGrouping<TKey, TElement>> op = groupings as QueryOperator<IGrouping<TKey, TElement>>;
 
             IEnumerator<IGrouping<TKey, TElement>> input = (op == null) ? groupings.GetEnumerator() : op.GetEnumerator(ParallelMergeOptions.FullyBuffered);
@@ -5387,7 +5387,7 @@ namespace System.Linq
         private static TSource GetOneWithPossibleDefault<TSource>(
             QueryOperator<TSource> queryOp, bool throwIfTwo, bool defaultIfEmpty)
         {
-            Contract.Assert(queryOp != null, "expected query operator");
+            Debug.Assert(queryOp != null, "expected query operator");
 
             using (IEnumerator<TSource> e = queryOp.GetEnumerator(ParallelMergeOptions.FullyBuffered))
             {
@@ -5406,7 +5406,7 @@ namespace System.Linq
                     }
                     else
                     {
-                        Contract.Assert(!e.MoveNext(), "expected only a single element");
+                        Debug.Assert(!e.MoveNext(), "expected only a single element");
                     }
 
                     return current;

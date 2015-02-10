@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -98,7 +97,7 @@ namespace System.IO
                 if (ioCallback == null) s_IOCallback = ioCallback = new IOCompletionCallback(AsyncFSCallback);
                 _overlapped = overlapped.Pack(ioCallback, bytes);
 
-                Contract.Assert(_overlapped != null, "Did Overlapped.Pack or Overlapped.UnsafePack just return a null?");
+                Debug.Assert(_overlapped != null, "Did Overlapped.Pack or Overlapped.UnsafePack just return a null?");
 #endif
             }
 
@@ -242,7 +241,7 @@ namespace System.IO
                     try
                     {
                         _waitHandle.WaitOne();
-                        Contract.Assert(_isComplete == true, "FileStreamAsyncResult::Wait - AsyncFSCallback  didn't set _isComplete to true!");
+                        Debug.Assert(_isComplete == true, "FileStreamAsyncResult::Wait - AsyncFSCallback  didn't set _isComplete to true!");
                     }
                     finally
                     {
@@ -289,9 +288,9 @@ namespace System.IO
                 ManualResetEvent wh = asyncResult._waitHandle;
                 if (wh != null)
                 {
-                    Contract.Assert(!wh.GetSafeWaitHandle().IsClosed, "ManualResetEvent already closed!");
+                    Debug.Assert(!wh.GetSafeWaitHandle().IsClosed, "ManualResetEvent already closed!");
                     bool r = wh.Set();
-                    Contract.Assert(r, "ManualResetEvent::Set failed!");
+                    Debug.Assert(r, "ManualResetEvent::Set failed!");
                     if (!r) throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
@@ -302,8 +301,8 @@ namespace System.IO
 
             internal void Cancel()
             {
-                Contract.Assert(_handle != null, "_handle should not be null.");
-                Contract.Assert(_overlapped != null, "Cancel should only be called on true asynchronous FileStreamAsyncResult, i.e. _overlapped is not null");
+                Debug.Assert(_handle != null, "_handle should not be null.");
+                Debug.Assert(_overlapped != null, "Cancel should only be called on true asynchronous FileStreamAsyncResult, i.e. _overlapped is not null");
 
                 if (IsCompleted)
                     return;

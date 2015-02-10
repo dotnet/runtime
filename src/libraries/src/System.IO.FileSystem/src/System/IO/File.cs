@@ -3,14 +3,16 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
 using System.Threading;
+
 using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.Versioning;
-using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
@@ -193,7 +195,7 @@ namespace System.IO
                 // After normalizing, check whether path ends in directory separator.
                 // Otherwise, FillAttributeInfo removes it and we may return a false positive.
                 // GetFullPath should never return null
-                Contract.Assert(path != null, "File.Exists: GetFullPath returned null");
+                Debug.Assert(path != null, "File.Exists: GetFullPath returned null");
                 if (path.Length > 0 && PathHelpers.IsDirectorySeparator(path[path.Length - 1]))
                 {
                     return false;

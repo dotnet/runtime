@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -47,7 +47,7 @@ namespace System.Linq.Parallel
         internal TakeOrSkipQueryOperator(IEnumerable<TResult> child, int count, bool take)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(child != null, "child data source cannot be null");
 
             _count = count;
             _take = take;
@@ -85,7 +85,7 @@ namespace System.Linq.Parallel
         internal override void WrapPartitionedStream<TKey>(
             PartitionedStream<TResult, TKey> inputStream, IPartitionedStreamRecipient<TResult> recipient, bool preferStriping, QuerySettings settings)
         {
-            Contract.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexible, "Don't take this code path if the child is indexible.");
+            Debug.Assert(Child.OrdinalIndexState != OrdinalIndexState.Indexible, "Don't take this code path if the child is indexible.");
 
             // If the index is not at least increasing, we need to reindex.
             if (_prematureMerge)
@@ -168,10 +168,10 @@ namespace System.Linq.Parallel
                 FixedMaxHeap<TKey> sharedIndices, CountdownEvent sharedBarrier, CancellationToken cancellationToken,
                 IComparer<TKey> keyComparer)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(sharedIndices != null);
-                Contract.Assert(sharedBarrier != null);
-                Contract.Assert(keyComparer != null);
+                Debug.Assert(source != null);
+                Debug.Assert(sharedIndices != null);
+                Debug.Assert(sharedBarrier != null);
+                Debug.Assert(keyComparer != null);
 
                 _source = source;
                 _count = sharedIndices.Size;
@@ -188,7 +188,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TResult currentElement, ref TKey currentKey)
             {
-                Contract.Assert(_sharedIndices != null);
+                Debug.Assert(_sharedIndices != null);
 
                 // If the buffer has not been created, we will populate it lazily on demand.
                 if (_buffer == null && _count > 0)
@@ -287,7 +287,7 @@ namespace System.Linq.Parallel
                     // Lastly, so long as our input still has elements, they will be yieldable.
                     if (_source.MoveNext(ref currentElement, ref currentKey))
                     {
-                        Contract.Assert(_count <= 0 || _keyComparer.Compare(currentKey, minKey) > 0,
+                        Debug.Assert(_count <= 0 || _keyComparer.Compare(currentKey, minKey) > 0,
                                         "expected remaining element indices to be greater than smallest");
                         return true;
                     }
@@ -349,7 +349,7 @@ namespace System.Linq.Parallel
                 : base(childQueryResults, takeOrSkipOp, settings, preferStriping)
             {
                 _takeOrSkipOp = takeOrSkipOp;
-                Contract.Assert(_childQueryResults.IsIndexible);
+                Debug.Assert(_childQueryResults.IsIndexible);
 
                 _childCount = _childQueryResults.ElementsCount;
             }
@@ -363,7 +363,7 @@ namespace System.Linq.Parallel
             {
                 get
                 {
-                    Contract.Assert(_childCount >= 0);
+                    Debug.Assert(_childCount >= 0);
                     if (_takeOrSkipOp._take)
                     {
                         return Math.Min(_childCount, _takeOrSkipOp._count);
@@ -377,9 +377,9 @@ namespace System.Linq.Parallel
 
             internal override TResult GetElement(int index)
             {
-                Contract.Assert(_childCount >= 0);
-                Contract.Assert(index >= 0);
-                Contract.Assert(index < ElementsCount);
+                Debug.Assert(_childCount >= 0);
+                Debug.Assert(index >= 0);
+                Debug.Assert(index < ElementsCount);
 
                 if (_takeOrSkipOp._take)
                 {

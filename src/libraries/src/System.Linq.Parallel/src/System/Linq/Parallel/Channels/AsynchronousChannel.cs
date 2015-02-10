@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -111,8 +111,8 @@ namespace System.Linq.Parallel
         {
             if (chunkSize == 0) chunkSize = Scheduling.GetDefaultChunkSize<T>();
 
-            Contract.Assert(chunkSize > 0, "chunk size must be greater than 0");
-            Contract.Assert(capacity > 1, "this impl doesn't support capacity of 1 or 0");
+            Debug.Assert(chunkSize > 0, "chunk size must be greater than 0");
+            Debug.Assert(capacity > 1, "this impl doesn't support capacity of 1 or 0");
 
             // Initialize a buffer with enough space to hold 'capacity' elements.
             // We need one extra unused element as a sentinel to detect a full buffer,
@@ -283,12 +283,12 @@ namespace System.Linq.Parallel
 
         private void EnqueueChunk(T[] chunk)
         {
-            Contract.Assert(chunk != null);
-            Contract.Assert(!_done, "can't continue producing after the production is over");
+            Debug.Assert(chunk != null);
+            Debug.Assert(!_done, "can't continue producing after the production is over");
 
             if (IsFull)
                 WaitUntilNonFull();
-            Contract.Assert(!IsFull, "expected a non-full buffer");
+            Debug.Assert(!IsFull, "expected a non-full buffer");
 
             // We can safely store into the current producer index because we know no consumers
             // will be reading from it concurrently.
@@ -378,7 +378,7 @@ namespace System.Linq.Parallel
             if (_producerChunk != null && _producerChunkIndex != 0)
             {
                 // Trim the partially-full chunk to an array just big enough to hold it.
-                Contract.Assert(1 <= _producerChunkIndex && _producerChunkIndex <= _chunkSize);
+                Debug.Assert(1 <= _producerChunkIndex && _producerChunkIndex <= _chunkSize);
                 T[] leftOverChunk = new T[_producerChunkIndex];
                 Array.Copy(_producerChunk, leftOverChunk, _producerChunkIndex);
 
@@ -405,7 +405,7 @@ namespace System.Linq.Parallel
             {
                 if (!TryDequeueChunk(ref _consumerChunk))
                 {
-                    Contract.Assert(_consumerChunk == null);
+                    Debug.Assert(_consumerChunk == null);
                     return false;
                 }
 
@@ -413,8 +413,8 @@ namespace System.Linq.Parallel
             }
 
             // Retrieve the current item in the chunk.
-            Contract.Assert(_consumerChunk != null, "consumer chunk is null");
-            Contract.Assert(0 <= _consumerChunkIndex && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
+            Debug.Assert(_consumerChunk != null, "consumer chunk is null");
+            Debug.Assert(0 <= _consumerChunkIndex && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
             item = _consumerChunk[_consumerChunkIndex];
 
             // And lastly, if we have consumed the chunk, null it out so we'll get the
@@ -483,7 +483,7 @@ namespace System.Linq.Parallel
             {
                 if (!TryDequeueChunk(ref _consumerChunk, ref isDone))
                 {
-                    Contract.Assert(_consumerChunk == null);
+                    Debug.Assert(_consumerChunk == null);
                     return false;
                 }
 
@@ -491,8 +491,8 @@ namespace System.Linq.Parallel
             }
 
             // Retrieve the current item in the chunk.
-            Contract.Assert(_consumerChunk != null, "consumer chunk is null");
-            Contract.Assert(0 <= _consumerChunkIndex && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
+            Debug.Assert(_consumerChunk != null, "consumer chunk is null");
+            Debug.Assert(0 <= _consumerChunkIndex && _consumerChunkIndex < _consumerChunk.Length, "chunk index out of bounds");
             item = _consumerChunk[_consumerChunkIndex];
 
             // And lastly, if we have consumed the chunk, null it out.
@@ -584,7 +584,7 @@ namespace System.Linq.Parallel
                 }
             }
 
-            Contract.Assert(!IsChunkBufferEmpty, "single-consumer should never witness an empty queue here");
+            Debug.Assert(!IsChunkBufferEmpty, "single-consumer should never witness an empty queue here");
 
             chunk = InternalDequeueChunk();
             return true;
@@ -603,7 +603,7 @@ namespace System.Linq.Parallel
 
         private T[] InternalDequeueChunk()
         {
-            Contract.Assert(!IsChunkBufferEmpty);
+            Debug.Assert(!IsChunkBufferEmpty);
 
             // We can safely read from the consumer index because we know no producers
             // will write concurrently.
@@ -661,9 +661,9 @@ namespace System.Linq.Parallel
             // remove the lock.
             lock (this)
             {
-                Contract.Assert(_done, "Expected channel to be done before disposing");
-                Contract.Assert(_producerEvent != null);
-                Contract.Assert(_consumerEvent != null);
+                Debug.Assert(_done, "Expected channel to be done before disposing");
+                Debug.Assert(_producerEvent != null);
+                Debug.Assert(_consumerEvent != null);
                 _producerEvent.Dispose();
                 _producerEvent = null;
                 _consumerEvent = null;

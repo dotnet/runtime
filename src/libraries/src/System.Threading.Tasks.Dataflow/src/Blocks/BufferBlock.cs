@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BufferBlock<T>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -118,7 +118,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Consume the message from the source if necessary
                     if (consumeToAccept)
                     {
-                        Contract.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
+                        Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                         bool consumed;
                         messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
@@ -134,7 +134,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Otherwise, we try to postpone if a source was provided
                 else if (source != null)
                 {
-                    Contract.Assert(_boundingState != null && _boundingState.PostponedMessages != null,
+                    Debug.Assert(_boundingState != null && _boundingState.PostponedMessages != null,
                         "PostponedMessages must have been initialized during construction in bounding mopde.");
 
                     _boundingState.PostponedMessages.Push(source, messageHeader);
@@ -175,7 +175,7 @@ namespace System.Threading.Tasks.Dataflow
                 // Revert the dirty processing state if requested
                 if (revertProcessingState)
                 {
-                    Contract.Assert(_boundingState != null && _boundingState.TaskForInputProcessing != null,
+                    Debug.Assert(_boundingState != null && _boundingState.TaskForInputProcessing != null,
                                     "The processing state must be dirty when revertProcessingState==true.");
                     _boundingState.TaskForInputProcessing = null;
                 }
@@ -234,7 +234,7 @@ namespace System.Threading.Tasks.Dataflow
                 lock (IncomingLock)
                 {
                     // Decrement the count, which mirrors the count in the source half
-                    Contract.Assert(_boundingState.CurrentCount - numItemsRemoved >= 0,
+                    Debug.Assert(_boundingState.CurrentCount - numItemsRemoved >= 0,
                         "It should be impossible to have a negative number of items.");
                     _boundingState.CurrentCount -= numItemsRemoved;
 
@@ -249,7 +249,7 @@ namespace System.Threading.Tasks.Dataflow
         internal void ConsumeAsyncIfNecessary(bool isReplacementReplica = false)
         {
             Common.ContractAssertMonitorStatus(IncomingLock, held: true);
-            Contract.Assert(_boundingState != null, "Must be in bounded mode.");
+            Debug.Assert(_boundingState != null, "Must be in bounded mode.");
 
             if (!_targetDecliningPermanently &&
                 _boundingState.TaskForInputProcessing == null &&
@@ -290,7 +290,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             Contract.Requires(_boundingState != null && _boundingState.TaskForInputProcessing != null,
                 "May only be called in bounded mode and when a task is in flight.");
-            Contract.Assert(_boundingState.TaskForInputProcessing.Id == Task.CurrentId,
+            Debug.Assert(_boundingState.TaskForInputProcessing.Id == Task.CurrentId,
                 "This must only be called from the in-flight processing task.");
             Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 
@@ -336,7 +336,7 @@ namespace System.Threading.Tasks.Dataflow
         {
             Contract.Requires(_boundingState != null && _boundingState.TaskForInputProcessing != null,
                 "May only be called in bounded mode and when a task is in flight.");
-            Contract.Assert(_boundingState.TaskForInputProcessing.Id == Task.CurrentId,
+            Debug.Assert(_boundingState.TaskForInputProcessing.Id == Task.CurrentId,
                 "This must only be called from the in-flight processing task.");
             Common.ContractAssertMonitorStatus(IncomingLock, held: false);
 

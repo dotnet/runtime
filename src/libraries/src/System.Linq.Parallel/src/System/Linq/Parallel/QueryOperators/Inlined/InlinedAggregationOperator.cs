@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -33,7 +33,7 @@ namespace System.Linq.Parallel
         internal InlinedAggregationOperator(IEnumerable<TSource> child)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(child != null, "child data source cannot be null");
         }
 
         //---------------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
-            Contract.Assert(false, "This method should never be called. Associative aggregation can always be parallelized.");
+            Debug.Assert(false, "This method should never be called. Associative aggregation can always be parallelized.");
             throw new NotSupportedException();
         }
 

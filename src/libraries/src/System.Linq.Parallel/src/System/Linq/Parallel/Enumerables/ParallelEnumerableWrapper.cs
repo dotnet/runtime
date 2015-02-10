@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -28,7 +28,7 @@ namespace System.Linq.Parallel
         internal ParallelEnumerableWrapper(Collections.IEnumerable source)
             : base(QuerySettings.Empty)
         {
-            Contract.Assert(source != null);
+            Debug.Assert(source != null);
             _source = source;
         }
 
@@ -66,7 +66,7 @@ namespace System.Linq.Parallel
         internal ParallelEnumerableWrapper(IEnumerable<T> wrappedEnumerable)
             : base(QuerySettings.Empty)
         {
-            Contract.Assert(wrappedEnumerable != null, "wrappedEnumerable must not be null.");
+            Debug.Assert(wrappedEnumerable != null, "wrappedEnumerable must not be null.");
 
             _wrappedEnumerable = wrappedEnumerable;
         }
@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
 
         public override IEnumerator<T> GetEnumerator()
         {
-            Contract.Assert(_wrappedEnumerable != null);
+            Debug.Assert(_wrappedEnumerable != null);
             return _wrappedEnumerable.GetEnumerator();
         }
     }

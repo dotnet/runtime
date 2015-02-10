@@ -16,7 +16,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Security;
@@ -69,7 +68,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             int index = 0;
             foreach (T element in collection)
             {
-                Contract.Assert(index >= 0 && index < SEGMENT_SIZE);
+                Debug.Assert(index >= 0 && index < SEGMENT_SIZE);
                 localTail.UnsafeAdd(element);
                 index++;
 
@@ -117,7 +116,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
-            Contract.Assert(_serializationArray != null);
+            Debug.Assert(_serializationArray != null);
             InitializeFromCollection(_serializationArray);
             _serializationArray = null;
         }
@@ -681,7 +680,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                 _array = new T[SEGMENT_SIZE];
                 _state = new VolatileBool[SEGMENT_SIZE]; //all initialized to false
                 _high = -1;
-                Contract.Assert(index >= 0);
+                Debug.Assert(index >= 0);
                 _index = index;
                 _source = source;
             }
@@ -713,7 +712,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             /// <param name="value"></param>
             internal void UnsafeAdd(T value)
             {
-                Contract.Assert(_high < SEGMENT_SIZE - 1);
+                Debug.Assert(_high < SEGMENT_SIZE - 1);
                 _high++;
                 _array[_high] = value;
                 _state[_high]._value = true;
@@ -729,7 +728,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
             /// <returns>the reference to the new Segment</returns>
             internal Segment UnsafeGrow()
             {
-                Contract.Assert(_high >= SEGMENT_SIZE - 1);
+                Debug.Assert(_high >= SEGMENT_SIZE - 1);
                 Segment newSegment = new Segment(_index + 1, _source); //_index is Int64, we don't need to worry about overflow
                 _next = newSegment;
                 return newSegment;
@@ -745,7 +744,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                 //no CAS is needed, since there is no contention (other threads are blocked, busy waiting)
                 Segment newSegment = new Segment(_index + 1, _source);  //_index is Int64, we don't need to worry about overflow
                 _next = newSegment;
-                Contract.Assert(_source._tail == this);
+                Debug.Assert(_source._tail == this);
                 _source._tail = _next;
             }
 
@@ -850,7 +849,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
                             {
                                 spinLocal.SpinOnce();
                             }
-                            Contract.Assert(_source._head == this);
+                            Debug.Assert(_source._head == this);
                             _source._head = _next;
                         }
                         return true;

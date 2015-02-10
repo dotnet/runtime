@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -27,7 +27,7 @@ namespace System.Linq.Parallel
 
         protected MergeEnumerator(QueryTaskGroupState taskGroupState)
         {
-            Contract.Assert(taskGroupState != null);
+            Debug.Assert(taskGroupState != null);
             _taskGroupState = taskGroupState;
         }
 
@@ -65,7 +65,7 @@ namespace System.Linq.Parallel
             // been initiated, so we just need to ensure exceptions are propagated.
             if (!_taskGroupState.IsAlreadyEnded)
             {
-                Contract.Assert(_taskGroupState.CancellationState.TopLevelDisposedFlag.Value);
+                Debug.Assert(_taskGroupState.CancellationState.TopLevelDisposedFlag.Value);
                 _taskGroupState.QueryEnd(true);
             }
         }

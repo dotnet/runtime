@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
                                    IComparer<TSortKey> comparer, bool descending)
             : base(source, true)
         {
-            Contract.Assert(keySelector != null, "key selector must not be null");
+            Debug.Assert(keySelector != null, "key selector must not be null");
 
             _keySelector = keySelector;
 
@@ -205,9 +205,9 @@ namespace System.Linq.Parallel
         internal SortQueryOperatorEnumerator(QueryOperatorEnumerator<TInputOutput, TKey> source,
             Func<TInputOutput, TSortKey> keySelector, IComparer<TSortKey> keyComparer)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(keySelector != null, "need a key comparer");
-            Contract.Assert(keyComparer != null, "expected a compiled operator");
+            Debug.Assert(source != null);
+            Debug.Assert(keySelector != null, "need a key comparer");
+            Debug.Assert(keyComparer != null, "expected a compiled operator");
 
             _source = source;
             _keySelector = keySelector;
@@ -230,7 +230,7 @@ namespace System.Linq.Parallel
 
         internal override bool MoveNext(ref TInputOutput currentElement, ref TSortKey currentKey)
         {
-            Contract.Assert(_source != null);
+            Debug.Assert(_source != null);
 
             TKey keyUnused = default(TKey);
             if (!_source.MoveNext(ref currentElement, ref keyUnused))
@@ -244,7 +244,7 @@ namespace System.Linq.Parallel
 
         protected override void Dispose(bool disposing)
         {
-            Contract.Assert(_source != null);
+            Debug.Assert(_source != null);
             _source.Dispose();
         }
     }

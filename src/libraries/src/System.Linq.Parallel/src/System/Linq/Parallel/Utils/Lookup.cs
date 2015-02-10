@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -112,13 +112,13 @@ namespace System.Linq.Parallel
         {
             if (_comparer.Equals(grouping.Key, default(TKey)))
             {
-                Contract.Assert(_defaultKeyGrouping == null, "Cannot insert two groupings with the default key into a lookup.");
+                Debug.Assert(_defaultKeyGrouping == null, "Cannot insert two groupings with the default key into a lookup.");
 
                 _defaultKeyGrouping = grouping;
             }
             else
             {
-                Contract.Assert(!_dict.ContainsKey(grouping.Key));
+                Debug.Assert(!_dict.ContainsKey(grouping.Key));
 
                 _dict.Add(grouping.Key, grouping);
             }

@@ -9,6 +9,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Linq.Parallel
@@ -290,7 +291,7 @@ namespace System.Linq.Parallel
             QueryOperatorEnumerator<TInputOutput, TIgnoreKey> source, AsynchronousChannel<TInputOutput> destination)
             : base(taskIndex, groupState)
         {
-            Contract.Assert(source != null);
+            Debug.Assert(source != null);
             _source = source;
             _destination = destination;
         }
@@ -377,7 +378,7 @@ namespace System.Linq.Parallel
             QueryOperatorEnumerator<TInputOutput, TIgnoreKey> source)
             : base(taskIndex, groupState)
         {
-            Contract.Assert(source != null);
+            Debug.Assert(source != null);
             _source = source;
         }
 
