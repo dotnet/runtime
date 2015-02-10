@@ -10,7 +10,7 @@ setlocal
 if not defined VS120COMNTOOLS (
     if not defined VS140COMNTOOLS (
         echo Error: build.cmd should be run from a Visual Studio 2013 or 2015 Command Prompt.  
-        echo        Please see https://github.com/dotnet/corefx/wiki/Developer%%20Guide for build instructions.
+        echo        Please see https://github.com/dotnet/corefx/wiki/Developer-Guide for build instructions.
         exit /b 1
     )
 )
