@@ -6,7 +6,6 @@ using System.Collections;
 using System.Text;
 using Xunit;
 
-
 namespace System.Collections.SortedListTests
 {
     public class CountTests : IComparer

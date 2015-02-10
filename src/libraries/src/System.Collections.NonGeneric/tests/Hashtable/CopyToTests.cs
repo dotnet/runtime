@@ -62,7 +62,7 @@ namespace System.Collections.HashtableTests
 
             // make sure sentinal character is still there
             Assert.Equal("startstring", objArr[0]);
-            Assert.True("endstring".Equals(objArr[values.Length + 1]));
+            Assert.Equal("endstring", objArr[values.Length + 1]);
 
             // check to make sure arr is filled up with the correct elements
 
@@ -85,8 +85,8 @@ namespace System.Collections.HashtableTests
 
             // make sure sentinal character is still there
 
-            Assert.True("startstring".Equals(objArr[0]));
-            Assert.True("endstring".Equals(objArr[values.Length + 1]));
+            Assert.Equal("startstring", objArr[0]);
+            Assert.Equal("endstring", objArr[values.Length + 1]);
 
             // check to make sure arr is filled up with the correct elements
             BitArray bitArray = new BitArray(values.Length);

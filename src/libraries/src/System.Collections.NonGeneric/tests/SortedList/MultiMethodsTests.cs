@@ -8,7 +8,6 @@ using System.Reflection;
 
 namespace System.Collections.SortedListTests
 {
-
     public class MultiMethodsTests
     {
         [Fact]
@@ -35,7 +34,7 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < slst1.Count; i++)
             {
                 strValue = "Value_" + i;
-                Assert.True(strValue.Equals(slst1[slst1.GetKey(i)]), "Error, Expected value not returned, " + strValue + " " + slst1[slst1.GetKey(i)]);
+                Assert.Equal(strValue, slst1[slst1.GetKey(i)]);
             }
 
             //paramter stuff
@@ -103,16 +102,16 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < slst1.Count; i++)
             {
                 strValue = "Value_" + i;
-                Assert.True(strValue.Equals(slst1[i + 50]), "Error, Expected value not returned, " + strValue + " " + slst1[i + 50]);
+                Assert.Equal(strValue, slst1[i + 50]);
             }
 
             //already existent ones
             strValue = "Value_1";
-            Assert.True(strValue.Equals(slst1[51]), "Error, Expected value not returned, " + slst1[51]);
+            Assert.Equal(strValue, slst1[51]);
 
             strValue = "Different value";
             slst1[51] = strValue;
-            Assert.True(strValue.Equals(slst1[51]), "Error, Expected value not returned, " + slst1[51]);
+            Assert.Equal(strValue, slst1[51]);
 
             //paramter stuff
             Assert.Throws<ArgumentNullException>(() =>
@@ -145,7 +144,7 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < slst1.Count; i++)
             {
                 strValue = "Value_" + i + 50;
-                Assert.True(strValue.Equals(slst1.GetByIndex(i)), "Error, Expected value not returned, " + strValue + " " + slst1.GetByIndex(i));
+                Assert.Equal(strValue, slst1.GetByIndex(i));
             }
             //paramter stuff
 
@@ -175,7 +174,7 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < slst1.Count; i++)
             {
                 strValue = "Value_" + i;
-                Assert.True(strValue.Equals(((DictionaryEntry)ar1.GetValue(i)).Value), "Error, Expected value not returned, " + strValue + " " + ((DictionaryEntry)ar1.GetValue(i)).Value);
+                Assert.Equal(strValue, ((DictionaryEntry)ar1.GetValue(i)).Value);
             }
 
             //paramter stuff
@@ -211,8 +210,7 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < slst1.Count; i++)
             {
                 strValue = "Value_" + i;
-
-                Assert.True(strValue.Equals(((DictionaryEntry)ar1.GetValue(iNumberOfElements + i)).Value), "Error, Expected value not returned, <" + strValue + "> <" + ((DictionaryEntry)ar1.GetValue(iNumberOfElements + i)).Value + "><" + ((DictionaryEntry)ar1.GetValue(i)).Value + ">");
+                Assert.Equal(strValue, ((DictionaryEntry)ar1.GetValue(iNumberOfElements + i)).Value);
             }
         }
     }

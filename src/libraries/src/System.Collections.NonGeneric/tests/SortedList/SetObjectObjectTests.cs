@@ -52,7 +52,7 @@ namespace System.Collections.SortedListTests
             Assert.Equal(0, sl2.Count);
 
             //   Testcase: Set - null val, should pass
-                sl2["first key"] = (string)null;
+            sl2["first key"] = (string)null;
             Assert.Equal(1, sl2.Count);
 
             //   Testcase: vanila Set
@@ -65,7 +65,7 @@ namespace System.Collections.SortedListTests
             //   Testcase: Get and check the value
             sl2["first key"] = "first value";
             s2 = (string)sl2["first key"];
-            Assert.True(s2.Equals("first value"));
+            Assert.Equal("first value", s2);
 
             //   Testcase: Set again with a diff value
             sl2["first key"] = "second value";
@@ -73,7 +73,7 @@ namespace System.Collections.SortedListTests
 
             //   Testcase: now, Get again and check the value set
             s2 = (string)sl2["first key"];
-            Assert.True(s2.Equals("second value"));
+            Assert.Equal("second value", s2);
             sl2.Clear();
 
             //   Testcase: add 50 key-val pairs

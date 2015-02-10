@@ -5,6 +5,7 @@ using Xunit;
 using System;
 using System.Collections;
 using System.Globalization;
+
 namespace System.Collections.SortedListTests
 {
     public class PropertyCapacityTests01
@@ -12,7 +13,6 @@ namespace System.Collections.SortedListTests
         [Fact]
         public void TestSetCapacityBasic()
         {
-
             string strValue = string.Empty;
 
             SortedList list;
@@ -87,7 +87,6 @@ namespace System.Collections.SortedListTests
                              list.Capacity = capacity;
                          }
             );
-
         }
     }
 }

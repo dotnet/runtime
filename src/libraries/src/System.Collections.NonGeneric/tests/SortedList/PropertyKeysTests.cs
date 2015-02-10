@@ -9,7 +9,6 @@ namespace System.Collections.SortedListTests
 {
     public class KeysTests
     {
-
         [Fact]
         public void TestGetKeysBasic()
         {

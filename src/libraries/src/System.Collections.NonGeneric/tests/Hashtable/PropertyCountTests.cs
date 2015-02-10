@@ -24,12 +24,12 @@ namespace System.Collections.HashtableTests
 
             // Set - null val, should pass
 
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             ht1["first key"] = null;
             Assert.Equal(1, ht1.Count);
 
             //[]  vanila
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             ht1["first key"] = "first value";
             Assert.Equal(1, ht1.Count);
 
