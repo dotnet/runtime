@@ -28,11 +28,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axes.Tests", "System.Xml.XDocument\tests\axes\Axes.Tests.csproj", "{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "common", "System.Xml.XDocument\tests\Common\common.csproj", "{52666206-B6C9-49FA-A1D7-D0A0C68807B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Common", "System.Xml.XDocument\tests\XDocument.Common\XDocument.Common.csproj", "{52666206-B6C9-49FA-A1D7-D0A0C68807B0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Events.Tests", "System.Xml.XDocument\tests\events\Events.Tests.csproj", "{C560E194-5B14-4112-ABC6-3208491E53E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Test.ModuleCore", "System.Xml.XDocument\tests\Microsoft.Test.ModuleCore\Microsoft.Test.ModuleCore.csproj", "{979510CE-9042-4F8D-9C74-EE03B89194CC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Test.ModuleCore", "System.Xml.XDocument\tests\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj", "{979510CE-9042-4F8D-9C74-EE03B89194CC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Misc.Tests", "System.Xml.XDocument\tests\misc\Misc.Tests.csproj", "{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}"
 EndProject
