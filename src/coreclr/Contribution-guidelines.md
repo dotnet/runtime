@@ -1,7 +1,7 @@
 [CoreFx]: http://http://github.com/dotnet/corefx
 [CoreCLR]: http://http://github.com/dotnet/coreclr
 #Priorities
-The current priority for the team is open sourcing the [.NET Core](http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx).
+The current priority for the team is open sourcing [.NET Core](http://blogs.msdn.com/b/dotnet/archive/2014/12/04/introducing-net-core.aspx).
 
 Because of this and the available bandwidth of our team we are going to have to balance the incoming PRs and issues with our current priority. 
 
