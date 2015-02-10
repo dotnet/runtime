@@ -39,6 +39,10 @@ gist or starting a thread in the [.NET Foundation forums]. For broader topics, p
 
 [.NET Foundation forums]: http://forums.dotnetfoundation.org/
 
+Want to chat with other members of the CoreCLR community?
+
+[![Join the chat at https://gitter.im/dotnet/coreclr](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/coreclr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## CoreCLR Build Artifacts
 The build for this repo will produce the following artifacts:
 
