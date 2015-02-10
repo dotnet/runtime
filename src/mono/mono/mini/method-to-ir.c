@@ -4836,6 +4836,99 @@ handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, unsigned char *ip)
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, sp);
 }
 
+/*
+ * handle_constrained_gsharedvt_call:
+ *
+ *   Handle constrained calls where the receiver is a gsharedvt type.
+ * Return the instruction representing the call. Set the cfg exception on failure.
+ */
+static MonoInst*
+handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp, MonoClass *constrained_call,
+								   gboolean *ref_emit_widen, MonoBasicBlock **ref_bblock)
+{
+	MonoInst *ins = NULL;
+	MonoBasicBlock *bblock = *ref_bblock;
+	gboolean emit_widen = *ref_emit_widen;
+
+	/*
+	 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
+	 * This is hard to do with the current call code, since we would have to emit a branch and two different calls. So instead, we
+	 * pack the arguments into an array, and do the rest of the work in in an icall.
+	 */
+	if (((cmethod->klass == mono_defaults.object_class) || (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) || (!cmethod->klass->valuetype && cmethod->klass->image != mono_defaults.corlib)) &&
+		(MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || mini_is_gsharedvt_type (cfg, fsig->ret)) &&
+		(fsig->param_count == 0 || (!fsig->hasthis && fsig->param_count == 1) || (fsig->param_count == 1 && (MONO_TYPE_IS_REFERENCE (fsig->params [0]) || fsig->params [0]->byref || mini_is_gsharedvt_type (cfg, fsig->params [0]))))) {
+		MonoInst *args [16];
+
+		/*
+		 * This case handles calls to
+		 * - object:ToString()/Equals()/GetHashCode(),
+		 * - System.IComparable<T>:CompareTo()
+		 * - System.IEquatable<T>:Equals ()
+		 * plus some simple interface calls enough to support AsyncTaskMethodBuilder.
+		 */
+
+		args [0] = sp [0];
+		if (mono_method_check_context_used (cmethod))
+			args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
+		else
+			EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
+		args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
+
+		/* !fsig->hasthis is for the wrapper for the Object.GetType () icall */
+		if (fsig->hasthis && fsig->param_count) {
+			/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
+			MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
+			ins->dreg = alloc_preg (cfg);
+			ins->inst_imm = fsig->param_count * sizeof (mgreg_t);
+			MONO_ADD_INS (cfg->cbb, ins);
+			args [4] = ins;
+
+			if (mini_is_gsharedvt_type (cfg, fsig->params [0])) {
+				int addr_reg;
+
+				args [3] = emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type (fsig->params [0]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
+
+				EMIT_NEW_VARLOADA_VREG (cfg, ins, sp [1]->dreg, fsig->params [0]);
+				addr_reg = ins->dreg;
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, 0, addr_reg);
+			} else {
+				EMIT_NEW_ICONST (cfg, args [3], 0);
+				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, 0, sp [1]->dreg);
+			}
+		} else {
+			EMIT_NEW_ICONST (cfg, args [3], 0);
+			EMIT_NEW_ICONST (cfg, args [4], 0);
+		}
+		ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
+		emit_widen = FALSE;
+
+		if (mini_is_gsharedvt_type (cfg, fsig->ret)) {
+			ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type (fsig->ret), ins, &bblock);
+		} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret)) {
+			MonoInst *add;
+
+			/* Unbox */
+			NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, sizeof (MonoObject));
+			MONO_ADD_INS (cfg->cbb, add);
+			/* Load value */
+			NEW_LOAD_MEMBASE_TYPE (cfg, ins, fsig->ret, add->dreg, 0);
+			MONO_ADD_INS (cfg->cbb, ins);
+			/* ins represents the call result */
+		}
+	} else {
+		GSHAREDVT_FAILURE (CEE_CALLVIRT);
+	}
+
+	*ref_emit_widen = emit_widen;
+	*ref_bblock = bblock;
+
+	return ins;
+
+ exception_exit:
+	return NULL;
+}
+
 static void
 mono_emit_load_got_addr (MonoCompile *cfg)
 {
@@ -8729,80 +8822,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (constrained_call) {
 				if (mini_is_gsharedvt_klass (cfg, constrained_call)) {
-					/*
-					 * Constrained calls need to behave differently at runtime dependending on whenever the receiver is instantiated as ref type or as a vtype.
-					 */
 					if ((cmethod->klass != mono_defaults.object_class) && constrained_call->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
 					} else if (cmethod->klass->image != mono_defaults.corlib && !(cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && !cmethod->klass->valuetype) {
 						/* 'The type parameter is instantiated as a reference type' case below. */
-					} else if (((cmethod->klass == mono_defaults.object_class) || (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) || (!cmethod->klass->valuetype && cmethod->klass->image != mono_defaults.corlib)) &&
-							   (MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || mini_is_gsharedvt_type (cfg, fsig->ret)) &&
-							   (fsig->param_count == 0 || (!fsig->hasthis && fsig->param_count == 1) || (fsig->param_count == 1 && (MONO_TYPE_IS_REFERENCE (fsig->params [0]) || fsig->params [0]->byref || mini_is_gsharedvt_type (cfg, fsig->params [0]))))) {
-						MonoInst *args [16];
-
-						/*
-						 * This case handles calls to
-						 * - object:ToString()/Equals()/GetHashCode(),
-						 * - System.IComparable<T>:CompareTo()
-						 * - System.IEquatable<T>:Equals ()
-						 * plus some simple interface calls enough to support AsyncTaskMethodBuilder.
-						 */
-
-						args [0] = sp [0];
-						if (mono_method_check_context_used (cmethod))
-							args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
-						else
-							EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
-						args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
-
-						/* !fsig->hasthis is for the wrapper for the Object.GetType () icall */
-						if (fsig->hasthis && fsig->param_count) {
-							/* Pass the arguments using a localloc-ed array using the format expected by runtime_invoke () */
-							MONO_INST_NEW (cfg, ins, OP_LOCALLOC_IMM);
-							ins->dreg = alloc_preg (cfg);
-							ins->inst_imm = fsig->param_count * sizeof (mgreg_t);
-							MONO_ADD_INS (cfg->cbb, ins);
-							args [4] = ins;
-
-							if (mini_is_gsharedvt_type (cfg, fsig->params [0])) {
-								int addr_reg;
-
-								args [3] = emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type (fsig->params [0]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
-
-								EMIT_NEW_VARLOADA_VREG (cfg, ins, sp [1]->dreg, fsig->params [0]);
-								addr_reg = ins->dreg;
-								EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, 0, addr_reg);
-							} else {
-								EMIT_NEW_ICONST (cfg, args [3], 0);
-								EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, 0, sp [1]->dreg);
-							}
-						} else {
-							EMIT_NEW_ICONST (cfg, args [3], 0);
-							EMIT_NEW_ICONST (cfg, args [4], 0);
-						}
-						ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
-						emit_widen = FALSE;
-
-						if (mini_is_gsharedvt_type (cfg, fsig->ret)) {
-							ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type (fsig->ret), ins, &bblock);
-						} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret)) {
-							MonoInst *add;
-
-							/* Unbox */
-							NEW_BIALU_IMM (cfg, add, OP_ADD_IMM, alloc_dreg (cfg, STACK_MP), ins->dreg, sizeof (MonoObject));
-							MONO_ADD_INS (cfg->cbb, add);
-							/* Load value */
-							NEW_LOAD_MEMBASE_TYPE (cfg, ins, fsig->ret, add->dreg, 0);
-							MONO_ADD_INS (cfg->cbb, ins);
-							/* ins represents the call result */
-						}
-
-						goto call_end;
 					} else {
-						GSHAREDVT_FAILURE (*ip);
+						ins = handle_constrained_gsharedvt_call (cfg, cmethod, fsig, sp, constrained_call, &emit_widen, &bblock);
+						CHECK_CFG_EXCEPTION;
+						g_assert (ins);
+						goto call_end;
 					}
 				}
+
 				/*
 				 * We have the `constrained.' prefix opcode.
 				 */
