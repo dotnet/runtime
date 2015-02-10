@@ -4274,44 +4274,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_EXCHANGE_I4: {
-			guchar *br[2];
-			int sreg2 = ins->sreg2;
-			int breg = ins->inst_basereg;
-
-			g_assert (cfg->has_atomic_exchange_i4);
-
-			/* cmpxchg uses eax as comperand, need to make sure we can use it
-			 * hack to overcome limits in x86 reg allocator 
-			 * (req: dreg == eax and sreg2 != eax and breg != eax) 
-			 */
-			g_assert (ins->dreg == X86_EAX);
-			
-			/* We need the EAX reg for the cmpxchg */
-			if (ins->sreg2 == X86_EAX) {
-				sreg2 = (breg == X86_EDX) ? X86_EBX : X86_EDX;
-				x86_push_reg (code, sreg2);
-				x86_mov_reg_reg (code, sreg2, X86_EAX, 4);
-			}
-
-			if (breg == X86_EAX) {
-				breg = (sreg2 == X86_ESI) ? X86_EDI : X86_ESI;
-				x86_push_reg (code, breg);
-				x86_mov_reg_reg (code, breg, X86_EAX, 4);
-			}
-
-			x86_mov_reg_membase (code, X86_EAX, breg, ins->inst_offset, 4);
-
-			br [0] = code; x86_prefix (code, X86_LOCK_PREFIX);
-			x86_cmpxchg_membase_reg (code, breg, ins->inst_offset, sreg2);
-			br [1] = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
-			x86_patch (br [1], br [0]);
-
-			if (breg != ins->inst_basereg)
-				x86_pop_reg (code, breg);
-
-			if (ins->sreg2 != sreg2)
-				x86_pop_reg (code, sreg2);
-
+			/* LOCK prefix is implied. */
+			x86_mov_reg_reg (code, X86_EDX, ins->sreg2, 4);
+			x86_xchg_membase_reg (code, ins->sreg1, ins->inst_offset, X86_EDX, 4);
+			x86_mov_reg_reg (code, ins->dreg, X86_EDX, 4);
 			break;
 		}
 		case OP_ATOMIC_CAS_I4: {
