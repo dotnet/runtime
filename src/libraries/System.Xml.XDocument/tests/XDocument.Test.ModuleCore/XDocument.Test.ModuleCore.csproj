@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{52666206-B6C9-49FA-A1D7-D0A0C68807B0}</ProjectGuid>
+    <ProjectGuid>{979510CE-9042-4F8D-9C74-EE03B89194CC}</ProjectGuid>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <AssemblyName>common</AssemblyName>
-    <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <AssemblyName>XDocument.Test.ModuleCore</AssemblyName>
+    <RootNamespace>Microsoft.Test.ModuleCore</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -17,24 +17,20 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="BridgeHelpers.cs" />
-    <Compile Include="CXmlCache.cs" />
-    <Compile Include="DNException.cs" />
-    <Compile Include="EventsHelper.cs" />
-    <Compile Include="HelperExtensionMethods.cs" />
-    <Compile Include="InputSpace.cs" />
-    <Compile Include="ManagedNodeWriter.cs" />
-    <Compile Include="XLinqTestCase.cs" />
+    <Compile Include="interop.cs" />
+    <Compile Include="testattribute.cs" />
+    <Compile Include="testcase.cs" />
+    <Compile Include="testexception.cs" />
+    <Compile Include="testitem.cs" />
+    <Compile Include="testlog.cs" />
+    <Compile Include="testmodule.cs" />
+    <Compile Include="testparser.cs" />
+    <Compile Include="testproperties.cs" />
+    <Compile Include="testspec.cs" />
+    <Compile Include="testvariation.cs" />
+    <Compile Include="util.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlCoreTest\XmlCoreTest.csproj">
-      <Project>{89701565-f68b-46d9-bd78-95b0f052c50b}</Project>
-      <Name>XmlCoreTest</Name>
-    </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlDiff\XmlDiff.csproj">
-      <Project>{466d87df-bdec-4e6c-bacd-317d79b8edbe}</Project>
-      <Name>XmlDiff</Name>
-    </ProjectReference>
     <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
@@ -42,10 +38,6 @@
     <ProjectReference Include="..\..\src\System.Xml.XDocument.csproj">
       <Project>{442c5a88-29c2-4b00-b1df-730d646d3861}</Project>
       <Name>System.Xml.XDocument</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Microsoft.Test.ModuleCore\Microsoft.Test.ModuleCore.csproj">
-      <Project>{979510ce-9042-4f8d-9c74-ee03b89194cc}</Project>
-      <Name>Microsoft.Test.ModuleCore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

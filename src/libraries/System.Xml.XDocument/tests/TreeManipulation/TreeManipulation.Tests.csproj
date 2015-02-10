@@ -76,13 +76,13 @@
       <Project>{442c5a88-29c2-4b00-b1df-730d646d3861}</Project>
       <Name>System.Xml.XDocument</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Common\common.csproj">
+    <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj">
       <Project>{52666206-b6c9-49fa-a1d7-d0a0c68807b0}</Project>
-      <Name>common</Name>
+      <Name>XDocument.Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Microsoft.Test.ModuleCore\Microsoft.Test.ModuleCore.csproj">
+    <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj">
       <Project>{979510ce-9042-4f8d-9c74-ee03b89194cc}</Project>
-      <Name>Microsoft.Test.ModuleCore</Name>
+      <Name>XDocument.Test.ModuleCore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
