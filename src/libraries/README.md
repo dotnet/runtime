@@ -1,9 +1,9 @@
 # .NET Core Libraries (CoreFX)
 
-[![Build status][build-status-image]][build-status]
-
-[build-status-image]: http://dotnet-ci.cloudapp.net/job/dotnet_corefx/badge/icon
-[build-status]: http://dotnet-ci.cloudapp.net/job/dotnet_corefx/
+|   |Linux|Windows|
+|:-:|:-:|:-:|
+|**Debug**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_windows_debug/)|
+|**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_corefx_windows_release/)|
 
 The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other components. It builds and runs on Windows. You can ['watch'](https://github.com/dotnet/corefx/subscription) the repo to see Linux and Mac support being added over the next few months.
 
