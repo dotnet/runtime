@@ -448,7 +448,7 @@ namespace System
                     string filePath = directoryPath + "/" + term[0] + "/" + term; // filePath == /directory/termFirstLetter/term
 
                     int fd;
-                    while ((fd = Interop.libc.open64(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
+                    while ((fd = Interop.libc.open(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
                     {
                         // Don't throw in this case, as we'll be polling multiple locations looking for the file.
                         // But we still want to retry if the open is interrupted by a signal.
