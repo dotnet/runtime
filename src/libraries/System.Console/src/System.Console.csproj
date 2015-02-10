@@ -75,8 +75,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs">
       <Link>Common\Interop\Interop.lseek64.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open64.cs">
-      <Link>Common\Interop\Interop.open64.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
+      <Link>Common\Interop\Interop.open.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Interop.read.cs</Link>
