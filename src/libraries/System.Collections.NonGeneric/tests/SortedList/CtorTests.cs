@@ -16,7 +16,7 @@ namespace System.Collections.SortedListTests
 
         public CtorTestClass(string tstr)
         {
-            this.str = tstr;
+            str = tstr;
         }
 
         public virtual int CompareTo(object obj2)

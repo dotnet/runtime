@@ -89,7 +89,7 @@ namespace System.Collections.SortedListTests
             }
 
             //lets check the values if
-                idic = arrMother.GetEnumerator();
+            idic = arrMother.GetEnumerator();
             while (idic.MoveNext())
             {
                 Assert.True(hshPossibleValues.ContainsKey(idic.Key), "Error, Expected value not returned, " + idic.Key);
@@ -97,12 +97,12 @@ namespace System.Collections.SortedListTests
             }
         }
 
-        void AddMoreElements(String threadName)
+        private void AddMoreElements(String threadName)
         {
-                _arrGrandDaughter.Add("Key_" + threadName, threadName);
+            _arrGrandDaughter.Add("Key_" + threadName, threadName);
         }
 
-        void RemoveElements()
+        private void RemoveElements()
         {
             _arrDaughter.Clear();
         }

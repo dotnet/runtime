@@ -90,7 +90,7 @@ namespace System.Collections.SortedListTests
             //
             // Boundary - null key - pk
             //
-          Assert.Throws<ArgumentNullException>(() => {  sl2.Remove((string)null);});
+            Assert.Throws<ArgumentNullException>(() => { sl2.Remove((string)null); });
         }
     }
 }

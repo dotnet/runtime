@@ -306,8 +306,8 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < 100; i++)
                 dic1.Add("Key_" + i, "Value_" + i);
 
-           var  idicTest = dic1.GetEnumerator();
-           var  idicTest1 = dic1.GetEnumerator();
+            var idicTest = dic1.GetEnumerator();
+            var idicTest1 = dic1.GetEnumerator();
 
             var hsh1 = new Hashtable();
 
@@ -339,7 +339,6 @@ namespace System.Collections.SortedListTests
                     hsh1["IDictionaryEnumerator"] = "";
                 if (dic1[dicEnt.Key] != dicEnt.Value)
                     hsh1["IDictionaryEnumerator"] = "";
-
             }
 
             idicTest1.Reset();
@@ -431,7 +430,7 @@ namespace System.Collections.SortedListTests
             var dicEnt1 = new DictionaryEntry[dic2.Count];
             dic2.CopyTo(dicEnt1, 0);
             //ContainsXXX
-           var hsh3 = new Hashtable();
+            var hsh3 = new Hashtable();
             var iNumberOfElements = 100;
             for (int i = 0; i < iNumberOfElements; i++)
             {
@@ -593,7 +592,7 @@ namespace System.Collections.SortedListTests
             {
                 hsh1["Synchronized"] = "Synchronized";
             }
-  
+
             //Set/GetByIndex()
             dic1 = new SortedList();
             icol1 = dic1.Keys;
@@ -895,7 +894,6 @@ namespace System.Collections.SortedListTests
 
         private void DoIListTests(SortedList good, IList bad, Hashtable hsh1, DicType dic)
         {
-
             if (bad.IsReadOnly != good.IsReadOnly)
                 hsh1["IsReadOnly"] = "";
 
@@ -1010,7 +1008,6 @@ namespace System.Collections.SortedListTests
                 {
                     hsh1["RemoveAt"] = ex.GetType().Name;
                 }
-
             }
             catch (Exception ex)
             {

@@ -19,7 +19,7 @@ namespace System.Collections.HashtableTests
             string s2 = null;
 
             int i = 0;
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             ht1.Clear();
 
             Assert.Equal(0, ht1.Count);

@@ -20,7 +20,7 @@ namespace System.Collections.HashtableTests
             string s1 = null;
             string s2 = null;
 
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             Assert.False(ht1.ContainsValue("No_Such_Val"));
 
             /// add few key-val pairs

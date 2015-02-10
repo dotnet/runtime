@@ -32,7 +32,7 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < 10; i++)
             {
                 strValue = "String_" + i;
-                Assert.True(strValue.Equals((string)hsh2["Key_" + i]), "Error, Expected value not returned, " + strValue);
+                Assert.Equal(strValue, (string)hsh2["Key_" + i]);
             }
 
             //now we remove an object from the original list
@@ -61,24 +61,24 @@ namespace System.Collections.SortedListTests
             for (int i = 0; i < 10; i++)
             {
                 strValue = "Hello World";
-                Assert.True(strValue.Equals(((Foo)hsh2[i]).strValue), "Error, Expected value not returned, " + strValue);
+                Assert.Equal(strValue, ((Foo)hsh2[i]).strValue);
             }
 
             strValue = "Good Bye";
             ((Foo)hsh1[0]).strValue = strValue;
 
-            Assert.True(strValue.Equals(((Foo)hsh1[0]).strValue), "Error, Expected value not returned, " + strValue);
+            Assert.Equal(strValue, ((Foo)hsh1[0]).strValue);
 
             //da test
-            Assert.True(strValue.Equals(((Foo)hsh2[0]).strValue), "Error, Expected value not returned, " + strValue);
+            Assert.Equal(strValue, ((Foo)hsh2[0]).strValue);
 
             //if we change the object, of course, the previous should not happen
             hsh2[0] = new Foo();
             strValue = "Good Bye";
-            Assert.True(strValue.Equals(((Foo)hsh1[0]).strValue), "Error, Expected value not returned, " + strValue);
+            Assert.Equal(strValue, ((Foo)hsh1[0]).strValue);
 
             strValue = "Hello World";
-            Assert.True(strValue.Equals(((Foo)hsh2[0]).strValue), "Error, Expected value not returned, " + strValue);
+            Assert.Equal(strValue, ((Foo)hsh2[0]).strValue);
         }
     }
 

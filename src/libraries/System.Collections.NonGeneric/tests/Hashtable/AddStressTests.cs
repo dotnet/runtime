@@ -10,6 +10,7 @@ namespace System.Collections.HashtableTests
     public partial class AddStressTests
     {
         [Fact]
+        [OuterLoop]
         public void TestAddRemoveLargeAmountNumbers()
         {
             Hashtable ht = new Hashtable();

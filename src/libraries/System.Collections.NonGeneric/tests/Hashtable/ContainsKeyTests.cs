@@ -22,7 +22,7 @@ namespace System.Collections.HashtableTests
 
             int i = 0;
 
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             Assert.False(ht1.ContainsKey("No_Such_Key"));
 
             // add few key-val pairs

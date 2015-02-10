@@ -71,14 +71,13 @@ namespace System.Collections.StackTests
         private int _i;
         public A(int i)
         {
-            this._i = i;
+            _i = i;
         }
-        internal Int32 I
+        
+        internal int I
         {
             set { _i = value; }
             get { return _i; }
         }
-
-
     }
 }

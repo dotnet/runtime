@@ -6,14 +6,12 @@ using System.Collections;
 using System.Text;
 using Xunit;
 
-
 namespace System.Collections.SortedListTests
 {
     public class GetEnumeratorTests : IComparer
     {
         public virtual int Compare(object obj1, object obj2)  // ICompare satisfier.
         {
-
             int mrI4_1 = (Int32)obj1;
             int mrI4_2 = (Int32)obj2;
 

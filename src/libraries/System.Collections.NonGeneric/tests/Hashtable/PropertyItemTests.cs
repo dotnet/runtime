@@ -23,7 +23,7 @@ namespace System.Collections.HashtableTests
             int i = 0;
 
             // []  No_Such_Get
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
 
             s3 = (string)ht1["No_Such_Get"];
             Assert.Null(s3);
@@ -89,17 +89,17 @@ namespace System.Collections.HashtableTests
             int i = 0;
 
             // []  Testcase: Set - null key, ArgExc expected
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             Assert.NotNull(ht1[0]);
             Assert.Equal(ht1.Count, 0);
 
             // []  Testcase: Set - null val, should pass
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             ht1["first key"] = null;
             Assert.Equal(ht1.Count, 1);
 
             // []  vanila Set
-            ht1 = new Hashtable(); //defalult constructor
+            ht1 = new Hashtable(); //default constructor
             ht1["first key"] = "first value";
             Assert.Equal(ht1.Count, 1);
 
@@ -108,7 +108,7 @@ namespace System.Collections.HashtableTests
 
             // Get and check the value
             s2 = (string)ht1["first key"];
-            Assert.True(s2.Equals("first value"), "Test Failed");
+            Assert.Equal("first value", s2);
 
             // []  Testcase: Set again with a diff value
             ht1["first key"] = "second value";
@@ -116,7 +116,7 @@ namespace System.Collections.HashtableTests
 
             // now, Get again and check the value set
             s2 = (string)ht1["first key"];
-            Assert.True(s2.Equals("second value"), "Test Failed");
+            Assert.Equal("second value", s2);
 
             // add 50 key-val pairs
             ht1 = new Hashtable();

@@ -6,7 +6,6 @@ using System.Collections;
 using System.Text;
 using Xunit;
 
-
 namespace System.Collections.SortedListTests
 {
     public class GetKeyTests : IComparer
@@ -84,7 +83,6 @@ namespace System.Collections.SortedListTests
             }
 
             Assert.Equal(50, sl2.Count);
-
         }
     }
 }

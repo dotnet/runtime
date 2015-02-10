@@ -125,7 +125,6 @@ namespace System.Collections.SortedListTests
 
             for (i = 0; i < uniqueDisplayNameCount; ++i)
             {
-
                 Assert.Equal(installedCultures[i], sl2[installedCultures[i].DisplayName]);
             }
 

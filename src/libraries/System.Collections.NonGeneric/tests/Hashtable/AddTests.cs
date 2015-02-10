@@ -90,7 +90,7 @@ namespace System.Collections.HashtableTests
             Assert.Equal(in4a[0], 1);
 
             str7 = (string)ht2[str5];
-            Assert.NotEqual(str7.Equals(str6), false);
+            Assert.Equal(str7 ,str6);
 
             // Add another obj, verify the previously added pair still exists.
             str5 = "key_130"; str6 = "value_130"; //equiv. to <i>"value_130";</i>
@@ -101,11 +101,11 @@ namespace System.Collections.HashtableTests
             // verify the Values added
             str7 = (string)ht2["key_150"];
             Assert.NotNull(str7);
-            Assert.True(str7.Equals("value_150"));
+            Assert.Equal("value_150", str7);
 
             str7 = (string)ht2[str5];
             Assert.NotNull(str7);
-            Assert.True(str7.Equals(str6));
+            Assert.Equal(str7, str6);
 
             // Cause expected exception by attempting to add duplicate keys.
             Assert.Throws<ArgumentException>(() => { ht2.Add(str5, str6 + "_b"); }); // Only the key is dupl.
@@ -193,7 +193,7 @@ namespace System.Collections.HashtableTests
         [Fact]
         public void TestDuplicatedKeysWithInitialCapacity()
         {
-            // Make rehash get called because to many items with dupplicated keys have been added to the hashtable
+            // Make rehash get called because to many items with duplicated keys have been added to the hashtable
             var ht = new Hashtable(200);
 
             for (int i = 0; i < iterations; i += 2)
@@ -249,7 +249,7 @@ namespace System.Collections.HashtableTests
 
         public BadHashCode(int value)
         {
-            this._value = (uint)value;
+            _value = (uint)value;
         }
 
         public override bool Equals(object o)
@@ -262,18 +262,13 @@ namespace System.Collections.HashtableTests
             }
             else
             {
-                throw new ArgumentException("o", "is not BadHashCode type actual" + o.GetType());
+                throw new ArgumentException("o", "is not BadHashCode type actual " + o.GetType());
             }
         }
 
         public override int GetHashCode()
         {
-            //The goal here is to return the same hashcode for different values
-            //First we clear the lowes order bits this will make every value even (0, 2, 4, 6, ...)
-            //However we would then be missing all of the odd values and we to return ever value
-            //So we divide by 2. (0, 2, 4, 6, ...) goes to (0, 1, 2, 3, ...)
-            //return (int)(value & (uint)0xFFFFFFFE) / 2;
-
+            // Return 0 for everything to force hash collisions.
             return 0;
         }
 

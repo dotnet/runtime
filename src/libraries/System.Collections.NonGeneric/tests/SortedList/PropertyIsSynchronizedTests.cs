@@ -72,7 +72,7 @@ namespace System.Collections.SortedListTests
             Assert.True(_slst2.IsSynchronized);
         }
 
-        void AddElements(string strName)
+        private void AddElements(string strName)
         {
             for (int i = 0; i < _iNumberOfElements; i++)
             {
@@ -80,7 +80,7 @@ namespace System.Collections.SortedListTests
             }
         }
 
-        void RemoveElements(string strName)
+        private void RemoveElements(string strName)
         {
             for (int i = 0; i < _iNumberOfElements; i++)
             {

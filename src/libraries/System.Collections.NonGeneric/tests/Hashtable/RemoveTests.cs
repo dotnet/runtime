@@ -149,7 +149,7 @@ namespace System.Collections.HashtableTests
                 }
             }
 
-            Assert.True(fRetValue, "Test Failed");
+            Assert.True(fRetValue);
         }
 
         [Fact]

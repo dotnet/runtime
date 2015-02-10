@@ -6,7 +6,6 @@ using System.Collections;
 using System.Text;
 using Xunit;
 
-
 namespace System.Collections.SortedListTests
 {
     public class GetKeyListTests
@@ -62,7 +61,6 @@ namespace System.Collections.SortedListTests
             //   Testcase: add key-val pairs
             for (i = 0; i < 100; i++)
             {
-
                 sl2.Add(i + 100, i);
             }
 
