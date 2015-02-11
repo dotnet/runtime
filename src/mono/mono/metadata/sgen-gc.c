@@ -2537,7 +2537,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	SGEN_LOG (6, "Pinning from sections");
 	/* first pass for the sections */
 	sgen_find_section_pin_queue_start_end (nursery_section);
-	major_collector.find_pin_queue_start_ends (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	/* identify possible pointers to the insize of large objects */
 	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {

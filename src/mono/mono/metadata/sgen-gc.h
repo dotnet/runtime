@@ -684,7 +684,6 @@ struct _SgenMajorCollector {
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);
-	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (gboolean mod_union, SgenGrayQueue *queue);

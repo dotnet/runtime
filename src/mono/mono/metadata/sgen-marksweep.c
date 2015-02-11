@@ -82,8 +82,6 @@ struct _MSBlockInfo {
 	unsigned int swept : 1;
 	void ** volatile free_list;
 	MSBlockInfo * volatile next_free;
-	size_t pin_queue_first_entry;
-	size_t pin_queue_last_entry;
 	guint8 *cardtable_mod_union;
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
@@ -987,18 +985,18 @@ major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue
 }
 
 static void
-mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
+mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t last_entry, SgenGrayQueue *queue)
 {
 	void **entry, **end;
 	int last_index = -1;
 
-	if (block->pin_queue_first_entry == block->pin_queue_last_entry)
+	if (first_entry == last_entry)
 		return;
 
 	block->has_pinned = TRUE;
 
-	entry = sgen_pinning_get_entry (block->pin_queue_first_entry);
-	end = sgen_pinning_get_entry (block->pin_queue_last_entry);
+	entry = sgen_pinning_get_entry (first_entry);
+	end = sgen_pinning_get_entry (last_entry);
 
 	for (; entry < end; ++entry) {
 		int index = MS_BLOCK_OBJ_INDEX (*entry, block);
@@ -1543,23 +1541,16 @@ major_free_swept_blocks (void)
 }
 
 static void
-major_find_pin_queue_start_ends (SgenGrayQueue *queue)
-{
-	MSBlockInfo *block;
-
-	FOREACH_BLOCK (block) {
-		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
-				&block->pin_queue_first_entry, &block->pin_queue_last_entry);
-	} END_FOREACH_BLOCK;
-}
-
-static void
 major_pin_objects (SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		mark_pinned_objects_in_block (block, queue);
+		size_t first_entry, last_entry;
+		SGEN_ASSERT (0, block->swept, "All blocks must be swept when we're pinning.");
+		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
+				&first_entry, &last_entry);
+		mark_pinned_objects_in_block (block, first_entry, last_entry, queue);
 	} END_FOREACH_BLOCK;
 }
 
@@ -1967,7 +1958,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
-	collector->find_pin_queue_start_ends = major_find_pin_queue_start_ends;
 	collector->pin_objects = major_pin_objects;
 	collector->pin_major_object = pin_major_object;
 	collector->scan_card_table = major_scan_card_table;
