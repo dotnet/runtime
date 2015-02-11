@@ -39,5 +39,6 @@ void sgen_pointer_queue_init (SgenPointerQueue *queue, int mem_type);
 void* sgen_pointer_queue_pop (SgenPointerQueue *queue);
 gboolean sgen_pointer_queue_is_empty (SgenPointerQueue *queue);
 void sgen_pointer_queue_free (SgenPointerQueue *queue);
+gboolean sgen_pointer_queue_will_grow (SgenPointerQueue *queue);
 
 #endif

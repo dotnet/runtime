@@ -77,7 +77,7 @@
  * SWEPT           The block is fully swept.  It might or might not be in
  *                 a free list.
  *
- * NOT_SWEPT       The block might or might not contain live objects.  If
+ * MARKING         The block might or might not contain live objects.  If
  *                 we're in between an initial collection pause and the
  *                 finishing pause, the block might or might not be in a
  *                 free list.
@@ -191,23 +191,23 @@ static gboolean concurrent_mark;
 
 #define BLOCK_IS_TAGGED_HAS_REFERENCES(bl)	SGEN_POINTER_IS_TAGGED_1 ((bl))
 #define BLOCK_TAG_HAS_REFERENCES(bl)		SGEN_POINTER_TAG_1 ((bl))
-#define BLOCK_UNTAG_HAS_REFERENCES(bl)		SGEN_POINTER_UNTAG_1 ((bl))
 
-#define BLOCK_TAG(bl)	((bl)->has_references ? BLOCK_TAG_HAS_REFERENCES ((bl)) : (bl))
+#define BLOCK_IS_TAGGED_CHECKING(bl)		SGEN_POINTER_IS_TAGGED_2 ((bl))
+#define BLOCK_TAG_CHECKING(bl)			SGEN_POINTER_TAG_2 ((bl))
+
+#define BLOCK_UNTAG(bl)				SGEN_POINTER_UNTAG_12 ((bl))
+
+#define BLOCK_TAG(bl)				((bl)->has_references ? BLOCK_TAG_HAS_REFERENCES ((bl)) : (bl))
 
 /* all allocated blocks in the system */
 static SgenPointerQueue allocated_blocks;
-static mono_mutex_t allocated_blocks_lock;
-
-#define LOCK_ALLOCATED_BLOCKS	mono_mutex_lock (&allocated_blocks_lock)
-#define UNLOCK_ALLOCATED_BLOCKS	mono_mutex_unlock (&allocated_blocks_lock)
 
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
-#define FOREACH_BLOCK_NO_LOCK(bl)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [__index]);
-#define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG_HAS_REFERENCES ((bl));
+#define FOREACH_BLOCK_NO_LOCK(bl)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = BLOCK_UNTAG (allocated_blocks.data [__index]);
+#define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr)	{ size_t __index; SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { (bl) = allocated_blocks.data [__index]; (hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl)); (bl) = BLOCK_UNTAG ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} }
 
 static volatile size_t num_major_sections = 0;
@@ -487,6 +487,8 @@ add_free_block (MSBlockInfo * volatile *free_blocks, int size_index, MSBlockInfo
 	} while (SGEN_CAS_PTR ((gpointer)&free_blocks [size_index], block, old) != old);
 }
 
+static void major_finish_sweeping (void);
+
 static gboolean
 ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 {
@@ -539,9 +541,15 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 
 	add_free_block (free_blocks, size_index, info);
 
-	LOCK_ALLOCATED_BLOCKS;
+	/*
+	 * This is the only place where the `allocated_blocks` array can potentially grow.
+	 * We need to make sure concurrent sweep isn't running when that happens, so in that
+	 * specific case we just wait for sweep to finish.
+	 */
+	if (sgen_pointer_queue_will_grow (&allocated_blocks))
+		major_finish_sweeping ();
+
 	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
-	UNLOCK_ALLOCATED_BLOCKS;
 
 	SGEN_ATOMIC_ADD_P (num_major_sections, 1);
 	return TRUE;
@@ -786,7 +794,7 @@ set_sweep_state (int new, int expected)
 	SGEN_ASSERT (0, success, "Could not set sweep state.");
 }
 
-static gboolean ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gboolean *have_checked);
+static gboolean ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *have_checked);
 
 static void
 major_finish_sweeping (void)
@@ -816,21 +824,10 @@ major_finish_sweeping (void)
 	/*
 	 * We're running with the world stopped and the only other thread doing work is the
 	 * sweep thread, which doesn't add blocks to the array, so we can safely access
-	 * `next_slot` without locking.
+	 * `next_slot`.
 	 */
-	for (block_index = 0; block_index < allocated_blocks.next_slot; ++block_index) {
-		MSBlockInfo *block;
-
-		LOCK_ALLOCATED_BLOCKS;
-		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
-
-		if (!block) {
-			UNLOCK_ALLOCATED_BLOCKS;
-			continue;
-		}
-
-		ensure_block_is_checked_for_sweeping (block, block_index, NULL);
-	}
+	for (block_index = 0; block_index < allocated_blocks.next_slot; ++block_index)
+		ensure_block_is_checked_for_sweeping (block_index, FALSE, NULL);
 
 	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_SWEEPING_AND_ITERATING);
 	while (sweep_state != SWEEP_STATE_SWEPT)
@@ -1361,24 +1358,47 @@ sweep_start (void)
 static void sweep_finish (void);
 
 /*
- * LOCKING: The allocated blocks lock must be held when entering this function.  `block`
- * must have been loaded from the array with the lock held.  This function will unlock the
- * lock.
+ * If `wait` is TRUE and the block is currently being checked, this function will wait until
+ * the checking has finished.
  *
- * Returns whether the block is still there.
+ * Returns whether the block is still there.  If `wait` is FALSE, the return value will not
+ * be correct, i.e. must not be used.
  */
 static gboolean
-ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gboolean *have_checked)
+ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *have_checked)
 {
 	int count;
 	gboolean have_live = FALSE;
 	gboolean have_free = FALSE;
 	int nused = 0;
-	int block_state = block->state;
+	int block_state;
 	int i;
+	void *tagged_block;
+	MSBlockInfo *block;
+
+	SGEN_ASSERT (0, sweep_in_progress (), "Why do we call this function if there's no sweep in progress?");
 
 	if (have_checked)
 		*have_checked = FALSE;
+
+ retry:
+	tagged_block = *(void * volatile *)&allocated_blocks.data [block_index];
+	if (!tagged_block)
+		return FALSE;
+
+	if (BLOCK_IS_TAGGED_CHECKING (tagged_block)) {
+		if (!wait)
+			return FALSE;
+		/* FIXME: do this more elegantly */
+		g_usleep (100);
+		goto retry;
+	}
+
+	if (SGEN_CAS_PTR (&allocated_blocks.data [block_index], BLOCK_TAG_CHECKING (tagged_block), tagged_block) != tagged_block)
+		goto retry;
+
+	block = BLOCK_UNTAG (tagged_block);
+	block_state = block->state;
 
 	if (!sweep_in_progress ()) {
 		SGEN_ASSERT (0, block_state != BLOCK_STATE_SWEEPING && block_state != BLOCK_STATE_CHECKING, "Invalid block state.");
@@ -1386,41 +1406,16 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 			SGEN_ASSERT (0, block_state != BLOCK_STATE_NEED_SWEEPING, "Invalid block state.");
 	}
 
- retry:
 	switch (block_state) {
 	case BLOCK_STATE_SWEPT:
 	case BLOCK_STATE_NEED_SWEEPING:
 	case BLOCK_STATE_SWEEPING:
-		UNLOCK_ALLOCATED_BLOCKS;
-		return TRUE;
+		goto done;
 	case BLOCK_STATE_MARKING:
-		if (sweep_in_progress ())
-			break;
-		UNLOCK_ALLOCATED_BLOCKS;
-		return TRUE;
-	case BLOCK_STATE_CHECKING: {
-		MSBlockInfo *block_before = block;
-		/*
-		 * FIXME: do this more elegantly.
-		 *
-		 * Also, when we're called from the sweep thread, we don't actually have to
-		 * wait for it to finish, because the sweep thread doesn't use the block.
-		 * However, the sweep thread needs to know when all the blocks have been
-		 * checked (so it can set the global sweep state to SWEPT), so we'd have to
-		 * do some kind of accounting if we don't wait.
-		 */
-		UNLOCK_ALLOCATED_BLOCKS;
-		g_usleep (100);
-		LOCK_ALLOCATED_BLOCKS;
-		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
-		if (!block) {
-			UNLOCK_ALLOCATED_BLOCKS;
-			return FALSE;
-		}
-		SGEN_ASSERT (0, block == block_before, "How did the block get exchanged for a different one?");
-		block_state = block->state;
-		goto retry;
-	}
+		break;
+	case BLOCK_STATE_CHECKING:
+		SGEN_ASSERT (0, FALSE, "We set the CHECKING bit - how can the stage be CHECKING?");
+		goto done;
 	default:
 		SGEN_ASSERT (0, FALSE, "Illegal block state");
 		break;
@@ -1428,7 +1423,6 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 
 	SGEN_ASSERT (0, block->state == BLOCK_STATE_MARKING, "When we sweep all blocks must start out marking.");
 	set_block_state (block, BLOCK_STATE_CHECKING, BLOCK_STATE_MARKING);
-	UNLOCK_ALLOCATED_BLOCKS;
 
 	if (have_checked)
 		*have_checked = TRUE;
@@ -1489,26 +1483,25 @@ ensure_block_is_checked_for_sweeping (MSBlockInfo *block, int block_index, gbool
 
 		/* FIXME: Do we need the heap boundaries while we do nursery collections? */
 		update_heap_boundaries_for_block (block);
-
-		return TRUE;
 	} else {
 		/*
 		 * Blocks without live objects are removed from the
 		 * block list and freed.
 		 */
-		LOCK_ALLOCATED_BLOCKS;
 		SGEN_ASSERT (0, block_index < allocated_blocks.next_slot, "How did the number of blocks shrink?");
-		SGEN_ASSERT (0, BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]) == block, "How did the block move?");
-		allocated_blocks.data [block_index] = NULL;
-		UNLOCK_ALLOCATED_BLOCKS;
+		SGEN_ASSERT (0, allocated_blocks.data [block_index] == BLOCK_TAG_CHECKING (tagged_block), "How did the block move?");
 
 		binary_protocol_empty (MS_BLOCK_OBJ (block, 0), (char*)MS_BLOCK_OBJ (block, count) - (char*)MS_BLOCK_OBJ (block, 0));
 		ms_free_block (block);
 
 		SGEN_ATOMIC_ADD_P (num_major_sections, -1);
 
-		return FALSE;
+		tagged_block = NULL;
 	}
+
+ done:
+	allocated_blocks.data [block_index] = tagged_block;
+	return !!tagged_block;
 }
 
 static mono_native_thread_return_t
@@ -1527,41 +1520,26 @@ sweep_loop_thread_func (void *dummy)
 	 * low to high, to avoid constantly colliding on the same blocks.
 	 */
 	for (block_index = num_blocks - 1; block_index >= 0; --block_index) {
-		MSBlockInfo *block;
 		gboolean have_checked;
-
-		LOCK_ALLOCATED_BLOCKS;
-		block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
 
 		/*
 		 * The block might have been freed by another thread doing some checking
 		 * work.
 		 */
-		if (!block) {
-			UNLOCK_ALLOCATED_BLOCKS;
+		if (!ensure_block_is_checked_for_sweeping (block_index, TRUE, &have_checked))
 			++num_major_sections_freed_in_sweep;
-			continue;
-		}
-
-		if (block->state == BLOCK_STATE_SWEPT) {
-			UNLOCK_ALLOCATED_BLOCKS;
-			continue;
-		}
-
-		ensure_block_is_checked_for_sweeping (block, block_index, &have_checked);
 	}
 
 	while (!try_set_sweep_state (SWEEP_STATE_COMPACTING, SWEEP_STATE_SWEEPING))
 		g_usleep (100);
 
-	LOCK_ALLOCATED_BLOCKS;
+	/* FIXME: remove this iteration */
 	for (block_index = num_blocks; block_index < allocated_blocks.next_slot; ++block_index) {
-		MSBlockInfo *block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [block_index]);
+		MSBlockInfo *block = BLOCK_UNTAG (allocated_blocks.data [block_index]);
 		SGEN_ASSERT (0, block && block->state == BLOCK_STATE_SWEPT, "How did a new block to be swept get added while swept?");
 	}
 
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
-	UNLOCK_ALLOCATED_BLOCKS;
 
 	sweep_finish ();
 
@@ -2265,7 +2243,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 #ifdef PREFETCH_CARDS
 		int prefetch_index = __index + 6;
 		if (prefetch_index < allocated_blocks.next_slot) {
-			MSBlockInfo *prefetch_block = BLOCK_UNTAG_HAS_REFERENCES (allocated_blocks.data [prefetch_index]);
+			MSBlockInfo *prefetch_block = BLOCK_UNTAG (allocated_blocks.data [prefetch_index]);
 			guint8 *prefetch_cards = sgen_card_table_get_card_scan_address ((mword)MS_BLOCK_FOR_BLOCK_INFO (prefetch_block));
 			PREFETCH_READ (prefetch_block);
 			PREFETCH_WRITE (prefetch_cards);
@@ -2473,8 +2451,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	mono_counters_register ("Gray stack prefetch failures", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_drain_prefetch_fill_failures);
 #endif
 #endif
-
-	mono_mutex_init (&allocated_blocks_lock);
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 	mono_mutex_init (&scanned_objects_list_lock);

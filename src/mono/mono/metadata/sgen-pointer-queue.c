@@ -51,10 +51,16 @@ realloc_queue (SgenPointerQueue *queue)
 	SGEN_LOG (4, "Reallocated pointer queue to size: %lu", new_size);
 }
 
+gboolean
+sgen_pointer_queue_will_grow (SgenPointerQueue *queue)
+{
+	return queue->next_slot >= queue->size;
+}
+
 void
 sgen_pointer_queue_add (SgenPointerQueue *queue, void *ptr)
 {
-	if (queue->next_slot >= queue->size)
+	if (sgen_pointer_queue_will_grow (queue))
 		realloc_queue (queue);
 
 	queue->data [queue->next_slot++] = ptr;
