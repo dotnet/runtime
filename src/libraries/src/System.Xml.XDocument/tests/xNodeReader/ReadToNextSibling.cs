@@ -168,7 +168,6 @@ namespace CoreXml.Test.XLinq
                     } while (mnw.GetNodes().Length < 4096);
                     mnw.PutText("<a/><b/>");
                     mnw.Finish();
-                    TestLog.WriteIgnore(mnw.GetNodes() + "\n");
 
                     XmlReader DataReader = GetReader(new StringReader(mnw.GetNodes()));
                     PositionOnElement(DataReader, "ELEMENT_1");

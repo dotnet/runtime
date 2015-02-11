@@ -447,7 +447,6 @@ namespace CoreXml.Test.XLinq
                         bytes = DataReader.ReadContentAsBinHex(bbb, 0, bbb.Length);
                         for (int i = 0; i < bytes; i++)
                         {
-                            TestLog.Write(bbb[i].ToString());
                             output.AppendFormat(bbb[i].ToString());
                         }
                     }
@@ -867,7 +866,6 @@ namespace CoreXml.Test.XLinq
                         bytes = DataReader.ReadElementContentAsBinHex(bbb, 0, bbb.Length);
                         for (int i = 0; i < bytes; i++)
                         {
-                            TestLog.Write(bbb[i].ToString());
                             output.AppendFormat(bbb[i].ToString());
                         }
                     }
