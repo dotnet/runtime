@@ -14,19 +14,10 @@ namespace CoreXml.Test.XLinq
 {
     public partial class FunctionalTests : TestModule
     {
-        [Fact]
-        public static void FakeTest()
-        {
-            // This test doesn't test anything
-            // Xunit complains when there are no tests in the test project
-            // and there is only one which disabled.
-            // Please remove it when removing [ActiveIssue(641)]
-        }
-
         // Type is CoreXml.Test.XLinq.FunctionalTests
         // Test Module
         [Fact]
-        [ActiveIssue(641)] // Please remove FakeTest() above when removing this attribute
+        [ActiveIssue(641)]
         public static void RunTests()
         {
             TestInput.CommandLine = "";
