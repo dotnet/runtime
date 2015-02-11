@@ -5,16 +5,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using CoreXml.Test.XLinq;
 
 namespace System.Xml.Linq.Tests
 {
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// <summary>
-    /// Tests for XNode axes.  All of the common test cases are implemented in the base classes XNodeAxes
-    /// and XNodeAxesWithXName.  Specific tests can be added here but more general test that apply to all
-    /// axes should be added in the base classes.
-    /// </summary>
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
     public static class AxisOrderValidation
     {
         [Fact]
@@ -112,13 +106,6 @@ namespace System.Xml.Linq.Tests
             Assert.Equal(0, nodes.Count());
         }
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// <summary>
-        /// Tests for XContainer axes.  All of the common test cases are implemented in the base classes.
-        /// Specific tests can be added here but more general tests that apply to all axes should be added
-        /// in the base class.
-        /// </summary>
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
         [Fact]
         public static void NodesOnXDocBeforeAndAfter()
         {
@@ -329,14 +316,6 @@ namespace System.Xml.Linq.Tests
             a.Add(new XAttribute("name", "a"), new XAttribute("type", "alphabet"));
             Assert.Equal(1, nodes.Count());
         }
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// <summary>
-        /// Test for IEnumerable axes.  All of the common test cases are implemented in the base classes.
-        /// Specific tests can be added here but more general tests that apply to all axes should be added in
-        /// the base classes.
-        /// </summary>
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
 
         [Fact]
         public static void IEnumerableInDocumentOrderVariationOne()
