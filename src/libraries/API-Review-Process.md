@@ -30,7 +30,7 @@ For work that involves adding new APIs we'd like the issue to contain what we ca
 
 * **Coding**. The contributor is implementing the APIs as discussed. Minor deviations are OK, but if during the implementation the design starts to take a major shift, the contributor is encouraged to go back to the issue and raise the concerns with the current proposal.
 
-* **Pull request is being created**. Once the contributor believes the implementation is ready for review, she creates a pull request, referencing the issue created in the first step. In order to call dips, you can also create the PR before it's completely ready. Use checkboxes to indicate which areas are still missing so that we know it's not ready for review yet. [Here is a good example](https://github.com/dotnet/corefx/pull/316).
+* **Pull request is being created**. Once the contributor believes the implementation is ready for review, she creates a pull request, referencing the issue created in the first step. In order to call dips, you can also create the PR before it's completely ready. Use checkboxes to indicate which areas are still missing so that we know it's not ready for review yet. [Here is a good example](https://github.com/dotnet/corefx/pull/316). At this time, if any new API are being added to a type that has shipped in the full .NET Framework, submit the pull request to the *future* branch. See [[Branching Guide]].
 
 * **Pull request is being reviewed**. The community reviews the code for the pull request. The review should focus on the code changes and architecture - not the APIs themselves. Once at least two project owners give their OK, the PR is considered good to go.
 

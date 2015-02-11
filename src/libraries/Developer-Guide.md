@@ -18,13 +18,14 @@ the core tests for the project. Visual Studio Solution (.sln) files exist for
 related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
 
-## Running Tests
+## Tests
 
-We use the OSS testing framework [xUnit.net][xunit].
+We use the OSS testing framework [xunit|http://xunit.github.io/]
+
+### Running tests on the command line
 
 By default, the core tests are run as part of the build. Running the tests from
-the command line is as simple as invoking `build.cmd`. A test report for the
-build will be output on the console at the end of a successful build.
+the command line is as simple as invoking `build.cmd`. 
 
 You can also run the test for an individual project by building just one test
 project, e.g.:
@@ -33,12 +34,13 @@ cd src\System.Collections.Immutable\tests
 msbuild
 ```
 
-**NOTE: Running tests from using the VS test explorer does not currently work 
-after we switched to running on CoreCLR.** 
+### Running tests from Visual Studio
 
-We will be working on enabling full VS test integration but we don't have an
-ETA yet. In the meantime, however, we do have basic test debugging support in 
-Visual Studio 2015:
+1. Open solution of interest
+2. Right click test project and select 'Set as startup project'
+3. Ctrl+F5 (Run)
+
+### Debugging tests in Visual Studio
 
 1. Install VS 2015 Preview or later including Web Developer Tools
 2. Open solution of interest in VS 2015
@@ -46,6 +48,11 @@ Visual Studio 2015:
 4. Set breakpoint appropriately
 5. F5 (Debug)
 
-[xunit]: http://xunit.github.io/
-[xunit-runner]: http://xunit.github.io/docs/running-v1-tests-in-vs.html
+### Notes 
+* Running tests from using the VS test explorer does not currently work 
+after we switched to running on CoreCLR. We will be working on enabling 
+full VS test integration but we don't have an ETA yet. In the meantime,
+use the steps above to launch/debug the tests using the console runner.
 
+* VS 2015 is required to debug tests running on CoreCLR as the CoreCLR
+debug engine is a VS 2015 component.
