@@ -20,14 +20,14 @@ namespace System.ComponentModel
     {
         // This is where we store the various converters for the intrinsic types.
         //
-        private static volatile Dictionary<object, object> IntrinsicConverters;
+        private static volatile Dictionary<object, object> s_intrinsicConverters;
 
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
         //
-        private static object IntrinsicNullableKey = new object();
+        private static object s_intrinsicNullableKey = new object();
 
-        private static object SyncObject = new object();
+        private static object s_syncObject = new object();
 
         /// <devdoc>
         ///     Creates a new ReflectTypeDescriptionProvider.  The type is the
@@ -50,7 +50,7 @@ namespace System.ComponentModel
                 // It is not worth taking a lock for this -- worst case of a collision
                 // would build two tables, one that garbage collects very quickly.
                 //
-                if (ReflectTypeDescriptionProvider.IntrinsicConverters == null)
+                if (ReflectTypeDescriptionProvider.s_intrinsicConverters == null)
                 {
                     Dictionary<object, object> temp = new Dictionary<object, object>();
 
@@ -82,11 +82,11 @@ namespace System.ComponentModel
 
                     // Special cases for things that are not bound to a specific type
                     //
-                    temp[ReflectTypeDescriptionProvider.IntrinsicNullableKey] = typeof(NullableConverter);
+                    temp[ReflectTypeDescriptionProvider.s_intrinsicNullableKey] = typeof(NullableConverter);
 
-                    ReflectTypeDescriptionProvider.IntrinsicConverters = temp;
+                    ReflectTypeDescriptionProvider.s_intrinsicConverters = temp;
                 }
-                return ReflectTypeDescriptionProvider.IntrinsicConverters;
+                return ReflectTypeDescriptionProvider.s_intrinsicConverters;
             }
         }
 
@@ -262,7 +262,7 @@ namespace System.ComponentModel
             // lock.  Also, this allows multiple intrinsic tables to be searched
             // at once.
             //
-            lock (ReflectTypeDescriptionProvider.SyncObject)
+            lock (ReflectTypeDescriptionProvider.s_syncObject)
             {
                 Type baseType = callingType;
                 while (baseType != null && baseType != typeof(object))
@@ -319,7 +319,7 @@ namespace System.ComponentModel
                     if (callingTypeInfo.IsGenericType && callingTypeInfo.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         // Check if it is a nullable value
-                        ReflectTypeDescriptionProvider.IntrinsicTypeConverters.TryGetValue(ReflectTypeDescriptionProvider.IntrinsicNullableKey, out hashEntry);
+                        ReflectTypeDescriptionProvider.IntrinsicTypeConverters.TryGetValue(ReflectTypeDescriptionProvider.s_intrinsicNullableKey, out hashEntry);
                     }
                 }
 

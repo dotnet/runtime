@@ -11,7 +11,7 @@ namespace System.ComponentModel
     /// </devdoc>
     public abstract class TypeListConverter : TypeConverter
     {
-        private Type[] types;
+        private Type[] _types;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeListConverter'/> class using
@@ -19,7 +19,7 @@ namespace System.ComponentModel
         /// </devdoc>
         protected TypeListConverter(Type[] types)
         {
-            this.types = types;
+            _types = types;
         }
 
         /// <internalonly/>
@@ -45,7 +45,7 @@ namespace System.ComponentModel
         {
             if (value is string)
             {
-                foreach (Type t in this.types)
+                foreach (Type t in _types)
                 {
                     if (value.Equals(t.FullName))
                     {

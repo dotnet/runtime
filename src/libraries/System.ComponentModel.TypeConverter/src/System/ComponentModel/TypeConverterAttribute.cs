@@ -15,7 +15,7 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.All)]
     public sealed class TypeConverterAttribute : Attribute
     {
-        private string typeName;
+        private string _typeName;
 
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.TypeConverterAttribute'/> class, using 
@@ -25,7 +25,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public TypeConverterAttribute(Type type)
         {
-            this.typeName = type.AssemblyQualifiedName;
+            _typeName = type.AssemblyQualifiedName;
         }
 
         /// <devdoc>
@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public TypeConverterAttribute(string typeName)
         {
-            this.typeName = typeName;
+            _typeName = typeName;
         }
 
         /// <devdoc>
@@ -46,19 +46,19 @@ namespace System.ComponentModel
         {
             get
             {
-                return this.typeName;
+                return _typeName;
             }
         }
 
         public override bool Equals(object obj)
         {
             TypeConverterAttribute other = obj as TypeConverterAttribute;
-            return (other != null) && other.ConverterTypeName == this.typeName;
+            return (other != null) && other.ConverterTypeName == _typeName;
         }
 
         public override int GetHashCode()
         {
-            return this.typeName.GetHashCode();
+            return _typeName.GetHashCode();
         }
     }
 }

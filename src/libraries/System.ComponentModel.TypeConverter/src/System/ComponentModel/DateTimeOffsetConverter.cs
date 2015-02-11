@@ -34,13 +34,15 @@ namespace System.ComponentModel
         /// </devdoc>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value is string)
+            string text = value as string;
+            if (text != null)
             {
-                string text = ((string)value).Trim();
+                text = text.Trim();
                 if (text.Length == 0)
                 {
                     return DateTimeOffset.MinValue;
                 }
+
                 try
                 {
                     // See if we have a culture info to parse with.  If so, then use it.
@@ -133,4 +135,3 @@ namespace System.ComponentModel
         }
     }
 }
-
