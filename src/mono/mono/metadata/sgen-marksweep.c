@@ -486,7 +486,7 @@ add_free_block (MSBlockInfo * volatile *free_blocks, int size_index, MSBlockInfo
 	} while (SGEN_CAS_PTR ((gpointer)&free_blocks [size_index], block, old) != old);
 }
 
-static void major_finish_sweeping (void);
+static void major_finish_sweep_checking (void);
 
 static gboolean
 ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
@@ -546,7 +546,7 @@ ms_alloc_block (int size_index, gboolean pinned, gboolean has_references)
 	 * specific case we just wait for sweep to finish.
 	 */
 	if (sgen_pointer_queue_will_grow (&allocated_blocks))
-		major_finish_sweeping ();
+		major_finish_sweep_checking ();
 
 	sgen_pointer_queue_add (&allocated_blocks, BLOCK_TAG (info));
 
@@ -796,7 +796,7 @@ set_sweep_state (int new, int expected)
 static gboolean ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *have_checked);
 
 static void
-major_finish_sweeping (void)
+major_finish_sweep_checking (void)
 {
 	int block_index;
 
@@ -841,7 +841,7 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 	gboolean pinned = flags & ITERATE_OBJECTS_PINNED;
 	MSBlockInfo *block;
 
-	major_finish_sweeping ();
+	major_finish_sweep_checking ();
 	FOREACH_BLOCK_NO_LOCK (block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		int i;
@@ -2047,8 +2047,7 @@ major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	MSBlockInfo *block;
 	gboolean has_references;
 
-	major_finish_sweeping ();
-
+	major_finish_sweep_checking ();
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 		if (has_references)
 			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
@@ -2239,8 +2238,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 	if (!concurrent_mark)
 		g_assert (!mod_union);
 
-	major_finish_sweeping ();
-
+	major_finish_sweep_checking ();
 	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
 #ifdef PREFETCH_CARDS
 		int prefetch_index = __index + 6;
@@ -2403,7 +2401,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
 	collector->have_swept = major_have_swept;
-	collector->finish_sweeping = major_finish_sweeping;
+	collector->finish_sweeping = major_finish_sweep_checking;
 	collector->free_swept_blocks = major_free_swept_blocks;
 	collector->check_scan_starts = major_check_scan_starts;
 	collector->dump_heap = major_dump_heap;
