@@ -22,7 +22,7 @@ The purpose of Book of the Runtime chapters is to capture information that we ca
 
 # How is this different from a design doc?
 
-A design doc is what you write before you start implementation. A BotR chapter is usually written after a feature is implemented, at which point you have already decided the pros and cons of varoius design options and settled on one (and perhaps have plans to use an improved design in the future), and have a much better idea about all the details (some of which could be very hard to think of without actually going through the implementation/testing). So you can talk about rationales behind design decisions a lot better.
+A design doc is what you write before you start implementation. A BotR chapter is usually written after a feature is implemented, at which point you have already decided the pros and cons of various design options and settled on one (and perhaps have plans to use an improved design in the future), and have a much better idea about all the details (some of which could be very hard to think of without actually going through the implementation/testing). So you can talk about rationales behind design decisions a lot better.
 
 # I am a new dev and not familiar with any features yet, how can I contribute?
 
@@ -40,6 +40,6 @@ As a reviewer you will be expected to give constructive comments on the chapter 
 
 Here are some ways I think would be useful when working on BotR.
 
-- Spread the work out; don't make it a workitem as in "I will need to spend the next Monday through Thursday to work on my chapter"; think of it more like something you do when you want to take a break from coding or bug fixing, or just a change of scenery. I find it much easier to spend a little time here and there working a chapter than having to specifically allocate a contiguous number of days which always seem hard to come by.
+- Spread the work out; don't make it a workitem as in "I will need to spend the next Monday through Thursday to work on my chapter"; think of it more like something you do when you want to take a break from coding or bug fixing, or just a change of scenery. I find it much easier to spend a little time here and there working on a chapter than having to specifically allocate a contiguous number of days which always seem hard to come by.
 - Have someone else write the chapter or most of the chapter for you. I am not joking. This is actually a very good way to help new devs ramp up. If you will be mentoring a new dev in your area, spend time with them to explain the feature area and encourage them to write a BotR chapter if one doesn't already exist. Of course be a reviewer of it.
 - Use other documentation that is already there. There are MSDN docs and blog posts on .NET features. This can certainly be a base for your BotR chapter as well.
