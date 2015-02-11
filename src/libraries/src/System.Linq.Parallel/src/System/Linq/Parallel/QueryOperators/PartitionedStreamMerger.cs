@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
             get
             {
 #if DEBUG
-                Contract.Assert(_received, "Cannot return the merge executor because Receive() has not been called yet.");
+                Debug.Assert(_received, "Cannot return the merge executor because Receive() has not been called yet.");
 #endif
                 return _mergeExecutor;
             }

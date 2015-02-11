@@ -49,7 +49,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
             Contract.Requires(syncObj != null, "The monitor object to check must be provided.");
-            Contract.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
+            Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
         }
 
         /// <summary>Keeping alive processing tasks: maximum number of processed messages.</summary>
@@ -95,7 +95,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static T UnwrapWeakReference<T>(object state) where T : class
         {
             var wr = state as WeakReference<T>;
-            Contract.Assert(wr != null, "Expected a WeakReference<T> as the state argument");
+            Debug.Assert(wr != null, "Expected a WeakReference<T> as the state argument");
             T item;
             return wr.TryGetTarget(out item) ? item : null;
         }
@@ -373,7 +373,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(cancellationToken.IsCancellationRequested,
                 "The task will only be immediately canceled if the token has cancellation requested already.");
             var t = new Task<TResult>(CachedGenericDelegates<TResult>.DefaultTResultFunc, cancellationToken);
-            Contract.Assert(t.IsCanceled, "Task's constructor should cancel the task synchronously in the ctor.");
+            Debug.Assert(t.IsCanceled, "Task's constructor should cancel the task synchronously in the ctor.");
             return t;
         }
 
@@ -482,7 +482,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             catch (Exception caughtException)
             {
                 // Verify TPL has faulted the task
-                Contract.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
+                Debug.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
 
                 // Observe the task's exception
                 AggregateException ignoredTaskException = task.Exception;
@@ -518,7 +518,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // they get a response to a postponed message.
                 try
                 {
-                    Contract.Assert(sourceAndMessage.Key != null, "Postponed messages must have an associated source.");
+                    Debug.Assert(sourceAndMessage.Key != null, "Postponed messages must have an associated source.");
                     if (sourceAndMessage.Key.ReserveMessage(sourceAndMessage.Value, target))
                     {
                         sourceAndMessage.Key.ReleaseReservation(sourceAndMessage.Value, target);
@@ -532,7 +532,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 processedCount++;
             }
 
-            Contract.Assert(processedCount == initialCount,
+            Debug.Assert(processedCount == initialCount,
                 "We should have processed the exact number of elements that were initially there.");
         }
 
@@ -549,7 +549,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
-            Contract.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
+            Debug.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
 
             AggregateException exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
 

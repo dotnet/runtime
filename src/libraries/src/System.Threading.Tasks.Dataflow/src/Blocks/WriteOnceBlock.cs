@@ -441,7 +441,7 @@ namespace System.Threading.Tasks.Dataflow
             // and all targets can get a copy, we don't need to broadcast to all targets, only to
             // the target that released the message.  Note that we don't care whether it's accepted
             // or not, nor do we care about any exceptions which may emerge (they should just propagate).
-            Contract.Assert(_header.IsValid, "A valid header is required.");
+            Debug.Assert(_header.IsValid, "A valid header is required.");
             bool useCloning = _cloningFunction != null;
             target.OfferMessage(_header, _value, this, consumeToAccept: useCloning);
         }

@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -35,7 +35,7 @@ namespace System.Linq.Parallel
         internal SingleQueryOperator(IEnumerable<TSource> child, Func<TSource, bool> predicate)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(child != null, "child data source cannot be null");
             _predicate = predicate;
         }
 
@@ -73,7 +73,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TSource> AsSequentialQuery(CancellationToken token)
         {
-            Contract.Assert(false, "This method should never be called as it is an ending operator with LimitsParallelism=false.");
+            Debug.Fail("This method should never be called as it is an ending operator with LimitsParallelism=false.");
             throw new NotSupportedException();
         }
 
@@ -108,8 +108,8 @@ namespace System.Linq.Parallel
             internal SingleQueryOperatorEnumerator(QueryOperatorEnumerator<TSource, TKey> source,
                                                    Func<TSource, bool> predicate, Shared<int> totalElementCount)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(totalElementCount != null);
+                Debug.Assert(source != null);
+                Debug.Assert(totalElementCount != null);
 
                 _source = source;
                 _predicate = predicate;
@@ -122,7 +122,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TSource currentElement, ref int currentKey)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
 
                 if (_alreadySearched)
                 {

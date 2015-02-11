@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 using IEnumerator = System.Collections.IEnumerator;
 
@@ -52,9 +52,9 @@ namespace System.Linq.Parallel
                                       IEqualityComparer<TGroupKey> keyComparer)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(keySelector != null, "need a selector function");
-            Contract.Assert(elementSelector != null ||
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(keySelector != null, "need a selector function");
+            Debug.Assert(elementSelector != null ||
                             typeof(TSource) == typeof(TElement), "need an element function if TSource!=TElement");
 
             _keySelector = keySelector;
@@ -110,7 +110,7 @@ namespace System.Linq.Parallel
             {
                 if (_elementSelector == null)
                 {
-                    Contract.Assert(typeof(TSource) == typeof(TElement));
+                    Debug.Assert(typeof(TSource) == typeof(TElement));
 
                     var enumerator = new GroupByIdentityQueryOperatorEnumerator<TSource, TGroupKey, TKey>(
                         hashStream[i], _keyComparer, cancellationToken);
@@ -149,7 +149,7 @@ namespace System.Linq.Parallel
             {
                 if (_elementSelector == null)
                 {
-                    Contract.Assert(typeof(TSource) == typeof(TElement));
+                    Debug.Assert(typeof(TSource) == typeof(TElement));
 
                     var enumerator = new OrderedGroupByIdentityQueryOperatorEnumerator<TSource, TGroupKey, TKey>(
                         hashStream[i], _keySelector, _keyComparer, orderComparer, cancellationToken);
@@ -188,7 +188,7 @@ namespace System.Linq.Parallel
             IEnumerable<TSource> wrappedChild = CancellableEnumerable.Wrap(Child.AsSequentialQuery(token), token);
             if (_elementSelector == null)
             {
-                Contract.Assert(typeof(TElement) == typeof(TSource));
+                Debug.Assert(typeof(TElement) == typeof(TSource));
                 return (IEnumerable<IGrouping<TGroupKey, TElement>>)(object)(wrappedChild.GroupBy(_keySelector, _keyComparer));
             }
             else
@@ -239,7 +239,7 @@ namespace System.Linq.Parallel
             QueryOperatorEnumerator<Pair, TOrderKey> source,
             IEqualityComparer<TGroupKey> keyComparer, CancellationToken cancellationToken)
         {
-            Contract.Assert(source != null);
+            Debug.Assert(source != null);
 
             _source = source;
             _keyComparer = keyComparer;
@@ -254,7 +254,7 @@ namespace System.Linq.Parallel
 
         internal override bool MoveNext(ref IGrouping<TGroupKey, TElement> currentElement, ref TOrderKey currentKey)
         {
-            Contract.Assert(_source != null);
+            Debug.Assert(_source != null);
 
             // Lazy-init the mutable state. This also means we haven't yet built our lookup of
             // groupings, so we can go ahead and do that too.
@@ -265,7 +265,7 @@ namespace System.Linq.Parallel
 
                 // Build the hash lookup and start enumerating the lookup at the beginning.
                 mutables._hashLookup = BuildHashLookup();
-                Contract.Assert(mutables._hashLookup != null);
+                Debug.Assert(mutables._hashLookup != null);
                 mutables._hashLookupIndex = -1;
             }
 
@@ -341,7 +341,7 @@ namespace System.Linq.Parallel
                     currentValue = new ListChunk<TSource>(INITIAL_CHUNK_SIZE);
                     hashlookup.Add(key, currentValue);
                 }
-                Contract.Assert(currentValue != null);
+                Debug.Assert(currentValue != null);
 
                 // Call to the base class to yield the current value.
                 currentValue.Add((TSource)sourceElement.First);
@@ -370,7 +370,7 @@ namespace System.Linq.Parallel
             IEqualityComparer<TGroupKey> keyComparer, Func<TSource, TElement> elementSelector, CancellationToken cancellationToken) :
             base(source, keyComparer, cancellationToken)
         {
-            Contract.Assert(elementSelector != null);
+            Debug.Assert(elementSelector != null);
             _elementSelector = elementSelector;
         }
 
@@ -403,7 +403,7 @@ namespace System.Linq.Parallel
                     currentValue = new ListChunk<TElement>(INITIAL_CHUNK_SIZE);
                     hashlookup.Add(key, currentValue);
                 }
-                Contract.Assert(currentValue != null);
+                Debug.Assert(currentValue != null);
 
                 // Call to the base class to yield the current value.
                 currentValue.Add(_elementSelector((TSource)sourceElement.First));
@@ -442,8 +442,8 @@ namespace System.Linq.Parallel
             Func<TSource, TGroupKey> keySelector, IEqualityComparer<TGroupKey> keyComparer, IComparer<TOrderKey> orderComparer,
             CancellationToken cancellationToken)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(keySelector != null);
+            Debug.Assert(source != null);
+            Debug.Assert(keySelector != null);
 
             _source = source;
             _keySelector = keySelector;
@@ -460,8 +460,8 @@ namespace System.Linq.Parallel
 
         internal override bool MoveNext(ref IGrouping<TGroupKey, TElement> currentElement, ref TOrderKey currentKey)
         {
-            Contract.Assert(_source != null);
-            Contract.Assert(_keySelector != null);
+            Debug.Assert(_source != null);
+            Debug.Assert(_keySelector != null);
 
             // Lazy-init the mutable state. This also means we haven't yet built our lookup of
             // groupings, so we can go ahead and do that too.
@@ -472,7 +472,7 @@ namespace System.Linq.Parallel
 
                 // Build the hash lookup and start enumerating the lookup at the beginning.
                 mutables._hashLookup = BuildHashLookup();
-                Contract.Assert(mutables._hashLookup != null);
+                Debug.Assert(mutables._hashLookup != null);
                 mutables._hashLookupIndex = -1;
             }
 
@@ -578,7 +578,7 @@ namespace System.Linq.Parallel
                     hashLookup.Add(key, currentValue);
                 }
 
-                Contract.Assert(currentValue != null);
+                Debug.Assert(currentValue != null);
 
                 currentValue._grouping.Add((TSource)sourceElement.First, sourceOrderKey);
             }
@@ -612,7 +612,7 @@ namespace System.Linq.Parallel
             CancellationToken cancellationToken) :
             base(source, keySelector, keyComparer, orderComparer, cancellationToken)
         {
-            Contract.Assert(elementSelector != null);
+            Debug.Assert(elementSelector != null);
             _elementSelector = elementSelector;
         }
 
@@ -653,7 +653,7 @@ namespace System.Linq.Parallel
                     hashLookup.Add(key, currentValue);
                 }
 
-                Contract.Assert(currentValue != null);
+                Debug.Assert(currentValue != null);
 
                 // Call to the base class to yield the current value.
                 currentValue._grouping.Add(_elementSelector((TSource)sourceElement.First), sourceOrderKey);
@@ -685,7 +685,7 @@ namespace System.Linq.Parallel
 
         internal GroupByGrouping(KeyValuePair<Wrapper<TGroupKey>, ListChunk<TElement>> keyValues)
         {
-            Contract.Assert(keyValues.Value != null);
+            Debug.Assert(keyValues.Value != null);
             _keyValues = keyValues;
         }
 
@@ -707,7 +707,7 @@ namespace System.Linq.Parallel
 
         IEnumerator<TElement> IEnumerable<TElement>.GetEnumerator()
         {
-            Contract.Assert(_keyValues.Value != null);
+            Debug.Assert(_keyValues.Value != null);
             return _keyValues.Value.GetEnumerator();
         }
 
@@ -756,12 +756,12 @@ namespace System.Linq.Parallel
 
         IEnumerator<TElement> IEnumerable<TElement>.GetEnumerator()
         {
-            Contract.Assert(_values != null);
+            Debug.Assert(_values != null);
 
 
             int valueCount = _values.Count;
             TElement[] valueArray = _values.InternalArray;
-            Contract.Assert(valueArray.Length >= valueCount); // valueArray.Length may be larger than valueCount
+            Debug.Assert(valueArray.Length >= valueCount); // valueArray.Length may be larger than valueCount
 
             for (int i = 0; i < valueCount; i++)
             {
@@ -779,8 +779,8 @@ namespace System.Linq.Parallel
         /// </summary>
         internal void Add(TElement value, TOrderKey orderKey)
         {
-            Contract.Assert(_values != null);
-            Contract.Assert(_orderKeys != null);
+            Debug.Assert(_values != null);
+            Debug.Assert(_orderKeys != null);
 
             _values.Add(value);
             _orderKeys.Add(orderKey);
@@ -791,8 +791,8 @@ namespace System.Linq.Parallel
         /// </summary>
         internal void DoneAdding()
         {
-            Contract.Assert(_values != null);
-            Contract.Assert(_orderKeys != null);
+            Debug.Assert(_values != null);
+            Debug.Assert(_orderKeys != null);
 
             // Create a map of key-value pair.
             // We can't use a dictionary since the keys are not necessarily unique

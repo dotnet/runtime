@@ -71,7 +71,7 @@ namespace System.Linq.Parallel
         /// </summary>
         public IEnumerator<TInputOutput> GetEnumerator()
         {
-            Debug.Assert(false, "ArrayMergeHelper<>.GetEnumerator() is not intended to be used. Call GetResultsAsArray() instead.");
+            Debug.Fail("ArrayMergeHelper<>.GetEnumerator() is not intended to be used. Call GetResultsAsArray() instead.");
             return ((IEnumerable<TInputOutput>)GetResultsAsArray()).GetEnumerator();
         }
 

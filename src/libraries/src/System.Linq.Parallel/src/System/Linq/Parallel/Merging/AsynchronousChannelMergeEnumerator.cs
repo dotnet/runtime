@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -41,9 +41,9 @@ namespace System.Linq.Parallel
             QueryTaskGroupState taskGroupState, AsynchronousChannel<T>[] channels, IntValueEvent consumerEvent)
             : base(taskGroupState)
         {
-            Contract.Assert(channels != null);
+            Debug.Assert(channels != null);
 #if DEBUG
-            foreach (AsynchronousChannel<T> c in channels) Contract.Assert(c != null);
+            foreach (AsynchronousChannel<T> c in channels) Debug.Assert(c != null);
 #endif
 
             _channels = channels;
@@ -146,7 +146,7 @@ namespace System.Linq.Parallel
                         if (!current.IsChunkBufferEmpty)
                         {
                             bool dequeueResult = current.TryDequeue(ref _currentElement);
-                            Contract.Assert(dequeueResult, "channel isn't empty, yet the dequeue failed, hmm");
+                            Debug.Assert(dequeueResult, "channel isn't empty, yet the dequeue failed, hmm");
                             return true;
                         }
 
@@ -158,8 +158,8 @@ namespace System.Linq.Parallel
 
                     if (isDone)
                     {
-                        Contract.Assert(_channels[currChannelIndex].IsDone, "thought this channel was done");
-                        Contract.Assert(_channels[currChannelIndex].IsChunkBufferEmpty, "thought this channel was empty");
+                        Debug.Assert(_channels[currChannelIndex].IsDone, "thought this channel was done");
+                        Debug.Assert(_channels[currChannelIndex].IsChunkBufferEmpty, "thought this channel was empty");
 
                         // Increment the count of done channels that we've seen. If this reaches the
                         // total number of channels, we know we're finally done.
@@ -262,7 +262,7 @@ namespace System.Linq.Parallel
             TraceHelpers.TraceInfo("[timing]: {0}: Completed the merge", DateTime.Now.Ticks);
 
             // If we got this far, it means we've exhausted our channels.
-            Contract.Assert(currChannelIndex == _channels.Length);
+            Debug.Assert(currChannelIndex == _channels.Length);
 
             // If any tasks failed, propagate the failure now. We must do it here, because the merge
             // executor returns control back to the caller before the query has completed; contrast

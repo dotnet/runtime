@@ -2,10 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -1214,9 +1215,9 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private byte InternalReadByte(Int64 position)
         {
-            Contract.Assert(CanRead, "UMA not readable");
-            Contract.Assert(position >= 0, "position less than 0");
-            Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
+            Debug.Assert(CanRead, "UMA not readable");
+            Debug.Assert(position >= 0, "position less than 0");
+            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
             byte result;
             unsafe
@@ -1242,9 +1243,9 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void InternalWrite(Int64 position, byte value)
         {
-            Contract.Assert(CanWrite, "UMA not writeable");
-            Contract.Assert(position >= 0, "position less than 0");
-            Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
+            Debug.Assert(CanWrite, "UMA not writeable");
+            Debug.Assert(position >= 0, "position less than 0");
+            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
             unsafe
             {

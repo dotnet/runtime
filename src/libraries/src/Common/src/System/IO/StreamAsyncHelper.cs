@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace System.IO
 
         internal StreamAsyncHelper(Stream stream)
         {
-            Contract.Assert(stream != null);
+            Debug.Assert(stream != null);
             _stream = stream;
         }
 
@@ -48,7 +49,7 @@ namespace System.IO
             // the active one completes.
             SemaphoreSlim sem = EnsureAsyncActiveSemaphoreInitialized();
             sem.Wait();
-            Contract.Assert(_activeReadWriteTask == null);
+            Debug.Assert(_activeReadWriteTask == null);
 
             // Create the task to asynchronously run the read or write.  Even though Task implements IAsyncResult,
             // we wrap it in a special IAsyncResult object that stores all of the state for the operation
@@ -122,7 +123,7 @@ namespace System.IO
             finally
             {
                 _activeReadWriteTask = null;
-                Contract.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
+                Debug.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
                 _asyncActiveSemaphore.Release();
             }
         }
@@ -156,7 +157,7 @@ namespace System.IO
             finally
             {
                 _activeReadWriteTask = null;
-                Contract.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
+                Debug.Assert(_asyncActiveSemaphore != null, "Must have been initialized in order to get here.");
                 _asyncActiveSemaphore.Release();
             }
         }

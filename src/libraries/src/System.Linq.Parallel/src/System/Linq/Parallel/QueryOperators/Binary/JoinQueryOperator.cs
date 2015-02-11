@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -57,10 +57,10 @@ namespace System.Linq.Parallel
                                    IEqualityComparer<TKey> keyComparer)
             : base(left, right)
         {
-            Contract.Assert(left != null && right != null, "child data sources cannot be null");
-            Contract.Assert(leftKeySelector != null, "left key selector must not be null");
-            Contract.Assert(rightKeySelector != null, "right key selector must not be null");
-            Contract.Assert(resultSelector != null, "need a result selector function");
+            Debug.Assert(left != null && right != null, "child data sources cannot be null");
+            Debug.Assert(leftKeySelector != null, "left key selector must not be null");
+            Debug.Assert(rightKeySelector != null, "right key selector must not be null");
+            Debug.Assert(resultSelector != null, "need a result selector function");
 
             _leftKeySelector = leftKeySelector;
             _rightKeySelector = rightKeySelector;
@@ -75,7 +75,7 @@ namespace System.Linq.Parallel
             PartitionedStream<TLeftInput, TLeftKey> leftStream, PartitionedStream<TRightInput, TRightKey> rightStream,
             IPartitionedStreamRecipient<TOutput> outputRecipient, bool preferStriping, QuerySettings settings)
         {
-            Contract.Assert(rightStream.PartitionCount == leftStream.PartitionCount);
+            Debug.Assert(rightStream.PartitionCount == leftStream.PartitionCount);
 
             if (LeftChild.OutputOrdered)
             {

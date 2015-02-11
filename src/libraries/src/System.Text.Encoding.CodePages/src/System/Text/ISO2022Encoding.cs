@@ -32,6 +32,7 @@
 //
 
 using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -225,8 +226,8 @@ namespace System.Text
         public override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(count >= 0, "[ISO2022Encoding.GetByteCount]count is negative");
-            Contract.Assert(chars != null, "[ISO2022Encoding.GetByteCount]chars is null");
+            Debug.Assert(count >= 0, "[ISO2022Encoding.GetByteCount]count is negative");
+            Debug.Assert(chars != null, "[ISO2022Encoding.GetByteCount]chars is null");
 
             // Just call GetBytes with null byte* to get count
             return GetBytes(chars, count, null, 0, baseEncoder);
@@ -237,12 +238,12 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS baseEncoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(chars != null, "[ISO2022Encoding.GetBytes]chars is null");
-            Contract.Assert(byteCount >= 0, "[ISO2022Encoding.GetBytes]byteCount is negative");
-            Contract.Assert(charCount >= 0, "[ISO2022Encoding.GetBytes]charCount is negative");
+            Debug.Assert(chars != null, "[ISO2022Encoding.GetBytes]chars is null");
+            Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetBytes]byteCount is negative");
+            Debug.Assert(charCount >= 0, "[ISO2022Encoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(EncoderFallback != null, "[ISO2022Encoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(EncoderFallback != null, "[ISO2022Encoding.GetBytes]Attempting to use null encoder fallback");
 
             // Fix our encoder
             ISO2022Encoder encoder = (ISO2022Encoder)baseEncoder;
@@ -278,8 +279,8 @@ namespace System.Text
         public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
-            Contract.Assert(bytes != null, "[ISO2022Encoding.GetCharCount]bytes is null");
-            Contract.Assert(count >= 0, "[ISO2022Encoding.GetCharCount]byteCount is negative");
+            Debug.Assert(bytes != null, "[ISO2022Encoding.GetCharCount]bytes is null");
+            Debug.Assert(count >= 0, "[ISO2022Encoding.GetCharCount]byteCount is negative");
 
             // Just call getChars with null char* to get count
             return GetChars(bytes, count, null, 0, baseDecoder);
@@ -290,9 +291,9 @@ namespace System.Text
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[ISO2022Encoding.GetChars]bytes is null");
-            Contract.Assert(byteCount >= 0, "[ISO2022Encoding.GetChars]byteCount is negative");
-            Contract.Assert(charCount >= 0, "[ISO2022Encoding.GetChars]charCount is negative");
+            Debug.Assert(bytes != null, "[ISO2022Encoding.GetChars]bytes is null");
+            Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetChars]byteCount is negative");
+            Debug.Assert(charCount >= 0, "[ISO2022Encoding.GetChars]charCount is negative");
 
             // Fix our decoder
             ISO2022Decoder decoder = (ISO2022Decoder)baseDecoder;
@@ -316,7 +317,7 @@ namespace System.Text
                     iCount = GetCharsCP52936(bytes, byteCount, chars, charCount, decoder);
                     break;
                 default:
-                    Contract.Assert(false, "[ISO2022Encoding.GetChars] had unexpected code page");
+                    Debug.Fail("[ISO2022Encoding.GetChars] had unexpected code page");
                     break;
             }
 
@@ -379,7 +380,7 @@ namespace System.Text
                 // We may have a left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Contract.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP5022xJP]leftover character should be high surrogate");
+                    Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP5022xJP]leftover character should be high surrogate");
 
                     // It has to be a high surrogate, which we don't support, so it has to be a fallback
                     buffer.Fallback(charLeftOver);
@@ -440,7 +441,7 @@ namespace System.Text
                         else
                         {
                             // 50221 does halfwidth katakana by escape sequence
-                            Contract.Assert(CodePage == 50221, "[ISO2022Encoding.GetBytesCP5022xJP]Expected Code Page 50221");
+                            Debug.Assert(CodePage == 50221, "[ISO2022Encoding.GetBytesCP5022xJP]Expected Code Page 50221");
 
                             // Add our escape sequence
                             if (!buffer.AddByte(ESCAPE, unchecked((byte)'('), unchecked((byte)'I')))
@@ -621,7 +622,7 @@ namespace System.Text
                 // We may have a l left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Contract.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP50225KR]leftover character should be high surrogate");
+                    Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP50225KR]leftover character should be high surrogate");
 
                     // It has to be a high surrogate, which we don't support, so it has to be a fallback
                     buffer.Fallback(charLeftOver);
@@ -721,7 +722,7 @@ namespace System.Text
                 if (!encoder.MustFlush || encoder.charLeftOver != (char)0)
                 {
                     // We should be not flushing or converting
-                    Contract.Assert(!encoder.MustFlush || !encoder.m_throwOnOverflow,
+                    Debug.Assert(!encoder.MustFlush || !encoder.m_throwOnOverflow,
                         "[ISO2022Encoding.GetBytesCP50225KR]Expected no left over data or not flushing or not converting");
                     encoder.shiftInOutMode = shiftOutMode;
                 }
@@ -768,7 +769,7 @@ namespace System.Text
                 // We may have a left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Contract.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP52936]leftover character should be high surrogate");
+                    Debug.Assert(Char.IsHighSurrogate(charLeftOver), "[ISO2022Encoding.GetBytesCP52936]leftover character should be high surrogate");
 
                     // It has to be a high surrogate, which we don't support, so it has to be a fallback
                     buffer.Fallback(charLeftOver);
@@ -1092,7 +1093,7 @@ namespace System.Text
                 if (!decoder.MustFlush || escapeCount != 0)
                 {
                     // Either not flushing or had state (from convert)
-                    Contract.Assert(!decoder.MustFlush || !decoder.m_throwOnOverflow,
+                    Debug.Assert(!decoder.MustFlush || !decoder.m_throwOnOverflow,
                         "[ISO2022Encoding.GetCharsCP5022xJP]Expected no state or not converting or not flushing");
 
                     decoder.currentMode = currentMode;
@@ -1186,7 +1187,7 @@ namespace System.Text
 
         private byte DecrementEscapeBytes(ref byte[] bytes, ref int count)
         {
-            Contract.Assert(count > 0, "[ISO2022Encoding.DecrementEscapeBytes]count > 0");
+            Debug.Assert(count > 0, "[ISO2022Encoding.DecrementEscapeBytes]count > 0");
 
             // Decrement our count
             count--;
@@ -1392,7 +1393,7 @@ namespace System.Text
                 if (!decoder.MustFlush || escapeCount != 0)
                 {
                     // Either not flushing or had state (from convert)
-                    Contract.Assert(!decoder.MustFlush || !decoder.m_throwOnOverflow,
+                    Debug.Assert(!decoder.MustFlush || !decoder.m_throwOnOverflow,
                         "[ISO2022Encoding.GetCharsCP50225KR]Expected no state or not converting or not flushing");
 
                     decoder.currentMode = currentMode;
@@ -1451,8 +1452,8 @@ namespace System.Text
         private unsafe int GetCharsCP52936(byte* bytes, int byteCount,
                                                 char* chars, int charCount, ISO2022Decoder decoder)
         {
-            Contract.Assert(byteCount >= 0, "[ISO2022Encoding.GetCharsCP52936]count >=0");
-            Contract.Assert(bytes != null, "[ISO2022Encoding.GetCharsCP52936]bytes!=null");
+            Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetCharsCP52936]count >=0");
+            Debug.Assert(bytes != null, "[ISO2022Encoding.GetCharsCP52936]bytes!=null");
 
             // Get our info.
             EncodingCharBuffer buffer = new EncodingCharBuffer(this, decoder, chars, charCount, bytes, byteCount);
@@ -1562,7 +1563,7 @@ namespace System.Text
                 if (currentMode != ISO2022Modes.ModeASCII)
                 {
                     // Should be ModeHZ
-                    Contract.Assert(currentMode == ISO2022Modes.ModeHZ, "[ISO2022Encoding.GetCharsCP52936]Expected ModeHZ");
+                    Debug.Assert(currentMode == ISO2022Modes.ModeHZ, "[ISO2022Encoding.GetCharsCP52936]Expected ModeHZ");
                     char cm;
 
                     // Everett allowed characters < 0x20 to be passed as if they were ASCII
@@ -1687,7 +1688,7 @@ namespace System.Text
                 else
                 {
                     // Either not flushing or had state (from convert)
-                    Contract.Assert(!decoder.MustFlush || !decoder.m_throwOnOverflow,
+                    Debug.Assert(!decoder.MustFlush || !decoder.m_throwOnOverflow,
                         "[ISO2022Encoding.GetCharsCP52936]Expected no state or not converting or not flushing");
 
                     decoder.currentMode = currentMode;

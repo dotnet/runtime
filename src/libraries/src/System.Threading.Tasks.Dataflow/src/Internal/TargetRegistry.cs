@@ -97,7 +97,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             _targetInformation.Add(target, node);
 
             // Increment the optimization counter if needed
-            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
+            Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             if (node.RemainingMessages > 0) _linksWithRemainingMessages++;
 #if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -126,7 +126,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(target != null, "Target to remove is required.");
 
             // If we are implicitly unlinking and there is nothing to be unlinked implicitly, bail
-            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
+            Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             if (onlyIfReachedMaxMessages && _linksWithRemainingMessages == 0) return;
 
             // Otherwise take the slow path
@@ -143,14 +143,14 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(target != null, "Target to remove is required.");
 
             // Make sure we've intended to go the slow route
-            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
-            Contract.Assert(!onlyIfReachedMaxMessages || _linksWithRemainingMessages > 0, "We shouldn't have ended on the slow path.");
+            Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
+            Debug.Assert(!onlyIfReachedMaxMessages || _linksWithRemainingMessages > 0, "We shouldn't have ended on the slow path.");
 
             // If the target is registered...
             LinkedTargetInfo node;
             if (_targetInformation.TryGetValue(target, out node))
             {
-                Contract.Assert(node != null, "The LinkedTargetInfo node referenced in the Dictionary must be non-null.");
+                Debug.Assert(node != null, "The LinkedTargetInfo node referenced in the Dictionary must be non-null.");
 
                 // Remove the target, if either there's no constraint on the removal
                 // or if this was the last remaining message.
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     // Decrement the optimization counter if needed
                     if (node.RemainingMessages == 0) _linksWithRemainingMessages--;
-                    Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
+                    Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
 #if FEATURE_TRACING
                     DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // If the target is to stay and we are counting the remaining messages for this link, decrement the counter
                 else if (node.RemainingMessages > 0)
                 {
-                    Contract.Assert(node.RemainingMessages > 1, "The target should have been removed, because there are no remaining messages.");
+                    Debug.Assert(node.RemainingMessages > 1, "The target should have been removed, because there are no remaining messages.");
                     node.RemainingMessages--;
                 }
             }
@@ -188,7 +188,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Clear out the entry points
             _firstTarget = _lastTarget = null;
             _targetInformation.Clear();
-            Contract.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
+            Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             _linksWithRemainingMessages = 0;
 
             return firstTarget;
@@ -198,7 +198,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="firstTarget">The head of a saved linked list.</param>
         internal void PropagateCompletion(LinkedTargetInfo firstTarget)
         {
-            Contract.Assert(_owningSource.Completion.IsCompleted, "The owning source must have completed before propagating completion.");
+            Debug.Assert(_owningSource.Completion.IsCompleted, "The owning source must have completed before propagating completion.");
 
             // Cache the owning source's completion task to avoid calling the getter many times
             Task owningSourceCompletion = _owningSource.Completion;
@@ -227,9 +227,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
             else
             {
-                Contract.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must either be null or non-null.");
-                Contract.Assert(_lastTarget.Next == null, "The last node must not have a successor.");
-                Contract.Assert(_firstTarget.Previous == null, "The first node must not have a predecessor.");
+                Debug.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must either be null or non-null.");
+                Debug.Assert(_lastTarget.Next == null, "The last node must not have a successor.");
+                Debug.Assert(_firstTarget.Previous == null, "The first node must not have a predecessor.");
 
                 if (append)
                 {
@@ -247,7 +247,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
             }
 
-            Contract.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null after AddToList.");
+            Debug.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null after AddToList.");
         }
 
         /// <summary>Removes the LinkedTargetInfo node from the doubly-linked list.</summary>
@@ -255,7 +255,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal void RemoveFromList(LinkedTargetInfo node)
         {
             Contract.Requires(node != null, "Node to remove is required.");
-            Contract.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null before RemoveFromList.");
+            Debug.Assert(_firstTarget != null && _lastTarget != null, "Both first and last node must be non-null before RemoveFromList.");
 
             LinkedTargetInfo previous = node.Previous;
             LinkedTargetInfo next = node.Next;
@@ -277,7 +277,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             if (_firstTarget == node) _firstTarget = next;
             if (_lastTarget == node) _lastTarget = previous;
 
-            Contract.Assert((_firstTarget != null) == (_lastTarget != null), "Both first and last node must either be null or non-null after RemoveFromList.");
+            Debug.Assert((_firstTarget != null) == (_lastTarget != null), "Both first and last node must either be null or non-null after RemoveFromList.");
         }
 
         /// <summary>Gets the number of items in the registry.</summary>
@@ -327,7 +327,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Targets/Member[@name="OfferMessage"]/*' />
             DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
             {
-                Contract.Assert(source == _owningSource, "Only valid to be used with the source for which it was created.");
+                Debug.Assert(source == _owningSource, "Only valid to be used with the source for which it was created.");
                 return _target.OfferMessage(messageHeader, messageValue, this, consumeToAccept);
             }
 

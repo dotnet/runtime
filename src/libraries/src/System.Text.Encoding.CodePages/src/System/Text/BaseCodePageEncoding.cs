@@ -3,7 +3,7 @@
 
 using System.Reflection;
 using System.IO;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -160,7 +160,7 @@ namespace System.Text
 
         internal static Stream GetEncodingDataStream(String tableName)
         {
-            Contract.Assert(tableName != null, "table name can not be null");
+            Debug.Assert(tableName != null, "table name can not be null");
 
             // NOTE: We must reflect on a public type that is exposed in the contract here
             // (i.e. CodePagesEncodingProvider), otherwise we will not get a reference to
@@ -197,7 +197,7 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated
         private unsafe bool FindCodePage(int codePage)
         {
-            Contract.Assert(m_codePageHeader != null && m_codePageHeader.Length == CODEPAGE_HEADER_SIZE, "m_codePageHeader expected to match in size the struct CodePageHeader");
+            Debug.Assert(m_codePageHeader != null && m_codePageHeader.Length == CODEPAGE_HEADER_SIZE, "m_codePageHeader expected to match in size the struct CodePageHeader");
 
             // Loop through all of the m_pCodePageIndex[] items to find our code page
             byte[] codePageIndex = new byte[sizeof(CodePageIndex)];
@@ -280,7 +280,7 @@ namespace System.Text
 
                         if (pCodePageIndex->CodePage == codePage)
                         {
-                            Contract.Assert(pCodePageIndex->ByteCount == 1 || pCodePageIndex->ByteCount == 2,
+                            Debug.Assert(pCodePageIndex->ByteCount == 1 || pCodePageIndex->ByteCount == 2,
                                 "[BaseCodePageEncoding] Code page (" + codePage + ") has invalid byte size (" + pCodePageIndex->ByteCount + ") in table");
                             // Return what it says for byte count
                             return pCodePageIndex->ByteCount;
@@ -304,7 +304,7 @@ namespace System.Text
             if (safeNativeMemoryHandle == null)
             {
                 byte* pNativeMemory = (byte*)Marshal.AllocHGlobal(iSize);
-                Contract.Assert(pNativeMemory != null);
+                Debug.Assert(pNativeMemory != null);
 
                 safeNativeMemoryHandle = new SafeAllocHHandle((IntPtr)pNativeMemory);
             }
@@ -321,7 +321,7 @@ namespace System.Text
             // Read in our best fit table if necessary
             if (arrayUnicodeBestFit == null) ReadBestFitTable();
 
-            Contract.Assert(arrayUnicodeBestFit != null, "[BaseCodePageEncoding.GetBestFitUnicodeToBytesData]Expected non-null arrayUnicodeBestFit");
+            Debug.Assert(arrayUnicodeBestFit != null, "[BaseCodePageEncoding.GetBestFitUnicodeToBytesData]Expected non-null arrayUnicodeBestFit");
 
             // Normally we don't have any best fit data.
             return arrayUnicodeBestFit;
@@ -333,7 +333,7 @@ namespace System.Text
             // Read in our best fit table if necessary
             if (arrayBytesBestFit == null) ReadBestFitTable();
 
-            Contract.Assert(arrayBytesBestFit != null, "[BaseCodePageEncoding.GetBestFitBytesToUnicodeData]Expected non-null arrayBytesBestFit");
+            Debug.Assert(arrayBytesBestFit != null, "[BaseCodePageEncoding.GetBestFitBytesToUnicodeData]Expected non-null arrayBytesBestFit");
 
             // Normally we don't have any best fit data.
             return arrayBytesBestFit;

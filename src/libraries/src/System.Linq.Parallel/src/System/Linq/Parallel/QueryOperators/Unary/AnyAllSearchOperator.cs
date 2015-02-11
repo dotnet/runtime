@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -50,8 +50,8 @@ namespace System.Linq.Parallel
         internal AnyAllSearchOperator(IEnumerable<TInput> child, bool qualification, Func<TInput, bool> predicate)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(predicate != null, "need a predicate function");
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(predicate != null, "need a predicate function");
 
             _qualification = qualification;
             _predicate = predicate;
@@ -124,7 +124,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<bool> AsSequentialQuery(CancellationToken token)
         {
-            Contract.Assert(false, "This method should never be called as it is an ending operator with LimitsParallelism=false.");
+            Debug.Fail("This method should never be called as it is an ending operator with LimitsParallelism=false.");
             throw new NotSupportedException();
         }
 
@@ -161,9 +161,9 @@ namespace System.Linq.Parallel
                                                     Func<TInput, bool> predicate, int partitionIndex, Shared<bool> resultFoundFlag,
                                                     CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(predicate != null);
-                Contract.Assert(resultFoundFlag != null);
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null);
+                Debug.Assert(resultFoundFlag != null);
 
                 _source = source;
                 _qualification = qualification;
@@ -181,7 +181,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref bool currentElement, ref int currentKey)
             {
-                Contract.Assert(_predicate != null);
+                Debug.Assert(_predicate != null);
 
                 // Avoid enumerating if we've already found an answer.
                 if (_resultFoundFlag.Value)
@@ -229,7 +229,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

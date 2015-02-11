@@ -12,7 +12,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
 namespace System.Threading.Tasks.Dataflow
@@ -104,7 +103,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _taskScheduler; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 if (value == null) throw new ArgumentNullException("value");
                 _taskScheduler = value;
             }
@@ -116,7 +115,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _cancellationToken; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 _cancellationToken = value;
             }
         }
@@ -127,7 +126,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _maxMessagesPerTask; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 if (value < 1 && value != Unbounded) throw new ArgumentOutOfRangeException("value");
                 _maxMessagesPerTask = value;
             }
@@ -147,7 +146,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _boundedCapacity; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 if (value < 1 && value != Unbounded) throw new ArgumentOutOfRangeException("value");
                 _boundedCapacity = value;
             }
@@ -166,7 +165,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _nameFormat; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 if (value == null) throw new ArgumentNullException("value");
                 _nameFormat = value;
             }
@@ -260,7 +259,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _maxDegreeOfParallelism; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 if (value < 1 && value != Unbounded) throw new ArgumentOutOfRangeException("value");
                 _maxDegreeOfParallelism = value;
             }
@@ -283,7 +282,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _singleProducerConstrained; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 _singleProducerConstrained = value;
             }
         }
@@ -387,7 +386,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _greedy; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 _greedy = value;
             }
         }
@@ -398,7 +397,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _maxNumberOfGroups; }
             set
             {
-                Contract.Assert(this != Default, "Default instance is supposed to be immutable.");
+                Debug.Assert(this != Default, "Default instance is supposed to be immutable.");
                 if (value <= 0 && value != Unbounded) throw new ArgumentOutOfRangeException("value");
                 _maxNumberOfGroups = value;
             }

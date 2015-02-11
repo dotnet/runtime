@@ -952,7 +952,7 @@ namespace System.Xml
                     case State.Closed:
                         return WriteState.Closed;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail("Unmatched state in switch");
                         return WriteState.Error;
                 }
             }
@@ -1419,7 +1419,7 @@ namespace System.Xml
                         stack[top].defaultNs = ns;
                         break;
                     default:
-                        Debug.Assert(false, "Should have never come here");
+                        Debug.Fail("Should have never come here");
                         return;
                 }
                 stack[top].defaultNsState = (declared ? NamespaceState.DeclaredAndWrittenOut : NamespaceState.DeclaredButNotWrittenOut);

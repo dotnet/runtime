@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -150,7 +151,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 Task completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
                 bool blockIsCompleted = completionTask != null && completionTask.IsCompleted;
-                Contract.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
+                Debug.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
                 if (blockIsCompleted)
                 {
                     var reason = (BlockCompletionReason)completionTask.Status;

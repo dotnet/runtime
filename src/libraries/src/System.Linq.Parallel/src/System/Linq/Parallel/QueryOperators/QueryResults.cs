@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -60,7 +60,7 @@ namespace System.Linq.Parallel
 
         internal virtual T GetElement(int index)
         {
-            Contract.Assert(false, "GetElement property is not supported by non-indexible query results");
+            Debug.Fail("GetElement property is not supported by non-indexible query results");
             throw new NotSupportedException();
         }
 
@@ -75,7 +75,7 @@ namespace System.Linq.Parallel
         {
             get
             {
-                Contract.Assert(false, "ElementsCount property is not supported by non-indexible query results");
+                Debug.Fail("ElementsCount property is not supported by non-indexible query results");
                 throw new NotSupportedException();
             }
         }

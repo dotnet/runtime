@@ -68,7 +68,7 @@ namespace System.Collections.Specialized
 #if DEBUG
                 if ((value & section.Mask) != value)
                 {
-                    Debug.Assert(false, "Value out of bounds on BitVector32 Section Set!");
+                    Debug.Fail("Value out of bounds on BitVector32 Section Set!");
                 }
 #endif
                 value <<= section.Offset;

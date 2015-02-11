@@ -333,7 +333,7 @@ namespace Microsoft.Win32
             else if (ret != 0) // syscall failed, ret is an error code.
                 Win32Error(ret, keyName + "\\" + subkey);  // Access denied?
 
-            Debug.Assert(false, "Unexpected code path in RegistryKey::CreateSubKey");
+            Debug.Fail("Unexpected code path in RegistryKey::CreateSubKey");
             return null;
         }
 
@@ -1080,7 +1080,7 @@ namespace Microsoft.Win32
             if (datasize < 0)
             {
                 // unexpected code path
-                Debug.Assert(false, "[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
+                Debug.Fail("[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
                 datasize = 0;
             }
 

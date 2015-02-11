@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -65,14 +65,14 @@ namespace System.Linq.Parallel
             Func<TInputOutput, THashKey> keySelector, HashRepartitionStream<TInputOutput, THashKey, int> repartitionStream,
             CountdownEvent barrier, ListChunk<Pair>[][] valueExchangeMatrix, CancellationToken cancellationToken)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(keySelector != null || typeof(THashKey) == typeof(NoKeyMemoizationRequired));
-            Contract.Assert(repartitionStream != null);
-            Contract.Assert(barrier != null);
-            Contract.Assert(valueExchangeMatrix != null);
-            Contract.Assert(valueExchangeMatrix.GetLength(0) == partitionCount, "expected square matrix of buffers (NxN)");
-            Contract.Assert(partitionCount > 0 && valueExchangeMatrix[0].Length == partitionCount, "expected square matrix of buffers (NxN)");
-            Contract.Assert(0 <= partitionIndex && partitionIndex < partitionCount);
+            Debug.Assert(source != null);
+            Debug.Assert(keySelector != null || typeof(THashKey) == typeof(NoKeyMemoizationRequired));
+            Debug.Assert(repartitionStream != null);
+            Debug.Assert(barrier != null);
+            Debug.Assert(valueExchangeMatrix != null);
+            Debug.Assert(valueExchangeMatrix.GetLength(0) == partitionCount, "expected square matrix of buffers (NxN)");
+            Debug.Assert(partitionCount > 0 && valueExchangeMatrix[0].Length == partitionCount, "expected square matrix of buffers (NxN)");
+            Debug.Assert(0 <= partitionIndex && partitionIndex < partitionCount);
 
             _source = source;
             _partitionCount = partitionCount;
@@ -128,7 +128,7 @@ namespace System.Linq.Parallel
             if (mutables._currentBufferIndex == ENUMERATION_NOT_STARTED)
             {
                 EnumerateAndRedistributeElements();
-                Contract.Assert(mutables._currentBufferIndex != ENUMERATION_NOT_STARTED);
+                Debug.Assert(mutables._currentBufferIndex != ENUMERATION_NOT_STARTED);
             }
 
             // Once we've enumerated our contents, we can then go back and walk the buffers that belong
@@ -151,7 +151,7 @@ namespace System.Linq.Parallel
                         // If the chunk is empty, advance to the next one (if any).
                         mutables._currentIndex = ENUMERATION_NOT_STARTED;
                         mutables._currentBuffer = mutables._currentBuffer.Next;
-                        Contract.Assert(mutables._currentBuffer == null || mutables._currentBuffer.Count > 0);
+                        Debug.Assert(mutables._currentBuffer == null || mutables._currentBuffer.Count > 0);
                         continue; // Go back around and invoke this same logic.
                     }
                 }
@@ -195,7 +195,7 @@ namespace System.Linq.Parallel
         private void EnumerateAndRedistributeElements()
         {
             Mutables mutables = _mutables;
-            Contract.Assert(mutables != null);
+            Debug.Assert(mutables != null);
 
             ListChunk<Pair>[] privateBuffers = new ListChunk<Pair>[_partitionCount];
 
@@ -218,11 +218,11 @@ namespace System.Linq.Parallel
                 }
                 else
                 {
-                    Contract.Assert(typeof(THashKey) == typeof(NoKeyMemoizationRequired));
+                    Debug.Assert(typeof(THashKey) == typeof(NoKeyMemoizationRequired));
                     destinationIndex = _repartitionStream.GetHashCode(element) % _partitionCount;
                 }
 
-                Contract.Assert(0 <= destinationIndex && destinationIndex < _partitionCount,
+                Debug.Assert(0 <= destinationIndex && destinationIndex < _partitionCount,
                                 "destination partition outside of the legal range of partitions");
 
                 // Get the buffer for the destnation partition, lazily allocating if needed.  We maintain
