@@ -171,7 +171,7 @@
 #define MONO_FAST_TLS_DECLARE(x) static pthread_key_t x;
 
 #define MONO_THREAD_VAR_OFFSET(x,y) ({	\
-	typeof(x) _x = (x);			\
+	__typeof__(x) _x = (x);			\
 	pthread_key_t _y;	\
 	(void) (&_x == &_y);		\
 	y = (gint32) x; })
