@@ -507,7 +507,8 @@ void                Compiler::lvaInitUserArgs(InitVarDscInfo *      varDscInfo)
 #if defined(_TARGET_X86_)
     // Only (some of) the implicit args are enregistered for varargs
     varDscInfo->maxIntRegArgNum = info.compIsVarArgs ? varDscInfo->intRegArgNum : MAX_REG_ARG;
-#elif defined(_TARGET_AMD64_)
+#elif defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+    // On System V type environment the float registers are not indexed together with the int ones.
     varDscInfo->floatRegArgNum = varDscInfo->intRegArgNum;
 #endif // _TARGET_*
 
@@ -3726,7 +3727,10 @@ void Compiler::lvaFixVirtualFrameOffsets()
                 }
             }
 #endif
+#ifndef UNIX_AMD64_ABI
+            // On System V environments the stkOffs could be 0 for params passed in registers.
             assert(codeGen->isFramePointerUsed() || varDsc->lvStkOffs >= 0); // Only EBP relative references can have negative offsets
+#endif // !UNIX_AMD64_ABI
         }
     }
 
@@ -4040,15 +4044,12 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
 #if defined(_TARGET_X86_)
         argOffs += sizeof(void *);
 #elif defined(_TARGET_AMD64_)
-#ifdef UNIX_AMD64_ABI
-        // Reserve space on the stack only for OnFrame variables.
-        // No need to do that for OutgoingArg. No such thing on Linux.
-        if (varDsc->lvOnFrame)
-#endif // UNIX_AMD64_ABI
-        {
-            varDsc->lvStkOffs = argOffs;
-            argOffs += sizeof(void *);
-        }
+#ifndef UNIX_AMD64_ABI
+        // The offset for args need not to be set for System V.
+        // No outgoing args for callees. The spilled args offsets will be set later.
+        varDsc->lvStkOffs = argOffs;
+        argOffs += sizeof(void *);
+#endif // !UNIX_AMD64_ABI
 #elif defined(_TARGET_ARM64_)
         // Register arguments don't take stack space.
 #elif defined(_TARGET_ARM_)
