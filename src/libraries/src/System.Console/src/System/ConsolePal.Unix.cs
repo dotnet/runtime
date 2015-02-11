@@ -391,7 +391,7 @@ namespace System
                 private static Database ReadDatabase()
                 {
                     string term = Interop.libc.getenv("TERM");
-                    return term != null ? ReadDatabase(term) : null;
+                    return !string.IsNullOrEmpty(term) ? ReadDatabase(term) : null;
                 }
 
                 /// <summary>
@@ -439,23 +439,43 @@ namespace System
                     return null;
                 }
 
+                /// <summary>Attempt to open as readonly the specified file path.</summary>
+                /// <param name="filePath">The path to the file to open.</param>
+                /// <param name="fd">If successful, the opened file descriptor; otherwise, -1.</param>
+                /// <returns>true if the file was successfully opened; otherwise, false.</returns>
+                private static bool TryOpen(string filePath, out int fd)
+                {
+                    int tmpFd;
+                    while ((tmpFd = Interop.libc.open(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
+                    {
+                        // Don't throw in this case, as we'll be polling multiple locations looking for the file.
+                        // But we still want to retry if the open is interrupted by a signal.
+                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
+                        {
+                            fd = -1;
+                            return false;
+                        }
+                    }
+                    fd = tmpFd;
+                    return true;
+                }
+
                 /// <summary>Read the database for the specified terminal from the specified directory.</summary>
                 /// <param name="term">The identifier for the terminal.</param>
                 /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
                 /// <returns>The database, or null if it could not be found.</returns>
                 private static Database ReadDatabase(string term, string directoryPath)
                 {
-                    string filePath = directoryPath + "/" + term[0] + "/" + term; // filePath == /directory/termFirstLetter/term
+                    if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
+                    {
+                        return null;
+                    }
 
                     int fd;
-                    while ((fd = Interop.libc.open(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
+                    if (!TryOpen(directoryPath + "/" + term[0].ToString() + "/" + term, out fd) &&          // /directory/termFirstLetter/term      (Linux)
+                        !TryOpen(directoryPath + "/" + ((int)term[0]).ToString("X") + "/" + term, out fd))  // /directory/termFirstLetterAsHex/term (Mac)
                     {
-                        // Don't throw in this case, as we'll be polling multiple locations looking for the file.
-                        // But we still want to retry if the open is interrupted by a signal.
-                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
-                        {
-                            return null;
-                        }
+                        return null;
                     }
 
                     try
