@@ -288,6 +288,8 @@ namespace Mono.Linker.Steps {
 		// even if we (just before saving) will resolve all type references (bug #26752)
 		void MarkWithResolvedScope (TypeReference type)
 		{
+			if (type == null)
+				return;
 			var td = type.Resolve ();
 			if (td != null)
 				type.Scope = td.Scope;
