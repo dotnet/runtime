@@ -101,8 +101,14 @@ namespace Microsoft.Test.ModuleCore
                         }
                         catch (TestSkippedException tse)
                         {
-                            System.Console.WriteLine(indent + var.Desc);
-                            System.Console.WriteLine(indent + " SKIPPED" + ", Msg:" + tse.Message);
+                            if (!string.IsNullOrWhiteSpace(var.Desc))
+                            {
+                                System.Console.WriteLine(indent + var.Desc);
+                            }
+                            if (!string.IsNullOrWhiteSpace(tse.Message))
+                            {
+                                System.Console.WriteLine(indent + " SKIPPED" + ", Msg:" + tse.Message);
+                            }
                             module.SkipCount++;
                         }
                         catch (Exception e)
