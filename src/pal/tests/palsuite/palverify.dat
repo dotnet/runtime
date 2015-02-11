@@ -226,6 +226,7 @@ c_runtime/iswupper/test1,1
 c_runtime/iswxdigit/test1,1
 c_runtime/isxdigit/test1,1
 c_runtime/labs/test1,1
+c_runtime/llabs/test1,1
 c_runtime/localtime/test1,1
 c_runtime/log/test1,1
 c_runtime/log10/test1,1
