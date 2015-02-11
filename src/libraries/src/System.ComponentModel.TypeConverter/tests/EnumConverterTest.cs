@@ -55,7 +55,6 @@ namespace System.ComponentModel.Tests
         {
             Assert.Throws<FormatException>(
                 () => EnumConverterTests.s_someEnumConverter.ConvertFrom(TypeConverterTests.s_context, null, "<random string>"));
-
         }
 
         [Fact]

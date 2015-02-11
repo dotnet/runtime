@@ -47,15 +47,15 @@ namespace System.ComponentModel
         /// </devdoc>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value is string)
+            string text = value as string;
+            if (text != null)
             {
-                string text = (string)value;
                 if (text.Length > 1)
                 {
                     text = text.Trim();
                 }
 
-                if (text != null && text.Length > 0)
+                if (text.Length > 0)
                 {
                     if (text.Length != 1)
                     {
@@ -66,8 +66,8 @@ namespace System.ComponentModel
 
                 return '\0';
             }
+
             return base.ConvertFrom(context, culture, value);
         }
     }
 }
-

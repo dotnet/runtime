@@ -27,7 +27,6 @@ namespace System.ComponentModel.Tests
         {
             Assert.Throws<Exception>(
                 () => Int64ConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "8.0"));
-
         }
 
         [Fact]

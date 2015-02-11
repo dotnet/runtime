@@ -22,7 +22,7 @@ namespace System.ComponentModel
         ///       associated with.
         ///    </para>
         /// </devdoc>
-        private Type type;
+        private Type _type;
 
         /// <devdoc>
         ///    <para>
@@ -32,7 +32,7 @@ namespace System.ComponentModel
         /// </devdoc>
         public EnumConverter(Type type)
         {
-            this.type = type;
+            _type = type;
         }
 
         /// <devdoc>
@@ -42,7 +42,7 @@ namespace System.ComponentModel
         {
             get
             {
-                return this.type;
+                return _type;
             }
         }
 
@@ -80,29 +80,29 @@ namespace System.ComponentModel
         /// </devdoc>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value is string)
+            string strValue = value as string;
+            if (strValue != null)
             {
                 try
                 {
-                    string strValue = (string)value;
                     if (strValue.IndexOf(',') != -1)
                     {
                         long convertedValue = 0;
                         string[] values = strValue.Split(new char[] { ',' });
                         foreach (string v in values)
                         {
-                            convertedValue |= Convert.ToInt64((Enum)Enum.Parse(this.type, v, true), culture);
+                            convertedValue |= Convert.ToInt64((Enum)Enum.Parse(_type, v, true), culture);
                         }
-                        return Enum.ToObject(this.type, convertedValue);
+                        return Enum.ToObject(_type, convertedValue);
                     }
                     else
                     {
-                        return Enum.Parse(this.type, strValue, true);
+                        return Enum.Parse(_type, strValue, true);
                     }
                 }
                 catch (Exception e)
                 {
-                    throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, this.type.Name), e);
+                    throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, (string)value, _type.Name), e);
                 }
             }
             else if (value is Enum[])
@@ -112,7 +112,7 @@ namespace System.ComponentModel
                 {
                     finalValue |= Convert.ToInt64(e, culture);
                 }
-                return Enum.ToObject(this.type, finalValue);
+                return Enum.ToObject(_type, finalValue);
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -136,21 +136,21 @@ namespace System.ComponentModel
                 // Raise an argument exception if the value isn't defined and if
                 // the enum isn't a flags style.
                 //
-                if (!this.type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(this.type, value))
+                if (!_type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(_type, value))
                 {
-                    throw new ArgumentException(SR.Format(SR.EnumConverterInvalidValue, value.ToString(), this.type.Name));
+                    throw new ArgumentException(SR.Format(SR.EnumConverterInvalidValue, value.ToString(), _type.Name));
                 }
 
-                return Enum.Format(this.type, value, "G");
+                return Enum.Format(_type, value, "G");
             }
 
             if (destinationType == typeof(Enum[]) && value != null)
             {
-                if (this.type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false))
+                if (_type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false))
                 {
                     List<Enum> flagValues = new List<Enum>();
 
-                    Array objValues = Enum.GetValues(this.type);
+                    Array objValues = Enum.GetValues(_type);
                     long[] ulValues = new long[objValues.Length];
                     for (int idx = 0; idx < objValues.Length; idx++)
                     {
@@ -166,7 +166,7 @@ namespace System.ComponentModel
                         {
                             if ((ul != 0 && (ul & longValue) == ul) || ul == longValue)
                             {
-                                flagValues.Add((Enum)Enum.ToObject(this.type, ul));
+                                flagValues.Add((Enum)Enum.ToObject(_type, ul));
                                 valueFound = true;
                                 longValue &= ~ul;
                                 break;
@@ -181,14 +181,14 @@ namespace System.ComponentModel
 
                     if (!valueFound && longValue != 0)
                     {
-                        flagValues.Add((Enum)Enum.ToObject(this.type, longValue));
+                        flagValues.Add((Enum)Enum.ToObject(_type, longValue));
                     }
 
                     return flagValues.ToArray();
                 }
                 else
                 {
-                    return new Enum[] { (Enum)Enum.ToObject(this.type, value) };
+                    return new Enum[] { (Enum)Enum.ToObject(_type, value) };
                 }
             }
 
@@ -196,4 +196,3 @@ namespace System.ComponentModel
         }
     }
 }
-

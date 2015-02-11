@@ -12,24 +12,24 @@ namespace System.ComponentModel
     /// </devdoc>
     public class NullableConverter : TypeConverter
     {
-        private Type nullableType;
-        private Type simpleType;
-        private TypeConverter simpleTypeConverter;
+        private Type _nullableType;
+        private Type _simpleType;
+        private TypeConverter _simpleTypeConverter;
 
         /// <devdoc>
         /// Nullable converter is initialized with the underlying simple type.
         /// </devdoc>
         public NullableConverter(Type type)
         {
-            this.nullableType = type;
+            _nullableType = type;
 
-            this.simpleType = Nullable.GetUnderlyingType(type);
-            if (this.simpleType == null)
+            _simpleType = Nullable.GetUnderlyingType(type);
+            if (_simpleType == null)
             {
                 throw new ArgumentException(SR.NullableConverterBadCtorArg, "type");
             }
 
-            this.simpleTypeConverter = TypeDescriptor.GetConverter(this.simpleType);
+            _simpleTypeConverter = TypeDescriptor.GetConverter(_simpleType);
         }
 
         /// <devdoc>
@@ -38,13 +38,13 @@ namespace System.ComponentModel
         /// </devdoc>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == this.simpleType)
+            if (sourceType == _simpleType)
             {
                 return true;
             }
-            else if (this.simpleTypeConverter != null)
+            else if (_simpleTypeConverter != null)
             {
-                return this.simpleTypeConverter.CanConvertFrom(context, sourceType);
+                return _simpleTypeConverter.CanConvertFrom(context, sourceType);
             }
             else
             {
@@ -57,17 +57,17 @@ namespace System.ComponentModel
         /// </devdoc>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value == null || value.GetType() == this.simpleType)
+            if (value == null || value.GetType() == _simpleType)
             {
                 return value;
             }
-            else if (value is String && String.IsNullOrEmpty(value as String))
+            else if (value is string && string.IsNullOrEmpty(value as string))
             {
                 return null;
             }
-            else if (this.simpleTypeConverter != null)
+            else if (_simpleTypeConverter != null)
             {
-                return this.simpleTypeConverter.ConvertFrom(context, culture, value);
+                return _simpleTypeConverter.ConvertFrom(context, culture, value);
             }
             else
             {
@@ -80,13 +80,13 @@ namespace System.ComponentModel
         /// </devdoc>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == this.simpleType)
+            if (destinationType == _simpleType)
             {
                 return true;
             }
-            else if (this.simpleTypeConverter != null)
+            else if (_simpleTypeConverter != null)
             {
-                return this.simpleTypeConverter.CanConvertTo(context, destinationType);
+                return _simpleTypeConverter.CanConvertTo(context, destinationType);
             }
             else
             {
@@ -104,7 +104,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException("destinationType");
             }
 
-            if (destinationType == this.simpleType && value != null && this.nullableType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))
+            if (destinationType == _simpleType && value != null && _nullableType.GetTypeInfo().IsAssignableFrom(value.GetType().GetTypeInfo()))
             {
                 return value;
             }
@@ -116,9 +116,9 @@ namespace System.ComponentModel
                     return string.Empty;
                 }
             }
-            else if (this.simpleTypeConverter != null)
+            else if (_simpleTypeConverter != null)
             {
-                return this.simpleTypeConverter.ConvertTo(context, culture, value, destinationType);
+                return _simpleTypeConverter.ConvertTo(context, culture, value, destinationType);
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -131,7 +131,7 @@ namespace System.ComponentModel
         {
             get
             {
-                return this.nullableType;
+                return _nullableType;
             }
         }
 
@@ -142,7 +142,7 @@ namespace System.ComponentModel
         {
             get
             {
-                return this.simpleType;
+                return _simpleType;
             }
         }
 
@@ -153,7 +153,7 @@ namespace System.ComponentModel
         {
             get
             {
-                return this.simpleTypeConverter;
+                return _simpleTypeConverter;
             }
         }
     }
