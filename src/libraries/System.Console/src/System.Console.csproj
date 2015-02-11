@@ -72,7 +72,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getenv.cs">
       <Link>Common\Interop\Interop.getenv.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek.cs">
       <Link>Common\Interop\Interop.lseek64.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
