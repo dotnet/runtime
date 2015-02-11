@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-using off_t = System.IntPtr;
+using off_t = System.Int64; // Assuming either 64-bit machine or _FILE_OFFSET_BITS == 64
 
 internal static partial class Interop
 {
