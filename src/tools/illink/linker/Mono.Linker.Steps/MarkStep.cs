@@ -277,11 +277,21 @@ namespace Mono.Linker.Steps {
 
 				MarkType (et);
 				foreach (var cac in (CustomAttributeArgument[]) argument.Value)
-					MarkType ((TypeReference) cac.Value);
+					MarkWithResolvedScope ((TypeReference) cac.Value);
 			} else if (at.Namespace == "System" && at.Name == "Type") {
 				MarkType (argument.Type);
-				MarkType ((TypeReference) argument.Value);
+				MarkWithResolvedScope ((TypeReference) argument.Value);
 			}
+		}
+
+		// custom attributes encoding means it's possible to have a scope that will point into a PCL facade
+		// even if we (just before saving) will resolve all type references (bug #26752)
+		void MarkWithResolvedScope (TypeReference type)
+		{
+			var td = type.Resolve ();
+			if (td != null)
+				type.Scope = td.Scope;
+			MarkType (type);
 		}
 
 		protected bool CheckProcessed (IMetadataTokenProvider provider)
