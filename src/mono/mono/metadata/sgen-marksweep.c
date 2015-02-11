@@ -402,6 +402,13 @@ sweep_in_progress (void)
 		state == SWEEP_STATE_COMPACTING;
 }
 
+static inline gboolean
+block_is_swept_or_marking (MSBlockInfo *block)
+{
+	gint32 state = block->state;
+	return state == BLOCK_STATE_SWEPT || state == BLOCK_STATE_MARKING;
+}
+
 //#define MARKSWEEP_CONSISTENCY_CHECK
 
 #ifdef MARKSWEEP_CONSISTENCY_CHECK
@@ -460,7 +467,7 @@ consistency_check (void)
 		g_assert (num_free == 0);
 
 		/* check all mark words are zero */
-		if (!sgen_concurrent_collection_in_progress () && (block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING)) {
+		if (!sgen_concurrent_collection_in_progress () && block_is_swept_or_marking (block)) {
 			for (i = 0; i < MS_NUM_MARK_WORDS; ++i)
 				g_assert (block->mark_words [i] == 0);
 		}
@@ -859,7 +866,7 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
 			/* FIXME: This condition is probably incorrect. */
-			if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING) {
+			if (!block_is_swept_or_marking (block)) {
 				int word, bit;
 				MS_CALC_MARK_BIT (word, bit, obj);
 				if (!MS_MARK_BIT (block, word, bit))
@@ -1951,7 +1958,7 @@ major_pin_objects (SgenGrayQueue *queue)
 
 	FOREACH_BLOCK_NO_LOCK (block) {
 		size_t first_entry, last_entry;
-		SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT || block->state == BLOCK_STATE_MARKING, "All blocks must be swept when we're pinning.");
+		SGEN_ASSERT (0, block_is_swept_or_marking (block), "All blocks must be swept when we're pinning.");
 		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
 				&first_entry, &last_entry);
 		mark_pinned_objects_in_block (block, first_entry, last_entry, queue);
@@ -2171,7 +2178,7 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFun
 		start = (char*)(block_start + card_index * CARD_SIZE_IN_BYTES);
 		end = start + CARD_SIZE_IN_BYTES;
 
-		if (block->state != BLOCK_STATE_SWEPT && block->state != BLOCK_STATE_MARKING)
+		if (!block_is_swept_or_marking (block))
 			sweep_block (block);
 
 		HEAVY_STAT (++marked_cards);
