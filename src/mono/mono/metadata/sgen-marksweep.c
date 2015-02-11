@@ -73,8 +73,12 @@
 
 typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
-	int obj_size;
-	int obj_size_index;
+	guint16 obj_size;
+	/*
+	 * FIXME: Do we even need this? It's only used during sweep and might be worth
+	 * recalculating to save the space.
+	 */
+	guint16 obj_size_index;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
