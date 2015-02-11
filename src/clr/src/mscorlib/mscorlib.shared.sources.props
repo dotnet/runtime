@@ -13,7 +13,7 @@
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilationRelaxations.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ExtensionAttribute.cs" />
-    <CompilerServicesSources Include="$(BclSourcesRoot)\system\Runtime\CompilerServices\FormattableStringFactory.cs" />
+    <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FormattableStringFactory.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <CompilerServicesSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
@@ -254,7 +254,7 @@
   <ItemGroup>
     <SystemSources Include="$(BclSourcesRoot)\System\AggregateException.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\system\AppContext\AppContextSwitches.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
@@ -273,7 +273,7 @@
     <SystemSources Include="$(BclSourcesRoot)\System\Text\StringBuilder.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\Exception.cs" />
-    <SystemSources Include="$(BclSourcesRoot)\system\FormattableString.cs" />
+    <SystemSources Include="$(BclSourcesRoot)\System\FormattableString.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\DateTime.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\DateTimeKind.cs" />
     <SystemSources Include="$(BclSourcesRoot)\System\DateTimeOffset.cs" />
@@ -690,7 +690,7 @@
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
-    <GlobalizationSources Include="$(BclSourcesRoot)\system\globalization\CalendricalCalculationsHelper.cs" />
+    <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
