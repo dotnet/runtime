@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Microsoft.DotNet.CoreCLR.Development</id>
-    <version>1.0.0-prerelease</version>
+    <version>1.0.1-prerelease</version>
     <title>Microsoft DotNet CoreCLR Runtime For Component Development</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -23,6 +23,7 @@
     <file src="..\mscorrc.debug.dll" target="bin\mscorrc.debug.dll" />
     <file src="..\corerun.exe" target="bin\corerun.exe" />
     <file src="..\mscorlib.dll" target="bin\mscorlib.dll" />
+    <file src="..\sos.dll" target="bin\sos.dll" />
     <file src="..\PDB\clretwrc.pdb" target="bin\clretwrc.pdb" />
     <file src="..\PDB\coreclr.pdb" target="bin\coreclr.pdb" />
     <file src="..\PDB\corerun.pdb" target="bin\corerun.pdb" />
@@ -31,6 +32,7 @@
     <file src="..\PDB\mscorrc.pdb" target="bin\mscorrc.pdb" />
     <file src="..\PDB\mscorrc.debug.pdb" target="bin\mscorrc.debug.pdb" />
     <file src="..\PDB\corerun.pdb" target="bin\corerun.pdb" />
+    <file src="..\PDB\sos.pdb" target="bin\sos.pdb" />
     <file src="..\mscorlib.pdb" target="bin\mscorlib.pdb" />
     <file src="..\inc\cor.h" target="inc\cor.h" />
     <file src="..\inc\corerror.h" target="inc\corerror.h" />
