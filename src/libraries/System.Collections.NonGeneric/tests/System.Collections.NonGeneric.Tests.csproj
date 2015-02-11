@@ -30,7 +30,7 @@
     <Compile Include="ArrayList\GetSetRangeTests.cs" />
     <Compile Include="ArrayList\IndexOfTests.cs" />
     <Compile Include="ArrayList\InsertRangeTests.cs" />
-    <Compile Include="ArrayList\InsertTests.cs" /> 
+    <Compile Include="ArrayList\InsertTests.cs" />
     <Compile Include="ArrayList\LastIndexOfTests.cs" />
     <Compile Include="ArrayList\PropertyCapacityTests.cs" />
     <Compile Include="ArrayList\PropertyCountTests.cs" />
@@ -66,6 +66,29 @@
     <Compile Include="Comparer\Comparer_Objects.cs" />
     <Compile Include="DictionaryBase\DictionaryBase_OnMethods.cs" />
     <Compile Include="DictionaryBase\DictionaryBase_UnitTests.cs" />
+    <Compile Include="Hashtable\AddStressTests.cs" />
+    <Compile Include="Hashtable\AddStressTestsInputData.cs" />
+    <Compile Include="Hashtable\AddTests.cs" />
+    <Compile Include="Hashtable\ClearTests.cs" />
+    <Compile Include="Hashtable\CloneTests.cs" />
+    <Compile Include="Hashtable\ContainsKeyTests.cs" />
+    <Compile Include="Hashtable\ContainsTests.cs" />
+    <Compile Include="Hashtable\ContainsValueTests.cs" />
+    <Compile Include="Hashtable\CopyToTests.cs" />
+    <Compile Include="Hashtable\CtorTests.cs" />
+    <Compile Include="Hashtable\GetEnumeratorTests.cs" />
+    <Compile Include="Hashtable\PropertyCountTests.cs" />
+    <Compile Include="Hashtable\PropertyEqualityComparerTests.cs" />
+    <Compile Include="Hashtable\PropertyIsFixedSizeTests.cs" />
+    <Compile Include="Hashtable\PropertyIsReadOnlyTests.cs" />
+    <Compile Include="Hashtable\PropertyIsSynchronizedTests.cs" />
+    <Compile Include="Hashtable\PropertyItemTests.cs" />
+    <Compile Include="Hashtable\PropertyItemThreadSafety.cs" />
+    <Compile Include="Hashtable\PropertyKeysTests.cs" />
+    <Compile Include="Hashtable\PropertySyncRootTests.cs" />
+    <Compile Include="Hashtable\PropertyValuesTests.cs" />
+    <Compile Include="Hashtable\RemoveTests.cs" />
+    <Compile Include="Hashtable\SynchronizedTests.cs" />
     <Compile Include="Queue\Queue_Clone.cs" />
     <Compile Include="Queue\Queue_Contains.cs" />
     <Compile Include="Queue\Queue_ctor.cs" />
@@ -79,8 +102,51 @@
     <Compile Include="Queue\Queue_Synchronized.cs" />
     <Compile Include="Queue\Queue_ToArray.cs" />
     <Compile Include="Queue\Queue_TrimToSize.cs" />
+    <Compile Include="ReadOnlyCollectionBase\ReadOnlyCollectionBaseTests.cs" />
+    <Compile Include="SortedList\ClearTests.cs" />
+    <Compile Include="SortedList\CloneTests.cs" />
+    <Compile Include="SortedList\ContainsKeyTests.cs" />
+    <Compile Include="SortedList\ContainsValueTests.cs" />
+    <Compile Include="SortedList\CtorDictionaryIComparerTests.cs" />
+    <Compile Include="SortedList\CtorDictionaryTests.cs" />
+    <Compile Include="SortedList\CtorIComparerIntTests.cs" />
+    <Compile Include="SortedList\CtorIComparerTests.cs" />
+    <Compile Include="SortedList\CtorTests.cs" />
+    <Compile Include="SortedList\GetByIndexITests.cs" />
+    <Compile Include="SortedList\GetEnumeratorTests.cs" />
+    <Compile Include="SortedList\GetKeyListTests.cs" />
+    <Compile Include="SortedList\GetKeyTests.cs" />
+    <Compile Include="SortedList\GetObjectTests.cs" />
+    <Compile Include="SortedList\GetValueListTests.cs" />
+    <Compile Include="SortedList\IndexOfKeyTests.cs" />
+    <Compile Include="SortedList\IndexOfValueTests.cs" />
+    <Compile Include="SortedList\MultiMethodsTests.cs" />
+    <Compile Include="SortedList\PropertyCapacityTests.cs" />
+    <Compile Include="SortedList\PropertyCountTests.cs" />
+    <Compile Include="SortedList\PropertyIsFixedSizeTests.cs" />
+    <Compile Include="SortedList\PropertyIsReadOnlyTests.cs" />
+    <Compile Include="SortedList\PropertyIsSynchronizedTests.cs" />
+    <Compile Include="SortedList\PropertyKeysTests.cs" />
+    <Compile Include="SortedList\PropertySyncRootTests.cs" />
+    <Compile Include="SortedList\PropertyValuesTests.cs" />
+    <Compile Include="SortedList\RemoveAtTests.cs" />
+    <Compile Include="SortedList\RemoveTests.cs" />
+    <Compile Include="SortedList\SetCapacityTests.cs" />
+    <Compile Include="SortedList\SetObjectObjectTests.cs" />
+    <Compile Include="SortedList\SynchronizedTests.cs" />
+    <Compile Include="SortedList\TrimToSizeTests.cs" />
+    <Compile Include="SortedList\WrapperTests.cs" />
+    <Compile Include="Stack\StackBasicTests.cs" />
+    <Compile Include="Stack\Stack_Clone.cs" />
+    <Compile Include="Stack\Stack_Contains_obj.cs" />
+    <Compile Include="Stack\Stack_get_SyncRoot.cs" />
+    <Compile Include="Stack\Stack_ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.Collections.NonGeneric.csproj">
       <Name>System.Collections.NonGeneric</Name>
     </ProjectReference>
