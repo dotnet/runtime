@@ -858,16 +858,21 @@ major_iterate_objects (IterateObjectsFlags flags, IterateObjectCallbackFunc call
 		if (!block->pinned && !non_pinned)
 			continue;
 		if (sweep && lazy_sweep) {
-			/* FIXME: We can't just call `sweep_block` willy-nilly. */
 			sweep_block (block);
 			SGEN_ASSERT (0, block->state == BLOCK_STATE_SWEPT, "Block must be swept after sweeping");
 		}
 
 		for (i = 0; i < count; ++i) {
 			void **obj = (void**) MS_BLOCK_OBJ (block, i);
-			/* FIXME: This condition is probably incorrect. */
+			/*
+			 * We've finished sweep checking, but if we're sweeping lazily and
+			 * the flags don't require us to sweep, the block might still need
+			 * sweeping.  In that case, we need to consult the mark bits to tell
+			 * us whether an object slot is live.
+			 */
 			if (!block_is_swept_or_marking (block)) {
 				int word, bit;
+				SGEN_ASSERT (0, !sweep && block->state == BLOCK_STATE_NEED_SWEEPING, "Has sweeping not finished?");
 				MS_CALC_MARK_BIT (word, bit, obj);
 				if (!MS_MARK_BIT (block, word, bit))
 					continue;
