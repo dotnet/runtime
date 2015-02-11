@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq.Parallel;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -26,7 +26,7 @@ namespace System.Linq
             : base(sortOp.SpecifiedQuerySettings)
         {
             _sortOp = sortOp;
-            Contract.Assert(sortOp is IOrderedEnumerable<TSource>);
+            Debug.Assert(sortOp is IOrderedEnumerable<TSource>);
         }
 
         internal QueryOperator<TSource> SortOperator

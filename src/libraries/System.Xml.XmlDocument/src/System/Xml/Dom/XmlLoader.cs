@@ -362,7 +362,7 @@ namespace System.Xml
                         standalone = _reader.Value;
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail("Unknown reader name");
                         break;
                 }
             }

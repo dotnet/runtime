@@ -101,7 +101,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BatchedJoinBlock<T1, T2>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -153,8 +153,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
         public void Complete()
         {
-            Contract.Assert(_target1 != null, "_target1 not initialized");
-            Contract.Assert(_target2 != null, "_target2 not initialized");
+            Debug.Assert(_target1 != null, "_target1 not initialized");
+            Debug.Assert(_target2 != null, "_target2 not initialized");
 
             _target1.Complete();
             _target2.Complete();
@@ -166,9 +166,9 @@ namespace System.Threading.Tasks.Dataflow
             if (exception == null) throw new ArgumentNullException("exception");
             Contract.EndContractBlock();
 
-            Contract.Assert(_sharedResources != null, "_sharedResources not initialized");
-            Contract.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
-            Contract.Assert(_source != null, "_source not initialized");
+            Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
+            Debug.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
+            Debug.Assert(_source != null, "_source not initialized");
 
             lock (_sharedResources._incomingLock)
             {
@@ -366,7 +366,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BatchedJoinBlock<T1, T2, T3>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -420,9 +420,9 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
         public void Complete()
         {
-            Contract.Assert(_target1 != null, "_target1 not initialized");
-            Contract.Assert(_target2 != null, "_target2 not initialized");
-            Contract.Assert(_target3 != null, "_target3 not initialized");
+            Debug.Assert(_target1 != null, "_target1 not initialized");
+            Debug.Assert(_target2 != null, "_target2 not initialized");
+            Debug.Assert(_target3 != null, "_target3 not initialized");
 
             _target1.Complete();
             _target2.Complete();
@@ -435,9 +435,9 @@ namespace System.Threading.Tasks.Dataflow
             if (exception == null) throw new ArgumentNullException("exception");
             Contract.EndContractBlock();
 
-            Contract.Assert(_sharedResources != null, "_sharedResources not initialized");
-            Contract.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
-            Contract.Assert(_source != null, "_source not initialized");
+            Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
+            Debug.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
+            Debug.Assert(_source != null, "_source not initialized");
 
             lock (_sharedResources._incomingLock)
             {
@@ -609,7 +609,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Consume the message from the source if necessary, and store the message
                 if (consumeToAccept)
                 {
-                    Contract.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
+                    Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                     bool consumed;
                     messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
@@ -713,9 +713,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Action batchSizeReachedAction, Action allTargetsDecliningAction,
             Action<Exception> exceptionAction, Action completionAction)
         {
-            Contract.Assert(batchSize >= 1, "A positive batch size is required.");
-            Contract.Assert(batchSizeReachedAction != null, "Need an action to invoke for each batch.");
-            Contract.Assert(allTargetsDecliningAction != null, "Need an action to invoke when all targets have declined.");
+            Debug.Assert(batchSize >= 1, "A positive batch size is required.");
+            Debug.Assert(batchSizeReachedAction != null, "Need an action to invoke for each batch.");
+            Debug.Assert(allTargetsDecliningAction != null, "Need an action to invoke when all targets have declined.");
 
             _incomingLock = new object();
             _batchSize = batchSize;

@@ -10,7 +10,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -47,7 +47,7 @@ namespace System.Linq.Parallel
 
         internal QueryOpeningEnumerator(QueryOperator<TOutput> queryOperator, ParallelMergeOptions? mergeOptions, bool suppressOrderPreservation)
         {
-            Contract.Assert(queryOperator != null);
+            Debug.Assert(queryOperator != null);
 
             _queryOperator = queryOperator;
             _mergeOptions = mergeOptions;

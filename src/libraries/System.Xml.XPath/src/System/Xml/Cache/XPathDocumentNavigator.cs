@@ -78,7 +78,7 @@ namespace MS.Internal.Xml.Cache
                     case XPathNodeType.Attribute:
                     case XPathNodeType.Comment:
                     case XPathNodeType.ProcessingInstruction:
-                        Debug.Assert(false, "ReadStringValue() should have taken care of these node types.");
+                        Debug.Fail("ReadStringValue() should have taken care of these node types.");
                         break;
 
                     case XPathNodeType.Text:

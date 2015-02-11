@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Text
 {
@@ -40,7 +40,7 @@ namespace System.Text
 
             // If we're getting chars or getting char count we don't expect to have
             // to remember fallbacks between calls (so it should be empty)
-            Contract.Assert(_fallbackBuffer.Remaining == 0,
+            Debug.Assert(_fallbackBuffer.Remaining == 0,
                 "[Encoding.EncodingCharBuffer.EncodingCharBuffer]Expected empty fallback buffer for getchars/charcount");
             _fallbackBufferHelper = new DecoderFallbackBufferHelper(_fallbackBuffer);
             _fallbackBufferHelper.InternalInitialize(_bytes, _charEnd);
@@ -113,7 +113,7 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated
         internal unsafe byte GetNextByte()
         {
-            Contract.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
+            Debug.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
             if (_bytes >= _byteEnd)
                 return 0;
             return *(_bytes++);

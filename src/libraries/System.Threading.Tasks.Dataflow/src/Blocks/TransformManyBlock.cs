@@ -132,7 +132,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else // async
             {
-                Contract.Assert(transformAsync != null, "Incorrect delegate type.");
+                Debug.Assert(transformAsync != null, "Incorrect delegate type.");
 
                 // If a task-based function was provided, we need to use asynchronous completion, meaning
                 // that the target won't consider a message completed until the task
@@ -161,7 +161,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((TransformManyBlock<TInput, TOutput>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -312,7 +312,7 @@ namespace System.Threading.Tasks.Dataflow
                     break;
 
                 default:
-                    Contract.Assert(false, "The task should have been in a final state.");
+                    Debug.Assert(false, "The task should have been in a final state.");
                     break;
             }
 
@@ -514,7 +514,7 @@ namespace System.Threading.Tasks.Dataflow
             Contract.Requires(_target.IsBounded, "Expected to be in bounding mode.");
             if (count > 1) _target.ChangeBoundingCount(count - 1);
             else if (count == 0) _target.ChangeBoundingCount(-1);
-            else Contract.Assert(count == 1, "Count shouldn't be negative.");
+            else Debug.Assert(count == 1, "Count shouldn't be negative.");
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />

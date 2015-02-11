@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -29,7 +29,7 @@ namespace System.Linq.Parallel
         internal UnionQueryOperator(ParallelQuery<TInputOutput> left, ParallelQuery<TInputOutput> right, IEqualityComparer<TInputOutput> comparer)
             : base(left, right)
         {
-            Contract.Assert(left != null && right != null, "child data sources cannot be null");
+            Debug.Assert(left != null && right != null, "child data sources cannot be null");
 
             _comparer = comparer;
             _outputOrdered = LeftChild.OutputOrdered || RightChild.OutputOrdered;
@@ -56,7 +56,7 @@ namespace System.Linq.Parallel
             PartitionedStream<TInputOutput, TLeftKey> leftStream, PartitionedStream<TInputOutput, TRightKey> rightStream,
             IPartitionedStreamRecipient<TInputOutput> outputRecipient, bool preferStriping, QuerySettings settings)
         {
-            Contract.Assert(leftStream.PartitionCount == rightStream.PartitionCount);
+            Debug.Assert(leftStream.PartitionCount == rightStream.PartitionCount);
             int partitionCount = leftStream.PartitionCount;
 
             // Wrap both child streams with hash repartition
@@ -199,8 +199,8 @@ namespace System.Linq.Parallel
                 int partitionIndex, IEqualityComparer<TInputOutput> comparer,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(leftSource != null);
-                Contract.Assert(rightSource != null);
+                Debug.Assert(leftSource != null);
+                Debug.Assert(rightSource != null);
 
                 _leftSource = leftSource;
                 _rightSource = rightSource;
@@ -221,7 +221,7 @@ namespace System.Linq.Parallel
                     _outputLoopCount = new Shared<int>(0);
                 }
 
-                Contract.Assert(_hashLookup != null);
+                Debug.Assert(_hashLookup != null);
 
                 // Enumerate the left and then right data source. When each is done, we set the
                 // field to null so we will skip it upon subsequent calls to MoveNext.
@@ -316,8 +316,8 @@ namespace System.Linq.Parallel
                 bool leftOrdered, bool rightOrdered, IEqualityComparer<TInputOutput> comparer, IComparer<ConcatKey> keyComparer,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(leftSource != null);
-                Contract.Assert(rightSource != null);
+                Debug.Assert(leftSource != null);
+                Debug.Assert(rightSource != null);
 
                 _leftSource = leftSource;
                 _rightSource = rightSource;
@@ -341,8 +341,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInputOutput currentElement, ref ConcatKey currentKey)
             {
-                Contract.Assert(_leftSource != null);
-                Contract.Assert(_rightSource != null);
+                Debug.Assert(_leftSource != null);
+                Debug.Assert(_rightSource != null);
 
                 if (_outputEnumerator == null)
                 {
@@ -403,7 +403,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_leftSource != null && _rightSource != null);
+                Debug.Assert(_leftSource != null && _rightSource != null);
                 _leftSource.Dispose();
                 _rightSource.Dispose();
             }

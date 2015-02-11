@@ -9,7 +9,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
 
         protected QueryTask(int taskIndex, QueryTaskGroupState groupState)
         {
-            Contract.Assert(groupState != null);
+            Debug.Assert(groupState != null);
             _taskIndex = taskIndex;
             _groupState = groupState;
         }
@@ -58,7 +58,7 @@ namespace System.Linq.Parallel
 
         internal Task RunSynchronously(TaskScheduler taskScheduler)
         {
-            Contract.Assert(taskScheduler == TaskScheduler.Default, "PLINQ queries can currently execute only on the default scheduler.");
+            Debug.Assert(taskScheduler == TaskScheduler.Default, "PLINQ queries can currently execute only on the default scheduler.");
             TraceHelpers.TraceInfo("[timing]: {0}: Running work synchronously", DateTime.Now.Ticks, _taskIndex);
             Task task = new Task(s_runTaskSynchronouslyDelegate, this, TaskCreationOptions.AttachedToParent);
             task.RunSynchronously(taskScheduler);
@@ -76,7 +76,7 @@ namespace System.Linq.Parallel
 
         internal Task RunAsynchronously(TaskScheduler taskScheduler)
         {
-            Contract.Assert(taskScheduler == TaskScheduler.Default, "PLINQ queries can currently execute only on the default scheduler.");
+            Debug.Assert(taskScheduler == TaskScheduler.Default, "PLINQ queries can currently execute only on the default scheduler.");
 
             TraceHelpers.TraceInfo("[timing]: {0}: Queue work {1} to occur asynchronously", DateTime.Now.Ticks, _taskIndex);
             return Task.Factory.StartNew(s_baseWorkDelegate, this, new CancellationToken(), TaskCreationOptions.AttachedToParent | TaskCreationOptions.PreferFairness, taskScheduler);
@@ -89,7 +89,7 @@ namespace System.Linq.Parallel
 
         private void BaseWork(object unused)
         {
-            Contract.Assert(unused == null);
+            Debug.Assert(unused == null);
             TraceHelpers.TraceInfo("[timing]: {0}: Start work {1}", DateTime.Now.Ticks, _taskIndex);
 
             PlinqEtwProvider.Log.ParallelQueryFork(_groupState.QueryId);

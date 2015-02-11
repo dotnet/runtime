@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -30,7 +30,7 @@ namespace System.Linq.Parallel
         internal DistinctQueryOperator(IEnumerable<TInputOutput> source, IEqualityComparer<TInputOutput> comparer)
             : base(source)
         {
-            Contract.Assert(source != null, "child data source cannot be null");
+            Debug.Assert(source != null, "child data source cannot be null");
             _comparer = comparer;
             SetOrdinalIndexState(OrdinalIndexState.Shuffled);
         }
@@ -130,7 +130,7 @@ namespace System.Linq.Parallel
                 QueryOperatorEnumerator<Pair, TKey> source, IEqualityComparer<TInputOutput> comparer,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
+                Debug.Assert(source != null);
                 _source = source;
                 _hashLookup = new Set<TInputOutput>(comparer);
                 _cancellationToken = cancellationToken;
@@ -142,8 +142,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInputOutput currentElement, ref int currentKey)
             {
-                Contract.Assert(_source != null);
-                Contract.Assert(_hashLookup != null);
+                Debug.Assert(_source != null);
+                Debug.Assert(_hashLookup != null);
 
                 // Iterate over this set's elements until we find a unique element.
                 TKey keyUnused = default(TKey);
@@ -173,7 +173,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }
@@ -205,7 +205,7 @@ namespace System.Linq.Parallel
                 IEqualityComparer<TInputOutput> comparer, IComparer<TKey> keyComparer,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
+                Debug.Assert(source != null);
                 _source = source;
                 _keyComparer = keyComparer;
 
@@ -221,8 +221,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInputOutput currentElement, ref TKey currentKey)
             {
-                Contract.Assert(_source != null);
-                Contract.Assert(_hashLookup != null);
+                Debug.Assert(_source != null);
+                Debug.Assert(_hashLookup != null);
 
                 if (_hashLookupEnumerator == null)
                 {
@@ -267,7 +267,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
 
                 if (_hashLookupEnumerator != null)

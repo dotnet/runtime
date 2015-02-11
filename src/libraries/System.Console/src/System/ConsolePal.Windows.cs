@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -109,7 +110,7 @@ namespace System
             try
             {
                 enc = Encoding.GetEncoding(codePage);
-                Contract.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console streams
+                Debug.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console streams
                 enc = new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
             }
             catch (NotSupportedException)
@@ -143,7 +144,7 @@ namespace System
                 if (!succeeded)
                     return;
 
-                Contract.Assert(_haveReadDefaultColors, "Setting the background color before we've read the default foreground color!");
+                Debug.Assert(_haveReadDefaultColors, "Setting the background color before we've read the default foreground color!");
 
                 short attrs = csbi.wAttributes;
                 attrs &= ~((short)Interop.mincore.Color.BackgroundMask);
@@ -177,7 +178,7 @@ namespace System
                 if (!succeeded)
                     return;
 
-                Contract.Assert(_haveReadDefaultColors, "Setting the foreground color before we've read the default foreground color!");
+                Debug.Assert(_haveReadDefaultColors, "Setting the foreground color before we've read the default foreground color!");
 
                 short attrs = csbi.wAttributes;
                 attrs &= ~((short)Interop.mincore.Color.ForegroundMask);
@@ -196,7 +197,7 @@ namespace System
             if (!succeeded)
                 return; // For code that may be used from Windows app w/ no console
 
-            Contract.Assert(_haveReadDefaultColors, "Resetting color before we've read the default foreground color!");
+            Debug.Assert(_haveReadDefaultColors, "Resetting color before we've read the default foreground color!");
 
             // Ignore errors here - there are some scenarios for running code that wants
             // to print in colors to the console in a Windows application.
@@ -260,7 +261,7 @@ namespace System
             if (!_haveReadDefaultColors)
             {
                 // Fetch the default foreground and background color for the ResetColor method.
-                Contract.Assert((int)Interop.mincore.Color.ColorMask == 0xff, "Make sure one byte is large enough to store a Console color value!");
+                Debug.Assert((int)Interop.mincore.Color.ColorMask == 0xff, "Make sure one byte is large enough to store a Console color value!");
                 _defaultColors = (byte)(csbi.wAttributes & (short)Interop.mincore.Color.ColorMask);
                 _haveReadDefaultColors = true;
             }
@@ -281,7 +282,7 @@ namespace System
             internal WindowsConsoleStream(IntPtr handle, FileAccess access)
                 : base(access)
             {
-                Contract.Assert(handle != IntPtr.Zero && handle != Interop.InvalidHandleValue, "ConsoleStream expects a valid handle!");
+                Debug.Assert(handle != IntPtr.Zero && handle != Interop.InvalidHandleValue, "ConsoleStream expects a valid handle!");
                 _handle = handle;
                 _isPipe = Interop.mincore.GetFileType(handle) == Interop.FILE_TYPE_PIPE;
             }
@@ -385,7 +386,7 @@ namespace System
                 {
                     int numBytesWritten;
                     writeSuccess = (0 != Interop.mincore.WriteFile(hFile, p + offset, count, out numBytesWritten, IntPtr.Zero));
-                    Contract.Assert(!writeSuccess || count == numBytesWritten);
+                    Debug.Assert(!writeSuccess || count == numBytesWritten);
 
                     // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                     // // Note that WriteConsoleW has a max limit on num of chars to write (64K)
@@ -394,7 +395,7 @@ namespace System
                     // // a much shorter buffer size anyway.
                     // Int32 charsWritten;
                     // writeSuccess = Interop.mincore.WriteConsole(hFile, p + offset, count / BytesPerWChar, out charsWritten, IntPtr.Zero);
-                    // Contract.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
+                    // Debug.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
                 }
                 if (writeSuccess)
                     return Interop.ERROR_SUCCESS;

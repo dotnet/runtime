@@ -4,13 +4,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-using Microsoft.Win32;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Globalization;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Security;
+using System.Text;
+
+using Microsoft.Win32;
 
 namespace System.IO
 {
@@ -49,7 +51,7 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         internal DirectoryInfo(String fullPath, IFileSystemObject fileSystemObject) : base(fileSystemObject)
         {
-            Contract.Assert(PathHelpers.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
+            Debug.Assert(PathHelpers.GetRootLength(fullPath) > 0, "fullPath must be fully qualified!");
             // Fast path when we know a DirectoryInfo exists.
             OriginalPath = Path.GetFileName(fullPath);
 
@@ -62,7 +64,7 @@ namespace System.IO
             get
             {
                 // DisplayPath is dir name for coreclr
-                Contract.Assert(GetDirName(FullPath) == DisplayPath || DisplayPath == ".");
+                Debug.Assert(GetDirName(FullPath) == DisplayPath || DisplayPath == ".");
 
                 return DisplayPath;
             }
@@ -455,8 +457,8 @@ namespace System.IO
 
         private static String GetDisplayName(String originalPath, String fullPath)
         {
-            Contract.Assert(originalPath != null);
-            Contract.Assert(fullPath != null);
+            Debug.Assert(originalPath != null);
+            Debug.Assert(fullPath != null);
 
             String displayName = "";
 
@@ -474,7 +476,7 @@ namespace System.IO
 
         private static String GetDirName(String fullPath)
         {
-            Contract.Assert(fullPath != null);
+            Debug.Assert(fullPath != null);
 
             String dirName = null;
             if (fullPath.Length > 3)

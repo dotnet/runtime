@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -33,7 +33,7 @@ namespace System.Linq.Parallel
 
         internal FixedMaxHeap(int maximumSize, IComparer<TElement> comparer)
         {
-            Contract.Assert(comparer != null);
+            Debug.Assert(comparer != null);
 
             _elements = new TElement[maximumSize];
             _comparer = comparer;
@@ -130,7 +130,7 @@ namespace System.Linq.Parallel
 
         internal void ReplaceMax(TElement newValue)
         {
-            Contract.Assert(_count > 0);
+            Debug.Assert(_count > 0);
             _elements[0] = newValue;
             HeapifyRoot();
         }
@@ -141,7 +141,7 @@ namespace System.Linq.Parallel
 
         internal void RemoveMax()
         {
-            Contract.Assert(_count > 0);
+            Debug.Assert(_count > 0);
             _count--;
 
             if (_count > 0)

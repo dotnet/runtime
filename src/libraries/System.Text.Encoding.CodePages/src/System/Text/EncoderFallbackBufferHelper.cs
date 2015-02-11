@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Text
 {
@@ -72,7 +72,7 @@ namespace System.Text
         internal unsafe bool InternalFallback(char ch, ref char* chars)
         {
             // Shouldn't have null charStart
-            Contract.Assert(charStart != null, "[EncoderFallback.InternalFallbackBuffer]Fallback buffer is not initialized");
+            Debug.Assert(charStart != null, "[EncoderFallback.InternalFallbackBuffer]Fallback buffer is not initialized");
 
             // Get our index, remember chars was preincremented to point at next char, so have to decrement
             int index = (int)(chars - charStart) - 1;

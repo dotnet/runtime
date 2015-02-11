@@ -7,7 +7,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -32,9 +32,9 @@ namespace System.Linq.Parallel
         internal SynchronousChannelMergeEnumerator(
             QueryTaskGroupState taskGroupState, SynchronousChannel<T>[] channels) : base(taskGroupState)
         {
-            Contract.Assert(channels != null);
+            Debug.Assert(channels != null);
 #if DEBUG
-            foreach (SynchronousChannel<T> c in channels) Contract.Assert(c != null);
+            foreach (SynchronousChannel<T> c in channels) Debug.Assert(c != null);
 #endif
 
             _channels = channels;
@@ -74,7 +74,7 @@ namespace System.Linq.Parallel
 
         public override bool MoveNext()
         {
-            Contract.Assert(_channels != null);
+            Debug.Assert(_channels != null);
 
             // If we're at the start, initialize the index.
             if (_channelIndex == -1)
@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
             while (_channelIndex != _channels.Length)
             {
                 SynchronousChannel<T> current = _channels[_channelIndex];
-                Contract.Assert(current != null);
+                Debug.Assert(current != null);
 
                 if (current.Count == 0)
                 {
@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
             TraceHelpers.TraceInfo("[timing]: {0}: Completed the merge", DateTime.Now.Ticks);
 
             // If we got this far, it means we've exhausted our channels.
-            Contract.Assert(_channelIndex == _channels.Length);
+            Debug.Assert(_channelIndex == _channels.Length);
 
             return false;
         }

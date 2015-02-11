@@ -1,12 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -154,7 +155,7 @@ namespace System.IO
         /// <returns>The buffer.</returns>
         private byte[] GetBuffer()
         {
-            Contract.Assert(_buffer == null || _buffer.Length == _bufferLength);
+            Debug.Assert(_buffer == null || _buffer.Length == _bufferLength);
             return _buffer ?? (_buffer = new byte[_bufferLength]);
         }
 
@@ -343,13 +344,13 @@ namespace System.IO
         private void VerifyBufferInvariants()
         {
             // Read buffer values must be in range: 0 <= _bufferReadPos <= _bufferReadLength <= _bufferLength
-            Contract.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
+            Debug.Assert(0 <= _readPos && _readPos <= _readLength && _readLength <= _bufferLength);
 
             // Write buffer values must be in range: 0 <= _bufferWritePos <= _bufferLength
-            Contract.Assert(0 <= _writePos && _writePos <= _bufferLength);
+            Debug.Assert(0 <= _writePos && _writePos <= _bufferLength);
 
             // Read buffering and write buffering can't both be active
-            Contract.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);
+            Debug.Assert((_readPos == 0 && _readLength == 0) || _writePos == 0);
         }
 
         /// <summary>
@@ -665,7 +666,7 @@ namespace System.IO
                 bytesRead = (int)SysCall((fd, ptr, len) =>
                 {
                     long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
-                    Contract.Assert(result <= len);
+                    Debug.Assert(result <= len);
                     return result;
                 }, (IntPtr)(bufPtr + offset), count);
             }
@@ -775,7 +776,7 @@ namespace System.IO
             // Our buffer is now empty.  If using the buffer would slow things down (because
             // the user's looking to write more data than we can store in the buffer),
             // skip the buffer.  Otherwise, put the remaining data into the buffer.
-            Contract.Assert(_writePos == 0);
+            Debug.Assert(_writePos == 0);
             if (count >= _bufferLength)
             {
                 WriteCore(array, offset, count);
@@ -801,7 +802,7 @@ namespace System.IO
                 bytesWritten = SysCall((fd, ptr, len) =>
                 {
                     long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
-                    Contract.Assert(result <= len);
+                    Debug.Assert(result <= len);
                     return result;
                 }, (IntPtr)(bufPtr + offset), count);
             }
@@ -957,8 +958,8 @@ namespace System.IO
         /// <returns>The new position in the stream.</returns>
         private long SeekCore(long offset, SeekOrigin origin)
         {
-            Contract.Assert(!_fileHandle.IsClosed && CanSeek);
-            Contract.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
+            Debug.Assert(!_fileHandle.IsClosed && CanSeek);
+            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             long pos = SysCall((fd, off, or) => Interop.libc.lseek(fd, off, or), offset, (Interop.libc.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
             _filePosition = pos;
@@ -993,9 +994,9 @@ namespace System.IO
                 // Get the file descriptor from the handle.  We increment the ref count to help
                 // ensure it's not closed out from under us.
                 _fileHandle.DangerousAddRef(ref gotRefOnHandle);
-                Contract.Assert(gotRefOnHandle);
+                Debug.Assert(gotRefOnHandle);
                 int fd = (int)_fileHandle.DangerousGetHandle();
-                Contract.Assert(fd >= 0);
+                Debug.Assert(fd >= 0);
 
                 // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
                 while (true)

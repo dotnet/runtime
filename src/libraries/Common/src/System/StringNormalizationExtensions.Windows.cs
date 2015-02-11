@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -102,7 +103,7 @@ namespace System
                     // Do appropriate stuff for the individual errors:
                     case Interop.ERROR_INSUFFICIENT_BUFFER:
                         iLength = Math.Abs(iLength);
-                        Contract.Assert(iLength > cBuffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
+                        Debug.Assert(iLength > cBuffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
                         continue;
 
                     case Interop.ERROR_INVALID_PARAMETER:

@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Resources
@@ -219,7 +220,7 @@ namespace System.Resources
 
                 //  Write out sorted name hashes.
                 //   Align to 8 bytes.
-                Contract.Assert((bw.BaseStream.Position & 7) == 0, "ResourceWriter: Name hashes array won't be 8 byte aligned!  Ack!");
+                Debug.Assert((bw.BaseStream.Position & 7) == 0, "ResourceWriter: Name hashes array won't be 8 byte aligned!  Ack!");
 
                 foreach (int hash in nameHashes)
                     bw.Write(hash);
@@ -228,7 +229,7 @@ namespace System.Resources
                 //   Note: this data is 4 byte aligned, occuring immediately 
                 //   after the 8 byte aligned name hashes (whose length may 
                 //   potentially be odd).
-                Contract.Assert((bw.BaseStream.Position & 3) == 0, "ResourceWriter: Name positions array won't be 4 byte aligned!  Ack!");
+                Debug.Assert((bw.BaseStream.Position & 3) == 0, "ResourceWriter: Name positions array won't be 4 byte aligned!  Ack!");
 
                 foreach (int pos in namePositions)
                     bw.Write(pos);
@@ -249,7 +250,7 @@ namespace System.Resources
                 names.Dispose();
 
                 // Write data section.
-                Contract.Assert(startOfDataSection == bw.Seek(0, SeekOrigin.Current), "ResourceWriter::Generate - start of data section is wrong!");
+                Debug.Assert(startOfDataSection == bw.Seek(0, SeekOrigin.Current), "ResourceWriter::Generate - start of data section is wrong!");
                 dataSection.Position = 0;
                 dataSection.CopyTo(bw.BaseStream);
                 data.Dispose();

@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -51,8 +51,8 @@ namespace System.Linq.Parallel
             _keyComparer = hashKeyComparer;
             _elementComparer = elementComparer;
 
-            Contract.Assert(_keyComparer == null || _elementComparer == null);
-            Contract.Assert(_elementComparer == null || typeof(THashKey) == typeof(NoKeyMemoizationRequired));
+            Debug.Assert(_keyComparer == null || _elementComparer == null);
+            Debug.Assert(_elementComparer == null || typeof(THashKey) == typeof(NoKeyMemoizationRequired));
 
             // We use the following constant when distributing hash-codes into partition streams.
             // It's an (arbitrary) prime number to account for poor hashing functions, e.g. those

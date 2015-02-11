@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -38,7 +38,7 @@ namespace System.Linq.Parallel
         internal OrderPreservingMergeHelper(PartitionedStream<TInputOutput, TKey> partitions, TaskScheduler taskScheduler,
             CancellationState cancellationState, int queryId)
         {
-            Contract.Assert(partitions != null);
+            Debug.Assert(partitions != null);
 
             TraceHelpers.TraceInfo("KeyOrderPreservingMergeHelper::.ctor(..): creating an order preserving merge helper");
 
@@ -66,7 +66,7 @@ namespace System.Linq.Parallel
 
         IEnumerator<TInputOutput> IMergeHelper<TInputOutput>.GetEnumerator()
         {
-            Contract.Assert(_results.Value != null);
+            Debug.Assert(_results.Value != null);
             return ((IEnumerable<TInputOutput>)_results.Value).GetEnumerator();
         }
 
