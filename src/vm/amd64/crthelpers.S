@@ -26,7 +26,7 @@ LEAF_ENTRY JIT_MemSet, _TEXT
 Exit_MemSet:
         ret
 
-LEAF_END JIT_MemSet, _TEXT
+LEAF_END_MARKED JIT_MemSet, _TEXT
 
 LEAF_ENTRY JIT_MemCpy, _TEXT
         test rdx, rdx
@@ -40,4 +40,4 @@ LEAF_ENTRY JIT_MemCpy, _TEXT
 Exit_MemCpy:
         ret
 
-LEAF_END JIT_MemCpy, _TEXT
+LEAF_END_MARKED JIT_MemCpy, _TEXT
