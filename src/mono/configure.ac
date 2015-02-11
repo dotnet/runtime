@@ -530,7 +530,7 @@ WARN=''
 if test x"$GCC" = xyes; then
         WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value'
 		# The runtime code does not respect ANSI C strict aliasing rules
-		CFLAGS="$CFLAGS -fno-strict-aliasing"
+		CFLAGS="$CFLAGS -std=c99 -fno-strict-aliasing"
 
 		# We rely on signed overflow to behave
 		CFLAGS="$CFLAGS -fwrapv"
