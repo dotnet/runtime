@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ModuleCore</AssemblyName>
+    <RootNamespace>OLEDB.Test.ModuleCore</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="cattrbase.cs" />
+    <Compile Include="ccommon.cs" />
+    <Compile Include="cerror.cs" />
+    <Compile Include="cltmconsole.cs" />
+    <Compile Include="cmodinfo.cs" />
+    <Compile Include="cparser.cs" />
+    <Compile Include="ctestbase.cs" />
+    <Compile Include="ctestcase.cs" />
+    <Compile Include="ctestexception.cs" />
+    <Compile Include="ctestmodule.cs" />
+    <Compile Include="cvariation.cs" />
+    <Compile Include="interop.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
