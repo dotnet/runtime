@@ -18,6 +18,7 @@ Historically, new devs to the CLR team would be encouraged to read the "Book of 
 - [Book of the Runtime FAQ](https://github.com/dotnet/coreclr/blob/master/Documentation/botr-faq.md)
 - [Introduction to the Common Language Runtime](https://github.com/dotnet/coreclr/blob/master/Documentation/intro-to-clr.md)
 - [Mscorlib and Calling Into the Runtime](https://github.com/dotnet/coreclr/blob/master/Documentation/mscorlib.md)
+- [.NET Core Glossary](https://github.com/dotnet/coreclr/blob/master/Documentation/glossary.md)
 - More coming 
 
 ## How to Engage, Contribute and Provide Feedback
