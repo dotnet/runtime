@@ -317,7 +317,7 @@ namespace System.Text
                     iCount = GetCharsCP52936(bytes, byteCount, chars, charCount, decoder);
                     break;
                 default:
-                    Debug.Assert(false, "[ISO2022Encoding.GetChars] had unexpected code page");
+                    Debug.Fail("[ISO2022Encoding.GetChars] had unexpected code page");
                     break;
             }
 

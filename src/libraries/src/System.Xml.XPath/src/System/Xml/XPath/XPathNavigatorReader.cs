@@ -593,7 +593,7 @@ namespace System.Xml.XPath
                             {
                                 if (!nav.MoveToNextNamespace(XPathNamespaceScope.Local))
                                 {
-                                    Debug.Assert(false, "Couldn't find Namespace Node! Should not happen!");
+                                    Debug.Fail("Couldn't find Namespace Node! Should not happen!");
                                     return false;
                                 }
                                 if (nav.IsSamePosition(_nav))

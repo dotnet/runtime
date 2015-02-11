@@ -47,7 +47,7 @@ namespace System.Linq
 
         internal virtual ParallelQuery<TCastTo> Cast<TCastTo>()
         {
-            Debug.Assert(false, "The derived class must override this method.");
+            Debug.Fail("The derived class must override this method.");
             throw new NotSupportedException();
         }
 
@@ -59,7 +59,7 @@ namespace System.Linq
 
         internal virtual ParallelQuery<TCastTo> OfType<TCastTo>()
         {
-            Debug.Assert(false, "The derived class must override this method.");
+            Debug.Fail("The derived class must override this method.");
             throw new NotSupportedException();
         }
 
@@ -71,7 +71,7 @@ namespace System.Linq
 
         internal virtual IEnumerator GetEnumeratorUntyped()
         {
-            Debug.Assert(false, "The derived class must override this method.");
+            Debug.Fail("The derived class must override this method.");
             throw new NotSupportedException();
         }
 
@@ -120,7 +120,7 @@ namespace System.Linq
         /// <returns>An enumerator that iterates through the sequence.</returns>
         public virtual IEnumerator<TSource> GetEnumerator()
         {
-            Debug.Assert(false, "The derived class must override this method.");
+            Debug.Fail("The derived class must override this method.");
             throw new NotSupportedException();
         }
     }

@@ -318,7 +318,7 @@ namespace MS.Internal.Xml.XPath
                 case Operator.Op.EQ: return (n1 == n2);
                 case Operator.Op.NE: return (n1 != n2);
             }
-            Debug.Assert(false, "Unexpected Operator.op code in cmpNumberNumber()");
+            Debug.Fail("Unexpected Operator.op code in cmpNumberNumber()");
             return false;
         }
         static bool cmpNumberNumberO(Operator.Op op, double n1, double n2)
@@ -330,7 +330,7 @@ namespace MS.Internal.Xml.XPath
                 case Operator.Op.LE: return (n1 <= n2);
                 case Operator.Op.GE: return (n1 >= n2);
             }
-            Debug.Assert(false, "Unexpected Operator.op code in cmpNumberNumber()");
+            Debug.Fail("Unexpected Operator.op code in cmpNumberNumber()");
             return false;
         }
         static bool cmpNumberNumber(Operator.Op op, object val1, object val2)

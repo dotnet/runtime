@@ -563,7 +563,7 @@ namespace System.Xml
                     _namespaceParent = element;
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail("Unmatched scope in switch");
                     return false;
             }
             return true;
@@ -677,7 +677,7 @@ namespace System.Xml
                     _attributeIndex = index;
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail("Unmatched scope in switch");
                     return false;
             }
             return true;

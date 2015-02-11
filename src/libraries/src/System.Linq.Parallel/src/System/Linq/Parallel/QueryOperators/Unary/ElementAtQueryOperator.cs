@@ -98,7 +98,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TSource> AsSequentialQuery(CancellationToken token)
         {
-            Debug.Assert(false, "This method should never be called as fallback to sequential is handled in Aggregate().");
+            Debug.Fail("This method should never be called as fallback to sequential is handled in Aggregate().");
             throw new NotSupportedException();
         }
 

@@ -73,7 +73,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TSource> AsSequentialQuery(CancellationToken token)
         {
-            Debug.Assert(false, "This method should never be called as it is an ending operator with LimitsParallelism=false.");
+            Debug.Fail("This method should never be called as it is an ending operator with LimitsParallelism=false.");
             throw new NotSupportedException();
         }
 
