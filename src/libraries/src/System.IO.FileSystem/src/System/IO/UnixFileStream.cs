@@ -112,7 +112,7 @@ namespace System.IO
                 0;
             if (fadv != 0)
             {
-                SysCall<Interop.libc.Advice, int>((fd, advice, _) => Interop.libc.posix_fadvise(fd, IntPtr.Zero, IntPtr.Zero, advice), fadv);
+                SysCall<Interop.libc.Advice, int>((fd, advice, _) => Interop.libc.posix_fadvise(fd, 0, 0, advice), fadv);
             }
 
             // Jump to the end of the file if opened as Append.
@@ -252,7 +252,7 @@ namespace System.IO
                 if (!_canSeek.HasValue)
                 {
                     // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
-                    _canSeek = SysCall<int, int>((fd, _, __) => Interop.libc.lseek64(fd, 0, Interop.libc.SeekWhence.SEEK_CUR), throwOnError: false) >= 0;
+                    _canSeek = SysCall<int, int>((fd, _, __) => Interop.libc.lseek(fd, 0, Interop.libc.SeekWhence.SEEK_CUR), throwOnError: false) >= 0;
                 }
                 return _canSeek.Value;
             }
@@ -960,7 +960,7 @@ namespace System.IO
             Contract.Assert(!_fileHandle.IsClosed && CanSeek);
             Contract.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
-            long pos = SysCall((fd, off, or) => Interop.libc.lseek64(fd, off, or), offset, (Interop.libc.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
+            long pos = SysCall((fd, off, or) => Interop.libc.lseek(fd, off, or), offset, (Interop.libc.SeekWhence)(int)origin); // SeekOrigin values are the same as Interop.libc.SeekWhence values
             _filePosition = pos;
             return pos;
         }
