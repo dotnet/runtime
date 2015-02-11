@@ -109,7 +109,7 @@ struct _MSBlockInfo {
 	 * recalculating to save the space.
 	 */
 	guint16 obj_size_index;
-	/* FIXME: reduce this */
+	/* FIXME: Reduce this - it only needs a byte. */
 	volatile gint32 state;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
@@ -1487,12 +1487,11 @@ ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *
 		 */
 		if (have_free) {
 			MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (block->pinned, block->has_references);
-			int index = MS_BLOCK_OBJ_SIZE_INDEX (block->obj_size);
 
 			if (!lazy_sweep)
 				SGEN_ASSERT (0, block->free_list, "How do we not have a free list when there are free slots?");
 
-			add_free_block (free_blocks, index, block);
+			add_free_block (free_blocks, obj_size_index, block);
 		}
 
 		/* FIXME: Do we need the heap boundaries while we do nursery collections? */
