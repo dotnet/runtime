@@ -1547,10 +1547,11 @@ sweep_loop_thread_func (void *dummy)
 	while (!try_set_sweep_state (SWEEP_STATE_COMPACTING, SWEEP_STATE_SWEEPING))
 		g_usleep (100);
 
-	/* FIXME: remove this iteration */
-	for (block_index = num_blocks; block_index < allocated_blocks.next_slot; ++block_index) {
-		MSBlockInfo *block = BLOCK_UNTAG (allocated_blocks.data [block_index]);
-		SGEN_ASSERT (0, block && block->state == BLOCK_STATE_SWEPT, "How did a new block to be swept get added while swept?");
+	if (SGEN_MAX_ASSERT_LEVEL >= 6) {
+		for (block_index = num_blocks; block_index < allocated_blocks.next_slot; ++block_index) {
+			MSBlockInfo *block = BLOCK_UNTAG (allocated_blocks.data [block_index]);
+			SGEN_ASSERT (6, block && block->state == BLOCK_STATE_SWEPT, "How did a new block to be swept get added while swept?");
+		}
 	}
 
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
