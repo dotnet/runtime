@@ -1,6 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <ResGenCommand Condition="'$(ResGenCommand)'==''">$(FrameworkSDKDir)bin\NETFX 4.5.1 Tools\ResGen.exe</ResGenCommand>
+    <ResGenCommand Condition="'$(ResGenCommand)'==''">$(SDK40ToolsPath)ResGen.exe</ResGenCommand>
     <PrepareResourcesDependsOn>GenerateSplitStringResources;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
   </PropertyGroup>
     
