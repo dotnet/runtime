@@ -10,8 +10,11 @@ We have work in progress to bring more tests online and support more platforms i
 
 ## Prerequisites ##
 
-1. [Visual Studio 2013](http://www.visualstudio.com/en-us/visual-studio-homepage-vs.aspx) should be installed
-2. Install [Cmake](http://www.cmake.org/download/ "CMake") 3.0.2 and make sure it is present in PATH environment variable for the system.
+1. Visual Studio must be installed. Supported versions:
+    - [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!!
+    - [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) (Pro, Premium, Ultimate)
+    - Visual Studio Express isn't supported for building CoreCLR
+2. Install [Cmake](http://www.cmake.org/download/ "CMake") 3.0.2 for Windows and make sure it is present in PATH environment variable for the system.
 3. Powershell should be installed.
 4. Tools required to work with Git are installed (e.g. [Git for Windows](http://msysgit.github.io/), [GitHub for Windows](https://windows.github.com/))
 
