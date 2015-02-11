@@ -96,7 +96,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TSource> AsSequentialQuery(CancellationToken token)
         {
-            Debug.Assert(false, "This method should never be called as fallback to sequential is handled in ParallelEnumerable.First().");
+            Debug.Fail("This method should never be called as fallback to sequential is handled in ParallelEnumerable.First().");
             throw new NotSupportedException();
         }
 

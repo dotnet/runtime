@@ -909,7 +909,7 @@ namespace System.Collections
             // If you see this assert, make sure load factor & count are reasonable.
             // Then verify that our double hash function (h2, described at top of file)
             // meets the requirements described above. You should never see this assert.
-            Debug.Assert(false, "hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
+            Debug.Fail("hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
             throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
         }
 
@@ -1494,7 +1494,7 @@ namespace System.Collections
                 return cmp.GetRandomizedEqualityComparer();
             }
 
-            Debug.Assert(false, "Missing case in GetRandomizedEqualityComparer!");
+            Debug.Fail("Missing case in GetRandomizedEqualityComparer!");
 
             return null;
         }

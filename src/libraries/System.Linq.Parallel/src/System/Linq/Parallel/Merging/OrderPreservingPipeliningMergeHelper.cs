@@ -167,7 +167,7 @@ namespace System.Linq.Parallel
 
         public TOutput[] GetResultsAsArray()
         {
-            Debug.Assert(false, "An ordered pipelining merge is not intended to be used this way.");
+            Debug.Fail("An ordered pipelining merge is not intended to be used this way.");
             throw new InvalidOperationException();
         }
 
@@ -365,7 +365,7 @@ namespace System.Linq.Parallel
                         // QueryEnd will wait on all tasks to complete and then propagate all exceptions.
                         _taskGroupState.QueryEnd(false);
 
-                        Debug.Assert(false, "QueryEnd() should have thrown an exception.");
+                        Debug.Fail("QueryEnd() should have thrown an exception.");
                     }
                     finally
                     {

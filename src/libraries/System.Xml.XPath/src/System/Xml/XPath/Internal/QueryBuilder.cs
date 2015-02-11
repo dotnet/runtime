@@ -490,7 +490,7 @@ namespace MS.Internal.Xml.XPath
                     result = new AbsoluteQuery();
                     break;
                 default:
-                    Debug.Assert(false, "Unknown QueryType encountered!!");
+                    Debug.Fail("Unknown QueryType encountered!!");
                     break;
             }
             --_parseDepth;

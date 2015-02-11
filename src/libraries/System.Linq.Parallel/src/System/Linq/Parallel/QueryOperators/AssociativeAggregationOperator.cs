@@ -213,7 +213,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TIntermediate> AsSequentialQuery(CancellationToken token)
         {
-            Debug.Assert(false, "This method should never be called. Associative aggregation can always be parallelized.");
+            Debug.Fail("This method should never be called. Associative aggregation can always be parallelized.");
             throw new NotSupportedException();
         }
 

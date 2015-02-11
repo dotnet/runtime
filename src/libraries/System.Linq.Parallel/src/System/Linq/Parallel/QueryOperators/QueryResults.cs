@@ -60,7 +60,7 @@ namespace System.Linq.Parallel
 
         internal virtual T GetElement(int index)
         {
-            Debug.Assert(false, "GetElement property is not supported by non-indexible query results");
+            Debug.Fail("GetElement property is not supported by non-indexible query results");
             throw new NotSupportedException();
         }
 
@@ -75,7 +75,7 @@ namespace System.Linq.Parallel
         {
             get
             {
-                Debug.Assert(false, "ElementsCount property is not supported by non-indexible query results");
+                Debug.Fail("ElementsCount property is not supported by non-indexible query results");
                 throw new NotSupportedException();
             }
         }

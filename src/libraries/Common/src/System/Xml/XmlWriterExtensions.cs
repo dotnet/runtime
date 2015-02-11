@@ -90,7 +90,7 @@ namespace System.Xml.XPath
                         // do nothing on root level namespace
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail("Unmatched state in switch");
                         break;
                 }
 

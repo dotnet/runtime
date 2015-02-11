@@ -100,7 +100,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TInput> AsSequentialQuery(CancellationToken token)
         {
-            Debug.Assert(false, "AsSequentialQuery is not supported on ForAllOperator");
+            Debug.Fail("AsSequentialQuery is not supported on ForAllOperator");
             throw new InvalidOperationException();
         }
 

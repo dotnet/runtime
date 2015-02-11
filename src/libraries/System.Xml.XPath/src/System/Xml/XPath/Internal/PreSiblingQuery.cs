@@ -73,7 +73,7 @@ namespace MS.Internal.Xml.XPath
                             }
                             if (!prev.MoveToNext())
                             {
-                                Debug.Assert(false, "We managed to miss sentinel node (input)");
+                                Debug.Fail("We managed to miss sentinel node (input)");
                                 break;
                             }
                         }

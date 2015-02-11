@@ -103,7 +103,7 @@ namespace System.Xml
                 case State.InReadElementContent:
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail("Unmatched state in switch");
                     return 0;
             }
 
@@ -159,7 +159,7 @@ namespace System.Xml
                 case State.InReadElementContent:
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail("Unmatched state in switch");
                     return 0;
             }
 
@@ -215,7 +215,7 @@ namespace System.Xml
                     }
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail("Unmatched state in switch");
                     return 0;
             }
 
@@ -271,7 +271,7 @@ namespace System.Xml
                     }
                     break;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail("Unmatched state in switch");
                     return 0;
             }
 
