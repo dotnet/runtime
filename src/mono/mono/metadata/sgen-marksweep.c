@@ -266,8 +266,7 @@ add_scanned_object (void *ptr)
 }
 #endif
 
-static void
-sweep_block (MSBlockInfo *block);
+static gboolean sweep_block (MSBlockInfo *block);
 
 static int
 ms_find_block_obj_size_index (size_t size)
@@ -580,8 +579,8 @@ ensure_can_access_block_free_list (MSBlockInfo *block)
 			SGEN_ASSERT (0, FALSE, "How did we get a block that's being checked from a free list?");
 			break;
 		case BLOCK_STATE_NEED_SWEEPING:
-			stat_major_blocks_lazy_swept ++;
-			sweep_block (block);
+			if (sweep_block (block))
+				++stat_major_blocks_lazy_swept;
 			break;
 		case BLOCK_STATE_SWEEPING:
 			/* FIXME: do this more elegantly */
@@ -1246,11 +1245,12 @@ set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 }
 
 /*
- * sweep_block:
+ * If `block` needs sweeping, sweep it and return TRUE.  Otherwise return FALSE.
  *
- *   Traverse BLOCK, freeing and zeroing unused objects.
+ * Sweeping means iterating through the block's slots and building the free-list from the
+ * unmarked ones.  They will also be zeroed.  The mark bits will be reset.
  */
-static void
+static gboolean
 sweep_block (MSBlockInfo *block)
 {
 	int count;
@@ -1259,7 +1259,7 @@ sweep_block (MSBlockInfo *block)
  retry:
 	switch (block->state) {
 	case BLOCK_STATE_SWEPT:
-		return;
+		return FALSE;
 	case BLOCK_STATE_MARKING:
 	case BLOCK_STATE_CHECKING:
 		SGEN_ASSERT (0, FALSE, "How did we get to sweep a block that's being marked or being checked?");
@@ -1309,6 +1309,8 @@ sweep_block (MSBlockInfo *block)
 	mono_memory_write_barrier ();
 
 	set_block_state (block, BLOCK_STATE_SWEPT, BLOCK_STATE_SWEEPING);
+
+	return TRUE;
 }
 
 static inline int
