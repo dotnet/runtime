@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = C Runtime
+Function = labs
+Name = Series of tests for labs: positive, negative, zero, maximum __int64 value.
+TYPE = DEFAULT
+EXE1 = test1
+Description
+= Call llabs on a series of values -- negative, positive, zero,
+= and the largest negative value of an __int64.  Ensure that they are all
+= changed properly to their absoulte value. 
