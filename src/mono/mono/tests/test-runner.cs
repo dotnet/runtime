@@ -30,6 +30,8 @@ using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Xml;
 
 //
 // This is a simple test runner with support for parallel execution
@@ -62,6 +64,8 @@ public class TestRunner
 		// Defaults
 		int concurrency = 1;
 		int timeout = 2 * 60; // in seconds
+
+		DateTime test_start_time = DateTime.UtcNow;
 
 		// FIXME: Add support for runtime arguments + env variables
 
@@ -138,6 +142,7 @@ public class TestRunner
 		int nfailed = 0;
 
 		var processes = new List<Process> ();
+		var passed = new List<ProcessData> ();
 		var failed = new List<ProcessData> ();
 		var process_data = new Dictionary<Process, ProcessData> ();
 
@@ -212,6 +217,7 @@ public class TestRunner
 							Console.WriteLine ("passed.");
 						else
 							Console.Write (".");
+						passed.Add(process_data [dead]);
 						npassed ++;
 					} else {
 						if (concurrency == 1)
@@ -310,6 +316,110 @@ public class TestRunner
 			}
 		}
 
+		TimeSpan test_time = DateTime.UtcNow - test_start_time;
+		XmlWriterSettings xmlWriterSettings = new XmlWriterSettings ();
+		xmlWriterSettings.NewLineOnAttributes = true;
+		xmlWriterSettings.Indent = true;
+		using (XmlWriter writer = XmlWriter.Create ("TestResults_runtime.xml", xmlWriterSettings)) {
+			// <?xml version="1.0" encoding="utf-8" standalone="no"?>
+			writer.WriteStartDocument ();
+			// <!--This file represents the results of running a test suite-->
+			writer.WriteComment ("This file represents the results of running a test suite");
+			// <test-results name="/home/charlie/Dev/NUnit/nunit-2.5/work/src/bin/Debug/tests/mock-assembly.dll" total="21" errors="1" failures="1" not-run="7" inconclusive="1" ignored="4" skipped="0" invalid="3" date="2010-10-18" time="13:23:35">
+			writer.WriteStartElement ("test-results");
+			writer.WriteAttributeString ("name", "runtime-tests.dummy");
+			writer.WriteAttributeString ("total", (npassed + nfailed).ToString());
+			writer.WriteAttributeString ("failures", nfailed.ToString());
+			writer.WriteAttributeString ("not-run", "0");
+			writer.WriteAttributeString ("date", DateTime.Now.ToString ("yyyy-MM-dd"));
+			writer.WriteAttributeString ("time", DateTime.Now.ToString ("HH:mm:ss"));
+			//   <environment nunit-version="2.4.8.0" clr-version="4.0.30319.17020" os-version="Unix 3.13.0.45" platform="Unix" cwd="/home/directhex/Projects/mono/mcs/class/corlib" machine-name="marceline" user="directhex" user-domain="marceline" />
+			writer.WriteStartElement ("environment");
+			writer.WriteAttributeString ("nunit-version", "2.4.8.0" );
+			writer.WriteAttributeString ("clr-version", Environment.Version.ToString() );
+			writer.WriteAttributeString ("os-version", Environment.OSVersion.ToString() );
+			writer.WriteAttributeString ("platform", Environment.OSVersion.Platform.ToString() );
+			writer.WriteAttributeString ("cwd", Environment.CurrentDirectory );
+			writer.WriteAttributeString ("machine-name", Environment.MachineName );
+			writer.WriteAttributeString ("user", Environment.UserName );
+			writer.WriteAttributeString ("user-domain", Environment.UserDomainName );
+			writer.WriteEndElement ();
+			//   <culture-info current-culture="en-GB" current-uiculture="en-GB" />
+			writer.WriteStartElement ("culture-info");
+			writer.WriteAttributeString ("current-culture", CultureInfo.CurrentCulture.Name );
+			writer.WriteAttributeString ("current-uiculture", CultureInfo.CurrentUICulture.Name );
+			writer.WriteEndElement ();
+			//   <test-suite name="corlib_test_net_4_5.dll" success="True" time="114.318" asserts="0">
+			writer.WriteStartElement ("test-suite");
+			writer.WriteAttributeString ("name","runtime-tests.dummy");
+			writer.WriteAttributeString ("success", (nfailed == 0).ToString());
+			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
+			writer.WriteAttributeString ("asserts", nfailed.ToString());
+			//     <results>
+			writer.WriteStartElement ("results");
+			//       <test-suite name="MonoTests" success="True" time="114.318" asserts="0">
+			writer.WriteStartElement ("test-suite");
+			writer.WriteAttributeString ("name","MonoTests");
+			writer.WriteAttributeString ("success", (nfailed == 0).ToString());
+			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
+			writer.WriteAttributeString ("asserts", nfailed.ToString());
+			//         <results>
+			writer.WriteStartElement ("results");
+			//           <test-suite name="MonoTests" success="True" time="114.318" asserts="0">
+			writer.WriteStartElement ("test-suite");
+			writer.WriteAttributeString ("name","runtime");
+			writer.WriteAttributeString ("success", (nfailed == 0).ToString());
+			writer.WriteAttributeString ("time", test_time.Seconds.ToString());
+			writer.WriteAttributeString ("asserts", nfailed.ToString());
+			//             <results>
+			writer.WriteStartElement ("results");
+			// Dump all passing tests first
+			foreach (ProcessData pd in passed) {
+				// <test-case name="MonoTests.Microsoft.Win32.RegistryKeyTest.bug79051" executed="True" success="True" time="0.063" asserts="0" />
+				writer.WriteStartElement ("test-case");
+				writer.WriteAttributeString ("name", "MonoTests.runtime." + pd.test);
+				writer.WriteAttributeString ("executed", "True");
+				writer.WriteAttributeString ("success", "True");
+				writer.WriteAttributeString ("time", "0");
+				writer.WriteAttributeString ("asserts", "0");
+				writer.WriteEndElement ();
+			}
+			// Now dump all failing tests
+			foreach (ProcessData pd in failed) {
+				// <test-case name="MonoTests.Microsoft.Win32.RegistryKeyTest.bug79051" executed="True" success="True" time="0.063" asserts="0" />
+				writer.WriteStartElement ("test-case");
+				writer.WriteAttributeString ("name", "MonoTests.runtime." + pd.test);
+				writer.WriteAttributeString ("executed", "True");
+				writer.WriteAttributeString ("success", "False");
+				writer.WriteAttributeString ("time", "0");
+				writer.WriteAttributeString ("asserts", "1");
+				writer.WriteStartElement ("failure");
+				writer.WriteStartElement ("message");
+				writer.WriteCData (DumpPseudoTrace (pd.stdoutFile));
+				writer.WriteEndElement ();
+				writer.WriteStartElement ("stack-trace");
+				writer.WriteCData (DumpPseudoTrace (pd.stderrFile));
+				writer.WriteEndElement ();
+				writer.WriteEndElement ();
+				writer.WriteEndElement ();
+			}
+			//             </results>
+			writer.WriteEndElement ();
+			//           </test-suite>
+			writer.WriteEndElement ();
+			//         </results>
+			writer.WriteEndElement ();
+			//       </test-suite>
+			writer.WriteEndElement ();
+			//     </results>
+			writer.WriteEndElement ();
+			//   </test-suite>
+			writer.WriteEndElement ();
+			// </test-results>
+			writer.WriteEndElement ();
+			writer.WriteEndDocument ();
+		}
+
 		Console.WriteLine ();
 
 		if (timed_out) {
@@ -348,5 +458,12 @@ public class TestRunner
 			Console.WriteLine (File.ReadAllText (filename));
 			Console.WriteLine ("=============== EOF ===============");
 		}
+	}
+
+	static string DumpPseudoTrace (string filename) {
+		if (File.Exists (filename))
+			return File.ReadAllText (filename);
+		else
+			return string.Empty;
 	}
 }
