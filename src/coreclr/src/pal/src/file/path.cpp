@@ -474,94 +474,6 @@ GetTempPathA(
         return 0;
     }
 
-#ifdef __APPLE__
-    // Retrieve the Temporary Items folder.
-    DWORD palError = ERROR_SUCCESS;
-    FSRef tempFolderFSRef;
-    OSErr err = FSFindFolder(kUserDomain, kTemporaryFolderType, true /* fCreate */,
-        &tempFolderFSRef);
-    if (err != noErr)
-        palError = ERROR_INTERNAL_ERROR;
-    else
-    {
-        CFURLRef tempFolderURLRef = CFURLCreateFromFSRef(kCFAllocatorDefault, &tempFolderFSRef);
-        if (tempFolderURLRef == NULL)
-            palError = ERROR_OUTOFMEMORY;
-        else
-        {
-            CFStringRef tempFolderPathRef = CFURLCopyFileSystemPath(tempFolderURLRef, kCFURLPOSIXPathStyle);
-            CFRelease(tempFolderURLRef);
-            CFIndex tempFolderPathLenWide;
-            if (tempFolderPathRef == NULL)
-                palError = ERROR_OUTOFMEMORY;
-            else if ((tempFolderPathLenWide = CFStringGetLength(tempFolderPathRef)) == 0)
-            {
-                palError = ERROR_INTERNAL_ERROR;
-                CFRelease(tempFolderPathRef);
-            }
-            else
-            {
-                // String needs to terminate with a slash.
-                if (CFStringGetCharacterAtIndex(tempFolderPathRef, tempFolderPathLenWide) != '/')
-                {
-                    CFStringRef altTempFolderPathRef = CFStringCreateWithFormat(kCFAllocatorDefault, 
-                        NULL, CFSTR("%@/"), tempFolderPathRef);
-                    if (altTempFolderPathRef == NULL)
-                    {
-                        palError = ERROR_OUTOFMEMORY;
-                    }
-                    else
-                    {
-                        CFRelease(tempFolderPathRef);
-                        tempFolderPathRef = altTempFolderPathRef;
-                    }
-                }
-                if (palError != ERROR_SUCCESS)
-                {}
-                else if (!CFStringGetFileSystemRepresentation(tempFolderPathRef, lpBuffer, nBufferLength))
-                {
-                    // Too small or failed conversion.
-                    CFIndex tempFolderPathLenMax = CFStringGetMaximumSizeOfFileSystemRepresentation(tempFolderPathRef);
-                    char *lpBigBuffer = CorUnix::InternalNewArray<char>(CorUnix::InternalGetCurrentThread(), tempFolderPathLenMax);
-                    if (!lpBigBuffer)
-                    {
-                        palError = ERROR_OUTOFMEMORY;
-                    }
-                    else
-                    {
-                        if (!CFStringGetFileSystemRepresentation(tempFolderPathRef, lpBigBuffer, tempFolderPathLenMax))
-                        {
-                            // failed conversion.
-                            ERROR("Could not convert temp folder ref to 8-bit string.\n");
-                            palError = ERROR_INTERNAL_ERROR;
-                        }
-                        else
-                        {
-                            if (!ClrSafeInt<DWORD>::addition(strlen(lpBigBuffer), 1, dwPathLen))
-                            {
-                                ERROR("Integer overflow in buffer math.\n");
-                                palError = ERROR_INTERNAL_ERROR;
-                            }
-                            else
-                            {
-                                ERROR("Buffer is too small, need %d characters.\n", dwPathLen);
-                                palError = ERROR_INSUFFICIENT_BUFFER;
-                            }
-                        }
-                        CorUnix::InternalDeleteArray<char>(CorUnix::InternalGetCurrentThread(), lpBigBuffer);
-                    }
-                }
-                else
-                {
-                    dwPathLen = strlen(lpBuffer);
-                }
-                CFRelease(tempFolderPathRef);
-            }
-        }
-    }
-    if (palError != ERROR_SUCCESS)
-        SetLastError(palError);
-#else
 	// GetTempPath is supposed to include the trailing slash.
     const char *defaultDir = "/tmp/";
 
@@ -582,7 +494,6 @@ GetTempPathA(
         ERROR("Buffer is too small, need %d characters\n", dwPathLen);
         SetLastError( ERROR_INSUFFICIENT_BUFFER );
     }
-#endif // __APPLE__
 
     LOGEXIT("GetTempPathA returns DWORD %u\n", dwPathLen);
     PERF_EXIT(GetTempPathA);
