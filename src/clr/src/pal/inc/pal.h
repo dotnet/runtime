@@ -5435,6 +5435,8 @@ PALIMPORT unsigned int __cdecl _rotr(unsigned int, int);
 PALIMPORT int __cdecl abs(int);
 PALIMPORT double __cdecl fabs(double); 
 PALIMPORT LONG __cdecl labs(LONG);
+// clang complains if this is declared with __int64
+PALIMPORT long long __cdecl llabs(long long);
 
 PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl log(double);
@@ -5466,7 +5468,14 @@ PALIMPORT double __cdecl _copysign(double, double);
 extern "C++" {
 inline float fabsf(float _X)
 {
-    return ((float)fabs((double)_X)); }
+    return ((float)fabs((double)_X));
+}
+
+#ifdef BIT64
+inline __int64 abs(__int64 _X) {
+    return llabs(_X);
+}
+#endif
 }
 #endif
 
