@@ -1,7 +1,7 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
 // Copyright (c) Geoff Norton. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 .intel_syntax noprefix
@@ -13,7 +13,7 @@
 // It is IMPORANT that the exception handling code is able to find these guys
 // on the stack, but on non-windows platforms we can just defer to the platform
 // implementation.
-// 
+//
 
 LEAF_ENTRY JIT_MemSet, _TEXT
         test rdx, rdx
@@ -21,7 +21,7 @@ LEAF_ENTRY JIT_MemSet, _TEXT
 
         cmp  byte ptr [rdi], 0
 
-        jmp  C_FUNC(memset)
+        jmp  C_PLTFUNC(memset)
 
 Exit_MemSet:
         ret
@@ -35,7 +35,7 @@ LEAF_ENTRY JIT_MemCpy, _TEXT
         cmp  byte ptr [rdi], 0
         cmp  byte ptr [rsi], 0
 
-        jmp  C_FUNC(memcpy)
+        jmp  C_PLTFUNC(memset)
 
 Exit_MemCpy:
         ret
