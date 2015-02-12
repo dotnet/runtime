@@ -65,8 +65,8 @@ The code fragment below is the simplest way to introduce a GC hole into the syst
 	     OBJECTREF a = AllocateObject(pMT);
 	     OBJECTREF b = AllocateObject(pMT);
 
-	     //WRONG!!! “a” may point to garbage if the second
-	     //“AllocateObject” triggered a GC.
+	     //WRONG!!! "a" may point to garbage if the second
+	     //"AllocateObject" triggered a GC.
 	     DoSomething (a, b);
 	}
 
@@ -82,7 +82,7 @@ This point is worth repeating. The GC has no intrinsic knowledge of root referen
 
 Here's how to fix our buggy code fragment.
 
-	#include “frames.h”
+	#include "frames.h"
 	{
 	     MethodTable *pMT = g_pObjectClass->GetMethodTable();
 
@@ -122,7 +122,7 @@ Why is GCPROTECT not implemented via a C++ smart pointer? The GCPROTECT macro or
 
 The following is illegal and will cause some sort of crash:
 
-	// WRONG: Can’t GCPROTECT twice.
+	// WRONG: Can't GCPROTECT twice.
 	OBJECTREF a = AllocateObject(...);
 	GCPROTECT_BEGIN(a);
 	GCPROTECT_BEGIN(a);
@@ -189,7 +189,7 @@ NOTE: PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING OPTIMA
 
 ### Use the right GC Mode – Preemptive vs. Cooperative
 
-Earlier, we implied that GC doesn't occur spontaneously. This is true… for a given thread. But the CLR is multithreaded. Even if your thread does all the right things, it has no control over other threads.
+Earlier, we implied that GC doesn't occur spontaneously. This is true... for a given thread. But the CLR is multithreaded. Even if your thread does all the right things, it has no control over other threads.
 
 Consider two possible ways to schedule GC:
 
@@ -205,7 +205,7 @@ Both have their strengths and drawbacks. Preemptive mode sounds attractive and e
 Now, while the compiler can generate any valid code for this, it's very likely it will look something like this:
 
 	call	AllocateObject
-	mov	[A],eax  ;;store result in “a”
+	mov	[A],eax  ;;store result in "a"
 	... code for GCPROTECT_BEGIN omitted...
 	push	[A]        ;push argument to DoSomething
 	call	DoSomething
@@ -244,7 +244,7 @@ To switch modes multiple times in a function, you must introduce a new scope for
 
 	{
 	     GCX_COOP();
-	     …
+	     ...
 	     GCX_PREEMP():	//WRONG!
 	}
 
@@ -351,7 +351,7 @@ A GC_NOTRIGGER function cannot:
 - Call any other function marked GC_TRIGGERS
 - Call any other code that does these things
 
-[1] With one exception: GCX_COOP (which effects a preemp->coop->preemp roundtrip) is permitted. The rationale is that GCX_COOP becomes a NOP if the thread was cooperative to begin with so it’s safe to allow this (and necessary to avoid some awkward code in our product.)
+[1] With one exception: GCX_COOP (which effects a preemp->coop->preemp roundtrip) is permitted. The rationale is that GCX_COOP becomes a NOP if the thread was cooperative to begin with so it's safe to allow this (and necessary to avoid some awkward code in our product.)
 
 **Note that for GC to be truly prevented, the caller must also ensure that the thread is in cooperative mode.** Otherwise, all the precautions above are in vain since any other thread can start a GC at any time. Given that, you might be wondering why cooperative mode is not part of the definition of GC_NOTRIGGER. In fact, there is a third thread state called GC_FORBID which is exactly that: GC_TRIGGERS plus forced cooperative mode. As its name implies, GC_FORBID _guarantees_ that no GC will occur on any thread.
 
@@ -393,28 +393,28 @@ The following shows explicit backout vs. holders:
 
 **Wrong**
 
-	HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, …);
+	HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, ...);
 	if (hFile == INVALID_HANDLE_VALUE) {
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 	}
 
 	DWORD dwFileLen = SafeGetFileSize(hFile, 0);
 	if (dwFileLen == 0xffffffff) {
 	    CloseHandle(hFile);
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 	}
 	CloseHandle(hFile);
 	return S_OK;
 
 **Right**
 
-	HandleHolder hFile(ClrCreateFile(szFileName, GENERIC_READ, …));
+	HandleHolder hFile(ClrCreateFile(szFileName, GENERIC_READ, ...));
 	if (hFile == INVALID_HANDLE_VALUE)
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 
 	DWORD dwFileLen = SafeGetFileSize(hFile, 0);
 	if (dwFileLen == 0xffffffff)
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 
 	return S_OK;
 
@@ -426,24 +426,24 @@ Suppose you want to auto-close the handle if an error occurs but keep the handle
 
 **Wrong:**
 
-	HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, …);
+	HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, ...);
 	if (hFile == INVALID_HANDLE_VALUE) {
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 	}
 	if (FAILED(SomeOperation())) {
 	    CloseHandle(hFile);
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 	}
 	return hFile;
 
 **Right:**
 
-	HandleHolder hFile = ClrCreateFile(szFileName, GENERIC_READ, …);
+	HandleHolder hFile = ClrCreateFile(szFileName, GENERIC_READ, ...);
 	if (hFile == INVALID_HANDLE_VALUE) {
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 	}
 	if (FAILED(SomeOperation())) {
-	    COMPlusThrow(…);
+	    COMPlusThrow(...);
 	}
 	// No failures allowed after this!
 	hFile.SuppressRelease();
@@ -615,7 +615,7 @@ FAULT_NOT_FATAL() is almost identical to a CONTRACT_VIOLATION() but the name ind
 
 If you wish to set the OOM state for a scope rather than a function, use the FAULT_FORBID() holder. To test the current state, use the ARE_FAULTS_FORBIDDEN() predicate.
 
-#### Remember…
+#### Remember...
 
 - Do not use INJECT_FAULT to indicate the possibility of non-OOM errors such as entries not existing in a hash table or a COM object not supporting an interface. INJECT_FAULT indicates OOM errors and no other type.
 - Be very suspicious if your INJECT_FAULT() argument is anything other than throwing an OOM exception or returning E_OUTOFMEMORY. OOM errors must distinguishable from other types of errors so if you're merely returning NULL without indicating the type of error, you'd better be a simple memory allocator or some other function that will never fail for any reason other than an OOM.
@@ -669,7 +669,7 @@ We have now standardized on an infrastructure for performing overflow-safe arith
 
 The _safe_ version of the above code follows:
 
-	#include “safemath.h”
+	#include "safemath.h"
 
 	void *pInput = whatever;
 	S_UINT32 cbSizeOfData = S_UINT32(GetSizeOfData());
@@ -745,7 +745,7 @@ To create a Crst:
 
 	Crst *pcrst = new Crst(type [, flags]);
 
-Where “type” is a member of the CrstType enumeration (defined in the automatically generated src\inc\CrstTypes.h file). These types indicate the usage of the Crst, particularly with regard to which other Crsts may be obtained simultaneously, There is a direct mapping for the CrstType to a level (see CrstTypes.h) though the reverse is not true.
+Where "type" is a member of the CrstType enumeration (defined in the automatically generated src\inc\CrstTypes.h file). These types indicate the usage of the Crst, particularly with regard to which other Crsts may be obtained simultaneously, There is a direct mapping for the CrstType to a level (see CrstTypes.h) though the reverse is not true.
 
 Don't create static instances of Crsts<sup>[2]</sup>. Use CrstStatic class for this purpose, instead.
 
@@ -766,7 +766,7 @@ To enter or leave a crst, you must wrap the crst inside a CrstHolder. All operat
 	{
 	    CrstHolder ch(pcrst);	// implicit enter
 
-	    … do your thing… may also throw…
+	    ... do your thing... may also throw...
 
 	}							// implicit leave
 
@@ -779,9 +779,9 @@ You can also manually acquire and release crsts by calling the appropriate metho
 	{
 	    CrstHolder ch(pcrst);	// implicit enter
 
-	    …
+	    ...
 	    ch.Release();		// temporarily leave
-	    …
+	    ...
 	    ch.Acquire();		// temporarily enter
 
 	}					// implicit leave
@@ -793,7 +793,7 @@ If you need to create a CrstHolder without actually entering the critical sectio
 	{
 	    CrstHolder ch(pcrst, FALSE);	// no implicit enter
 
-	    …
+	    ...
 	}									// no implicit leave
 
 If you want to exit the scope without leaving the Crst, call SuppressRelease() on the holder:
@@ -868,7 +868,7 @@ In order to use CRST_UNSAFE_SAMELEVEL, you should write a paragraph explaining w
 
 Under no circumstances may you use CRST_UNSAFE_SAMELEVEL for a non-host-breakable lock.
 
-[3] More precisely, you cannot allow a GC to block your thread at a GC-safe point. If it does, the GC could deadlock because the GC thread itself blocks waiting for a third cooperative mode thread to reach its GC-safe point… which it can’t do because it’s trying to acquire the very lock that your first thread owns. This wouldn’t be an issue if acquiring a coop-mode lock was itself a GC-safe point. But too much code relies on this not being a GC-safe point to fix this easily
+[3] More precisely, you cannot allow a GC to block your thread at a GC-safe point. If it does, the GC could deadlock because the GC thread itself blocks waiting for a third cooperative mode thread to reach its GC-safe point... which it can't do because it's trying to acquire the very lock that your first thread owns. This wouldn't be an issue if acquiring a coop-mode lock was itself a GC-safe point. But too much code relies on this not being a GC-safe point to fix this easily
 
 ### Bypassing leveling (CRSTUNORDEREDnordered)
 
@@ -1106,7 +1106,7 @@ In more complex situations, a caller may be able to vouch for an EE Thread's exi
 	if (pThread == NULL)
 	    return;
 
-	// We know there’s an EE Thread now, so it’s safe to call GetThread()
+	// We know there's an EE Thread now, so it's safe to call GetThread()
 	// and expect a non-NULL return.
 	BEGIN_GETTHREAD_ALLOWED;
 	CallCodeThatRequiresThread();
@@ -1171,7 +1171,7 @@ The ClrDebugState is the per-thread data structure that houses all of the flag b
 
 This data is meant to be changed in a scoped manner only. In particular, the CONTRACT destructor always restores the _entire_ ClrDebugState from a copy saved on function entry. This means that any net changes made by the function body itself will be wiped out when the function exits via local _or_ non-local control. The same caveat is true for holders such as GCX_NOTRIGGER.
 
-### For more details…
+### For more details...
 
 See the big block comment at the start of [src\inc\contract.h][contract.h].
 
