@@ -3288,6 +3288,13 @@ PALAPI
 LPCVOID
 PAL_GetCoreClrModuleBase();
 
+PALAPI
+DWORD
+PAL_GetModuleProcAddress(
+        IN LPCSTR lpLibFileName,
+        IN LPCSTR lpProcName,
+        OUT FARPROC *lpProcAddress);
+
 PALIMPORT
 LPVOID
 PALAPI

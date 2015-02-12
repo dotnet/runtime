@@ -20,8 +20,6 @@
 #define STRESS_LOG_READONLY
 #include "stresslog.h"
 
-BOOL g_bDacBroken = FALSE;
-
 
 void GcHistClear();
 void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);

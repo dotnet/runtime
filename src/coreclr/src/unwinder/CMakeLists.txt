@@ -7,6 +7,11 @@ include_directories(${CLR_DIR}/src/gc)
 include_directories(${CLR_DIR}/src/gcdump)
 include_directories(${CLR_DIR}/src/debug/daccess)
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+  add_compile_options(-fPIC)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
+
 if(IS_64BIT_BUILD EQUAL 1)
     include_directories(amd64)
 

@@ -2,6 +2,10 @@ include(${CLR_DIR}/dac.cmake)
 
 add_definitions(-DFEATURE_NO_HOST)
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_compile_options(-fPIC)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 set(CLR_DAC_SOURCES
     mscordac.cpp
 )
@@ -21,23 +25,37 @@ if(WIN32)
 
     #create target to add file dependency on mscordac.def
     add_custom_target(mscordaccore_def DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/mscordac.def)
+
+    # No library groups for Win32
+    set(START_LIBRARY_GROUP)
+    set(END_LIBRARY_GROUP)
+else(WIN32)
+    # The following linked options can be inserted into the linker libraries list to 
+    # ensure proper resolving of circular references between a subset of the libraries.
+    set(START_LIBRARY_GROUP -Wl,--start-group)
+    set(END_LIBRARY_GROUP -Wl,--end-group)
 endif(WIN32)
 
 add_library(mscordaccore SHARED ${CLR_DAC_SOURCES})
 
+# IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
+# order dependent and changing the order can result in undefined symbols in the shared 
+# library.
 set(COREDAC_LIBRARIES
-    cee_dac
+    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
+    utilcode_dac
     cordbee_dac
+    cee_dac
+    mdcompiler_dac
+    mdruntime_dac
+    mdruntimerw_dac
+    mdhotdata_dac
     corguids
     daccess
     dbgutil
-    mdcompiler_dac
-    mdhotdata_dac
-    mdruntime_dac
-    mdruntimerw_dac
     strongname_dac
-    utilcode_dac
     unwinder_dac
+    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
 
 if(WIN32)
@@ -64,8 +82,9 @@ if(WIN32)
         user32.lib
         ${STATIC_MT_CRT_LIB}
     )
-else()
+else(WIN32)
     list(APPEND COREDAC_LIBRARIES
+        CoreClrPal
         palrt
     )
 endif(WIN32)
