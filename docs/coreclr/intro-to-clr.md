@@ -9,7 +9,7 @@ What is the Common Language Runtime (CLR)? To put it succinctly:
 
 Phew, that was a mouthful. It also in and of itself is not very illuminating.  The statement above _is_ useful however, because it is the first step in taking the large and complicated piece of software known as the [CLR][clr] and grouping its features in an understandable way.  It gives us a "10,000 foot" view of the runtime from which we can understand the broad goals and purpose of the runtime. After understanding the CLR at this high level, it is easier to look more deeply into sub-components without as much chance of getting lost in the details. 
 
-#The CLR: A (very rare) Complete Programming Platform
+# The CLR: A (very rare) Complete Programming Platform
 
 Every program has a surprising number of dependencies on its runtime environment.  Most obviously, the program is written in a particular programming language, but that is only the first of many assumptions a programmer weaves into the program.  All interesting programs need some _runtime library_ that allows them to interact with the other resources of the machine (such as user input, disk files, network communications, etc).  The program also needs to be converted in some way (either by interpretation or compilation) to a form that the native hardware can execute directly. These dependencies of a program are so numerous, interdependent and diverse that implementers of programming languages almost always defer to other standards to specify them.  For example the C++ language does not specify the format of a C++ executable. Instead each C++ compiler is bound to a particular hardware architecture (e.g., X86), and to an operating system environment (e.g., Windows, Linux, or Mac OS), which describes the format of the executable file format and specifies how it will be loaded.  Thus programmers don't make a "C++ executable," but rather a "Windows X86 executable", or a "Power PC Mac OS executable."
 
@@ -29,7 +29,7 @@ Because the runtime is shared among _many_ languages, it means that more resourc
 
 In short, the runtime is a complete specification of the exact bits one has to put in a file to create and run a program. The virtual machine that runs these files is at a high level appropriate for implementing a broad class of programming languages. This virtual machine, along with an ever growing body of class libraries that run on that virtual machine, is what we call the common language runtime ( CLR). 
 
-#The Primary Goal of the CLR    
+# The Primary Goal of the CLR    
 
 Now that we have basic idea what the CLR is, it is useful to back up just a bit and understand the problem the runtime was meant to solve.  At a very high level, the runtime has only one goal:
 
@@ -46,7 +46,7 @@ The second reason this goal is so important is that **ease of use is the fundame
 
 It is this dedication to ease of use (which goes hand in hand with simplicity of the user model) stands out as the reason for the success of the CLR.  Oddly, some of the most important ease-of-use features are also the most "boring." For example, any programming environment could apply consistent naming conventions, yet actually doing so across a large class library is quite a lot of work. Often such efforts conflict with other goals (such as retaining compatibility with existing interfaces), or they run into significant logistical concerns (such as the cost of renaming a method across a _very_ large code base).  It is at times like these that we have to remind ourselves about our number-one overarching goal of the runtime, and ensure that we are have our priorities straight to reach that goal. 
 
-#Fundamental Features of the CLR
+# Fundamental Features of the CLR
 
 The runtime has quite a number of features, so it is useful to categorize them as follows:
 
@@ -88,11 +88,11 @@ What this means is that the CLR needs to track _all_ references to the GC heap _
 TODO: Update GC BOTR link
 To learn more, check out the [Garbage Collector design document]().
 
-##The Concept of "Managed Code"
+## The Concept of "Managed Code"
 
 Code that does the extra bookkeeping so that it can report all of its live GC references "almost all the time" is called _managed code_ (because it is "managed" by the CLR).  Code that does not do this is called _unmanaged code_.  Thus all code that existed before the CLR is unmanaged code, and in particular, all operating system code is unmanaged. 
 
-###The stack unwinding problem
+### The stack unwinding problem
 
 Clearly, because managed code needs the services of the operating system, there will be times when managed code calls unmanaged code. Similarly, because the operating system originally started the managed code, there are also times when unmanaged code calls into managed code. Thus, in general, if you stop a managed program at an arbitrary location, the call stack will have a mixture of frames created by managed code and frames created by unmanaged code. 
 
@@ -102,7 +102,7 @@ Managed code has additional requirements on it: not only must it track all the G
 
 [1] More recent platform ABIs (application binary interfaces) define conventions for encoding this information, however there is typically not a strict requirement for all code to follow them.
 
-###The "World" of Managed Code
+### The "World" of Managed Code
 
 The result is that special bookkeeping is needed at every transition to and from managed code.  Managed code effectively lives in its own "world" where execution can't enter or leave unless the CLR knows about it. The two worlds are in a very real sense distinct from one another (at any point in time the code is in the _managed world_ or the _unmanaged world_).  Moreover, because the execution of managed code is specified in a CLR format (with its [Common Intermediate Language][cil-spec] (CIL)), and it is the CLR that converts it to run on the native hardware, the CLR has _much_ more control over exactly what that execution does.  For example, the CLR could change the meaning of what it means to fetch a field from an object, or call a function.  In fact the CLR does exactly this to support the ability to create MarshalByReference objects. These appear to be ordinary local objects, but in fact may exist on another machine. In short, the managed world of the CLR has a large number of _execution hooks_ that it can use to support powerful features that will be explained in more detail in the coming sections. 
 
@@ -119,7 +119,7 @@ Thus, we have now seen that managed code (which is intimately involved with the 
 
 **Both** of these characteristics are very important to the success of managed code. 
 
-##Memory and Type Safety
+## Memory and Type Safety
 
 One of the less obvious, but quite far-reaching features that a garbage collector enables is that of memory safety. The invariant of memory safety is very simple: a program is memory safe if it accesses only memory that has been allocated (and not freed). This simply means that you don't have "wild" (dangling) pointers that are pointing at random locations (more precisely, at memory that was freed prematurely). Clearly, memory safety is a property we want all programs to have.  Dangling pointers are always bugs, and tracking them down is often quite difficult. 
 
@@ -140,7 +140,7 @@ For type safety, conceptually each memory allocation is associated with a type. 
 
 One the most important of these type-specific guarantees is that the visibility attributes associated with a type (and in particular with fields) are enforced. Thus, if a field is declared to be private (accessible only by the methods of the type), then that privacy will indeed be respected by all other type-safe code. For example, a particular type might declare a count field that represents the count of items in a table.  Assuming this field (and the field for the table itself), are private, and assuming that the only code that updates them updates them together, there is now a strong guarantee (across all type-safe code), that the count and the number of items in the table are indeed in sync.  When reasoning about programs, programmers use the concept of type safety all the time, whether they know it or not.  The CLR elevates type-safety from being simply a programming language/compiler convention, to something that can be strictly enforced at run time.
 
-###Enforcing memory safety (Verifiable Code)
+### Enforcing memory safety (Verifiable Code)
 
 Conceptually, to enforce type safety, every operation that the program performs has to be checked to ensure that it is operating on memory that was typed in a way that is compatible with the operation. While the system could do this all at runtime, it would be very slow. Instead, the CLR has the concept of [CIL][cil-spec] verification, where a static analysis is done on the [CIL][cil-spec] (before the code is run) to confirm that most operations are indeed type-safe. Only when this static analysis can't do a complete job are runtime checks necessary.  In practice, the number of run-time checks needed is actually very small. They include the following operations: 
 
@@ -160,11 +160,11 @@ Thus, by verifying the [CIL][cil-spec] of the code and by doing a few run-time c
 
 The CLR strongly encourages the use of verifiable, type-safe code.  Even so, there are times (mostly when dealing with unmanaged code), that unverifiable programming is needed.  The CLR allows this, but the best practice here is to try to confine this unsafe code as much as possible.  Typical programs have only a very small fraction of their code that needs to be unsafe, and the rest can be type-safe. 
 
-##High Level Support for Programming Languages.
+## High Level Support for Programming Languages.
 
 Supporting garbage collection had a profound effect on the runtime because it requires that all code must support extra bookkeeping.  The desire for type-safety also had a profound effect, requiring that the description of the program (the [CIL][cil-spec]) be at a high level, where fields and methods have detailed type information. The desire for type safety also forces the [CIL][cil-spec] to support other high-level programming constructs that are type-safe. Expressing these constructs in a type-safe manner also requires runtime support.  The two most important of these high-level features are used to support two essential elements of object oriented programming: inheritance and virtual call dispatch.
 
-###Object Oriented Programming
+### Object Oriented Programming
 
 Inheritance is relatively simple in a mechanical sense.  The basic idea is that if the fields of type derived are a superset of the fields of type base, and derived lays out its fields so the fields of base come first, then any code that expects a pointer to an instance of base can be given a pointer to an instance of derived and the code will "just work". Thus, type derived is said to inherit from base, meaning that it can be used anywhere base can be used. Code becomes _polymorphic_ because the same code can be used on many distinct types. Because the runtime needs to know what type coercions are possible, the runtime must formalize the way inheritance is specified so it can validate type safety. 
 
@@ -177,7 +177,7 @@ For this reason, the CLR has direct support for basic object-oriented features. 
 
 It is important to keep in mind that while the runtime supports these object-oriented concepts, it does not require their use. Languages without the concept of inheritance (e.g., functional languages) simply don't use these facilities. 
 
-###Value Types (and Boxing)
+### Value Types (and Boxing)
 
 A profound, yet subtle aspect of object oriented programming is the concept of object identity: the notion that objects (allocated by separate allocation calls) can be distinguished, even if all their field values are identical.  Object identity is strongly related to the fact that objects are accessed by reference (pointer) rather than by value. If two variables hold the same object (their pointers address the same memory), then updates to one of the variables will affect the other variable.
 
@@ -194,13 +194,13 @@ The key characteristics of value types are:
 
 Value types very closely model the C (and C++) notion of a struct (or C++ class). Like C you can have pointers to value types, but the pointers are a type distinct from the type of the struct. 
 
-###Exceptions
+### Exceptions
 
 Another high-level programming construct that the CLR directly supports is exceptions.  Exceptions are a language feature that allow programmers to _throw_ an arbitrary object at the point that a failure occurs.  When an object is thrown the runtime searches the call stack for a method that declares that it can _catch_ the exception. If such a catch declaration is found, execution continues from that point. The usefulness of exceptions is that it avoids the very common mistake of not checking if a called method fails. Given that exceptions help avoid programmer mistakes (thus making programming easier), it is not surprising that the CLR supports them. 
 
 As an aside, while exceptions avoid one common error (not checking for failure), they do not prevent another (restoring data structures to a consistent state in the event of a failure).  This means that after an exception is caught, it is difficult in general to know if continuing execution will cause additional errors (caused by the first failure). This is an area where the CLR is likely to add value in the future.  Even as currently implemented, however, exceptions are a great step forward (we just need to go further). 
 
-###Parameterized Types (Generics)
+### Parameterized Types (Generics)
 
 Previous to version 2.0 of the CLR, the only parameterized types were arrays.  All other containers (such as hash tables, lists, queues, etc.), all operated on a generic Object type. The inability to create List<ElemT>, or Dictionary<KeyT, ValueT> certainly had a negative performance effect because value types needed to be boxed on entry to a collection, and explicit casting was needed on element fetch. Nevertheless, that is not the overriding reason for adding parameterized types to the CLR.  The main reason is that **parameterized types make programming easier**. 
 
@@ -208,7 +208,7 @@ The reason for this is subtle. The easiest way to see the effect is to imagine w
 
 These benefits do not disappear just because the type gets put into a List or a Dictionary, so clearly parameterized types have value.  The only real question is whether parameterized types are best thought of as a language specific feature which is "compiled out" by the time CIL is generated, or whether this feature should have first class support in the runtime.  Either implementation is certainly possible. The CLR team chose first class support because without it, parameterized types would be implemented different ways by different languages. This would imply that interoperability would be cumbersome at best.  In addition, expressing programmer intent for parameterized types is most valuable _at the interface_ of a class library.  If the CLR did not officially support parameterized types, then class libraries could not use them, and an important usability feature would be lost. 
 
-###Programs as Data (Reflection APIs)
+### Programs as Data (Reflection APIs)
 
 The fundamentals of the CLR are garbage collection, type safety, and high-level language features. These basic characteristics forced the specification of the program (the CIL) to be at fairly high level. Once this data existed at runtime (something not true for C or C++ programs), it became obvious that it would also be valuable to expose this rich data to end programmers.  This idea resulted in the creation of the System.Reflection interfaces (so-called because they allow the program to look at (reflect upon) itself).  This interface allows you to explore almost all aspects of a program (what types it has, the inheritance relationship, and what methods and fields are present). In fact, so little information is lost that very good "decompilers" for managed code are possible (e.g., . [NET Reflector](http://www.red-gate.com/products/reflector/)).  While those concerned with intellectual property protection are aghast at this capability (which can be fixed by purposefully destroying information by performing an operation called _obfuscating_ the program), the fact that it is possible is a testament to the richness of the information available at runtime in managed code.
 
@@ -216,19 +216,19 @@ In addition to simply inspecting programs at runtime, it is also possible to per
 
 While reflection capabilities are indeed powerful, that power should be used with care.  Reflection is usually significantly slower than its statically compiled counterparts.  More importantly, self-referential systems are inherently harder to understand. This means that powerful features such as Reflection or Reflection.Emit should only be used when the value is clear and substantial. 
 
-#Other Features
+# Other Features
 
 The last grouping of runtime features are those that are not related to the fundamental architecture of the CLR (GC, type safety, high-level specification), but nevertheless fill important needs of any complete runtime system. 
 
-##Interoperation with Unmanaged Code
+## Interoperation with Unmanaged Code
 
 Managed code needs to be able to use functionality implemented in unmanaged code.  There are two main "flavors" of interoperation.  First is the ability simply to call unmanaged functions (this is called Platform Invoke or PINVOKE). Unmanaged code also has an object-oriented model of interoperation called COM (component object model) which has more structure than ad hoc method calls.  Since both COM and the CLR have models for objects and other conventions (how errors are handled, lifetime of objects, etc.), the CLR can do a better job interoperating with COM code if it has special support. 
 
-##Ahead of time Compilation
+## Ahead of time Compilation
 
 In the CLR model, managed code is distributed as CIL, not native code.  Translation to native code occurs at runtime.  As an optimization, the native code that is generated from the CIL can be saved in a file using a tool called crossgen (similar to .NET Framework NGEN tool).  This avoids large amounts of compilation time at runtime, and is very important because the class library is so large.
 
-##Threading
+## Threading
 
 The CLR fully anticipated the need to support multi-threaded programs in managed code. From the start, the CLR libraries contained the System.Threading.Thread class which is a 1-to-1 wrapper over the operating system notion of a thread of execution. However because it is just a wrapper over the operating system thread, creating a System.Threading.Thread is relatively expensive (it takes milliseconds to start).  While this is fine for many operations, one style of programming creates very small work items (taking only tens of milliseconds), are created. This is very common in server code (e.g., each task is serving just one web page), or in code that tries to take advantage of multi-processors (e.g., a multi-core sort algorithm). To support this, the CLR has the notion of a ThreadPool which allows WorkItems to be queued. In this scheme, the CLR is responsible for creating the necessary threads to do the work. While the CLR does expose the ThreadPool directly as the System.Threading.Threadpool class, the preferred mechanism is to use the [task parallel library][tpl], which adds additional support for very common forms of concurrency control.
 
@@ -236,7 +236,7 @@ The CLR fully anticipated the need to support multi-threaded programs in managed
 
 From an implementation perspective, the important innovation of the ThreadPool is that it is responsible for ensuring that the optimal number of threads are used to dispatch the work.  The CLR does this using a feedback system where it monitors the throughput rate and the number of threads, and adjusts the number of threads to maximize the throughput. This is very nice because now programmers can think mostly in terms of "exposing parallelism" (that is, creating work items), rather than the more subtle question of determining the right amount of parallelism (which depends on the workload and the hardware on which the program is run). 
 
-#Summary and Resources
+# Summary and Resources
 
 Phew!  The runtime does a lot! It has taken many pages just to describe _some_ of the features of the runtime, without even starting to talk about internal details.  The hope is, however, that this introduction will provide a useful framework for a deeper understanding of those internal details.  The basic outline of this framework is:
 
@@ -247,7 +247,7 @@ Phew!  The runtime does a lot! It has taken many pages just to describe _some_ o
   - Type Safety
   - High-Level Support for Language Features 
 
-##Useful Links 
+## Useful Links 
 
 - [MSDN Entry for the CLR][clr]
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
