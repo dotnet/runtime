@@ -78,7 +78,7 @@
     <!-- The rejit feature is available only on supported architectures (x86 & x64) -->
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
     <FeatureWindowsPhone>true</FeatureWindowsPhone>
-    <FeatureManagedEtw Condition="'$(OS)' != 'Unix'">true</FeatureManagedEtw>
+    <FeatureManagedEtw Condition="'$(OS)' == 'Windows_NT'">true</FeatureManagedEtw>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureHostedBinder>true</FeatureHostedBinder>
     <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
