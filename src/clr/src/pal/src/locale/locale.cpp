@@ -323,8 +323,8 @@ static CFStringRef MapFormatPattern(CFStringRef cfStringFormat, const struct For
                 }
 
                 /* find the map entry corresponding to the count we have found (there must be one) */
-                while (!((entry->count & ORMORE) != 0 && count >= (entry->count & ~ORMORE) ||
-                         (entry->count & ORMORE) == 0 && count == entry->count))
+                while (!(((entry->count & ORMORE) != 0 && count >= (entry->count & ~ORMORE)) ||
+                         ((entry->count & ORMORE) == 0 && count == entry->count)))
                 {
                     entry++;
                     if (entry->uniChar != uniChar)
