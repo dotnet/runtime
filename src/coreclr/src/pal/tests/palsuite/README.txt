@@ -99,7 +99,7 @@ File_IO: getfiletime/test5
 This test case is NTFS specific.
 
 
-File_IO: getfilesize/test1, setfilepointer/test(5,6,7)  *************
+File_IO: getfilesize/test1, getfilesizeex/test1 setfilepointer/test(5,6,7)
 
 These tests cases create a large number of temporary files which require  
 ample disk space.  On systems with less than 6Gb free disk space expect 
