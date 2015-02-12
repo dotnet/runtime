@@ -256,7 +256,6 @@ Phew!  The runtime does a lot! It has taken many pages just to describe _some_ o
   - [Partition III CIL Instruction Set][cil-spec]
 - [.NET Framework Design Guidelines](http://msdn.microsoft.com/en-us/library/ms229042.aspx)
 
-
 [ecma-spec]: http://msdn.microsoft.com/en-us/netframework/aa569283.aspx
 [clr]: http://msdn.microsoft.com/en-us/library/8bs2ecf4(VS.71).aspx
 [cil-spec]: http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf
