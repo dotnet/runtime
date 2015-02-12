@@ -12,7 +12,6 @@ root = true
 insert_final_newline = true
 indent_style = space
 indent_size = 4
-trim_trailing_whitespace = true
 
 [*.{asm,inc}]
 indent_size = 8
