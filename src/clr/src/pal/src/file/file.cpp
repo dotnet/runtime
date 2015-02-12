@@ -3050,9 +3050,37 @@ PALAPI GetFileSizeEx(
 IN   HANDLE hFile,
 OUT  PLARGE_INTEGER lpFileSize)
 {
-    // UNIXTODO: Implement this!
-    ERROR("Needs Implementation!!!");
-    return FALSE;
+    PAL_ERROR palError = NO_ERROR;
+    CPalThread *pThread;
+    DWORD dwFileSizeHigh;
+    DWORD dwFileSizeLow;
+
+    PERF_ENTRY(GetFileSizeEx);
+    ENTRY("GetFileSizeEx(hFile=%p, lpFileSize=%p)\n", hFile, lpFileSize);
+
+    pThread = InternalGetCurrentThread();
+
+    palError = InternalGetFileSize(
+        pThread,
+        hFile,
+        &dwFileSizeLow,
+        &dwFileSizeHigh
+        );
+
+    if (lpFileSize != NULL)
+    {
+        lpFileSize->u.LowPart = dwFileSizeLow;
+        lpFileSize->u.HighPart = dwFileSizeHigh;
+    }
+
+    if (NO_ERROR != palError)
+    {
+        pThread->SetLastError(palError);
+    }
+
+    LOGEXIT("GetFileSizeEx returns BOOL %d\n", NO_ERROR == palError);
+    PERF_EXIT(GetFileSizeEx);
+    return NO_ERROR == palError;
 }
 
 PAL_ERROR

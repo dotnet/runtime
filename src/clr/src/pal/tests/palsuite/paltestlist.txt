@@ -549,6 +549,7 @@ file_io/GetFileAttributesA/test1/paltest_getfileattributesa_test1
 file_io/GetFileAttributesExW/test2/paltest_getfileattributesexw_test2
 file_io/GetFileAttributesW/test1/paltest_getfileattributesw_test1
 file_io/GetFileSize/test1/paltest_getfilesize_test1
+file_io/GetFileSizeEx/test1/paltest_getfilesizeex_test1
 file_io/GetFileTime/test1/paltest_getfiletime_test1
 file_io/GetFileTime/test2/paltest_getfiletime_test2
 file_io/GetFileTime/test3/paltest_getfiletime_test3
