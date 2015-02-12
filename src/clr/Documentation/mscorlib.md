@@ -225,7 +225,7 @@ Notice how oldBuffer and newBuffer (interior pointers into String instances) are
 	        FCThrowRes(kNullReferenceException, L"NullReference_This");
 	    }
 
-	    [… Removed some uninteresting code here for illustrative purposes…]
+	    [... Removed some uninteresting code here for illustrative purposes...]
 
 	    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_RETURNOBJ, newString, thisRef);
 
@@ -262,25 +262,25 @@ The CLR must know the name of your QCall and FCall methods, both in terms of the
 Say we defined an FCall method for String.Replace(char, char), in the example above. First, we need to ensure that we have an array of function elements for the String class.
 
 	// Note these have to remain sorted by name:namespace pair (Assert will wack you if you
-	    …
+	    ...
 	    FCClassElement("String", "System", gStringFuncs)
-	    …
+	    ...
 
 Second, we must then ensure that gStringFuncs contains a proper entry for Replace. Note that if a method name has multiple overloads (such as String.Replace(String, String)), then we can specify a signature:
 
 	FCFuncStart(gStringFuncs)
-	    …
+	    ...
 	    FCFuncElement("IndexOf", COMString::IndexOfChar)
 	    FCFuncElementSig("Replace", &gsig_IM_Char_Char_RetStr, COMString::Replace)
 	    FCFuncElementSig("Replace", &gsig_IM_Str_Str_RetStr, COMString::ReplaceString)
-	    …
+	    ...
 	FCFuncEnd()
 
 There is a parallel QCFuncElement macro.
 
 ## Naming convention
 
-Try to use normal name (e.g. no “_”, “n” or “native” prefix) for all FCalls and QCalls. It is not good idea to embed that the function is implemented in VM in the name of the function for the following reasons:
+Try to use normal name (e.g. no "_", "n" or "native" prefix) for all FCalls and QCalls. It is not good idea to embed that the function is implemented in VM in the name of the function for the following reasons:
 
 - There are directly exposed public FCalls. These FCalls have to follow the naming convention for public APIs.
 - The implementation of functions do move between CLR and mscorlib.dll. It is painful to change the name of the function in all call sites when this happens.
