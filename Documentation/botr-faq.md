@@ -13,7 +13,7 @@ Each of the BoTR documents were written with a [certain perspective](https://git
 
 # Who is the main audience of BotR?
 
-- Developers who are working on bugs that impinge on an area and need a high level overview of the component. 
+- Developers who are working on bugs that impinge on an area and need a high level overview of the component.
 - Developers working on new features with dependencies on a component need to know enough about it to ensure the new feature will interact correctly with existing components.
 - New developers need this chapter to maintain a given component.
 
