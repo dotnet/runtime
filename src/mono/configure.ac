@@ -539,6 +539,12 @@ if test x"$GCC" = xyes; then
 		# We rely on signed overflow to behave
 		CFLAGS="$CFLAGS -fwrapv"
 
+		# Don't export any symbols by default
+		CFLAGS="$CFLAGS -fvisibility=hidden"
+		CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -fvisibility=hidden"
+		CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+
+		# Export symbols marked by MONO_API
 		CFLAGS="$CFLAGS -DMONO_DLL_EXPORT"
 
 		ORIG_CFLAGS=$CFLAGS
