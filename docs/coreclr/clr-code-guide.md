@@ -172,7 +172,6 @@ The following code fragment shows how handles are used. In practice, of course, 
 	    ah = CreateHandle(AllocateObject(pMT));
 	    bh = CreateHandle(AllocateObject(pMT));
 
-
 	    DoSomething (ObjectFromHandle(ah),
 	                 ObjectFromhandle(bh));
 
@@ -230,7 +229,6 @@ While you are running in preemptive mode, OBJECTREF's are strictly hands-off; th
 	    Code you want run in cooperative mode	
 	} // leaving scope automatically restores original mode
 
-
 It's perfectly legal to invoke GCX_COOP() when the thread is already in cooperative mode. GCX_COOP will be a NOP in that case. Likewise for GCX_PREEMP.
 
 GCX_COOP and GCX_PREEMP will never throw an exception and return no error status.
@@ -271,7 +269,6 @@ You can assert the need to be in a particular mode in the contract by using one 
 	}
 	CONTRACTL_END
 
-
 	CONTRACTL
 	{
 	    MODE_PREEMPTIVE
@@ -287,7 +284,6 @@ There are also standalone versions:
 	{
 	    GCX_ASSERT_PREEMP();
 	}
-
 
 You'll notice that the standalone versions are actually holders rather than simple statements. The intention was that these holders would assert again on scope exit to ensure that any backout holders are correctly restoring the mode. However, that exit check was disabled initially with the idea of enabling it eventually once all the backout code was clean. Unfortunately, the "eventually" has yet to arrive. As long as you use the GCX holders to manage mode changes, this shouldn't really be a problem.
 
@@ -453,7 +449,6 @@ Suppose you want to auto-close the handle if an error occurs but keep the handle
 	hFile.SuppressRelease();
 	return hFile;
 
-
 ### Common Features of Holders
 
 All holders, no matter how complex or simple, offer these basic services:
@@ -510,7 +505,6 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 	NewHolder<Foo> pFoo = new Foo();
 
 ### New'ed array:
-
 
 **Wrong:**
    	
@@ -706,8 +700,6 @@ Currently, the "S_" types are available only for unsigned ints and SIZE_T. Check
 
 **Key Takeaway: Do not roll your own overflow checks. Always use safemath.h.** Writing correct overflow-safe arithmetic code is harder than you might think (take a look at the implementation in [safemath.h][safemath.h] if you don't believe me.) Every unauthorized version is another security hotspot that has to be watched carefully. If safemath.h doesn't support the functionality you need, please get the functionality added to safemath.h rather than creating a new infrastructure.
 
-
-
 **Key Takeaway: Don't let premature perf concerns stop you from using safemath.h.** Despite the apparently complexity, the optimized codegen for this helper is very efficient and in most cases, at least as efficient as any hand-rolled version you might be tempted to create.
 
 **Note:** If you've worked on other projects that use the SafeInt class, you might be wondering why we don't do that here. The reason is that we needed something that could be used easily from exception-intolerant code.
@@ -778,8 +770,6 @@ To enter or leave a crst, you must wrap the crst inside a CrstHolder. All operat
 
 	}							// implicit leave
 
-
-
 **You can only enter and leave Crsts in preemptive GC mode.** Attempting to enter a Crst in cooperative mode will forcibly switch your thread into preemptive mode.
 
 If you need a Crst that you can take in cooperative mode, you must pass a special flag to the Crst constructor to do so. See the information about CRITSECT_UNSAFE_\* flags below. You will also find information about why it's preferable not to take Crsts in cooperative mode.
@@ -796,7 +786,6 @@ You can also manually acquire and release crsts by calling the appropriate metho
 
 	}					// implicit leave
 
-
 Note that holders do not let you nest Acquires or Releases. You will get an assert if you try. Introduce a new scope and a new holder if you need to do this.
 
 If you need to create a CrstHolder without actually entering the critical section, pass FALSE to the holder's "take" parameter like this:
@@ -807,15 +796,12 @@ If you need to create a CrstHolder without actually entering the critical sectio
 	    … 
 	}									// no implicit leave
 
-	
 If you want to exit the scope without leaving the Crst, call SuppressRelease() on the holder:
 
 	{
 	    CrstHolder ch(pcrst);	// implicit enter
 	    ch.SuppressRelease();		
 	}							// no implicit leave
-
-
 
 ### Other Crst Operations
 
@@ -1102,7 +1088,6 @@ Of course, there are exceptions to this. In particular, if there is a clear code
 	}
 
 Rule: You should only use GetThreadNULLOk if it is patently obvious from the call site that NULL is dealt with directly. Obviously, this would be bad:
-
 
 	GetThreadNULLOk()->BeginCriticalRegion();
 

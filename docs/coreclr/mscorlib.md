@@ -337,7 +337,6 @@ Here's a simplified example. Note how this instance uses the binder described in
 	    GCPROTECT_END();
 	}
 
-
 # Interactions with Other Subsystems
 
 ## Debugger
