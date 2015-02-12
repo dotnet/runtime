@@ -23,8 +23,6 @@ mono_ldftn (MonoMethod *method)
 {
 	gpointer addr;
 
-	MONO_ARCH_SAVE_REGS;
-
 	addr = mono_create_jump_trampoline (mono_domain_get (), method, FALSE);
 
 	return mono_create_ftnptr (mono_domain_get (), addr);
@@ -35,8 +33,6 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 {
 	MonoError error;
 	MonoMethod *res;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (obj == NULL)
 		mono_raise_exception (mono_get_exception_null_reference ());
@@ -76,8 +72,6 @@ mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method)
 void
 mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (!array)
 		mono_raise_exception (mono_get_exception_null_reference ());
 	if (val && !mono_object_isinst (val, array->obj.vtable->klass->element_class))
@@ -89,7 +83,6 @@ mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 gint64 
 mono_llmult (gint64 a, gint64 b)
 {
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return a * b;
 }
 
@@ -101,8 +94,6 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 	guint32 bl = b;
 	guint32 bh = b >> 32; 
 	guint64 res, t1;
-
-	MONO_ARCH_SAVE_REGS;
 
 	// fixme: this is incredible slow
 
@@ -150,8 +141,6 @@ mono_llmult_ovf (gint64 a, gint64 b)
 
 	gint64 res, t1;
 	gint32 sign;
-
-	MONO_ARCH_SAVE_REGS;
 
 	/* need to work with absoulte values, so find out what the
 	   resulting sign will be and convert any negative numbers
@@ -239,8 +228,6 @@ mono_llmult_ovf (gint64 a, gint64 b)
 gint64 
 mono_lldiv (gint64 a, gint64 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -253,8 +240,6 @@ mono_lldiv (gint64 a, gint64 b)
 gint64 
 mono_llrem (gint64 a, gint64 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -267,8 +252,6 @@ mono_llrem (gint64 a, gint64 b)
 guint64 
 mono_lldiv_un (guint64 a, guint64 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -279,8 +262,6 @@ mono_lldiv_un (guint64 a, guint64 b)
 guint64 
 mono_llrem_un (guint64 a, guint64 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -297,7 +278,6 @@ mono_lshl (guint64 a, gint32 shamt)
 {
 	guint64 res;
 
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	res = a << shamt;
 
 	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
@@ -310,7 +290,6 @@ mono_lshr_un (guint64 a, gint32 shamt)
 {
 	guint64 res;
 
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	res = a >> shamt;
 
 	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
@@ -323,7 +302,6 @@ mono_lshr (gint64 a, gint32 shamt)
 {
 	gint64 res;
 
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	res = a >> shamt;
 
 	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
@@ -338,8 +316,6 @@ mono_lshr (gint64 a, gint32 shamt)
 gint32
 mono_idiv (gint32 a, gint32 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -352,8 +328,6 @@ mono_idiv (gint32 a, gint32 b)
 guint32
 mono_idiv_un (guint32 a, guint32 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -364,8 +338,6 @@ mono_idiv_un (guint32 a, guint32 b)
 gint32
 mono_irem (gint32 a, gint32 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -379,8 +351,6 @@ mono_irem (gint32 a, gint32 b)
 guint32
 mono_irem_un (guint32 a, guint32 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	if (!b)
 		mono_raise_exception (mono_get_exception_divide_by_zero ());
@@ -395,8 +365,6 @@ mono_irem_un (guint32 a, guint32 b)
 gint32
 mono_imul (gint32 a, gint32 b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return a * b;
 }
 
@@ -404,8 +372,6 @@ gint32
 mono_imul_ovf (gint32 a, gint32 b)
 {
 	gint64 res;
-
-	MONO_ARCH_SAVE_REGS;
 
 	res = (gint64)a * (gint64)b;
 
@@ -420,8 +386,6 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 {
 	guint64 res;
 
-	MONO_ARCH_SAVE_REGS;
-
 	res = (guint64)a * (guint64)b;
 
 	if ((res >> 32))
@@ -435,8 +399,6 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 double
 mono_fdiv (double a, double b)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return a / b;
 }
 #endif
@@ -649,8 +611,6 @@ mono_array_new_va (MonoMethod *cm, ...)
 	int rank;
 	int i, d;
 
-	MONO_ARCH_SAVE_REGS;
-
 	pcount = mono_method_signature (cm)->param_count;
 	rank = cm->klass->rank;
 
@@ -689,8 +649,6 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 	int pcount;
 	int rank;
 
-	MONO_ARCH_SAVE_REGS;
-
 	pcount = mono_method_signature (cm)->param_count;
 	rank = cm->klass->rank;
 
@@ -716,8 +674,6 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 	intptr_t *lower_bounds;
 	int pcount;
 	int rank;
-
-	MONO_ARCH_SAVE_REGS;
 
 	pcount = mono_method_signature (cm)->param_count;
 	rank = cm->klass->rank;
@@ -745,8 +701,6 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	intptr_t *lower_bounds;
 	int pcount;
 	int rank;
-
-	MONO_ARCH_SAVE_REGS;
 
 	pcount = mono_method_signature (cm)->param_count;
 	rank = cm->klass->rank;
@@ -776,8 +730,6 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	int pcount;
 	int rank;
 
-	MONO_ARCH_SAVE_REGS;
-
 	pcount = mono_method_signature (cm)->param_count;
 	rank = cm->klass->rank;
 
@@ -804,8 +756,6 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	MonoVTable *vtable;
 	gpointer addr;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
 	mono_class_init (field->parent);
@@ -831,7 +781,6 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 	MonoClass *handle_class;
 	gpointer res;
 
-	MONO_ARCH_SAVE_REGS;
 	res = mono_ldtoken_checked (image, token, &handle_class, context, &error);
 	mono_error_raise_exception (&error);
 	mono_class_init (handle_class);
@@ -866,7 +815,6 @@ mono_fconv_u8 (double v)
 gint64
 mono_fconv_i8 (double v)
 {
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
 	return (gint64)v;
 }
 #endif
@@ -874,8 +822,6 @@ mono_fconv_i8 (double v)
 guint32
 mono_fconv_u4 (double v)
 {
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-
 	/* MS.NET behaves like this for some reason */
 #ifdef HAVE_ISINF
 	if (isinf (v) || isnan (v))
@@ -901,8 +847,6 @@ mono_fconv_ovf_i8 (double v)
 {
 	gint64 res;
 
-	MONO_ARCH_SAVE_REGS;
-
 	res = (gint64)v;
 
 	if (isnan(v) || trunc (v) != res) {
@@ -916,7 +860,6 @@ mono_fconv_ovf_u8 (double v)
 {
 	guint64 res;
 
-	MONO_ARCH_SAVE_REGS;
 /*
  * The soft-float implementation of some ARM devices have a buggy guin64 to double
  * conversion that it looses precision even when the integer if fully representable
