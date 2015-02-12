@@ -2582,13 +2582,13 @@ namespace System.Diagnostics.Tracing
             {
 #if FEATURE_MANAGED_ETW
                 if (m_provider != null && m_provider.IsValid())
+#endif // FEATURE_MANAGED_ETW
                 {
                     // When the ETW session is created after the EventSource has registered with the ETW system
                     // we can send any error messages here.
                     ReportOutOfBandMessage("ERROR: Exception during SendCommand for EventSource " +
                                             Name + ": " + e.Message, true);
                 }
-#endif // FEATURE_MANAGED_ETW
 
                 // When the EventSource is created while an ETW session already exists, the registration has not 
                 // completed yet, and m_provider does not have a valid registration handle, so we'll remember 
@@ -2769,7 +2769,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
             get { return m_provider == null || m_provider.m_disposed; }
 #else
-            get { return true; }
+            get { return false; } // ETW is not present (true means that the EventSource is "off" / broken)
 #endif // FEATURE_MANAGED_ETW
         }
 
