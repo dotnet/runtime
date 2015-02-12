@@ -3,7 +3,6 @@
 
 using System.Text;
 using System.IO;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
@@ -23,7 +22,7 @@ namespace System.Diagnostics.ProcessTests
 
                 s = s.Replace("\r", "").Replace("\n", "");
 
-                Assert.Contains("Unhandled Exception: System.Exception: Intentional Exception thrown   at ProcessTest_ConsoleApp.Program.Main(String[] args)", s);
+                Assert.Equal("Unhandled Exception: Intentional Exception thrown", s);
             }
         }
 
@@ -41,7 +40,7 @@ namespace System.Diagnostics.ProcessTests
             {
                 p.BeginErrorReadLine();
                 p.WaitForExit();
-                Assert.Contains(@"Unhandled Exception: System.Exception: Intentional Exception thrown   at ProcessTest_ConsoleApp.Program.Main(String[] args)", s_process_AsyncErrorStream_sb.ToString());
+                Assert.Equal("Unhandled Exception: Intentional Exception thrown", s_process_AsyncErrorStream_sb.ToString());
             }
         }
 
