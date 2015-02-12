@@ -9,14 +9,28 @@
     </ParameterGroup>
     <Task>
       <Reference Include="System" />
+      <Reference Include="System.IO" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
-           var directory = System.IO.Path.GetDirectoryName(FileName);
-           System.IO.Directory.CreateDirectory(directory);
-           var client = new System.Net.WebClient();
-           client.Proxy = System.Net.WebRequest.DefaultWebProxy;
-           client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
-           client.DownloadFile(Address, FileName);
+            var directory = System.IO.Path.GetDirectoryName(FileName);
+            Directory.CreateDirectory(directory);
+
+            var tempFile = Path.Combine(directory, Path.GetRandomFileName());
+            var client = new System.Net.WebClient();
+            client.Proxy = System.Net.WebRequest.DefaultWebProxy;
+            client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+            client.DownloadFile(Address, tempFile);
+
+            try
+            {
+                if (!File.Exists(FileName))
+                   File.Move(tempFile, FileName);
+            }
+            finally
+            {
+              if (File.Exists(tempFile))
+                  File.Delete(tempFile);
+            }
         ]]>
       </Code>
     </Task>
