@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" InitialTargets="_RestoreBuildToolsWrapper" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
+  <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <Address ParameterType="System.String" Required="true"/>
+      <FileName ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System" />
+      <Reference Include="System.IO" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+            var directory = System.IO.Path.GetDirectoryName(FileName);
+            Directory.CreateDirectory(directory);
+
+            var tempFile = Path.Combine(directory, Path.GetRandomFileName());
+            var client = new System.Net.WebClient();
+            client.Proxy = System.Net.WebRequest.DefaultWebProxy;
+            client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+            client.DownloadFile(Address, tempFile);
+
+            try
+            {
+                if (!File.Exists(FileName))
+                   File.Move(tempFile, FileName);
+            }
+            finally
+            {
+              if (File.Exists(tempFile))
+                  File.Delete(tempFile);
+            }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <!-- 
+    Needed to avoid the IntialTargets from having an Output which ends up getting
+    added to the output references when you have a project to project reference.
+  -->
+  <Target Name="_RestoreBuildToolsWrapper" DependsOnTargets="_RestoreBuildTools" />
+
+  <Target Name="_RestoreBuildTools"
+          Inputs="$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)dir.props"
+          Outputs="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath)">
+    <Message Importance="High" Text="Restoring build tools..." />
+
+    <!-- Download latest nuget.exe -->
+    <DownloadFile FileName="$(NuGetToolPath)"
+                  Address="http://nuget.org/nuget.exe" 
+                  Condition="!Exists($(NuGetToolPath))" />
+
+    <!-- Restore build tools -->
+    <Exec Command="$(NugetRestoreCommand) &quot;$(SourceDir).nuget\packages.config&quot;" StandardOutputImportance="Low" />
+    
+    <Error Condition="'$(ErrorIfBuildToolsRestoredFromIndividualProject)'=='true'"
+           Text="The build tools package was just restored and so we cannot continue the build of an individual project because targets from the build tools package were not able to be imported. Please retry the build the individual project again." />
+  </Target>
+
+</Project>
