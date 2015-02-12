@@ -3,12 +3,12 @@ Documents Index
 
 This repo includes several documents that explain both high-level and low-level concepts about the .NET runtime. These are very useful for contributors, to get context that can be very difficult to acquire from just reading code.
 
-# Book of the Runtime (BotR)
+# Book of the Runtime
 
-- [Book of the Runtime FAQ](botr-faq.md)
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
 - [Stack Walking](stackwalking.md)
+- [Book of the Runtime FAQ](botr-faq.md)
 
 # Coding Guides
 - [CLR Coding Guide](clr-code-guide.md)
