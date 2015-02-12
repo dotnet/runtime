@@ -539,6 +539,8 @@ if test x"$GCC" = xyes; then
 		# We rely on signed overflow to behave
 		CFLAGS="$CFLAGS -fwrapv"
 
+		CFLAGS="$CFLAGS -DMONO_DLL_EXPORT"
+
 		ORIG_CFLAGS=$CFLAGS
 		CFLAGS="$CFLAGS -Wdeclaration-after-statement"
 		AC_MSG_CHECKING(for -Wdeclaration-after-statement option to gcc)
