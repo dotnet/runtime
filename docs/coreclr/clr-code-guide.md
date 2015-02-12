@@ -217,7 +217,7 @@ How about the alternative: cooperative GC? With cooperative GC, the above proble
 
 Because neither policy alone suffices for the CLR, the CLR supports both: and you, as a developer, are responsible for switching the threads accordingly. Note that the GC-scheduling mode is a property of an individual thread; not a global system property.
 
-Put precisely: as long as a thread is in cooperative mode, it is guaranteed that a GC will only occur when your thread triggers an object allocation, calls out to interruptable managed code or explicitly requests a GC. All other threads are blocked from GC. As long as your thread is in preemptive mode, then you must assume that a GC can be started any time (by some other thread) and is running concurrently with your thread.
+Put precisely: as long as a thread is in cooperative mode, it is guaranteed that a GC will only occur when your thread triggers an object allocation, calls out to interruptible managed code or explicitly requests a GC. All other threads are blocked from GC. As long as your thread is in preemptive mode, then you must assume that a GC can be started any time (by some other thread) and is running concurrently with your thread.
 
 A good rule of thumb is this: a CLR thread runs in cooperative mode any time it is running managed code or any time it needs to manipulate object references in any way. An Execution Engine (EE) thread that is running in preemptive mode is usually running unmanaged code; i.e. it has left the managed world. Process threads that have never entered CLR in any way are effectively running in preemptive mode. Much of the code inside CLR runs in cooperative mode.
 
@@ -242,7 +242,7 @@ There are a couple of variants for special situations:
 - **GCX_MAYBE_\*(BOOL)**: This version only performs the switch if the boolean parameter is TRUE. Note that the mode restore at the end of the scope still occurs whether or not you passed TRUE. (Of course, this is only important if the mode got switched some other way inside the scope. Usually, this shouldn't happen.)
 - **GCX_\*_THREAD_EXISTS(Thread\*)**: If you're concerned about the repeated GetThread() and null Thread checks inside this holder, use this "performance" version which lets you cache the Thread pointer and pass it to all the GCX_\* calls. You cannot use this to change the mode of another thread. You also cannot pass NULL here.
 
-To switch modes multiple times in a function, you must introduce a new scope for each switch. You can also call GCX_POP(), which performs a mode restore prior to the end of the scope. (The mode restore will happen again at the end of the scope, however. Since mode restore is idempodent, this shouldn't matter.) Do not, however, do this:
+To switch modes multiple times in a function, you must introduce a new scope for each switch. You can also call GCX_POP(), which performs a mode restore prior to the end of the scope. (The mode restore will happen again at the end of the scope, however. Since mode restore is idempotent, this shouldn't matter.) Do not, however, do this:
 
 	{
 	     GCX_COOP();
@@ -259,7 +259,7 @@ While the holder-based macros are the preferred way to switch modes, sometimes o
 
 There is no automatic mode-restore with these functions so the onus is on you to manage the lifetime of the mode. Also, mode changes cannot be nested. You will get an assert if you try to change to a mode you're already in. The "this" argument must be the currently executing thread. You cannot use this to change the mode of another thread.
 
-**Key Takeway:** Use GCX_COOP/PREEMP rather than unscoped calls to DisablePreemptiveGC() whenever possible.
+**Key Takeaway:** Use GCX_COOP/PREEMP rather than unscoped calls to DisablePreemptiveGC() whenever possible.
 
 **Testing/asserting the GC mode:**
 
@@ -556,7 +556,7 @@ This means that:
 
 - Any operation that fails due to an OOM must allow future retries. This means any changes to global data structures must be rolled back and OOM exceptions cannot be cached. 
 - OOM failures must be distinguishable from other error results. OOM's must never be transformed into some other error code. Doing so may cause some operations to cache the error and return the same error on each retry. 
-- Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declation is done by the INJECT_FAULT and FORBID_FAULT contract annotations. 
+- Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declaration is done by the INJECT_FAULT and FORBID_FAULT contract annotations. 
 
 ### Documenting where OOM's can happen.
 

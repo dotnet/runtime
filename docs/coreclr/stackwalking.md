@@ -2,7 +2,7 @@ Stackwalking in the CLR
 ---
 Author: Rudi Martin ([@Rudi-Martin](https://github.com/Rudi-Martin)) - 2008
 
-The CLR makes heavy use of a technique known as stack walking (or stack crawling). This involves iterating the sequence of calls frames for a particular thread, from the most recent (the thread's current function) back down to the base of the stack.
+The CLR makes heavy use of a technique known as stack walking (or stack crawling). This involves iterating the sequence of call frames for a particular thread, from the most recent (the thread's current function) back down to the base of the stack.
 
 The runtime uses stack walks for a number of purposes:
 
@@ -19,9 +19,9 @@ Logically, a stack is divided up into some number of _frames_. Each frame repres
 
 The exact definition of a frame varies from platform to platform and on many platforms there isn't a hard definition of a frame format that all functions adhere to (x86 is an example of this). Instead the compiler is often free to optimize the exact format of frames. On such systems it is not possible to guarantee that a stackwalk will return 100% correct or complete results (for debugging purposes, debug symbols such as pdbs are used to fill in the gaps so that debuggers can generate more accurate stack traces).
 
-This is not a problem for the CLR, however, since we do not require a fully generalized stack walk. Instead we are only interested in those frames that are managed (i.e. represent a managed method) or, to some extent, frames coming from unmanaged code used to implement part of the runtime itself. In particular there is no guaruntee about fidelity of 3rd party unmanaged frames other than to note where such frames transition into or out of the runtime itself (i.e. one of the frame types we do care about).
+This is not a problem for the CLR, however, since we do not require a fully generalized stack walk. Instead we are only interested in those frames that are managed (i.e. represent a managed method) or, to some extent, frames coming from unmanaged code used to implement part of the runtime itself. In particular there is no guarantee about fidelity of 3rd party unmanaged frames other than to note where such frames transition into or out of the runtime itself (i.e. one of the frame types we do care about).
 
-Because we control the format of the frames we're interested in (we'll delve into the details of this later) we can ensure that those frames are crawable with 100% fidelity. The only additional requirement is a mechanism to link disjoint groups of runtime frames together such that we can skip over any intervening unmanaged (and otherwise uncrawlable) frames.
+Because we control the format of the frames we're interested in (we'll delve into the details of this later) we can ensure that those frames are crawlable with 100% fidelity. The only additional requirement is a mechanism to link disjoint groups of runtime frames together such that we can skip over any intervening unmanaged (and otherwise uncrawlable) frames.
 
 The following diagram illustrates a stack containing all the frames types (note that this document uses a convention where stacks grow towards the top of the page):
 
@@ -75,7 +75,7 @@ The caller of this method provides three main inputs:
 
 StackWalkFramesEx() returns an enum value that indicates whether the walk terminated normally (got to the stack base and ran out of methods to report), was aborted by one of the callbacks (the callbacks return an enum of the same type to the stack walk to control this) or suffered some other miscellaneous error.
 
-Aside from the context value passed to StackWalkFramesEx(), stack callback functions are passed one other piece of context: the CrawlFrame. This class is defined in [stackwalk.h](https://github.com/dotnet/coreclr/blob/master/src/vm/stackwalk.h) and contains all sorts of context gathered as the stack walk procedes.
+Aside from the context value passed to StackWalkFramesEx(), stack callback functions are passed one other piece of context: the CrawlFrame. This class is defined in [stackwalk.h](https://github.com/dotnet/coreclr/blob/master/src/vm/stackwalk.h) and contains all sorts of context gathered as the stack walk proceeds.
 
 For instance the CrawlFrame indicates the MethodDesc* for managed frames and the Frame* for unmanaged Frames. It also provides the current register set inferred by virtually unwinding frames up to that point.
 
