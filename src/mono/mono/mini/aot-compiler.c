@@ -5035,7 +5035,10 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	emit_line (acfg);
 
 	if (acfg->aot_opts.write_symbols) {
-		emit_symbol_size (acfg, debug_sym, ".");
+		if (debug_sym)
+			emit_symbol_size (acfg, debug_sym, ".");
+		else
+			emit_symbol_size (acfg, cfg->asm_symbol, ".");
 		g_free (debug_sym);
 	}
 
