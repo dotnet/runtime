@@ -6,7 +6,7 @@ The CLR makes heavy use of a technique known as stack walking (or stack crawling
 
 The runtime uses stack walks for a number of purposes:
 
--  The runtime walks the stacks of all threads during garbage collection, looking for managed roots (local variables holding object references in the frames of managed methods that need to be reported to the GC to keep the objects alive and possibly track their movement if the GC decides to compact the heap).
+- The runtime walks the stacks of all threads during garbage collection, looking for managed roots (local variables holding object references in the frames of managed methods that need to be reported to the GC to keep the objects alive and possibly track their movement if the GC decides to compact the heap).
 - On some platforms the stack walker is used during the processing of exceptions (looking for handlers in the first pass and unwinding the stack in the second).
 - The debugger uses the functionality when generating managed stack traces.
 - Various miscellaneous methods, usually those close to some public managed API, perform a stack walk to pick up information about their caller (such as the method, class or assembly of that caller).
