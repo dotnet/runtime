@@ -4,7 +4,19 @@ The .NET runtime supports a wide variety of high performance applications.  As s
 # Design Phase #
 Make sure to address performance during the design phase of any change.  It is much easier to tweak a design to fit performance goals and requirements before implementation has started.
 
-Think about how/how often the feature is used, and how much additional resources are required after the change.  
+Here are some guidelines about how to think about performance during design:
+
+- **DO** consider the performance of your change across a **wide variety of scenarios**.  While one scenario may benefit, others may not or may even regress.  Performance changes that penalize many scenarios for the benefit of one scenario are likely to be rejected unless the scenario is sufficiently important.
+- **DO** ensure that any additional complexity, such as caches or tricky logic have a compelling reason for inclusion.
+- **DO** ensure that performance fixes are **pay for play**.  This means that in general, whoever pays the cost of the fix also gets the benefit.  If scenarios or APIs pay for something that they never use or don't get benefit from, then this is essentially a performance regression.
+- **DO** share your justification for any performance fixes in your pull request so that reviewers understand the trade-off that is being made.
+
+# Cache Considerations #
+A few guidelines to consider if you're planning to add a cache.  In addition to their upsides, they also come with downsides:
+
+- Caches are generally additional complexity.  Thus there needs to be a **compelling** scenario when adding one.
+- Caches need to be **pay for play**.  If there are scenarios that pay the cost but don't benefit, then the cache likely belongs at a different level of abstraction.
+- Prior to adding a cache, analysis of size and lifetime needs to be completed.  Things to consider are whether the cache is unbounded in one or more scenarios, whether the lifetime of the cache is much longer than the times when it is useful and whether or not the cache needs any hints in order to be efficient.  If any of these considerations are true, likely the cache should be at a different level of abstraction.
 
 # Prototyping #
 If you need to convince yourself that the performance characteristics of a design are acceptable, consider writing a prototype.  The prototype should be just enough to be able to run a scenario that meets the scale requirements.  You can then capture a performance trace and analyze the results.
