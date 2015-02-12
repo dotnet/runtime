@@ -9,6 +9,7 @@
 // 
 // ==--==
 #include "exts.h"
+#ifndef FEATURE_PAL
 #include "disasm.h"
 #include "EventCallbacks.h"
 
@@ -33,6 +34,7 @@ BOOL    Connected;
 ULONG   g_TargetClass;
 DWORD_PTR g_filterHint = 0;
 IMachine* g_targetMachine = NULL;
+BOOL    g_bDacBroken = FALSE;
 
 PDEBUG_CLIENT         g_ExtClient;    
 PDEBUG_CONTROL2       g_ExtControl;
@@ -42,9 +44,7 @@ PDEBUG_REGISTERS      g_ExtRegisters;
 PDEBUG_SYMBOLS        g_ExtSymbols;
 PDEBUG_SYMBOLS2       g_ExtSymbols2;
 PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
-#ifndef FEATURE_PAL
 PDEBUG_ADVANCED3      g_ExtAdvanced3;
-#endif
 
 PDEBUG_CLIENT         g_pCallbacksClient;
 
@@ -69,12 +69,10 @@ ExtQuery(PDEBUG_CLIENT Client)
     SOS_ExtQueryFailGo(g_ExtSymbols, IDebugSymbols);
     SOS_ExtQueryFailGo(g_ExtSymbols2, IDebugSymbols2);
     SOS_ExtQueryFailGo(g_ExtSystem, IDebugSystemObjects);
-#ifndef FEATURE_PAL
     SOS_ExtQueryFailGo(g_ExtAdvanced3, IDebugAdvanced3);
-#endif
     g_ExtClient = Client;
 
-  
+    
 
     return S_OK;
 
@@ -142,15 +140,12 @@ ExtRelease(void)
     EXT_RELEASE(g_ExtSymbols);
     EXT_RELEASE(g_ExtSymbols2);
     EXT_RELEASE(g_ExtSystem);
-#ifndef FEATURE_PAL
     EXT_RELEASE(g_ExtAdvanced3);
-#endif
 }
 
 BOOL IsMiniDumpFileNODAC();
 extern HMODULE g_hInstance;
 
-#ifndef FEATURE_PAL
 // This function throws an exception that can be caught by the debugger,
 // instead of allowing the default CRT behavior of invoking Watson to failfast.
 void __cdecl _SOS_invalid_parameter(
@@ -357,34 +352,39 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     }
     return true;
 }
-#else
-extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
-{
-    static bool g_procInitialized = false;
-    
-    if (dwReason == DLL_PROCESS_ATTACH)
-    {
-        if (g_procInitialized)
-            return FALSE;
-        
-        const char * arg = "";
-        if (PAL_Initialize(1, &arg) != 0)
-            return FALSE;
 
-        g_hInstance = (HMODULE) hInstance;
-        g_procInitialized = true;
-    }
-    else if (dwReason == DLL_PROCESS_DETACH)
-    {
-        if (g_procInitialized)
-        {
-            // We cannot call PAL_Terminate here, as it is currently broken and AVs when called.
-            // For now we just have to leak the PAL like the DAC currently does.
-            //PAL_Terminate();
-            g_procInitialized = false;
-        }
-    }
-    
-    return TRUE;
+#else // FEATURE_PAL
+
+BOOL g_bDacBroken = FALSE;
+
+PDEBUG_CLIENT         g_ExtClient;    
+PDEBUG_DATA_SPACES    g_ExtData;
+PDEBUG_CONTROL2       g_ExtControl;
+PDEBUG_SYMBOLS        g_ExtSymbols;
+
+extern "C" HRESULT
+ExtQuery(PDEBUG_CLIENT Client)
+{
+    g_ExtClient = Client;
+    g_ExtControl = (PDEBUG_CONTROL2)Client;
+    g_ExtData = (PDEBUG_DATA_SPACES)Client;
+    g_ExtSymbols = (PDEBUG_SYMBOLS)Client;
+    return S_OK;
 }
+
+extern "C" HRESULT
+ArchQuery(void)
+{
+    return S_OK;
+}
+
+void
+ExtRelease(void)
+{
+    g_ExtClient = NULL;
+    g_ExtControl = NULL;
+    g_ExtData = NULL;
+    g_ExtSymbols = NULL;
+}
+
 #endif // FEATURE_PAL

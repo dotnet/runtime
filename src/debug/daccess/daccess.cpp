@@ -51,6 +51,13 @@ DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
             return FALSE;   // should only get called once
         }
 
+#ifdef FEATURE_PAL
+        int err = PAL_Initialize(0, NULL);
+        if(err != 0)
+        {
+            return FALSE;
+        }
+#endif
         InitializeCriticalSection(&g_dacCritSec);
 
         // Save the module handle.
@@ -66,8 +73,9 @@ DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         {
             DeleteCriticalSection(&g_dacCritSec);
         }
-        
+#ifndef FEATURE_PAL 
         TLS_FreeMasterSlotIndex();
+#endif
         g_procInitialized = false;
         break;
     }
@@ -7414,6 +7422,9 @@ STDAPI
 CLRDataCreateInstance(REFIID iid,
                       ICLRDataTarget * pLegacyTarget,
                       void ** iface)
+#ifdef __llvm__
+__attribute__((used))
+#endif // __llvm__
 {
     if ((pLegacyTarget == NULL) || (iface == NULL))
     {

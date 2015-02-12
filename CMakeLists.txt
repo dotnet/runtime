@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 2.8.12)
 # Set the project name
 project(CoreCLR)
 
+set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/vm)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
     set(CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64 1)
@@ -120,6 +123,7 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
 endif(WIN32)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
+    add_subdirectory(src/ToolBox/SOS/lldbplugin)
     add_subdirectory(src/pal)
     add_subdirectory(src/coreclr/hosts/unixcorerun)
 endif(CLR_CMAKE_PLATFORM_UNIX)
@@ -466,8 +470,5 @@ if (IS_64BIT_BUILD EQUAL 1)
 else ()
   set(ARCH_SOURCES_DIR i386)
 endif (IS_64BIT_BUILD EQUAL 1)
-
-set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/vm)
 
 add_subdirectory(src)

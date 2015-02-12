@@ -60,7 +60,7 @@ const ULONG WRITEWAITERS_INCR = 0x00400000;    // amoun to add to increment numb
 // Copy of definition from file:..\VM\spinlock.h
 #define CALLER_LIMITS_SPINNING 0
 
-#if defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)
+#if (defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)) || (defined(FEATURE_PAL) && defined(DACCESS_COMPILE))
 
 // When we do not have host, we just call OS - see file:..\VM\hosting.cpp#__SwitchToThread
 BOOL __SwitchToThread(DWORD dwSleepMSec, DWORD dwSwitchCount)
