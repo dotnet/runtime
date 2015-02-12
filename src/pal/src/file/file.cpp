@@ -3060,17 +3060,21 @@ OUT  PLARGE_INTEGER lpFileSize)
 
     pThread = InternalGetCurrentThread();
 
-    palError = InternalGetFileSize(
-        pThread,
-        hFile,
-        &dwFileSizeLow,
-        &dwFileSizeHigh
-        );
-
     if (lpFileSize != NULL)
     {
+        palError = InternalGetFileSize(
+            pThread,
+            hFile,
+            &dwFileSizeLow,
+            &dwFileSizeHigh
+            );
+
         lpFileSize->u.LowPart = dwFileSizeLow;
         lpFileSize->u.HighPart = dwFileSizeHigh;
+    }
+    else
+    {
+        palError = ERROR_INVALID_PARAMETER;
     }
 
     if (NO_ERROR != palError)
