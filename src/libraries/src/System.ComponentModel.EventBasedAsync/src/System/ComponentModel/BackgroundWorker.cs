@@ -24,6 +24,11 @@ namespace System.ComponentModel
             _progressReporter = new SendOrPostCallback(ProgressReporter);
         }
 
+        ~BackgroundWorker() // exists for backwards compatibility
+        {
+            Dispose(false);
+        }
+
         private void AsyncOperationCompleted(object arg)
         {
             _isRunning = false;
