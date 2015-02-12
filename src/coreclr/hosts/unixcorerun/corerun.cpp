@@ -266,7 +266,7 @@ int ExecuteManagedAssembly(
     std::string tpaList;
     AddFilesFromDirectoryToTpaList(clrFilesAbsolutePath, tpaList);
     
-    void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW);
+    void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (coreclrLib != nullptr)
     {
         ExecuteAssemblyFunction executeAssembly = (ExecuteAssemblyFunction)dlsym(coreclrLib, "ExecuteAssembly");
