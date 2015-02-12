@@ -64,3 +64,5 @@
 
 *.in text eol=lf
 *.sh text eol=lf
+src/pal/tests/palsuite/paltestlist.txt text eol=lf
+src/pal/tests/palsuite/paltestlist_to_be_reviewed.txt text eol=lf
