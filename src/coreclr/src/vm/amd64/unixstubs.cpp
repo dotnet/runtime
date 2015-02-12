@@ -117,24 +117,6 @@ extern "C"
         return eax;
     }
     
-    void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void STDCALL JIT_MemCpy_End()
-    {
-    }
-
-    void STDCALL JIT_MemSet(void *dest, int c, SIZE_T count)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void STDCALL JIT_MemSet_End()
-    {
-    }
-
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
