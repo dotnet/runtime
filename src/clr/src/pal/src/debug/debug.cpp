@@ -71,8 +71,10 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
 
 /* ------------------- Constant definitions ----------------------------------*/
 
+#if !HAVE_VM_READ && !HAVE_PROCFS_CTL
 const BOOL DBG_ATTACH       = TRUE;
 const BOOL DBG_DETACH       = FALSE;
+#endif
 static const char PAL_OUTPUTDEBUGSTRING[]    = "PAL_OUTPUTDEBUGSTRING";
 
 #ifdef _DEBUG
