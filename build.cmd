@@ -1,18 +1,20 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=debug
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
-set __ProjectDir=%~dp0
-set __ProjectFilesDir=%~dp0
-set __SourceDir=%__ProjectDir%\src
-set __PackagesDir=%__SourceDir%\.nuget
-set __RootBinDir=%__ProjectDir%\binaries
-set __LogsDir=%__RootBinDir%\Logs
-set __CMakeSlnDir=%__RootBinDir%\CMake
+set "__ProjectDir=%~dp0"
+:: remove trailing slash
+if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
+set "__ProjectFilesDir=%__ProjectDir%"
+set "__SourceDir=%__ProjectDir%\src"
+set "__PackagesDir=%__SourceDir%\.nuget"
+set "__RootBinDir=%__ProjectDir%\binaries"
+set "__LogsDir=%__RootBinDir%\Logs"
+set "__CMakeSlnDir=%__RootBinDir%\CMake"
 set __MSBCleanBuildArgs=
 
 :Arg_Loop
@@ -36,18 +38,18 @@ echo Commencing CoreCLR Repo build
 echo.
 
 :: Set the remaining variables based upon the determined build configuration
-set __BinDir=%__RootBinDir%\Product\%__BuildArch%\%__BuildType%
-set __PackagesBinDir=%__BinDir%\.nuget
-set __ToolsDir=%__RootBinDir%\tools
-set __TestWorkingDir=%__RootBinDir%\tests\%__BuildArch%\%__BuildType%
-set __IntermediatesDir=%__RootBinDir%\intermediates\%__BuildArch%\%__BuildType%
+set "__BinDir=%__RootBinDir%\Product\%__BuildArch%\%__BuildType%"
+set "__PackagesBinDir=%__BinDir%\.nuget"
+set "__ToolsDir=%__RootBinDir%\tools"
+set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildArch%\%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\intermediates\%__BuildArch%\%__BuildType%"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
-set __CMakeBinDir=%__BinDir%
+set "__CMakeBinDir=%__BinDir%"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 
 :: Switch to clean build mode if the binaries output folder does not exist
-if not exist %__RootBinDir% set __CleanBuild=1
+if not exist "%__RootBinDir%" set __CleanBuild=1
 
 :: Configure environment if we are doing a clean build.
 if not defined __CleanBuild goto CheckPrereqs
@@ -58,19 +60,19 @@ echo.
 set __MSBCleanBuildArgs=/t:rebuild
 
 :: Cleanup the binaries drop folder
-if exist %__BinDir% rd /s /q %__BinDir%
-md %__BinDir%
+if exist "%__BinDir%" rd /s /q "%__BinDir%"
+md "%__BinDir%"
 
 :: Cleanup the CMake folder
-if exist %__CMakeSlnDir% rd /s /q %__CMakeSlnDir%
-md %__CMakeSlnDir%
+if exist "%__CMakeSlnDir%" rd /s /q "%__CMakeSlnDir%"
+md "%__CMakeSlnDir%"
 
 :: Cleanup the logs folder
-if exist %__LogsDir% rd /s /q %__LogsDir%
-md %__LogsDir%
+if exist "%__LogsDir%" rd /s /q "%__LogsDir%"
+md "%__LogsDir%"
 
 ::Cleanup intermediates folder
-if exist %__IntermediatesDir% rd /s /q %__IntermediatesDir%
+if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 
 :: Check prerequisites
 :CheckPrereqs
@@ -126,21 +128,21 @@ goto :eof
 
 :GenVSSolution
 :: Regenerate the VS solution
-pushd %__CMakeSlnDir%
-call %__SourceDir%\pal\tools\gen-buildsys-win.bat %__ProjectDir%
+pushd "%__CMakeSlnDir%"
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%"
 popd
 
 :BuildComponents
-if exist %__CMakeSlnDir%\install.vcxproj goto BuildCoreCLR
+if exist "%__CMakeSlnDir%\install.vcxproj" goto BuildCoreCLR
 echo Failed to generate native component build project!
 goto :eof
 
 REM Build CoreCLR
 :BuildCoreCLR
-set __CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildArch%__%__BuildType%.log
-%_msbuildexe% %__CMakeSlnDir%\install.vcxproj %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__CoreCLRBuildLog%"
+set "__CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildArch%__%__BuildType%.log"
+%_msbuildexe% "%__CMakeSlnDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__CoreCLRBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformMScorlibBuild
-echo Native component build failed. Refer %__CoreCLRBuildLog% for details.
+echo Native component build failed. Refer !__CoreCLRBuildLog! for details.
 goto :eof
 
 :PerformMScorlibBuild
@@ -157,14 +159,14 @@ if defined __UnixMscorlibOnly set __AdditionalMSBuildArgs=/p:OS=Unix /p:BuildNug
 call "%VS120COMNTOOLS%\VsDevCmd.bat"
 echo Commencing build of mscorlib for %__BuildArch%/%__BuildType%
 echo.
-set __MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildArch%__%__BuildType%.log
-%_msbuildexe% "%__ProjectFilesDir%build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__MScorlibBuildLog%" %__AdditionalMSBuildArgs%
+set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildArch%__%__BuildType%.log"
+%_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__MScorlibBuildLog%" %__AdditionalMSBuildArgs%
 IF NOT ERRORLEVEL 1 (
   if defined __UnixMscorlibOnly goto :eof
   goto PerformTestBuild
 )
 
-echo MScorlib build failed. Refer %__MScorlibBuildLog% for details.
+echo MScorlib build failed. Refer !__MScorlibBuildLog! for details.
 goto :eof
 
 :PerformTestBuild
@@ -173,15 +175,15 @@ echo Commencing build of tests for %__BuildArch%/%__BuildType%
 echo.
 call tests\buildtest.cmd
 IF NOT ERRORLEVEL 1 goto SuccessfulBuild
-echo Test binaries build failed. Refer %__MScorlibBuildLog% for details.
+echo Test binaries build failed. Refer !__MScorlibBuildLog! for details.
 goto :eof
 
 :SuccessfulBuild
 ::Build complete
 echo Repo successfully built.
 echo.
-echo Product binaries are available at %__BinDir%
-echo Test binaries are available at %__TestWorkingDir%
+echo Product binaries are available at !__BinDir!
+echo Test binaries are available at !__TestWorkingDir!
 goto :eof
 
 :Usage
