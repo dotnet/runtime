@@ -1505,7 +1505,7 @@ void Ref_CheckAlive(UINT condemned, UINT maxgen, LPARAM lp1)
 
 static VOLATILE(LONG) uCount = 0;
 
-// NTOE: Please: if you update this function, update the very similar profiling function immediately below!!!
+// NOTE: Please: if you update this function, update the very similar profiling function immediately below!!!
 void Ref_UpdatePointers(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promote_func* fn)
 {
     WRAPPER_NO_CONTRACT;
