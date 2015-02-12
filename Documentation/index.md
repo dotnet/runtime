@@ -11,9 +11,11 @@ This repo includes several documents that explain both high-level and low-level 
 - [Book of the Runtime FAQ](botr-faq.md)
 
 # Coding Guides
+
 - [CLR Coding Guide](clr-code-guide.md)
 
 # Glossary
+
 - [.NET Core Glossary](glossary.md)
 - [.NET Filename Encyclopedia](dotnet-filenames.md)
 
