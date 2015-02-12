@@ -30,86 +30,12 @@ void CleanUp(HANDLE hFile)
     }
 }
 
-
-int __cdecl main(int argc, char *argv[])
+void CheckFileSize(HANDLE hFile, DWORD dwOffset, DWORD dwHighOrder)
 {
-    HANDLE hFile = NULL;
-    BOOL bRc = FALSE;
     DWORD dwRc = 0;
     DWORD dwError = 0;
-    DWORD dwHighOrder = 0;
-    DWORD dwOffset = 0;
-    DWORD dwReturnedHighOrder = 0;
-    DWORD dwReturnedOffset = 0;
-    DWORD lpNumberOfBytesWritten;
     LARGE_INTEGER qwFileSize;
-    LARGE_INTEGER qwFileSize2;
-    char * data = "1234567890";
 
-    qwFileSize.QuadPart = 0;
-    qwFileSize2.QuadPart = 0;
-
-    if (0 != PAL_Initialize(argc,argv))
-    {
-        return FAIL;
-    }
-
-
-    /* test on a null file handle */
-    bRc = GetFileSizeEx(hFile, NULL);
-    if (bRc != FALSE)
-    {
-        Fail("GetFileSizeEx: ERROR -> A file size was returned for "
-            "an invalid handle.\n");
-    }
-
-
-    /* create a test file */
-    hFile = CreateFile(szTextFile, 
-        GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
-        NULL,
-        CREATE_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
-        NULL);
-
-    if(hFile == INVALID_HANDLE_VALUE)
-    {
-        Fail("GetFileSizeEx: ERROR -> Unable to create file \"%s\".\n", 
-            szTextFile);
-    }
-
-    /* give the file a size */
-    dwOffset = 256;
-    dwRc = SetFilePointer(hFile, dwOffset, NULL, FILE_BEGIN);
-    if (dwRc == INVALID_SET_FILE_POINTER)
-    {
-        Trace("GetFileSizeEx: ERROR -> Call to SetFilePointer failed with %ld.\n", 
-            GetLastError());
-        CleanUp(hFile);
-        Fail("");
-    }
-    else
-    {
-        if (!SetEndOfFile(hFile))
-        {
-            Trace("GetFileSizeEx: ERROR -> Call to SetEndOfFile failed with %ld.\n", 
-                GetLastError());
-            CleanUp(hFile);
-            Fail("");
-        }
-        GetFileSizeEx(hFile, &qwFileSize);
-        if ((qwFileSize.u.LowPart != dwOffset) || 
-            (qwFileSize.u.HighPart != dwHighOrder))
-        {
-            CleanUp(hFile);
-            Fail("GetFileSizeEx: ERROR -> File sizes do not match up.\n");
-        }
-    }
-
-    /* make the file large using the high order option */
-    dwOffset = 256;
-    dwHighOrder = 1;
     dwRc = SetFilePointer(hFile, dwOffset, (PLONG)&dwHighOrder, FILE_BEGIN);
     if (dwRc == INVALID_SET_FILE_POINTER)
     {
@@ -146,36 +72,76 @@ int __cdecl main(int argc, char *argv[])
             }
         }
     }
+}
+
+int __cdecl main(int argc, char *argv[])
+{
+    HANDLE hFile = NULL;
+    BOOL bRc = FALSE;
+    DWORD lpNumberOfBytesWritten;
+    LARGE_INTEGER qwFileSize;
+    LARGE_INTEGER qwFileSize2;
+    char * data = "1234567890";
+
+    qwFileSize.QuadPart = 0;
+    qwFileSize2.QuadPart = 0;
+
+    if (0 != PAL_Initialize(argc,argv))
+    {
+        return FAIL;
+    }
+
+
+    /* test on a null file */
+    bRc = GetFileSizeEx(NULL, &qwFileSize);
+    if (bRc != FALSE)
+    {
+        Fail("GetFileSizeEx: ERROR -> Returned status as TRUE for "
+            "a null handle.\n");
+    }
+
+
+    /* test on an invalid file */
+    bRc = GetFileSizeEx(INVALID_HANDLE_VALUE, &qwFileSize);
+    if (bRc != FALSE)
+    {
+        Fail("GetFileSizeEx: ERROR -> Returned status as TRUE for "
+            "an invalid handle.\n");
+    }
+
+
+    /* create a test file */
+    hFile = CreateFile(szTextFile, 
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if(hFile == INVALID_HANDLE_VALUE)
+    {
+        Fail("GetFileSizeEx: ERROR -> Unable to create file \"%s\".\n", 
+            szTextFile);
+    }
+
+    /* test on a null lpFileSize */
+    bRc = GetFileSizeEx(hFile, NULL);
+    if (bRc != FALSE)
+    {
+        Fail("GetFileSizeEx: ERROR -> Returned status as TRUE for "
+            "a null lpFileSize.\n");
+    }
+
+    /* give the file a size */
+    CheckFileSize(hFile, 256, 0);
+
+    /* make the file large using the high order option */
+    CheckFileSize(hFile, 256, 1);
 
 
     /* set the file size to zero */
-    dwOffset = 0;
-    dwHighOrder = 0;
-    dwRc = SetFilePointer(hFile, dwOffset, NULL, FILE_BEGIN);
-    if (dwRc == INVALID_SET_FILE_POINTER)
-    {
-        Trace("GetFileSizeEx: ERROR -> SetEndOfFile call failed with error %ld\n",
-            GetLastError());
-        CleanUp(hFile);
-        Fail("");
-    }
-    else
-    {
-        if (!SetEndOfFile(hFile))
-        {
-            Trace("GetFileSizeEx: ERROR -> Call to SetEndOfFile failed "
-                "with %ld.\n", GetLastError());
-            CleanUp(hFile);
-            Fail("");
-        }
-        GetFileSizeEx(hFile, &qwFileSize);
-        if ((qwFileSize.u.LowPart != dwOffset) || 
-            (qwFileSize.u.HighPart != dwHighOrder))
-        {
-            CleanUp(hFile);
-            Fail("GetFileSizeEx: ERROR -> File sizes do not match up.\n");
-        }
-    }
+    CheckFileSize(hFile, 0, 0);
 
     /*  test if file size changes by writing to it. */
     /* get file size */
