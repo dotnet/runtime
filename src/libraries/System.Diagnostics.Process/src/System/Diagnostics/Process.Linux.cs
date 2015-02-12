@@ -320,12 +320,10 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
-            // TODO: This implementation supports basic starting of processes.
-            // Still to implement:
-            // - Fix stream redirection.
-            // - Determine if/how to search for filename location to pass to execve
-            // - Re-enable environment variable flow one runtime bug is fixed
+            // Resolve the path to the specified file name
+            string executablePath = ResolvePath(startInfo.FileName);
 
+            // TODO: Fix stream redirection.
             // If streams are to be redirected, create a pipe for each that is.
             // int[0] is the read end of the pipe, int[1] is the write end.
             int[] stdinPipeFds = startInfo.RedirectStandardInput ? CreatePipe() : null;
@@ -369,14 +367,14 @@ namespace System.Diagnostics
                 ParseArgumentsIntoList(startInfo.Arguments, argv);
                 
                 // Parse the environment variables
-                var envVars = new List<string>(); // startInfo.Environment.Count);
-                //foreach (var pair in startInfo.Environment)
-                //{
-                //    envVars.Add(pair.Key + "=" + pair.Value);
-                //}
+                var envVars = new List<string>(startInfo.Environment.Count);
+                foreach (var pair in startInfo.Environment)
+                {
+                    envVars.Add(pair.Key + "=" + pair.Value);
+                }
 
                 // Execute. If this succeeds, it won't return.
-                if (Interop.libc.execve(startInfo.FileName, argv.ToArray(), envVars.ToArray()) != 0)
+                if (Interop.libc.execve(executablePath, argv.ToArray(), envVars.ToArray()) != 0)
                 {
                     throw new Win32Exception();
                 }
@@ -424,6 +422,115 @@ namespace System.Diagnostics
 
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
+
+        /// <summary>Resolves a path to the filename passed to ProcessStartInfo.</summary>
+        /// <param name="filename">The filename.</param>
+        /// <returns>The resolved path.</returns>
+        private static string ResolvePath(string filename)
+        {
+            // Follow the same resolution that Windows uses with CreateProcess:
+            // 1. First try the exact path provided
+            // 2. Then try the file relative to the executable directory
+            // 3. Then try the file relative to the current directory
+            // 4. then try the file in each of the directories specified in PATH
+            // Windows does additional Windows-specific steps between 3 and 4,
+            // and we ignore those here.
+
+            // If the filename is a complete path, use it, regardless of whether it exists.
+            if (Path.IsPathRooted(filename))
+            {
+                // In this case, it doesn't matter whether the file exists or not;
+                // it's what the caller asked for, so it's what they'll get
+                return filename;
+            }
+
+            // Then check the executable's directory
+            string path = GetExePath();
+            if (path != null)
+            {
+                try
+                {
+                    path = Path.Combine(Path.GetDirectoryName(path), filename);
+                    if (File.Exists(path))
+                    {
+                        return path;
+                    }
+                }
+                catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
+            }
+
+            // Then check the current directory
+            path = Path.Combine(Directory.GetCurrentDirectory(), filename);
+            if (File.Exists(path))
+            {
+                return path;
+            }
+
+            // Then check each directory listed in the PATH environment variables
+            string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar != null)
+            {
+                int startIndex = -1, endIndex = -1;
+                while (true)
+                {
+                    // Find the next colon-separated path directory
+                    startIndex = endIndex + 1;
+                    endIndex = pathEnvVar.IndexOf(':', startIndex);
+                    if (endIndex < 0) // no ':' found
+                    {
+                        break;
+                    }
+                    if (endIndex <= startIndex + 1) // resulting string would be empty
+                    {
+                        continue;
+                    }
+
+                    // Extract it and see if our file lives there
+                    string subPath = pathEnvVar.Substring(startIndex, endIndex - startIndex);
+                    path = Path.Combine(subPath, filename);
+                    if (File.Exists(path))
+                    {
+                        return path;
+                    }
+                }
+            }
+
+            // Could not find the file
+            throw new Win32Exception(Interop.Errors.ENOENT);
+        }
+
+        /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
+        private static string GetExePath()
+        {
+            // Determine the maximum size of a path
+            int maxPath = -1;
+            Interop.libc.GetPathConfValue(ref maxPath, Interop.libc.PathConfNames._PC_PATH_MAX, Interop.libc.DEFAULT_PC_PATH_MAX);
+
+            // Start small with a buffer allocation, and grow only up to the max path
+            for (int pathLen = 256; pathLen < maxPath; pathLen *= 2)
+            {
+                // Read from procfs the symbolic link to this process' executable
+                byte[] buffer = new byte[pathLen + 1]; // +1 for null termination
+                int resultLength = (int)Interop.libc.readlink(Interop.procfs.SelfExeFilePath, buffer, (IntPtr)pathLen);
+
+                // If we got one, null terminate it (readlink doesn't do this) and return the string
+                if (resultLength > 0)
+                {
+                    buffer[resultLength] = (byte)'\0';
+                    return Encoding.UTF8.GetString(buffer, 0, resultLength);
+                }
+
+                // If the buffer was too small, loop around again and try with a larger buffer.
+                // Otherwise, bail.
+                if (resultLength == 0 || Marshal.GetLastWin32Error() != Interop.Errors.ENAMETOOLONG)
+                {
+                    break;
+                }
+            }
+
+            // Could not get a path
+            return null;
+        }
 
         /// <summary>Computes a time based on a number of ticks since boot.</summary>
         /// <param name="ticksAfterBoot">The number of ticks since boot.</param>

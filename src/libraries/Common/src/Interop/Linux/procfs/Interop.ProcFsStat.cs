@@ -9,9 +9,10 @@ internal static partial class Interop
     internal static partial class procfs
     {
         internal const string RootPath = "/proc/";
+        internal const string SelfExeFilePath = RootPath + "self/exe";
         internal const string ProcUptimeFilePath = RootPath + "uptime";
-        internal const string StatFileName = "/stat";
-        internal const string TaskDirectoryName = "/task/";
+        private const string StatFileName = "/stat";
+        private const string TaskDirectoryName = "/task/";
 
         internal struct ParsedStat
         {

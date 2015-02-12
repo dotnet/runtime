@@ -17,31 +17,20 @@ namespace System.IO
 
         public override int MaxPath 
         {
-            get { return GetPathConfValue(ref _maxPath, Interop.libc.PathConfNames._PC_PATH_MAX, Interop.libc.DEFAULT_PC_PATH_MAX); } 
+            get
+            {
+                Interop.libc.GetPathConfValue(ref _maxPath, Interop.libc.PathConfNames._PC_PATH_MAX, Interop.libc.DEFAULT_PC_PATH_MAX);
+                return _maxPath;
+            } 
         }
 
         public override int MaxDirectoryPath 
         {
-            get { return GetPathConfValue(ref _maxName, Interop.libc.PathConfNames._PC_NAME_MAX, Interop.libc.DEFAULT_PC_NAME_MAX); } 
-        }
-
-        /// <summary>
-        /// Gets a pathconf value by name.  If the cached value is less than zero (meaning not yet initialized),
-        /// pathconf is used to retrieve the value, which is then stored into the field.
-        /// If the field is greater than or equal to zero, it's value is returned.
-        /// </summary>
-        /// <param name="cachedValue">The field used to cache the pathconf value.</param>
-        /// <param name="pathConfName">The name of the pathconf value.</param>
-        /// <param name="defaultValue">The default value to use in case pathconf fails.</param>
-        /// <returns>The pathconf value, or the default if pathconf failed to return a value.</returns>
-        private static int GetPathConfValue(ref int cachedValue, int pathConfName, int defaultValue)
-        {
-            if (cachedValue < 0) // benign race condition on cached value
+            get
             {
-                int result = Interop.libc.pathconf("/", pathConfName);
-                cachedValue = result >= 0 ? result : defaultValue;
-            }
-            return cachedValue;
+                Interop.libc.GetPathConfValue(ref _maxName, Interop.libc.PathConfNames._PC_NAME_MAX, Interop.libc.DEFAULT_PC_NAME_MAX);
+                return _maxName;
+            } 
         }
 
         public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
