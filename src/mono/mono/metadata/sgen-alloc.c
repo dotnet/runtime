@@ -93,7 +93,7 @@ static __thread char *tlab_next;
 static __thread char *tlab_temp_end;
 static __thread char *tlab_real_end;
 /* Used by the managed allocator/wbarrier */
-static __thread char **tlab_next_addr;
+static __thread char **tlab_next_addr MONO_ATTR_USED;
 #endif
 
 #ifdef HAVE_KW_THREAD
