@@ -1,6 +1,6 @@
 Stackwalking
 ---
-2008
+Author: Rudi Martin - 2008
 
 The CLR makes heavy use of a technique known as stack walking (or stack crawling). This involves iterating the sequence of calls frames for a particular thread, from the most recent (the thread's current function) back down to the base of the stack.
 
