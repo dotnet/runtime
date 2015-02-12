@@ -44,7 +44,7 @@ enum {
 /*
  * | state                    | num_awake | num_posted                 | post_done |
  * |--------------------------+-----------+----------------------------+-----------|
- * | STATE_NOT_WORKING        | 0         | *                          |         0 |
+ * | STATE_NOT_WORKING        | 0         | 0                          |         0 |
  * | STATE_WORKING            | > 0       | <= workers_num - num_awake |         * |
  * | STATE_NURSERY_COLLECTION | *         | <= workers_num - num_awake |         1 |
  * | STATE_NURSERY_COLLECTION | 0         | 0                          |         0 |
