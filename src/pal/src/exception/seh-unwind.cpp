@@ -762,6 +762,8 @@ void PAL_CallRunHandler()
     _ASSERT(FALSE);
 }
 
+extern "C"
+PALAPI
 struct _Unwind_Exception *PAL_TryExcept(
     PFN_PAL_BODY pfnBody,
     PFN_PAL_EXCEPTION_FILTER pfnFilter,
