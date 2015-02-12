@@ -42,18 +42,18 @@ int __cdecl main(int argc, char **argv)
         return FAIL;
     }
 
-    /* Loop through each case. Call labs on each LONG and ensure that
+    /* Loop through each case. Call llabs on each __int64 and ensure that
        the resulting value is correct.
     */
 
     for(i = 0; i < sizeof(testCases) / sizeof(struct testCase); i++)
     {
-        /* Absolute value on a LONG */ 
+        /* Absolute value on an __int64 */ 
         result = llabs(testCases[i].LongLongValue);
 
         if (testCases[i].AbsoluteLongLongValue != result)
         {
-            Fail("ERROR: labs took the absoulte value of '%d' to be '%d' "
+            Fail("ERROR: llabs took the absoulte value of '%d' to be '%d' "
                  "instead of %d.\n", 
                  testCases[i].LongLongValue, 
                  result, 
