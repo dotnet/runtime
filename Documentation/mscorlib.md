@@ -79,29 +79,29 @@ There is a way to pass a raw object references in and out of QCalls. It is done 
 
 Do not replicate the comments into your actual QCall implementation. This is for illustrative purposes.
 
-    class Foo
-    {
-        // All QCalls should have the following DllImport and 
-        // SuppressUnmanagedCodeSecurity attributes
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        // QCalls should always be static extern.
-        private static extern bool Bar(int flags, string inString, StringHandleOnStack retString);
+	class Foo
+	{
+	    // All QCalls should have the following DllImport and 
+	    // SuppressUnmanagedCodeSecurity attributes
+	    [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+	    SuppressUnmanagedCodeSecurity]
+	    // QCalls should always be static extern.
+	    private static extern bool Bar(int flags, string inString, StringHandleOnStack retString);
 
-        // Many QCalls have a thin managed wrapper around them to expose them to 
-        // the world in more meaningful way.
-        public string Bar(int flags)
-        {
-            string retString = null;
+	    // Many QCalls have a thin managed wrapper around them to expose them to 
+	    // the world in more meaningful way.
+	    public string Bar(int flags)
+	    {
+	        string retString = null;
 
-            // The strings are returned from QCalls by taking address
-            // of a local variable using JitHelpers.GetStringHandle method 
-            if (!Bar(flags, this.Id, JitHelpers.GetStringHandle(ref retString)))
-             FatalError();
+	        // The strings are returned from QCalls by taking address
+	        // of a local variable using JitHelpers.GetStringHandle method 
+	        if (!Bar(flags, this.Id, JitHelpers.GetStringHandle(ref retString)))
+	            FatalError();
 
-            return retString;
-        }
-    }
+	        return retString;
+	    }
+	}
 
 ### QCall Example - Unmanaged Part
 
@@ -111,57 +111,57 @@ The QCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 
 [ecalllist]: https://github.com/dotnet/coreclr/blob/master/src/vm/ecalllist.h
 
-    class FooNative
-    {
-    public:
-         // All QCalls should be static and should be tagged with QCALLTYPE
-         static
-         BOOL QCALLTYPE Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString);
-    };
-    
-    BOOL QCALLTYPE FooNative::Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
-    {
-        // All QCalls should have QCALL_CONTRACT.
-        // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE; SO_TOLERANT.
-        QCALL_CONTRACT;
+	class FooNative
+	{
+	public:
+	    // All QCalls should be static and should be tagged with QCALLTYPE
+	    static
+	    BOOL QCALLTYPE Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString);
+	};
 
-        // Optionally, use QCALL_CHECK instead and the expanded form of the contract
-        // if you want to specify preconditions:
-        // CONTRACTL { 
-        //     QCALL_CHECK; 
-        //     PRECONDITION(wszString != NULL);
-        // } CONTRACTL_END;
+	BOOL QCALLTYPE FooNative::Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString)
+	{
+	    // All QCalls should have QCALL_CONTRACT.
+	    // It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE; SO_TOLERANT.
+	    QCALL_CONTRACT;
 
-        // The only line between QCALL_CONTRACT and BEGIN_QCALL
-        // should be the return value declaration if there is one.
-        BOOL retVal = FALSE;
+	    // Optionally, use QCALL_CHECK instead and the expanded form of the contract
+	    // if you want to specify preconditions:
+	    // CONTRACTL { 
+	    //     QCALL_CHECK; 
+	    //     PRECONDITION(wszString != NULL);
+	    // } CONTRACTL_END;
 
-        // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary 
-        // to make the exception handling work.
-        BEGIN_QCALL;
+	    // The only line between QCALL_CONTRACT and BEGIN_QCALL
+	    // should be the return value declaration if there is one.
+	    BOOL retVal = FALSE;
 
-        // Validate arguments if necessary and throw exceptions.
-        // There is no convention currently on whether the argument validation should be 
-        // done in managed or unmanaged code.
-        if (flags != 0)
-         COMPlusThrow(kArgumentException, L"InvalidFlags");
+	    // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary 
+	    // to make the exception handling work.
+	    BEGIN_QCALL;
 
-        // No need to worry about GC moving strings passed into QCall.
-        // Marshalling pins them for us.
-        printf("%S", wszString);
+	    // Validate arguments if necessary and throw exceptions.
+	    // There is no convention currently on whether the argument validation should be 
+	    // done in managed or unmanaged code.
+	    if (flags != 0)
+	        COMPlusThrow(kArgumentException, L"InvalidFlags");
 
-        // This is most the efficient way to return strings back 
-        // to managed code. No need to use StringBuilder.
-        retString.Set(L"Hello");
+	    // No need to worry about GC moving strings passed into QCall.
+	    // Marshalling pins them for us.
+	    printf("%S", wszString);
 
-        // You can not return from inside of BEGIN_QCALL/END_QCALL. 
-        // The return value has to be passed out in helper variable.
-        retVal = TRUE;
+	    // This is most the efficient way to return strings back 
+	    // to managed code. No need to use StringBuilder.
+	    retString.Set(L"Hello");
 
-        END_QCALL;
+	    // You can not return from inside of BEGIN_QCALL/END_QCALL. 
+	    // The return value has to be passed out in helper variable.
+	    retVal = TRUE;
 
-        return retVal;
-    }
+	    END_QCALL;
+
+	    return retVal;
+	}
 
 ## FCall Functional Behavior
 
@@ -195,12 +195,12 @@ Setting a breakpoint inside an FCall implementation may confuse the epilog walke
 
 Here's a real-world example from the String class:
 
-    public partial sealed class String
-    {
-        // Replaces all instances of oldChar with newChar.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern String Replace (char oldChar, char newChar);
-    }
+	public partial sealed class String
+	{
+	    // Replaces all instances of oldChar with newChar.
+	    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+	    public extern String Replace (char oldChar, char newChar);
+	}
 
 ### FCall Example – Native Part
 
