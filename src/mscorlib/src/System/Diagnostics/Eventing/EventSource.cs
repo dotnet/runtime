@@ -2,11 +2,15 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
+#if !PLATFORM_UNIX
+
 #define FEATURE_MANAGED_ETW
 
 #if !ES_BUILD_STANDALONE
 #define FEATURE_ACTIVITYSAMPLING
 #endif // !ES_BUILD_STANDALONE
+
+#endif // !PLATFORM_UNIX
 
 #if ES_BUILD_STANDALONE
 #define FEATURE_MANAGED_ETW_CHANNELS
@@ -373,6 +377,7 @@ namespace System.Diagnostics.Tracing
         [System.Security.SecuritySafeCritical]
         public static void SetCurrentThreadActivityId(Guid activityId)
         {
+#if FEATURE_MANAGED_ETW
 #if FEATURE_ACTIVITYSAMPLING
             Guid newId = activityId;
 #endif // FEATURE_ACTIVITYSAMPLING
@@ -395,6 +400,7 @@ namespace System.Diagnostics.Tracing
                 }
 #endif // FEATURE_ACTIVITYSAMPLING
             }
+#endif // FEATURE_MANAGED_ETW
             if (System.Threading.Tasks.TplEtwProvider.Log != null)
                  System.Threading.Tasks.TplEtwProvider.Log.SetActivityId(activityId);
         }
@@ -422,11 +428,13 @@ namespace System.Diagnostics.Tracing
         public static void SetCurrentThreadActivityId(Guid activityId, out Guid oldActivityThatWillContinue)
         {
             oldActivityThatWillContinue = activityId;
+#if FEATURE_MANAGED_ETW
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.  
             UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
                 UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
+#endif // FEATURE_MANAGED_ETW
 
             // We don't call the activityDying callback here because the caller has declared that
             // it is not dying.  
@@ -445,9 +453,11 @@ namespace System.Diagnostics.Tracing
                 // We ignore errors to keep with the convention that EventSources do not throw 
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
                 Guid retVal = new Guid();
+#if FEATURE_MANAGED_ETW
                 UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
                     UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
+#endif // FEATURE_MANAGED_ETW
                 return retVal;
             }
         }
@@ -1255,6 +1265,7 @@ namespace System.Diagnostics.Tracing
             int dataCount,
             IntPtr data)
         {
+#if FEATURE_MANAGED_ETW
             if (m_provider == null)
             {
                 ThrowEventSourceException();
@@ -1264,6 +1275,7 @@ namespace System.Diagnostics.Tracing
                 if (!m_provider.WriteEventRaw(ref eventDescriptor, activityID, relatedActivityID, dataCount, data))
                     ThrowEventSourceException();
             }
+#endif // FEATURE_MANAGED_ETW
         }
 
 
@@ -1274,12 +1286,14 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         internal void WriteString(string msg, SessionMask m, bool isError)
         {
+#if FEATURE_MANAGED_ETW
             if (m_provider != null)
             {
                 var eventName = isError ? "EventSourceErrorMessage" : "EventSourceMessage";
                 WriteEventString(0, unchecked((long)m.ToEventKeywords()), eventName, msg);
                 WriteStringToAllListeners(eventName, msg);
             }
+#endif // FEATURE_MANAGED_ETW
         }
         /// <summary>
         /// Best effort method to notify all listeners (ETW or otherwise) of a "message" of interest.
@@ -1386,6 +1400,7 @@ namespace System.Diagnostics.Tracing
                 m_eventSourceEnabled = false;       // This is insurance, it should still be off.    
             }
 
+#if FEATURE_MANAGED_ETW
             if (m_provider != null)
             {
 #if !ES_BUILD_STANDALONE
@@ -1408,6 +1423,7 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+#endif // FEATURE_MANAGED_ETW
 
             // report any possible errors
             ReportOutOfBandMessage(null, true);
@@ -2017,6 +2033,7 @@ namespace System.Diagnostics.Tracing
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEventString(EventLevel level, long keywords, string eventName, string msgString)
         {
+#if FEATURE_MANAGED_ETW
             if (m_provider != null)
             {
                 EventSourceOptions opt = new EventSourceOptions
@@ -2028,6 +2045,7 @@ namespace System.Diagnostics.Tracing
                 var tlet = new TraceLoggingEventTypes(eventName, EventTags.None, new Type[] { msg.GetType() });
                 WriteMultiMergeInner(eventName, ref opt, tlet, null, null, msg);
             }
+#endif // FEATURE_MANAGED_ETW
         }
 
         /// <summary>
@@ -2562,7 +2580,9 @@ namespace System.Diagnostics.Tracing
             }
             catch (Exception e)
             {
+#if FEATURE_MANAGED_ETW
                 if (m_provider != null && m_provider.IsValid())
+#endif // FEATURE_MANAGED_ETW
                 {
                     // When the ETW session is created after the EventSource has registered with the ETW system
                     // we can send any error messages here.
@@ -2744,7 +2764,14 @@ namespace System.Diagnostics.Tracing
             return false;
         }
 
-        private bool IsDisposed { get { return m_provider == null || m_provider.m_disposed; } }
+        private bool IsDisposed 
+        {
+#if FEATURE_MANAGED_ETW
+            get { return m_provider == null || m_provider.m_disposed; }
+#else
+            get { return false; } // ETW is not present (true means that the EventSource is "off" / broken)
+#endif // FEATURE_MANAGED_ETW
+        }
 
         [SecuritySafeCritical]
         private void EnsureInitialized()
@@ -2854,7 +2881,7 @@ namespace System.Diagnostics.Tracing
                     envelope.ChunkNumber++;
                 }
             }
-#endif
+#endif // FEATURE_MANAGED_ETW
             return success;
         }
 
