@@ -4176,20 +4176,23 @@ emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 	int pos2;
 
 	if (!ICustomMarshaler) {
-		ICustomMarshaler = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ICustomMarshaler");
-		if (!ICustomMarshaler) {
+		MonoClass *klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "ICustomMarshaler");
+		if (!klass) {
 			exception_msg = g_strdup ("Current profile doesn't support ICustomMarshaler");
 			goto handle_exception;
 		}
 
-		cleanup_native = mono_class_get_method_from_name (ICustomMarshaler, "CleanUpNativeData", 1);
+		cleanup_native = mono_class_get_method_from_name (klass, "CleanUpNativeData", 1);
 		g_assert (cleanup_native);
-		cleanup_managed = mono_class_get_method_from_name (ICustomMarshaler, "CleanUpManagedData", 1);
+		cleanup_managed = mono_class_get_method_from_name (klass, "CleanUpManagedData", 1);
 		g_assert (cleanup_managed);
-		marshal_managed_to_native = mono_class_get_method_from_name (ICustomMarshaler, "MarshalManagedToNative", 1);
+		marshal_managed_to_native = mono_class_get_method_from_name (klass, "MarshalManagedToNative", 1);
 		g_assert (marshal_managed_to_native);
-		marshal_native_to_managed = mono_class_get_method_from_name (ICustomMarshaler, "MarshalNativeToManaged", 1);
+		marshal_native_to_managed = mono_class_get_method_from_name (klass, "MarshalNativeToManaged", 1);
 		g_assert (marshal_native_to_managed);
+
+		mono_memory_barrier ();
+		ICustomMarshaler = klass;
 	}
 
 	if (spec->data.custom_data.image)
