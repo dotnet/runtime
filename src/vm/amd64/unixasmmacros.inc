@@ -1,15 +1,15 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 #define INVALIDGCVALUE -0x33333333 // 0CCCCCCCDh - the assembler considers it to be a signed integer constant
 
-.macro NOP_3_BYTE 
+.macro NOP_3_BYTE
         nop dword ptr [rax]
 .endm
 
-.macro NOP_2_BYTE 
+.macro NOP_2_BYTE
         xchg ax, ax
 .endm
 
@@ -28,6 +28,12 @@
 #define C_FUNC(name) _##name
 #else
 #define C_FUNC(name) name
+#endif
+
+#if defined(__APPLE__)
+#define C_PLTFUNC(name) _##name
+#else
+#define C_PLTFUNC(name) name@PLT
 #endif
 
 .macro PATCH_LABEL Name
@@ -126,7 +132,7 @@ C_FUNC(\Name\()_End):
 //       this one gives an "unknown directive" error
 //
 //        .savexmm128 \Reg, \Offset
-    
+
         ___STACK_ADJUSTMENT_FORBIDDEN = 1
 
 .endm
@@ -134,7 +140,7 @@ C_FUNC(\Name\()_End):
 .macro restore_xmm128 Reg, ofs
         __Offset = \ofs
         movdqa          \Reg, [rsp + __Offset]
-.endm 
+.endm
 
 .macro POP_CALLEE_SAVED_REGISTERS
 
@@ -205,7 +211,7 @@ C_FUNC(\Name\()_End):
 // CalleeSavedRegisters::r13
 // CalleeSavedRegisters::r12
 // CalleeSavedRegisters::rbp
-// CalleeSavedRegisters::rbx 
+// CalleeSavedRegisters::rbx
 // ArgumentRegisters::r9
 // ArgumentRegisters::r8
 // ArgumentRegisters::rcx
@@ -258,7 +264,7 @@ C_FUNC(\Name\()_End):
         push_nonvol_reg r12
         push_nonvol_reg rbp
         push_nonvol_reg rbx
-        
+
         // ArgumentRegisters
         PUSH_ARGUMENT_REGISTERS
 
@@ -279,12 +285,12 @@ C_FUNC(\Name\()_End):
 
         alloc_stack     __PWTB_StackAlloc
         SAVE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
-        
+
         END_PROLOGUE
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL 
+.macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
         lea rsp,        [rsp + __PWTB_StackAlloc]
