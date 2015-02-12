@@ -42,7 +42,7 @@ namespace ProcessTest_ConsoleApp
                 // We're testing STDERR streams, not the JIT debugger. 
                 // This makes the process behave just like a crashing .NET app, but without the WER invocation
                 // nor the blocking dialog that comes with it, or the need to suppress that.
-                Console.Error.WriteLine(string.Format("Unhandled Exception: {0}", toLog.ToString()));
+                Console.Error.WriteLine(string.Format("Unhandled Exception: {0}", toLog.Message));
                 return 1;
             }
 
