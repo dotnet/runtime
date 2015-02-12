@@ -3,75 +3,98 @@ add_definitions(-D_TARGET_WIN64_=1)
 add_definitions(-DDBG_TARGET_64BIT)
 add_definitions(-DDBG_TARGET_WIN64=1)
 add_definitions(-DSTRIKE)  
-add_definitions(-DUSE_STL)
 
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
 
 if(WIN32)
+  include_directories(inc)
+  include_directories(BEFORE ${VM_DIR})
+  include_directories(${CLR_DIR}/src/gcdump)
+  include_directories(${CLR_DIR}/src/debug/shim)
+  include_directories("$ENV{VSInstallDir}/DIA SDK/include")
+
+  add_definitions(-DUSE_STL)
+
   #use static crt
   add_definitions(-MT) 
+
+  set(SOS_SOURCES
+    disasm.cpp
+    dllsext.cpp
+    eeheap.cpp
+    EventCallbacks.cpp
+    ExpressionNode.cpp
+    exts.cpp
+    gchist.cpp
+    gcroot.cpp
+    metadata.cpp
+    sildasm.cpp
+    sos.cpp
+    stressLogDump.cpp
+    strike.cpp
+    util.cpp
+    vm.cpp
+    WatchCmd.cpp
+    Native.rc
+  )
+
+  set(SOS_SOURCES_AMD64
+    disasmX86.cpp
+  )
+
+  list(APPEND SOS_SOURCES ${SOS_SOURCES_AMD64})
+
+  add_definitions(-DFX_VER_INTERNALNAME_STR=SOS.dll)
+
+  #Preprocess exports definition file
+  preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/sos.def ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
+  list(APPEND SOS_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
+
+  set(SOS_LIBRARY
+    corguids
+    debugshim
+    dbgutil
+    ${STATIC_MT_CRT_LIB}
+    ${STATIC_MT_CPP_LIB}
+    kernel32.lib
+    user32.lib
+    ole32.lib
+    dbghelp.lib
+    uuid.lib
+    version.lib
+    dbgeng.lib
+    advapi32.lib
+    psapi.lib
+    ntdll.lib
+  )
+else(WIN32)
+  include_directories(../lldbplugin/inc)
+  include_directories(BEFORE ${VM_DIR})
+
+  add_compile_options(-fPIC)
+
+  set(SOS_SOURCES
+    datatarget.cpp
+    exts.cpp
+    metadata.cpp
+    strike.cpp
+    util.cpp
+  )
+
+  set(SOS_LIBRARY
+    corguids
+    CoreClrPal
+    palrt
+  )
 endif(WIN32)
 
-include_directories(inc)
-include_directories(BEFORE ${VM_DIR})
-include_directories(${CLR_DIR}/src/gcdump)
-include_directories(${CLR_DIR}/src/debug/shim)
-include_directories("$ENV{VSInstallDir}/DIA SDK/include")
-
-set(SOS_SOURCES
-  disasm.cpp
-  dllsext.cpp
-  eeheap.cpp
-  EventCallbacks.cpp
-  ExpressionNode.cpp
-  exts.cpp
-  gchist.cpp
-  gcroot.cpp
-  metadata.cpp
-  sildasm.cpp
-  sos.cpp
-  stressLogDump.cpp
-  strike.cpp
-  util.cpp
-  vm.cpp
-  WatchCmd.cpp
-  Native.rc
-)
-
-set(SOS_SOURCES_AMD64
-  disasmX86.cpp
-)
-
-list(APPEND SOS_SOURCES ${SOS_SOURCES_AMD64})
-
-add_definitions(-DFX_VER_INTERNALNAME_STR=SOS.dll)
-
-#Preprocess exports definition file
-preprocess_def_file(${CMAKE_CURRENT_SOURCE_DIR}/sos.def ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
-list(APPEND SOS_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/sos.def)
-
-set(SOS_LIBRARY
-  corguids
-  debugshim
-  dbgutil
-  ${STATIC_MT_CRT_LIB}
-  ${STATIC_MT_CPP_LIB}
-  kernel32.lib
-  user32.lib
-  ole32.lib
-  dbghelp.lib
-  uuid.lib
-  version.lib
-  dbgeng.lib
-  advapi32.lib
-  psapi.lib
-  ntdll.lib
-)
-
 add_library(sos SHARED ${SOS_SOURCES})
+add_dependencies(sos mscordaccore)
 target_link_libraries(sos ${SOS_LIBRARY})
 
 # add the install targets
 install (TARGETS sos DESTINATION .)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/sos.pdb DESTINATION PDB)
+if(WIN32)
+  install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/sos.pdb DESTINATION PDB)
+endif(WIN32)

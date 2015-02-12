@@ -1895,26 +1895,29 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 
     g_lpwstrCmdLine = lpwstrCmdLine;
     
-    lpwstr=PAL_wcsrchr(lpwstrFullPath,'/');
-    lpwstr[0]='\0';
-    n=lstrlenW(lpwstrFullPath)+1;
-
-    int iLen = n;
-    initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, iLen*sizeof(WCHAR)));
-    if (NULL == initial_dir)
+    if (lpwstrCmdLine)
     {
-        ERROR("malloc() failed! (initial_dir) \n");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
+        lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
+        lpwstr[0] = '\0';
+        n = lstrlenW(lpwstrFullPath) + 1;
 
-    if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
-    {
-        ERROR("wcscpy_s failed!\n");
-        palError = ERROR_INTERNAL_ERROR;
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
+        int iLen = n;
+        initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, iLen*sizeof(WCHAR)));
+        if (NULL == initial_dir)
+        {
+            ERROR("malloc() failed! (initial_dir) \n");
+            goto CreateInitialProcessAndThreadObjectsExit;
+        }
 
-    lpwstr[0]='/';
+        if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
+        {
+            ERROR("wcscpy_s failed!\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto CreateInitialProcessAndThreadObjectsExit;
+        }
+
+        lpwstr[0] = '/';
+    }
 
     pAppDir = initial_dir;
     
