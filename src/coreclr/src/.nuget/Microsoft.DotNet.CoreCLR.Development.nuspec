@@ -33,7 +33,7 @@
     <file src="..\PDB\mscorrc.debug.pdb" target="bin\mscorrc.debug.pdb" />
     <file src="..\PDB\corerun.pdb" target="bin\corerun.pdb" />
     <file src="..\PDB\sos.pdb" target="bin\sos.pdb" />
-    <file src="..\mscorlib.pdb" target="bin\mscorlib.pdb" />
+    <file src="..\PDB\mscorlib.pdb" target="bin\mscorlib.pdb" />
     <file src="..\inc\cor.h" target="inc\cor.h" />
     <file src="..\inc\corerror.h" target="inc\corerror.h" />
     <file src="..\inc\corhdr.h" target="inc\corhdr.h" />
