@@ -412,7 +412,8 @@ namespace System.IO
                 charPos = charLen;  // Note we consumed these characters
                 ReadBuffer();
             } while (charLen > 0);
-            return this.GetStringAndReleaseSharedStringBuilder(sb);
+
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
         public override int ReadBlock([In, Out] char[] buffer, int index, int count)
@@ -541,11 +542,11 @@ namespace System.IO
                 return new StringBuilder(capacity);
 
             // note that since StreamReader does not support concurrent reads it is not needed to
-            // set this._builder to null to avoid parallel acquisitions.
-            StringBuilder sb = this._builder;
+            // set _builder to null to avoid parallel acquisitions.
+            StringBuilder sb = _builder;
 
             if (sb == null)
-                return this._builder = new StringBuilder(capacity);
+                return _builder = new StringBuilder(capacity);
              
             // Clear the shared builder. Does not remove the allocated buffers so they are reused.
             sb.Length = 0;
@@ -560,8 +561,8 @@ namespace System.IO
 
         private string GetStringAndReleaseSharedStringBuilder(StringBuilder sb)
         {
-            if (sb == this._builder && sb.Capacity > MaxSharedBuilderCapacity)
-                this._builder = null;
+            if (sb == _builder && sb.Capacity > MaxSharedBuilderCapacity)
+                _builder = null;
 
             return sb.ToString();
         }
@@ -760,7 +761,7 @@ namespace System.IO
                         String s;
                         if (sb != null) {
                             sb.Append(charBuffer, charPos, i - charPos);
-                            s = this.GetStringAndReleaseSharedStringBuilder(sb);
+                            s = GetStringAndReleaseSharedStringBuilder(sb);
                         }
                         else {
                             s = new String(charBuffer, charPos, i - charPos);
@@ -777,7 +778,7 @@ namespace System.IO
                 if (sb == null) sb = AcquireSharedStringBuilder(i + 80);
                 sb.Append(charBuffer, charPos, i);
             } while (ReadBuffer() > 0);
-            return this.GetStringAndReleaseSharedStringBuilder(sb);
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
         
         #region Task based Async APIs
@@ -830,7 +831,7 @@ namespace System.IO
                         if (sb != null)
                         {
                             sb.Append(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                            s = this.GetStringAndReleaseSharedStringBuilder(sb);
+                            s = GetStringAndReleaseSharedStringBuilder(sb);
                         }
                         else
                         {
@@ -859,7 +860,7 @@ namespace System.IO
 
             } while (await ReadBufferAsync().ConfigureAwait(false) > 0);
 
-            return this.GetStringAndReleaseSharedStringBuilder(sb);
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
         [HostProtection(ExternalThreading=true)]
@@ -896,7 +897,7 @@ namespace System.IO
                 await ReadBufferAsync().ConfigureAwait(false);
             } while (CharLen_Prop > 0);
 
-            return this.GetStringAndReleaseSharedStringBuilder(sb);
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
         [HostProtection(ExternalThreading=true)]
