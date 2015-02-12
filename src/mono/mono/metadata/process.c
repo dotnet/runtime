@@ -350,9 +350,9 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	}
 }
 
-static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename)
+static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
 {
-	MonoClass *proc_class, *filever_class;
+	MonoClass *filever_class;
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
 	MODULEINFO modinfo;
@@ -360,8 +360,6 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
-	proc_class=mono_class_from_name (system_assembly, "System.Diagnostics",
-					 "ProcessModule");
 	item=mono_object_new (domain, proc_class);
 
 	filever_class=mono_class_from_name (system_assembly,
@@ -403,17 +401,19 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	DWORD needed;
 	guint32 count = 0;
 	guint32 i, num_added = 0;
+	MonoClass *proc_class;
 
 	STASH_SYS_ASS (this);
 
 	if (EnumProcessModules (process, mods, sizeof(mods), &needed)) {
 		count = needed / sizeof(HMODULE);
-		temp_arr = mono_array_new (mono_domain_get (), mono_get_object_class (), count);
+		proc_class = mono_class_from_name (system_assembly, "System.Diagnostics", "ProcessModule");
+		temp_arr = mono_array_new (mono_domain_get (), proc_class, count);
 		for (i = 0; i < count; i++) {
 			if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
 					GetModuleFileNameEx (process, mods[i], filename, MAX_PATH)) {
 				MonoObject *module = process_add_module (process, mods[i],
-						filename, modname);
+						filename, modname, proc_class);
 				mono_array_setref (temp_arr, num_added++, module);
 			}
 		}
@@ -423,7 +423,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 		arr = temp_arr;
 	} else {
 		/* shorter version of the array */
-		arr = mono_array_new (mono_domain_get (), mono_get_object_class (), num_added);
+		arr = mono_array_new (mono_domain_get (), proc_class, num_added);
 
 		for (i = 0; i < num_added; i++)
 			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
