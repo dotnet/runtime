@@ -125,14 +125,6 @@ int __cdecl main(int argc, char *argv[])
             szTextFile);
     }
 
-    /* test on a null lpFileSize */
-    bRc = GetFileSizeEx(hFile, NULL);
-    if (bRc != FALSE)
-    {
-        Fail("GetFileSizeEx: ERROR -> Returned status as TRUE for "
-            "a null lpFileSize.\n");
-    }
-
     /* give the file a size */
     CheckFileSize(hFile, 256, 0);
 
