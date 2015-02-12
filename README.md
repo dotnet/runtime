@@ -15,14 +15,8 @@ The [.NET Core Libraries][corefx] repo contains the base class libraries, which 
 ## Learn about CoreCLR
 Historically, new devs to the CLR team would be encouraged to read the "Book of the Runtime" (BotR) before making substative changes to the product. We have released the meaningful BotR chapters, for the same goal with new contributors.
 
-- [Book of the Runtime FAQ](Documentation/botr-faq.md)
 - [Introduction to the Common Language Runtime](Documentation/intro-to-clr.md)
-- [Mscorlib and Calling Into the Runtime](Documentation/mscorlib.md)
-- [Stack Walking](Documentation/stackwalking.md)
-- [CLR Coding Guide](Documentation/clr-code-guide.md)
-- [.NET Core Glossary](Documentation/glossary.md)
-- [.NET Filename Encyclopedia](Documentation/dotnet-filenames.md)
-- More coming 
+- [Documents Index](Documents/index.md)
 
 ## How to Engage, Contribute and Provide Feedback
 
