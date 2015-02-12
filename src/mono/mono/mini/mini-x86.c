@@ -2289,7 +2289,7 @@ static int tls_gs_offset;
 gboolean
 mono_x86_have_tls_get (void)
 {
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 	static gboolean have_tls_get = FALSE;
 	static gboolean inited = FALSE;
 	guint32 *ins;
