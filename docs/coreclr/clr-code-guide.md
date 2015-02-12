@@ -311,7 +311,7 @@ OBJECTREF's pointer mimicry isn't perfect. In certain cases, the checked build r
 compiles fine under retail but breaks under checked. The usual workaround is something like this:
 
 	pv = (LPVOID)OBJECTREFToObject(o);
-    
+
 ### How to know if a function can trigger a GC.
 
 The GC behavior of every function in the source base must be documented in its contract. Every function must have a contract that declares one of the following:
