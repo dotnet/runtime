@@ -234,8 +234,14 @@ mono_gc_is_critical_method (MonoMethod *method)
 	return FALSE;
 }
 
+int
+mono_gc_get_aligned_size_for_allocator (int size)
+{
+	return size;
+}
+
 MonoMethod*
-mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
+mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size)
 {
 	return NULL;
 }

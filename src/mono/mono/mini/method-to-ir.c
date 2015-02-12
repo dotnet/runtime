@@ -3942,8 +3942,9 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		MonoInst *data;
 		int rgctx_info;
 		MonoInst *iargs [2];
+		gboolean known_instance_size = !mini_is_gsharedvt_klass (cfg, klass);
 
-		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (klass, for_box);
+		MonoMethod *managed_alloc = mono_gc_get_managed_allocator (klass, for_box, known_instance_size);
 
 		if (cfg->opt & MONO_OPT_SHARED)
 			rgctx_info = MONO_RGCTX_INFO_KLASS;
@@ -3960,8 +3961,11 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 			alloc_ftn = mono_object_new_specific;
 		}
 
-		if (managed_alloc && !(cfg->opt & MONO_OPT_SHARED))
+		if (managed_alloc && !(cfg->opt & MONO_OPT_SHARED)) {
+			if (known_instance_size)
+				EMIT_NEW_ICONST (cfg, iargs [1], mono_gc_get_aligned_size_for_allocator (klass->instance_size));
 			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
+		}
 
 		return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
 	}
@@ -3988,11 +3992,12 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		}
 
 #ifndef MONO_CROSS_COMPILE
-		managed_alloc = mono_gc_get_managed_allocator (klass, for_box);
+		managed_alloc = mono_gc_get_managed_allocator (klass, for_box, TRUE);
 #endif
 
 		if (managed_alloc) {
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
+			EMIT_NEW_ICONST (cfg, iargs [1], mono_gc_get_aligned_size_for_allocator (klass->instance_size));
 			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 		}
 		alloc_ftn = mono_class_get_allocation_ftn (vtable, for_box, &pass_lw);
@@ -6501,7 +6506,7 @@ mini_redirect_call (MonoCompile *cfg, MonoMethod *method,
 
 			g_assert (vtable); /*Should not fail since it System.String*/
 #ifndef MONO_CROSS_COMPILE
-			managed_alloc = mono_gc_get_managed_allocator (method->klass, FALSE);
+			managed_alloc = mono_gc_get_managed_allocator (method->klass, FALSE, FALSE);
 #endif
 			if (!managed_alloc)
 				return NULL;

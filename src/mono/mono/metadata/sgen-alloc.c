@@ -778,7 +778,7 @@ create_allocator (int atype)
 	}
 
 	if (atype == ATYPE_SMALL) {
-		num_params = 1;
+		num_params = 2;
 		name = "AllocSmall";
 	} else if (atype == ATYPE_NORMAL) {
 		num_params = 1;
@@ -808,7 +808,11 @@ create_allocator (int atype)
 
 #ifndef DISABLE_JIT
 	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	if (atype == ATYPE_NORMAL || atype == ATYPE_SMALL) {
+	if (atype == ATYPE_SMALL) {
+		/* size_var = size_arg */
+		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_stloc (mb, size_var);
+	} else if (atype == ATYPE_NORMAL) {
 		/* size = vtable->klass->instance_size; */
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
@@ -931,14 +935,16 @@ create_allocator (int atype)
 		g_assert_not_reached ();
 	}
 
-	/* size += ALLOC_ALIGN - 1; */
-	mono_mb_emit_ldloc (mb, size_var);
-	mono_mb_emit_icon (mb, ALLOC_ALIGN - 1);
-	mono_mb_emit_byte (mb, CEE_ADD);
-	/* size &= ~(ALLOC_ALIGN - 1); */
-	mono_mb_emit_icon (mb, ~(ALLOC_ALIGN - 1));
-	mono_mb_emit_byte (mb, CEE_AND);
-	mono_mb_emit_stloc (mb, size_var);
+	if (atype != ATYPE_SMALL) {
+		/* size += ALLOC_ALIGN - 1; */
+		mono_mb_emit_ldloc (mb, size_var);
+		mono_mb_emit_icon (mb, ALLOC_ALIGN - 1);
+		mono_mb_emit_byte (mb, CEE_ADD);
+		/* size &= ~(ALLOC_ALIGN - 1); */
+		mono_mb_emit_icon (mb, ~(ALLOC_ALIGN - 1));
+		mono_mb_emit_byte (mb, CEE_AND);
+		mono_mb_emit_stloc (mb, size_var);
+	}
 
 	/* if (size > MAX_SMALL_OBJ_SIZE) goto slowpath */
 	if (atype != ATYPE_SMALL) {
@@ -1072,13 +1078,22 @@ create_allocator (int atype)
 }
 #endif
 
+int
+mono_gc_get_aligned_size_for_allocator (int size)
+{
+	int aligned_size = size;
+	aligned_size += ALLOC_ALIGN - 1;
+	aligned_size &= ~(ALLOC_ALIGN - 1);
+	return aligned_size;
+}
+
 /*
  * Generate an allocator method implementing the fast path of mono_gc_alloc_obj ().
  * The signature of the called method is:
  * 	object allocate (MonoVTable *vtable)
  */
 MonoMethod*
-mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
+mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size)
 {
 #ifdef MANAGED_ALLOCATION
 
@@ -1097,6 +1112,8 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
 		return NULL;
 	if (klass->instance_size > tlab_size)
 		return NULL;
+	if (known_instance_size && ALIGN_TO (klass->instance_size, ALLOC_ALIGN) >= MAX_SMALL_OBJ_SIZE)
+		return NULL;
 
 	if (klass->has_finalize || mono_class_is_marshalbyref (klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return NULL;
@@ -1105,7 +1122,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
 	if (klass->byval_arg.type == MONO_TYPE_STRING)
 		return mono_gc_get_managed_allocator_by_type (ATYPE_STRING);
 	/* Generic classes have dynamic field and can go above MAX_SMALL_OBJ_SIZE. */
-	if (ALIGN_TO (klass->instance_size, ALLOC_ALIGN) < MAX_SMALL_OBJ_SIZE && !mono_class_is_open_constructed_type (&klass->byval_arg))
+	if (known_instance_size)
 		return mono_gc_get_managed_allocator_by_type (ATYPE_SMALL);
 	else
 		return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL);
