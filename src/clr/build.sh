@@ -41,7 +41,7 @@ clean()
 
     # Cleanup intermediates folder
     if [ -d "$__IntermediatesDir" ]; then
-        rm -f "$__IntermediatesDir"
+        rm -r "$__IntermediatesDir"
     fi
 
     mkdir -p "$__IntermediatesDir"
