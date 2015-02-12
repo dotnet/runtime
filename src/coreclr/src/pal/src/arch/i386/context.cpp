@@ -982,7 +982,7 @@ CONTEXT_GetThreadContextFromPort(
             // so we can simply memcpy them across.
             memcpy(lpContext->ExtendedRegisters + CONTEXT_EXREG_XMM_OFFSET, &State.fpu_xmm0, 8 * 16);
         }
-#endif _X86_
+#endif
     }
 
 EXIT:
