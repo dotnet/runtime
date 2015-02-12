@@ -524,8 +524,6 @@ cominterop_type_from_handle (MonoType *handle)
 	MonoDomain *domain = mono_domain_get (); 
 	MonoClass *klass = mono_class_from_mono_type (handle);
 
-	MONO_ARCH_SAVE_REGS;
-
 	mono_class_init (klass);
 	return mono_type_get_object (domain, handle);
 }
@@ -1588,8 +1586,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal (MonoO
 guint32
 ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal (MonoReflectionMethod *m)
 {
-	MONO_ARCH_SAVE_REGS;
-
 #ifndef DISABLE_COM
 	return cominterop_get_com_slot_for_method (m->method);
 #else
@@ -1605,8 +1601,6 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionType *type)
 	MonoDomain *domain;
 	MonoObject *obj;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	domain = mono_object_domain (type);
 	klass = mono_class_from_mono_type (type->type);
 
@@ -3309,23 +3303,17 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (gpointe
 MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (gpointer ptr)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return mono_string_from_bstr(ptr);
 }
 
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_StringToBSTR (MonoString* ptr)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return mono_string_to_bstr(ptr);
 }
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	mono_free_bstr (ptr);
 }

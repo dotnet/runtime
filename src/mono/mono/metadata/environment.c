@@ -43,8 +43,6 @@ ves_icall_System_Environment_GetOSVersionString (void)
 #ifdef HOST_WIN32
 	OSVERSIONINFOEX verinfo;
 
-	MONO_ARCH_SAVE_REGS;
-
 	verinfo.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
 	if (GetVersionEx ((OSVERSIONINFO*)&verinfo)) {
 		char version [128];
@@ -59,8 +57,6 @@ ves_icall_System_Environment_GetOSVersionString (void)
 	}
 #elif defined(HAVE_SYS_UTSNAME_H)
 	struct utsname name;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (uname (&name) >= 0) {
 		return mono_string_new (mono_domain_get (), name.release);

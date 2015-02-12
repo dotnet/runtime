@@ -94,8 +94,6 @@ static struct termios initial_attr;
 MonoBoolean
 ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return isatty (GPOINTER_TO_INT (handle));
 }
 
@@ -106,8 +104,6 @@ set_property (gint property, gboolean value)
 	gboolean callset = FALSE;
 	gboolean check;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	if (tcgetattr (STDIN_FILENO, &attr) == -1)
 		return FALSE;
 
@@ -151,8 +147,6 @@ ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
 	struct timeval *tvptr;
 	div_t divvy;
 	int ret, nbytes;
-
-	MONO_ARCH_SAVE_REGS;
 
 	do {
 		FD_ZERO (&rfds);
@@ -207,8 +201,6 @@ static void
 tty_teardown (void)
 {
 	int unused;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (!setup_finished)
 		return;
@@ -281,7 +273,6 @@ static gboolean in_sigint;
 MONO_SIG_HANDLER_FUNC (static, sigint_handler)
 {
 	int save_errno;
-	MONO_ARCH_SAVE_REGS;
 
 	if (in_sigint)
 		return;
@@ -448,8 +439,6 @@ MonoBoolean
 ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
 {
 	int dims;
-
-	MONO_ARCH_SAVE_REGS;
 
 	dims = terminal_get_dimensions ();
 	if (dims == -1){

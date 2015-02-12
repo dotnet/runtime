@@ -275,8 +275,6 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 	MonoClass *klass;
 	gchar *full_name;
 
-	MONO_ARCH_SAVE_REGS;
-
 	if (vtable->initialized)
 		return NULL;
 
@@ -4435,7 +4433,6 @@ mono_object_new (MonoDomain *domain, MonoClass *klass)
 {
 	MonoVTable *vtable;
 
-	MONO_ARCH_SAVE_REGS;
 	vtable = mono_class_vtable (domain, klass);
 	if (!vtable)
 		return NULL;
@@ -4453,7 +4450,6 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass)
 {
 	MonoVTable *vtable;
 
-	MONO_ARCH_SAVE_REGS;
 	vtable = mono_class_vtable (domain, klass);
 	if (!vtable)
 		return NULL;
@@ -4477,8 +4473,6 @@ mono_object_new_specific (MonoVTable *vtable)
 {
 	MonoObject *o;
 
-	MONO_ARCH_SAVE_REGS;
-	
 	/* check for is_com_object for COM Interop */
 	if (mono_vtable_is_remote (vtable) || mono_class_is_com_object (vtable->klass))
 	{
@@ -4681,8 +4675,6 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 	uintptr_t size;
 	MonoClass *klass = src->obj.vtable->klass;
 
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (klass == dest->obj.vtable->klass);
 
 	size = mono_array_length (src);
@@ -4717,8 +4709,6 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 	uintptr_t size, i;
 	uintptr_t *sizes;
 	MonoClass *klass = array->obj.vtable->klass;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (array->bounds == NULL) {
 		size = mono_array_length (array);
@@ -4929,8 +4919,6 @@ mono_array_new (MonoDomain *domain, MonoClass *eclass, uintptr_t n)
 {
 	MonoClass *ac;
 
-	MONO_ARCH_SAVE_REGS;
-
 	ac = mono_array_class_get (eclass, 1);
 	g_assert (ac);
 
@@ -4951,8 +4939,6 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	MonoObject *o;
 	MonoArray *ao;
 	uintptr_t byte_len;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (G_UNLIKELY (n > MONO_ARRAY_MAX_INDEX)) {
 		arith_overflow ();
@@ -5167,8 +5153,6 @@ MonoString*
 mono_string_new_wrapper (const char *text)
 {
 	MonoDomain *domain = mono_domain_get ();
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (text)
 		return mono_string_new (domain, text);
@@ -5545,8 +5529,6 @@ mono_string_intern (MonoString *str)
 MonoString*
 mono_ldstr (MonoDomain *domain, MonoImage *image, guint32 idx)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (image->dynamic) {
 		MonoString *str = mono_lookup_dynamic_token (image, MONO_TOKEN_STRING | idx, NULL);
 		return str;

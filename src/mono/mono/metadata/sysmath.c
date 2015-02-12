@@ -38,13 +38,12 @@ static __huge_val_t __huge_val = { __HUGE_VAL_bytes };
 
 
 gdouble ves_icall_System_Math_Floor (gdouble x) {
-	MONO_ARCH_SAVE_REGS;
 	return floor(x);
 }
 
 gdouble ves_icall_System_Math_Round (gdouble x) {
 	double int_part, dec_part;
-	MONO_ARCH_SAVE_REGS;
+
 	int_part = floor(x);
 	dec_part = x - int_part;
 	if (((dec_part == 0.5) &&
@@ -61,7 +60,6 @@ gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean awa
 #endif
 	double p;
 
-	MONO_ARCH_SAVE_REGS;
 	if (value == HUGE_VAL)
 		return HUGE_VAL;
 	if (value == -HUGE_VAL)
@@ -95,56 +93,42 @@ gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean awa
 gdouble 
 ves_icall_System_Math_Sin (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return sin (x);
 }
 
 gdouble 
 ves_icall_System_Math_Cos (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return cos (x);
 }
 
 gdouble 
 ves_icall_System_Math_Tan (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return tan (x);
 }
 
 gdouble 
 ves_icall_System_Math_Sinh (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return sinh (x);
 }
 
 gdouble 
 ves_icall_System_Math_Cosh (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return cosh (x);
 }
 
 gdouble 
 ves_icall_System_Math_Tanh (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return tanh (x);
 }
 
 gdouble 
 ves_icall_System_Math_Acos (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (x < -1 || x > 1)
 		return NAN;
 
@@ -154,8 +138,6 @@ ves_icall_System_Math_Acos (gdouble x)
 gdouble 
 ves_icall_System_Math_Asin (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (x < -1 || x > 1)
 		return NAN;
 
@@ -165,8 +147,6 @@ ves_icall_System_Math_Asin (gdouble x)
 gdouble 
 ves_icall_System_Math_Atan (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return atan (x);
 }
 
@@ -174,7 +154,6 @@ gdouble
 ves_icall_System_Math_Atan2 (gdouble y, gdouble x)
 {
 	double result;
-	MONO_ARCH_SAVE_REGS;
 
 	if ((y == HUGE_VAL && x == HUGE_VAL) ||
 		(y == HUGE_VAL && x == -HUGE_VAL) ||
@@ -189,16 +168,12 @@ ves_icall_System_Math_Atan2 (gdouble y, gdouble x)
 gdouble 
 ves_icall_System_Math_Exp (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return exp (x);
 }
 
 gdouble 
 ves_icall_System_Math_Log (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (x == 0)
 		return -HUGE_VAL;
 	else if (x < 0)
@@ -210,8 +185,6 @@ ves_icall_System_Math_Log (gdouble x)
 gdouble 
 ves_icall_System_Math_Log10 (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (x == 0)
 		return -HUGE_VAL;
 	else if (x < 0)
@@ -224,7 +197,6 @@ gdouble
 ves_icall_System_Math_Pow (gdouble x, gdouble y)
 {
 	double result;
-	MONO_ARCH_SAVE_REGS;
 
 	if (isnan(x) || isnan(y)) {
 		return NAN;
@@ -259,8 +231,6 @@ ves_icall_System_Math_Pow (gdouble x, gdouble y)
 gdouble 
 ves_icall_System_Math_Sqrt (gdouble x)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (x < 0)
 		return NAN;
 

@@ -269,8 +269,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 {
 	gpointer token = NULL;
 
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef HOST_WIN32
 	/* Note: This isn't a copy of the Token - we must not close it!!!
 	 * http://www.develop.com/kbrown/book/html/whatis_windowsprincipal.html
@@ -296,8 +294,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	gint32 size = 0;
 
 #ifdef HOST_WIN32
-	MONO_ARCH_SAVE_REGS;
-
 	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
 	if (size > 0) {
 		TOKEN_USER *tu = g_malloc0 (size);
@@ -308,8 +304,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 	}
 #else 
 	gchar *uname = GetTokenName ((uid_t) GPOINTER_TO_INT (token));
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (uname) {
 		size = strlen (uname);
@@ -337,8 +331,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 #ifdef HOST_WIN32
 	gpointer token = NULL;
 
-	MONO_ARCH_SAVE_REGS;
-
 	/* TODO: MS has something like this working in Windows 2003 (client and
 	 * server) but works only for domain accounts (so it's quite limiting).
 	 * http://www.develop.com/kbrown/book/html/howto_logonuser.html
@@ -357,8 +349,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	struct passwd *p;
 	gchar *utf8_name;
 	gboolean result;
-
-	MONO_ARCH_SAVE_REGS;
 
 	utf8_name = mono_unicode_to_external (mono_string_chars (username));
 
@@ -402,8 +392,6 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 #ifdef HOST_WIN32
 	gint32 size = 0;
 
-	MONO_ARCH_SAVE_REGS;
-
 	GetTokenInformation (token, TokenGroups, NULL, size, (PDWORD)&size);
 	if (size > 0) {
 		TOKEN_GROUPS *tg = g_malloc0 (size);
@@ -446,8 +434,6 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken (gpoi
 {
 	gboolean result = TRUE;
 
-	MONO_ARCH_SAVE_REGS;
-
 #ifdef HOST_WIN32
 	result = (CloseHandle (token) != 0);
 #endif
@@ -459,8 +445,6 @@ gpointer
 ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token)
 {
 	gpointer dupe = NULL;
-
-	MONO_ARCH_SAVE_REGS;
 
 #ifdef HOST_WIN32
 	if (DuplicateToken (token, SecurityImpersonation, &dupe) == 0) {
@@ -476,8 +460,6 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	/* Posix version implemented in /mono/mono/io-layer/security.c */
 	return (ImpersonateLoggedOnUser (token) != 0);
 }
@@ -486,8 +468,6 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken 
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	/* Posix version implemented in /mono/mono/io-layer/security.c */
 	return (RevertToSelf () != 0);
 }
@@ -501,8 +481,6 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 	gboolean result = FALSE;
 
 #ifdef HOST_WIN32
-	MONO_ARCH_SAVE_REGS;
-
 	/* The convertion from an ID to a string is done in managed code for Windows */
 	g_warning ("IsMemberOfGroupId should never be called on Win32");
 
@@ -515,8 +493,6 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer
 	gint32 retval;
 #endif
 	struct group *g = NULL;
-
-	MONO_ARCH_SAVE_REGS;
 
 #ifdef HAVE_GETGRGID_R
 #ifdef _SC_GETGR_R_SIZE_MAX
@@ -553,16 +529,11 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 	gboolean result = FALSE;
 
 #ifdef HOST_WIN32
-
-	MONO_ARCH_SAVE_REGS;
-
 	/* Windows version use a cache built using WindowsIdentity._GetRoles */
 	g_warning ("IsMemberOfGroupName should never be called on Win32");
 
 #else /* HOST_WIN32 */
 	gchar *utf8_groupname;
-
-	MONO_ARCH_SAVE_REGS;
 
 	utf8_groupname = mono_unicode_to_external (mono_string_chars (group));
 	if (utf8_groupname) {
@@ -861,14 +832,11 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *r
 #if HOST_WIN32
 	gint32 flags;
 
-	MONO_ARCH_SAVE_REGS;
-
 	/* ACL are nice... unless you have FAT or other uncivilized filesystem */
 	if (!GetVolumeInformation (mono_string_chars (root), NULL, 0, NULL, NULL, (LPDWORD)&flags, NULL, 0))
 		return FALSE;
 	return ((flags & FS_PERSISTENT_ACLS) == FS_PERSISTENT_ACLS);
 #else
-	MONO_ARCH_SAVE_REGS;
 	/* we assume some kind of security is applicable outside Windows */
 	return TRUE;
 #endif
@@ -879,8 +847,6 @@ MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path)
 {
 	gboolean ret = FALSE;
-
-	MONO_ARCH_SAVE_REGS;
 
 	/* no one, but the owner, should have write access to the directory */
 #ifdef HOST_WIN32
@@ -897,8 +863,6 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoStr
 {
 	gboolean ret = FALSE;
 
-	MONO_ARCH_SAVE_REGS;
-
 	/* no one, but the user, should have access to the directory */
 #ifdef HOST_WIN32
 	ret = IsUserProtected (mono_string_chars (path));
@@ -913,8 +877,6 @@ MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path)
 {
 	gboolean ret = FALSE;
-
-	MONO_ARCH_SAVE_REGS;
 
 	/* read/write to owner, read to everyone else */
 #ifdef HOST_WIN32
@@ -931,8 +893,6 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString 
 {
 	gboolean ret = FALSE;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	/* read/write to user, no access to everyone else */
 #ifdef HOST_WIN32
 	ret = ProtectUser (mono_string_chars (path));
@@ -979,8 +939,6 @@ void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolea
 	MonoClass *klass;
 	MonoMethod *method;
 	void *params [2];
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (system_security_assembly == NULL) {
 		system_security_assembly = mono_image_loaded ("System.Security");

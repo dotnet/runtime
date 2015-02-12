@@ -4770,8 +4770,6 @@ mono_image_insert_string (MonoReflectionModuleBuilder *module, MonoString *str)
 	char buf [16];
 	char *b = buf;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	if (!module->dynamic_image)
 		mono_image_module_basic_init (module);
 
@@ -5289,8 +5287,6 @@ mono_image_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	MonoDynamicImage *image;
 	MonoDomain *domain = mono_object_domain (assemblyb);
 	
-	MONO_ARCH_SAVE_REGS;
-
 	if (assemblyb->dynamic_assembly)
 		return;
 
@@ -9890,8 +9886,6 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 	char *buffer, *p;
 	guint32 buflen, i;
 
-	MONO_ARCH_SAVE_REGS;
-
 	if (strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
 		/* sig is freed later so allocate it in the heap */
 		sig = ctor_builder_to_signature (NULL, (MonoReflectionCtorBuilder*)ctor);
@@ -9968,8 +9962,6 @@ mono_reflection_setup_internal_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoError error;
 	MonoClass *klass, *parent;
-
-	MONO_ARCH_SAVE_REGS;
 
 	RESOLVE_TYPE (tb->parent);
 
@@ -10108,8 +10100,6 @@ mono_reflection_create_generic_class (MonoReflectionTypeBuilder *tb)
 	MonoClass *klass;
 	int count, i;
 
-	MONO_ARCH_SAVE_REGS;
-
 	klass = mono_class_from_mono_type (tb->type.type);
 
 	count = tb->generic_params ? mono_array_length (tb->generic_params) : 0;
@@ -10152,8 +10142,6 @@ void
 mono_reflection_create_internal_class (MonoReflectionTypeBuilder *tb)
 {
 	MonoClass *klass;
-
-	MONO_ARCH_SAVE_REGS;
 
 	klass = mono_class_from_mono_type (tb->type.type);
 
@@ -10707,8 +10695,6 @@ mono_reflection_bind_generic_method_parameters (MonoReflectionMethod *rmethod, M
 	MonoType **type_argv;
 	int count, i;
 
-	MONO_ARCH_SAVE_REGS;
-
 	/*FIXME but this no longer should happen*/
 	if (!strcmp (rmethod->object.vtable->klass->name, "MethodBuilder")) {
 #ifndef DISABLE_REFLECTION_EMIT
@@ -10861,8 +10847,6 @@ mono_reflection_generic_class_initialize (MonoReflectionGenericClass *type, Mono
 	MonoClass *klass, *gklass;
 	MonoType *gtype;
 	int i;
-
-	MONO_ARCH_SAVE_REGS;
 
 	gtype = mono_reflection_type_get_handle ((MonoReflectionType*)type);
 	klass = mono_class_from_mono_type (gtype);
@@ -11437,8 +11421,6 @@ mono_reflection_create_runtime_class (MonoReflectionTypeBuilder *tb)
 	MonoReflectionType* res;
 	int i, j;
 
-	MONO_ARCH_SAVE_REGS;
-
 	domain = mono_object_domain (tb);
 	klass = mono_class_from_mono_type (tb->type.type);
 
@@ -11614,8 +11596,6 @@ mono_reflection_initialize_generic_parameter (MonoReflectionGenericParam *gparam
 	MonoImage *image;
 	MonoClass *pklass;
 	MonoError error;
-
-	MONO_ARCH_SAVE_REGS;
 
 	image = &gparam->tbuilder->module->dynamic_image->image;
 

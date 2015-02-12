@@ -462,8 +462,6 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetup *
 	MonoDomain *data;
 	char *shadow_location;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	adclass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomain");
 
 	/* FIXME: pin all those objects */
@@ -612,8 +610,6 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	MonoObject *o;
 	char *str;
 
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (ad != NULL);
 	add = ad->data;
 	g_assert (add != NULL);
@@ -660,8 +656,6 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 {
 	MonoDomain *add;
 
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (ad != NULL);
 	add = ad->data;
 	g_assert (add != NULL);
@@ -679,8 +673,6 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 MonoAppDomainSetup *
 ves_icall_System_AppDomain_getSetup (MonoAppDomain *ad)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (ad != NULL);
 	g_assert (ad->data != NULL);
 
@@ -690,8 +682,6 @@ ves_icall_System_AppDomain_getSetup (MonoAppDomain *ad)
 MonoString *
 ves_icall_System_AppDomain_getFriendlyName (MonoAppDomain *ad)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (ad != NULL);
 	g_assert (ad->data != NULL);
 
@@ -703,8 +693,6 @@ ves_icall_System_AppDomain_getCurDomain ()
 {
 	MonoDomain *add = mono_domain_get ();
 
-	MONO_ARCH_SAVE_REGS;
-
 	return add->domain;
 }
 
@@ -712,8 +700,6 @@ MonoAppDomain *
 ves_icall_System_AppDomain_getRootDomain ()
 {
 	MonoDomain *root = mono_get_root_domain ();
-
-	MONO_ARCH_SAVE_REGS;
 
 	return root->domain;
 }
@@ -873,8 +859,6 @@ ves_icall_System_AppDomain_GetAssemblies (MonoAppDomain *ad, MonoBoolean refonly
 	GSList *tmp;
 	int i;
 	GPtrArray *assemblies;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (!System_Reflection_Assembly)
 		System_Reflection_Assembly = mono_class_from_name (
@@ -1895,8 +1879,6 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	MonoAssembly *ass;
 
-	MONO_ARCH_SAVE_REGS;
-
 	if (fname == NULL) {
 		MonoException *exc = mono_get_exception_argument_null ("assemblyFile");
 		mono_raise_exception (exc);
@@ -1968,8 +1950,6 @@ ves_icall_System_AppDomain_LoadAssembly (MonoAppDomain *ad,  MonoString *assRef,
 	gchar *name;
 	gboolean parsed;
 
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (assRef != NULL);
 
 	name = mono_string_to_utf8 (assRef);
@@ -2008,8 +1988,6 @@ void
 ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 {
 	MonoDomain * domain = mono_domain_get_by_id (domain_id);
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (NULL == domain) {
 		MonoException *exc = mono_get_exception_execution_engine ("Failed to unload domain, domain id not found");
@@ -2053,8 +2031,6 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad,
 	MonoImage *image;
 	MonoMethod *method;
 
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (refass);
 	image = refass->assembly->image;
 	g_assert (image);
@@ -2073,8 +2049,6 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomain *ad,
 gint32 
 ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad) 
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return ad->data->domain_id;
 }
 
@@ -2082,8 +2056,6 @@ MonoAppDomain *
 ves_icall_System_AppDomain_InternalSetDomain (MonoAppDomain *ad)
 {
 	MonoDomain *old_domain = mono_domain_get();
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (!mono_domain_set (ad->data, FALSE))
 		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
@@ -2097,8 +2069,6 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoDomain *domain = mono_domain_get_by_id (domainid);
 
-	MONO_ARCH_SAVE_REGS;
-
 	if (!domain || !mono_domain_set (domain, FALSE))	
 		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
@@ -2108,8 +2078,6 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 void
 ves_icall_System_AppDomain_InternalPushDomainRef (MonoAppDomain *ad)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	mono_thread_push_appdomain_ref (ad->data);
 }
 
@@ -2117,8 +2085,6 @@ void
 ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 {
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (!domain)
 		/* 
@@ -2133,24 +2099,18 @@ ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 void
 ves_icall_System_AppDomain_InternalPopDomainRef (void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	mono_thread_pop_appdomain_ref ();
 }
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalGetContext ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return mono_context_get ();
 }
 
 MonoAppContext * 
 ves_icall_System_AppDomain_InternalGetDefaultContext ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return mono_domain_get ()->default_context;
 }
 
@@ -2158,8 +2118,6 @@ MonoAppContext *
 ves_icall_System_AppDomain_InternalSetContext (MonoAppContext *mc)
 {
 	MonoAppContext *old_context = mono_context_get ();
-
-	MONO_ARCH_SAVE_REGS;
 
 	mono_context_set (mc);
 

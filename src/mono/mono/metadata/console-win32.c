@@ -46,8 +46,6 @@ ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
 {
 	DWORD mode;
 
-	MONO_ARCH_SAVE_REGS;
-
 	return GetConsoleMode (handle, &mode) != 0;
 }
 

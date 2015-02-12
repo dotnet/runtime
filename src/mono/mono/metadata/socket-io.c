@@ -665,8 +665,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 	gint32 sock_proto;
 	gint32 sock_type;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	sock_family=convert_family(family);
@@ -704,8 +702,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Socket_internal(MonoObject *this, g
 void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock,
 							gint32 *error)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	LOGDEBUG (g_message ("%s: closing 0x%x", __func__, sock));
 
 	*error = 0;
@@ -718,8 +714,6 @@ void ves_icall_System_Net_Sockets_Socket_Close_internal(SOCKET sock,
 
 gint32 ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal(void)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	LOGDEBUG (g_message("%s: returning %d", __func__, WSAGetLastError()));
 
 	return(WSAGetLastError());
@@ -731,8 +725,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_Available_internal(SOCKET sock,
 	int ret;
 	int amount;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 
 	/* FIXME: this might require amount to be unsigned long. */
@@ -751,8 +743,6 @@ void ves_icall_System_Net_Sockets_Socket_Blocking_internal(SOCKET sock,
 {
 	int ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 
 	/*
@@ -773,8 +763,6 @@ gpointer ves_icall_System_Net_Sockets_Socket_Accept_internal(SOCKET sock,
 {
 	SOCKET newsock;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 #ifdef HOST_WIN32
 	{
@@ -800,8 +788,6 @@ void ves_icall_System_Net_Sockets_Socket_Listen_internal(SOCKET sock,
 {
 	int ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	ret = _wapi_listen (sock, backlog);
@@ -969,8 +955,6 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal(SO
 	int ret;
 	MonoObject *result;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	salen = get_sockaddr_size (convert_family (af));
@@ -1003,8 +987,6 @@ extern MonoObject *ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal(S
 	int ret;
 	MonoObject *result;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	salen = get_sockaddr_size (convert_family (af));
@@ -1145,8 +1127,6 @@ extern void ves_icall_System_Net_Sockets_Socket_Bind_internal(SOCKET sock, MonoO
 	socklen_t sa_size;
 	int ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	sa=create_sockaddr_from_object(sockaddr, &sa_size, error);
@@ -1178,9 +1158,6 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (SOCKET sock, gint mode,
 	mono_pollfd *pfds;
 	int ret;
 	time_t start;
-	
-
-	MONO_ARCH_SAVE_REGS;
 	
 	pfds = g_new0 (mono_pollfd, 1);
 	pfds[0].fd = GPOINTER_TO_INT (sock);
@@ -1251,8 +1228,6 @@ extern void ves_icall_System_Net_Sockets_Socket_Connect_internal(SOCKET sock, Mo
 	socklen_t sa_size;
 	int ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	sa=create_sockaddr_from_object(sockaddr, &sa_size, error);
@@ -1294,8 +1269,6 @@ extern void ves_icall_System_Net_Sockets_Socket_Disconnect_internal(SOCKET sock,
 	LPFN_TRANSMITFILE _wapi_transmitfile = NULL;
 	gboolean bret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	LOGDEBUG (g_message("%s: disconnecting from socket %p (reuse %d)", __func__, sock, reuse));
@@ -1354,8 +1327,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_internal(SOCKET sock, MonoArr
 	gint32 alen;
 	int recvflags=0;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	alen = mono_array_length (buffer);
@@ -1397,8 +1368,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_array_internal(SOCKET sock, M
 	WSABUF *wsabufs;
 	DWORD recvflags = 0;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	wsabufs = mono_array_addr (buffers, WSABUF, 0);
@@ -1428,8 +1397,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoAr
 	struct sockaddr *sa;
 	socklen_t sa_size;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	alen = mono_array_length (buffer);
@@ -1478,8 +1445,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_internal(SOCKET sock, MonoArray 
 	gint32 alen;
 	int sendflags=0;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	alen = mono_array_length (buffer);
@@ -1515,8 +1480,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_Send_array_internal(SOCKET sock, Mono
 	WSABUF *wsabufs;
 	DWORD sendflags = 0;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	wsabufs = mono_array_addr (buffers, WSABUF, 0);
@@ -1546,8 +1509,6 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 	struct sockaddr *sa;
 	socklen_t sa_size;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	alen = mono_array_length (buffer);
@@ -1608,8 +1569,6 @@ void ves_icall_System_Net_Sockets_Socket_Select_internal(MonoArray **sockets, gi
 	time_t start;
 	uintptr_t socks_size;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	/* *sockets -> READ, null, WRITE, null, ERROR, null */
 	count = mono_array_length (*sockets);
 	nfds = count - 3; /* NULL separators */
@@ -1747,8 +1706,6 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal(SOCKET soc
 	MonoClass *obj_class;
 	MonoClassField *field;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 #if !defined(SO_EXCLUSIVEADDRUSE) && defined(SO_REUSEADDR)
@@ -1886,8 +1843,6 @@ void ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal(SOCKET soc
 	guchar *buf;
 	socklen_t valsize;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	ret=convert_sockopt_level_and_name(level, name, &system_level,
@@ -2003,8 +1958,6 @@ void ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal(SOCKET sock, g
 
 	sol_ipv6 = mono_networking_get_ipv6_protocol ();
 	sol_ip = mono_networking_get_ip_protocol ();
-
-	MONO_ARCH_SAVE_REGS;
 
 	ret=convert_sockopt_level_and_name(level, name, &system_level,
 					   &system_name);
@@ -2202,8 +2155,6 @@ void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 {
 	int ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error = 0;
 	
 	/* Currently, the values for how (recv=0, send=1, both=2) match
@@ -2224,8 +2175,6 @@ ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
 	gchar *i_buffer, *o_buffer;
 	gint i_len, o_len;
 	gint ret;
-
-	MONO_ARCH_SAVE_REGS;
 
 	*error = 0;
 	
@@ -2393,8 +2342,6 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	MonoAddressInfo *info = NULL;
 	char *hostname;
 	
-	MONO_ARCH_SAVE_REGS;
-	
 	hostname=mono_string_to_utf8 (host);
 	if (*hostname == '\0') {
 		add_local_ips = TRUE;
@@ -2477,8 +2424,6 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 	gchar hostname[256];
 	int ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	ret = gethostname (hostname, sizeof (hostname));
 	if(ret==-1) {
 		return(FALSE);
@@ -2495,8 +2440,6 @@ ves_icall_System_Net_Sockets_Socket_SendFile (SOCKET sock, MonoString *filename,
 	HANDLE file;
 	gint32 error;
 	TRANSMIT_FILE_BUFFERS buffers;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (filename == NULL)
 		return FALSE;

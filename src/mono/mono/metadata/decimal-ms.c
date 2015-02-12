@@ -2213,8 +2213,6 @@ DecAddInt32(MonoDecimal* value, unsigned int i)
 MonoDecimalCompareResult
 mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	uint32_t   left_sign;
 	uint32_t   right_sign;
 
@@ -2257,7 +2255,6 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 void
 mono_decimal_init_single (MonoDecimal *_this, float value)
 {
-	MONO_ARCH_SAVE_REGS;
 	if (VarDecFromR4 (value, _this) == MONO_DECIMAL_OVERFLOW)
 		mono_raise_exception (mono_get_exception_overflow ());
 	_this->reserved = 0;
@@ -2266,7 +2263,6 @@ mono_decimal_init_single (MonoDecimal *_this, float value)
 void
 mono_decimal_init_double (MonoDecimal *_this, double value)
 {
-	MONO_ARCH_SAVE_REGS;
 	if (VarDecFromR8 (value, _this) == MONO_DECIMAL_OVERFLOW)
 		mono_raise_exception (mono_get_exception_overflow ());
 	_this->reserved = 0;
@@ -2276,8 +2272,6 @@ void
 mono_decimal_floor (MonoDecimal *d)
 {
 	MonoDecimal decRes;
-
-	MONO_ARCH_SAVE_REGS;
 
 	VarDecInt(d, &decRes);
 	
@@ -2292,7 +2286,6 @@ mono_decimal_get_hash_code (MonoDecimal *d)
 {
 	double dbl;
 
-	MONO_ARCH_SAVE_REGS;
 	if (VarR8FromDec(d, &dbl) != MONO_DECIMAL_OK)
 		return 0;
 	
@@ -2319,8 +2312,6 @@ mono_decimal_multiply (MonoDecimal *d1, MonoDecimal *d2)
 {
 	MonoDecimal decRes;
 
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDecimalStatus status = VarDecMul(d1, d2, &decRes);
 	if (status != MONO_DECIMAL_OK)
 		mono_raise_exception (mono_get_exception_overflow ());
@@ -2334,8 +2325,6 @@ mono_decimal_multiply (MonoDecimal *d1, MonoDecimal *d2)
 void
 mono_decimal_round (MonoDecimal *d, int32_t decimals)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDecimal decRes;
 	
 	// GC is only triggered for throwing, no need to protect result 
@@ -2360,8 +2349,6 @@ mono_decimal_tocurrency (MonoDecimal *decimal)
 double
 mono_decimal_to_double (MonoDecimal d)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	double result = 0.0;
 	// Note: this can fail if the input is an invalid decimal, but for compatibility we should return 0
 	VarR8FromDec(&d, &result);
@@ -2371,8 +2358,6 @@ mono_decimal_to_double (MonoDecimal d)
 int32_t
 mono_decimal_to_int32 (MonoDecimal d)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDecimal result;
 	
 	// The following can not return an error, it only returns INVALID_ARG if the decimals is < 0
@@ -2403,8 +2388,6 @@ mono_decimal_to_int32 (MonoDecimal d)
 float
 mono_decimal_to_float (MonoDecimal d)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	float result = 0.0f;
 	// Note: this can fail if the input is an invalid decimal, but for compatibility we should return 0
 	VarR4FromDec(&d, &result);
@@ -2414,8 +2397,6 @@ mono_decimal_to_float (MonoDecimal d)
 void
 mono_decimal_truncate (MonoDecimal *d)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	MonoDecimal decRes;
 
 	VarDecFix(d, &decRes);
@@ -2435,7 +2416,6 @@ mono_decimal_addsub (MonoDecimal *left, MonoDecimal *right, uint8_t sign)
 	int         scale, hi_prod, cur;
 	SPLIT64     sdlTmp;
 	
-	MONO_ARCH_SAVE_REGS;
 	g_assert(sign == 0 || sign == DECIMAL_NEG);
 
 	leftOriginal = left;
@@ -2698,8 +2678,6 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 	int      scale, cur_scale;
 	gboolean unscale;
 
-	MONO_ARCH_SAVE_REGS;
-	
 	scale = DECIMAL_SCALE(*left) - DECIMAL_SCALE(*right);
 	unscale = FALSE;
 	divisor[0] = DECIMAL_LO32(*right);
@@ -3064,7 +3042,6 @@ typedef struct  {
 int
 mono_decimal_from_number (void *from, MonoDecimal *target)
 {
-	MONO_ARCH_SAVE_REGS;
 	CLRNumber *number = (CLRNumber *) from;
 	g_assert(number != NULL);
 	g_assert(target != NULL);

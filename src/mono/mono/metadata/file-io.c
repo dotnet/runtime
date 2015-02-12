@@ -270,8 +270,6 @@ ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error)
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=CreateDirectory (mono_string_chars (path), NULL);
@@ -287,8 +285,6 @@ ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error)
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=RemoveDirectory (mono_string_chars (path));
@@ -326,8 +322,6 @@ ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 	gchar *utf8_path, *utf8_result, *full_name;
 	gint32 attributes;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	result = NULL;
 	*error = ERROR_SUCCESS;
 
@@ -519,8 +513,6 @@ ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error)
 	gunichar2 *buf;
 	int len, res_len;
 
-	MONO_ARCH_SAVE_REGS;
-
 	len = MAX_PATH + 1; /*FIXME this is too smal under most unix systems.*/
 	buf = g_new (gunichar2, len);
 	
@@ -555,8 +547,6 @@ ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=SetCurrentDirectory (mono_string_chars (path));
@@ -573,8 +563,6 @@ ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest,
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=MoveFile (mono_string_chars (path), mono_string_chars (dest));
@@ -593,8 +581,6 @@ ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *
 	gboolean ret;
 	gunichar2 *utf16_sourceFileName = NULL, *utf16_destinationFileName = NULL, *utf16_destinationBackupFileName = NULL;
 	guint32 replaceFlags = REPLACEFILE_WRITE_THROUGH;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (sourceFileName)
 		utf16_sourceFileName = mono_string_chars (sourceFileName);
@@ -622,8 +608,6 @@ ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=CopyFile (mono_string_chars (path), mono_string_chars (dest), !overwrite);
@@ -639,8 +623,6 @@ ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error)
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=DeleteFile (mono_string_chars (path));
@@ -656,8 +638,6 @@ ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error)
 {
 	gint32 ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=get_file_attributes (mono_string_chars (path));
@@ -682,8 +662,6 @@ ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=SetFileAttributes (mono_string_chars (path),
@@ -700,8 +678,6 @@ ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error)
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=GetFileType (handle);
@@ -721,8 +697,6 @@ ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
 {
 	gboolean result;
 	WIN32_FILE_ATTRIBUTE_DATA data;
-
-	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
 	
@@ -747,8 +721,6 @@ ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 	int attributes, attrs;
 	gunichar2 *chars = mono_string_chars (filename);
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 
 	if (options != 0){
@@ -799,8 +771,6 @@ ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error)
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=CloseHandle (handle);
@@ -819,8 +789,6 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 	guchar *buffer;
 	gboolean result;
 	guint32 n;
-
-	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
 
@@ -849,8 +817,6 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 	gboolean result;
 	guint32 n;
 
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 
 	MONO_CHECK_ARG_NULL (src);
@@ -875,8 +841,6 @@ ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
 {
 	gint32 offset_hi;
 
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	offset_hi = offset >> 32;
@@ -895,8 +859,6 @@ ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error)
 {
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	ret=FlushFileBuffers (handle);
@@ -912,8 +874,6 @@ ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error)
 {
 	gint64 length;
 	guint32 length_hi;
-
-	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
 	
@@ -933,8 +893,6 @@ ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
 	gint32 offset_hi;
 	gint32 length_hi;
 	gboolean result;
-
-	MONO_ARCH_SAVE_REGS;
 
 	*error=ERROR_SUCCESS;
 	
@@ -985,8 +943,6 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 	const FILETIME *last_access_filetime;
 	const FILETIME *last_write_filetime;
 
-	MONO_ARCH_SAVE_REGS;
-
 	*error=ERROR_SUCCESS;
 	
 	if (creation_time < 0)
@@ -1015,24 +971,18 @@ ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleOutput ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return GetStdHandle (STD_OUTPUT_HANDLE);
 }
 
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleInput ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return GetStdHandle (STD_INPUT_HANDLE);
 }
 
 HANDLE 
 ves_icall_System_IO_MonoIO_get_ConsoleError ()
 {
-	MONO_ARCH_SAVE_REGS;
-
 	return GetStdHandle (STD_ERROR_HANDLE);
 }
 
@@ -1043,8 +993,6 @@ ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
 	SECURITY_ATTRIBUTES attr;
 	gboolean ret;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	attr.nLength=sizeof(SECURITY_ATTRIBUTES);
 	attr.bInheritHandle=TRUE;
 	attr.lpSecurityDescriptor=NULL;
@@ -1064,8 +1012,6 @@ MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_ha
 {
 	/* This is only used on Windows */
 	gboolean ret;
-	
-	MONO_ARCH_SAVE_REGS;
 	
 	ret=DuplicateHandle (source_process_handle, source_handle, target_process_handle, target_handle, access, inherit, options);
 	if(ret==FALSE) {
@@ -1146,8 +1092,6 @@ ves_icall_System_IO_MonoIO_get_InvalidPathChars ()
 	MonoArray *chars;
 	MonoDomain *domain;
 	int i, n;
-
-	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_domain_get ();
 	n = sizeof (invalid_path_chars) / sizeof (gunichar2);

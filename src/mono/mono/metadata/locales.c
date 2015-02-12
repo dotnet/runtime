@@ -166,8 +166,6 @@ ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData
 	const CultureInfoEntry *ci;
 	char *n;
 
-	MONO_ARCH_SAVE_REGS;
-
 	n = mono_string_to_utf8 (name);
 	ne = mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
@@ -210,8 +208,6 @@ ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *t
 	MonoDomain *domain;
 	const DateTimeFormatEntry *dfe;
 
-	MONO_ARCH_SAVE_REGS;
-
 	g_assert (datetime_index >= 0);
 
 	dfe = &datetime_format_entries [datetime_index];
@@ -235,8 +231,6 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 	MonoDomain *domain;
 	MonoNumberFormatInfo *number;
 	const NumberFormatEntry *nfe;
-
-	MONO_ARCH_SAVE_REGS;
 
 	g_assert (this->number_format != 0);
 	if (this->number_index < 0)
@@ -345,8 +339,6 @@ region_info_entry_from_lcid (int lcid)
 {
 	const RegionInfoEntry *entry;
 	const CultureInfoEntry *ne;
-
-	MONO_ARCH_SAVE_REGS;
 
 	ne = mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
 
@@ -497,8 +489,6 @@ ves_icall_System_Globalization_CultureInfo_get_current_locale_name (void)
 	MonoString* ret;
 	MonoDomain *domain;
 
-	MONO_ARCH_SAVE_REGS;
-
 	locale = get_current_locale_name ();
 	if (locale == NULL)
 		return NULL;
@@ -516,8 +506,6 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (
 {
 	const CultureInfoEntry *ci;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	ci = culture_info_entry_from_lcid (lcid);
 	if(ci == NULL)
 		return FALSE;
@@ -532,8 +520,6 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (
 	const CultureInfoNameEntry *ne;
 	char *n;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	n = mono_string_to_utf8 (name);
 	ne = mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
@@ -555,8 +541,6 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specif
 	gchar *locale;
 	gboolean ret;
 
-	MONO_ARCH_SAVE_REGS;
-
 	locale = mono_string_to_utf8 (name);
 	ret = construct_culture_from_specific_name (ci, locale);
 	g_free (locale);
@@ -570,8 +554,6 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid (M
 {
 	const RegionInfoEntry *ri;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	ri = region_info_entry_from_lcid (lcid);
 	if(ri == NULL)
 		return FALSE;
@@ -586,8 +568,6 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (M
 	const RegionInfoNameEntry *ne;
 	char *n;
 	
-	MONO_ARCH_SAVE_REGS;
-
 	n = mono_string_to_utf8 (name);
 	ne = mono_binary_search (n, region_name_entries, NUM_REGION_ENTRIES,
 		sizeof (RegionInfoNameEntry), region_name_locator);
@@ -613,8 +593,6 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 	const CultureInfoEntry *ci;
 	gint i, len;
 	gboolean is_neutral;
-
-	MONO_ARCH_SAVE_REGS;
 
 	domain = mono_domain_get ();
 
@@ -665,8 +643,6 @@ void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompa
 
 int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options)
 {
-	MONO_ARCH_SAVE_REGS;
-	
 	/* Do a normal ascii string compare, as we only know the
 	 * invariant locale if we dont have ICU
 	 */
@@ -684,8 +660,6 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 	MonoArray *arr;
 	gint32 keylen, i;
 
-	MONO_ARCH_SAVE_REGS;
-	
 	keylen=mono_string_length (source);
 	
 	arr=mono_array_new (mono_domain_get (), mono_get_byte_class (),
@@ -699,31 +673,23 @@ void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo 
 
 int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first)
 {
-	MONO_ARCH_SAVE_REGS;
-	
 	return(string_invariant_indexof (source, sindex, count, value, first));
 }
 
 int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareInfo *this, MonoString *source, gint32 sindex, gint32 count, gunichar2 value, gint32 options, MonoBoolean first)
 {
-	MONO_ARCH_SAVE_REGS;
-	
 	return(string_invariant_indexof_char (source, sindex, count, value,
 					      first));
 }
 
 int ves_icall_System_Threading_Thread_current_lcid (void)
 {
-	MONO_ARCH_SAVE_REGS;
-	
 	/* Invariant */
 	return(0x007F);
 }
 
 MonoString *ves_icall_System_String_InternalReplace_Str_Comp (MonoString *this, MonoString *old, MonoString *new, MonoCompareInfo *comp)
 {
-	MONO_ARCH_SAVE_REGS;
-	
 	/* Do a normal ascii string compare and replace, as we only
 	 * know the invariant locale if we dont have ICU
 	 */

@@ -415,8 +415,6 @@ ves_icall_System_GC_InternalCollect (int generation)
 gint64
 ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	if (forceCollection)
 		mono_gc_collect (mono_gc_max_generation ());
 	return mono_gc_get_used_size ();
@@ -425,8 +423,6 @@ ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 void
 ves_icall_System_GC_KeepAlive (MonoObject *obj)
 {
-	MONO_ARCH_SAVE_REGS;
-
 	/*
 	 * Does nothing.
 	 */

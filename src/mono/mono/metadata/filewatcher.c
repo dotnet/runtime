@@ -54,8 +54,6 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	void *iter;
 	char *err;
 
-	MONO_ARCH_SAVE_REGS;
-
 	inotify_instance = ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ();
 	if (inotify_instance != -1) {
 		close (inotify_instance);
@@ -104,8 +102,6 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 {
 	FAMEvent ev;
 
-	MONO_ARCH_SAVE_REGS;
-
 	if (FAMNextEvent (conn, &ev) == 1) {
 		*filename = mono_string_new (mono_domain_get (), ev.filename);
 		*code = ev.code;
@@ -147,8 +143,6 @@ ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 ma
 {
 	char *str, *path;
 	int retval;
-
-	MONO_ARCH_SAVE_REGS;
 
 	if (name == NULL)
 		return -1;
