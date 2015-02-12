@@ -19,10 +19,10 @@ This repo includes several documents that explain both high-level and low-level 
 
 # Links to other sources
 
-- [MSDN Entry for the CLR][clr](http://msdn.microsoft.com/en-us/library/8bs2ecf4(VS.71).aspx)
+- [MSDN Entry for the CLR](http://msdn.microsoft.com/en-us/library/8bs2ecf4(VS.71).aspx)
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
 - [ECMA Standard for the Common Language Infrastructure (CLI)](http://msdn.microsoft.com/en-us/netframework/aa569283.aspx)
   - [Partition I Concepts and Architecture](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20I.pdf)
   - [Partition II Meta Data Definition and Semantics](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20II.pdf)
-  - [Partition III CIL Instruction Set][cil-spec](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf)
+  - [Partition III CIL Instruction Set](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf)
 - [.NET Framework Design Guidelines](http://msdn.microsoft.com/en-us/library/ms229042.aspx)
