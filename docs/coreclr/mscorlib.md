@@ -5,23 +5,23 @@ Author: Brian Grunkemeyer ([@briangru](https://github.com/briangru)) - 2006
 
 # Introduction
 
-Mscorlib is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library. Base data types live in this assembly, and it  has a tight coupling with the CLR. Here you will learn exactly how & why mscorlib.dll is special, and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code. 
+Mscorlib is the assembly for defining the core parts of the type system, and a good portion of the Base Class Library. Base data types live in this assembly, and it  has a tight coupling with the CLR. Here you will learn exactly how & why mscorlib.dll is special, and the basics about calling into the CLR from managed code via QCall and FCall methods. It also discusses calling from within the CLR into managed code.
 
 ## Dependencies
 
-Since mscorlib defines base data types like Object, Int32, and String, mscorlib cannot depend on other managed assemblies. However, there is a strong dependency between mscorlib and the CLR. Many of the types in mscorlib need to be accessed from native code, so the layout of many managed types is defined both in managed code and in native code inside the CLR. Additionally, some fields may be defined only in debug or checked builds, so typically mscorlib must be compiled separately for checked vs. retail builds. 
+Since mscorlib defines base data types like Object, Int32, and String, mscorlib cannot depend on other managed assemblies. However, there is a strong dependency between mscorlib and the CLR. Many of the types in mscorlib need to be accessed from native code, so the layout of many managed types is defined both in managed code and in native code inside the CLR. Additionally, some fields may be defined only in debug or checked builds, so typically mscorlib must be compiled separately for checked vs. retail builds.
 
 For 64 bit platforms, some constants are also defined at compile time. So a 64 bit mscorlib.dll is slightly different from a 32 bit mscorlib.dll. Due to these constants, such as IntPtr.Size, most libraries above mscorlib should not need to build separately for 32 bit vs. 64 bit.
 
 ## What Makes Mscorlib Special?
 
-Mscorlib has several unique properties, many of which are due to its tight coupling to the CLR. 
+Mscorlib has several unique properties, many of which are due to its tight coupling to the CLR.
 
 - Mscorlib defines the core types necessary to implement the CLR's Virtual Object System, such as the base data types (Object, Int32, String, etc).
 - The CLR must load mscorlib on startup to load certain system types.
-- Can only have one mscorlib loaded in the process at a time, due to layout issues. Loading multiple mscorlibs would require formalizing a contract of behavior, FCall methods, and datatype layout between CLR & mscorlib, and keeping that contract relatively stable across versions. 
+- Can only have one mscorlib loaded in the process at a time, due to layout issues. Loading multiple mscorlibs would require formalizing a contract of behavior, FCall methods, and datatype layout between CLR & mscorlib, and keeping that contract relatively stable across versions.
 - Mscorlib's types will be used heavily for native interop, and managed exceptions should map correctly to native error codes/formats.
-- The CLR's multiple JIT compilers may special case a small group of certain methods in mscorlib for performance reasons, both in terms of optimizing away the method (such as Math.Cos(double)), or calling a method in peculiar ways (such as Array.Length, or some implementation details on StringBuilder for getting the current thread). 
+- The CLR's multiple JIT compilers may special case a small group of certain methods in mscorlib for performance reasons, both in terms of optimizing away the method (such as Math.Cos(double)), or calling a method in peculiar ways (such as Array.Length, or some implementation details on StringBuilder for getting the current thread).
 - Mscorlib will need to call into native code, via P/Invoke where appropriate, primarily into the underlying operating system or occasionally a platform adaptation layer.
 - Mscorlib will require calling into the CLR to expose some CLR-specific functionality, such as triggering a garbage collection, to load classes, or to interact with the type system in a non-trivial way. This requires a bridge between managed code and native, "manually managed" code within the CLR.
 - The CLR will need to call into managed code to call managed methods, and to get at certain functionality that is only implemented in managed code.
@@ -34,7 +34,7 @@ To reiterate, the needs of managed code in mscorlib include:
 - Managed code must be able to call into the CLR
 - The CLR must be able to call managed code.
 
-To implement these, we need a way for the CLR to specify and optionally verify the layout of a managed object in native code, a managed mechanism for calling into native code, and a native mechanism for calling into managed code. 
+To implement these, we need a way for the CLR to specify and optionally verify the layout of a managed object in native code, a managed mechanism for calling into native code, and a native mechanism for calling into managed code.
 
 The managed mechanism for calling into native code must also support the special managed calling convention used by String's constructors, where the constructor allocates the memory used by the object (instead of the typical convention where the constructor is called after the GC allocates memory).
 
@@ -54,11 +54,11 @@ Reasons to write FCalls in the past generally fell into three camps: missing lan
 
 If the only reason you're defining a FCall method is to call a native Win32 method, you should be using P/Invoke to call Win32 directly. P/Invoke is the public native method interface, and should be doing everything you need in a correct manner.
 
-If you still need to implement a feature inside the runtime, now consider if there is a way to reduce the frequency of transitioning to native code. Can you write the common case in managed, and only call into native for some rare corner cases? You're usually best off keeping as much as possible in managed code. 
+If you still need to implement a feature inside the runtime, now consider if there is a way to reduce the frequency of transitioning to native code. Can you write the common case in managed, and only call into native for some rare corner cases? You're usually best off keeping as much as possible in managed code.
 
 QCalls are the preferred mechanism going forward. You should only use FCalls when you are "forced" to. This happens when there is common "short path" through the code that is important to optimize. This short path should not be more than a few hundred instructions, cannot allocate GC memory, take locks or throw exceptions (GC_NOTRIGGER, NOTHROWS). In all other circumstances (and especially when you enter a FCall and then simply erect HelperMethodFrame), you should be using QCall.
 
-FCalls were specifically designed for short paths of code that must be optimized. They allowed you to take explicit control over when erecting a frame was done.  However it is error prone and is not worth it for many APIs. QCalls are essentially P/Invokes into CLR. 
+FCalls were specifically designed for short paths of code that must be optimized. They allowed you to take explicit control over when erecting a frame was done.  However it is error prone and is not worth it for many APIs. QCalls are essentially P/Invokes into CLR.
 
 As a result, QCalls give you some advantageous marshaling for SafeHandles automatically – your native method just takes a HANDLE type, and can use it without worrying whether someone will free the handle while you are in that method body. The resulting FCall method would need to use a SafeHandleHolder, and may need to protect the SafeHandle, etc. Leveraging the P/Invoke marshaler can avoid this additional plumbing code.
 
@@ -82,21 +82,21 @@ Do not replicate the comments into your actual QCall implementation. This is for
 
 	class Foo
 	{
-	    // All QCalls should have the following DllImport and 
+	    // All QCalls should have the following DllImport and
 	    // SuppressUnmanagedCodeSecurity attributes
 	    [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
 	    SuppressUnmanagedCodeSecurity]
 	    // QCalls should always be static extern.
 	    private static extern bool Bar(int flags, string inString, StringHandleOnStack retString);
 
-	    // Many QCalls have a thin managed wrapper around them to expose them to 
+	    // Many QCalls have a thin managed wrapper around them to expose them to
 	    // the world in more meaningful way.
 	    public string Bar(int flags)
 	    {
 	        string retString = null;
 
 	        // The strings are returned from QCalls by taking address
-	        // of a local variable using JitHelpers.GetStringHandle method 
+	        // of a local variable using JitHelpers.GetStringHandle method
 	        if (!Bar(flags, this.Id, JitHelpers.GetStringHandle(ref retString)))
 	            FatalError();
 
@@ -128,8 +128,8 @@ The QCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 
 	    // Optionally, use QCALL_CHECK instead and the expanded form of the contract
 	    // if you want to specify preconditions:
-	    // CONTRACTL { 
-	    //     QCALL_CHECK; 
+	    // CONTRACTL {
+	    //     QCALL_CHECK;
 	    //     PRECONDITION(wszString != NULL);
 	    // } CONTRACTL_END;
 
@@ -137,12 +137,12 @@ The QCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 	    // should be the return value declaration if there is one.
 	    BOOL retVal = FALSE;
 
-	    // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary 
+	    // The body has to be enclosed in BEGIN_QCALL/END_QCALL macro. It is necessary
 	    // to make the exception handling work.
 	    BEGIN_QCALL;
 
 	    // Validate arguments if necessary and throw exceptions.
-	    // There is no convention currently on whether the argument validation should be 
+	    // There is no convention currently on whether the argument validation should be
 	    // done in managed or unmanaged code.
 	    if (flags != 0)
 	        COMPlusThrow(kArgumentException, L"InvalidFlags");
@@ -151,11 +151,11 @@ The QCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 	    // Marshalling pins them for us.
 	    printf("%S", wszString);
 
-	    // This is most the efficient way to return strings back 
+	    // This is most the efficient way to return strings back
 	    // to managed code. No need to use StringBuilder.
 	    retString.Set(L"Hello");
 
-	    // You can not return from inside of BEGIN_QCALL/END_QCALL. 
+	    // You can not return from inside of BEGIN_QCALL/END_QCALL.
 	    // The return value has to be passed out in helper variable.
 	    retVal = TRUE;
 
@@ -178,9 +178,9 @@ A much more complete discussion on GC holes can be found in the [CLR Code Guide]
 
 Object references passed as parameters to FCall methods are not GC-protected, meaning that if a GC occurs, those references will point to the old location in memory of an object, not the new location. For this reason, FCalls usually follow the discipline of accepting something like "StringObject*" as their parameter type, then explicitly converting that to a STRINGREF before doing operations that may trigger a GC. You must GC protect object references before triggering a GC, if you expect to be able to use that object reference later.
 
-All GC heap allocations within an FCall method must happen within a helper method frame. If you allocate memory on the GC's heap, the GC may collect dead objects & move objects around in unpredictable ways, with some low probability. For this reason, you must manually report any object references in your method to the GC, so that if a garbage collection occurs, your object reference will be updated to refer to the new location in memory. Any pointers into managed objects (like arrays or Strings) within your code will not be updated automatically, and must be re-fetched after any operation that may allocate memory and before your first usage. Reporting a reference can be done via the GCPROTECT macros, or as parameters when you erect a helper method frame. 
+All GC heap allocations within an FCall method must happen within a helper method frame. If you allocate memory on the GC's heap, the GC may collect dead objects & move objects around in unpredictable ways, with some low probability. For this reason, you must manually report any object references in your method to the GC, so that if a garbage collection occurs, your object reference will be updated to refer to the new location in memory. Any pointers into managed objects (like arrays or Strings) within your code will not be updated automatically, and must be re-fetched after any operation that may allocate memory and before your first usage. Reporting a reference can be done via the GCPROTECT macros, or as parameters when you erect a helper method frame.
 
-Failing to properly report an OBJECTREF or to update an interior pointer is commonly referred to as a "GC hole", because the OBJECTREF class will do some validation that it points to a valid object every time you dereference it in checked builds. When an OBJECTREF pointing to an invalid object is dereferenced, you'll get an assert saying something like "Detected an invalid object reference. Possible GC hole?". This assert is unfortunately easy to hit when writing "manually managed" code. 
+Failing to properly report an OBJECTREF or to update an interior pointer is commonly referred to as a "GC hole", because the OBJECTREF class will do some validation that it points to a valid object every time you dereference it in checked builds. When an OBJECTREF pointing to an invalid object is dereferenced, you'll get an assert saying something like "Detected an invalid object reference. Possible GC hole?". This assert is unfortunately easy to hit when writing "manually managed" code.
 
 Note that QCall's programming model is restrictive to sidestep GC holes most of the time, by forcing you to pass in the address of an object reference on the stack. This guarantees that the object reference is GC protected by the JIT's reporting logic, and that the actual object reference will not move because it is not allocated in the GC heap. QCall is our recommended approach, precisely because it makes GC holes harder to write.
 
@@ -207,38 +207,38 @@ Here's a real-world example from the String class:
 
 The FCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllist] using FCFuncEntry macro. See "Registering your QCall or FCall Method".
 
-Notice how oldBuffer and newBuffer (interior pointers into String instances) are re-fetched after allocating memory. Also, this method is an instance method in managed code, with the "this" parameter passed as the first argument. We use StringObject* as the argument type, then copy it into a STRINGREF so we get some error checking when we use it. 
+Notice how oldBuffer and newBuffer (interior pointers into String instances) are re-fetched after allocating memory. Also, this method is an instance method in managed code, with the "this" parameter passed as the first argument. We use StringObject* as the argument type, then copy it into a STRINGREF so we get some error checking when we use it.
 
 	FCIMPL3(LPVOID, COMString::Replace, StringObject* thisRefUNSAFE, CLR_CHAR oldChar, CLR_CHAR newChar)
 	{
 	    FCALL_CONTRACT;
-	
+
 	    int length = 0;
 	    int firstFoundIndex = -1;
 	    WCHAR *oldBuffer = NULL;
 	    WCHAR *newBuffer;
-	
+
 	    STRINGREF   newString   = NULL;
 	    STRINGREF   thisRef     = (STRINGREF)thisRefUNSAFE;
-	
+
 	    if (thisRef==NULL) {
 	        FCThrowRes(kNullReferenceException, L"NullReference_This");
 	    }
-	
+
 	    [… Removed some uninteresting code here for illustrative purposes…]
-	
+
 	    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_RETURNOBJ, newString, thisRef);
-	
+
 	    //Get the length and allocate a new String
 	    //We will definitely do an allocation here.
 	    newString = NewString(length);
-	
+
 	    //After allocation, thisRef may have moved
 	    oldBuffer = thisRef->GetBuffer();
-	
+
 	    //Get the buffers in both of the Strings.
 	    newBuffer = newString->GetBuffer();
-	
+
 	    //Copy the characters, doing the replacement as we go.
 	    for (int i=0; i<firstFoundIndex; i++) {
 	        newBuffer[i]=oldBuffer[i];
@@ -247,9 +247,9 @@ Notice how oldBuffer and newBuffer (interior pointers into String instances) are
 	        newBuffer[i]=(oldBuffer[i]==((WCHAR)oldChar))?
 	                      ((WCHAR)newChar):oldBuffer[i];
 	    }
-	
+
 	    HELPER_METHOD_FRAME_END();
-	
+
 	    return OBJECTREFToObject(newString);
 	}
 	FCIMPLEND
@@ -261,7 +261,7 @@ The CLR must know the name of your QCall and FCall methods, both in terms of the
 
 Say we defined an FCall method for String.Replace(char, char), in the example above. First, we need to ensure that we have an array of function elements for the String class.
 
-	// Note these have to remain sorted by name:namespace pair (Assert will wack you if you 
+	// Note these have to remain sorted by name:namespace pair (Assert will wack you if you
 	    …
 	    FCClassElement("String", "System", gStringFuncs)
 	    …
@@ -312,7 +312,7 @@ Then, you can use the REF<T> template to create a type name like SAFEHANDLEREF. 
 
 # Calling Into Managed Code From Native
 
-Clearly there are places where the CLR must call into managed code from native. For this purpose, we have added a MethodDescCallSite class to handle a lot of plumbing for you. Conceptually, all you need to do is find the MethodDesc\* for the method you want to call, find a managed object for the "this" pointer (if you're calling an instance method), pass in an array of arguments, and deal with the return value. Internally, you'll need to potentially toggle your thread's state to allow the GC to run in preemptive mode, etc. 
+Clearly there are places where the CLR must call into managed code from native. For this purpose, we have added a MethodDescCallSite class to handle a lot of plumbing for you. Conceptually, all you need to do is find the MethodDesc\* for the method you want to call, find a managed object for the "this" pointer (if you're calling an instance method), pass in an array of arguments, and deal with the return value. Internally, you'll need to potentially toggle your thread's state to allow the GC to run in preemptive mode, etc.
 
 Here's a simplified example. Note how this instance uses the binder described in the previous section to call SafeHandle's virtual ReleaseHandle method.
 
@@ -323,18 +323,18 @@ Here's a simplified example. Note how this instance uses the binder described in
 	        GC_TRIGGERS;
 	        MODE_COOPERATIVE;
 	    } CONTRACTL_END;
-	
+
 	    SAFEHANDLEREF sh(psh);
-	
+
 	    GCPROTECT_BEGIN(sh);
-	
+
 	    MethodDescCallSite releaseHandle(s_pReleaseHandleMethod, METHOD__SAFE_HANDLE__RELEASE_HANDLE, (OBJECTREF*)&sh, TypeHandle(), TRUE);
-	
+
 	    ARG_SLOT releaseArgs[] = { ObjToArgSlot(sh) };
 	    if (!(BOOL)releaseHandle.Call_RetBool(releaseArgs)) {
 	        MDA_TRIGGER_ASSISTANT(ReleaseHandleFailed, ReportViolation)(sh->GetTypeHandle(), sh->m_handle);
 	    }
-	
+
 	    GCPROTECT_END();
 	}
 
