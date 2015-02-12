@@ -146,7 +146,7 @@ Conceptually, to enforce type safety, every operation that the program performs 
 
 1. Casting a pointer to a base type to be a pointer to a derived type (the opposite direction can be checked statically)
 2. Array bounds checks (just as we saw for memory safety)
-3. Assigning an element in an array of pointers to a new (pointer) value.  This particular check is only required because CLR arrays have liberal casting rules (more on that later…)
+3. Assigning an element in an array of pointers to a new (pointer) value.  This particular check is only required because CLR arrays have liberal casting rules (more on that later...)
 
 Note that the need to do these checks places requirements on the runtime. In particular:
 
