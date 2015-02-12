@@ -1,0 +1,13 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = file_io
+Function = GetFileSizeEx
+Name = Positive Test for GetFileSizeEx (test 1)
+Type = DEFAULT 
+EXE1 = getfilesizeex
+Description
+= Test GetFileSizeEx on a NULL handle and valid file handles
+
