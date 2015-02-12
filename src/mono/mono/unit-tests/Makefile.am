@@ -1,10 +1,10 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
-TEST_CFLAGS = $(AM_CFLAGS) $(SGEN_DEFINES)
-TEST_LDADD = ../metadata/libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
+test_cflags = $(AM_CFLAGS) $(SGEN_DEFINES)
+test_ldadd = ../metadata/libmonoruntimesgen.la ../io-layer/libwapi.la ../utils/libmonoutils.la \
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV)
 if PLATFORM_DARWIN
-TEST_LDFLAGS = -framework CoreFoundation -framework Foundation
+test_ldflags = -framework CoreFoundation -framework Foundation
 endif
 
 
@@ -14,24 +14,24 @@ if SUPPORT_BOEHM
 if !PLATFORM_GNU
 
 test_sgen_qsort_SOURCES = test-sgen-qsort.c
-test_sgen_qsort_CFLAGS = $(TEST_CFLAGS)
-test_sgen_qsort_LDADD = $(TEST_LDADD)
-test_sgen_qsort_LDFLAGS = $(TEST_LDFLAGS)
+test_sgen_qsort_CFLAGS = $(test_cflags)
+test_sgen_qsort_LDADD = $(test_ldadd)
+test_sgen_qsort_LDFLAGS = $(test_ldflags)
 
 test_gc_memfuncs_SOURCES = test-gc-memfuncs.c
-test_gc_memfuncs_CFLAGS = $(TEST_CFLAGS)
-test_gc_memfuncs_LDADD = $(TEST_LDADD)
-test_gc_memfuncs_LDFLAGS = $(TEST_LDFLAGS)
+test_gc_memfuncs_CFLAGS = $(test_cflags)
+test_gc_memfuncs_LDADD = $(test_ldadd)
+test_gc_memfuncs_LDFLAGS = $(test_ldflags)
 
 test_mono_linked_list_set_SOURCES = test-mono-linked-list-set.c
-test_mono_linked_list_set_CFLAGS = $(TEST_CFLAGS)
-test_mono_linked_list_set_LDADD = $(TEST_LDADD)
-test_mono_linked_list_set_LDFLAGS = $(TEST_LDFLAGS)
+test_mono_linked_list_set_CFLAGS = $(test_cflags)
+test_mono_linked_list_set_LDADD = $(test_ldadd)
+test_mono_linked_list_set_LDFLAGS = $(test_ldflags)
 
 test_conc_hashtable_SOURCES = test-conc-hashtable.c
-test_conc_hashtable_CFLAGS = $(TEST_CFLAGS)
-test_conc_hashtable_LDADD = $(TEST_LDADD)
-test_conc_hashtable_LDFLAGS = $(TEST_LDFLAGS)
+test_conc_hashtable_CFLAGS = $(test_cflags)
+test_conc_hashtable_LDADD = $(test_ldadd)
+test_conc_hashtable_LDFLAGS = $(test_ldflags)
 
 noinst_PROGRAMS = test-sgen-qsort test-gc-memfuncs test-mono-linked-list-set test-conc-hashtable
 
