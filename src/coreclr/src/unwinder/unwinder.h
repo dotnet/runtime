@@ -26,39 +26,17 @@
 
 class OOPStackUnwinder
 {
-public:
-    // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.  
-    // Derived classes are expected to override this function for each processor architecture.
-    virtual BOOL Unwind(T_CONTEXT * pContext) = 0;
-                                  
 protected:
-#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
-    // the unwind info on ARM is significantly different than AMD64, as such we don't need this function.
-    // Read an UNWIND_INFO structure given its address.  The UNWIND_INFO structure is variable sized.
-    virtual UNWIND_INFO * GetUnwindInfo(TADDR taUnwindInfo);
-#endif // !_TARGET_ARM_ && !_TARGET_ARM64_
-
-    // This is a simple wrapper over ReadMemory().  Unlike ReadMemory(), it fails if we don't successfully 
-    // read all the specified bytes.
-    virtual HRESULT ReadAllMemory(                       DWORD64 address,
-                                  __in_ecount(cbRequest) PVOID   pbBuffer,
-                                                         DWORD   cbRequest);
-
-    // Read the specified memory.
-    virtual HRESULT ReadMemory(                       DWORD64 address,
-                               __in_ecount(cbRequest) PVOID   pbBuffer,
-                                                      DWORD   cbRequest,
-                               __out_opt              PDWORD  pcbDone);
 
     // Given a control PC, return the base of the module it is in.  For jitted managed code, this is the 
     // start of the code heap.
-    virtual HRESULT GetModuleBase(      DWORD64  address,
-                                  __out PDWORD64 pdwBase);
+    static HRESULT GetModuleBase(      DWORD64  address,
+                                 __out PDWORD64 pdwBase);
 
     // Given a control PC, return the function entry of the functoin it is in.
-    virtual HRESULT GetFunctionEntry(                       DWORD64 address,
-                                     __out_ecount(cbBuffer) PVOID   pBuffer,
-                                                            DWORD   cbBuffer);
+    static HRESULT GetFunctionEntry(                       DWORD64 address,
+                                    __out_ecount(cbBuffer) PVOID   pBuffer,
+                                                           DWORD   cbBuffer);
 };
 
 #endif // __unwinder_h__
