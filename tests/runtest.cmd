@@ -8,6 +8,7 @@ if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&got
 if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
 if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
+if /i "%1" == "EnableMSILC" (set __EnableMSILC=true&shift&goto Arg_Loop)
 
 if /i "%1" == "/?"      (goto Usage)
 
@@ -132,6 +133,7 @@ echo.
 echo BuildArch is x64
 echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter this will run the same set of tests as the last time it was run
+echo EnableMSILC- Optional parameter this will use MSILC JIT, an alternative JIT for testing
 echo CORE_ROOT The path to the runtime  
 goto :eof
 
