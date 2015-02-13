@@ -8,6 +8,138 @@
 #include "stdafx.h"
 #include "unwinder_amd64.h"
 
+typedef DPTR(M128A)  PTR_M128A;
+
+//---------------------------------------------------------------------------------------
+//
+// Read 64 bit unsigned value from the specified address. When the unwinder is built
+// for jitted code unwinding on non-Windows systems, this is just a plain memory read.
+// When the unwinder is built for DAC though, this reads data from the target debugged
+// process.
+//
+// Arguments:
+//    addr - address to read from
+//
+// Return Value:
+//    The value that was read
+//
+// Notes:
+//    If the memory read fails in the DAC mode, the failure is reported as an exception
+//    via the DacError function.
+//
+static ULONG64 MemoryRead64(PULONG64 addr)
+{
+    return *dac_cast<PTR_ULONG64>((TADDR)addr);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Read 128 bit value from the specified address. When the unwinder is built
+// for jitted code unwinding on non-Windows systems, this is just a plain memory read.
+// When the unwinder is built for DAC though, this reads data from the target debugged
+// process.
+//
+// Arguments:
+//    addr - address to read from
+//
+// Return Value:
+//    The value that was read
+//
+// Notes:
+//    If the memory read fails in the DAC mode, the failure is reported as an exception
+//    via the DacError function.
+//
+static M128A MemoryRead128(PM128A addr)
+{
+    return *dac_cast<PTR_M128A>((TADDR)addr);
+}
+
+#ifdef DACCESS_COMPILE
+
+// Report failure in the unwinder if the condition is FALSE
+#define UNWINDER_ASSERT(Condition) if (!(Condition)) DacError(CORDBG_E_TARGET_INCONSISTENT)
+
+//---------------------------------------------------------------------------------------
+//
+// The InstructionBuffer class abstracts accessing assembler instructions in the function
+// being unwound. It behaves as a memory byte pointer, but it reads the instruction codes
+// from the target process being debugged and removes all changes that the debugger
+// may have made to the code, e.g. breakpoint instructions.
+//
+class InstructionBuffer
+{
+    UINT m_offset;
+    SIZE_T m_address;
+    UCHAR m_buffer[32];
+
+    // Load the instructions from the target process being debugged
+    HRESULT Load()
+    {
+        HRESULT hr = DacReadAll(TO_TADDR(m_address), m_buffer, sizeof(m_buffer), false);
+        if (SUCCEEDED(hr))
+        {
+            // On X64, we need to replace any patches which are within the requested memory range.
+            // This is because the X64 unwinder needs to disassemble the native instructions in order to determine
+            // whether the IP is in an epilog.
+            MemoryRange range(dac_cast<PTR_VOID>((TADDR)m_address), sizeof(m_buffer));
+            hr = DacReplacePatchesInHostMemory(range, m_buffer);
+        }
+
+        return hr;
+    }
+
+public:
+
+    // Construct the InstructionBuffer for the given address in the target process
+    InstructionBuffer(SIZE_T address)
+      : m_address(address),
+        m_offset(0)
+    {
+        HRESULT hr = Load();
+        if (FAILED(hr))
+        {
+            // If we have failed to read from the target process, just pretend
+            // we've read zeros. 
+            // The InstructionBuffer is used in code driven epilogue unwinding 
+            // when we read processor instructions and simulate them.
+            // It's very rare to be stopped in an epilogue when
+            // getting a stack trace, so if we can't read the
+            // code just assume we aren't in an epilogue instead of failing
+            // the unwind.
+            memset(m_buffer, 0, sizeof(m_buffer));
+        }
+    }
+
+    // Move to the next byte in the buffer
+    InstructionBuffer& operator++()
+    {
+        m_offset++;
+        return *this;
+    }
+
+    // Skip delta bytes in the buffer
+    InstructionBuffer& operator+=(INT delta)
+    {
+        m_offset += delta;
+        return *this;
+    }
+
+    // Return address of the current byte in the buffer
+    explicit operator ULONG64()
+    {
+        return m_address + m_offset;
+    }
+
+    // Get the byte at the given index from the current position
+    // Invoke DacError if the index is out of the buffer
+    UCHAR operator[](int index)
+    {
+        int realIndex = m_offset + index;
+        UNWINDER_ASSERT(realIndex < sizeof(m_buffer));
+        return m_buffer[realIndex];
+    }
+};
+
 //---------------------------------------------------------------------------------------
 //
 // Given the target address of an UNWIND_INFO structure, this function retrieves all the memory used for
@@ -25,12 +157,11 @@
 //    is flushed (i.e. when the debugee is continued).  Thus, the caller doesn't need to worry about freeing
 //    this memory.
 //
-
 UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo)
 {
     PTR_UNWIND_INFO pUnwindInfo = PTR_UNWIND_INFO(taUnwindInfo);
-    DWORD cbUnwindInfo = offsetof(UNWIND_INFO, UnwindCode) + 
-                         pUnwindInfo->CountOfUnwindCodes * sizeof(UNWIND_CODE);
+    DWORD cbUnwindInfo = offsetof(UNWIND_INFO, UnwindCode) +
+        pUnwindInfo->CountOfUnwindCodes * sizeof(UNWIND_CODE);
 
     // Check if there is a chained unwind info.  If so, it has an extra RUNTIME_FUNCTION tagged to the end.
     if ((pUnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0)
@@ -44,6 +175,18 @@ UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo)
     }
     return reinterpret_cast<UNWIND_INFO *>(DacInstantiateTypeByAddress(taUnwindInfo, cbUnwindInfo, true));
 }
+
+//---------------------------------------------------------------------------------------
+//
+// This function just wraps the DacGetUnwindInfo. 
+// The DacGetUnwindInfo is called from other places outside of the unwinder, so it
+// cannot be merged into the body of this method.
+//
+UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
+{
+    return DacGetUnwindInfo(taUnwindInfo);
+}
+
 
 //---------------------------------------------------------------------------------------
 //
@@ -63,8 +206,7 @@ UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo)
 
 BOOL DacUnwindStackFrame(CONTEXT * pContext, KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)
 {
-    OOPStackUnwinderAMD64 unwinder;
-    BOOL res = unwinder.Unwind(pContext);
+    BOOL res = OOPStackUnwinderAMD64::Unwind(pContext);
 
     if (res && pContextPointers)
     {
@@ -112,17 +254,111 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 
     // call VirtualUnwind() to do the real work
     ULONG64 EstablisherFrame;
-    hr = VirtualUnwind(uImageBase, uControlPC, &functionEntry, pContext, &EstablisherFrame);
+    hr = VirtualUnwind(0, uImageBase, uControlPC, &functionEntry, pContext, NULL, &EstablisherFrame, NULL, NULL);
 
     return (hr == S_OK);
 }
 
+#else // DACCESS_COMPILE
+
+// Report failure in the unwinder if the condition is FALSE
+#define UNWINDER_ASSERT _ASSERTE
+
+// For unwinding of the jitted code on non-Windows platforms, the Instruction buffer is 
+// just a plain pointer to the instruction data.
+typedef UCHAR * InstructionBuffer;
+
+//---------------------------------------------------------------------------------------
+//
+// Return UNWIND_INFO pointer for the given address. 
+//
+UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
+{
+    return (UNWIND_INFO *)taUnwindInfo;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// This function behaves like the RtlVirtualUnwind in Windows. 
+// It virtually unwinds the specified function by executing its
+// prologue code backward or its epilogue code forward.
+// 
+// If a context pointers record is specified, then the address where each
+// nonvolatile registers is restored from is recorded in the appropriate
+// element of the context pointers record.
+// 
+// Arguments:
+// 
+//     HandlerType - Supplies the handler type expected for the virtual unwind.
+//         This may be either an exception or an unwind handler. A flag may
+//         optionally be supplied to avoid epilogue detection if it is known
+//         the specified control PC is not located inside a function epilogue.
+// 
+//     ImageBase - Supplies the base address of the image that contains the
+//         function being unwound.
+// 
+//     ControlPc - Supplies the address where control left the specified
+//         function.
+// 
+//     FunctionEntry - Supplies the address of the function table entry for the
+//         specified function.
+// 
+//     ContextRecord - Supplies the address of a context record.
+// 
+//     HandlerData - Supplies a pointer to a variable that receives a pointer
+//         the the language handler data.
+// 
+//     EstablisherFrame - Supplies a pointer to a variable that receives the
+//         the establisher frame pointer value.
+// 
+//     ContextPointers - Supplies an optional pointer to a context pointers
+//         record.
+// 
+// Return value:
+// 
+//     The handler routine address.  If control did not leave the specified
+//     function in either the prologue or an epilogue and a handler of the
+//     proper type is associated with the function, then the address of the
+//     language specific exception handler is returned. Otherwise, NULL is
+//     returned.
+//
+PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
+    __in ULONG HandlerType,
+    __in ULONG64 ImageBase,
+    __in ULONG64 ControlPc,
+    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in OUT PCONTEXT ContextRecord,
+    __out PVOID *HandlerData,
+    __out PULONG64 EstablisherFrame,
+    __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    PEXCEPTION_ROUTINE handlerRoutine;
+
+    HRESULT res = OOPStackUnwinderAMD64::VirtualUnwind(
+        HandlerType,
+        ImageBase,
+        ControlPc,
+        (_PIMAGE_RUNTIME_FUNCTION_ENTRY)FunctionEntry,
+        ContextRecord,
+        HandlerData,
+        EstablisherFrame,
+        ContextPointers,
+        &handlerRoutine);
+
+    _ASSERTE(SUCCEEDED(res));
+
+    return handlerRoutine;
+}
+
+
+#endif // DACCESS_COMPILE
 
 //
 //
 // <NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE>
 //
-// Everything below is borrowed from dbghelp.dll
+// Everything below is borrowed from minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
 //
 // <NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE NOTE>
 //
@@ -134,29 +370,9 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 // Copied OS code.
 //
 // This must be kept in sync with the system unwinder.
-// base\ntos\rtl\amd64\exdsptch.c
+// minkernel\ntos\rtl\amd64\exdsptch.c
 //
 //----------------------------------------------------------------------------
-
-//
-// Lookup table providing the number of slots used by each unwind code.
-// 
-
-UCHAR
-OOPStackUnwinderAMD64::s_UnwindOpSlotTable[] =
-{
-    1,          // UWOP_PUSH_NONVOL
-    2,          // UWOP_ALLOC_LARGE (or 3, special cased in lookup code)
-    1,          // UWOP_ALLOC_SMALL
-    1,          // UWOP_SET_FPREG
-    2,          // UWOP_SAVE_NONVOL
-    3,          // UWOP_SAVE_NONVOL_FAR
-    2,          // UWOP_SAVE_XMM
-    3,          // UWOP_SAVE_XMM_FAR
-    2,          // UWOP_SAVE_XMM128
-    3,          // UWOP_SAVE_XMM128_FAR
-    1           // UWOP_PUSH_MACHFRAME
-};
 
 //
 // ****** temp - defin elsewhere ******
@@ -169,6 +385,7 @@ OOPStackUnwinderAMD64::s_UnwindOpSlotTable[] =
 #define JMP_IMM32_OP 0xe9
 #define JMP_IND_OP 0xff
 #define LEA_OP 0x8d
+#define REPNE_PREFIX 0xf2
 #define REP_PREFIX 0xf3
 #define POP_OP 0x58
 #define RET_OP 0xc3
@@ -176,13 +393,257 @@ OOPStackUnwinderAMD64::s_UnwindOpSlotTable[] =
 
 #define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
 
+#define UNWIND_CHAIN_LIMIT 32
+
+HRESULT
+OOPStackUnwinderAMD64::UnwindEpilogue(
+    __in ULONG64 ImageBase,
+    __in ULONG64 ControlPc,
+    __in ULONG EpilogueOffset,
+    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    __inout PCONTEXT ContextRecord,
+    __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
+)
+
+/*++
+
+Routine Description:
+
+    This function emulates the state change associated with a function
+    epilogue by using the corresponding prologue unwind codes of the
+    primary function entry corresponding to the specified function.
+
+    The prologue unwind codes can be used to reverse the epilogue since
+    the epilogue operations are structured as a mirror-image of the initial
+    prologue instructions prior to the establishment of the frame.
+
+Arguments:
+
+    ImageBase - Supplies the base address of the image that contains the
+        function being unwound.
+
+    ControlPc - Supplies the address where control left the specified function.
+
+    EpilogueOffset - Supplies the offset within an epilogue of the specified
+        instruction pointer address.
+
+    FunctionEntry - Supplies a pointer to the function table entry for the
+        specified function. If appropriate, this has already been probed.
+
+    ContextRecord - Supplies a pointer to a context record.
+
+    ContextPointers - Supplies an optional pointer to a context pointers record.
+
+
+Return Value:
+
+HRESULT.
+
+--*/
+
+{
+
+    ULONG ChainCount;
+    ULONG CountOfCodes;
+    ULONG CurrentOffset;
+    ULONG FirstPushIndex;
+    ULONG Index;
+    PULONG64 IntegerAddress;
+    PULONG64 IntegerRegister;
+    ULONG OpInfo;
+    PULONG64 ReturnAddress;
+    PULONG64 StackAddress;
+    NTSTATUS Status;
+    PUNWIND_INFO UnwindInfo;
+    UNWIND_CODE UnwindOp;
+
+    //
+    // A canonical epilogue sequence consists of the following operations:
+    //
+    // 1. Optional cleanup of fixed and dynamic stack allocations, which is
+    //    considered to be outside of the epilogue region.
+    //
+    //    add rsp, imm
+    //        or
+    //    lea rsp, disp[fp]
+    //
+    // 2. Zero or more pop nonvolatile-integer-register[0..15] instructions,
+    //    which are unwound using the corresponding UWOP_PUSH_NONVOL opcodes.
+    //
+    //    pop r64
+    //        or
+    //    REX.R pop r64
+    //
+    // 3. An optional one-byte pop r64 to a volatile register to clean up an
+    //    RFLAGS register pushed with pushfq. This is marked with a
+    //    UWOP_ALLOC_SMALL 8 opcode.
+    //
+    //    pop rcx
+    //
+    // 4. A control transfer instruction (ret or jump). In both cases, there
+    //    will be no prologue unwind codes remaining after the previous set of
+    //    recognized operations are emulated.
+    //
+    //    ret 0
+    //        or
+    //    jmp imm
+    //        or
+    //    jmp [target]
+    //        or
+    //    iretq
+    //
+    // N.B. The correctness of these assumptions is based on the ordering
+    //      of unwind codes and the mirroring of epilogue and prologue
+    //      regions.
+    //
+    // Find the function's primary entry, which contains the relevant frame
+    // adjustment unwind codes.
+    //
+    // Locate the first push unwind code. This code requires that all pushes
+    // occur within a single function entry, though not necessarily within the
+    // root function entry of a chained function.
+    //
+
+    ChainCount = 0;
+    for (;;) {
+        UnwindInfo = GetUnwindInfo(FunctionEntry->UnwindInfoAddress + ImageBase);
+        if (UnwindInfo == NULL)
+        {
+            return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
+        }
+        CountOfCodes = UnwindInfo->CountOfUnwindCodes;
+        FirstPushIndex = 0;
+        while (FirstPushIndex < CountOfCodes) {
+            UnwindOp = UnwindInfo->UnwindCode[FirstPushIndex];
+            if ((UnwindOp.UnwindOp == UWOP_PUSH_NONVOL) ||
+                (UnwindOp.UnwindOp == UWOP_PUSH_MACHFRAME)) {
+
+                break;
+            }
+
+            FirstPushIndex += UnwindOpSlots(UnwindOp);
+        }
+
+        if (FirstPushIndex < CountOfCodes) {
+            break;
+        }
+
+        //
+        // If a chained parent function entry exists, continue looking for
+        // push opcodes in the parent.
+        //
+
+        if ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) == 0) {
+            break;
+        }
+
+        ChainCount += 1;
+        if (ChainCount > UNWIND_CHAIN_LIMIT) {
+            return E_FAIL;
+        }
+
+        Index = CountOfCodes;
+        if (Index % 2 != 0) {
+            Index += 1;
+        }
+
+        FunctionEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)&UnwindInfo->UnwindCode[Index];
+    }
+
+    //
+    // Unwind any push codes that have not already been reversed by the
+    // epilogue.
+    //
+
+    CurrentOffset = 0;
+    IntegerRegister = &ContextRecord->Rax;
+    for (Index = FirstPushIndex; Index < CountOfCodes; Index += 1) {
+        UnwindOp = UnwindInfo->UnwindCode[Index];
+        OpInfo = UnwindOp.OpInfo;
+
+        if (UnwindOp.UnwindOp != UWOP_PUSH_NONVOL) {
+            break;
+        }
+
+        if (CurrentOffset >= EpilogueOffset) {
+            IntegerAddress = (PULONG64)(ContextRecord->Rsp);
+
+            ContextRecord->Rsp += 8;
+            IntegerRegister[OpInfo] = MemoryRead64(IntegerAddress);
+            if (ARGUMENT_PRESENT(ContextPointers)) {
+                ContextPointers->IntegerContext[OpInfo] = IntegerAddress;
+            }
+        }
+
+        //
+        // POP r64 is encoded as (58h + r64) for the lower 8 general-purpose
+        // registers and REX.R, (58h + r64) for r8 - r15.
+        //
+
+        CurrentOffset += 1;
+        if (OpInfo >= 8) {
+            CurrentOffset += 1;
+        }
+    }
+
+    //
+    // Check for an UWOP_ALLOC_SMALL 8 directive, which corresponds to a push
+    // of the FLAGS register.
+    //
+
+    if ((Index < CountOfCodes) &&
+        (UnwindOp.UnwindOp == UWOP_ALLOC_SMALL) && (OpInfo == 0)) {
+
+        if (CurrentOffset >= EpilogueOffset) {
+            ContextRecord->Rsp += 8;
+        }
+
+        CurrentOffset += 1;
+        Index += 1;
+    }
+
+    //
+    // Check for a machine frame.
+    //
+
+    if (Index < CountOfCodes) {
+        UnwindOp = UnwindInfo->UnwindCode[Index];
+        if (UnwindOp.UnwindOp == UWOP_PUSH_MACHFRAME) {
+            ReturnAddress = (PULONG64)(ContextRecord->Rsp);
+            StackAddress = (PULONG64)(ContextRecord->Rsp + (3 * 8));
+
+            ContextRecord->Rip = MemoryRead64(ReturnAddress);
+            ContextRecord->Rsp = MemoryRead64(StackAddress);
+            return S_OK;
+        }
+
+        //
+        // Any remaining operation must be a machine frame.
+        //
+
+        UNWINDER_ASSERT(FALSE);
+    }
+
+    //
+    // Emulate a return operation.
+    //
+
+    IntegerAddress = (PULONG64)(ContextRecord->Rsp);
+
+    ContextRecord->Rip = MemoryRead64(IntegerAddress);
+    ContextRecord->Rsp += 8;
+    return S_OK;
+}
+
 HRESULT
 OOPStackUnwinderAMD64::UnwindPrologue(
     __in ULONG64 ImageBase,
     __in ULONG64 ControlPc,
     __in ULONG64 FrameBase,
     __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __inout PCONTEXT ContextRecord
+    __inout PCONTEXT ContextRecord,
+    __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
+    __deref_out _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
     )
 
 /*++
@@ -212,372 +673,332 @@ Arguments:
 
     ContextRecord - Supplies the address of a context record.
 
+    ContextPointers - Supplies an optional pointer to a context pointers
+        record.
+
+    FinalFunctionEntry - Supplies a pointer to a variable that receives the
+        final function entry after the specified function entry and all
+        descendent chained entries have been unwound. This will have been
+        probed as appropriate.
+
+Return Value:
+
+    HRESULT.
+
 --*/
 
 {
 
-    HRESULT Status = E_UNEXPECTED;
-    ULONG64 FloatingAddress;
-    M128A* FloatingRegister;
+    ULONG ChainCount;
+    PM128A FloatingAddress;
+    PM128A FloatingRegister;
     ULONG FrameOffset;
     ULONG Index;
-    ULONG64 IntegerAddress;
+    PULONG64 IntegerAddress;
     PULONG64 IntegerRegister;
     BOOLEAN MachineFrame;
     ULONG OpInfo;
     ULONG PrologOffset;
-    ULONG64 ReturnAddress;
-    ULONG64 StackAddress;
+    PULONG64 ReturnAddress;
+    PULONG64 StackAddress;
     PUNWIND_INFO UnwindInfo;
     ULONG UnwindOp;
 
     //
-    // Process the unwind codes.
+    // Process the unwind codes for the specified function entry and all its
+    // descendent chained function entries.
     //
 
+    ChainCount = 0;
     FloatingRegister = &ContextRecord->Xmm0;
     IntegerRegister = &ContextRecord->Rax;
-    Index = 0;
-    MachineFrame = FALSE;
-    PrologOffset = (ULONG)(ControlPc - (FunctionEntry->BeginAddress + ImageBase));
-
-    UnwindInfo = DacGetUnwindInfo(ImageBase + FunctionEntry->UnwindInfoAddress);
-    if (UnwindInfo == NULL)
-    {
-        return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
-    }
-
-    while (Index < UnwindInfo->CountOfUnwindCodes) {
-
-        //
-        // If the prologue offset is greater than the next unwind code offset,
-        // then simulate the effect of the unwind code.
-        //
-
-        UnwindOp = UnwindInfo->UnwindCode[Index].UnwindOp;
-        if (UnwindOp > UWOP_PUSH_MACHFRAME) {
-            goto Fail;
+    do {
+        Index = 0;
+        MachineFrame = FALSE;
+        PrologOffset = (ULONG)(ControlPc - (FunctionEntry->BeginAddress + ImageBase));
+    
+        UnwindInfo = GetUnwindInfo(ImageBase + FunctionEntry->UnwindInfoAddress);
+        if (UnwindInfo == NULL)
+        {
+            return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
         }
-        
-        OpInfo = UnwindInfo->UnwindCode[Index].OpInfo;
-        if (PrologOffset >= UnwindInfo->UnwindCode[Index].CodeOffset) {
-            switch (UnwindOp) {
-
-                //
-                // Push nonvolatile integer register.
-                //
-                // The operation information is the register number of the
-                // register than was pushed.
-                //
-
-            case UWOP_PUSH_NONVOL:
-                IntegerAddress = ContextRecord->Rsp;
-                if ((Status = 
-                     ReadAllMemory(IntegerAddress,
-                                   &IntegerRegister[OpInfo],
-                                   sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-
-                ContextRecord->Rsp += 8;
-                break;
-
-                //
-                // Allocate a large sized area on the stack.
-                //
-                // The operation information determines if the size is
-                // 16- or 32-bits.
-                //
-
-            case UWOP_ALLOC_LARGE:
-                Index += 1;
-                FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset;
-                if (OpInfo != 0) {
-                    Index += 1;
-                    FrameOffset += (UnwindInfo->UnwindCode[Index].FrameOffset << 16);
-                } else {
-                    // The 16-bit form is scaled.
-                    FrameOffset *= 8;
-                }
-
-                ContextRecord->Rsp += FrameOffset;
-                break;
-
-                //
-                // Allocate a small sized area on the stack.
-                //
-                // The operation information is the size of the unscaled
-                // allocation size (8 is the scale factor) minus 8.
-                //
-
-            case UWOP_ALLOC_SMALL:
-                ContextRecord->Rsp += (OpInfo * 8) + 8;
-                break;
-
-                //
-                // Establish the the frame pointer register.
-                //
-                // The operation information is not used.
-                //
-
-            case UWOP_SET_FPREG:
-                ContextRecord->Rsp = IntegerRegister[UnwindInfo->FrameRegister];
-                ContextRecord->Rsp -= UnwindInfo->FrameOffset * 16;
-                break;
-
-                //
-                // Save nonvolatile integer register on the stack using a
-                // 16-bit displacment.
-                //
-                // The operation information is the register number.
-                //
-
-            case UWOP_SAVE_NONVOL:
-                Index += 1;
-                FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset * 8;
-                IntegerAddress = FrameBase + FrameOffset;
-                if ((Status = 
-                    ReadAllMemory(IntegerAddress,
-                                  &IntegerRegister[OpInfo],
-                                  sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Save nonvolatile integer register on the stack using a
-                // 32-bit displacment.
-                //
-                // The operation information is the register number.
-                //
-
-            case UWOP_SAVE_NONVOL_FAR:
-                Index += 2;
-                FrameOffset = UnwindInfo->UnwindCode[Index - 1].FrameOffset;
-                FrameOffset += UnwindInfo->UnwindCode[Index].FrameOffset << 16;
-                IntegerAddress = FrameBase + FrameOffset;
-                if ((Status = 
-                     ReadAllMemory(IntegerAddress,
-                                   &IntegerRegister[OpInfo],
-                                   sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Save a nonvolatile XMM(64) register on the stack using a
-                // 16-bit displacement.
-                //
-                // The operation information is the register number.
-                //
-
-            case UWOP_SAVE_XMM:
-                Index += 1;
-                FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset * 8;
-                FloatingAddress = FrameBase + FrameOffset;
-                FloatingRegister[OpInfo].High = 0;
-                if ((Status = 
-                     ReadAllMemory(FloatingAddress,
-                                   &FloatingRegister[OpInfo].Low,
-                                   sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Save a nonvolatile XMM(64) register on the stack using a
-                // 32-bit displacement.
-                //
-                // The operation information is the register number.
-                //
-
-            case UWOP_SAVE_XMM_FAR:
-                Index += 2;
-                FrameOffset = UnwindInfo->UnwindCode[Index - 1].FrameOffset;
-                FrameOffset += UnwindInfo->UnwindCode[Index].FrameOffset << 16;
-                FloatingAddress = FrameBase + FrameOffset;
-                FloatingRegister[OpInfo].High = 0;
-                if ((Status = 
-                     ReadAllMemory(FloatingAddress,
-                                   &FloatingRegister[OpInfo].Low,
-                                   sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Save a nonvolatile XMM(128) register on the stack using a
-                // 16-bit displacement.
-                //
-                // The operation information is the register number.
-                //
-
-            case UWOP_SAVE_XMM128:
-                Index += 1;
-                FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset * 16;
-                FloatingAddress = FrameBase + FrameOffset;
-                if ((Status = 
-                     ReadAllMemory(FloatingAddress,
-                                   &FloatingRegister[OpInfo],
-                                   sizeof(M128A))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Save a nonvolatile XMM(128) register on the stack using a
-                // 32-bit displacement.
-                //
-                // The operation information is the register number.
-                //
-
-            case UWOP_SAVE_XMM128_FAR:
-                Index += 2;
-                FrameOffset = UnwindInfo->UnwindCode[Index - 1].FrameOffset;
-                FrameOffset += UnwindInfo->UnwindCode[Index].FrameOffset << 16;
-                FloatingAddress = FrameBase + FrameOffset;
-                if ((Status = 
-                     ReadAllMemory(FloatingAddress,
-                                   &FloatingRegister[OpInfo],
-                                   sizeof(M128A))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Push a machine frame on the stack.
-                //
-                // The operation information determines whether the machine
-                // frame contains an error code or not.
-                //
-
-            case UWOP_PUSH_MACHFRAME:
-                MachineFrame = TRUE;
-                ReturnAddress = ContextRecord->Rsp;
-                StackAddress = ContextRecord->Rsp + (3 * 8);
-                if (OpInfo != 0) {
-                    ReturnAddress += 8;
-                    StackAddress +=  8;
-                }
-
-                if ((Status = 
-                     ReadAllMemory(ReturnAddress,
-                                   &ContextRecord->Rip,
-                                   sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-                if ((Status = 
-                     ReadAllMemory(StackAddress,
-                                   &ContextRecord->Rsp,
-                                   sizeof(ULONG64))) != S_OK) {
-                    goto Fail;
-                }
-                break;
-
-                //
-                // Unused codes.
-                //
-
-            default:
-                break;
+    
+        while (Index < UnwindInfo->CountOfUnwindCodes) {
+    
+            //
+            // If the prologue offset is greater than the next unwind code
+            // offset, then simulate the effect of the unwind code.
+            //
+    
+            UnwindOp = UnwindInfo->UnwindCode[Index].UnwindOp;
+            if (UnwindOp > UWOP_PUSH_MACHFRAME) {
+                return E_UNEXPECTED;
             }
+            
+            OpInfo = UnwindInfo->UnwindCode[Index].OpInfo;
+            if (PrologOffset >= UnwindInfo->UnwindCode[Index].CodeOffset) {
+                switch (UnwindOp) {
+    
+                    //
+                    // Push nonvolatile integer register.
+                    //
+                    // The operation information is the register number of
+                    // the register than was pushed.
+                    //
+    
+                case UWOP_PUSH_NONVOL:
+                    IntegerAddress = (PULONG64)ContextRecord->Rsp;
+                    IntegerRegister[OpInfo] = MemoryRead64(IntegerAddress);
+    
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->IntegerContext[OpInfo] = IntegerAddress;
+                    }
+    
+                    ContextRecord->Rsp += 8;
+                    break;
+    
+                    //
+                    // Allocate a large sized area on the stack.
+                    //
+                    // The operation information determines if the size is
+                    // 16- or 32-bits.
+                    //
+    
+                case UWOP_ALLOC_LARGE:
+                    Index += 1;
+                    FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset;
+                    if (OpInfo != 0) {
+                        Index += 1;
+                        FrameOffset += (UnwindInfo->UnwindCode[Index].FrameOffset << 16);
+    
+                    } else {
+                        // The 16-bit form is scaled.
+                        FrameOffset *= 8;
+                    }
+    
+                    ContextRecord->Rsp += FrameOffset;
+                    break;
+    
+                    //
+                    // Allocate a small sized area on the stack.
+                    //
+                    // The operation information is the size of the unscaled
+                    // allocation size (8 is the scale factor) minus 8.
+                    //
+    
+                case UWOP_ALLOC_SMALL:
+                    ContextRecord->Rsp += (OpInfo * 8) + 8;
+                    break;
+    
+                    //
+                    // Establish the the frame pointer register.
+                    //
+                    // The operation information is not used.
+                    //
+    
+                case UWOP_SET_FPREG:
+                    ContextRecord->Rsp = IntegerRegister[UnwindInfo->FrameRegister];
+                    ContextRecord->Rsp -= UnwindInfo->FrameOffset * 16;
+                    break;
+    
+                    //
+                    // Save nonvolatile integer register on the stack using a
+                    // 16-bit displacment.
+                    //
+                    // The operation information is the register number.
+                    //
+    
+                case UWOP_SAVE_NONVOL:
+                    Index += 1;
+                    FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset * 8;
+                    IntegerAddress = (PULONG64)(FrameBase + FrameOffset);
+                    IntegerRegister[OpInfo] = MemoryRead64(IntegerAddress);
+    
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->IntegerContext[OpInfo] = IntegerAddress;
+                    }
+    
+                    break;
+    
+                    //
+                    // Save nonvolatile integer register on the stack using a
+                    // 32-bit displacment.
+                    //
+                    // The operation information is the register number.
+                    //
+    
+                case UWOP_SAVE_NONVOL_FAR:
+                    Index += 2;
+                    FrameOffset = UnwindInfo->UnwindCode[Index - 1].FrameOffset;
+                    FrameOffset += UnwindInfo->UnwindCode[Index].FrameOffset << 16;
+                    IntegerAddress = (PULONG64)(FrameBase + FrameOffset);
+                    IntegerRegister[OpInfo] = MemoryRead64(IntegerAddress);
+    
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->IntegerContext[OpInfo] = IntegerAddress;
+                    }
+    
+                    break;
+    
+                    //
+                    // Function epilog marker (ignored for prologue unwind).
+                    //
 
-            Index += 1;
-        
+               case UWOP_EPILOG:
+                    Index += 1;
+                    break;
+    
+                    //
+                    // Spare unused codes.
+                    //
+    
+    
+                case UWOP_SPARE_CODE:
+   
+                    UNWINDER_ASSERT(FALSE);
+    
+                    Index += 2;
+                    break;
+    
+                    //
+                    // Save a nonvolatile XMM(128) register on the stack using a
+                    // 16-bit displacement.
+                    //
+                    // The operation information is the register number.
+                    //
+       
+                case UWOP_SAVE_XMM128:
+                    Index += 1;
+                    FrameOffset = UnwindInfo->UnwindCode[Index].FrameOffset * 16;
+                    FloatingAddress = (PM128A)(FrameBase + FrameOffset);
+                    FloatingRegister[OpInfo] = MemoryRead128(FloatingAddress);
+    
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->FloatingContext[OpInfo] = FloatingAddress;
+                    }
+    
+                    break;
+    
+                    //
+                    // Save a nonvolatile XMM(128) register on the stack using
+                    // a 32-bit displacement.
+                    //
+                    // The operation information is the register number.
+                    //
+    
+                case UWOP_SAVE_XMM128_FAR:
+                    Index += 2;
+                    FrameOffset = UnwindInfo->UnwindCode[Index - 1].FrameOffset;
+                    FrameOffset += UnwindInfo->UnwindCode[Index].FrameOffset << 16;
+                    FloatingAddress = (PM128A)(FrameBase + FrameOffset);
+                    FloatingRegister[OpInfo] = MemoryRead128(FloatingAddress);
+    
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->FloatingContext[OpInfo] = FloatingAddress;
+                    }
+    
+                    break;
+    
+                    //
+                    // Push a machine frame on the stack.
+                    //
+                    // The operation information determines whether the
+                    // machine frame contains an error code or not.
+                    //
+    
+                case UWOP_PUSH_MACHFRAME:
+                    MachineFrame = TRUE;
+                    ReturnAddress = (PULONG64)ContextRecord->Rsp;
+                    StackAddress = (PULONG64)(ContextRecord->Rsp + (3 * 8));
+                    if (OpInfo != 0) {
+                        ReturnAddress += 1;
+                        StackAddress +=  1;
+                    }
+    
+                    ContextRecord->Rip = MemoryRead64(ReturnAddress);
+                    ContextRecord->Rsp = MemoryRead64(StackAddress);
+    
+                    break;
+    
+                    //
+                    // Unused codes.
+                    //
+    
+                default:
+                    //RtlRaiseStatus(STATUS_BAD_FUNCTION_TABLE);
+                    break;
+                }
+    
+                Index += 1;
+    
+            } else {
+    
+                //
+                // Skip this unwind operation by advancing the slot index
+                // by the number of slots consumed by this operation.
+                //
+    
+                Index += UnwindOpSlots(UnwindInfo->UnwindCode[Index]);
+            }
+        }
+    
+        //
+        // If chained unwind information is specified, then set the function
+        // entry address to the chained function entry and continue the scan.
+        // Otherwise, determine the return address if a machine frame was not
+        // encountered during the scan of the unwind codes and terminate the
+        // scan.
+        //
+    
+        if ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0) {
+    
+            _PIMAGE_RUNTIME_FUNCTION_ENTRY ChainEntry;
+            
+            Index = UnwindInfo->CountOfUnwindCodes;
+            if ((Index & 1) != 0) {
+                Index += 1;
+            }
+    
+            // GetUnwindInfo looks for CHAININFO and reads
+            // the trailing RUNTIME_FUNCTION so we can just
+            // directly use the data sitting in UnwindInfo.
+            FunctionEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)
+                &UnwindInfo->UnwindCode[Index];
         } else {
-
-            //
-            // Skip this unwind operation by advancing the slot index by the
-            // number of slots consumed by this operation.
-            //
-
-            Index += s_UnwindOpSlotTable[UnwindOp];
-
-            //
-            // Special case any unwind operations that can consume a variable
-            // number of slots.
-            // 
-
-            switch (UnwindOp) {
-
-                //
-                // A non-zero operation information indicates that an
-                // additional slot is consumed.
-                //
-
-            case UWOP_ALLOC_LARGE:
-                if (OpInfo != 0) {
-                    Index += 1;
-                }
-
-                break;
-
-                //
-                // No other special cases.
-                //
-
-            default:
-                break;
+    
+            if (MachineFrame == FALSE) {
+                ContextRecord->Rip = MemoryRead64((PULONG64)ContextRecord->Rsp);
+                ContextRecord->Rsp += 8;
             }
-        }
-    }
-
-    //
-    // If chained unwind information is specified, then recursively unwind
-    // the chained information. Otherwise, determine the return address if
-    // a machine frame was not encountered during the scan of the unwind
-    // codes.
-    //
-
-    if ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0) {
-
-        _PIMAGE_RUNTIME_FUNCTION_ENTRY ChainEntry;
-        
-        Index = UnwindInfo->CountOfUnwindCodes;
-        if ((Index & 1) != 0) {
-            Index += 1;
+            
+            break;
         }
 
-        // GetUnwindInfo looks for CHAININFO and reads
-        // the trailing RUNTIME_FUNCTION so we can just
-        // directly use the data sitting in UnwindInfo.
-        ChainEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)
-            &UnwindInfo->UnwindCode[Index];
+        //
+        // Limit the number of iterations possible for chained function table
+        // entries.
+        //
 
-        Status = UnwindPrologue(ImageBase,
-                                ControlPc,
-                                FrameBase,
-                                ChainEntry,
-                                ContextRecord);
+        ChainCount += 1;
+        UNWINDER_ASSERT(ChainCount <= UNWIND_CHAIN_LIMIT);
 
-        return Status;
+    } while (TRUE);
 
-    } else {
-
-        if (MachineFrame == FALSE) {
-            if ((Status = 
-                 ReadAllMemory(ContextRecord->Rsp,
-                               &ContextRecord->Rip,
-                               sizeof(ULONG64))) != S_OK) {
-                return Status;
-            }
-            ContextRecord->Rsp += 8;
-        }
-        
-        return S_OK;
-    }
-
- Fail:
-    return Status;
+    *FinalFunctionEntry = FunctionEntry;
+    return S_OK;
 }
 
 HRESULT
 OOPStackUnwinderAMD64::VirtualUnwind(
+    __in DWORD HandlerType,
     __in ULONG64 ImageBase,
     __in ULONG64 ControlPc,
     __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
-    __out PULONG64 EstablisherFrame
+    __out PVOID *HandlerData,
+    __out PULONG64 EstablisherFrame,
+    __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
+    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine
     )
 
 /*++
@@ -593,6 +1014,11 @@ Routine Description:
 
 Arguments:
 
+    HandlerType - Supplies the handler type expected for the virtual unwind.
+        This may be either an exception or an unwind handler. A flag may
+        optionally be supplied to avoid epilogue detection if it is known
+        the specified control PC is not located inside a function epilogue.
+
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
 
@@ -604,29 +1030,53 @@ Arguments:
 
     ContextRecord - Supplies the address of a context record.
 
+
+    HandlerData - Supplies a pointer to a variable that receives a pointer
+        the the language handler data.
+
     EstablisherFrame - Supplies a pointer to a variable that receives the
         the establisher frame pointer value.
 
+    ContextPointers - Supplies an optional pointer to a context pointers
+        record.
+
+    HandlerRoutine - Supplies an optional pointer to a variable that receives
+        the handler routine address.  If control did not leave the specified
+        function in either the prologue or an epilogue and a handler of the
+        proper type is associated with the function, then the address of the
+        language specific exception handler is returned. Otherwise, NULL is
+        returned.
 --*/
 
 {
 
-    HRESULT Status;
     ULONG64 BranchTarget;
     LONG Displacement;
-    ULONG FrameRegister = 0;
+    ULONG EpilogueOffset;
+    ULONG EpilogueSize;
+    PEXCEPTION_ROUTINE FoundHandler;
+    ULONG FrameRegister;
     ULONG Index;
     BOOL InEpilogue;
+    PULONG64 IntegerAddress;
     PULONG64 IntegerRegister;
-    PUCHAR NextByte;
     _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryFunctionEntry;
     ULONG PrologOffset;
     ULONG RegisterNumber;
+    ULONG RelativePc;
+    HRESULT Status;
     PUNWIND_INFO UnwindInfo;
-    UCHAR InstrBuffer[32];
-    ULONG InstrBytes;
-    ULONG Bytes;
-    ULONG UnwindFrameReg;
+    ULONG UnwindVersion;
+    UNWIND_CODE UnwindOp;
+
+    FoundHandler = NULL;
+    UnwindInfo = GetUnwindInfo(ImageBase + FunctionEntry->UnwindInfoAddress);
+    if (UnwindInfo == NULL)
+    {
+        return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
+    }
+
+    UnwindVersion = UnwindInfo->Version;
 
     //
     // If the specified function does not use a frame pointer, then the
@@ -646,7 +1096,7 @@ Arguments:
     //
     // If the specified function uses a frame pointer and control left the
     // function from within the prologue, then the set frame pointer unwind
-    // code must be looked up in the unwind codes to detetermine if the
+    // code must be looked up in the unwind codes to determine if the
     // contents of the stack pointer or the contents of the frame pointer
     // should be used for the establisher frame. This may not actually be
     // the real establisher frame. In this case the establisher frame may
@@ -659,42 +1109,29 @@ Arguments:
     //      unwind codes.
     //
 
-    UnwindInfo = DacGetUnwindInfo(ImageBase + FunctionEntry->UnwindInfoAddress);
-    if (UnwindInfo == NULL)
-    {
-        return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
-    }
-
     PrologOffset = (ULONG)(ControlPc - (FunctionEntry->BeginAddress + ImageBase));
-    UnwindFrameReg = UnwindInfo->FrameRegister;
-    if (UnwindFrameReg == 0) {
+    if (UnwindInfo->FrameRegister == 0) {
         *EstablisherFrame = ContextRecord->Rsp;
 
     } else if ((PrologOffset >= UnwindInfo->SizeOfProlog) ||
                ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) != 0)) {
-        *EstablisherFrame = (&ContextRecord->Rax)[UnwindFrameReg];
+
+        *EstablisherFrame = (&ContextRecord->Rax)[UnwindInfo->FrameRegister];
         *EstablisherFrame -= UnwindInfo->FrameOffset * 16;
 
     } else {
-
-        // Read all the data.
-        UnwindInfo = DacGetUnwindInfo(ImageBase + FunctionEntry->UnwindInfoAddress);
-        if (UnwindInfo == NULL)
-        {
-            return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
-        }
-
         Index = 0;
         while (Index < UnwindInfo->CountOfUnwindCodes) {
-            if (UnwindInfo->UnwindCode[Index].UnwindOp == UWOP_SET_FPREG) {
+            UnwindOp = UnwindInfo->UnwindCode[Index];
+            if (UnwindOp.UnwindOp == UWOP_SET_FPREG) {
                 break;
             }
 
-            Index += 1;
+            Index += UnwindOpSlots(UnwindOp);
         }
 
         if (PrologOffset >= UnwindInfo->UnwindCode[Index].CodeOffset) {
-            *EstablisherFrame = (&ContextRecord->Rax)[UnwindFrameReg];
+            *EstablisherFrame = (&ContextRecord->Rax)[UnwindInfo->FrameRegister];
             *EstablisherFrame -= UnwindInfo->FrameOffset * 16;
 
         } else {
@@ -702,358 +1139,419 @@ Arguments:
         }
     }
 
-    if ((Status = 
-         ReadMemory(ControlPc, InstrBuffer, sizeof(InstrBuffer),
-                    &InstrBytes)) != S_OK) {
-
-        // We need the code to look for epilogue ops.
-        // It's very rare to be stopped in an epilogue when
-        // getting a stack trace, so if we can't read the
-        // code just assume we aren't in an epilogue.
-        InstrBytes = 0;
-    }
-
     //
-    // If the point at which control left the specified function is in an
-    // epilogue, then emulate the execution of the epilogue forward and
+    // Check if control left the specified function during an epilogue
+    // sequence and emulate the execution of the epilogue forward and
     // return no exception handler.
     //
+    // If the unwind version indicates the absence of epilogue unwind codes
+    // this is done by emulating the instruction stream. Otherwise, epilogue
+    // detection and emulation is performed using the function unwind codes.
+    //
     
-    IntegerRegister = &ContextRecord->Rax;
-    NextByte = InstrBuffer;
-    Bytes = InstrBytes;
-
-    //
-    // Check for one of:
-    //
-    //   add rsp, imm8
-    //       or
-    //   add rsp, imm32
-    //       or
-    //   lea rsp, -disp8[fp]
-    //       or
-    //   lea rsp, -disp32[fp]
-    //
-
-    if (Bytes >= 4 &&
-        (NextByte[0] == SIZE64_PREFIX) &&
-        (NextByte[1] == ADD_IMM8_OP) &&
-        (NextByte[2] == 0xc4)) {
-            
-        //
-        // add rsp, imm8.
-        //
-            
-        NextByte += 4;
-        Bytes -= 4;
-            
-    } else if (Bytes >= 7 &&
-               (NextByte[0] == SIZE64_PREFIX) &&
-               (NextByte[1] == ADD_IMM32_OP) &&
-               (NextByte[2] == 0xc4)) {
-            
-        //
-        // add rsp, imm32.
-        //
-            
-        NextByte += 7;
-        Bytes -= 7;
-            
-    } else if (Bytes >= 4 &&
-               ((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
-               (NextByte[1] == LEA_OP)) {
-            
-        FrameRegister = ((NextByte[0] & 0x7) << 3) | (NextByte[2] & 0x7);
-        if ((FrameRegister != 0) &&
-            (FrameRegister == UnwindFrameReg)) {
-            if ((NextByte[2] & 0xf8) == 0x60) {
-                    
-                //
-                // lea rsp, disp8[fp].
-                //
-                    
-                NextByte += 4;
-                Bytes -= 4;
-                    
-            } else if (Bytes >= 7 &&
-                       (NextByte[2] &0xf8) == 0xa0) {
-                    
-                //
-                // lea rsp, disp32[fp].
-                //
-                    
-                NextByte += 7;
-                Bytes -= 7;
-            }
-        }
-    }
-        
-    //
-    // Check for any number of:
-    //
-    //   pop nonvolatile-integer-register[0..15].
-    //
-        
-    while (TRUE) {
-        if (Bytes >= 1 &&
-            (NextByte[0] & 0xf8) == POP_OP) {
-            NextByte += 1;
-            Bytes -= 1;
-                
-        } else if (Bytes >= 2 &&
-                   IS_REX_PREFIX(NextByte[0]) &&
-                   ((NextByte[1] & 0xf8) == POP_OP)) {
-                
-            NextByte += 2;
-            Bytes -= 2;
-                
-        } else {
-            break;
-        }
-    }
-        
-    //
-    // If the next instruction is a return or an appropriate jump, then
-    // control is currently in an epilogue and execution of the epilogue
-    // should be emulated. Otherwise, execution is not in an epilogue and
-    // the prologue should be unwound.
-    //
-        
     InEpilogue = FALSE;
-    if ((Bytes >= 1 &&
-         ((NextByte[0] == RET_OP) ||
-          (NextByte[0] == RET_OP_2))) ||
-        (Bytes >= 2 &&
-         ((NextByte[0] == REP_PREFIX) && (NextByte[1] == RET_OP)))) {
-            
+    if (UnwindVersion < 2) {
+        InstructionBuffer InstrBuffer = (InstructionBuffer)ControlPc;
+        InstructionBuffer NextByte = InstrBuffer;
+    
         //
-        // A return is an unambiguous indication of an epilogue.
-        //
-            
-        InEpilogue = TRUE;
-
-    } else if ((Bytes >= 2 && NextByte[0] == JMP_IMM8_OP) ||
-               (Bytes >= 5 && NextByte[0] == JMP_IMM32_OP)) {
-
-        //
-        // An unconditional branch to a target that is equal to the start of
-        // or outside of this routine is logically a call to another function.
-        // 
-
-        BranchTarget = (ULONG64)(NextByte - InstrBuffer) + ControlPc - ImageBase;
-        if (NextByte[0] == JMP_IMM8_OP) {
-            BranchTarget += 2 + (CHAR)NextByte[1];
-        } else {
-            BranchTarget += 5 + *((LONG UNALIGNED *)&NextByte[1]);
-        }
-            
-        //
-        // Determine whether the branch target refers to code within this
-        // function. If not, then it is an epilogue indicator.
-        //
-        // A branch to the start of self implies a recursive call, so
-        // is treated as an epilogue.
-        //
-            
-        if (BranchTarget < FunctionEntry->BeginAddress ||
-            BranchTarget >= FunctionEntry->EndAddress) {
-
-            _IMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntryBuffer;
-            
-            //
-            // The branch target is outside of the region described by
-            // this function entry.  See whether it is contained within
-            // an indirect function entry associated with this same
-            // function.
-            //
-            // If not, then the branch target really is outside of
-            // this function.
-            //
-
-            PrimaryFunctionEntry =
-                SameFunction(FunctionEntry,
-                             ImageBase,
-                             BranchTarget + ImageBase,
-                             &PrimaryEntryBuffer);
-
-            if ((PrimaryFunctionEntry == NULL) ||
-                (BranchTarget == PrimaryFunctionEntry->BeginAddress)) {
-
-                InEpilogue = TRUE;
-            }
-
-        } else if ((BranchTarget == FunctionEntry->BeginAddress) &&
-                   ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) == 0)) {
-            
-            InEpilogue = TRUE;
-        }
-            
-    } else if (Bytes >= 2 &&
-               (NextByte[0] == JMP_IND_OP) && (NextByte[1] == 0x25)) {
-            
-        //
-        // An unconditional jump indirect.
-        //
-        // This is a jmp outside of the function, probably a tail call
-        // to an import function.
-        //
-            
-        InEpilogue = TRUE;
-
-    } else if (Bytes >= 3 &&
-               ((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
-               (NextByte[1] == 0xff) &&
-               (NextByte[2] & 0x38) == 0x20) {
-
-        //
-        // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
-        // flag (REX.W) is always redundant here, so its presence is
-        // overloaded to indicate a branch out of the function - a tail
-        // call.
-        //
-        // Such an opcode is an unambiguous epilogue indication.
-        //
-
-        InEpilogue = TRUE;
-    }
-        
-    if (InEpilogue != FALSE) {
-        NextByte = InstrBuffer;
-        Bytes = InstrBytes;
-
-        //
-        // Emulate one of (if any):
+        // Check for one of:
         //
         //   add rsp, imm8
         //       or
         //   add rsp, imm32
         //       or
-        //   lea rsp, disp8[frame-register]
+        //   lea rsp, -disp8[fp]
         //       or
-        //   lea rsp, disp32[frame-register]
+        //   lea rsp, -disp32[fp]
         //
-            
-        if (Bytes >= 1 &&
-            (NextByte[0] & 0xf8) == SIZE64_PREFIX) {
-        
-            if (Bytes >= 4 &&
-                NextByte[1] == ADD_IMM8_OP) {
+    
+        if ((NextByte[0] == SIZE64_PREFIX) &&
+            (NextByte[1] == ADD_IMM8_OP) &&
+            (NextByte[2] == 0xc4)) {
                 
-                //
-                // add rsp, imm8.
-                //
-                    
-                ContextRecord->Rsp += (CHAR)NextByte[3];
-                NextByte += 4;
-                Bytes -= 4;
-                    
-            } else if (Bytes >= 7 &&
-                       NextByte[1] == ADD_IMM32_OP) {
-                    
-                //
-                // add rsp, imm32.
-                //
-                    
-                Displacement = NextByte[3] | (NextByte[4] << 8);
-                Displacement |= (NextByte[5] << 16) | (NextByte[6] << 24);
-                ContextRecord->Rsp += Displacement;
-                NextByte += 7;
-                Bytes -= 7;
-                    
-            } else if (Bytes >= 4 &&
-                       NextByte[1] == LEA_OP) {
+            //
+            // add rsp, imm8.
+            //
+                
+            NextByte += 4;
+                
+        } else if ((NextByte[0] == SIZE64_PREFIX) &&
+                   (NextByte[1] == ADD_IMM32_OP) &&
+                   (NextByte[2] == 0xc4)) {
+                
+            //
+            // add rsp, imm32.
+            //
+                
+            NextByte += 7;
+                
+        } else if (((NextByte[0] & 0xfe) == SIZE64_PREFIX) &&
+                (NextByte[1] == LEA_OP)) {
+                
+            FrameRegister = ((NextByte[0] & 0x1) << 3) | (NextByte[2] & 0x7);
+            if ((FrameRegister != 0) &&
+                (FrameRegister == UnwindInfo->FrameRegister)) {
+    
                 if ((NextByte[2] & 0xf8) == 0x60) {
                         
                     //
-                    // lea rsp, disp8[frame-register].
+                    // lea rsp, disp8[fp].
                     //
                         
-                    ContextRecord->Rsp = IntegerRegister[FrameRegister];
-                    ContextRecord->Rsp += (CHAR)NextByte[3];
                     NextByte += 4;
-                    Bytes -= 4;
                         
-                } else if (Bytes >= 7 &&
-                           (NextByte[2] & 0xf8) == 0xa0) {
+                } else if ((NextByte[2] &0xf8) == 0xa0) {
                         
                     //
-                    // lea rsp, disp32[frame-register].
+                    // lea rsp, disp32[fp].
                     //
                         
-                    Displacement = NextByte[3] | (NextByte[4] << 8);
-                    Displacement |= (NextByte[5] << 16) | (NextByte[6] << 24);
-                    ContextRecord->Rsp = IntegerRegister[FrameRegister];
-                    ContextRecord->Rsp += Displacement;
                     NextByte += 7;
-                    Bytes -= 7;
                 }
             }
         }
             
         //
-        // Emulate any number of (if any):
+        // Check for any number of:
         //
-        //   pop nonvolatile-integer-register.
+        //   pop nonvolatile-integer-register[0..15].
         //
             
         while (TRUE) {
-            if (Bytes >= 1 &&
-                (NextByte[0] & 0xf8) == POP_OP) {
-                    
-                //
-                // pop nonvolatile-integer-register[0..7]
-                //
-                    
-                RegisterNumber = NextByte[0] & 0x7;
-                if ((Status = 
-                    ReadAllMemory(ContextRecord->Rsp,
-                                  &IntegerRegister[RegisterNumber],
-                                  sizeof(ULONG64))) != S_OK) {
-                    return Status;
-                }
-                ContextRecord->Rsp += 8;
+            if ((NextByte[0] & 0xf8) == POP_OP) {
                 NextByte += 1;
-                Bytes -= 1;
                     
-            } else if (Bytes >= 2 &&
-                       IS_REX_PREFIX(NextByte[0]) &&
-                       (NextByte[1] & 0xf8) == POP_OP) {
+            } else if (IS_REX_PREFIX(NextByte[0]) &&
+                       ((NextByte[1] & 0xf8) == POP_OP)) {
                     
-                //
-                // pop nonvolatile-integer-register[8..15]
-                //
-                    
-                RegisterNumber = ((NextByte[0] & 1) << 3) | (NextByte[1] & 0x7);
-                if ((Status = 
-                     ReadAllMemory(ContextRecord->Rsp,
-                                   &IntegerRegister[RegisterNumber],
-                                   sizeof(ULONG64))) != S_OK) {
-                    return Status;
-                }
-                ContextRecord->Rsp += 8;
                 NextByte += 2;
-                Bytes -= 2;
                     
             } else {
                 break;
             }
         }
-
+            
         //
-        // Emulate return and return null exception handler.
+        // A REPNE prefix may optionally precede a control transfer
+        // instruction with no effect on unwinding.
         //
-        // Note: this instruction might in fact be a jmp, however
-        //       we want to emulate a return regardless.
+    
+        if (NextByte[0] == REPNE_PREFIX) {
+            NextByte += 1;
+        }
+    
+        //
+        // If the next instruction is a return or an appropriate jump, then
+        // control is currently in an epilogue and execution of the epilogue
+        // should be emulated. Otherwise, execution is not in an epilogue and
+        // the prologue should be unwound.
         //
             
-        if ((Status = 
-            ReadAllMemory(ContextRecord->Rsp,
-                          &ContextRecord->Rip,
-                          sizeof(ULONG64))) != S_OK) {
-            return Status;
+        InEpilogue = FALSE;
+        if ( ((NextByte[0] == RET_OP) ||
+              (NextByte[0] == RET_OP_2)) ||
+            (((NextByte[0] == REP_PREFIX) && (NextByte[1] == RET_OP)))) {
+                
+            //
+            // A return is an unambiguous indication of an epilogue.
+            //
+                
+            InEpilogue = TRUE;
+    
+        } else if ((NextByte[0] == JMP_IMM8_OP) ||
+                   (NextByte[0] == JMP_IMM32_OP)) {
+    
+            //
+            // An unconditional branch to a target that is equal to the start of
+            // or outside of this routine is logically a call to another function.
+            // 
+    
+            BranchTarget = (ULONG64)NextByte - ImageBase;
+            if (NextByte[0] == JMP_IMM8_OP) {
+                BranchTarget += 2 + (CHAR)NextByte[1];
+    
+            } else {
+                LONG32 delta = NextByte[1] | (NextByte[2] << 8) |
+                               (NextByte[3] << 16) | (NextByte[4] << 24);
+                BranchTarget += 5 + delta;
+
+            }
+                
+            //
+            // Determine whether the branch target refers to code within this
+            // function. If not, then it is an epilogue indicator.
+            //
+            // A branch to the start of self implies a recursive call, so
+            // is treated as an epilogue.
+            //
+                
+            if (BranchTarget < FunctionEntry->BeginAddress ||
+                BranchTarget >= FunctionEntry->EndAddress) {
+    
+                //
+                // The branch target is outside of the region described by
+                // this function entry.  See whether it is contained within
+                // an indirect function entry associated with this same
+                // function.
+                //
+                // If not, then the branch target really is outside of
+                // this function.
+                //
+    
+                PrimaryFunctionEntry =
+                    SameFunction(FunctionEntry,
+                                 ImageBase,
+                                 BranchTarget + ImageBase);
+    
+                if ((PrimaryFunctionEntry == NULL) ||
+                    (BranchTarget == PrimaryFunctionEntry->BeginAddress)) {
+    
+                    InEpilogue = TRUE;
+                }
+    
+            } else if ((BranchTarget == FunctionEntry->BeginAddress) &&
+                       ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) == 0)) {
+                
+                InEpilogue = TRUE;
+            }
+                
+        } else if ((NextByte[0] == JMP_IND_OP) && (NextByte[1] == 0x25)) {
+                
+            //
+            // An unconditional jump indirect.
+            //
+            // This is a jmp outside of the function, probably a tail call
+            // to an import function.
+            //
+                
+            InEpilogue = TRUE;
+    
+        } else if (((NextByte[0] & 0xf8) == SIZE64_PREFIX) &&
+                   (NextByte[1] == 0xff) &&
+                   (NextByte[2] & 0x38) == 0x20) {
+    
+            //
+            // This is an indirect jump opcode: 0x48 0xff /4.  The 64-bit
+            // flag (REX.W) is always redundant here, so its presence is
+            // overloaded to indicate a branch out of the function - a tail
+            // call.
+            //
+            // Such an opcode is an unambiguous epilogue indication.
+            //
+    
+            InEpilogue = TRUE;
         }
-        ContextRecord->Rsp += 8;
-        return S_OK;
+            
+        if (InEpilogue != FALSE) {
+            IntegerRegister = &ContextRecord->Rax;
+            NextByte = InstrBuffer;
+
+            //
+            // Emulate one of (if any):
+            //
+            //   add rsp, imm8
+            //       or
+            //   add rsp, imm32
+            //       or
+            //   lea rsp, disp8[frame-register]
+            //       or
+            //   lea rsp, disp32[frame-register]
+            //
+
+            if ((NextByte[0] & 0xf8) == SIZE64_PREFIX) {
+
+                if (NextByte[1] == ADD_IMM8_OP) {
+
+                    //
+                    // add rsp, imm8.
+                    //
+
+                    ContextRecord->Rsp += (CHAR)NextByte[3];
+                    NextByte += 4;
+
+                }
+                else if (NextByte[1] == ADD_IMM32_OP) {
+
+                    //
+                    // add rsp, imm32.
+                    //
+
+                    Displacement = NextByte[3] | (NextByte[4] << 8);
+                    Displacement |= (NextByte[5] << 16) | (NextByte[6] << 24);
+                    ContextRecord->Rsp += Displacement;
+                    NextByte += 7;
+
+                }
+                else if (NextByte[1] == LEA_OP) {
+                    if ((NextByte[2] & 0xf8) == 0x60) {
+
+                        //
+                        // lea rsp, disp8[frame-register].
+                        //
+
+                        ContextRecord->Rsp = IntegerRegister[FrameRegister];
+                        ContextRecord->Rsp += (CHAR)NextByte[3];
+                        NextByte += 4;
+
+                    }
+                    else if ((NextByte[2] & 0xf8) == 0xa0) {
+
+                        //
+                        // lea rsp, disp32[frame-register].
+                        //
+
+                        Displacement = NextByte[3] | (NextByte[4] << 8);
+                        Displacement |= (NextByte[5] << 16) | (NextByte[6] << 24);
+                        ContextRecord->Rsp = IntegerRegister[FrameRegister];
+                        ContextRecord->Rsp += Displacement;
+                        NextByte += 7;
+                    }
+                }
+            }
+
+            //
+            // Emulate any number of (if any):
+            //
+            //   pop nonvolatile-integer-register.
+            //
+
+            while (TRUE) {
+                if ((NextByte[0] & 0xf8) == POP_OP) {
+
+                    //
+                    // pop nonvolatile-integer-register[0..7]
+                    //
+
+                    RegisterNumber = NextByte[0] & 0x7;
+                    IntegerAddress = (PULONG64)ContextRecord->Rsp;
+                    IntegerRegister[RegisterNumber] = MemoryRead64(IntegerAddress);
+
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->IntegerContext[RegisterNumber] = IntegerAddress;
+                    }
+
+                    ContextRecord->Rsp += 8;
+                    NextByte += 1;
+
+                }
+                else if (IS_REX_PREFIX(NextByte[0]) &&
+                    (NextByte[1] & 0xf8) == POP_OP) {
+
+                    //
+                    // pop nonvolatile-integer-register[8..15]
+                    //
+
+                    RegisterNumber = ((NextByte[0] & 1) << 3) | (NextByte[1] & 0x7);
+                    IntegerAddress = (PULONG64)ContextRecord->Rsp;
+                    IntegerRegister[RegisterNumber] = MemoryRead64(IntegerAddress);
+
+                    if (ARGUMENT_PRESENT(ContextPointers)) {
+                        ContextPointers->IntegerContext[RegisterNumber] = IntegerAddress;
+                    }
+
+                    ContextRecord->Rsp += 8;
+                    NextByte += 2;
+
+                }
+                else {
+                    break;
+                }
+            }
+
+            //
+            // Emulate return and return null exception handler.
+            //
+            // Note: This instruction might in fact be a jmp, however
+            //       we want to emulate a return regardless.
+            //
+
+            ContextRecord->Rip = MemoryRead64((PULONG64)ContextRecord->Rsp);
+            ContextRecord->Rsp += 8;
+            goto ExitSetHandler;
+        }
+
+    } else if (UnwindInfo->CountOfUnwindCodes != 0) {
+
+        UNWINDER_ASSERT(UnwindVersion >= 2);
+
+        //
+        // Capture the first unwind code and check if it is an epilogue code.
+        // If it is not an epilogue code, the current function entry does not
+        // contain any epilogues (it could represent a body region of a
+        // separated function or it could represent a function which never
+        // returns).
+        //
+    
+        UnwindOp = UnwindInfo->UnwindCode[0];
+        if (UnwindOp.UnwindOp == UWOP_EPILOG) {
+            EpilogueSize = UnwindOp.CodeOffset;
+    
+            UNWINDER_ASSERT(EpilogueSize != 0);
+            //
+            // If the low bit of the OpInfo field of the first epilogue code
+            // is set, the function has a single epilogue at the end of the
+            // function. Otherwise, subsequent epilogue unwind codes indicate
+            // the offset of the epilogue(s) from the function end and the
+            // relative PC must be compared against each epilogue record.
+            //
+            // N.B. The relative instruction pointer may not be within the
+            //      bounds of the runtime function entry if control left the
+            //      function in a region described by an indirect function
+            //      entry. Such a region cannot contain any epilogues.
+            //
+    
+            RelativePc = (ULONG)(ControlPc - ImageBase);
+            if ((UnwindOp.OpInfo & 1) != 0) {
+                EpilogueOffset = FunctionEntry->EndAddress - EpilogueSize;
+                if (RelativePc - EpilogueOffset < EpilogueSize) {
+                    InEpilogue = TRUE;
+                }
+            }
+
+            if (InEpilogue == FALSE) {
+                for (Index = 1; Index < UnwindInfo->CountOfUnwindCodes; Index += 1) {
+                    UnwindOp = UnwindInfo->UnwindCode[Index];
+
+                    if (UnwindOp.UnwindOp == UWOP_EPILOG) {
+                        EpilogueOffset = UnwindOp.EpilogueCode.OffsetLow +
+                                            UnwindOp.EpilogueCode.OffsetHigh * 256;
+
+                        //
+                        // An epilogue offset of 0 indicates that this is
+                        // a padding entry (the number of epilogue codes
+                        // is a multiple of 2).
+                        //
+
+                        if (EpilogueOffset == 0) {
+                            break;
+                        }
+
+                        EpilogueOffset = FunctionEntry->EndAddress - EpilogueOffset;
+                        if (RelativePc - EpilogueOffset < EpilogueSize) {
+
+                            UNWINDER_ASSERT(EpilogueOffset != FunctionEntry->EndAddress);
+                            InEpilogue = TRUE;
+                            break;
+                        }
+
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            if (InEpilogue != FALSE) {
+                Status = UnwindEpilogue(ImageBase,
+                                        ControlPc,
+                                        RelativePc - EpilogueOffset,
+                                        FunctionEntry,
+                                        ContextRecord,
+                                        ContextPointers);
+
+                goto ExitSetHandler;
+            }
+        }
     }
 
     //
@@ -1061,18 +1559,58 @@ Arguments:
     // subject function and any chained unwind information.
     //
 
-    return UnwindPrologue(ImageBase,
-                          ControlPc,
-                          *EstablisherFrame,
-                          FunctionEntry,
-                          ContextRecord);
+    Status = UnwindPrologue(ImageBase,
+                            ControlPc,
+                            *EstablisherFrame,
+                            FunctionEntry,
+                            ContextRecord,
+                            ContextPointers,
+                            &FunctionEntry);
+
+    if (Status != S_OK) {
+        return Status;
+    }
+
+    //
+    // If control left the specified function outside of the prologue and
+    // the function has a handler that matches the specified type, then
+    // return the address of the language specific exception handler.
+    // Otherwise, return NULL.
+    //
+
+    if (HandlerType != 0) {
+        PrologOffset = (ULONG)(ControlPc - (FunctionEntry->BeginAddress + ImageBase));
+        UnwindInfo = GetUnwindInfo(FunctionEntry->UnwindInfoAddress + ImageBase);
+        if (UnwindInfo == NULL)
+        {
+            return HRESULT_FROM_WIN32(ERROR_READ_FAULT);
+        }
+        if ((PrologOffset >= UnwindInfo->SizeOfProlog) &&
+            ((UnwindInfo->Flags & HandlerType) != 0)) {
+
+            Index = UnwindInfo->CountOfUnwindCodes;
+            if ((Index & 1) != 0) {
+                Index += 1;
+            }
+
+            *HandlerData = &UnwindInfo->UnwindCode[Index + 2];
+            FoundHandler = (PEXCEPTION_ROUTINE)(*((PULONG)&UnwindInfo->UnwindCode[Index]) + ImageBase);
+        }
+    }
+
+ExitSetHandler:
+    if (ARGUMENT_PRESENT(HandlerRoutine)) {
+        *HandlerRoutine = FoundHandler;
+    }
+
+    return S_OK;
 }
 
-ULONG64
-OOPStackUnwinderAMD64::LookupPrimaryUnwindInfo(
+_PIMAGE_RUNTIME_FUNCTION_ENTRY
+OOPStackUnwinderAMD64::LookupPrimaryFunctionEntry(
     __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __out _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry
+    __in ULONG64 ImageBase
+
     )
 
 /*++
@@ -1081,8 +1619,7 @@ Routine Description:
 
     This function determines whether the supplied function entry is a primary
     function entry or a chained function entry. If it is a chained function
-    entry, the unwind information associated with the primary function entry
-    is returned.
+    entry, then the primary function entry is returned.
 
 Arguments:
 
@@ -1092,22 +1629,17 @@ Arguments:
     ImageBase - Supplies the base address of the image containing the
         supplied function entry.
 
-    PrimaryEntry - Supplies the address of a variable that receives a pointer
-        to the primary function entry.
-
 Return Value:
 
-    A pointer to the unwind information for the primary function entry is
-    returned as the function value.
+    A pointer to the primary function entry is returned as the function value.
 
 --*/
 
 {
 
+    ULONG ChainCount;
     ULONG Index;
     PUNWIND_INFO UnwindInfo;
-    ULONG UnwindRel;
-    ULONG64 UnwindAbs;
 
     //
     // Locate the unwind information and determine whether it is chained.
@@ -1115,13 +1647,9 @@ Return Value:
     // entry and loop again.
     //
 
-    UnwindRel = FunctionEntry->UnwindInfoAddress;
-    // Copy the function entry before it becomes invalid.
-    *PrimaryEntry = *FunctionEntry;
-
+    ChainCount = 0;
     do {
-        UnwindAbs = ImageBase + UnwindRel;
-        UnwindInfo = DacGetUnwindInfo(ImageBase + UnwindRel);
+        UnwindInfo = GetUnwindInfo(FunctionEntry->UnwindInfoAddress + ImageBase);
         if ((UnwindInfo == NULL) || ((UnwindInfo->Flags & UNW_FLAG_CHAININFO) == 0))
         {
             break;
@@ -1132,24 +1660,26 @@ Return Value:
             Index += 1;
         }
 
-        FunctionEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)
-            &UnwindInfo->UnwindCode[Index];
-        UnwindRel = FunctionEntry->UnwindInfoAddress;
+        FunctionEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)&UnwindInfo->UnwindCode[Index];
 
-        // Copy the function entry before it becomes invalid.
-        *PrimaryEntry = *FunctionEntry;
+        //
+        // Limit the number of iterations possible for chained function table
+        // entries.
+        //
+
+        ChainCount += 1;
+        UNWINDER_ASSERT(ChainCount <= UNWIND_CHAIN_LIMIT);
 
     } while (TRUE);
 
-    return UnwindAbs;
+    return FunctionEntry;
 }
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 OOPStackUnwinderAMD64::SameFunction(
     __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __out _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer
+    __in ULONG64 ControlPc
     )
 
 /*++
@@ -1180,23 +1710,22 @@ Return Value:
 --*/
 
 {
-
+    _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryFunctionEntry;
     _IMAGE_RUNTIME_FUNCTION_ENTRY TargetFunctionEntry;
     ULONG64 TargetImageBase;
-    ULONG64 UnwindInfo1;
-    ULONG64 UnwindInfo2;
 
     //
     // Find the unwind information referenced by the primary function entry
     // associated with the specified function entry.
     // 
 
-    UnwindInfo1 = LookupPrimaryUnwindInfo(FunctionEntry, ImageBase,
-                                          FunctionReturnBuffer);
+    PrimaryFunctionEntry = LookupPrimaryFunctionEntry(FunctionEntry,
+                                                      ImageBase);
 
     //
     // Determine the function entry containing the control Pc and similarly
-    // resolve it's primary function entry.
+    // resolve its primary function entry.  If no function entry can be
+    // found then the control pc resides in a different function.
     //
 
     if (GetModuleBase(ControlPc, &TargetImageBase) != S_OK ||
@@ -1206,20 +1735,65 @@ Return Value:
         return NULL;
     }
     
-    UnwindInfo2 = LookupPrimaryUnwindInfo(&TargetFunctionEntry,
-                                          TargetImageBase,
-                                          FunctionReturnBuffer);
+    //
+    // Lookup the primary function entry associated with the target function
+    // entry.
+    //
+
+    TargetFunctionEntry = *LookupPrimaryFunctionEntry(&TargetFunctionEntry,
+                                                      TargetImageBase);
 
     //
-    // If the address of the two sets of unwind information are equal, then
+    // If the beginning offset of the two function entries are equal, then
     // return the address of the primary function entry. Otherwise, return
     // NULL.
     //
 
-    if (UnwindInfo1 == UnwindInfo2) {
-        return FunctionReturnBuffer;
+    if (PrimaryFunctionEntry->BeginAddress ==  TargetFunctionEntry.BeginAddress) {
+        return PrimaryFunctionEntry;
 
     } else {
         return NULL;
     }
 }
+
+ULONG OOPStackUnwinderAMD64::UnwindOpSlots(__in UNWIND_CODE UnwindCode)
+/*++
+
+Routine Description:
+
+    This routine determines the number of unwind code slots ultimately
+    consumed by an unwind code sequence.
+
+Arguments:
+
+    UnwindCode - Supplies the first unwind code in the sequence.
+
+Return Value:
+
+    Returns the total count of the number of slots consumed by the unwind
+    code sequence.
+
+--*/
+{
+
+    ULONG Slots;
+    ULONG UnwindOp;
+
+    //
+    // UWOP_SPARE_CODE may be found in very old x64 images.
+    //
+
+    UnwindOp = UnwindCode.UnwindOp;
+
+    UNWINDER_ASSERT(UnwindOp != UWOP_SPARE_CODE);
+    UNWINDER_ASSERT(UnwindOp < sizeof(UnwindOpExtraSlotTable));
+
+    Slots = UnwindOpExtraSlotTable[UnwindOp] + 1;
+    if ((UnwindOp == UWOP_ALLOC_LARGE) && (UnwindCode.OpInfo != 0)) {
+        Slots += 1;
+    }
+
+    return Slots;
+}
+
