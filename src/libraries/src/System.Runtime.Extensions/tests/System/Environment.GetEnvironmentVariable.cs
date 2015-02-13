@@ -5,12 +5,9 @@ using System;
 using System.Collections;
 using System.Runtime.InteropServices;
 using Xunit;
+
 public class GetEnvironmentVariable
 {
-    // TODO: Hard-coded for now -- check with test team how to inject this based
-    //       on platform capability.
-    internal static readonly bool PlatformBehavesAsIfNoVariablesAreEverSet = false;
-
     [Fact]
     public void NullVariableThrowsArgumentNull()
     {
@@ -37,11 +34,18 @@ public class GetEnvironmentVariable
         // found!
 
         string variable = "LongVariable_" + new string('@', 33000);
-        Assert.Equal(true, SetEnvironmentVariable(variable, "TestValue"));
-        string expectedValue = PlatformBehavesAsIfNoVariablesAreEverSet ? null : "TestValue";
+        const string value = "TestValue";
 
-        Assert.Equal(expectedValue, Environment.GetEnvironmentVariable(variable));
-        Assert.Equal(true, SetEnvironmentVariable(variable, null));
+        try
+        {
+            Assert.Equal(true, SetEnvironmentVariable(variable, value));
+
+            Assert.Equal(value, Environment.GetEnvironmentVariable(variable));
+        }
+        finally
+        {
+            Assert.Equal(true, SetEnvironmentVariable(variable, null));
+        }
     }
 
     [Fact]
@@ -52,16 +56,23 @@ public class GetEnvironmentVariable
     }
 
     [Fact]
-    public void VariablesAreCaseInsensitive()
+    public void VariableNamesAreCaseInsensitive()
     {
-        Assert.Equal(true, SetEnvironmentVariable("ThisIsATestEnvironmentVariable", "TestValue"));
-        string expectedValue = PlatformBehavesAsIfNoVariablesAreEverSet ? null : "TestValue";
+        const string value = "TestValue";
 
-        Assert.Equal(expectedValue, Environment.GetEnvironmentVariable("ThisIsATestEnvironmentVariable"));
-        Assert.Equal(expectedValue, Environment.GetEnvironmentVariable("thisisatestenvironmentvariable"));
-        Assert.Equal(expectedValue, Environment.GetEnvironmentVariable("THISISATESTENVIRONMENTVARIABLE"));
-        Assert.Equal(expectedValue, Environment.GetEnvironmentVariable("ThISISATeSTENVIRoNMEnTVaRIABLE"));
-        Assert.Equal(true, SetEnvironmentVariable("ThisIsATestEnvironmentVariable", null));
+        try
+        {
+            Assert.Equal(true, SetEnvironmentVariable("ThisIsATestEnvironmentVariable", value));
+
+            Assert.Equal(value, Environment.GetEnvironmentVariable("ThisIsATestEnvironmentVariable"));
+            Assert.Equal(value, Environment.GetEnvironmentVariable("thisisatestenvironmentvariable"));
+            Assert.Equal(value, Environment.GetEnvironmentVariable("THISISATESTENVIRONMENTVARIABLE"));
+            Assert.Equal(value, Environment.GetEnvironmentVariable("ThISISATeSTENVIRoNMEnTVaRIABLE"));
+        }
+        finally
+        {
+            Assert.Equal(true, SetEnvironmentVariable("ThisIsATestEnvironmentVariable", null));
+        }
     }
 
     [Fact]
@@ -79,7 +90,7 @@ public class GetEnvironmentVariable
             atLeastOne = true;
         }
 
-        Assert.Equal(atLeastOne, !PlatformBehavesAsIfNoVariablesAreEverSet);
+        Assert.True(atLeastOne);
     }
 
     [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]

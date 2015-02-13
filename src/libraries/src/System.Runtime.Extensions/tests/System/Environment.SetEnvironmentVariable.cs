@@ -3,151 +3,177 @@
 
 using System;
 using Xunit;
+
 public class SetEnvironmentVariable
 {
     private const int MAX_VAR_LENGTH_ALLOWED = 32767;
+    private const string NullString = "\u0000";
 
     [Fact]
     public void NullVariableThrowsArgumentNull()
     {
-        Assert.Throws<ArgumentNullException>(() => Environment.SetEnvironmentVariable(null, "foo"));
+        Assert.Throws<ArgumentNullException>(() => Environment.SetEnvironmentVariable(null, "test"));
     }
 
     [Fact]
     public void IncorrectVariableThrowsArgument()
     {
-        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(String.Empty, "foo"));
-        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable('\x00'.ToString(), "foo"));
-        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable("Variable=Something", "foo"));
+        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(String.Empty, "test"));
+        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(NullString, "test"));
+        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable("Variable=Something", "test"));
 
         string varWithLenLongerThanAllowed = new string('c', MAX_VAR_LENGTH_ALLOWED + 1);
-        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(varWithLenLongerThanAllowed, "foo"));
+        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(varWithLenLongerThanAllowed, "test"));
     }
 
     [Fact]
-    public void SetEnvironmentVariable_Default()
+    public void Default()
     {
         const string varName = "Test_SetEnvironmentVariable_Default";
-        string value = "true";
-        Environment.SetEnvironmentVariable(varName, value);
+        const string value = "true";
 
-        // Check whether the variable exists.
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), value);
-
-        // Clean the value.
-        Environment.SetEnvironmentVariable(varName, null);
+        try
+        {
+            Environment.SetEnvironmentVariable(varName, value);
+            Assert.Equal(value, Environment.GetEnvironmentVariable(varName));
+        }
+        finally
+        {
+            // Clear the test variable
+            Environment.SetEnvironmentVariable(varName, null);
+        }
     }
 
     [Fact]
     public void ModifyEnvironmentVariable()
     {
-        string varName = "Test_ModifyEnvironmentVariable";
-        string value = "false";
+        const string varName = "Test_ModifyEnvironmentVariable";
+        const string value = "false";
 
-        // First set the value to something and then change it and ensure that it gets modified.
-        Environment.SetEnvironmentVariable(varName, "true");
-        Environment.SetEnvironmentVariable(varName, value);
+        try
+        {
+            // First set the value to something and then change it and ensure that it gets modified.
+            Environment.SetEnvironmentVariable(varName, "true");
+            Environment.SetEnvironmentVariable(varName, value);
 
-        // Check whether the variable exists.
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), value);
-
-        // Clean the value.
-        Environment.SetEnvironmentVariable(varName, null);
+            // Check whether the variable exists.
+            Assert.Equal(value, Environment.GetEnvironmentVariable(varName));
+        }
+        finally
+        {
+            // Clear the test variable
+            Environment.SetEnvironmentVariable(varName, null);
+        }
     }
 
     [Fact]
     public void DeleteEnvironmentVariable()
     {
-        string varName = "Test_DeleteEnvironmentVariable";
-        string value = "false";
+        const string varName = "Test_DeleteEnvironmentVariable";
+        const string value = "false";
 
-        // First set the value to something and then change it and ensure that it gets modified.
+        // First set the value to something and then ensure that it can be deleted.
         Environment.SetEnvironmentVariable(varName, value);
         Environment.SetEnvironmentVariable(varName, String.Empty);
-
-        // Check whether the variable exists.
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
+        Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
 
         Environment.SetEnvironmentVariable(varName, value);
         Environment.SetEnvironmentVariable(varName, null);
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
+        Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
 
         Environment.SetEnvironmentVariable(varName, value);
-        Environment.SetEnvironmentVariable(varName, '\u0000'.ToString());
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
-
-        // Check that the varName with non-initial zero characters work during deleting.
-        string varName_initial = "Begin_DeleteEnvironmentVariable";
-        string varName_end = "End_DeleteEnvironmentVariable";
-        string hexDecimal = '\u0000'.ToString();
-
-        varName = varName_initial + hexDecimal + varName_end;
-        Environment.SetEnvironmentVariable(varName, "true");
-        Environment.SetEnvironmentVariable(varName, String.Empty);
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
-        Assert.Equal(Environment.GetEnvironmentVariable(varName_initial), null);
-
-        //Make sure we remove the environmentVariables.
-        Environment.SetEnvironmentVariable(varName, String.Empty);
-
-        //Check that the varValue with non-initial zero characters also work during deleting.
-        hexDecimal = '\u0000'.ToString();
-        value = hexDecimal + "Foo";
-        varName = "Test_DeleteEnvironmentVariable1";
-        Environment.SetEnvironmentVariable(varName, value);
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
-        Environment.SetEnvironmentVariable(varName, String.Empty);
+        Environment.SetEnvironmentVariable(varName, NullString);
+        Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
     }
 
     [Fact]
-    public void TestNonInitialZeroCharacterInVariableName()
+    public void DeleteEnvironmentVariableNonInitialNullInName()
     {
-        string varName_initial = "Begin";
-        string varName_end = "End";
-        string hexDecimal = '\u0000'.ToString();
+        const string varNamePrefix = "Begin_DeleteEnvironmentVariableNonInitialNullInName";
+        const string varNameSuffix = "End_DeleteEnvironmentVariableNonInitialNullInName";
+        const string varName = varNamePrefix + NullString + varNameSuffix;
+        const string value = "false";
 
-        string varName = varName_initial + hexDecimal + varName_end;
-        string value = "true";
-
-        Environment.SetEnvironmentVariable(varName, value);
-        Assert.Equal(Environment.GetEnvironmentVariable(varName_initial), "true");
-
-        Environment.SetEnvironmentVariable(varName, String.Empty);
-        Environment.SetEnvironmentVariable(varName_initial, String.Empty);
+        try
+        {
+            Environment.SetEnvironmentVariable(varName, value);
+            Environment.SetEnvironmentVariable(varName, null);
+            Assert.Equal(Environment.GetEnvironmentVariable(varName), null);
+            Assert.Equal(Environment.GetEnvironmentVariable(varNamePrefix), null);
+        }
+        finally
+        {
+            // Clear the test variable
+            Environment.SetEnvironmentVariable(varName, null);
+        }
     }
 
     [Fact]
-    public void TestNonInitialZeroCharacterInValue()
+    public void DeleteEnvironmentVariableInitialNullInValue()
     {
-        string varName = "Test_TestNonInitialZeroCharacterInValue";
-        string value_initial = "Begin";
-        string value_end = "End";
-        string hexDecimal = '\u0000'.ToString();
+        const string value = NullString + "test";
+        const string varName = "DeleteEnvironmentVariableInitialNullInValue";
 
-        string value = value_initial + hexDecimal + value_end;
-        Environment.SetEnvironmentVariable(varName, value);
-        Assert.Equal(Environment.GetEnvironmentVariable(varName), value_initial);
-
-        Environment.SetEnvironmentVariable(varName, String.Empty);
+        try
+        {
+            Environment.SetEnvironmentVariable(varName, value);
+            Assert.Equal(null, Environment.GetEnvironmentVariable(varName));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(varName, String.Empty);
+        }
     }
 
     [Fact]
-    public void TestDeletingNonExistingEnvironmentVariable()
+    public void NonInitialNullCharacterInVariableName()
     {
-        string varName = "Test_TestDeletingNonExistingEnvironmentVariable";
+        const string varNamePrefix = "NonInitialNullCharacterInVariableName_Begin";
+        const string varNameSuffix = "NonInitialNullCharacterInVariableName_End";
+        const string varName = varNamePrefix + NullString + varNameSuffix;
+        const string value = "true";
+
+        try
+        {
+            Environment.SetEnvironmentVariable(varName, value);
+            Assert.Equal(value, Environment.GetEnvironmentVariable(varNamePrefix));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(varName, String.Empty);
+            Environment.SetEnvironmentVariable(varNamePrefix, String.Empty);
+        }
+    }
+
+    [Fact]
+    public void NonInitialNullCharacterInValue()
+    {
+        const string varName = "Test_TestNonInitialZeroCharacterInValue";
+        const string valuePrefix = "Begin";
+        const string valueSuffix = "End";
+        const string value = valuePrefix + NullString + valueSuffix;
+
+        try
+        {
+            Environment.SetEnvironmentVariable(varName, value);
+            Assert.Equal(valuePrefix, Environment.GetEnvironmentVariable(varName));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(varName, String.Empty);
+        }
+    }
+
+    [Fact]
+    public void DeleteNonExistentEnvironmentVariable()
+    {
+        const string varName = "Test_TestDeletingNonExistingEnvironmentVariable";
 
         if (Environment.GetEnvironmentVariable(varName) != null)
         {
             Environment.SetEnvironmentVariable(varName, null);
         }
 
-        try
-        {
-            Environment.SetEnvironmentVariable("TestDeletingNonExistingEnvironmentVariable", String.Empty);
-        }
-        catch (Exception ex)
-        {
-            Assert.True(false, "TestDeletingNonExistingEnvironmentVariable failed: " + ex);
-        }
+        Environment.SetEnvironmentVariable("TestDeletingNonExistingEnvironmentVariable", String.Empty);
     }
 }

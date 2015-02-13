@@ -3,412 +3,183 @@
 
 using System;
 using Xunit;
-// [assembly: System.Reflection.Consumption.EnableDynamicProgramming(typeof(System.ArgumentException))]
-// [assembly: System.Reflection.Consumption.EnableDynamicProgramming(typeof(System.FormatException))]
 
-namespace Test
+public class ConvertToUInt16Tests : ConvertTestBase<UInt16>
 {
-    public class Co6067ToUInt16_all
+    [Fact]
+    public void FromBoolean()
     {
-        [Fact]
-        public static void runTest()
-        {
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Boolean )
+        Boolean[] testValues = { true, false };
+        UInt16[] expectedValues = { 1, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
+    }
 
-            //[] ToUInt16(Boolean) - Vanilla Cases (true,false)
+    [Fact]
+    public void FromByte()
+    {
+        Byte[] testValues = { Byte.MaxValue, Byte.MinValue };
+        UInt16[] expectedValues = { 255, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
+    }
 
-            // Setup Boolean Test
-            {
-                Boolean[] testValues = { true, false, };
-                UInt16[] expectedValues = { 1, 0, };
-                // Vanila Test Casse
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Double )
+    [Fact]
+    public void FromChar()
+    {
+        Char[] testValues = { Char.MaxValue, Char.MinValue, 'b' };
+        UInt16[] expectedValues = { Char.MaxValue, Char.MinValue, 98 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
+    }
 
-            //[] ToUInt16(Double) - Vanilla Cases (1000.0,0.0)
+    [Fact]
+    public void FromDecimal()
+    {
+        Decimal[] testValues = { 1000m, 0m };
+        UInt16[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            // Setup Double Test
-            {
-                Double[] testValues = { 1000.0, 0.0, };
-                UInt16[] expectedValues = { 1000, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Single )
+        Decimal[] overflowValues = { Decimal.MaxValue, Decimal.MinValue };
+        VerifyThrows<OverflowException, Decimal>(Convert.ToUInt16, overflowValues);
+    }
 
-            //[] ToUInt16(Single) - Vanilla Cases (1000.0f,0.0f)
+    [Fact]
+    public void FromDouble()
+    {
+        Double[] testValues = { 1000.0, 0.0 };
+        UInt16[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            // Setup Single Test
+        Double[] overflowValues = { Double.MaxValue, -100.0 };
+        VerifyThrows<OverflowException, Double>(Convert.ToUInt16, overflowValues);
+    }
 
-            {
-                Single[] testValues = { 1000.0f, 0.0f, };
-                UInt16[] expectedValues = { 1000, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Int32 )
+    [Fact]
+    public void FromInt16()
+    {
+        Int16[] testValues = { 1000, 0, Int16.MaxValue };
+        UInt16[] expectedValues = { 1000, 0, (UInt16)Int16.MaxValue };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            //[] ToUInt16(Int32) - Vanilla Cases (1000,0)
+        Int16[] overflowValues = { Int16.MinValue };
+        VerifyThrows<OverflowException, Int16>(Convert.ToUInt16, overflowValues);
+    }
 
-            // Setup Int32 Test
+    [Fact]
+    public void FromInt32()
+    {
+        Int32[] testValues = { 1000, 0 };
+        UInt16[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            {
-                Int32[] testValues = { 1000, 0, };
-                UInt16[] expectedValues = { 1000, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Int64 )
+        Int32[] overflowValues = { Int32.MinValue, Int32.MaxValue };
+        VerifyThrows<OverflowException, Int32>(Convert.ToUInt16, overflowValues);
+    }
 
-            //[] ToUInt16(Int64) - Vanilla Cases (1000,0)
+    [Fact]
+    public void FromInt64()
+    {
+        Int64[] testValues = { 1000, 0 };
+        UInt16[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            // Setup Int64 Test
+        Int64[] overflowValues = { Int64.MinValue, Int64.MaxValue };
+        VerifyThrows<OverflowException, Int64>(Convert.ToUInt16, overflowValues);
+    }
 
-            {
-                Int64[] testValues = { 1000, 0, };
-                UInt16[] expectedValues = { 1000, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Int16 )
+    [Fact]
+    public void FromObject()
+    {
+        Object[] testValues = { null };
+        UInt16[] expectedValues = { 0 };
+        VerifyFromObject(Convert.ToUInt16, Convert.ToUInt16, testValues, expectedValues);
 
-            //[] ToUInt16(Int16) - Vanilla Cases (1000,0)
+        Object[] invalidValues = { new Object(), DateTime.Now };
+        VerifyFromObjectThrows<InvalidCastException>(Convert.ToUInt16, Convert.ToUInt16, invalidValues);
+    }
 
-            // Setup Int16 Test
+    [Fact]
+    public void FromSByte()
+    {
+        SByte[] testValues = { 100, 0 };
+        UInt16[] expectedValues = { 100, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            {
-                Int16[] testValues = { 1000, 0, };
-                UInt16[] expectedValues = { 1000, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Decimal )
+        SByte[] values = { SByte.MinValue };
+        VerifyThrows<OverflowException, SByte>(Convert.ToUInt16, values);
+    }
 
-            //[] ToUInt16(Decimal) - Vanilla Cases (Decimal( 1000 ),Decimal( 0 ))
+    [Fact]
+    public void FromSingle()
+    {
+        Single[] testValues = { 1000.0f, 0.0f };
+        UInt16[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            // Setup Decimal Test
+        Single[] values = { Single.MaxValue, -100.0f };
+        VerifyThrows<OverflowException, Single>(Convert.ToUInt16, values);
+    }
 
-            {
-                Decimal[] testValues = { new Decimal(1000), new Decimal(0), };
-                UInt16[] expectedValues = { 1000, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( String )
+    [Fact]
+    public void FromString()
+    {
+        String[] testValues = { "1000", "0", UInt16.MaxValue.ToString(), null };
+        UInt16[] expectedValues = { 1000, 0, UInt16.MaxValue, 0 };
+        VerifyFromString(Convert.ToUInt16, Convert.ToUInt16, testValues, expectedValues);
 
-            //[] ToUInt16(String) - Vanilla Cases ("1000","0",UInt16.MaxValue.ToString())
+        String[] overflowValues = { "-1", Decimal.MaxValue.ToString() };
+        VerifyFromStringThrows<OverflowException>(Convert.ToUInt16, Convert.ToUInt16, overflowValues);
 
-            // Setup String Test
+        String[] formatExceptionValues = { "abba" };
+        VerifyFromStringThrows<FormatException>(Convert.ToUInt16, Convert.ToUInt16, formatExceptionValues);
+    }
 
-            {
-                String[] testValues = { "1000", "0", UInt16.MaxValue.ToString(), null, };
-                UInt16[] expectedValues = { 1000, 0, UInt16.MaxValue, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ///////////////////////////////////////////// []UInt16 Convert.ToUInt16( String, IFormatProvider )
+    [Fact]
+    public void FromStringWithBase()
+    {
+        String[] testValues = { null, null, null, null, "ffff", "65535", "177777", "1111111111111111", "0", "0", "0", "0" };
+        Int32[] testBases =   { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2 };
+        UInt16[] expectedValues = { 0, 0, 0, 0, UInt16.MaxValue, UInt16.MaxValue, UInt16.MaxValue, UInt16.MaxValue, UInt16.MinValue, UInt16.MinValue, UInt16.MinValue, UInt16.MinValue };
+        VerifyFromStringWithBase(Convert.ToUInt16, testValues, testBases, expectedValues);
 
-            // Setup String Test
-            {
-                String[] testValues = { "1000", "0", UInt16.MaxValue.ToString(), null, };
-                UInt16[] expectedValues = { 1000, 0, UInt16.MaxValue, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i], new TestFormatProvider());
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Byte )
+        String[] overflowValues = { "65536", "-1", "11111111111111111", "1FFFF", "777777" };
+        Int32[] overflowBases = { 10, 10, 2, 16, 8 };
+        VerifyFromStringWithBaseThrows<OverflowException>(Convert.ToUInt16, overflowValues, overflowBases);
 
-            //[] ToUInt16(Byte) - Vanilla Cases (Byte.MaxValue,Byte.MinValue)
+        String[] formatExceptionValues = { "12", "ffffffffffffffffffff" };
+        Int32[] formatExceptionBases = { 2, 8 };
+        VerifyFromStringWithBaseThrows<FormatException>(Convert.ToUInt16, formatExceptionValues, formatExceptionBases);
 
-            // Setup Byte Test
-            {
-                Byte[] testValues = { Byte.MaxValue, Byte.MinValue, };
-                UInt16[] expectedValues = { 255, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+        String[] argumentExceptionValues = { "10", "11", "abba", "-ab" };
+        Int32[] argumentExceptionBases = { -1, 3, 0, 16 };
+        VerifyFromStringWithBaseThrows<ArgumentException>(Convert.ToUInt16, argumentExceptionValues, argumentExceptionBases);
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( String, Int32 )
+    [Fact]
+    public void FromUInt16()
+    {
+        UInt16[] testValues = { UInt16.MaxValue, UInt16.MinValue };
+        UInt16[] expectedValues = { UInt16.MaxValue, UInt16.MinValue };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
+    }
 
-            //[] ToUInt16(String,Int32) - Vanilla Cases {("ffff",16),("65535",10),("177777",8),("1111111111111111",2),("0",16),("0",10),("0",8),("0"2)}
+    [Fact]
+    public void FromUInt32()
+    {
+        UInt32[] testValues = { 100, 0 };
+        UInt16[] expectedValues = { 100, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            // Setup String, Int32 Test
+        UInt32[] overflowValues = { UInt32.MaxValue };
+        VerifyThrows<OverflowException, UInt32>(Convert.ToUInt16, overflowValues);
+    }
 
-            {
-                String[] dummy = { null, };
-                Assert.Equal(0, Convert.ToUInt16(dummy[0], 10));
-                Assert.Equal(0, Convert.ToUInt16(dummy[0], 2));
-                Assert.Equal(0, Convert.ToUInt16(dummy[0], 8));
-                Assert.Equal(0, Convert.ToUInt16(dummy[0], 16));
-            }
+    [Fact]
+    public void FromUInt64()
+    {
+        UInt64[] testValues = { 100, 0 };
+        UInt16[] expectedValues = { 100, 0 };
+        Verify(Convert.ToUInt16, testValues, expectedValues);
 
-            {
-                String[] testValues = { "ffff", "65535", "177777", "1111111111111111", "0", "0", "0", "0", };
-                Int32[] testBases = { 16, 10, 8, 2, 16, 10, 8, 2, };
-                UInt16[] expectedValues = { UInt16.MaxValue, UInt16.MaxValue, UInt16.MaxValue, UInt16.MaxValue, UInt16.MinValue, UInt16.MinValue, UInt16.MinValue, UInt16.MinValue, };                // Vanila Test Cases
-
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i], testBases[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( SByte )
-
-            //[] ToUInt16(SByte) - Vanilla Cases (100,0)
-
-            // Setup SByte Test
-
-            {
-                SByte[] testValues = { 100, 0, };
-                UInt16[] expectedValues = { 100, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( UInt32 )
-
-            //[] ToUInt16(UInt32) - Vanilla Cases (100,0)
-
-            // Setup UInt32 Test
-            {
-                UInt32[] testValues = { 100, 0, };
-                UInt16[] expectedValues = { 100, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( UInt64 )
-
-            //[] ToUInt16(UInt64) - Vanilla Cases (100,0)
-
-            // Setup UInt64 Test
-            {
-                UInt64[] testValues = { 100, 0, };
-                UInt16[] expectedValues = { 100, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( UInt16 )
-
-            //[] ToUInt16(UInt16) - Vanilla cases (UInt16.MaxValue,UInt16.MinValue)
-
-            // Setup UInt16 Test
-
-            {
-                UInt16[] testValues = { UInt16.MaxValue, UInt16.MinValue };
-                UInt16[] expectedValues = { UInt16.MaxValue, UInt16.MinValue };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Char )
-
-            //[] ToUInt16(Char) - Vanilla Cases (Char.MaxValue,Char.MinValue, 'b')
-
-            // Setup Char Test
-
-            {
-                Char[] testValues = { Char.MaxValue, Char.MinValue, 'b' };
-                UInt16[] expectedValues = { (UInt16)Char.MaxValue, (UInt16)Char.MinValue, 98 };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt16 result = Convert.ToUInt16(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            //[] ToUInt16( Object ) - obj = null
-
-            {
-                UInt16 bTest = Convert.ToUInt16((Object)null);
-                Assert.Equal(0, bTest);
-            }
-            //[] ToUInt16( Object, IFP ) - obj = null
-            {
-                UInt16 bTest = Convert.ToUInt16((Object)null, new TestFormatProvider());
-                Assert.Equal(0, bTest);
-            }
-        }
-
-        [Fact]
-        public static void runTest_Negative()
-        {
-            {
-                // Exception Test Cases
-                //[] ToUInt16(Double) - Exception Cases (Double.MaxValue,-100.0)
-                Double[] errorValues = { Double.MaxValue, -100.0, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt16(Single) - Exception Cases (Single.MaxValue,-100.0f)
-                Single[] errorValues = { Single.MaxValue, -100.0f, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt16(Int32) - Exception Cases (Int32.MinValue,Int32.MaxValue)
-                Int32[] errorValues = { Int32.MinValue, Int32.MaxValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt16(Int64) - Exception Cases (Int64.MaxValue,Int64.MinValue)
-                Int64[] errorValues = { Int64.MaxValue, Int64.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(errorValues[i]); });
-                }
-            }
-            // Exception Test Cases
-            //[] ToUInt16(Int16) - Exception Cases (Int16.MinValue)
-
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(Int16.MinValue); });
-            {
-                // Exception Test Cases
-                //[] ToUInt16(Decimal) - Exception Cases (Decimal.MaxValue,Decimal.MinValue)
-                Decimal[] errorValues = { Decimal.MaxValue, Decimal.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(errorValues[i]); });
-                }
-            }
-            // Exception Test Cases
-            //[] ToUInt16(String) - Exception Cases ("-1",Decimal.MaxValue.ToString(),null,"abba")
-
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(Decimal.MaxValue.ToString()); });
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16("-1"); });
-            Assert.Throws<FormatException>(() => { UInt16 result = Convert.ToUInt16("abba"); });
-
-            // Exception Test Cases
-            //[] ToUInt16(String) - Exception Cases ("-1",Decimal.MaxValue.ToString(),null,"abba")
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(Decimal.MaxValue.ToString(), new TestFormatProvider()); });
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16("-1", new TestFormatProvider()); });
-            Assert.Throws<FormatException>(() => { UInt16 result = Convert.ToUInt16("abba", new TestFormatProvider()); });
-            {
-                // Exception Test Cases
-                //[] ToUInt16(String,Int32) - Exception Cases {(null,2),("12",3),("11",5),("abba",10),("ffffffffffffffffffff",16)}
-                String[] expectedExceptions = { "System.FormatException", "System.ArgumentException", "System.ArgumentException", "System.ArgumentException", "System.FormatException", "System.ArgumentException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", };
-                String[] errorValues = { "12", "10", "11", "abba", "ffffffffffffffffffff", "-ab", "65536", "-1", "11111111111111111", "1FFFF", "777777", };
-                Int32[] errorBases = { 2, -1, 3, 0, 8, 16, 10, 10, 2, 16, 8, };
-
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    try
-                    {
-                        UInt16 result = Convert.ToUInt16(errorValues[i], errorBases[i]);
-                        Assert.True(false, "Exception expected: " + expectedExceptions[i]);
-                    }
-                    catch (Exception e)
-                    {
-                        Assert.True(e.GetType().FullName.Equals(expectedExceptions[i]), " Wrong Exception Thrown. Expected" + expectedExceptions[i] + ", Actual: " + e.GetType().FullName);
-                    }
-                }
-            }
-            // Exception Test Cases
-            //[] ToUInt16(SByte) - Exception Cases (SByte.MinValue)
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(SByte.MinValue); });
-
-            // Exception Test Cases
-            //[] ToUInt16(UInt32) - Exception Cases (UInt32.MaxValue)
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(UInt32.MaxValue); });
-
-            // Exception Test Cases
-            //[] ToUInt16(UInt64) - Exception Cases (UInt64.MaxValue)
-            Assert.Throws<OverflowException>(() => { UInt16 result = Convert.ToUInt16(UInt64.MaxValue); });
-
-            ///////////////////////////////////////////// UInt16 Convert.ToUInt16( Object )
-            //[] ToUInt16( Object ) - Exception Case (Object that does not implement IConvertible) 
-
-            Assert.Throws<InvalidCastException>(() => { UInt16 bTest = Convert.ToUInt16(new Object()); });
-
-            ///////////////////////////////////////////// []UInt16 Convert.ToUInt16( Object, IFormatPRovider )
-            Assert.Throws<InvalidCastException>(() => { UInt16 bTest = Convert.ToUInt16(new Object(), new TestFormatProvider()); });
-
-            ///////////////////////////////////////////// []UInt16 Convert.ToUInt16( DateTime )
-            Assert.Throws<InvalidCastException>(() => { UInt16 bTest = Convert.ToUInt16(DateTime.Now); });
-        }
+        UInt64[] overflowValues = { UInt64.MaxValue };
+        VerifyThrows<OverflowException, UInt64>(Convert.ToUInt16, overflowValues);
     }
 }

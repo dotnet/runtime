@@ -124,24 +124,6 @@ namespace PathTests
         private static void Verify(string[] paths)
         {
             String rVal;
-
-            //Logger.LogInformation("");
-            //Logger.LogInformation("Testing on combining: ");
-            bool first = true;
-            foreach (string s in paths)
-            {
-                if (!first)
-                {
-                    //Logger.LogInformation(", ");
-                }
-                else
-                {
-                    first = false;
-                }
-                //Logger.LogInformation(s);
-            }
-            //Logger.LogInformation("");
-
             String expected = String.Empty;
             if (paths.Length > 0) expected = paths[0];
             for (int i = 1; i < paths.Length; i++)
@@ -209,27 +191,6 @@ namespace PathTests
         private static void VerifyException<T>(string[] paths) where T : Exception
         {
             String rVal;
-
-            //Logger.LogInformation("");
-            //Logger.LogInformation("Testing on combining: ");
-            if (paths != null)
-            {
-                bool first = true;
-                foreach (string s in paths)
-                {
-                    if (!first)
-                    {
-                        //Logger.LogInformation(", ");
-                    }
-                    else
-                    {
-                        first = false;
-                    }
-                    //Logger.LogInformation("{0}", s);
-                }
-                //Logger.LogInformation("");
-            }
-
             Assert.Throws<T>(() => { rVal = Path.Combine(paths); });
 
             //verify passed as elements case

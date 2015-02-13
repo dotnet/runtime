@@ -20,8 +20,8 @@
     <Compile Include="System\IO\Path.Combine.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
-    <Compile Include="System\Convert.FromBase64CharArray.cs" />
-    <Compile Include="System\Convert.FromBase64String.cs" />
+    <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.TestBase.cs" />
     <Compile Include="System\Convert.ToBase64CharArray.cs" />
     <Compile Include="System\Convert.ToBase64String.cs" />
     <Compile Include="System\Convert.ToBoolean.cs" />
