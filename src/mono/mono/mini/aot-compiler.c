@@ -129,6 +129,7 @@ typedef struct MonoAotOptions {
 	char *llvm_path;
 	char *instances_logfile_path;
 	char *logfile;
+	gboolean dump_json;
 } MonoAotOptions;
 
 typedef struct MonoAotStats {
@@ -6468,6 +6469,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			exit (0);
 		} else if (str_begins_with (arg, "gc-maps")) {
 			mini_gc_enable_gc_maps_for_aot ();
+		} else if (str_begins_with (arg, "dump")) {
+			opts->dump_json = TRUE;			
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
@@ -6496,6 +6499,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    print-skipped\n");
 			printf ("    no-instances\n");
 			printf ("    stats\n");
+			printf ("    dump\n");
 			printf ("    info\n");
 			printf ("    help/?\n");
 			exit (0);
@@ -8900,6 +8904,8 @@ acfg_free (MonoAotCompile *acfg)
 	g_free (acfg);
 }
 
+#include "aot_dump.c"
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
@@ -9359,6 +9365,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 
 	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
+
+	if (acfg->aot_opts.dump_json)
+		aot_dump (acfg);
 
 	acfg_free (acfg);
 	
