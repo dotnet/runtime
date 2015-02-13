@@ -641,3 +641,121 @@ bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		MONO_REMOVE_INS (bb, prev);
 	};
 }
+
+void
+mono_image_get_aot_seq_point_path (MonoImage *image, char **str)
+{
+	int size = strlen (image->name) + strlen (SEQ_POINT_AOT_EXT) + 1;
+	*str = g_malloc (size);
+	g_sprintf (*str, "%s%s", image->name, SEQ_POINT_AOT_EXT);
+}
+
+/*
+ * SeqPointData struct and functions
+ * This is used to store/load/use sequence point from a file
+ */
+
+void
+seq_point_data_init (SeqPointData *data, int entry_capacity) {
+	data->entry_count = 0;
+	data->entry_capacity = entry_capacity;
+	data->entries = g_malloc (sizeof (SeqPointDataEntry) * entry_capacity);
+}
+
+void
+seq_point_data_free (SeqPointData *data) {
+	int i;
+	for (i=0; i<data->entry_count; i++) {
+		if (data->entries [i].free_seq_points)
+			g_free (data->entries [i].seq_points);
+	}
+	g_free (data->entries);
+}
+
+gboolean
+seq_point_data_read (SeqPointData *data, char *path) {
+	guint8 *buffer, *buffer_orig;
+	int entry_count, i;
+	long fsize;
+	FILE *f;
+
+	f = fopen (path, "r");
+	if (!f)
+		return FALSE;
+
+	fseek(f, 0, SEEK_END);
+	fsize = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	buffer_orig = buffer = g_malloc(fsize + 1);
+	fread(buffer_orig, fsize, 1, f);
+	fclose(f);
+
+	entry_count = decode_var_int (buffer, &buffer);
+	seq_point_data_init (data, entry_count);
+	data->entry_count = entry_count;
+
+	for (i=0; i<entry_count; i++) {
+		data->entries [i].token = decode_var_int (buffer, &buffer);
+		buffer += seq_point_info_read (&data->entries [i].seq_points, buffer, TRUE);
+		data->entries [i].free_seq_points = TRUE;
+	}
+
+	g_free (buffer_orig);
+	return TRUE;
+}
+
+gboolean
+seq_point_data_write (SeqPointData *data, char *path) {
+	guint8 *buffer, *buffer_orig;
+	FILE *f;
+	int i, size = 0;
+
+	f = fopen (path, "w+");
+	if (!f)
+		return FALSE;
+
+	for (i=0; i<data->entry_count; i++) {
+		size += seq_point_info_get_write_size (data->entries [i].seq_points);
+	}
+	// Add size of entry_count and native_base_offsets
+	size += 4 + data->entry_count * 4;
+
+	buffer_orig = buffer = g_malloc (size);
+
+	encode_var_int (buffer, &buffer, data->entry_count);
+
+	for (i=0; i<data->entry_count; i++) {
+		encode_var_int (buffer, &buffer, data->entries [i].token);
+		buffer += seq_point_info_write (data->entries [i].seq_points, buffer);
+	}
+
+	fwrite (buffer_orig, 1, buffer - buffer_orig, f);
+	g_free (buffer_orig);
+
+	return TRUE;
+}
+
+void
+seq_point_data_add (SeqPointData *data, guint32 token, MonoSeqPointInfo* info) {
+	int i;
+
+	g_assert (data->entry_count < data->entry_capacity);
+	i = data->entry_count++;
+	data->entries [i].seq_points = info;
+	data->entries [i].token = token;
+	data->entries [i].free_seq_points = FALSE;
+}
+
+gboolean
+seq_point_data_get (SeqPointData *data, guint32 token, MonoSeqPointInfo** info) {
+	int i;
+
+	for (i=0; i<data->entry_count; i++) {
+		if (data->entries [i].token == token) {
+			(*info) = data->entries [i].seq_points;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}

@@ -74,4 +74,42 @@ seq_point_info_get_write_size (MonoSeqPointInfo* info);
 void
 bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb);
 
+void
+mono_image_get_aot_seq_point_path (MonoImage *image, char **str);
+
+/*
+ * SeqPointData struct and functions
+ * This is used to store/load/use sequence point from a file
+ */
+
+typedef struct {
+	guint32 token;
+	MonoSeqPointInfo* seq_points;
+	gboolean free_seq_points;
+} SeqPointDataEntry;
+
+typedef struct {
+	SeqPointDataEntry* entries;
+	int entry_count;
+	int entry_capacity;
+} SeqPointData;
+
+void
+seq_point_data_init (SeqPointData *data, int entry_capacity);
+
+void
+seq_point_data_free (SeqPointData *data);
+
+gboolean
+seq_point_data_read (SeqPointData *data, char *path);
+
+gboolean
+seq_point_data_write (SeqPointData *data, char *path);
+
+void
+seq_point_data_add (SeqPointData *data, guint32 token, MonoSeqPointInfo* info);
+
+gboolean
+seq_point_data_get (SeqPointData *data, guint32 token, MonoSeqPointInfo** info);
+
 #endif /* __MONO_SEQ_POINTS_H__ */
