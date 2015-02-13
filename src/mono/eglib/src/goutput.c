@@ -132,6 +132,7 @@ g_assertion_message (const gchar *format, ...)
 	va_start (args, format);
 	g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 	va_end (args);
+	exit (0);
 }
 
 
