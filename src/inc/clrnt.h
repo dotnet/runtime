@@ -816,8 +816,8 @@ typedef enum _UNWIND_OP_CODES {
     UWOP_SET_FPREG,
     UWOP_SAVE_NONVOL,
     UWOP_SAVE_NONVOL_FAR,
-    UWOP_SAVE_XMM,
-    UWOP_SAVE_XMM_FAR,
+    UWOP_EPILOG,
+    UWOP_SPARE_CODE,
     UWOP_SAVE_XMM128,
     UWOP_SAVE_XMM128_FAR,
     UWOP_PUSH_MACHFRAME
@@ -825,13 +825,13 @@ typedef enum _UNWIND_OP_CODES {
 
 static const UCHAR UnwindOpExtraSlotTable[] = {
     0,          // UWOP_PUSH_NONVOL
-    1,          // UWOP_ALLOC_LARGE (special cased)
+    1,          // UWOP_ALLOC_LARGE (or 3, special cased in lookup code)
     0,          // UWOP_ALLOC_SMALL
     0,          // UWOP_SET_FPREG
     1,          // UWOP_SAVE_NONVOL
     2,          // UWOP_SAVE_NONVOL_FAR
-    1,          // UWOP_SAVE_XMM
-    2,          // UWOP_SAVE_XMM_FAR
+    1,          // UWOP_EPILOG
+    2,          // UWOP_SPARE_CODE      // previously 64-bit UWOP_SAVE_XMM_FAR
     1,          // UWOP_SAVE_XMM128
     2,          // UWOP_SAVE_XMM128_FAR
     0           // UWOP_PUSH_MACHFRAME
@@ -847,6 +847,12 @@ typedef union _UNWIND_CODE {
         UCHAR UnwindOp : 4;
         UCHAR OpInfo : 4;
     };
+
+    struct {
+        UCHAR OffsetLow;
+        UCHAR UnwindOp : 4;
+        UCHAR OffsetHigh : 4;
+    } EpilogueCode;
 
     USHORT FrameOffset;
 } UNWIND_CODE, *PUNWIND_CODE;
@@ -898,7 +904,21 @@ PEXCEPTION_ROUTINE
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
+#ifndef FEATURE_PAL
 extern RtlVirtualUnwindFn* RtlVirtualUnwind_Unsafe;
+#else // !FEATURE_PAL
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind_Unsafe(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    );
+#endif // !FEATURE_PAL
 
 #endif // _TARGET_AMD64_
 
