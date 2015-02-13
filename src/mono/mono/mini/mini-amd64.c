@@ -3549,7 +3549,7 @@ static int tls_gs_offset;
 gboolean
 mono_amd64_have_tls_get (void)
 {
-#ifdef __APPLE__
+#ifdef TARGET_MACH
 	static gboolean have_tls_get = FALSE;
 	static gboolean inited = FALSE;
 	guint8 *ins;
@@ -3580,7 +3580,7 @@ mono_amd64_have_tls_get (void)
 	tls_gs_offset = ins[5];
 
 	return have_tls_get;
-#elif defined(PLATFORM_ANDROID)
+#elif defined(TARGET_ANDROID)
 	return FALSE;
 #else
 	return TRUE;
