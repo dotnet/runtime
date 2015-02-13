@@ -33,6 +33,7 @@ void sgen_thread_pool_init (int num_threads);
 
 void sgen_thread_pool_job_init (SgenThreadPoolJob *job, SgenThreadPoolJobFunc func);
 void sgen_thread_pool_job_enqueue (SgenThreadPoolJob *job);
+void sgen_thread_pool_job_wait (SgenThreadPoolJob *job);
 
 void sgen_thread_pool_wait_for_all_jobs (void);
 

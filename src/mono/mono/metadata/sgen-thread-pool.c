@@ -134,6 +134,17 @@ sgen_thread_pool_job_enqueue (SgenThreadPoolJob *job)
 }
 
 void
+sgen_thread_pool_job_wait (SgenThreadPoolJob *job)
+{
+	mono_mutex_lock (&lock);
+
+	while (job->state != STATE_DONE)
+		mono_cond_wait (&done_cond, &lock);
+
+	mono_mutex_unlock (&lock);
+}
+
+void
 sgen_thread_pool_wait_for_all_jobs (void)
 {
 	mono_mutex_lock (&lock);

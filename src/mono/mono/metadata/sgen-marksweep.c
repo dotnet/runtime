@@ -804,6 +804,8 @@ set_sweep_state (int new, int expected)
 
 static gboolean ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *have_checked);
 
+static SgenThreadPoolJob sweep_job;
+
 static void
 major_finish_sweep_checking (void)
 {
@@ -822,8 +824,7 @@ major_finish_sweep_checking (void)
 		SGEN_ASSERT (0, FALSE, "Is there another minor collection running?");
 		goto retry;
 	case SWEEP_STATE_COMPACTING:
-		g_usleep (100);
-		goto retry;
+		goto wait;
 	default:
 		SGEN_ASSERT (0, FALSE, "Invalid sweep state.");
 		break;
@@ -838,8 +839,10 @@ major_finish_sweep_checking (void)
 		ensure_block_is_checked_for_sweeping (block_index, FALSE, NULL);
 
 	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_SWEEPING_AND_ITERATING);
-	while (sweep_state != SWEEP_STATE_SWEPT)
-		g_usleep (100);
+
+ wait:
+	sgen_thread_pool_job_wait (&sweep_job);
+	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "How is the sweep job done but we're not swept?");
 }
 
 static void
@@ -1544,8 +1547,14 @@ sweep_job_func (SgenThreadPoolJob *job)
 			++num_major_sections_freed_in_sweep;
 	}
 
-	while (!try_set_sweep_state (SWEEP_STATE_COMPACTING, SWEEP_STATE_SWEEPING))
+	while (!try_set_sweep_state (SWEEP_STATE_COMPACTING, SWEEP_STATE_SWEEPING)) {
+		/*
+		 * The main GC thread is currently iterating over the block array to help us
+		 * finish the sweep.  We have already finished, but we don't want to mess up
+		 * that iteration, so we just wait for it.
+		 */
 		g_usleep (100);
+	}
 
 	if (SGEN_MAX_ASSERT_LEVEL >= 6) {
 		for (block_index = num_blocks; block_index < allocated_blocks.next_slot; ++block_index) {
@@ -1589,8 +1598,6 @@ sweep_finish (void)
 
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
 }
-
-static SgenThreadPoolJob sweep_job;
 
 static void
 major_sweep (void)
