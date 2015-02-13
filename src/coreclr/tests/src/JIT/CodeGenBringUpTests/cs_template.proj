@@ -21,9 +21,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <PropertyGroup>
-    <_CLRTestPreCommands>IF NOT "%DOMSILCTEST%"=="" set COMPLus_AltJit=*;IF NOT "%DOMSILCTEST%"=="" set COMPLus_AltJitName=MSILCJit.dll</_CLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
       <Visible>False</Visible>
