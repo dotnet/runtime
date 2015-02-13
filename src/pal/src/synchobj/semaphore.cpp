@@ -61,7 +61,7 @@ Function:
 CreateSemaphoreExA
 
 Note:
-lpSemaphoreAttributes currentely ignored:
+lpSemaphoreAttributes currently ignored:
 -- Win32 object security not supported
 -- handles to semaphore objects are not inheritable
 
@@ -75,11 +75,20 @@ CreateSemaphoreExA(
         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
         IN LONG lInitialCount,
         IN LONG lMaximumCount,
-        IN LPCSTR lpName)
+        IN LPCSTR lpName,
+        IN /*_Reserved_*/  DWORD dwFlags,
+        IN DWORD dwDesiredAccess)
 {
-    // TODO: Implement this!
-    ERROR("Needs Implementation!!!");
-    return NULL;
+    // dwFlags is reserved and unused, and dwDesiredAccess is currently
+    // only ever used as SEMAPHORE_ALL_ACCESS.  The other parameters
+    // all map to CreateSemaphoreA.
+    _ASSERTE(SEMAPHORE_ALL_ACCESS == dwDesiredAccess);
+
+    return CreateSemaphoreA(
+        lpSemaphoreAttributes,
+        lInitialCount,
+        lMaximumCount,
+        lpName);
 }
 
 /*++
@@ -87,7 +96,7 @@ Function:
   CreateSemaphoreA
 
 Note:
-  lpSemaphoreAttributes currentely ignored:
+  lpSemaphoreAttributes currently ignored:
   -- Win32 object security not supported
   -- handles to semaphore objects are not inheritable
 
@@ -190,9 +199,16 @@ CreateSemaphoreExW(
         IN /*_Reserved_*/  DWORD dwFlags,
         IN DWORD dwDesiredAccess)
 {
-    // TODO: Implement this!
-    ERROR("Needs Implementation!!!");
-    return NULL;
+    // dwFlags is reserved and unused, and dwDesiredAccess is currently
+    // only ever used as SEMAPHORE_ALL_ACCESS.  The other parameters
+    // all map to CreateSemaphoreW.
+    _ASSERTE(SEMAPHORE_ALL_ACCESS == dwDesiredAccess);
+
+    return CreateSemaphoreW(
+        lpSemaphoreAttributes,
+        lInitialCount,
+        lMaximumCount,
+        lpName);
 }
 
 /*++
