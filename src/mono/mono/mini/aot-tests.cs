@@ -152,6 +152,7 @@ class Tests
 		public long o1, o2, o3;
 	}
 
+#if FALSE
 	[Category ("GSHAREDVT")]
 	public static int test_0_arm64_gsharedvt_out_vtypebyref () {
 		/* gsharedvt out trampoline with vtypebyref argument */
@@ -166,4 +167,27 @@ class Tests
 			return 1;
 		return 0;
 	}
+#endif
+
+	class Foo5<T> {
+		public static T Get_T (object o) {
+			return (T)o;
+		}
+	}
+
+	[Category ("!AMD64")]
+	static int test_0_arm64_dyncall_vtypebyref_ret () {
+		var s = new VTypeByRefStruct () { o1 = 1, o2 = 2, o3 = 3 };
+		Type t = typeof (Foo5<>).MakeGenericType (new Type [] { typeof (VTypeByRefStruct) });
+		var o = Activator.CreateInstance (t);
+		try {
+			var s_res = (VTypeByRefStruct)t.GetMethod ("Get_T").Invoke (o, new object [] { s });
+			if (s_res.o1 != 1 || s_res.o2 != 2 || s_res.o3 != 3)
+				return 1;
+		} catch (TargetInvocationException) {
+			return 2;
+		}
+		return 0;
+	}
+
 }
