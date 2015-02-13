@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Microsoft.DotNet.CoreCLR</id>
-    <version>1.0.0-prerelease</version>
+    <version>1.0.2-prerelease</version>
     <title>Microsoft DotNet CoreCLR Runtime</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -15,13 +15,13 @@
     <copyright>Copyright &#169; Microsoft Corporation</copyright>
   </metadata>
   <files>
-    <file src="..\clretwrc.dll" target="bin\clretwrc.dll" />
-    <file src="..\coreclr.dll" target="bin\coreclr.dll" />
-    <file src="..\mscordaccore.dll" target="bin\mscordaccore.dll" />
-    <file src="..\mscordbi.dll" target="bin\mscordbi.dll" />
-    <file src="..\mscorrc.dll" target="bin\mscorrc.dll" />
-    <file src="..\mscorrc.debug.dll" target="bin\mscorrc.debug.dll" />
-    <file src="..\corerun.exe" target="bin\corerun.exe" />
-    <file src="..\mscorlib.dll" target="bin\mscorlib.dll" />
+    <file src="..\clretwrc.dll" target="lib\aspnetcore50\clretwrc.dll" />
+    <file src="..\coreclr.dll" target="lib\aspnetcore50\coreclr.dll" />
+    <file src="..\mscordaccore.dll" target="lib\aspnetcore50\mscordaccore.dll" />
+    <file src="..\mscordbi.dll" target="lib\aspnetcore50\mscordbi.dll" />
+    <file src="..\mscorrc.dll" target="lib\aspnetcore50\mscorrc.dll" />
+    <file src="..\mscorrc.debug.dll" target="lib\aspnetcore50\mscorrc.debug.dll" />
+    <file src="..\corerun.exe" target="lib\aspnetcore50\corerun.exe" />
+    <file src="..\mscorlib.dll" target="lib\aspnetcore50\mscorlib.dll" />
   </files>
 </package>
