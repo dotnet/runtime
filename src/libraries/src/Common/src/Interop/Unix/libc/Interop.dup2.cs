@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int close(int fd);
+        internal static extern int dup2(int oldfd, int newfd);
     }
 }

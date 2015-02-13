@@ -3,11 +3,13 @@
 
 using System.Runtime.InteropServices;
 
+using pid_t = System.Int32;
+
 internal static partial class Interop
 {
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int close(int fd);
+        internal static extern int kill(pid_t pid, int sig);
     }
 }

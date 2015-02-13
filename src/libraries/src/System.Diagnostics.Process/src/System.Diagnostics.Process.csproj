@@ -21,8 +21,6 @@
       <Link>Common\System\SR.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -34,7 +32,6 @@
     <Compile Include="System\Diagnostics\ModuleInfo.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
@@ -50,8 +47,8 @@
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.Windows.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.Windows.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
@@ -60,17 +57,72 @@
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <!-- TODO: Remove once implemented -->
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.Unix.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.Unix.cs" />
-    <Compile Include="System\Diagnostics\Process.Unix.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
-    <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
+    <Compile Include="System\Diagnostics\Process.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+      <Link>Common\System\IO\StringParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
+      <Link>Common\Interop\Linux\Interop.ProcFsStat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sched_getsetaffinity.cs">
+      <Link>Common\Interop\Linux\Interop.sched_getsetaffinity.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
+      <Link>Common\Interop\Unix\Interop.close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.dup2.cs">
+      <Link>Common\Interop\Unix\Interop.dup2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.execve.cs">
+      <Link>Common\Interop\Unix\Interop.execve.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.FileDescriptors.cs">
+      <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fork.cs">
+      <Link>Common\Interop\Unix\Interop.fork.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
+      <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getpid.cs">
+      <Link>Common\Interop\Unix\Interop.getpid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getsetpriority.cs">
+      <Link>Common\Interop\Unix\Interop.getsetpriority.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.kill.cs">
+      <Link>Common\Interop\Unix\Interop.kill.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
+      <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pipe.cs">
+      <Link>Common\Interop\Unix\Interop.pipe.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readlink.cs">
+      <Link>Common\Interop\Unix\Interop.readlink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Signals.cs">
+      <Link>Common\Interop\Unix\Interop.Signals.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
+      <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.waitpid.cs">
+      <Link>Common\Interop\Unix\Interop.waitpid.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
