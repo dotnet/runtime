@@ -1,6 +1,6 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 /*++
@@ -83,16 +83,16 @@ Function:
 
 GetSystemInfo
 
-The GetSystemInfo function returns information about the current system. 
+The GetSystemInfo function returns information about the current system.
 
 Parameters
 
-lpSystemInfo 
-       [out] Pointer to a SYSTEM_INFO structure that receives the information. 
+lpSystemInfo
+       [out] Pointer to a SYSTEM_INFO structure that receives the information.
 
 Return Values
 
-This function does not return a value. 
+This function does not return a value.
 
 Note:
   fields returned by this function are:
@@ -108,12 +108,12 @@ GetSystemInfo(
 {
     int nrcpus = 0;
     long pagesize;
-    
+
     PERF_ENTRY(GetSystemInfo);
     ENTRY("GetSystemInfo (lpSystemInfo=%p)\n", lpSystemInfo);
-    
+
     pagesize = getpagesize();
-    
+
     lpSystemInfo->wProcessorArchitecture_PAL_Undefined = 0;
     lpSystemInfo->wReserved_PAL_Undefined = 0;
     lpSystemInfo->dwPageSize = pagesize;
@@ -207,7 +207,7 @@ GlobalMemoryStatusEx(
 
     PERF_ENTRY(GlobalMemoryStatusEx);
     ENTRY("GlobalMemoryStatusEx (lpBuffer=%p)\n", lpBuffer);
-    
+
     lpBuffer->dwMemoryLoad = 0;
     lpBuffer->ullTotalPhys = 0;
     lpBuffer->ullAvailPhys = 0;
@@ -220,7 +220,7 @@ GlobalMemoryStatusEx(
     BOOL fRetVal = FALSE;
 
     // Get the physical memory size
-#if HAVE_SYSCONF
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
     int64_t physical_memory;
 
     // Get the Physical memory size
@@ -249,14 +249,14 @@ GlobalMemoryStatusEx(
 #elif // HAVE_SYSINFO
     // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
     // we can use to fill in the xxxPageFile members.
-    
+
 #endif // HAVE_SYSCONF
 
     // Get the physical memory in use - from it, we can get the physical memory available.
     // We do this only when we have the total physical memory available.
     if (lpBuffer->ullTotalPhys > 0)
     {
-#if HAVE_SYSCONF
+#if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
         lpBuffer->ullAvailPhys = sysconf(_SC_AVPHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
         INT64 used_memory = lpBuffer->ullTotalPhys - lpBuffer->ullAvailPhys;
         lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
@@ -282,7 +282,7 @@ GlobalMemoryStatusEx(
     // TODO: figure out a way to get the real values for the total / available virtual
     lpBuffer->ullTotalVirtual = lpBuffer->ullTotalPhys;
     lpBuffer->ullAvailVirtual = lpBuffer->ullAvailPhys;
-    
+
     LOGEXIT("GlobalMemoryStatusEx returns %d\n", fRetVal);
     PERF_EXIT(GlobalMemoryStatusEx);
 
