@@ -648,6 +648,8 @@ namespace Test
             }
             catch (Exception ex)
             {
+                // This is not going to be the case since we changed the behavior of WithCancellation
+                // to not throw when called on disposed cancellationtokens.
                 ae1 = (ArgumentException)ex;
             }
 
@@ -659,6 +661,8 @@ namespace Test
             }
             catch (Exception ex)
             {
+                // This is not going to be the case since we changed the behavior of WithCancellation
+                // to not throw when called on disposed cancellationtokens.
                 ae2 = (ArgumentException)ex;
             }
 
@@ -671,12 +675,14 @@ namespace Test
             }
             catch (Exception ex)
             {
+                // This is not going to be the case since we changed the behavior of WithCancellation
+                // to not throw when called on disposed cancellationtokens.
                 ae3 = (ArgumentException)ex;
             }
 
-            Assert.NotNull(ae1);
-            Assert.NotNull(ae2);
-            Assert.NotNull(ae3);
+            Assert.Null(ae1); 
+            Assert.Null(ae2);
+            Assert.Null(ae3);
         }
 
         public static void SimulateThreadSleep(int milliseconds)
