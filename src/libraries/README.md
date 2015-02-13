@@ -46,10 +46,6 @@ Want to chat with other members of the CoreFX community?
 
 The repo contains the following components. More libraries are coming soon. ['Watch'](https://github.com/dotnet/corefx/subscription) the repo to be notified.
 
-* **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
-
-* **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
-
 * **System.Collections.Concurrent**.  Provides a set of thread-safe collection types, instances of which may be used 
   concurrently from multiple threads.
 
@@ -120,6 +116,10 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq, and the corresponding XPath extension methods.
+
+* **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
+
+* **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
 
 [roslyn]: https://roslyn.codeplex.com/
 [immutable-msdn]: http://msdn.microsoft.com/en-us/library/dn385366(v=vs.110).aspx
