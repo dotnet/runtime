@@ -102,152 +102,61 @@ internal static partial class Interop
 
         private static ParsedStat ParseStatFile(string statFileContents)
         {
-            StatParser parser = new StatParser(statFileContents);
-            ParsedStat results = default(ParsedStat);
+            var parser = new StringParser(statFileContents, ' ');
+            var results = default(ParsedStat);
 
             results.pid = parser.ParseNextInt32();
-            results.comm = parser.ParseNextCommString();
+            results.comm = parser.ParseRaw<string>((str, startIndex, endIndex) => {
+                if (str[startIndex] != '(' || str[endIndex - 1] != ')')
+                {
+                    throw new InvalidDataException();
+                }
+                return str.Substring(startIndex + 1, endIndex - startIndex - 2);
+            });
             results.state = parser.ParseNextChar();
-            parser.MoveNext(); // ppid
-            parser.MoveNext(); // pgrp
+            parser.MoveNextOrFail(); // ppid
+            parser.MoveNextOrFail(); // pgrp
             results.session = parser.ParseNextInt32();
-            parser.MoveNext(); // tty_nr
-            parser.MoveNext(); // tpgid
-            parser.MoveNext(); // flags
-            parser.MoveNext(); // majflt
-            parser.MoveNext(); // cmagflt
-            parser.MoveNext(); // minflt
-            parser.MoveNext(); // cminflt
+            parser.MoveNextOrFail(); // tty_nr
+            parser.MoveNextOrFail(); // tpgid
+            parser.MoveNextOrFail(); // flags
+            parser.MoveNextOrFail(); // majflt
+            parser.MoveNextOrFail(); // cmagflt
+            parser.MoveNextOrFail(); // minflt
+            parser.MoveNextOrFail(); // cminflt
             results.utime = parser.ParseNextUInt64();
             results.stime = parser.ParseNextUInt64();
-            parser.MoveNext(); // cutime
-            parser.MoveNext(); // cstime
-            parser.MoveNext(); // priority
+            parser.MoveNextOrFail(); // cutime
+            parser.MoveNextOrFail(); // cstime
+            parser.MoveNextOrFail(); // priority
             results.nice = parser.ParseNextInt64();
-            parser.MoveNext(); // num_threads
-            parser.MoveNext(); // itrealvalue
+            parser.MoveNextOrFail(); // num_threads
+            parser.MoveNextOrFail(); // itrealvalue
             results.starttime = parser.ParseNextUInt64();
             results.vsize = parser.ParseNextUInt64();
             results.rss = parser.ParseNextInt64();
             results.rsslim = parser.ParseNextUInt64();
-            parser.MoveNext(); // startcode
-            parser.MoveNext(); // endcode
+            parser.MoveNextOrFail(); // startcode
+            parser.MoveNextOrFail(); // endcode
             results.startstack = parser.ParseNextUInt64();
-            parser.MoveNext(); // kstkesp
-            parser.MoveNext(); // kstkeip
-            parser.MoveNext(); // signal
-            parser.MoveNext(); // blocked
-            parser.MoveNext(); // sigignore
-            parser.MoveNext(); // sigcatch
-            parser.MoveNext(); // wchan
-            parser.MoveNext(); // nswap
-            parser.MoveNext(); // cnswap
-            parser.MoveNext(); // exit_signal
-            parser.MoveNext(); // processor
-            parser.MoveNext(); // rt_priority
-            parser.MoveNext(); // policy
-            parser.MoveNext(); // delayacct_blkio_ticks
-            parser.MoveNext(); // guest_time
-            parser.MoveNext(); // cguest_time
+            parser.MoveNextOrFail(); // kstkesp
+            parser.MoveNextOrFail(); // kstkeip
+            parser.MoveNextOrFail(); // signal
+            parser.MoveNextOrFail(); // blocked
+            parser.MoveNextOrFail(); // sigignore
+            parser.MoveNextOrFail(); // sigcatch
+            parser.MoveNextOrFail(); // wchan
+            parser.MoveNextOrFail(); // nswap
+            parser.MoveNextOrFail(); // cnswap
+            parser.MoveNextOrFail(); // exit_signal
+            parser.MoveNextOrFail(); // processor
+            parser.MoveNextOrFail(); // rt_priority
+            parser.MoveNextOrFail(); // policy
+            parser.MoveNextOrFail(); // delayacct_blkio_ticks
+            parser.MoveNextOrFail(); // guest_time
+            parser.MoveNextOrFail(); // cguest_time
 
             return results;
-        }
-
-        private struct StatParser
-        {
-            private readonly string _str;
-            private int _startIndex;
-            private int _endIndex;
-
-            internal StatParser(string str)
-            {
-                _str = str;
-                _startIndex = -1;
-                _endIndex = -1;
-            }
-
-            internal void MoveNext()
-            {
-                if (_endIndex >= _str.Length)
-                {
-                    ThrowForInvalidData();
-                }
-
-                int nextSpace = _str.IndexOf(' ', _endIndex + 1);
-                _startIndex = _endIndex + 1;
-                _endIndex = nextSpace >= 0 ? nextSpace : _str.Length;
-            }
-
-            private string MoveAndExtractNext()
-            {
-                MoveNext();
-                return _str.Substring(_startIndex, _endIndex - _startIndex);
-            }
-
-            internal int ParseNextInt32()
-            {
-                int result;
-                if (!int.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
-                {
-                    ThrowForInvalidData();
-                }
-                return result;
-            }
-
-            internal long ParseNextInt64()
-            {
-                long result;
-                if (!long.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
-                {
-                    ThrowForInvalidData();
-                }
-                return result;
-            }
-
-            internal uint ParseNextUInt32()
-            {
-                uint result;
-                if (!uint.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
-                {
-                    ThrowForInvalidData();
-                }
-                return result;
-            }
-
-            internal ulong ParseNextUInt64()
-            {
-                ulong result;
-                if (!ulong.TryParse(MoveAndExtractNext(), NumberStyles.Integer, CultureInfo.InvariantCulture, out result))
-                {
-                    ThrowForInvalidData();
-                }
-                return result;
-            }
-
-            internal char ParseNextChar()
-            {
-                char result;
-                if (!char.TryParse(MoveAndExtractNext(), out result))
-                {
-                    ThrowForInvalidData();
-                }
-                return result;
-            }
-
-            internal string ParseNextCommString()
-            {
-                MoveNext();
-                if (_str[_startIndex] != '(' || _str[_endIndex - 1] != ')')
-                {
-                    ThrowForInvalidData();
-                }
-                return _str.Substring(_startIndex + 1, _endIndex - _startIndex - 2);
-            }
-
-            private static void ThrowForInvalidData()
-            {
-                throw new InvalidDataException();
-            }
         }
     }
 }
