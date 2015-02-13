@@ -41,6 +41,7 @@ namespace SortedListCtor
     public class Constructor_default
     {
         [Fact]
+        [ActiveIssue(754)]
         public static void RunTests()
         {
             //This mostly follows the format established by the original author of these tests

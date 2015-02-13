@@ -191,6 +191,7 @@ namespace SortedListTrim
     public class Meth_TrimExcess
     {
         [Fact]
+        [ActiveIssue(754)]
         public static void TrimToSizeMain()
         {
             Test test = new Test();
