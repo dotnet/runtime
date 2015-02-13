@@ -21,37 +21,37 @@ clean()
 
     # Cleanup the binaries drop folder
     if [ -d "$__BinDir" ]; then 
-        rm -r $__BinDir
+        rm -r "$__BinDir"
     fi
     
-    mkdir -p $__BinDir
+    mkdir -p "$__BinDir"
 
     # Cleanup the CMake folder
     if [ -d "$__CMakeSlnDir" ]; then
-         rm -r $__CMakeSlnDir
+         rm -r "$__CMakeSlnDir"
     fi
-    mkdir -p $__CMakeSlnDir
+    mkdir -p "$__CMakeSlnDir"
 
     # Cleanup the logs folder
     if [ -d "$__LogsDir" ]; then
-        rm -r $__LogsDir
+        rm -r "$__LogsDir"
     fi
     
-    mkdir -p $__LogsDir
+    mkdir -p "$__LogsDir"
 
     # Cleanup intermediates folder
     if [ -d "$__IntermediatesDir" ]; then
-        rm -f $__IntermediatesDir
+        rm -f "$__IntermediatesDir"
     fi
 
-    mkdir -p $__IntermediatesDir
+    mkdir -p "$__IntermediatesDir"
 }
 
 # Check the system to ensure the right pre-reqs are in place
 
 check_prereqs()
 {
-    echo Checking pre-requisites...
+    echo "Checking pre-requisites..."
     
     # Check presence of CMake on the path
     hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
@@ -64,17 +64,17 @@ build_coreclr()
 {
     # All set to commence the build
     
-    echo Commencing build of native components for $__BuildArch/$__BuildType
-    cd $__CMakeSlnDir
+    echo "Commencing build of native components for $__BuildArch/$__BuildType"
+    cd "$__CMakeSlnDir"
     
     # Regenerate the CMake solution
-    echo Invoking cmake with arguments: $__ProjectRoot $__CMakeArgs
-    $__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh $__ProjectRoot $__CMakeArgs
+    echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__CMakeArgs"
+    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__CMakeArgs
     
     # Check that the makefiles were created.
     
     if [ ! -f "$__CMakeSlnDir/Makefile" ]; then
-        echo Failed to generate native component build project!
+        echo "Failed to generate native component build project!"
         exit 1
     fi
 
@@ -85,16 +85,16 @@ build_coreclr()
     
     # Build CoreCLR
     
-    echo Executing make install -j $NumProc $__UnprocessedBuildArgs
+    echo "Executing make install -j $NumProc $__UnprocessedBuildArgs"
 
     make install -j $NumProc $__UnprocessedBuildArgs
     if [ $? != 0 ]; then
-        echo Failed to build coreclr components.
+        echo "Failed to build coreclr components."
         exit 1
     fi
 }
 
-echo Commencing CoreCLR Repo build
+echo "Commencing CoreCLR Repo build"
 
 # Argument types supported by this script:
 #
@@ -104,7 +104,7 @@ echo Commencing CoreCLR Repo build
 # Set the default arguments for build
 
 # Obtain the location of the bash script to figure out whether the root of the repo is.
-__ProjectRoot=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+__ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __BuildArch=amd64
 __MSBuildBuildArch=x64
 __BuildType=debug
@@ -179,6 +179,6 @@ build_coreclr
 
 # Build complete
 
-echo Repo successfully built.
-echo Product binaries are available at $__BinDir
+echo "Repo successfully built."
+echo "Product binaries are available at $__BinDir"
 exit 0

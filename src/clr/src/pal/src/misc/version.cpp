@@ -41,7 +41,7 @@ static DWORD /* PAL_ERROR */ CFStringToVers(CFStringRef versTupleStr, DWORD *pve
 
     /* check to make sure it wasn't a failed conversion */
     CFStringRef convertBackStr = CFStringCreateWithFormat(kCFAllocatorDefault, NULL,
-        CFSTR("%lu"), vers);
+        CFSTR("%u"), vers);
         
     if (!convertBackStr)
         return ERROR_NOT_ENOUGH_MEMORY;
