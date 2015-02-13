@@ -19,7 +19,7 @@
   <Target Name="RewriteWithBclRewriter" 
           Inputs="@(AnnotatedAssembly)" Outputs="@(RewrittenAssembly)">
    
-    <Exec Command="$(BclRewriterCommand) @(AnnotatedAssembly) /out:$(BclRewriterOutput) /include:$(BclRewriterModelFile) /platform:win /architecture:$(Platform) /flavor:$(_BuildType) /define:$(DefineConstants) /keepTempFiles+" StandardOutputImportance="Normal" />
+    <Exec Command="&quot;$(BclRewriterCommand)&quot; &quot;@(AnnotatedAssembly)&quot; &quot;/out:$(BclRewriterOutput)&quot; &quot;/include:$(BclRewriterModelFile)&quot; /platform:win /architecture:$(Platform) /flavor:$(_BuildType) /define:$(DefineConstants) /keepTempFiles+" StandardOutputImportance="Normal" />
 
     <!-- Update the location of the symbol file-->
     <PropertyGroup>

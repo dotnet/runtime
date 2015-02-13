@@ -1300,7 +1300,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     extern HINSTANCE g_hThisInst;
     if (WszGetModuleFileName(g_hThisInst, CoreClrFolder, MAX_PATH))
     {
-        WCHAR *filePtr = wcsrchr(CoreClrFolder, W('\\'));
+        WCHAR *filePtr = wcsrchr(CoreClrFolder, DIRECTORY_SEPARATOR_CHAR_W);
         if (filePtr)
         {
             filePtr[1] = W('\0');

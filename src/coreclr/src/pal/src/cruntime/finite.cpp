@@ -63,7 +63,7 @@ _finite(
 #if defined(_IA64_) && defined (_HPUX_)
     ret = !isnan(x) && x != PAL_POSINF && x != PAL_NEGINF;
 #else
-    ret = finite(x);
+    ret = isfinite(x);
 #endif
     LOGEXIT("_finite returns int %d\n", ret);
     PERF_EXIT(_finite);
