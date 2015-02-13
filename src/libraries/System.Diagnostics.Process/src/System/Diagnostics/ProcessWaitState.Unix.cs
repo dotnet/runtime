@@ -36,6 +36,17 @@ namespace System.Diagnostics
     //   the wait state object uses its own lock to protect the per-process state.  This includes
     //   caching exit / exit code / exit time information so that a Process object for a process that's already
     //   had waitpid called for it can get at its exit information.
+    //
+    // A negative ramification of this is that if a process exits, but there are outstanding wait handles 
+    // handed out (and rooted, so they can't be GC'd), and then a new process is created and the pid is recycled, 
+    // new calls to get that process's wait state will get the old processe's wait state.  However, pid recycling
+    // will be a more general issue, since pids are the only identifier we have to a process, so if a Process
+    // object is created for a particular pid, then that process goes away and a new one comes in with the same pid,
+    // our Process object will silently switch to referring to the new pid.  Unix systems typically have a simple
+    // policy for pid recycling, which is that they start at a low value, increment up to a system maximum (e.g.
+    // 32768), and then wrap around and start reusing value that aren't currently in use.  On Linux, 
+    // proc/sys/kernel/pid_max defines the max pid value.  Given the conditions that would be required for this
+    // to happen, it's possible but unlikely.
 
     /// <summary>Exit information and waiting capabilities for a process.</summary>
     internal sealed class ProcessWaitState : IDisposable
@@ -115,7 +126,8 @@ namespace System.Diagnostics
                 Debug.Assert(foundState);
                 if (foundState)
                 {
-                    if (--pws._outstandingRefCount == 0)
+                    --pws._outstandingRefCount;
+                    if (pws._outstandingRefCount == 0)
                     {
                         ProcessWaitState.s_processWaitStates.Remove(_processId);
                         pws.Dispose();
@@ -132,7 +144,7 @@ namespace System.Diagnostics
         private readonly object _gate = new object();
         /// <summary>ID of the associated process.</summary>
         private readonly int _processId;
-        
+
         /// <summary>If a wait operation is in progress, the Task that represents it; otherwise, null.</summary>
         private Task _waitInProgress;
         /// <summary>The number of alive users of this object.</summary>
@@ -269,6 +281,7 @@ namespace System.Diagnostics
         private void CheckForExit(bool blockingAllowed = false)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
+            Debug.Assert(!blockingAllowed); // see "PERF NOTE" comment in WaitForExit
 
             while (true) // in case of EINTR during system call
             {
@@ -407,8 +420,8 @@ namespace System.Diagnostics
                         waitTask = WaitForExitAsync(token);
 
                         // PERF NOTE:
-                        // At the moment, we never call CheckForExit with blockingAllowed:true (which in turn allows
-                        // waitpid to block until the child has completed) because we currently allows call it while
+                        // At the moment, we never call CheckForExit(true) (which in turn allows
+                        // waitpid to block until the child has completed) because we currently call it while
                         // holdling the _gate lock.  This is probably unnecessary in some situations, and in particular
                         // here if remainingTimeout == Timeout.Infinite. In that case, we should be able to set
                         // _waitInProgress to be a TaskCompletionSource task, and then below outside of the lock

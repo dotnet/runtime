@@ -343,38 +343,30 @@ namespace System.Diagnostics
                 // If we're redirecting streams, configure stdin, stdout, stderr
                 if (stdinPipeFds != null)
                 {
-                    Redirect(stdinPipeFds[0], Interop.libc.FileDescriptors.STDIN_FILENO);
-                    Interop.libc.close(stdinPipeFds[1]); // close copy of parent's write end
+                    Redirect(stdinPipeFds[Interop.libc.ReadEndOfPipe], Interop.libc.FileDescriptors.STDIN_FILENO);
+                    Interop.libc.close(stdinPipeFds[Interop.libc.WriteEndOfPipe]); // close copy of parent's write end
                 }
                 if (stdoutPipeFds != null)
                 {
-                    Redirect(stdoutPipeFds[1], Interop.libc.FileDescriptors.STDOUT_FILENO);
-                    Interop.libc.close(stdoutPipeFds[0]); // close copy of parent's read end
+                    Redirect(stdoutPipeFds[Interop.libc.WriteEndOfPipe], Interop.libc.FileDescriptors.STDOUT_FILENO);
+                    Interop.libc.close(stdoutPipeFds[Interop.libc.ReadEndOfPipe]); // close copy of parent's read end
                 }
                 if (stderrPipeFds != null)
                 {
-                    Redirect(stderrPipeFds[1], Interop.libc.FileDescriptors.STDERR_FILENO);
-                    Interop.libc.close(stderrPipeFds[0]); // close copy of parent's read end
+                    Redirect(stderrPipeFds[Interop.libc.WriteEndOfPipe], Interop.libc.FileDescriptors.STDERR_FILENO);
+                    Interop.libc.close(stderrPipeFds[Interop.libc.ReadEndOfPipe]); // close copy of parent's read end
                 }
 
                 // Set the current working directory based on the caller's request
                 if (!string.IsNullOrWhiteSpace(startInfo.WorkingDirectory))
                     Directory.SetCurrentDirectory(startInfo.WorkingDirectory);
 
-                // Parse the list of arguments
-                var argv = new List<string>();
-                argv.Add(startInfo.FileName);
-                ParseArgumentsIntoList(startInfo.Arguments, argv);
-                
-                // Parse the environment variables
-                var envVars = new List<string>(startInfo.Environment.Count);
-                foreach (var pair in startInfo.Environment)
-                {
-                    envVars.Add(pair.Key + "=" + pair.Value);
-                }
+                // Parse the list of arguments and environment variables
+                string[] argv = CreateArgv(startInfo);
+                string[] envp = CreateEnvp(startInfo);
 
                 // Execute. If this succeeds, it won't return.
-                if (Interop.libc.execve(executablePath, argv.ToArray(), envVars.ToArray()) != 0)
+                if (Interop.libc.execve(executablePath, argv, envp) != 0)
                 {
                     throw new Win32Exception();
                 }
@@ -390,23 +382,23 @@ namespace System.Diagnostics
             // Configure the parent's ends of the redirection streams.
             if (stdinPipeFds != null)
             {
-                Interop.libc.close(stdinPipeFds[0]); // close copy of child's stdin
+                Interop.libc.close(stdinPipeFds[Interop.libc.ReadEndOfPipe]); // close copy of child's stdin
                 _standardInput = new StreamWriter(
-                    OpenStream(stdinPipeFds[1], FileAccess.Write),
+                    OpenStream(stdinPipeFds[Interop.libc.WriteEndOfPipe], FileAccess.Write),
                     Encoding.UTF8, StreamBufferSize) { AutoFlush = true };
             }
             if (stdoutPipeFds != null)
             {
-                Interop.libc.close(stdoutPipeFds[1]); // close copy of child's stdout
+                Interop.libc.close(stdoutPipeFds[Interop.libc.WriteEndOfPipe]); // close copy of child's stdout
                 _standardOutput = new StreamReader(
-                    OpenStream(stdoutPipeFds[0], FileAccess.Read),
+                    OpenStream(stdoutPipeFds[Interop.libc.ReadEndOfPipe], FileAccess.Read),
                     startInfo.StandardOutputEncoding ?? Encoding.UTF8, true, StreamBufferSize);
             }
             if (stderrPipeFds != null)
             {
-                Interop.libc.close(stderrPipeFds[1]); // close copy of child's stderr
+                Interop.libc.close(stderrPipeFds[Interop.libc.WriteEndOfPipe]); // close copy of child's stderr
                 _standardError = new StreamReader(
-                    OpenStream(stderrPipeFds[0], FileAccess.Read),
+                    OpenStream(stderrPipeFds[Interop.libc.ReadEndOfPipe], FileAccess.Read),
                     startInfo.StandardErrorEncoding ?? Encoding.UTF8, true, StreamBufferSize);
             }
 
@@ -422,6 +414,39 @@ namespace System.Diagnostics
 
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
+
+        /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
+        /// <param name="psi">The ProcessStartInfo.</param>
+        /// <returns>The argv array.</returns>
+        private static string[] CreateArgv(ProcessStartInfo psi)
+        {
+            string argv0 = psi.FileName; // pass filename instead of resolved path as argv[0], to match what caller supplied
+            if (string.IsNullOrEmpty(psi.Arguments))
+            {
+                return new string[] { argv0 };
+            }
+            else
+            {
+                var argvList = new List<string>();
+                argvList.Add(argv0);
+                ParseArgumentsIntoList(psi.Arguments, argvList);
+                return argvList.ToArray();
+            }
+        }
+
+        /// <summary>Converts the environment variables information from a ProcessStartInfo into an envp array.</summary>
+        /// <param name="psi">The ProcessStartInfo.</param>
+        /// <returns>The envp array.</returns>
+        private static string[] CreateEnvp(ProcessStartInfo psi)
+        {
+            var envp = new string[psi.Environment.Count];
+            int index = 0;
+            foreach (var pair in psi.Environment)
+            {
+                envp[index++] = pair.Key + "=" + pair.Value;
+            }
+            return envp;
+        }
 
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo.</summary>
         /// <param name="filename">The filename.</param>
@@ -470,23 +495,10 @@ namespace System.Diagnostics
             string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
-                int startIndex = -1, endIndex = -1;
-                while (true)
+                var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
+                while (pathParser.MoveNext())
                 {
-                    // Find the next colon-separated path directory
-                    startIndex = endIndex + 1;
-                    endIndex = pathEnvVar.IndexOf(':', startIndex);
-                    if (endIndex < 0) // no ':' found
-                    {
-                        break;
-                    }
-                    if (endIndex <= startIndex + 1) // resulting string would be empty
-                    {
-                        continue;
-                    }
-
-                    // Extract it and see if our file lives there
-                    string subPath = pathEnvVar.Substring(startIndex, endIndex - startIndex);
+                    string subPath = pathParser.ExtractCurrent();
                     path = Path.Combine(subPath, filename);
                     if (File.Exists(path))
                     {
@@ -538,7 +550,7 @@ namespace System.Diagnostics
         internal static DateTime BootTimeToDateTime(ulong ticksAfterBoot)
         {
             // Read procfs to determine the system's uptime, aka how long ago it booted
-            string uptimeStr = File.ReadAllText(Interop.procfs.ProcUptimeFilePath);
+            string uptimeStr = File.ReadAllText(Interop.procfs.ProcUptimeFilePath, Encoding.UTF8);
             int spacePos = uptimeStr.IndexOf(' ');
             double uptime;
             if (spacePos < 1 || !double.TryParse(uptimeStr.Substring(0, spacePos), out uptime))
