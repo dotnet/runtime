@@ -6,6 +6,7 @@ using System.Collections;
 using System.Text;
 using System.Runtime.InteropServices;
 using Xunit;
+
 public class ExpandEnvironmentVariables
 {
     [Fact]
@@ -42,7 +43,7 @@ public class ExpandEnvironmentVariables
             atLeastOne = true;
         }
 
-        Assert.Equal(atLeastOne, !GetEnvironmentVariable.PlatformBehavesAsIfNoVariablesAreEverSet);
+        Assert.True(atLeastOne);
         Assert.Equal(expected.ToString(), Environment.ExpandEnvironmentVariables(input.ToString()));
     }
 
@@ -82,18 +83,9 @@ public class ExpandEnvironmentVariables
         string unset1 = keys[3], unset2 = keys[4], unset3 = keys[5];
         string value1, value2, value3;
 
-        if (GetEnvironmentVariable.PlatformBehavesAsIfNoVariablesAreEverSet)
-        {
-            value1 = "%" + set1 + "%";
-            value2 = "%" + set2 + "%";
-            value3 = "%" + set3 + "%";
-        }
-        else
-        {
-            value1 = "value1";
-            value2 = "value2";
-            value3 = "value3";
-        }
+        value1 = "value1";
+        value2 = "value2";
+        value3 = "value3";
 
         Test("%",
               "%");

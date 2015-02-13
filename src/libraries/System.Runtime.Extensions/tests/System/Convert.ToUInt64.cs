@@ -3,399 +3,177 @@
 
 using System;
 using Xunit;
-// [assembly: System.Reflection.Consumption.EnableDynamicProgramming(typeof(System.ArgumentException))]
-// [assembly: System.Reflection.Consumption.EnableDynamicProgramming(typeof(System.FormatException))]
 
-namespace Test
+public class ConvertToUInt64Tests : ConvertTestBase<UInt64>
 {
-    public class Co6069ToUInt64_all
+    [Fact]
+    public void FromBoolean()
     {
-        [Fact]
-        public static void runTest()
-        {
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Boolean )
+        Boolean[] testValues = { true, false };
+        UInt64[] expectedValues = { 1, 0 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
+    }
 
-            //[] ToUInt64(Boolean) - Vanilla Cases (true,false)
+    [Fact]
+    public void FromByte()
+    {
+        Byte[] testValues = { Byte.MaxValue, Byte.MinValue };
+        UInt64[] expectedValues = { Byte.MaxValue, Byte.MinValue };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
+    }
 
-            // Setup Boolean Test
-            {
-                Boolean[] testValues = { true, false, };
-                UInt64[] expectedValues = { ((UInt64)1), ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Double )
+    [Fact]
+    public void FromChar()
+    {
+        Char[] testValues = { Char.MaxValue, Char.MinValue, 'b' };
+        UInt64[] expectedValues = { Char.MaxValue, Char.MinValue, 98 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
+    }
 
-            //[] ToUInt64(Double) - Vanilla Cases (1000.0,0.0)
+    [Fact]
+    public void FromDecimal()
+    {
+        Decimal[] testValues = { 1000m, 0m };
+        UInt64[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            // Setup Double Test
-            {
-                Double[] testValues = { 1000.0, 0.0, };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Single )
+        Decimal[] overflowValues = { Decimal.MinValue, Decimal.MaxValue };
+        VerifyThrows<OverflowException, Decimal>(Convert.ToUInt64, overflowValues);
+    }
 
-            //[] ToUInt64(Single) - Vanilla Cases (((Single) 1000.0f ),((Single) 0.0f ))
+    [Fact]
+    public void FromDouble()
+    {
+        Double[] testValues = { 1000.0, 0.0 };
+        UInt64[] expectedValues = { (UInt64)1000, (UInt64)0 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            // Setup Single Test
+        Double[] overflowValues = { Double.MaxValue, -100.0 };
+        VerifyThrows<OverflowException, Double>(Convert.ToUInt64, overflowValues);
+    }
 
-            {
-                Single[] testValues = { ((Single)1000.0f), ((Single)0.0f), };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Int32 )
+    [Fact]
+    public void FromInt16()
+    {
+        Int16[] testValues = { 1000, 0, Int16.MaxValue };
+        UInt64[] expectedValues = { 1000, 0, (UInt64)Int16.MaxValue };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            //[] ToUInt64(Int32) - Vanilla Cases (((Int32) 1000 ),((Int32) 0 ),Int32.MaxValue)
+        Int16[] overflowValues = { Int16.MinValue };
+        VerifyThrows<OverflowException, Int16>(Convert.ToUInt64, overflowValues);
+    }
 
-            // Setup Int32 Test
-            {
-                Int32[] testValues = { ((Int32)1000), ((Int32)0), Int32.MaxValue, };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), ((UInt64)Int32.MaxValue), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Int64 )
+    [Fact]
+    public void FromInt32()
+    {
+        Int32[] testValues = { 1000, 0, Int32.MaxValue };
+        UInt64[] expectedValues = { 1000, 0, Int32.MaxValue };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            //[] ToUInt64(Int64) - Vanilla Cases (((Int64) 1000 ),((Int64) 0 ),Int64.MaxValue)
+        Int32[] overflowValues = { Int32.MinValue };
+        VerifyThrows<OverflowException, Int32>(Convert.ToUInt64, overflowValues);
+    }
 
-            // Setup Int64 Test
+    [Fact]
+    public void FromInt64()
+    {
+        Int64[] testValues = { 1000, 0, Int64.MaxValue };
+        UInt64[] expectedValues = { 1000, 0, Int64.MaxValue };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            {
-                Int64[] testValues = { ((Int64)1000), ((Int64)0), Int64.MaxValue, };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), (UInt64)Int64.MaxValue };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Int16 )
+        Int64[] overflowValues = { Int64.MinValue };
+        VerifyThrows<OverflowException, Int64>(Convert.ToUInt64, overflowValues);
+    }
 
-            //[] ToUInt64(Int16) - Vanilla Cases (((Int16) 1000 ),((Int16) 0 ),Int16.MaxValue)
+    [Fact]
+    public void FromObject()
+    {
+        Object[] testValues = { null };
+        UInt64[] expectedValues = { 0 };
+        VerifyFromObject(Convert.ToUInt64, Convert.ToUInt64, testValues, expectedValues);
 
-            // Setup Int16 Test
-            {
-                Int16[] testValues = { ((Int16)1000), ((Int16)0), Int16.MaxValue, };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), ((UInt64)(UInt64)Int16.MaxValue), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+        Object[] invalidValues = { new Object(), DateTime.Now };
+        VerifyFromObjectThrows<InvalidCastException>(Convert.ToUInt64, Convert.ToUInt64, invalidValues);
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Decimal )
+    [Fact]
+    public void FromSByte()
+    {
+        SByte[] testValues = { 100, 0 };
+        UInt64[] expectedValues = { 100, 0 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            //[] ToUInt64(Decimal) - Vanilla Cases (Decimal( 1000 ),Decimal( 0 ))
+        SByte[] overflowValues = { SByte.MinValue };
+        VerifyThrows<OverflowException, SByte>(Convert.ToUInt64, overflowValues);
+    }
 
-            // Setup Decimal Test
-            {
-                Decimal[] testValues = { new Decimal(1000), new Decimal(0), };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( String )
+    [Fact]
+    public void FromSingle()
+    {
+        Single[] testValues = { 1000.0f, 0.0f };
+        UInt64[] expectedValues = { 1000, 0 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
 
-            //[] ToUInt64(String) - Vanilla Cases ("1000","0",UInt16.MaxValue.ToString(),UInt32.MaxValue.ToString(),UInt64.MaxValue.ToString())
+        Single[] overflowValues = { Single.MaxValue, -100.0f };
+        VerifyThrows<OverflowException, Single>(Convert.ToUInt64, overflowValues);
+    }
 
-            // Setup String Test
-            {
-                String[] testValues = { "1000", "0", UInt16.MaxValue.ToString(), UInt32.MaxValue.ToString(), UInt64.MaxValue.ToString(), "9223372036854775807"  /*Int64.MaxValue*/, "9223372036854775808", "9223372036854775809", null, };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), Convert.ToUInt64(UInt16.MaxValue), Convert.ToUInt64(UInt32.MaxValue), UInt64.MaxValue, (UInt64)Int64.MaxValue, (UInt64)Int64.MaxValue + 1, (UInt64)Int64.MaxValue + 2, 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ///////////////////////////////////////////// []UInt64 Convert.ToUInt64( String, IFormatProvider )
+    [Fact]
+    public void FromString()
+    {
+        String[] testValues = { "1000", "0", UInt16.MaxValue.ToString(), UInt32.MaxValue.ToString(), UInt64.MaxValue.ToString(), "9223372036854775807", "9223372036854775808", "9223372036854775809", null };
+        UInt64[] expectedValues = { 1000, 0, UInt16.MaxValue, UInt32.MaxValue, UInt64.MaxValue, Int64.MaxValue, (UInt64)Int64.MaxValue + 1, (UInt64)Int64.MaxValue + 2, 0 };
+        VerifyFromString(Convert.ToUInt64, Convert.ToUInt64, testValues, expectedValues);
 
-            // Setup String Test
+        String[] overflowValues = { "-1", Decimal.MaxValue.ToString() };
+        VerifyFromStringThrows<OverflowException>(Convert.ToUInt64, Convert.ToUInt64, overflowValues);
 
-            {
-                String[] testValues = { "1000", "0", UInt16.MaxValue.ToString(), UInt32.MaxValue.ToString(), UInt64.MaxValue.ToString(), null, };
-                UInt64[] expectedValues = { ((UInt64)1000), ((UInt64)0), Convert.ToUInt64(UInt16.MaxValue), Convert.ToUInt64(UInt32.MaxValue), UInt64.MaxValue, ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i], new TestFormatProvider());
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Byte )
+        String[] formatExceptionValues = { "abba" };
+        VerifyFromStringThrows<FormatException>(Convert.ToUInt64, Convert.ToUInt64, formatExceptionValues);
+    }
 
-            //[] ToUInt64(Byte) - Vanilla Cases (Byte.MaxValue,Byte.MinValue)
+    [Fact]
+    public void FromStringWithBase()
+    {
+        String[] testValues = { null, null, null, null, "ffffffffffffffff", "18446744073709551615", "1777777777777777777777", "1111111111111111111111111111111111111111111111111111111111111111", "0", "0", "0", "0", "9223372036854775807", "9223372036854775808" /*VSWhidbey #526568*/, "9223372036854775809", "9223372036854775810", "9223372036854775811" };
+        Int32[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2, 10, 10, 10, 10, 10 };
+        UInt64[] expectedValues = { 0, 0, 0, 0, UInt64.MaxValue, UInt64.MaxValue, UInt64.MaxValue, UInt64.MaxValue, UInt64.MinValue, UInt64.MinValue, UInt64.MinValue, UInt64.MinValue, (UInt64)Int64.MaxValue, (UInt64)Int64.MaxValue + 1 /*VSWhidbey #526568*/, (UInt64)Int64.MaxValue + 2, (UInt64)Int64.MaxValue + 3, (UInt64)Int64.MaxValue + 4 };
+        VerifyFromStringWithBase(Convert.ToUInt64, testValues, testBases, expectedValues);
 
-            // Setup Byte Test
+        String[] overflowValues = { "18446744073709551616", "18446744073709551617", "18446744073709551618", "18446744073709551619", "18446744073709551620", "-4294967297", "11111111111111111111111111111111111111111111111111111111111111111", "1FFFFffffFFFFffff", "7777777777777777777777777" };
+        Int32[] overflowBases = { 10, 10, 10, 10, 10, 10, 2, 16, 8 };
+        VerifyFromStringWithBaseThrows<OverflowException>(Convert.ToUInt64, overflowValues, overflowBases);
 
-            {
-                Byte[] testValues = { Byte.MaxValue, Byte.MinValue, };
-                UInt64[] expectedValues = { ((UInt32)255), ((UInt32)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( UInt32 )
+        String[] formatExceptionValues = { "12", "ffffffffffffffffffff" };
+        Int32[] formatExceptionBases = { 2, 8 };
+        VerifyFromStringWithBaseThrows<FormatException>(Convert.ToUInt64, formatExceptionValues, formatExceptionBases);
 
-            //[] ToUInt64(UInt32) - Vanilla Cases (UInt32.MinValue,UInt32.MaxValue)
+        String[] argumentExceptionValues = { "10", "11", "abba", "-ab" };
+        Int32[] argumentExceptionBases = { -1, 3, 0, 16 };
+        VerifyFromStringWithBaseThrows<ArgumentException>(Convert.ToUInt64, argumentExceptionValues, argumentExceptionBases);
+    }
 
-            // Setup UInt32 Test
-            {
-                UInt32[] testValues = { UInt32.MinValue, UInt32.MaxValue, };
-                UInt64[] expectedValues = { UInt32.MinValue, UInt32.MaxValue, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+    [Fact]
+    public void FromUInt16()
+    {
+        UInt16[] testValues = { 100, 0 };
+        UInt64[] expectedValues = { 100, 0 };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( String, Int32 )
+    [Fact]
+    public void FromUInt32()
+    {
+        UInt32[] testValues = { UInt32.MinValue, UInt32.MaxValue };
+        UInt64[] expectedValues = { UInt32.MinValue, UInt32.MaxValue };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
+    }
 
-            //[] ToUInt64(String,Int32) - Vanilla Cases {("ffffffffffffffff",16),("18446744073709551615",10),("1777777777777777777777",8),("1111111111111111111111111111111111111111111111111111111111111111",2),("0",16),("0",10),("0",8),("0",2)}
-
-            // Setup String, Int32 Test
-
-            {
-                String[] dummy = { null, };
-                Assert.Equal((UInt64)0, Convert.ToUInt64(dummy[0], 10));
-                Assert.Equal((UInt64)0, Convert.ToUInt64(dummy[0], 2));
-                Assert.Equal((UInt64)0, Convert.ToUInt64(dummy[0], 8));
-                Assert.Equal((UInt64)0, Convert.ToUInt64(dummy[0], 16));
-            }
-            {
-                String[] testValues = { "ffffffffffffffff", "18446744073709551615", "1777777777777777777777", "1111111111111111111111111111111111111111111111111111111111111111", "0", "0", "0", "0", "9223372036854775807", "9223372036854775808" /*VSWhidbey #526568*/, "9223372036854775809", "9223372036854775810", "9223372036854775811", };
-                Int32[] testBases = { 16, 10, 8, 2, 16, 10, 8, 2, 10, 10, 10, 10, 10, };
-                UInt64[] expectedValues = { UInt64.MaxValue, UInt64.MaxValue, UInt64.MaxValue, UInt64.MaxValue, UInt64.MinValue, UInt64.MinValue, UInt64.MinValue, UInt64.MinValue, (UInt64)Int64.MaxValue, (UInt64)Int64.MaxValue + 1 /*VSWhidbey #526568*/, (UInt64)Int64.MaxValue + 2, (UInt64)Int64.MaxValue + 3, (UInt64)Int64.MaxValue + 4, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i], testBases[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( SByte )
-
-            //[] ToUInt64(SByte) - Vanilla Cases (100,0)
-
-            // Setup SByte Test
-            {
-                SByte[] testValues = { 100, 0, };
-                UInt64[] expectedValues = { ((UInt64)100), ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( UInt16 )
-
-            //[] ToUInt64(UInt16) - Vanilla Cases ((UInt16)100,(UInt16)0)
-
-            // Setup UInt16 Test
-
-            {
-                UInt16[] testValues = { (UInt16)100, (UInt16)0, };
-                UInt64[] expectedValues = { ((UInt64)100), ((UInt64)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( UInt64 )
-
-            //[] ToUInt64(UInt64) - Vanilla cases (UInt64.MaxValue,UInt64.MinValue)
-
-            // Setup UInt64 Test
-
-            {
-                UInt64[] testValues = { UInt64.MaxValue, UInt64.MinValue };
-                UInt64[] expectedValues = { UInt64.MaxValue, UInt64.MinValue };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Char )
-
-            //[] ToUInt64(Char) - Vanilla Cases (Char.MaxValue,Char.MinValue, 'b')
-
-            // Setup Char Test
-
-            {
-                Char[] testValues = { Char.MaxValue, Char.MinValue, 'b' };
-                UInt64[] expectedValues = { (UInt64)Char.MaxValue, (UInt64)Char.MinValue, 98 };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    UInt64 result = Convert.ToUInt64(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            //[] ToUInt64( Object ) - obj = null
-            {
-                UInt64 bTest = Convert.ToUInt64((Object)null);
-                Assert.Equal((UInt64)0, bTest);
-            }
-
-            //[] ToUInt64( Object, IFP ) - obj = null
-
-            {
-                UInt64 bTest = Convert.ToUInt64((Object)null, new TestFormatProvider());
-                Assert.Equal((UInt64)0, bTest);
-            }
-        }
-
-        [Fact]
-        public static void runTests_Negative()
-        {
-            {
-                // Exception Test Cases
-                //[] ToUInt64(Double) - Exception Cases (Double.MaxValue,-100.0)
-                Double[] errorValues = { Double.MaxValue, -100.0, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt64(Single) - Exception Cases (Single.MaxValue,-100.0f)
-                Single[] errorValues = { Single.MaxValue, -100.0f, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt64(Int32) - Exception Cases (((Int32) Int32.MinValue ))
-                Int32[] errorValues = { ((Int32)Int32.MinValue), };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt64(Int16) - Exception Cases (Int16.MinValue)
-                Int16[] errorValues = { Int16.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToUInt64(Decimal) - Exception Cases (Decimal.MaxValue,Decimal.MinValue)
-                Decimal[] errorValues = { Decimal.MaxValue, Decimal.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(errorValues[i]); });
-                }
-            }
-
-            // Exception Test Cases
-            //[] ToUInt64(String) - Exception Cases ("-1",Decimal.MaxValue.ToString(),null,"abba")
-            Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64("-1"); });
-            Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(Decimal.MaxValue.ToString()); });
-            Assert.Throws<FormatException>(() => { UInt64 result = Convert.ToUInt64("abba"); });
-
-            // Exception Test Cases
-            //[] ToUInt64(String) - Exception Cases ("-1",Decimal.MaxValue.ToString(),null,"abba")
-            Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64("-1", new TestFormatProvider()); });
-            Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(Decimal.MaxValue.ToString(), new TestFormatProvider()); });
-            Assert.Throws<FormatException>(() => { UInt64 result = Convert.ToUInt64("abba", new TestFormatProvider()); });
-
-            {
-                // Exception Test Cases
-                //[] ToUInt64(String,Int32) - Exception Cases {(null,2),("12",3),("11",5),("abba",8),("ffffffffffffffffffff",16)}
-                String[] expectedExceptions = { "System.FormatException", "System.ArgumentException", "System.ArgumentException", "System.ArgumentException", "System.FormatException", "System.ArgumentException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", };
-                String[] errorValues = { "12", "10", "11", "abba", "ffffffffffffffffffff", "-ab", "18446744073709551616" /*VSWhidbey #143726 */, "18446744073709551617"/*VSWhidbey #143726 */, "18446744073709551618"/*VSWhidbey #143726 */, "18446744073709551619"/*VSWhidbey #143726 */, "18446744073709551620"/*VSWhidbey #143726 */, "-4294967297", "11111111111111111111111111111111111111111111111111111111111111111", "1FFFFffffFFFFffff", "7777777777777777777777777", };
-                Int32[] errorBases = { 2, -1, 3, 0, 8, 16, 10, 10, 10, 10, 10, 10, 2, 16, 8, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    try
-                    {
-                        UInt64 result = Convert.ToUInt64(errorValues[i], errorBases[i]);
-                        Assert.True(false, "Exception expected: " + expectedExceptions[i]);
-                    }
-                    catch (Exception e)
-                    {
-                        Assert.True(e.GetType().FullName.Equals(expectedExceptions[i]), " Wrong Exception Thrown. Expected" + expectedExceptions[i] + ", Actual: " + e.GetType().FullName);
-                    }
-                }
-                // Exception Test Cases
-                //[] ToUInt64(SByte) - Exception Cases (SByte.MinValue)
-            }
-            {
-                SByte[] errorValues = { SByte.MinValue };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { UInt64 result = Convert.ToUInt64(errorValues[i]); });
-                }
-            }
-            ///////////////////////////////////////////// UInt64 Convert.ToUInt64( Object )
-            //[] ToUInt64( Object ) - Exception Case (Object that does not implement IConvertible) 
-            Assert.Throws<InvalidCastException>(() => { UInt64 bTest = Convert.ToUInt64(new Object()); });
-
-            ///////////////////////////////////////////// []UInt64 Convert.ToUInt64( Object, IFormatProvider )
-            Assert.Throws<InvalidCastException>(() => { UInt64 bTest = Convert.ToUInt64(new Object(), new TestFormatProvider()); });
-
-            ///////////////////////////////////////////// []UInt64 Convert.ToUInt64( DateTime )
-            Assert.Throws<InvalidCastException>(() => { UInt64 bTest = Convert.ToUInt64(DateTime.Now); });
-        }
+    [Fact]
+    public void FromUInt64()
+    {
+        UInt64[] testValues = { UInt64.MaxValue, UInt64.MinValue };
+        UInt64[] expectedValues = { UInt64.MaxValue, UInt64.MinValue };
+        Verify(Convert.ToUInt64, testValues, expectedValues);
     }
 }

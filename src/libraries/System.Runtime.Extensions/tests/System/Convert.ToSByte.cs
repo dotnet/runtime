@@ -3,407 +3,191 @@
 
 using System;
 using Xunit;
-// [assembly: System.Reflection.Consumption.EnableDynamicProgramming(typeof(System.FormatException))]
 
-namespace Test
+public class ConvertToSByteTests : ConvertTestBase<SByte>
 {
-    public class Co6064ToSByte_all
+    [Fact]
+    public void FromBoolean()
     {
-        [Fact]
-        public static void runTest()
-        {
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Boolean )
+        Boolean[] testValues = { true, false };
+        SByte[] expectedValues = { 1, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
+    }
 
-            //[] ToSByte(Boolean) - Vanilla Cases ()
+    [Fact]
+    public void FromByte()
+    {
+        Byte[] testValues = { 100, 0 };
+        SByte[] expectedValues = { 100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            // Setup Boolean Test
-            {
-                Boolean[] testValues = { true, false, };
-                SByte[] expectedValues = { (SByte)1, (SByte)0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Double )
+        Byte[] overflowValues = { Byte.MaxValue };
+        VerifyThrows<OverflowException, Byte>(Convert.ToSByte, overflowValues);
+    }
 
-            //[] ToSByte(Double) - Vanilla Cases (100.0,-100.0,0)
+    [Fact]
+    public void FromChar()
+    {
+        Char[] testValues = { 'A', Char.MinValue, };
+        SByte[] expectedValues = { 65, (SByte)Char.MinValue };
+        Verify(Convert.ToSByte, testValues, expectedValues);
+    }
 
-            // Setup Double Test
-            {
-                Double[] testValues = { 100.0, -100.0, 0, };
-                SByte[] expectedValues = { (SByte)100, (SByte)(-100), (SByte)0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Single )
+    [Fact]
+    public void FromDecimal()
+    {
+        Decimal[] testValues = { 100m, -100m, 0m };
+        SByte[] expectedValues = { 100, -100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            //[] ToSByte(Single) - Vanilla Cases (100.0f,-100.0f,0.0f)
+        Decimal[] overflowValues = { Decimal.MaxValue, Decimal.MinValue };
+        VerifyThrows<OverflowException, Decimal>(Convert.ToSByte, overflowValues);
+    }
 
-            // Setup Single Test
+    [Fact]
+    public void FromDouble()
+    {
+        Double[] testValues = { 100.0, -100.0, 0 };
+        SByte[] expectedValues = { 100, -100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            {
-                Single[] testValues = { 100.0f, -100.0f, 0.0f, };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Int32 )
+        Double[] overflowValues = { Double.MaxValue, Double.MinValue };
+        VerifyThrows<OverflowException, Double>(Convert.ToSByte, overflowValues);
+    }
 
-            //[] ToSByte(Int32) - Vanilla Cases (100,-100,0)
+    [Fact]
+    public void FromInt16()
+    {
+        Int16[] testValues = { 100, -100, 0 };
+        SByte[] expectedValues = { 100, -100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            // Setup Int32 Test
-            {
-                Int32[] testValues = { 100, -100, 0, };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Int64 )
+        Int64[] overflowValues = { Int64.MaxValue, Int64.MinValue };
+        VerifyThrows<OverflowException, Int64>(Convert.ToSByte, overflowValues);
+    }
 
-            //[] ToSByte(Int64) - Vanilla Cases (100,-100,0)
+    [Fact]
+    public void FromInt32()
+    {
+        Int32[] testValues = { 100, -100, 0 };
+        SByte[] expectedValues = { 100, -100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            // Setup Int64 Test
-            {
-                Int64[] testValues = { 100, -100, 0, };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Int16 )
+        Int32[] overflowValues = { Int32.MaxValue, Int32.MinValue };
+        VerifyThrows<OverflowException, Int32>(Convert.ToSByte, overflowValues);
+    }
 
-            //[] ToSByte(Int16) - Vanilla Cases (((Int16) 100 ),-100,((Int16) 0 ))
+    [Fact]
+    public void FromInt64()
+    {
+        Int64[] testValues = { 100, -100, 0 };
+        SByte[] expectedValues = { 100, -100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            // Setup Int64 Test
-            {
-                Int16[] testValues = { ((Int16)100), -100, ((Int16)0), };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+        Int64[] overflowValues = { Int64.MaxValue, Int64.MinValue };
+        VerifyThrows<OverflowException, Int64>(Convert.ToSByte, overflowValues);
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Decimal )
+    [Fact]
+    public void FromObject()
+    {
+        Object[] testValues = { null };
+        SByte[] expectedValues = { 0 };
+        VerifyFromObject(Convert.ToSByte, Convert.ToSByte, testValues, expectedValues);
 
-            //[] ToSByte(Decimal) - Vanilla Cases (new Decimal( 100 ),new Decimal( -100 ),new Decimal( 0.0 ))
+        Object[] invalidValues = { new Object(), DateTime.Now };
+        VerifyFromObjectThrows<InvalidCastException>(Convert.ToSByte, Convert.ToSByte, invalidValues);
+    }
 
-            // Setup Decimal Test
-            {
-                Decimal[] testValues = { new Decimal(100), new Decimal(-100), new Decimal(0.0), };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( String )
+    [Fact]
+    public void FromSByte()
+    {
+        SByte[] testValues = { SByte.MaxValue, SByte.MinValue };
+        SByte[] expectedValues = { SByte.MaxValue, SByte.MinValue };
+        Verify(Convert.ToSByte, testValues, expectedValues);
+    }
 
-            //[] ToSByte(String) - Vanilla Cases ("100","-100","0")
+    [Fact]
+    public void FromSingle()
+    {
+        Single[] testValues = { 100.0f, -100.0f, 0.0f, };
+        SByte[] expectedValues = { 100, -100, 0, };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            // Setup String Test
-            {
-                String[] testValues = { "100", "-100", "0", null, };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), 0, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ///////////////////////////////////////////// []SByte Convert.ToSByte( String, IFormatPRovider )
+        Single[] overflowValues = { Single.MaxValue, Single.MinValue };
+        VerifyThrows<OverflowException, Single>(Convert.ToSByte, overflowValues);
+    }
 
-            // Setup String Test
-            {
-                String[] testValues = { "100", "-100", "0", };
-                SByte[] expectedValues = { ((SByte)100), -100, ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i], new TestFormatProvider());
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( String, Int32 )
+    [Fact]
+    public void FromString()
+    {
+        String[] testValues = { "100", "-100", "0", SByte.MinValue.ToString(), SByte.MaxValue.ToString() };
+        SByte[] expectedValues = { 100, -100, 0, SByte.MinValue, SByte.MaxValue };
+        VerifyFromString(Convert.ToSByte, Convert.ToSByte, testValues, expectedValues);
 
-            //[] ToSByte(String,Int32) - Vanilla Cases {("7f",16),("127",10),("177",8),("1111111",2),("80",16),("-128",10),("200",8),("10000000"2)}
+        String[] overflowValues = { Int16.MinValue.ToString(), Int16.MaxValue.ToString() };
+        VerifyFromStringThrows<OverflowException>(Convert.ToSByte, Convert.ToSByte, overflowValues);
 
-            // Setup String, Int32 Test
+        String[] formatExceptionValues = { "abba" };
+        VerifyFromStringThrows<FormatException>(Convert.ToSByte, Convert.ToSByte, formatExceptionValues);
 
-            {
-                String[] dummy = { null, };
-                Assert.Equal(0, Convert.ToSByte(dummy[0], 10));
-                Assert.Equal(0, Convert.ToSByte(dummy[0], 2));
-                Assert.Equal(0, Convert.ToSByte(dummy[0], 8));
-                Assert.Equal(0, Convert.ToSByte(dummy[0], 16));
-            }
-            {
-                String[] testValues = { "7f", "127", "177", "1111111", "80", "-128", "200", "10000000", };
-                Int32[] testBases = { 16, 10, 8, 2, 16, 10, 8, 2, };
-                SByte[] expectedValues = { SByte.MaxValue, SByte.MaxValue, SByte.MaxValue, SByte.MaxValue, SByte.MinValue, SByte.MinValue, SByte.MinValue, SByte.MinValue, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i], testBases[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+        // Note: Only the Convert.ToSByte(String, IFormatProvider) overload throws an ArgumentNullException.
+        // This is inconsistent with the other numeric conversions, but fixing this behavior is not worth making
+        // a breaking change which will affect the desktop CLR.
+        Assert.Throws<ArgumentNullException>(() => Convert.ToSByte((String)null, TestFormatProvider.s_instance));
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( UInt16 )
+    [Fact]
+    public void FromStringWithBase()
+    {
+        String[] testValues = { null, null, null, null, "7f", "127", "177", "1111111", "80", "-128", "200", "10000000" };
+        Int32[] testBases = { 10, 2, 8, 16, 16, 10, 8, 2, 16, 10, 8, 2 };
+        SByte[] expectedValues = { 0, 0, 0, 0, SByte.MaxValue, SByte.MaxValue, SByte.MaxValue, SByte.MaxValue, SByte.MinValue, SByte.MinValue, SByte.MinValue, SByte.MinValue };
+        VerifyFromStringWithBase(Convert.ToSByte, testValues, testBases, expectedValues);
 
-            //[] ToSByte(UInt16) - Vanilla Cases (100, 0)
+        String[] overflowValues = { "128", "-129", "111111111", "1FF", "777" };
+        Int32[] overflowBases = { 10, 10, 2, 16, 8 };
+        VerifyFromStringWithBaseThrows<OverflowException>(Convert.ToSByte, overflowValues, overflowBases);
 
-            // Setup UInt16 Test
+        String[] formatExceptionValues = { "12", "ffffffffffffffffffff" };
+        Int32[] formatExceptionBases = { 2, 8 };
+        VerifyFromStringWithBaseThrows<FormatException>(Convert.ToSByte, formatExceptionValues, formatExceptionBases);
 
-            {
-                UInt16[] testValues = { 100, 0, };
-                SByte[] expectedValues = { ((SByte)100), ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+        String[] argumentExceptionValues = { "10", "11", "abba", "-ab" };
+        Int32[] argumentExceptionBases = { -1, 3, 0, 16 };
+        VerifyFromStringWithBaseThrows<ArgumentException>(Convert.ToSByte, argumentExceptionValues, argumentExceptionBases);
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( UInt32 )
+    [Fact]
+    public void FromUInt16()
+    {
+        UInt16[] testValues = { 100, 0 };
+        SByte[] expectedValues = { 100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            //[] ToSByte(UInt32) - Vanilla Cases (100,0)
+        UInt16[] overflowValues = { UInt16.MaxValue };
+        VerifyThrows<OverflowException, UInt16>(Convert.ToSByte, overflowValues);
+    }
 
-            // Setup UInt32 Test
+    [Fact]
+    public void FromUInt32()
+    {
+        UInt32[] testValues = { 100, 0 };
+        SByte[] expectedValues = { 100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            {
-                UInt32[] testValues = { 100, 0, };
-                SByte[] expectedValues = { ((SByte)100), ((SByte)0), };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
+        UInt32[] overflowValues = { UInt32.MaxValue };
+        VerifyThrows<OverflowException, UInt32>(Convert.ToSByte, overflowValues);
+    }
 
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( UInt64 )
+    [Fact]
+    public void FromUInt64()
+    {
+        UInt64[] testValues = { 100, 0 };
+        SByte[] expectedValues = { 100, 0 };
+        Verify(Convert.ToSByte, testValues, expectedValues);
 
-            //[] ToSByte(UInt64) - Vanilla Cases (100,0)
-
-            // Setup UInt64 Test
-
-            {
-                UInt64[] testValues = { 100, 0, };
-                SByte[] expectedValues = { ((SByte)100), ((SByte)0), };
-
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Char )
-
-            //[] ToSByte(Char) - Vanilla Cases ('A',Char.MinValue)
-
-            // Setup Char Test
-
-            {
-                Char[] testValues = { 'A', Char.MinValue, };
-                SByte[] expectedValues = { (SByte)'A', (SByte)Char.MinValue, };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// SByte Convert.ToSByte( SByte )
-
-            //[] ToSByte(SByte) - Vanilla Cases (SByte.MaxValue,SByte.MinValue, SByte.Empty)
-
-            // Setup SByte Test
-            {
-                SByte[] testValues = { SByte.MaxValue, SByte.MinValue };
-                SByte[] expectedValues = { SByte.MaxValue, SByte.MinValue };
-                // Vanila Test Cases
-                for (int i = 0; i < testValues.Length; i++)
-                {
-                    SByte result = Convert.ToSByte(testValues[i]);
-                    Assert.Equal(expectedValues[i], result);
-                }
-            }
-
-            //[] ToSByte( Object ) - obj = null
-            {
-                SByte bTest = Convert.ToSByte((Object)null);
-                Assert.Equal(0, bTest);
-            }
-
-            //[] ToSByte( Object, IFP ) - obj = null
-            {
-                SByte bTest = Convert.ToSByte((Object)null, new TestFormatProvider());
-                Assert.Equal(0, bTest);
-            }
-        }
-
-        [Fact]
-        public static void runTests_Negative()
-        {
-            {
-                // Exception Test Cases
-                //[] ToSByte(Single) - Exception Cases (Single.MaxValue,Single.MinValue)
-
-                Single[] errorValues = { Single.MaxValue, Single.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToSByte(Int32) - Exception Cases (Int32.MaxValue,Int32.MinValue)
-                Int32[] errorValues = { Int32.MaxValue, Int32.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToSByte(Int64) - Exception Cases (Int64.MaxValue,Int64.MinValue)
-                Int64[] errorValues = { Int64.MaxValue, Int64.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToSByte(Int16) - Exception Cases (Int16.MaxValue,Int16.MinValue)
-                Int16[] errorValues = { Int16.MaxValue, Int16.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(errorValues[i]); });
-                }
-            }
-            // Exception Test
-            //[] ToSByte(Byte) - Exception Cases (Byte.MaxValue)
-
-            Assert.Throws<OverflowException>(() => Convert.ToSByte(Byte.MaxValue));
-
-            // Exception Test Cases
-            //[] ToSByte(Double) - Exception Cases (((Double) Int32.MaxValue ),((Double) Int32.MinValue ))
-            {
-                Double[] errorValues = { ((Double)Int32.MaxValue), ((Double)Int32.MinValue), };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(errorValues[i]); });
-                }
-            }
-            {
-                // Exception Test Cases
-                //[] ToSByte(Decimal) - Exception Cases (Decimal.MaxValue,Decimal.MinValue)
-                Decimal[] errorValues = { Decimal.MaxValue, Decimal.MinValue, };
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(errorValues[i]); });
-                }
-            }
-            // Exception Test Cases
-            //[] ToSByte(String) - Exception Cases (Int32.MaxValue.ToString(),Int64.MaxValue.ToString(),null,"abba")
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(Int32.MaxValue.ToString()); });
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(Int64.MaxValue.ToString()); });
-            Assert.Throws<FormatException>(() => { SByte result = Convert.ToSByte("abba"); });
-
-            // Exception Test Cases
-            //[] ToSByte(String) - Exception Cases (Int32.MaxValue.ToString(),Int64.MaxValue.ToString(),null,"abba")
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(Int32.MaxValue.ToString(), new TestFormatProvider()); });
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(Int64.MaxValue.ToString(), new TestFormatProvider()); });
-            Assert.Throws<ArgumentNullException>(() => { SByte result = Convert.ToSByte(null, new TestFormatProvider()); });
-            Assert.Throws<FormatException>(() => { SByte result = Convert.ToSByte("abba", new TestFormatProvider()); });
-            {
-                // Exception Test Cases
-                //[] ToSByte(String,Int32) - Exception Cases {(null,2),("12",3),("11",5),("abba",8),("ffffffffffffffffffff",16)}
-                String[] expectedExceptions = { "System.FormatException", "System.ArgumentException", "System.ArgumentException", "System.ArgumentException", "System.FormatException", "System.ArgumentException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", "System.OverflowException", };
-                String[] errorValues = { "12", "10", "11", "abba", "ffffffffffffffffffff", "-ab", "128", "-129", "111111111", "1FF", "777", };
-                Int32[] errorBases = { 2, -1, 3, 0, 8, 16, 10, 10, 2, 16, 8, };
-
-                for (int i = 0; i < errorValues.Length; i++)
-                {
-                    try
-                    {
-                        SByte result = Convert.ToSByte(errorValues[i], errorBases[i]);
-                        Assert.True(false, "Exception expected: " + expectedExceptions[i]);
-                    }
-                    catch (Exception e)
-                    {
-                        Assert.True(e.GetType().FullName.Equals(expectedExceptions[i]), " Wrong Exception Thrown. Expected" + expectedExceptions[i] + ", Actual: " + e.GetType().FullName);
-                    }
-                }
-            }
-
-            // Exception Test Cases
-            //[] ToSByte(UInt16) - Exception Cases (UInt16.MaxValue)
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(UInt16.MaxValue); });// Exception Test Cases
-
-            // Exception Test Cases
-            //[] ToSByte(UInt32) - Exception Cases (UInt32.MaxValue)
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(UInt32.MaxValue); });
-
-            // Exception Test Cases
-            //[] ToSByte(UInt64) - Exception Cases (UInt64.MaxValue)
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(UInt64.MaxValue); });
-
-            // Exception test
-            //[] ToSByte(Char) - Exception Cases (Char.MaxValue)
-            Assert.Throws<OverflowException>(() => { SByte result = Convert.ToSByte(Char.MaxValue); });
-            ///////////////////////////////////////////// SByte Convert.ToSByte( Object )
-            //[] ToSByte( Object ) - Exception Case (Object that does not implement IConvertible) 
-            Assert.Throws<InvalidCastException>(() => { SByte bTest = Convert.ToSByte(new Object()); });
-
-            ///////////////////////////////////////////// []SByte Convert.ToSByte( Object, IFormatPRovider )
-            Assert.Throws<InvalidCastException>(() => { SByte bTest = Convert.ToSByte(new Object(), new TestFormatProvider()); });
-
-            ///////////////////////////////////////////// []SByte Convert.ToSByte( DateTime )
-            Assert.Throws<InvalidCastException>(() => { SByte bTest = Convert.ToSByte(DateTime.Now); });
-        }
+        UInt64[] overflowValues = { UInt64.MaxValue };
+        VerifyThrows<OverflowException, UInt64>(Convert.ToSByte, overflowValues);
     }
 }

@@ -4,454 +4,180 @@
 using System;
 using Xunit;
 
-namespace Test
+public class ConvertToByteTests : ConvertTestBase<Byte>
 {
-    public class Co6054ToByte_all
+    [Fact]
+    public void FromBoolean()
     {
-        [Fact]
-        public static void runTest()
-        {
-            ///////////////////////////////////////////// Byte Convert.ToByte( Boolean )
-
-            //[] ToByte( Boolean ) - true
-            //[] ToByte( Boolean ) - false
-
-            //// Setup Boolean Test
-            Boolean[] boolArray = { true, false, };
-            Byte[] boolResults = { 1, 0, 0, };
-
-            //// Vanilla Tests
-            for (int i = 0; i < boolArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(boolArray[i]);
-                Assert.Equal(boolResults[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( SByte )
-
-            //[] ToByte( SByte ) - (SByte) 10
-            //[] ToByte( SByte ) - (SByte) 0
-
-            //// Setup SByte Test
-
-            SByte[] SByteArray = { ((SByte)10), ((SByte)0), };
-            Byte[] SByteResults = { (Byte)10, (Byte)0, };
-
-            //// Vanilla Tests
-            for (int i = 0; i < SByteArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(SByteArray[i]);
-                Assert.Equal(SByteResults[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Double )
-
-            //[] ToByte( Double ) - (Double)Byte.MinValue
-            //[] ToByte( Double ) - (Double)Byte.MaxValue
-            //[] ToByte( Double ) - 0.0
-            //[] ToByte( Double ) - 100.0
-            //[] ToByte( Double ) - 254.9
-
-            //// Setup Double Test
-            Double[] doubArray = { (Double)Byte.MinValue, (Double)Byte.MaxValue, 0.0, 100.0, 254.9, };
-            Byte[] doubResults = { Byte.MinValue, Byte.MaxValue, 0, 100, 255 };
-            //// Vanilla Tests
-            for (int i = 0; i < doubArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(doubArray[i]);
-                Assert.Equal(doubResults[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Single )
-
-            //[] ToByte( Single ) - (Single)Byte.MaxValue
-            //[] ToByte( Single ) - (Single)Byte.MinValue
-            //[] ToByte( Single ) - 254.01f
-
-            //// Setup Single Test
-            Single[] singArray = { (Single)Byte.MaxValue, (Single)Byte.MinValue, 254.01f, };
-            Byte[] singResults = { Byte.MaxValue, Byte.MinValue, 254, };
-            //// Vanilla Tests
-            for (int i = 0; i < singArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(singArray[i]);
-                Assert.Equal(singResults[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Int32 )
-
-            //[] Byte Convert.ToByte( Int32 ) - 10
-            //[] Byte Convert.ToByte( Int32 ) - 0
-            //[] Byte Convert.ToByte( Int32 ) - 100
-            //[] Byte Convert.ToByte( Int32 ) - 255
-
-            //// Setup Int32 Test
-            Int32[] int3Array = { 10, 0, 100, 255, };
-            Byte[] int3Results = { 10, 0, 100, 255, };
-            //// Vanilla Tests
-            for (int i = 0; i < int3Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(int3Array[i]);
-                Assert.Equal(int3Results[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Int64 )
-
-            //[] ToByte( Int64 ) - 10
-            //[] ToByte( Int64 ) - 100
-
-            //// Setup Int64 Test
-
-            Int64[] int6Array = { 10, 100, };
-            Byte[] int6Results = { (Byte)10, (Byte)100, };
-
-            //// Vanilla Tests
-            for (int i = 0; i < int6Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(int6Array[i]);
-                Assert.Equal(int6Results[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Int16 )
-
-            //[] ToByte( Int16 ) - 0
-            //[] ToByte( Int16 ) - 255
-            //[] ToByte( Int16 ) - 100
-            //[] ToByte( Int16 ) - 2
-            //// Setup Int16 Test
-
-            Int16[] int1Array = { 0, 255, 100, 2, };
-            Byte[] int1Results = { 0, 255, 100, 2, };
-            //// Vanilla Tests
-            for (int i = 0; i < int1Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(int1Array[i]);
-                Assert.Equal(int1Results[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Decimal )
-
-            //[] ToByte( Decimal ) - (Decimal)Byte.MaxValue
-            //[] ToByte( Decimal ) - (Decimal)Byte.MinValue
-            //[] ToByte( Decimal ) - new Decimal( 254.01 ),
-            //[] ToByte( Decimal ) - (Decimal)(Byte.MaxValue/2 ),
-
-            //// Setup Decimal Test
-            Decimal[] deciArray = { (Decimal)Byte.MaxValue, (Decimal)Byte.MinValue, new Decimal(254.01), (Decimal)(Byte.MaxValue / 2), };
-            Byte[] deciResults = { Byte.MaxValue, Byte.MinValue, 254, Byte.MaxValue / 2, };
-
-            //// Vanilla Tests
-            for (int i = 0; i < deciArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(deciArray[i]);
-                Assert.Equal(deciResults[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( String )
-
-            //[] ToByte( String ) - Byte.MaxValue.ToString()
-            //[] ToByte( String ) - Byte.MinValue.ToString()
-
-            //// Setup String Test
-            String[] striArray = { Byte.MaxValue.ToString(), Byte.MinValue.ToString(), };
-            Byte[] striResults = { Byte.MaxValue, Byte.MinValue, };
-
-            //// Vanilla Tests
-            for (int i = 0; i < striArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(striArray[i]);
-                Assert.Equal(striResults[i], result);
-            }
-            // Exception test
-            //[] ToByte( String ) - null string
-
-            String[] dummy = { null, };
-
-            Byte result2 = Convert.ToByte(dummy[0]);
-            Assert.Equal(0, result2);
-
-            //[] ToByte( String, IFormatProvider ) - null string
-
-            result2 = Convert.ToByte(dummy[0], new TestFormatProvider());
-            Assert.Equal(0, result2);
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( String, Int32 )
-
-            //[] ToByte( String, Int32 ) - "10",10
-            //[] ToByte( String, Int32 ) - "100",10
-            //[] ToByte( String, Int32 ) - "1011",2
-            //[] ToByte( String, Int32 ) - "ff",16
-            //[] ToByte( String, Int32 ) - "0xff",16
-            //[] ToByte( String, Int32 ) - "77",8
-            //[] ToByte( String, Int32 ) - "11",2
-            //[] ToByte( String, Int32 ) - "11111111",2
-
-            //// Setup String Test
-
-            striArray = new string[] { "10", "100", "1011", "ff", "0xff", "77", "11", "11111111", };
-            Int32[] striBase = { 10, 10, 2, 16, 16, 8, 2, 2, };
-            striResults = new byte[] { 10, 100, 11, 255, 255, 63, 3, 255, };
-
-            //// Vanilla Tests
-            for (int i = 0; i < striArray.Length; i++)
-            {
-                Byte result = Convert.ToByte(striArray[i], striBase[i]);
-                Assert.Equal(striResults[i], result);
-            }
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - null,10
-
-            dummy = new string[] { null, };
-
-            Assert.Equal(0, Convert.ToByte(dummy[0], 10));
-            Assert.Equal(0, Convert.ToByte(dummy[0], 2));
-            Assert.Equal(0, Convert.ToByte(dummy[0], 8));
-            Assert.Equal(0, Convert.ToByte(dummy[0], 16));
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Byte )
-
-            //[] ToByte( Byte ) - Byte.MinValue
-            //[] ToByte( Byte ) - Byte.MaxValue
-            //[] ToByte( Byte ) - (Byte) 10
-            //[] ToByte( Byte ) - (Byte) 100
-
-            //// Setup UInt16 Test
-            UInt16[] UInt3216Array = { Byte.MinValue, Byte.MaxValue, (Byte)10, (Byte)100, };
-            Byte[] UInt3216Results = { 0, 255, 10, 100, };
-            //// Vanilla Tests
-
-            for (int i = 0; i < UInt3216Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(UInt3216Array[i]);
-                Assert.Equal(UInt3216Results[i], result);
-            }
-
-            /// Adding UInt Tests
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( UInt16 )
-
-            //[] ToByte( UInt16 ) - (UInt16)10
-            //[] ToByte( UInt16 ) - (UInt16)0
-            //[] ToByte( UInt16 ) - (UInt16)100
-            //[] ToByte( UInt16 ) - (UInt16)255
-
-            //// Setup UInt16 Test
-
-            UInt3216Array = new UInt16[] { (UInt16)10, (UInt16)0, (UInt16)100, (UInt16)255, };
-            UInt3216Results = new Byte[] { 10, 0, 100, 255, };
-            //// Vanilla Tests
-            for (int i = 0; i < UInt3216Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(UInt3216Array[i]);
-                Assert.Equal(UInt3216Results[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( UInt32 )
-
-            //[] ToByte( UInt32 ) - (UInt32)10
-
-            //[] ToByte( UInt32 ) - (UInt32)0
-
-            //[] ToByte( UInt32 ) - (UInt32)100
-
-            //[] ToByte( UInt32 ) - (UInt32)255
-
-            //// Setup UInt32 Test
-            UInt32[] UInt3232Array = { (UInt32)10, (UInt32)0, (UInt32)100, (UInt32)255, };
-            Byte[] UInt3232Results = { 10, 0, 100, 255, };
-            //// Vanilla Tests
-            for (int i = 0; i < UInt3232Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(UInt3232Array[i]);
-                Assert.Equal(UInt3232Results[i], result);
-            }
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( UInt64 )
-
-            //[] ToByte( UInt64 ) - (UInt64)10
-
-            //[] ToByte( UInt64 ) - (UInt64)0
-
-            //[] ToByte( UInt64 ) - (UInt64)100
-
-            //[] ToByte( UInt64 ) - (UInt64)255
-
-            //// Setup UInt64 Test
-            UInt64[] UInt3264Array = { (UInt64)10, (UInt64)0, (UInt64)100, (UInt64)255, };
-            Byte[] UInt3264Results = { 10, 0, 100, 255, };
-            //// Vanilla Tests
-            for (int i = 0; i < UInt3264Array.Length; i++)
-            {
-                Byte result = Convert.ToByte(UInt3264Array[i]);
-                Assert.Equal(UInt3264Results[i], result);
-            }
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ///////////////////////////////////////////// Int32 Convert.ToByte( Char )
-
-            //[] ToByte( Char ) - 'A'
-
-            //[] ToByte( Char ) - Char.MinValue
-
-            // Setup Char Test
-            Char[] testValues = { 'A', Char.MinValue, };
-            Byte[] expectedValues = { (Byte)'A', (Byte)Char.MinValue, };
-            // Vanila Test Cases
-            for (int i = 0; i < testValues.Length; i++)
-            {
-                Byte result = Convert.ToByte(testValues[i]);
-                Assert.Equal(expectedValues[i], result);
-            }
-
-            //[] ToByte( Object ) - obj = null
-            Assert.Equal(0, Convert.ToByte((Object)null));
-
-            //[] ToByte( Object, IFP ) - obj = null
-            Assert.Equal(0, Convert.ToByte((Object)null, new TestFormatProvider()));
-        }
-        [Fact]
-        public static void runTest_Negative()
-        {
-            // Exception test
-            //[] Exception test: ToByte( SByte ) - (SByte) -100
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((SByte)(-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( Double ) - (Double) -100        
-
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Double)(-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( Double ) - (Double) 1000        
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Double)1000); });
-
-            // Exception test
-            //[] Exception test: ToByte( Single ) - (Single(-100))
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Single)(-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( Single ) - (Single(1000))
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Single)1000); });
-
-            // Exception test
-            //[] Exception test: Byte Convert.ToByte( Int32 ) - -100
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte(-100); });
-
-            // Exception test
-            //[] Exception test: Byte Convert.ToByte( Int32 ) - 1000
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte(1000); });
-
-            // Exception test
-            //[] Exception test: ToByte( Int64 ) - -100
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Int64)(-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( Int64 ) - 1000
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Int64)1000); });
-
-            // Exception test
-            //[] Exception test: ToByte( Int16 ) - -100
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Int16)(-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( Int16 ) - 1000
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Int16)1000); });
-
-            // Exception test
-            //[] Exception test: ToByte( Decimal ) - (Decimal) -100
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Decimal)(-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( Decimal ) - (Decimal) 1000
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((Decimal)(1000)); });
-
-            // Exception test
-            //[] Exception test: ToByte( String ) - "256"
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("256"); });
-
-            // Exception test
-            //[] Exception test: ToByte( String ) - "-1"
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("-1"); });
-
-            // Exception test
-            //[] Exception test: ToByte( String ) - "!56"
-            Assert.Throws<FormatException>(() => { Byte result = Convert.ToByte("!56"); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - null,11
-            string[] dummy = new string[] { null, };
-            Assert.Throws<ArgumentException>(() => { Byte result = Convert.ToByte(dummy[0], 11); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "256",10
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("256", 10); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "111111111",2
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("111111111", 2); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "ffffe",16
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("ffffe", 16); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "7777777",8
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("7777777", 8); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "fffg",16
-            Assert.Throws<FormatException>(() => { Byte result = Convert.ToByte("fffg", 16); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "0xxfff",16
-            Assert.Throws<FormatException>(() => { Byte result = Convert.ToByte("0xxfff", 16); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "8",8
-            Assert.Throws<FormatException>(() => { Byte result = Convert.ToByte("8", 8); });
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "112",2
-            Assert.Throws<FormatException>(() => { Byte result = Convert.ToByte("112", 2); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "-1",10
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte("-1", 10); });
-
-            // Exception test
-            //[] Exception test: ToByte( String, Int32 ) - "!56",10
-            Assert.Throws<FormatException>(() => { Byte result = Convert.ToByte("!56", 10); });
-
-            // Exception test
-            //[] Exception test: ToByte( UInt16 ) - (UInt16)-100
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((-100)); });
-
-            // Exception test
-            //[] Exception test: ToByte( UInt16 ) - (UInt16)256
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((UInt16)256); });
-
-            //[] Exception test: ToByte( UInt32 ) - (UInt32)1000
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte(1000); });
-
-            // Exception test
-            //[] Exception test: ToByte( UInt32 ) - (UInt32)256
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((UInt32)256); });
-
-            // Exception test
-            //[] Exception test: ToByte( UInt64 ) - (UInt64)1000
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte(1000); });
-
-            // Exception test
-            //[] Exception test: ToByte( UInt64 ) - (UInt64)256
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte((UInt64)256); });
-
-            // Exception test
-            //[] Exception test: ToByte( Char ) - Char.MaxValue
-            Assert.Throws<OverflowException>(() => { Byte result = Convert.ToByte(Char.MaxValue); });
-
-            ///////////////////////////////////////////// Byte Convert.ToByte( Object )
-            //[] ToByte( Object ) - Exception Case (Object that does not implement IConvertible) 
-            Assert.Throws<InvalidCastException>(() => { Byte bTest = Convert.ToByte(new Object()); });
-        }
+        Boolean[] testValues = { true, false };
+        Byte[] expectedValues = { 1, 0 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+    }
+
+    [Fact]
+    public void FromChar()
+    {
+        Char[] testValues = { 'A', Char.MinValue };
+        Byte[] expectedValues = { (Byte)'A', (Byte)Char.MinValue };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Char[] overflowValues = { Char.MaxValue };
+        VerifyThrows<OverflowException, Char>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromDecimal()
+    {
+        Decimal[] testValues = { Byte.MaxValue, Byte.MinValue, 254.01m, 254.9m };
+        Byte[] expectedValues = { Byte.MaxValue, Byte.MinValue, 254, 255 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Decimal[] overflowValues = { Decimal.MinValue, Decimal.MaxValue };
+        VerifyThrows<OverflowException, Decimal>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromDouble()
+    {
+        Double[] testValues = { Byte.MinValue, Byte.MaxValue, 100.0, 254.9, 255.2 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 100, 255, 255 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Double[] overflowValues = { Double.MinValue, Double.MaxValue };
+        VerifyThrows<OverflowException, Double>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromInt16()
+    {
+        Int16[] testValues = { Byte.MinValue, Byte.MaxValue, 10, 2 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 10, 2 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Int16[] overflowValues = { Int16.MinValue, Int16.MaxValue };
+        VerifyThrows<OverflowException, Int16>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromInt32()
+    {
+        Int32[] testValues = { Byte.MinValue, Byte.MaxValue, 10 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 10 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Int32[] overflowValues = { Int32.MinValue, Int32.MaxValue };
+        VerifyThrows<OverflowException, Int32>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromInt64()
+    {
+        Int64[] testValues = { Byte.MinValue, Byte.MaxValue, 10 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 10 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Int64[] overflowValues = { Int64.MinValue, Int64.MaxValue };
+        VerifyThrows<OverflowException, Int64>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromObject()
+    {
+        Object[] testValues = { null };
+        Byte[] expectedValues = { 0 };
+        VerifyFromObject(Convert.ToByte, Convert.ToByte, testValues, expectedValues);
+
+        Object[] invalidValues = { new Object(), DateTime.Now };
+        VerifyFromObjectThrows<InvalidCastException>(Convert.ToByte, Convert.ToByte, invalidValues);
+    }
+
+    [Fact]
+    public void FromSByte()
+    {
+        SByte[] testValues = { 0, 10, SByte.MaxValue };
+        Byte[] expectedValues = { 0, 10, (Byte)SByte.MaxValue };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        SByte[] overflowValues = { SByte.MinValue };
+        VerifyThrows<OverflowException, SByte>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromSingle()
+    {
+        Single[] testValues = { Byte.MaxValue, Byte.MinValue, 254.01f, 254.9f };
+        Byte[] expectedValues = { Byte.MaxValue, Byte.MinValue, 254, 255 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        Single[] overflowValues = { Single.MinValue, Single.MaxValue };
+        VerifyThrows<OverflowException, Single>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromString()
+    {
+        String[] testValues = { Byte.MaxValue.ToString(), Byte.MinValue.ToString(), "0", "100", null };
+        Byte[] expectedValues = { Byte.MaxValue, Byte.MinValue, 0, 100, 0 };
+        VerifyFromString(Convert.ToByte, Convert.ToByte, testValues, expectedValues);
+
+        String[] overflowValues = { Int32.MinValue.ToString(), Int32.MaxValue.ToString() };
+        VerifyFromStringThrows<OverflowException>(Convert.ToByte, Convert.ToByte, overflowValues);
+
+        String[] formatExceptionValues = { "abba" };
+        VerifyFromStringThrows<FormatException>(Convert.ToByte, Convert.ToByte, formatExceptionValues);
+    }
+
+    [Fact]
+    public void FromStringWithBase()
+    {
+        String[] testValues = { null, null, null, null, "10", "100", "1011", "ff", "0xff", "77", "11", "11111111" };
+        Int32[] testBases = { 10, 2, 8, 16, 10, 10, 2, 16, 16, 8, 2, 2 };
+        Byte[] expectedValues = { 0, 0, 0, 0, 10, 100, 11, 255, 255, 63, 3, 255 };
+        VerifyFromStringWithBase(Convert.ToByte, testValues, testBases, expectedValues);
+
+        String[] overflowValues = { "256", "111111111", "ffffe", "7777777", "-1" };
+        Int32[] overflowBases = { 10, 2, 16, 8, 10 };
+        VerifyFromStringWithBaseThrows<OverflowException>(Convert.ToByte, overflowValues, overflowBases);
+
+        String[] formatExceptionValues = { "fffg", "0xxfff", "8", "112", "!56" };
+        Int32[] formatExceptionBases = { 16, 16, 8, 2, 10};
+        VerifyFromStringWithBaseThrows<FormatException>(Convert.ToByte, formatExceptionValues, formatExceptionBases);
+
+        String[] argumentExceptionValues = { null };
+        Int32[] argumentExceptionBases = { 11 };
+        VerifyFromStringWithBaseThrows<ArgumentException>(Convert.ToByte, argumentExceptionValues, argumentExceptionBases);
+    }
+
+    [Fact]
+    public void FromUInt16()
+    {
+        UInt16[] testValues = { Byte.MinValue, Byte.MaxValue, 10, 100 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 10, 100 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        UInt16[] overflowValues = { UInt16.MaxValue };
+        VerifyThrows<OverflowException, UInt16>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromUInt32()
+    {
+        UInt32[] testValues = { Byte.MinValue, Byte.MaxValue, 10, 100 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 10, 100 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        UInt32[] overflowValues = { UInt32.MaxValue };
+        VerifyThrows<OverflowException, UInt32>(Convert.ToByte, overflowValues);
+    }
+
+    [Fact]
+    public void FromUInt64()
+    {
+        UInt64[] testValues = { Byte.MinValue, Byte.MaxValue, 10, 100 };
+        Byte[] expectedValues = { Byte.MinValue, Byte.MaxValue, 10, 100 };
+        Verify(Convert.ToByte, testValues, expectedValues);
+
+        UInt64[] overflowValues = { UInt64.MaxValue };
+        VerifyThrows<OverflowException, UInt64>(Convert.ToByte, overflowValues);
     }
 }
