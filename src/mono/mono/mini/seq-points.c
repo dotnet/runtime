@@ -583,8 +583,7 @@ seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 	guint8* buffer0 = buffer;
 	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 
-	memcpy (buffer, &info_inflated.has_debug_data, 1);
-	buffer++;
+	encode_var_int (buffer, &buffer, info_inflated.has_debug_data);
 
 	//Write sequence points
 	encode_var_int (buffer, &buffer, info_inflated.len);
@@ -601,8 +600,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 	int size;
 	gboolean has_debug_data;
 
-	memcpy (&has_debug_data, buffer, 1);
-	buffer++;
+	has_debug_data = decode_var_int (buffer, &buffer);
 
 	size = decode_var_int (buffer, &buffer);
 	(*info) = seq_point_info_new (size, copy, buffer, has_debug_data);
