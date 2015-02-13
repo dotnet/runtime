@@ -58,7 +58,8 @@ if not exist %__LogsDir%           md  %__LogsDir%
 :SkipDefaultCoreRootSetup
 set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log
 set __TestRunBuildLog=%__LogsDir%\TestRunResults_%__BuildArch%__%__BuildType%.log
-set __TestRunHtmlLog=%CD%\TestRun_%__BuildArch%_%__BuildType%.html
+set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildArch%_%__BuildType%.html
+set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildArch%_%__BuildType%.xml
 
 echo "Core_Root that will be used is : %Core_Root%"
 echo "Starting The Test Run .. "
@@ -109,19 +110,18 @@ md %Core_Root%
 xcopy /s %__BinDir% %Core_Root%
 call :runtests 
 
-IF %BUILDERRORLEVEL% NEQ 0 echo Test Run  failed. Refer %__TestRunBuildLog% for details. && exit /b %BUILDERRORLEVEL%
+IF %BUILDERRORLEVEL% NEQ 0 ( 
+    echo Test Run failed. Refer to the following"
+    echo Msbuild log: %__TestRunBuildLog%
+    echo Html report: %__TestRunHtmlLog%
+    exit /b %BUILDERRORLEVEL%
+)
 goto :eof
 
 :runtests
 %_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix%
 
 set BUILDERRORLEVEL=%ERRORLEVEL%
-goto :eof
-
-%_buildprefix% echo "Core_Root that was used is %Core_Root%" %_buildpostfix%
-echo "Find details of the run in %__TestRunHtmlLog%
-
-
 goto :eof
 
 :Usage
