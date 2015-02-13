@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
-
 namespace System.Diagnostics
 {
     /// <devdoc>
@@ -14,8 +12,9 @@ namespace System.Diagnostics
     /// </devdoc>
     public partial class ProcessThread
     {
-        private readonly ThreadInfo _threadInfo;
         private readonly bool _isRemoteMachine;
+        private readonly int _processId;
+        private readonly ThreadInfo _threadInfo;
         private bool? _priorityBoostEnabled;
         private ThreadPriorityLevel? _priorityLevel;
 
@@ -23,9 +22,10 @@ namespace System.Diagnostics
         ///     Internal constructor.
         /// </devdoc>
         /// <internalonly/>
-        internal ProcessThread(bool isRemoteMachine, ThreadInfo threadInfo)
+        internal ProcessThread(bool isRemoteMachine, int processId, ThreadInfo threadInfo)
         {
             _isRemoteMachine = isRemoteMachine;
+            _processId = processId;
             _threadInfo = threadInfo;
         }
 

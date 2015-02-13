@@ -14,13 +14,14 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed partial class SafeThreadHandle : SafeHandle
+    internal sealed class SafeThreadHandle : SafeHandle
     {
         internal SafeThreadHandle()
-            : base(new IntPtr(DefaultInvalidHandleValue), true)
+            : base(new IntPtr(0), true)
         {
         }
 
@@ -28,6 +29,17 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(IsInvalid, "Safe handle should only be set once");
             base.SetHandle(h);
+        }
+
+        public override bool IsInvalid
+        {
+            [SecurityCritical]
+            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            return Interop.mincore.CloseHandle(handle);
         }
     }
 }

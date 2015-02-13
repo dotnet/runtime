@@ -12,10 +12,12 @@ namespace System.Diagnostics
     /// <internalonly/>
     internal sealed class ModuleInfo
     {
+#pragma warning disable 0649 // unused fields on some platforms
         internal string _baseName;
         internal string _fileName;
         internal IntPtr _baseOfDll;
         internal IntPtr _entryPoint;
         internal int _sizeOfImage;
+#pragma warning restore 0649
     }
 }
