@@ -879,12 +879,13 @@ set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int main(void)
 {
   char* szFileName;
   FILE* pFile = NULL;
-  int ret = 0;
+  int ret = 1;
 
   szFileName = tempnam(\".\", \"tmp\");
 
@@ -892,11 +893,11 @@ int main(void)
   pFile = fopen(szFileName, \"a\");
   if (pFile == NULL)
   {
-    exit(1);
+    exit(0);
   }
   if (ungetc('A', pFile) != EOF)
   {
-    ret = 1;
+    ret = 0;
   }
   unlink(szFileName);
   exit(ret);
