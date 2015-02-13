@@ -489,14 +489,12 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
     if (pInRD->pEdx != NULL) {pOutCtx->Edx = *pInRD->pEdx;} else {pInRD->pEdx = NULL;}
     pOutCtx->Esp = pInRD->Esp;
     pOutCtx->Eip = pInRD->ControlPC;
-#elif defined(_WIN64) || defined(_TARGET_ARM_)
+#else
     *pOutCtx = *(pInRD->pCurrentContext);
     if (pInRD->IsCallerContextValid)
     {
         pOutCallerCtx = pInRD->pCallerContext;
     }
-#else
-    PORTABILITY_ASSERT("@NYI Platform - CopyRegDisplay (Threads.cpp)");
 #endif
 
     if (pOutRD)
@@ -575,15 +573,9 @@ inline void UpdateContextFromRegDisp(PREGDISPLAY pRegDisp, PT_CONTEXT pContext)
     pContext->Edx = *pRegDisp->pEdx;
     pContext->Esp = pRegDisp->Esp;
     pContext->Eip = pRegDisp->ControlPC;
-
-#elif defined(_WIN64) || defined(_TARGET_ARM_)
+#else
     *pContext = *pRegDisp->pCurrentContext;
-
-#else  // !_TARGET_X86_ && !_WIN64 && !_TARGET_ARM_
-    _ASSERTE(!"DDII::UpdateContextFromRegDisplay() - NYI on this platform\n");
-    ThrowHR(E_NOTIMPL);
-
-#endif // !_TARGET_X86_ && !_WIN64 && !_TARGET_ARM_
+#endif
 }
 
 
