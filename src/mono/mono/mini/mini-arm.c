@@ -954,11 +954,24 @@ mono_arch_init (void)
 	arm_fpu = MONO_ARM_FPU_VFP;
 
 #if defined(ARM_FPU_NONE) && !defined(__APPLE__)
-	/* If we're compiling with a soft float fallback and it
-	   turns out that no VFP unit is available, we need to
-	   switch to soft float. We don't do this for iOS, since
-	   iOS devices always have a VFP unit. */
+	/*
+	 * If we're compiling with a soft float fallback and it
+	 * turns out that no VFP unit is available, we need to
+	 * switch to soft float. We don't do this for iOS, since
+	 * iOS devices always have a VFP unit.
+	 */
 	if (!mono_hwcap_arm_has_vfp)
+		arm_fpu = MONO_ARM_FPU_NONE;
+
+	/*
+	 * This environment variable can be useful in testing
+	 * environments to make sure the soft float fallback
+	 * works. Most ARM devices have VFP units these days, so
+	 * normally soft float code would not be exercised much.
+	 */
+	const char *soft = g_getenv ("MONO_ARM_FORCE_SOFT_FLOAT");
+
+	if (!strncmp (soft, "1", 1))
 		arm_fpu = MONO_ARM_FPU_NONE;
 #endif
 #endif
