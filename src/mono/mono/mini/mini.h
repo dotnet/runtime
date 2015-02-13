@@ -2275,6 +2275,7 @@ void     mono_llvm_create_aot_module        (const char *got_symbol, gboolean ex
 void     mono_llvm_emit_aot_module          (const char *filename, const char *cu_name) MONO_LLVM_INTERNAL;
 void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 void     mono_llvm_free_domain_info         (MonoDomain *domain) MONO_LLVM_INTERNAL;
+MONO_API void mono_personality              (void);
 
 gboolean mini_llvm_init                     (void);
 

@@ -2083,9 +2083,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 /* Have to export this for AOT */
 void
-mono_personality (void);
-	
-void
 mono_personality (void)
 {
 	/* Not used */
