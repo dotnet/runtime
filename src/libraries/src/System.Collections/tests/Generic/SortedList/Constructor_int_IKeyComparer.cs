@@ -12,6 +12,13 @@ namespace SortedListCtorIntIKeyComp
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         private CultureInfo _english = new CultureInfo("en");
         private CultureInfo _german = new CultureInfo("de");
         private CultureInfo _danish = new CultureInfo("da");
@@ -48,11 +55,11 @@ namespace SortedListCtorIntIKeyComp
             foreach (IComparer<String> predefinedComparer in predefinedComparers)
             {
                 _dic = new SortedList<String, String>(capacity, predefinedComparer);
-                Test.Eval(_dic.Comparer == predefinedComparer, String.Format("Err_4568aijueud! Comparer differ expected: {0} actual: {1}", predefinedComparer, _dic.Comparer));
-                Test.Eval(_dic.Count == 0, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-                Test.Eval(((IDictionary<KeyType, ValueType>)_dic).IsReadOnly == false, String.Format("Err_435wsdg! Count different: {0}", ((IDictionary<KeyType, ValueType>)_dic).IsReadOnly));
-                Test.Eval(_dic.Keys.Count == 0, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-                Test.Eval(_dic.Values.Count == 0, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+                m_test.Eval(_dic.Comparer == predefinedComparer, String.Format("Err_4568aijueud! Comparer differ expected: {0} actual: {1}", predefinedComparer, _dic.Comparer));
+                m_test.Eval(_dic.Count == 0, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+                m_test.Eval(((IDictionary<KeyType, ValueType>)_dic).IsReadOnly == false, String.Format("Err_435wsdg! Count different: {0}", ((IDictionary<KeyType, ValueType>)_dic).IsReadOnly));
+                m_test.Eval(_dic.Keys.Count == 0, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+                m_test.Eval(_dic.Values.Count == 0, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             }
 
 
@@ -60,62 +67,62 @@ namespace SortedListCtorIntIKeyComp
             CultureInfo.DefaultThreadCurrentCulture = _english;
             comparer = StringComparer.CurrentCulture;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_848652ahued! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_848652ahued! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(strAE, value);
-            Test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_235rdag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
+            m_test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_235rdag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
 
             //bug #11263 in NDPWhidbey
             CultureInfo.DefaultThreadCurrentCulture = _german;
             comparer = StringComparer.CurrentCulture;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_54848ahuede! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_54848ahuede! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(strAE, value);
-            Test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_23r7ag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
+            m_test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_23r7ag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
 
             //CurrentCultureIgnoreCase
             CultureInfo.DefaultThreadCurrentCulture = _english;
             comparer = StringComparer.CurrentCultureIgnoreCase;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_788989ajeude! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_788989ajeude! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(straA, value);
-            Test.Eval(_dic.ContainsKey(strAa), String.Format("Err_237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+            m_test.Eval(_dic.ContainsKey(strAa), String.Format("Err_237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             comparer = StringComparer.CurrentCultureIgnoreCase;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_54878aheuid! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_54878aheuid! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(straA, value);
-            Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+            m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
             //OrdinalIgnoreCase
             CultureInfo.DefaultThreadCurrentCulture = _english;
             comparer = StringComparer.OrdinalIgnoreCase;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_5588ahied! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_5588ahied! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(strI, value);
-            Test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234qf! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
+            m_test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234qf! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
 
             CultureInfo.DefaultThreadCurrentCulture = _turkish;
             comparer = StringComparer.OrdinalIgnoreCase;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_8488ahiued! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_8488ahiued! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(strI, value);
-            Test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234ra7g! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
+            m_test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234ra7g! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
 
             //Ordinal - not that many meaningful test
             CultureInfo.DefaultThreadCurrentCulture = _english;
             comparer = StringComparer.Ordinal;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_488ahede! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_488ahede! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(strBB, value);
-            Test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_1244sd! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
+            m_test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_1244sd! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
 
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             comparer = StringComparer.Ordinal;
             _dic = new SortedList<String, String>(capacity, comparer);
-            Test.Eval(_dic.Comparer == comparer, String.Format("Err_05848ahied! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
+            m_test.Eval(_dic.Comparer == comparer, String.Format("Err_05848ahied! Comparer differ expected: {0} actual: {1}", comparer, _dic.Comparer));
             _dic.Add(strBB, value);
-            Test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_235aeg! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
+            m_test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_235aeg! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
         }
 
         public void TestParm()
@@ -128,16 +135,16 @@ namespace SortedListCtorIntIKeyComp
                 CultureInfo.DefaultThreadCurrentCulture = _english;
                 _dic = new SortedList<String, String>(0, comparer);
                 _dic.Add(straA, value);
-                Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_9237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+                m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_9237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
                 CultureInfo.DefaultThreadCurrentCulture = _danish;
                 _dic = new SortedList<String, String>(comparer);
                 _dic.Add(straA, value);
-                Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_90723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+                m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_90723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
 
             int[] negativeValues = { -1, -2, -5, Int32.MinValue };
@@ -147,14 +154,14 @@ namespace SortedListCtorIntIKeyComp
                 try
                 {
                     _dic = new SortedList<String, String>(negativeValues[i], comparer);
-                    Test.Eval(false, String.Format("Err_387tsg! No exception thrown"));
+                    m_test.Eval(false, String.Format("Err_387tsg! No exception thrown"));
                 }
                 catch (ArgumentOutOfRangeException)
                 {
                 }
                 catch (Exception ex)
                 {
-                    Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                    m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
                 }
             }
         }
@@ -169,16 +176,16 @@ namespace SortedListCtorIntIKeyComp
                 CultureInfo.DefaultThreadCurrentCulture = _english;
                 _dic = new SortedList<String, String>(capacity, comparer);
                 _dic.Add(straA, value);
-                Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+                m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
                 CultureInfo.DefaultThreadCurrentCulture = _danish;
                 _dic = new SortedList<String, String>(comparer);
                 _dic.Add(straA, value);
-                Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_00723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+                m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_00723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
         }
     }
@@ -191,7 +198,9 @@ namespace SortedListCtorIntIKeyComp
             //This mostly follows the format established by the original author of these tests
             //These tests mostly uses the scenarios that were used in the individual constructors
 
-            Driver<String, String> driver1 = new Driver<String, String>();
+            Test test = new Test();
+
+            Driver<String, String> driver1 = new Driver<String, String>(test);
 
             //Scenario 1: Pass all the enum values and ensure that the behavior is correct
             int[] validCapacityValues = { 0, 1, 2, 5, 10, 16, 32, 50, 500, 5000, 10000 };
@@ -205,7 +214,7 @@ namespace SortedListCtorIntIKeyComp
             for (int i = 0; i < validCapacityValues.Length; i++)
                 driver1.IkeyComparerOwnImplementation(validCapacityValues[i]);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 

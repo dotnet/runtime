@@ -645,14 +645,14 @@ namespace SortedList_SortedListUtils
     }
     public class Test
     {
-        public static int counter = 0;
-        public static bool result = true;
-        public static void Eval(bool exp)
+        public int counter = 0;
+        public bool result = true;
+        public void Eval(bool exp)
         {
             counter++;
             Eval(exp, null);
         }
-        public static bool Eval(bool exp, String errorMsg)
+        public bool Eval(bool exp, String errorMsg)
         {
             if (!exp)
             {
@@ -667,7 +667,7 @@ namespace SortedList_SortedListUtils
             return exp;
         }
 
-        public static bool Eval(bool exp, String format, params object[] arg)
+        public bool Eval(bool exp, String format, params object[] arg)
         {
             if (!exp)
             {

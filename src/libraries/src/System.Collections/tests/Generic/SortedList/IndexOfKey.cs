@@ -11,16 +11,23 @@ namespace SortedListIdxKey
 {
     public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue<S>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void BasicIndexOfKey(K[] keys, V[] values)
         {
             SortedList<K, V> tbl = new SortedList<K, V>();
             for (int i = 0; i < keys.Length; i++)
             {
                 tbl.Add(keys[i], values[i]);
-                Test.Eval(tbl.IndexOfKey(keys[i]) == i, "BasicIndexOfKey1: Expected index of key to be " + i + " but found " + tbl.IndexOfKey(keys[i]));
-                if (i + 1 < keys.Length) Test.Eval(tbl.IndexOfKey(keys[i + 1]) == -1, "BasicIndexOfKey3: Expected not to find" + keys[i + 1].publicVal + " but found it at index, " + tbl.IndexOfKey(keys[i]));
+                m_test.Eval(tbl.IndexOfKey(keys[i]) == i, "BasicIndexOfKey1: Expected index of key to be " + i + " but found " + tbl.IndexOfKey(keys[i]));
+                if (i + 1 < keys.Length) m_test.Eval(tbl.IndexOfKey(keys[i + 1]) == -1, "BasicIndexOfKey3: Expected not to find" + keys[i + 1].publicVal + " but found it at index, " + tbl.IndexOfKey(keys[i]));
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void IndexOfKeyNegative(K[] keys, V[] values, K[] missingkeys)
@@ -31,12 +38,12 @@ namespace SortedListIdxKey
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             try
             {
                 tbl.IndexOfKey(tempToTest);
-                Test.Eval(tempToTest != null, "IndexOfKeyNegative0: Expected trying to reference a key of null to generate an ArgumentNullException, but it did not.");
+                m_test.Eval(tempToTest != null, "IndexOfKeyNegative0: Expected trying to reference a key of null to generate an ArgumentNullException, but it did not.");
             }
             catch (ArgumentNullException)
             {
@@ -44,7 +51,7 @@ namespace SortedListIdxKey
 
             for (int i = 0; i < missingkeys.Length; i++)
             {
-                Test.Eval(tbl.IndexOfKey(missingkeys[i]) == -1, "IndexOfKeyNegative2: Expected trying to IndexOfKey a key that hasn't been added to return -1, but it returned " + tbl.IndexOfKey(missingkeys[i]) + " for item " + missingkeys[i].publicVal);
+                m_test.Eval(tbl.IndexOfKey(missingkeys[i]) == -1, "IndexOfKeyNegative2: Expected trying to IndexOfKey a key that hasn't been added to return -1, but it returned " + tbl.IndexOfKey(missingkeys[i]) + " for item " + missingkeys[i].publicVal);
             }
         }
 
@@ -56,7 +63,7 @@ namespace SortedListIdxKey
                 tbl.Add(keys[i], values[i]);
             }
             tbl.Remove(keys[index]);
-            Test.Eval(tbl.IndexOfKey(keys[index]) == -1, "AddRemoveKeyIndexOfKey: Expected trying to IndexOfKey a key that has been removed to be -1, but it returned " + tbl.IndexOfKey(keys[index]) + " for item " + keys[index]);
+            m_test.Eval(tbl.IndexOfKey(keys[index]) == -1, "AddRemoveKeyIndexOfKey: Expected trying to IndexOfKey a key that has been removed to be -1, but it returned " + tbl.IndexOfKey(keys[index]) + " for item " + keys[index]);
         }
     }
 
@@ -65,7 +72,9 @@ namespace SortedListIdxKey
         [Fact]
         public static void IndexOfKeyMain()
         {
-            Driver<RefX1<int>, ValX1<string>, int, string> IntDriver = new Driver<RefX1<int>, ValX1<string>, int, string>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>, int, string> IntDriver = new Driver<RefX1<int>, ValX1<string>, int, string>(test);
             RefX1<int>[] intArr1 = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -82,7 +91,7 @@ namespace SortedListIdxKey
                 intArr2[i] = new RefX1<int>(i + 195);
             }
 
-            Driver<ValX1<string>, RefX1<int>, string, int> StringDriver = new Driver<ValX1<string>, RefX1<int>, string, int>();
+            Driver<ValX1<string>, RefX1<int>, string, int> StringDriver = new Driver<ValX1<string>, RefX1<int>, string, int>(test);
             ValX1<string>[] stringArr1 = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -101,7 +110,7 @@ namespace SortedListIdxKey
 
             //Ref<val>,Val<Ref>			
             IntDriver.BasicIndexOfKey(intArr1, stringArr1);
-            Assert.True(Test.result);
+            Assert.True(test.result);
             IntDriver.IndexOfKeyNegative(intArr1, stringArr1, intArr2);
             IntDriver.IndexOfKeyNegative(new RefX1<int>[0], new ValX1<string>[0], intArr2);
             IntDriver.AddRemoveKeyIndexOfKey(intArr1, stringArr1, 0);
@@ -150,7 +159,7 @@ namespace SortedListIdxKey
             IntDriver.BasicIndexOfKey(intArr1, stringArr1);
             StringDriver.BasicIndexOfKey(stringArr2, intArr3);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

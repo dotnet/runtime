@@ -10,14 +10,21 @@ namespace SortedListCtorIDic
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void TestVanilla(IDictionary<KeyType, ValueType> SortedList)
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>(SortedList);
-            Test.Eval(_dic.Comparer == Comparer<KeyType>.Default, String.Format("Err_54180auede! Comparer differ expected: {0} actual: {1}", Comparer<KeyType>.Default, _dic.Comparer));
-            Test.Eval(_dic.Count == SortedList.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(((IDictionary<KeyType, ValueType>)_dic).IsReadOnly == false, String.Format("Err_435wsdg! Count different: {0}", ((IDictionary<KeyType, ValueType>)_dic).IsReadOnly));
-            Test.Eval(_dic.Keys.Count == SortedList.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == SortedList.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Comparer == Comparer<KeyType>.Default, String.Format("Err_54180auede! Comparer differ expected: {0} actual: {1}", Comparer<KeyType>.Default, _dic.Comparer));
+            m_test.Eval(_dic.Count == SortedList.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(((IDictionary<KeyType, ValueType>)_dic).IsReadOnly == false, String.Format("Err_435wsdg! Count different: {0}", ((IDictionary<KeyType, ValueType>)_dic).IsReadOnly));
+            m_test.Eval(_dic.Keys.Count == SortedList.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == SortedList.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
         }
 
         public void TestParm(IDictionary<KeyType, ValueType> SortedList)
@@ -25,14 +32,14 @@ namespace SortedListCtorIDic
             try
             {
                 SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>(SortedList);
-                Test.Eval(false, "Err_23raf! Exception not thrown");
+                m_test.Eval(false, "Err_23raf! Exception not thrown");
             }
             catch (ArgumentNullException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
         }
     }
@@ -44,10 +51,12 @@ namespace SortedListCtorIDic
         {
             //This mostly follows the format established by the original author of these tests
 
-            Driver<SimpleRef<int>, SimpleRef<String>> driver1 = new Driver<SimpleRef<int>, SimpleRef<String>>();
-            Driver<SimpleRef<String>, SimpleRef<int>> driver2 = new Driver<SimpleRef<String>, SimpleRef<int>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> driver3 = new Driver<SimpleRef<int>, SimpleRef<int>>();
-            Driver<SimpleRef<String>, SimpleRef<String>> driver4 = new Driver<SimpleRef<String>, SimpleRef<String>>();
+            Test test = new Test();
+
+            Driver<SimpleRef<int>, SimpleRef<String>> driver1 = new Driver<SimpleRef<int>, SimpleRef<String>>(test);
+            Driver<SimpleRef<String>, SimpleRef<int>> driver2 = new Driver<SimpleRef<String>, SimpleRef<int>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> driver3 = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> driver4 = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
 
             int count;
 
@@ -112,7 +121,7 @@ namespace SortedListCtorIDic
             driver3.TestVanilla(new SortedList<SimpleRef<int>, SimpleRef<int>>());
             driver4.TestVanilla(new SortedList<SimpleRef<String>, SimpleRef<String>>());
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
 
         private static SortedList<KeyType, ValueType> FillValues<KeyType, ValueType>(KeyType[] keys, ValueType[] values)

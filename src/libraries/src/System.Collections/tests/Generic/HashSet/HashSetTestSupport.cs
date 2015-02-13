@@ -1016,6 +1016,7 @@ namespace Tests
             public int x;
 
             private static int s_nextIndex = 1;
+            private static object s_nextIndexLock = new object();
 
             public Item(int y)
             {
@@ -1024,8 +1025,14 @@ namespace Tests
 
             public static Item GenerateNext()
             {
-                int current = s_nextIndex;
-                s_nextIndex++;
+                int current;
+
+                lock (s_nextIndexLock)
+                {
+                    current = s_nextIndex;
+                    s_nextIndex++;
+                }
+
                 return new Item(current);
             }
         }
@@ -1051,6 +1058,7 @@ namespace Tests
             public int y;
 
             private static int s_nextIndex = 1;
+            private static object s_nextIndexLock = new object();
 
             public ValueItem(int x2, int y2)
             {
@@ -1060,10 +1068,16 @@ namespace Tests
 
             public static ValueItem GenerateNext()
             {
-                int xVal = s_nextIndex;
-                s_nextIndex++;
-                int yVal = s_nextIndex;
-                s_nextIndex++;
+                int xVal, yVal;
+
+                lock (s_nextIndexLock)
+                {
+                    xVal = s_nextIndex;
+                    s_nextIndex++;
+                    yVal = s_nextIndex;
+                    s_nextIndex++;
+                }
+
                 return new ValueItem(xVal, yVal);
             }
 
