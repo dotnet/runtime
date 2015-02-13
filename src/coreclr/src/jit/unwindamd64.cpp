@@ -392,8 +392,8 @@ void DumpUnwindInfo(bool isHotCode, UNATIVE_OFFSET startOffset, UNATIVE_OFFSET e
             i++;
             break;
 
-        case UWOP_SAVE_XMM:
-        case UWOP_SAVE_XMM_FAR:
+        case UWOP_EPILOG:
+        case UWOP_SPARE_CODE:
         case UWOP_PUSH_MACHFRAME:
         default:
             printf("    Unrecognized UNWIND_CODE: 0x%04X\n", *(USHORT*)pCode);
