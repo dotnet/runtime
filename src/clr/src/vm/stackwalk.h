@@ -687,9 +687,9 @@ private:
     bool          m_fDidFuncletReportGCReferences;
 #endif // WIN64EXCEPTIONS
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     LPVOID m_pvResumableFrameTargetSP;
-#endif // defined(_WIN64) || defined(_TARGET_ARM_)
+#endif // !_TARGET_X86_
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);

@@ -2186,7 +2186,7 @@ CodeHeader* EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, CorJitAll
         alignment = max(alignment, 16);
     }
     
-#if !defined(_WIN64) && !defined(_TARGET_ARM_)
+#if defined(_TARGET_X86_)
     // when not optimizing for code size, 8-byte align the method entry point, so that
     // the JIT can in turn 8-byte align the loop entry headers.
     // 
