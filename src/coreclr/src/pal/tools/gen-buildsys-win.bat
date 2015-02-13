@@ -1,7 +1,6 @@
+@echo off
 rem
 rem This file invokes cmake and generates the build system for windows.
-
-echo off
 
 set argC=0
 for %%x in (%*) do Set /A argC+=1
@@ -9,7 +8,21 @@ for %%x in (%*) do Set /A argC+=1
 if NOT %argC%==1 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
-cmake -DCMAKE_USER_MAKE_RULES_OVERRIDE=%1\src\pal\tools\windows-compiler-override.txt -G "Visual Studio 12 2013 Win64" %1
+setlocal
+set basePath=%1
+:: remove quotes
+set "basePath=%basePath:"=%"
+:: remove trailing slash
+if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
+
+if defined CMakePath goto DoGen
+
+:: Eval the output from probe-win1.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& .\probe-win.ps1"') do %%a
+
+:DoGen
+"%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%\src\pal\tools\windows-compiler-override.txt" -G "Visual Studio 12 2013 Win64" %1
+endlocal
 GOTO :DONE
 
 :USAGE

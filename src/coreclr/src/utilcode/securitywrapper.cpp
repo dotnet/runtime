@@ -419,15 +419,10 @@ HRESULT SidBuffer::InitFromProcessAppContainerSidNoThrow(DWORD pid)
         goto exit;
     }
     HANDLE hToken = NULL;
-    hr = OpenProcessToken(hProcess, TOKEN_QUERY, &hToken);
-    if (FAILED(hr))
+    if (!OpenProcessToken(hProcess, TOKEN_QUERY, &hToken))
     {
+        hr = HRESULT_FROM_GetLastError();
         goto exit;
-    }
-    else
-    {
-        hr = S_OK; // not sure why, but OpenProcessToken can return S_FALSE 
-                   // we don't want to return S_FALSE by accident
     }
 
     // Define new TOKEN_INFORMATION_CLASS/ TOKEN_APPCONTAINER_INFORMATION members for Win8 since they are not in the DevDiv copy of WinSDK yet
