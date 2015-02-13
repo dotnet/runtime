@@ -48,13 +48,13 @@ namespace System
         public static ConsoleColor ForegroundColor
         {
             get { throw new PlatformNotSupportedException(SR.PlatformNotSupported_GettingColor); } // no general mechanism for getting the current color
-            set { ChangeColor(TerminalColorInfo.Instance.ForegroundFormat, value); }
+            set { ChangeColor(foreground: true, color:  value); }
         }
 
         public static ConsoleColor BackgroundColor
         {
             get { throw new PlatformNotSupportedException(SR.PlatformNotSupported_GettingColor); } // no general mechanism for getting the current color
-            set { ChangeColor(TerminalColorInfo.Instance.BackgroundFormat, value); }
+            set { ChangeColor(foreground: false, color: value); }
         }
 
         public static void ResetColor()
@@ -127,22 +127,40 @@ namespace System
         }
 
         /// <summary>Outputs the format string evaluated and parameterized with the color.</summary>
-        /// <param name="formatString">The terminfo string to evaluate and output.</param>
+        /// <param name="foreground">true for foreground; false for background.</param>
         /// <param name="color">The color to store into the field and to use as an argument to the format string.</param>
-        private static void ChangeColor(string formatString, ConsoleColor color)
+        private static void ChangeColor(bool foreground, ConsoleColor color)
         {
+            // Get the numerical value of the color
             int ccValue = (int)color;
             if ((ccValue & ~0xF) != 0)
             {
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor);
             }
+
+            // See if we've already cached a format string for this foreground/background
+            // and specific color choice.  If we have, just output that format string again.
+            int fgbgIndex = foreground ? 0 : 1;
+            string evaluatedString = s_fgbgAndColorStrings[fgbgIndex][ccValue]; // benign race
+            if (evaluatedString != null)
+            {
+                Console.Write(evaluatedString);
+                return;
+            }
+
+            // We haven't yet computed a format string.  Compute it, use it, then cache it.
+            string formatString = foreground ? TerminalColorInfo.Instance.ForegroundFormat : TerminalColorInfo.Instance.BackgroundFormat;
             if (formatString != null)
             {
                 int maxColors = TerminalColorInfo.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
                     int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
-                    Console.Write(TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode));
+                    evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
+
+                    Console.Write(evaluatedString);
+
+                    s_fgbgAndColorStrings[fgbgIndex][ccValue] = evaluatedString; // benign race
                 }
             }
         }
@@ -174,6 +192,20 @@ namespace System
             11, // Yellow,
             15  // White
         };
+
+        /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
+        private static readonly string[][] s_fgbgAndColorStrings = CreateTwoDimArray(2, 16); // 2 == fg vs bg, 16 == ConsoleColor values
+
+        /// <summary>Constructs a two-dimensional jagged array.</summary>
+        private static string[][] CreateTwoDimArray(int dim1, int dim2)
+        {
+            string[][] arr = new string[dim1][];
+            for (int i = 0; i < dim1; i++)
+            {
+                arr[i] = new string[dim2];
+            }
+            return arr;
+        }
 
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalColorInfo
