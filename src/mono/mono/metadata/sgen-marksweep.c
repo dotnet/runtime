@@ -43,6 +43,7 @@
 #include "metadata/sgen-pointer-queue.h"
 #include "metadata/sgen-pinning.h"
 #include "metadata/sgen-workers.h"
+#include "metadata/sgen-thread-pool.h"
 
 #if defined(ARCH_MIN_MS_BLOCK_SIZE) && defined(ARCH_MIN_MS_BLOCK_SIZE_SHIFT)
 #define MS_BLOCK_SIZE	ARCH_MIN_MS_BLOCK_SIZE
@@ -188,6 +189,7 @@ enum {
 static volatile int sweep_state = SWEEP_STATE_SWEPT;
 
 static gboolean concurrent_mark;
+static gboolean concurrent_sweep = TRUE;
 
 #define BLOCK_IS_TAGGED_HAS_REFERENCES(bl)	SGEN_POINTER_IS_TAGGED_1 ((bl))
 #define BLOCK_TAG_HAS_REFERENCES(bl)		SGEN_POINTER_TAG_1 ((bl))
@@ -1517,12 +1519,11 @@ ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *
 	return !!tagged_block;
 }
 
-static mono_native_thread_return_t
-sweep_loop_thread_func (void *dummy)
+static void
+sweep_job_func (SgenThreadPoolJob *job)
 {
 	int block_index;
 	int num_blocks = num_major_sections_before_sweep;
-	int small_id = mono_thread_info_register_small_id ();
 
 	SGEN_ASSERT (0, sweep_in_progress (), "Sweep thread called with wrong state");
 	SGEN_ASSERT (0, num_blocks <= allocated_blocks.next_slot, "How did we lose blocks?");
@@ -1556,10 +1557,6 @@ sweep_loop_thread_func (void *dummy)
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
 
 	sweep_finish ();
-
-	mono_thread_small_id_free (small_id);
-
-	return NULL;
 }
 
 static void
@@ -1593,7 +1590,7 @@ sweep_finish (void)
 	set_sweep_state (SWEEP_STATE_SWEPT, SWEEP_STATE_COMPACTING);
 }
 
-static MonoNativeThreadId sweep_loop_thread;
+static SgenThreadPoolJob sweep_job;
 
 static void
 major_sweep (void)
@@ -1607,14 +1604,11 @@ major_sweep (void)
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
 
-	if (TRUE /*concurrent_mark*/) {
-		/*
-		 * FIXME: We can't create a thread while the world is stopped because it
-		 * might deadlock.  `finalizer-wait.exe` exposes this.
-		 */
-		mono_native_thread_create (&sweep_loop_thread, sweep_loop_thread_func, NULL);
+	if (concurrent_sweep) {
+		sgen_thread_pool_job_init (&sweep_job, sweep_job_func);
+		sgen_thread_pool_job_enqueue (&sweep_job);
 	} else {
-		sweep_loop_thread_func (NULL);
+		sweep_job_func (NULL);
 	}
 }
 
@@ -2035,6 +2029,12 @@ major_handle_gc_param (const char *opt)
 	} else if (!strcmp (opt, "no-lazy-sweep")) {
 		lazy_sweep = FALSE;
 		return TRUE;
+	} else if (!strcmp (opt, "concurrent-sweep")) {
+		concurrent_sweep = TRUE;
+		return TRUE;
+	} else if (!strcmp (opt, "no-concurrent-sweep")) {
+		concurrent_sweep = FALSE;
+		return TRUE;
 	}
 
 	return FALSE;
@@ -2047,6 +2047,7 @@ major_print_gc_param_usage (void)
 			""
 			"  evacuation-threshold=P (where P is a percentage, an integer in 0-100)\n"
 			"  (no-)lazy-sweep\n"
+			"  (no-)concurrent-sweep\n"
 			);
 }
 
@@ -2467,6 +2468,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 	mono_mutex_init (&scanned_objects_list_lock);
 #endif
+
+	if (concurrent_sweep)
+		sgen_thread_pool_init (1);
 
 	SGEN_ASSERT (0, SGEN_MAX_SMALL_OBJ_SIZE <= MS_BLOCK_FREE / 2, "MAX_SMALL_OBJ_SIZE must be at most MS_BLOCK_FREE / 2");
 
