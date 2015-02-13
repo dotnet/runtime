@@ -22,11 +22,11 @@
 #include <float.h>
 #include <limits.h>
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
 #ifndef WIN64EXCEPTIONS
 #define WIN64EXCEPTIONS
 #endif
-#endif // _WIN64 || _TARGET_ARM_
+#endif // !_TARGET_X86_
 
 #include "utilcode.h"
 #include "corjit.h"

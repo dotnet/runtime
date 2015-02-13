@@ -1136,9 +1136,9 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_fDidFuncletReportGCReferences = true;
 #endif // WIN64EXCEPTIONS
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     m_pvResumableFrameTargetSP = NULL;
-#endif // defined(_WIN64) || defined(_TARGET_ARM_)
+#endif
 } // StackFrameIterator::CommonCtor()
 
 //---------------------------------------------------------------------------------------
@@ -1183,10 +1183,10 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     _ASSERTE(CanThisThreadCallIntoHost() || (flags & LIGHTUNWIND) == 0);
 #endif // DACCESS_COMPILE
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     _ASSERTE(!(flags & POPFRAMES));
     _ASSERTE(pRegDisp->pCurrentContext);
-#endif // _WIN64 || _TARGET_ARM_
+#endif // !_TARGET_X86_
 
     BEGIN_FORBID_TYPELOAD();
 
@@ -1342,7 +1342,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     {
         TADDR curSP = GetRegdisplaySP(m_crawl.pRD);
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
         if (m_crawl.IsFrameless())
         {
             // On 64-bit and ARM, we stop at the explicit frames contained in a managed stack frame 
@@ -1350,7 +1350,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
             EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, NULL);
             curSP = GetSP(m_crawl.pRD->pCallerContext);
         }
-#endif // defined(_WIN64) || defined(_TARGET_ARM_)
+#endif // !_TARGET_X86_
 
 #if defined(_TARGET_X86_)
         // special processing on x86; see below for more information
@@ -2217,7 +2217,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
     if (m_frameState == SFITER_SKIPPED_FRAME_FUNCTION)
     {
-#if (defined(_WIN64) || defined(_TARGET_ARM_)) && defined(_DEBUG)
+#if !defined(_TARGET_X86_) && defined(_DEBUG)
         // make sure we're not skipping a different transition
         if (m_crawl.pFrame->NeedsUpdateRegDisplay())
         {
@@ -2235,7 +2235,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                 CONSISTENCY_CHECK(GetControlPC(m_crawl.pRD) == m_crawl.pFrame->GetReturnAddress());
             }
         }
-#endif // (defined(_WIN64) || defined(_TARGET_ARM_)) && defined(_DEBUG)
+#endif // !defined(_TARGET_X86_) && defined(_DEBUG)
 
 #if defined(STACKWALKER_MAY_POP_FRAMES)
         if (m_flags & POPFRAMES)
@@ -2290,7 +2290,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             {
                 goto Cleanup;
             }
-#elif (defined(_WIN64) || defined(_TARGET_ARM_))
+#else // _TARGET_X86_
             // On WIN64 and ARM, we are done handling the skipped explicit frame at this point.  So move on to the 
             // managed stack frame.
             m_crawl.isFrameless = true;
@@ -2300,16 +2300,16 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
             PreProcessingForManagedFrames();
             goto Cleanup;
-#endif // (defined(_WIN64) || defined(_TARGET_ARM_))
+#endif // _TARGET_X86_
         }
     }
     else if (m_frameState == SFITER_FRAMELESS_METHOD)
     {
         // Now find out if we need to leave monitors
 
-#if !defined(_WIN64) && !defined(_TARGET_ARM_)
+#ifdef _TARGET_X86_
         //
-        // WIN64 and ARM has the JIT generate try/finallys to leave monitors
+        // x86 has the JIT generate try/finallys to leave monitors
         //
 #if defined(STACKWALKER_MAY_POP_FRAMES)
         if (m_flags & POPFRAMES)
@@ -2354,7 +2354,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             END_GCX_ASSERT_COOP;
         }
 #endif // STACKWALKER_MAY_POP_FRAMES
-#endif // !defined(_WIN64) && !defined(_TARGET_ARM_)
+#endif // _TARGET_X86_
 
 #if !defined(ELIMINATE_FEF)
         // FaultingExceptionFrame is special case where it gets
@@ -2542,7 +2542,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             {
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
                 CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
 
                 if (m_crawl.isFirst)
@@ -2570,7 +2570,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                     EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry());
                     m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                 }
-#endif // defined(_WIN64) || defined(_TARGET_ARM_)
+#endif // !_TARGET_X86_
 
 
                 // We are transitioning from unmanaged code to managed code... lets do some validation of our
@@ -2870,15 +2870,15 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
-            // On WIN64 and ARM, we want to process the skipped explicit frames before the managed stack frame
+#if !defined(_TARGET_X86_)
+            // On non-X86, we want to process the skipped explicit frames before the managed stack frame
             // containing them.
             if (CheckForSkippedFrames())
             {
                 _ASSERTE(m_frameState == SFITER_SKIPPED_FRAME_FUNCTION);
             }
             else
-#endif // _WIN64 || _TARGET_ARM_
+#endif // !_TARGET_X86_
             {
                 PreProcessingForManagedFrames();
                 _ASSERTE(m_frameState == SFITER_FRAMELESS_METHOD);
@@ -2925,9 +2925,9 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
 
-#if !(defined(_WIN64) || defined(_TARGET_ARM_))
+#if !defined(_TARGET_X86_)
     pvReferenceSP = GetRegdisplaySP(m_crawl.pRD);
-#else  // (defined(_WIN64) || defined(_TARGET_ARM_))
+#else  // !_TARGET_X86_
     // Order the Frames relative to the caller SP of the methods
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
@@ -2935,7 +2935,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
     EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry(), &m_cachedCodeInfo);
     pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
-#endif // !(defined(_WIN64) || defined(_TARGET_ARM_))
+#endif // !_TARGET_X86_
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) && 
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
@@ -3021,7 +3021,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     if (m_pvResumableFrameTargetSP)
     {
         // We expect that if we saw a resumable frame, the next managed
@@ -3035,7 +3035,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         m_pvResumableFrameTargetSP = NULL;
         m_crawl.isFirst = true;
     }
-#endif // defined(_WIN64) || defined(_TARGET_ARM_)
+#endif // !_TARGET_X86_
 
 #if !defined(DACCESS_COMPILE)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(
