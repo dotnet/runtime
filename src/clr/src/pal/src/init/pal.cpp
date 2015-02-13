@@ -483,15 +483,6 @@ PAL_Initialize(
             goto CLEANUP15;
         }
 
-#if HAVE_COREFOUNDATION && !ENABLE_DOWNLEVEL_FOR_NLS
-        /* Initialize the locale functions */
-        if (FALSE == LocaleInitialize())
-        {
-            ERROR( "Unable to initialize the locale subsystem!\n"); 
-                goto CLEANUP17;
-        }
-#endif // HAVE_COREFOUNDATION && !ENABLE_DOWNLEVEL_FOR_NLS
-
         TRACE("First-time PAL initialization complete.\n");
         init_count++;        
 
@@ -518,10 +509,6 @@ PAL_Initialize(
     }
     goto done;
 
-#if HAVE_COREFOUNDATION && !ENABLE_DOWNLEVEL_FOR_NLS
-    LocaleCleanup();
-CLEANUP17:
-#endif // HAVE_COREFOUNDATION && !ENABLE_DOWNLEVEL_FOR_NLS
     /* No cleanup required for CRTInitStdStreams */ 
 CLEANUP15:
     FILECleanupStdHandles();
@@ -843,10 +830,6 @@ PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
 
                 MiscCleanup();
                 TIMECleanUpTransitionDates();
-
-#if HAVE_COREFOUNDATION && !ENABLE_DOWNLEVEL_FOR_NLS
-                LocaleCleanup();
-#endif // HAVE_COREFOUNDATION && !ENABLE_DOWNLEVEL_FOR_NLS
 
 #if !HAVE_COREFOUNDATION
                 CODEPAGECleanup();
