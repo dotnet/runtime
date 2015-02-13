@@ -5555,7 +5555,7 @@ public:
     {
     }
 
-    BOOL AcquireNoThrow()
+    HRESULT AcquireNoThrow()
     {
         WRAPPER_NO_CONTRACT;
 

@@ -96,7 +96,7 @@
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
     <CoreFxSourcesRoot>$(MSBuildThisFileDirectory)corefx</CoreFxSourcesRoot>
     <MscorlibDir>$(MSBuildThisFileDirectory)</MscorlibDir>
-    <NlpObjDir>$(BclSourcesRoot)\system\globalization\tables</NlpObjDir>
+    <NlpObjDir>$(BclSourcesRoot)\System\Globalization\Tables</NlpObjDir>
   </PropertyGroup>
   
   <!-- Output paths -->

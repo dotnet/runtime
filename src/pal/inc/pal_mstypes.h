@@ -322,7 +322,9 @@ typedef unsigned __int64 DWORD_PTR, *PDWORD_PTR;
 /* maximum unsigned 64 bit value */
 #define ULONG_PTR_MAX     UI64(0xffffffffffffffff)
 
+#ifndef SIZE_MAX
 #define SIZE_MAX _UI64_MAX
+#endif
 
 #define __int3264   __int64
 

@@ -198,6 +198,7 @@ function_name() to call the system's implementation
 #define time_t PAL_time_t
 #define va_list DUMMY_va_list
 #define abs DUMMY_abs
+#define llabs DUMMY_llabs
 #define atan DUMMY_atan
 #define tan DUMMY_tan
 #define cos DUMMY_cos
@@ -430,6 +431,7 @@ function_name() to call the system's implementation
 #undef stderr
 #undef abs
 #undef labs
+#undef llabs
 #undef acos
 #undef asin
 #undef atan2
