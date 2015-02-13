@@ -2744,13 +2744,6 @@ create_profiler (const char *filename)
 		FILE *f;
 		if (force_delete)
 			unlink (nf);
-		if ((f = fopen (nf, "r"))) {
-			fclose (f);
-			fprintf (stderr, "The Mono profiler won't overwrite existing filename: %s.\n", nf);
-			fprintf (stderr, "Profiling disabled: use a different name or -FILENAME to force overwrite.\n");
-			free (prof);
-			return NULL;
-		}
 		prof->file = fopen (nf, "wb");
 	}
 	if (!prof->file) {
