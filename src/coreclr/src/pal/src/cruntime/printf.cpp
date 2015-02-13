@@ -1154,20 +1154,24 @@ int PAL_vsscanf(LPCSTR Buffer, LPCSTR Format, va_list ap)
 
                 if (Store)
                 {
-                    // sscanf_s requires that if we are trying to read "%s" or "%c", then
+                    // sscanf_s requires that if we are trying to read "%s" or "%c" or “%[“, then
                     // the size of the buffer must follow the buffer we are trying to read into.
-                    // 
-                    // QUES: Is there a better way to get the string buffer size for the buffer
-                    // returned by va_arg below? If so, we should replace 1024 below with that.
                     voidPtr = va_arg(ap, LPVOID);
                     unsigned typeLen = 0;
-                    if ((TempBuff[0] == '%') && (TempBuff[1] == 's' || TempBuff[1] == 'S'))
+                    if ((Type == SCANF_TYPE_STRING) || (Type == SCANF_TYPE_BRACKETS))
                     {
-                        typeLen = 1024;
+                        // Since this is not a Safe CRT API we don’t really know the size of the destination
+                        // buffer provided by the caller. So we have to assume that the caller has allocated
+                        // enough space to hold either the width specified in the format or the entire input
+                        // string plus ‘\0’. 
+                        typeLen = ((Width > 0) ? Width : strlen(Buffer)) + 1;
                     }
-                    else if ((TempBuff[0] == '%') && (TempBuff[1] == 'c' || TempBuff[1] == 'C'))
+                    else if (Type == SCANF_TYPE_CHAR)
                     {
-                        typeLen = sizeof(CHAR);
+                        // Check whether the format string contains number of characters
+                        // that should be read from the input string.
+                        // Note: ‘\0’ does not get appended in the “%c” case.
+                        typeLen = (Width > 0) ? Width : 1;
                     }
 
                     if (typeLen > 0)
@@ -1175,7 +1179,9 @@ int PAL_vsscanf(LPCSTR Buffer, LPCSTR Format, va_list ap)
                         ret = sscanf_s(Buff, TempBuff, voidPtr, typeLen, &n);
                     }
                     else
+                    {
                         ret = sscanf_s(Buff, TempBuff, voidPtr, &n);
+                    }
                 }
                 else
                 {
@@ -1390,17 +1396,21 @@ int PAL_wvsscanf(LPCWSTR Buffer, LPCWSTR Format, va_list ap)
                         voidPtr = va_arg(ap, LPVOID);
                         // sscanf_s requires that if we are trying to read "%s" or "%c", then
                         // the size of the buffer must follow the buffer we are trying to read into.
-                        // 
-                        // QUES: Is there a better way to get the string buffer size for the buffer
-                        // returned by va_arg below? If so, we should replace 1024 below with that.
                         unsigned typeLen = 0;
-                        if ((TempBuff[0] == '%') && (TempBuff[1] == 's' || TempBuff[1] == 'S'))
+                        if (Type == SCANF_TYPE_STRING)
                         {
-                            typeLen = 1024;
+                            // We don’t really know the size of the destination buffer provided by the
+                            // caller. So we have to assume that the caller has allocated enough space
+                            // to hold either the width specified in the format or the entire input
+                            // string plus ‘\0’. 
+                            typeLen = ((Width > 0) ? Width : PAL_wcslen(Buffer)) + 1;
                         }
-                        else if ((TempBuff[0] == '%') && (TempBuff[1] == 'c' || TempBuff[1] == 'C'))
+                        else if (Type == SCANF_TYPE_CHAR)
                         {
-                            typeLen = sizeof(CHAR);
+                            // Check whether the format string contains number of characters
+                            // that should be read from the input string.
+                            // Note: ‘\0’ does not get appended in the “%c” case.
+                            typeLen = (Width > 0) ? Width : 1;
                         }
 
                         if (typeLen > 0)
