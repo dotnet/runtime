@@ -10,6 +10,7 @@
   <PropertyGroup>
       <TestAssemblyDir Condition="'$(TestAssemblyDir)' == ''">$(BaseOutputPathWithConfig)\tests\XunitRunner\</TestAssemblyDir>
       <__TestRunHtmlLog Condition="'$(__TestRunHtmlLog)' == ''">$(__LogsDir)\TestRun.html</__TestRunHtmlLog>
+      <__TestRunXmlLog Condition="'$(__TestRunXmlLog)' == ''">$(__LogsDir)\TestRun.xml</__TestRunXmlLog>
   </PropertyGroup>
   <Target Name="FindTestDirectories">
     <ItemGroup>
@@ -46,21 +47,15 @@
       <IncludeTraitsItems Include="$(IncludeTraits)" />
       <ExcludeTraitsItems Include="$(ExcludeTraits)" />
     </ItemGroup>
-    
-    <PropertyGroup>
-      <XunitOptions Condition="'@(IncludeTraitsItems)'!=''">$(XunitOptions)-trait @(IncludeTraitsItems, ' -trait ') </XunitOptions>
-      <XunitOptions Condition="'@(ExcludeTraitsItems)'!=''">$(XunitOptions)-notrait @(ExcludeTraitsItems, ' -notrait ') </XunitOptions>
-      <XunitOptions >$(XunitOptions) -parallel all </XunitOptions>
-      <ParallelizeAssemblies>True</ParallelizeAssemblies>
-      <ParallelizeTestCollections>True</ParallelizeTestCollections>
-    </PropertyGroup>
 
-      <xunit Assemblies="@(TestAssemblies)"
-          WorkingFolder ="$(ThisTestWorkingDir)"
-          ParallelizeAssemblies="True"
-          ParallelizeTestCollections="True"
-          Html="$(__TestRunHtmlLog)"
-          /> 
+    <xunit Assemblies="@(TestAssemblies)"
+      WorkingFolder="$(ThisTestWorkingDir)"
+      ParallelizeAssemblies="True"
+      ParallelizeTestCollections="True"
+      Html="$(__TestRunHtmlLog)"
+      Xml="$(__TestRunXmlLog)"
+      IncludeTraits="@(IncludeTraitsItems)"
+      ExcludeTraits="@(ExcludeTraitsItems)" /> 
 
   </Target>
 
