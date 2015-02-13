@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DE29C320-2ECA-43FD-9F41-6F4F6C6BACD5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Threading.Tasks.Parallel.Tests</RootNamespace>
+    <AssemblyName>System.Threading.Tasks.Parallel.Tests</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BreakTests.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="ParallelFor.cs" />
+    <Compile Include="ParallelForBoundary.cs" />
+    <Compile Include="ParallelForeachPartitioner.cs" />
+    <Compile Include="ParallelForTest.cs" />
+    <Compile Include="ParallelForTests.cs" />
+    <Compile Include="ParallelInvokeTest.cs" />
+    <Compile Include="ParallelLoopResultTests.cs" />
+    <Compile Include="ParallelStateTest.cs" />
+    <Compile Include="RangePartitioner1Chunk.cs" />
+    <Compile Include="RangePartitionerTests.cs" />
+    <Compile Include="RangePartitionerThreadSafetyTests.cs" />
+    <Compile Include="RespectParentCancellationTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Threading.Tasks.Parallel.csproj">
+      <Project>{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}</Project>
+      <Name>System.Threading.Tasks.Parallel</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
