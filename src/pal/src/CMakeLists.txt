@@ -16,7 +16,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     arch/i386/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
-    locale/locale.cpp
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
