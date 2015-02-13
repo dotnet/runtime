@@ -10,9 +10,9 @@
 
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(BinDir);$(PackagesDir)" />
+    <RemoveDir Directories="$(BinDir)" />
   </Target>
-  
+
   <Target Name="GenerateCoverageReport"
     AfterTargets="Build"
     Inputs="$(CoverageReportDir)\*.coverage.xml"
