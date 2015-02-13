@@ -149,7 +149,7 @@
 #endif
 
 
-#if defined(_DEBUG) && (defined(_TARGET_X86_) || defined(_WIN64) || defined(_TARGET_ARM_))
+#ifdef _DEBUG
 
 //hurray DAC makes everything more fun - you can't have defines that control whether
 //or not data members are visible which differ between DAC and non-DAC builds.
@@ -168,7 +168,7 @@
 #define PROF_TEST_ONLY_FORCE_OBJECT_ALLOCATED
 #endif // PROFILING_SUPPORTED
 
-#endif // defined(_DEBUG) && (defined(_TARGET_X86_) || defined(_WIN64))
+#endif // _DEBUG
 
 
 
