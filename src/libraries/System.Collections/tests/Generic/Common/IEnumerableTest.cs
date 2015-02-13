@@ -26,6 +26,8 @@ namespace TestSupport.Collections
 
             protected CollectionOrder _collectionOrder;
 
+            protected Test m_test = new Test();
+
 
             private IEnumerable_Test() { }
 
@@ -263,7 +265,7 @@ namespace TestSupport.Collections
                             iterations++;
                         }
 
-                        retValue &= Test.Eval(_items.Length, iterations,
+                        retValue &= m_test.Eval(_items.Length, iterations,
                             "Err_64897adhs Items iterated through");
 
                         //[] Call MoveNext() several times after the end of the collection has been reached
@@ -275,19 +277,19 @@ namespace TestSupport.Collections
                             {
                                 Object tempCurrent = enumerator.Current;
 
-                                retValue &= scenarioResult = Test.Eval(_isGenericCompatibility,
+                                retValue &= scenarioResult = m_test.Eval(_isGenericCompatibility,
                                     "Err_9849eada Expected Current to throw InvalidOperationException after the end of the collection " +
                                         "has been reached and nothing was thrown Iterations({0})\n", i);
                             }
                             catch (InvalidOperationException) { }
                             catch (Exception e)
                             {
-                                retValue &= scenarioResult = Test.Eval(_isGenericCompatibility,
+                                retValue &= scenarioResult = m_test.Eval(_isGenericCompatibility,
                                     "Err_64841phwa Expected Current to throw InvalidOperationException after the end of the collection " +
                                         "has been reache and the following exception was thrown Iterations({0}): \n{1}\n", i, e);
                             }
 
-                            retValue &= scenarioResult = Test.Eval(!enumerator.MoveNext(),
+                            retValue &= scenarioResult = m_test.Eval(!enumerator.MoveNext(),
                                 "Err_1081adohs Expected MoveNext() to return false on the {0} after the end of the collection has been reached\n", j + 1);
                         }
 
@@ -300,7 +302,7 @@ namespace TestSupport.Collections
                     }
                     catch (Exception e)
                     {
-                        retValue &= Test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                        retValue &= m_test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
                         break;
                     }
                 }
@@ -325,7 +327,7 @@ namespace TestSupport.Collections
                         //[] Call MoveNext() untill the end of the collection has been reached
                         testDescription = "1082ahhd Call MoveNext() untill the end of the collection has been reached";
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                         //[] Enumerate only part of the collection
                         testDescription = "64589eahps Enumerate only part of the collection ";
@@ -335,7 +337,7 @@ namespace TestSupport.Collections
                         else
                             enumerator.Reset();
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
 
                         //[] After Enumerating only part of the collection call Reset() and enumerate through the entire collection
                         testDescription = "6899piaem After Enumerating only part of the collection call Reset() and enumerate through the entire collection";
@@ -345,7 +347,7 @@ namespace TestSupport.Collections
                         else
                             enumerator.Reset();
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                         //[] Reset the enumerator for the nexe iteration
                         if (_isResetNotSupported)
@@ -355,7 +357,7 @@ namespace TestSupport.Collections
                     }
                     catch (Exception e)
                     {
-                        retValue &= Test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                        retValue &= m_test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
                         break;
                     }
                 }
@@ -387,7 +389,7 @@ namespace TestSupport.Collections
                             //[] Enumerate part of the collection then call Reset() several times
                             testDescription = "64894eahd Enumerate part of the collection then call Reset() several times";
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
 
                             enumerator.Reset();
                             enumerator.Reset();
@@ -396,14 +398,14 @@ namespace TestSupport.Collections
                             //[] After Enumerating only part of the collection and Reset() was called several times and enumerate through the entire collection
                             testDescription = "32584phs After Enumerating only part of the collection and Reset() was called several times and enumerate through the entire collection";
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                             enumerator.Reset();
 
                             //[] Enumerate the entire collection then call Reset() several times
                             testDescription = "273420ahu Enumerate the entire collection then call Reset() several times";
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                             enumerator.Reset();
                             enumerator.Reset();
@@ -412,7 +414,7 @@ namespace TestSupport.Collections
                             //[] After Enumerating the entire collection and Reset() was called several times and enumerate through the entire collection
                             testDescription = "32584phs After Enumerating the entire collection and Reset() was called several times and enumerate through the entire collection";
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                             enumerator.Reset();
                         }
@@ -425,51 +427,51 @@ namespace TestSupport.Collections
 
                             for (j = 0, scenarioResult = true; j < 3 && scenarioResult; ++j)
                             {
-                                retValue &= scenarioResult = Test.Eval(Test.VerifyException<NotSupportedException>(new ExceptionGenerator(enumerator.Reset)),
+                                retValue &= scenarioResult = m_test.Eval(m_test.VerifyException<NotSupportedException>(new ExceptionGenerator(enumerator.Reset)),
                                     "Err_368522aoied Verify Reset() Iteration:{0} FAILED", j);
                             }
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items),
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items),
                                 "Err_" + testDescription + " FAILED\n Expected Reset to throw InvalidOperationException\n");
 
                             //[] Enumerate only part of the collection
                             testDescription = "505488anied Enumerate only part of the collection ";
                             enumerator = _collection.GetEnumerator();
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
 
                             //[] After Enumerating only part of the collection call Reset() and enumerate through the entire collection
                             testDescription = "5855phhiy After Enumerating only part of the collection call Reset() and enumerate through the entire collection";
                             for (j = 0; j < 3; ++j)
                             {
-                                retValue &= Test.Eval(Test.VerifyException<NotSupportedException>(new ExceptionGenerator(enumerator.Reset)),
+                                retValue &= m_test.Eval(m_test.VerifyException<NotSupportedException>(new ExceptionGenerator(enumerator.Reset)),
                                     "Err_80318ajneide Verify Reset() Iteration:{0} FAILED", j);
                             }
 
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, _items.Length / 2, _items.Length - (_items.Length / 2), ExpectedEnumeratorRange.End, true),
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, _items.Length / 2, _items.Length - (_items.Length / 2), ExpectedEnumeratorRange.End, true),
                                 "Err_" + testDescription + " Reset is Supported FAILED\n");
 
                             //[] Enumerate the entire collection then call Reset() several times
                             testDescription = "273420ahu Enumerate the entire collection then call Reset() several times";
                             enumerator = _collection.GetEnumerator();
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                             for (j = 0; j < 3; ++j)
                             {
-                                retValue &= Test.Eval(Test.VerifyException<NotSupportedException>(new ExceptionGenerator(enumerator.Reset)),
+                                retValue &= m_test.Eval(m_test.VerifyException<NotSupportedException>(new ExceptionGenerator(enumerator.Reset)),
                                     "Err_58886ehpad Verify Reset() Iteration:{0} FAILED", j);
                             }
 
                             //[] After Enumerating the entire collection and Reset() was called several times and enumerate through the entire collection
                             testDescription = "32584phs After Enumerating the entire collection and Reset() was called several times and enumerate through the entire collection";
-                            retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, 0, ExpectedEnumeratorRange.End, true), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, 0, ExpectedEnumeratorRange.End, true), "Err_" + testDescription + " FAILED\n");
 
                             enumerator = _collection.GetEnumerator();
                         }
                     }
                     catch (Exception e)
                     {
-                        retValue &= Test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}", testDescription, e);
+                        retValue &= m_test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}", testDescription, e);
                         break;
                     }
                 }
@@ -504,7 +506,7 @@ namespace TestSupport.Collections
                     atEnd = _items.Length == 0;
                     _items = _modifyCollection(_collection, _items);
 
-                    retValue &= Test.Eval(VerifyModifiedEnumerator(enumerator, null, true, atEnd), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyModifiedEnumerator(enumerator, null, true, atEnd), "Err_" + testDescription + " FAILED\n");
 
                     //[] Verify enumerating to the first item
                     //We can only do this test if there is more then 1 item in it
@@ -515,7 +517,7 @@ namespace TestSupport.Collections
                         testDescription = "3158eadf Verify enumerating to the first item";
                         enumerator = _collection.GetEnumerator();
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, 1,
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, 1,
                             1 < _items.Length ? ExpectedEnumeratorRange.Start : ExpectedEnumeratorRange.Start | ExpectedEnumeratorRange.End, true),
                             "Err_" + testDescription + " FAILED\n");
 
@@ -524,7 +526,7 @@ namespace TestSupport.Collections
                         currentItem = enumerator.Current;
                         _items = _modifyCollection(_collection, _items);
 
-                        retValue &= Test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, false, false), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, false, false), "Err_" + testDescription + " FAILED\n");
                     }
 
                     //[] Verify enumerating part of the collection
@@ -536,7 +538,7 @@ namespace TestSupport.Collections
                         testDescription = "128uhkh Verify enumerating part of the collection";
                         enumerator = _collection.GetEnumerator();
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length / 2, ExpectedEnumeratorRange.Start, true), "Err_" + testDescription + " FAILED\n");
 
                         //[] Verify Modifying collection on an enumerator that has enumerated part of the collection
                         testDescription = "3549hkhu Verify Modifying collection on an enumerator that has enumerated part of the collection";
@@ -544,7 +546,7 @@ namespace TestSupport.Collections
                         _items = _modifyCollection(_collection, _items);
 
 
-                        retValue &= Test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, false, false), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, false, false), "Err_" + testDescription + " FAILED\n");
                     }
 
                     //[] Verify enumerating the entire collection
@@ -553,14 +555,14 @@ namespace TestSupport.Collections
                         testDescription = "3874khlerd Verify enumerating the entire collection";
                         enumerator = _collection.GetEnumerator();
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length, ExpectedEnumeratorRange.Start), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items, 0, _items.Length, ExpectedEnumeratorRange.Start), "Err_" + testDescription + " FAILED\n");
 
                         //[] Verify Modifying collection on an enumerator that has enumerated the entire collection		
                         testDescription = "55403hoa Verify Modifying collection on an enumerator that has enumerated the entire collection";
                         currentItem = enumerator.Current;
                         _items = _modifyCollection(_collection, _items);
 
-                        retValue &= Test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, false, true), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, false, true), "Err_" + testDescription + " FAILED\n");
                     }
 
                     //[] Verify enumerating past the end of the collection
@@ -569,19 +571,19 @@ namespace TestSupport.Collections
                         testDescription = "77564hklu Verify enumerating past the end of the collection";
                         enumerator = _collection.GetEnumerator();
 
-                        retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
                         //[] Verify Modifying collection on an enumerator that has enumerated past the end of the collection		
                         testDescription = "984uhluh Verify Modifying collection on an enumerator that has enumerated past the end of the collection";
                         currentItem = null;
                         _items = _modifyCollection(_collection, _items);
 
-                        retValue &= Test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, true, true), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyModifiedEnumerator(enumerator, currentItem, true, true), "Err_" + testDescription + " FAILED\n");
                     }
                 }
                 catch (Exception e)
                 {
-                    retValue &= Test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}", testDescription, e);
+                    retValue &= m_test.Eval(false, "The following test: \n{0} threw the following exception: \n {1}", testDescription, e);
                 }
 
                 return retValue;
@@ -610,14 +612,14 @@ namespace TestSupport.Collections
 
                     if (expectCurrentThrow)
                     {
-                        retValue &= Test.Eval(_isGenericCompatibility, "Err_8319yqqy: Current should have thrown an exception on a modified collection");
+                        retValue &= m_test.Eval(_isGenericCompatibility, "Err_8319yqqy: Current should have thrown an exception on a modified collection");
                     }
                     else
                     {
                         //[] Verify Current always returns the same value every time it is called
                         for (i = 0, scenarioResult = true; i < 3 && scenarioResult; i++)
                         {
-                            retValue &= scenarioResult = Test.Eval(_comparer.Equals(expectedCurrent, currentItem),
+                            retValue &= scenarioResult = m_test.Eval(_comparer.Equals(expectedCurrent, currentItem),
                                 "Err_67894wphs Current is returning inconsistant results Current returned={0} expected={1} Iteration({2})",
                                 currentItem, expectCurrentThrow, i);
                             currentItem = enumerator.Current;
@@ -626,11 +628,11 @@ namespace TestSupport.Collections
                 }
                 catch (InvalidOperationException)
                 {
-                    retValue &= Test.Eval(expectCurrentThrow, "Err_98715ajps: Did not expect Current to thow InvalidOperationException");
+                    retValue &= m_test.Eval(expectCurrentThrow, "Err_98715ajps: Did not expect Current to thow InvalidOperationException");
                 }
                 catch (Exception e)
                 {
-                    retValue &= Test.Eval(!_isGenericCompatibility || !expectCurrentThrow,
+                    retValue &= m_test.Eval(!_isGenericCompatibility || !expectCurrentThrow,
                         "Err_2507pyia Current should have thrown an InvalidOperationException on a modified collection but the following was thrown:\n{0}", e);
                 }
 
@@ -640,18 +642,18 @@ namespace TestSupport.Collections
                     try
                     {
                         enumerator.MoveNext();
-                        retValue &= Test.Eval(false, "Err_2507poaq: MoveNext() should have thrown an exception on a modified collection");
+                        retValue &= m_test.Eval(false, "Err_2507poaq: MoveNext() should have thrown an exception on a modified collection");
                     }
                     catch (InvalidOperationException) { }
                     catch (Exception e)
                     {
-                        retValue &= Test.Eval(false, "Err_6186pypa: MoveNext() should have thrown an InvalidOperationException on a modified collection but the following was thrown:\n{0}", e);
+                        retValue &= m_test.Eval(false, "Err_6186pypa: MoveNext() should have thrown an InvalidOperationException on a modified collection but the following was thrown:\n{0}", e);
                     }
                 }
                 else
                 {
                     // The eumerator is positioned at the end of the collection and it shouldn't throw
-                    retValue &= Test.Eval(!enumerator.MoveNext(), "Err_3923lgtk: MoveNext() should have returned false at the end of the collection");
+                    retValue &= m_test.Eval(!enumerator.MoveNext(), "Err_3923lgtk: MoveNext() should have returned false at the end of the collection");
                 }
 
                 if (!_isResetNotSupported)
@@ -660,12 +662,12 @@ namespace TestSupport.Collections
                     try
                     {
                         enumerator.Reset();
-                        retValue &= Test.Eval(false, "Err_1087pypa: Reset() should have thrown an exception on a modified collection");
+                        retValue &= m_test.Eval(false, "Err_1087pypa: Reset() should have thrown an exception on a modified collection");
                     }
                     catch (InvalidOperationException) { }
                     catch (Exception e)
                     {
-                        retValue &= Test.Eval(false, "Err_1344zxcy: Reset() should have thrown an InvalidOperationException on a modified collection but the following was thrown:\n{0}", e);
+                        retValue &= m_test.Eval(false, "Err_1344zxcy: Reset() should have thrown an InvalidOperationException on a modified collection but the following was thrown:\n{0}", e);
                     }
                 }
 
@@ -724,14 +726,14 @@ namespace TestSupport.Collections
                         {
                             Object tempCurrent = enumerator.Current;
 
-                            retValue &= scenarioResult = Test.Eval(_isGenericCompatibility,
+                            retValue &= scenarioResult = m_test.Eval(_isGenericCompatibility,
                                 "Err_9484epha Expected Current to throw InvalidOperationException before MoveNext() " +
                                 "has been called and nothing was thrown Iterations({0})", i);
                         }
                         catch (InvalidOperationException) { }
                         catch (Exception e)
                         {
-                            retValue &= scenarioResult = Test.Eval(_isGenericCompatibility,
+                            retValue &= scenarioResult = m_test.Eval(_isGenericCompatibility,
                                 "Err_6458ahphl Expected Current to throw InvalidOperationException before MoveNext() " +
                                 "has been called and the following exception was thrown Iterations({0}): \n{1}", i, e);
                         }
@@ -760,7 +762,7 @@ namespace TestSupport.Collections
                         Object tempItem;
 
                         //[] Verify we have not gotten more items then we expected
-                        retValue &= Test.Eval(iterations < count, "Err_9844awpa More items have been returned fromt the enumerator({0} items) then are " +
+                        retValue &= m_test.Eval(iterations < count, "Err_9844awpa More items have been returned fromt the enumerator({0} items) then are " +
                                 "in the expectedElements({1} items)", iterations, count);
 
                         //[] Verify Current returned the correct value
@@ -791,14 +793,14 @@ namespace TestSupport.Collections
                             }
                         }
 
-                        retValue &= Test.Eval(itemFound, "Err_1432pauy Current returned unexpected value={0}", currentItem);
+                        retValue &= m_test.Eval(itemFound, "Err_1432pauy Current returned unexpected value={0}", currentItem);
 
                         //[] Verify Current always returns the same value every time it is called
                         for (i = 0; i < 3; i++)
                         {
                             tempItem = enumerator.Current;
 
-                            retValue &= Test.Eval(_comparer.Equals(currentItem, tempItem),
+                            retValue &= m_test.Eval(_comparer.Equals(currentItem, tempItem),
                                 "Err_8776phaw Current is returning inconsistant results Current returned={0} expected={1}", tempItem, currentItem);
                         }
 
@@ -817,13 +819,13 @@ namespace TestSupport.Collections
                             }
                         }
 
-                        Test.Eval(count, visitedItemsCount, "Err_2398289aheid Number of items enumerator returned");
+                        m_test.Eval(count, visitedItemsCount, "Err_2398289aheid Number of items enumerator returned");
                     }
                     else
                     {
                         for (i = 0; i < count; ++i)
                         {
-                            retValue &= Test.Eval(itemsVisited[i], "Err_052848ahiedoi Expected Current to return {0}", expectedItems[startIndex + i]);
+                            retValue &= m_test.Eval(itemsVisited[i], "Err_052848ahiedoi Expected Current to return {0}", expectedItems[startIndex + i]);
                         }
                     }
                 }
@@ -835,11 +837,11 @@ namespace TestSupport.Collections
                         Object tempItem;
 
                         //[] Verify we have not gotten more items then we expected
-                        retValue &= Test.Eval(iterations < count, "Err_9844awpa More items have been returned fromt the enumerator({0} items) then are " +
+                        retValue &= m_test.Eval(iterations < count, "Err_9844awpa More items have been returned fromt the enumerator({0} items) then are " +
                                 "in the expectedElements({1} items)", iterations, count);
 
                         //[] Verify Current returned the correct value
-                        retValue &= Test.Eval(_comparer.Equals(currentItem, expectedItems[startIndex + iterations]),
+                        retValue &= m_test.Eval(_comparer.Equals(currentItem, expectedItems[startIndex + iterations]),
                             "Err_1432pauy Current returned unexpected value={0} expected={1}", currentItem, expectedItems[startIndex + iterations]);
 
                         //[] Verify Current always returns the same value every time it is called
@@ -847,7 +849,7 @@ namespace TestSupport.Collections
                         {
                             tempItem = enumerator.Current;
 
-                            retValue &= Test.Eval(_comparer.Equals(currentItem, tempItem),
+                            retValue &= m_test.Eval(_comparer.Equals(currentItem, tempItem),
                                 "Err_8776phaw Current is returning inconsistant results Current returned={0} expected={1}", tempItem, currentItem);
                         }
 
@@ -855,14 +857,14 @@ namespace TestSupport.Collections
                     }
                 }
 
-                retValue &= Test.Eval(count, iterations, "Err_189180ahieas Items iterated through");
+                retValue &= m_test.Eval(count, iterations, "Err_189180ahieas Items iterated through");
 
                 if ((expectedEnumeratorRange & ExpectedEnumeratorRange.End) != 0)
                 {
                     //[] Verify MoveNext returns false  every time it is called after the end of the collection has been reached
                     for (i = 0, scenarioResult = true; i < 3 && scenarioResult; i++)
                     {
-                        retValue &= scenarioResult &= Test.Eval(!enumerator.MoveNext(), "Err_051896aheid Expected MoveNext to return false iteration {0}", i);
+                        retValue &= scenarioResult &= m_test.Eval(!enumerator.MoveNext(), "Err_051896aheid Expected MoveNext to return false iteration {0}", i);
                     }
 
                     //[] Verify Current throws every time it is called after the end of the collection has been reached
@@ -872,14 +874,14 @@ namespace TestSupport.Collections
                         {
                             Object tempCurrent = enumerator.Current;
 
-                            retValue &= scenarioResult = Test.Eval(_isGenericCompatibility,
+                            retValue &= scenarioResult = m_test.Eval(_isGenericCompatibility,
                                 "Err_7848pjy Expected Current to throw InvalidOperationException after the end of the collection " +
                                 "has been reached and nothing was thrown Iterations({0})", i);
                         }
                         catch (InvalidOperationException) { }
                         catch (Exception e)
                         {
-                            retValue &= scenarioResult = Test.Eval(_isGenericCompatibility,
+                            retValue &= scenarioResult = m_test.Eval(_isGenericCompatibility,
                                 "Err_31549hpnl Expected Current to throw InvalidOperationException after the end of the collection " +
                                 "has been reache and the following exception was thrown Iterations({0}): \n{1}", i, e);
                         }

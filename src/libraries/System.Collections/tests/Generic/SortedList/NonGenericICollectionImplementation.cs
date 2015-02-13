@@ -5,13 +5,21 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 using SortedList_NonGenericICollectionImplementation;
-using SortedList_SortedListUtils;
+using SL = SortedList_SortedListUtils;
 using SortedList_ICollection;
+using TestSupport.Common_TestSupport;
 
 namespace SortedList_NonGenericICollectionImplementation
 {
     public class Driver<T>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public static SortedList<int, V> BuildSortedList<V>(V[] builtFrom)
         {
             SortedList<int, V> builtSortedList = new SortedList<int, V>(builtFrom.Length);
@@ -33,11 +41,12 @@ namespace SortedList_NonGenericICollectionImplementation
         ICollectionTester<KeyValuePair<int, T>>.RunTest(_dictionary, items.Length, false,
             ((System.Collections.ICollection)_dictionary).SyncRoot, arrayToCheck, false, true);
 #else
-            ICollectionTester<KeyValuePair<int, T>>.RunTest(_dictionary, items.Length, false,
+            var tester = new ICollectionTester<KeyValuePair<int, T>>();
+            tester.RunTest(m_test, _dictionary, items.Length, false,
               ((System.Collections.ICollection)_dictionary).SyncRoot, arrayToCheck, false, false);
 #endif
 
-            Test.Eval(((System.Collections.ICollection)_dictionary).SyncRoot.GetType() == typeof(Object),
+            m_test.Eval(((System.Collections.ICollection)_dictionary).SyncRoot.GetType() == typeof(Object),
                 "Err_47235fsd! Expected SyncRoot to be an object actual={0}",
                 ((System.Collections.ICollection)_dictionary).SyncRoot.GetType());
         }
@@ -64,12 +73,14 @@ public class NonGenericICollection
     {
         //Scenario 1: Verify that ICollection implementation works properly using ICollection common tester
 
-        Driver<int> IntDriver = new Driver<int>();
+        Test test = new Test();
+
+        Driver<int> IntDriver = new Driver<int>(test);
         IntDriver.TestICollection(GenerateArray<int>(10));
 
-        Driver<string> StringDriver = new Driver<string>();
+        Driver<string> StringDriver = new Driver<string>(test);
         StringDriver.TestICollection(GenerateArray<string>(1000));
 
-        Assert.True(Test.result);
+        Assert.True(test.Pass);
     }
 }

@@ -11,6 +11,13 @@ namespace SortedListContains
 {
     public class Driver<K, V> where K : IComparableValue
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         /*public void BasicContains(K[] keys, V[] values)
         {
             SortedList<K,V> tbl = new SortedList<K,V>(new ValueKeyComparer<K>());
@@ -18,11 +25,11 @@ namespace SortedListContains
             {
                 tbl.Add(keys[i],values[i]);
             }
-            Test.Eval(tbl.Count==keys.Length);
+            m_test.Eval(tbl.Count==keys.Length);
 
             for (int i=0; i<keys.Length; i++)
             {
-                Test.Eval(tbl.Contains(keys[i]));
+                m_test.Eval(tbl.Contains(keys[i]));
             }
         }
 
@@ -33,11 +40,11 @@ namespace SortedListContains
             {
                 tbl.Add(keys[i],values[i]);
             }
-            Test.Eval(tbl.Count==keys.Length);
+            m_test.Eval(tbl.Count==keys.Length);
 
             for (int i=0; i<missingkeys.Length; i++)
             {
-                Test.Eval(false==tbl.Contains(missingkeys[i]));
+                m_test.Eval(false==tbl.Contains(missingkeys[i]));
             }
         }
 
@@ -50,7 +57,7 @@ namespace SortedListContains
                 tbl.Add(keys[i],values[i]);
             }
             tbl.Remove(keys[index]);
-            Test.Eval(false==tbl.Contains(keys[index]));
+            m_test.Eval(false==tbl.Contains(keys[index]));
         }
 
         public void AddRemoveAddKeyContains(K[] keys, V[] values, int index, int repeat)
@@ -64,7 +71,7 @@ namespace SortedListContains
             {
                 tbl.Remove(keys[index]);
                 tbl.Add(keys[index],values[index]);
-                Test.Eval(tbl.Contains(keys[index]));
+                m_test.Eval(tbl.Contains(keys[index]));
             }
         }
 
@@ -84,11 +91,11 @@ namespace SortedListContains
                 try
                 {
                     tbl.Contains((K)(object)null);
-                    Test.Eval(false);
+                    m_test.Eval(false);
                 }
                 catch(ArgumentException)
                 {
-                    Test.Eval(true);
+                    m_test.Eval(true);
                 }
             }
         }*/
@@ -101,11 +108,11 @@ namespace SortedListContains
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < keys.Length; i++)
             {
-                Test.Eval(_idic.Contains(keys[i]));
+                m_test.Eval(_idic.Contains(keys[i]));
             }
         }
 
@@ -117,11 +124,11 @@ namespace SortedListContains
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < missingkeys.Length; i++)
             {
-                Test.Eval(false == _idic.Contains(missingkeys[i]));
+                m_test.Eval(false == _idic.Contains(missingkeys[i]));
             }
         }
 
@@ -135,7 +142,7 @@ namespace SortedListContains
                 tbl.Add(keys[i], values[i]);
             }
             tbl.Remove(keys[index]);
-            Test.Eval(false == _idic.Contains(keys[index]));
+            m_test.Eval(false == _idic.Contains(keys[index]));
         }
 
         public void NonGenericIDictionaryAddRemoveAddKeyContains(K[] keys, V[] values, int index, int repeat)
@@ -150,7 +157,7 @@ namespace SortedListContains
             {
                 tbl.Remove(keys[index]);
                 tbl.Add(keys[index], values[index]);
-                Test.Eval(_idic.Contains(keys[index]));
+                m_test.Eval(_idic.Contains(keys[index]));
             }
         }
 
@@ -169,14 +176,14 @@ namespace SortedListContains
             try
             {
                 _idic.Contains(null);
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (ArgumentException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
 
-            Test.Eval(!_idic.Contains(new Random(-55)), "Err_298282haiued Expected Contains to return false with an invalid type for the key");
+            m_test.Eval(!_idic.Contains(new Random(-55)), "Err_298282haiued Expected Contains to return false with an invalid type for the key");
         }
     }
 
@@ -185,7 +192,9 @@ namespace SortedListContains
         [Fact]
         public static void ContainsMain()
         {
-            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>(test);
             RefX1<int>[] intArr1 = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -198,7 +207,7 @@ namespace SortedListContains
                 intArr2[i] = new RefX1<int>(i + 100);
             }
 
-            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>();
+            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>(test);
             ValX1<string>[] stringArr1 = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -265,7 +274,7 @@ namespace SortedListContains
             StringDriver.NonGenericIDictionaryContainsValidations(stringArr1, intArr1);
             StringDriver.NonGenericIDictionaryContainsValidations(new ValX1<string>[] { }, new RefX1<int>[] { });
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

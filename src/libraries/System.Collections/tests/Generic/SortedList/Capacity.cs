@@ -10,47 +10,54 @@ namespace SortedListCapacity
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void TestVanilla()
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
-            Test.Eval(_dic.Capacity == 0, String.Format("Err_234897agf! wrong value returned, {0}, expected: 0", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 0, String.Format("Err_234897agf! wrong value returned, {0}, expected: 0", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>(0);
-            Test.Eval(_dic.Capacity == 0, String.Format("Err_234897agf1! wrong value returned, {0}, expected: 0", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 0, String.Format("Err_234897agf1! wrong value returned, {0}, expected: 0", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>(1);
-            Test.Eval(_dic.Capacity == 1, String.Format("Err_234897agf2! wrong value returned, {0}, expected: 1", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 1, String.Format("Err_234897agf2! wrong value returned, {0}, expected: 1", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>(16);
-            Test.Eval(_dic.Capacity == 16, String.Format("Err_234897agf3! wrong value returned, {0}, expected: 16", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 16, String.Format("Err_234897agf3! wrong value returned, {0}, expected: 16", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>(16000);
-            Test.Eval(_dic.Capacity == 16000, String.Format("Err_234897agf4! wrong value returned, {0}, expected: 16000", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 16000, String.Format("Err_234897agf4! wrong value returned, {0}, expected: 16000", _dic.Capacity));
         }
 
         public void TestVanillaSet()
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
             _dic.Capacity = 0;
-            Test.Eval(_dic.Capacity == 0, String.Format("Err_b234897agf1! wrong value returned, {0}, expected: 0", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 0, String.Format("Err_b234897agf1! wrong value returned, {0}, expected: 0", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>();
             _dic.Capacity = 1;
-            Test.Eval(_dic.Capacity == 1, String.Format("Err_b234897agf2! wrong value returned, {0}, expected: 1", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 1, String.Format("Err_b234897agf2! wrong value returned, {0}, expected: 1", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>();
             _dic.Capacity = 16;
-            Test.Eval(_dic.Capacity == 16, String.Format("Err_b234897agf3! wrong value returned, {0}, expected: 16", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 16, String.Format("Err_b234897agf3! wrong value returned, {0}, expected: 16", _dic.Capacity));
             _dic = new SortedList<KeyType, ValueType>();
             _dic.Capacity = 16000;
-            Test.Eval(_dic.Capacity == 16000, String.Format("Err_b234897agf4! wrong value returned, {0}, expected: 16000", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 16000, String.Format("Err_b234897agf4! wrong value returned, {0}, expected: 16000", _dic.Capacity));
         }
 
         public void TestParmValidation(KeyType[] keys, ValueType[] values)
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>(100);
-            Test.Eval(_dic.Capacity == 100, String.Format("Err_c234897agf1! wrong value returned, {0}, expected: 100", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 100, String.Format("Err_c234897agf1! wrong value returned, {0}, expected: 100", _dic.Capacity));
             _dic.Capacity = 0;
-            Test.Eval(_dic.Capacity == 0, String.Format("Err_d234897agf1! wrong value returned, {0}, expected: 0", _dic.Capacity));
+            m_test.Eval(_dic.Capacity == 0, String.Format("Err_d234897agf1! wrong value returned, {0}, expected: 0", _dic.Capacity));
 
             try
             {
                 _dic.Capacity = -1;
-                Test.Eval(false, "Err_e234897agf1! Expected to throw ArgumentOutOfRangeException when trying to set Capacity to negative");
+                m_test.Eval(false, "Err_e234897agf1! Expected to throw ArgumentOutOfRangeException when trying to set Capacity to negative");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -62,7 +69,7 @@ namespace SortedListCapacity
                 try
                 {
                     _dic.Capacity = i;
-                    Test.Eval(false, "Err_f234897agf1! Expected to throw ArgumentOutOfRangeException when trying to set Capacity to negative");
+                    m_test.Eval(false, "Err_f234897agf1! Expected to throw ArgumentOutOfRangeException when trying to set Capacity to negative");
                 }
                 catch (ArgumentOutOfRangeException)
                 {
@@ -87,11 +94,11 @@ namespace SortedListCapacity
 
                 if (i <= capacity + 1)
                 {
-                    Test.Eval(_dic.Capacity == capacity, String.Format("Err_4588ahied! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
+                    m_test.Eval(_dic.Capacity == capacity, String.Format("Err_4588ahied! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
                 }
                 else
                 {
-                    Test.Eval(_dic.Capacity == i, String.Format("Err_54848ajide! wrong value returned, {0}, expected: {1}", _dic.Capacity, i));
+                    m_test.Eval(_dic.Capacity == i, String.Format("Err_54848ajide! wrong value returned, {0}, expected: {1}", _dic.Capacity, i));
                 }
             }
         }
@@ -111,11 +118,11 @@ namespace SortedListCapacity
 
                 if (i <= capacity + 1)
                 {
-                    Test.Eval(_dic.Capacity == capacity, String.Format("Err_4560884ahuiid! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
+                    m_test.Eval(_dic.Capacity == capacity, String.Format("Err_4560884ahuiid! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
                 }
                 else
                 {
-                    Test.Eval(_dic.Capacity == i, String.Format("Err_50848ahied! wrong value returned, {0}, expected: {1}", _dic.Capacity, i));
+                    m_test.Eval(_dic.Capacity == i, String.Format("Err_50848ahied! wrong value returned, {0}, expected: {1}", _dic.Capacity, i));
                 }
             }
         }
@@ -134,15 +141,15 @@ namespace SortedListCapacity
 
                 if (i <= capacity + 1)
                 {
-                    Test.Eval(_dic.Capacity == capacity, String.Format("Err_0058ajied! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
+                    m_test.Eval(_dic.Capacity == capacity, String.Format("Err_0058ajied! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
                 }
                 else
                 {
-                    Test.Eval(_dic.Capacity == i, String.Format("Err_516898ahied! wrong value returned, {0}, expected: {1}", _dic.Capacity, i));
+                    m_test.Eval(_dic.Capacity == i, String.Format("Err_516898ahied! wrong value returned, {0}, expected: {1}", _dic.Capacity, i));
                 }
             }
             _dic.Clear();
-            Test.Eval(_dic.Capacity == capacity, String.Format("Err_36695ahieid! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
+            m_test.Eval(_dic.Capacity == capacity, String.Format("Err_36695ahieid! wrong value returned, {0}, expected: {1}", _dic.Capacity, capacity));
         }
     }
 
@@ -151,11 +158,13 @@ namespace SortedListCapacity
         [Fact]
         public static void RunTests()
         {
-            Driver<string, string> driver1 = new Driver<string, string>();
-            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>();
-            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>();
-            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>();
+            Test test = new Test();
+
+            Driver<string, string> driver1 = new Driver<string, string>(test);
+            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>(test);
+            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
 
             //Create a SD with default capacity and other capacities and verify
             SimpleRef<int>[] simpleInts;
@@ -211,7 +220,7 @@ namespace SortedListCapacity
             driver1.TestCapacityWhenCleared(strings, strings, 20);
             driver1.TestCapacityWhenCleared(strings, strings, 160);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

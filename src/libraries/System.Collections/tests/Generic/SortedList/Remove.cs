@@ -11,6 +11,13 @@ namespace SortedListRemove
 {
     public class Driver<K, V> where K : IComparableValue
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void BasicRemove(K[] keys, V[] values)
         {
             SortedList<K, V> tbl = new SortedList<K, V>(new ValueKeyComparer<K>());
@@ -18,13 +25,13 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < keys.Length; i++)
             {
-                Test.Eval(tbl.Remove(keys[i]));
+                m_test.Eval(tbl.Remove(keys[i]));
             }
-            Test.Eval(tbl.Count == 0);
+            m_test.Eval(tbl.Count == 0);
         }
 
         public void RemoveNegative(K[] keys, V[] values, K[] missingkeys)
@@ -34,13 +41,13 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < missingkeys.Length; i++)
             {
-                Test.Eval(false == tbl.Remove(missingkeys[i]));
+                m_test.Eval(false == tbl.Remove(missingkeys[i]));
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void RemoveSameKey(K[] keys, V[] values, int index, int repeat)
@@ -50,13 +57,13 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
-            Test.Eval(tbl.Remove(keys[index]));
+            m_test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Remove(keys[index]));
             for (int i = 0; i < repeat; i++)
             {
-                Test.Eval(false == tbl.Remove(keys[index]));
+                m_test.Eval(false == tbl.Remove(keys[index]));
             }
-            Test.Eval(tbl.Count == keys.Length - 1);
+            m_test.Eval(tbl.Count == keys.Length - 1);
         }
 
         public void AddRemoveSameKey(K[] keys, V[] values, int index, int repeat)
@@ -66,14 +73,14 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
-            Test.Eval(tbl.Remove(keys[index]));
+            m_test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Remove(keys[index]));
             for (int i = 0; i < repeat; i++)
             {
                 tbl.Add(keys[index], values[index]);
-                Test.Eval(tbl.Remove(keys[index]));
+                m_test.Eval(tbl.Remove(keys[index]));
             }
-            Test.Eval(tbl.Count == keys.Length - 1);
+            m_test.Eval(tbl.Count == keys.Length - 1);
         }
 
 
@@ -91,15 +98,15 @@ namespace SortedListRemove
             try
             {
                 tbl.Remove((K)(object)null);
-                Test.Eval(false, "Excepted ArgumentException but did not get an Exception when trying to remove null.");
+                m_test.Eval(false, "Excepted ArgumentException but did not get an Exception when trying to remove null.");
             }
             catch (ArgumentException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
             catch (Exception E)
             {
-                Test.Eval(false, "Excepted ArgumentException but got unknown Exception when trying to remove null: " + E);
+                m_test.Eval(false, "Excepted ArgumentException but got unknown Exception when trying to remove null: " + E);
             }
         }
 
@@ -111,14 +118,14 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < keys.Length; i++)
             {
                 _idic.Remove(keys[i]);
-                Test.Eval(!_idic.Contains(keys[i]), "Expected " + keys[i] + " to not still exist, but Contains returned true.");
+                m_test.Eval(!_idic.Contains(keys[i]), "Expected " + keys[i] + " to not still exist, but Contains returned true.");
             }
-            Test.Eval(tbl.Count == 0);
+            m_test.Eval(tbl.Count == 0);
         }
 
         public void NonGenericIDictionaryRemoveNegative(K[] keys, V[] values, K[] missingkeys)
@@ -129,14 +136,14 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < missingkeys.Length; i++)
             {
                 _idic.Remove(missingkeys[i]);
-                Test.Eval(!_idic.Contains(missingkeys[i]), "Expected " + missingkeys[i] + " to not still exist, but Contains returned true.");
+                m_test.Eval(!_idic.Contains(missingkeys[i]), "Expected " + missingkeys[i] + " to not still exist, but Contains returned true.");
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void NonGenericIDictionaryRemoveSameKey(K[] keys, V[] values, int index, int repeat)
@@ -147,15 +154,15 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
             _idic.Remove(keys[index]);
-            Test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
+            m_test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
             for (int i = 0; i < repeat; i++)
             {
                 _idic.Remove(keys[index]);
-                Test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
+                m_test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
             }
-            Test.Eval(tbl.Count == keys.Length - 1);
+            m_test.Eval(tbl.Count == keys.Length - 1);
         }
 
         public void NonGenericIDictionaryAddRemoveSameKey(K[] keys, V[] values, int index, int repeat)
@@ -166,16 +173,16 @@ namespace SortedListRemove
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
             _idic.Remove(keys[index]);
-            Test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
+            m_test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
             for (int i = 0; i < repeat; i++)
             {
                 tbl.Add(keys[index], values[index]);
                 _idic.Remove(keys[index]);
-                Test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
+                m_test.Eval(!_idic.Contains(keys[index]), "Expected " + keys[index] + " to not still exist, but Contains returned true.");
             }
-            Test.Eval(tbl.Count == keys.Length - 1);
+            m_test.Eval(tbl.Count == keys.Length - 1);
         }
 
 
@@ -194,15 +201,15 @@ namespace SortedListRemove
             try
             {
                 _idic.Remove(null);
-                Test.Eval(false, "Excepted ArgumentException but did not get an Exception when trying to remove null.");
+                m_test.Eval(false, "Excepted ArgumentException but did not get an Exception when trying to remove null.");
             }
             catch (ArgumentNullException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
             catch (Exception E)
             {
-                Test.Eval(false, "Excepted ArgumentException but got unknown Exception when trying to remove null: " + E);
+                m_test.Eval(false, "Excepted ArgumentException but got unknown Exception when trying to remove null: " + E);
             }
 
             try
@@ -211,7 +218,7 @@ namespace SortedListRemove
             }
             catch (Exception E)
             {
-                Test.Eval(false, "Excepted ArgumentException but got unknown Exception when trying to remove null: " + E);
+                m_test.Eval(false, "Excepted ArgumentException but got unknown Exception when trying to remove null: " + E);
             }
         }
     }
@@ -221,7 +228,9 @@ namespace SortedListRemove
         [Fact]
         public static void RemoveMain()
         {
-            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>(test);
             RefX1<int>[] intArr1 = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -234,7 +243,7 @@ namespace SortedListRemove
                 intArr2[i] = new RefX1<int>(i + 100);
             }
 
-            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>();
+            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>(test);
             ValX1<string>[] stringArr1 = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -326,7 +335,7 @@ namespace SortedListRemove
             StringDriver.NonGenericIDictionaryRemoveValidations(stringArr1, intArr1);
             StringDriver.NonGenericIDictionaryRemoveValidations(new ValX1<string>[] { }, new RefX1<int>[] { });
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

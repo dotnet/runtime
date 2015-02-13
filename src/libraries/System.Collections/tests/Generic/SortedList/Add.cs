@@ -11,6 +11,13 @@ namespace SortedListAdd
 {
     public class Driver<K, V> where K : IComparableValue
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void BasicAdd(K[] keys, V[] values)
         {
             SortedList<K, V> tbl = new SortedList<K, V>(new ValueKeyComparer<K>());
@@ -18,12 +25,12 @@ namespace SortedListAdd
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < keys.Length; i++)
             {
                 V val = tbl[keys[i]];
-                Test.Eval(((null == (object)val) && (null == (object)values[i])) || (val.Equals(values[i])));
+                m_test.Eval(((null == (object)val) && (null == (object)values[i])) || (val.Equals(values[i])));
             }
         }
 
@@ -35,20 +42,20 @@ namespace SortedListAdd
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
             for (int i = 0; i < repeat; i++)
             {
                 try
                 {
                     tbl.Add(keys[index], values[index]);
-                    Test.Eval(false);
+                    m_test.Eval(false);
                 }
                 catch (ArgumentException)
                 {
-                    Test.Eval(true);
+                    m_test.Eval(true);
                 }
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void AddRemoveKeyValPair(K[] keys, V[] values, int index, int repeat)
@@ -58,25 +65,25 @@ namespace SortedListAdd
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
             for (int i = 0; i < repeat; i++)
             {
                 V val;
-                Test.Eval(tbl.Remove(keys[index]));
+                m_test.Eval(tbl.Remove(keys[index]));
                 try
                 {
                     val = tbl[keys[index]];
-                    Test.Eval(false);
+                    m_test.Eval(false);
                 }
                 catch (KeyNotFoundException)
                 {
-                    Test.Eval(true);
+                    m_test.Eval(true);
                 }
                 tbl.Add(keys[index], values[index]);
                 val = tbl[keys[index]];
-                Test.Eval(((null == (object)val) && (null == (object)values[index])) || (val.Equals(values[index])));
+                m_test.Eval(((null == (object)val) && (null == (object)values[index])) || (val.Equals(values[index])));
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void AddValidations(K[] keys, V[] values, K key, V value)
@@ -92,11 +99,11 @@ namespace SortedListAdd
                 try
                 {
                     tbl.Add(key, value);
-                    Test.Eval(false);
+                    m_test.Eval(false);
                 }
                 catch (ArgumentException)
                 {
-                    Test.Eval(true);
+                    m_test.Eval(true);
                 }
             }
         }
@@ -109,12 +116,12 @@ namespace SortedListAdd
             {
                 _idic.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < keys.Length; i++)
             {
                 V val = tbl[keys[i]];
-                Test.Eval(((null == (object)val) && (null == (object)values[i])) || (val.Equals(values[i])));
+                m_test.Eval(((null == (object)val) && (null == (object)values[i])) || (val.Equals(values[i])));
             }
         }
 
@@ -127,20 +134,20 @@ namespace SortedListAdd
             {
                 _idic.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
             for (int i = 0; i < repeat; i++)
             {
                 try
                 {
                     _idic.Add(keys[index], values[index]);
-                    Test.Eval(false);
+                    m_test.Eval(false);
                 }
                 catch (ArgumentException)
                 {
-                    Test.Eval(true);
+                    m_test.Eval(true);
                 }
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void NonGenericIDictionaryAddRemoveKeyValPair(K[] keys, V[] values, int index, int repeat)
@@ -151,25 +158,25 @@ namespace SortedListAdd
             {
                 _idic.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
             for (int i = 0; i < repeat; i++)
             {
                 V val;
-                Test.Eval(tbl.Remove(keys[index]));
+                m_test.Eval(tbl.Remove(keys[index]));
                 try
                 {
                     val = tbl[keys[index]];
-                    Test.Eval(false);
+                    m_test.Eval(false);
                 }
                 catch (KeyNotFoundException)
                 {
-                    Test.Eval(true);
+                    m_test.Eval(true);
                 }
                 _idic.Add(keys[index], values[index]);
                 val = tbl[keys[index]];
-                Test.Eval(((null == (object)val) && (null == (object)values[index])) || (val.Equals(values[index])));
+                m_test.Eval(((null == (object)val) && (null == (object)values[index])) || (val.Equals(values[index])));
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
         }
 
         public void NonGenericIDictionaryAddValidations(K[] keys, V[] values, K key, V value)
@@ -187,31 +194,31 @@ namespace SortedListAdd
             try
             {
                 _idic.Add(null, value);
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (ArgumentNullException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
 
             try
             {
                 _idic.Add(new Random(-55), value);
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (ArgumentException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
 
             try
             {
                 _idic.Add(key, new Random(-55));
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (ArgumentException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
         }
     }
@@ -221,14 +228,16 @@ namespace SortedListAdd
         [Fact]
         public static void MainAdd()
         {
-            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>(test);
             RefX1<int>[] intArr = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
                 intArr[i] = new RefX1<int>(i);
             }
 
-            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>();
+            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>(test);
             ValX1<string>[] stringArr = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -306,7 +315,7 @@ namespace SortedListAdd
             StringDriver.NonGenericIDictionaryAddValidations(stringArr, intArr, stringArr[0], intArr[0]);
             StringDriver.NonGenericIDictionaryAddValidations(new ValX1<string>[] { }, new RefX1<int>[] { }, stringArr[0], intArr[0]);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

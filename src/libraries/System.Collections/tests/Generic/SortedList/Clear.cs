@@ -11,12 +11,19 @@ namespace SortedListClear
 {
     public class Driver<K, V> where K : IComparableValue
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void Clear(K[] keys, V[] values, int repeat)
         {
             SortedList<K, V> tbl = new SortedList<K, V>(new ValueKeyComparer<K>());
 
             tbl.Clear();
-            Test.Eval(tbl.Count == 0);
+            m_test.Eval(tbl.Count == 0);
 
             for (int i = 0; i < keys.Length; i++)
             {
@@ -25,7 +32,7 @@ namespace SortedListClear
             for (int i = 0; i < repeat; i++)
             {
                 tbl.Clear();
-                Test.Eval(tbl.Count == 0);
+                m_test.Eval(tbl.Count == 0);
             }
         }
 
@@ -35,7 +42,7 @@ namespace SortedListClear
             IDictionary _idic = tbl;
 
             _idic.Clear();
-            Test.Eval(tbl.Count == 0);
+            m_test.Eval(tbl.Count == 0);
 
             for (int i = 0; i < keys.Length; i++)
             {
@@ -44,7 +51,7 @@ namespace SortedListClear
             for (int i = 0; i < repeat; i++)
             {
                 _idic.Clear();
-                Test.Eval(tbl.Count == 0);
+                m_test.Eval(tbl.Count == 0);
             }
         }
     }
@@ -54,14 +61,16 @@ namespace SortedListClear
         [Fact]
         public static void ClearMain()
         {
-            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>(test);
             RefX1<int>[] intArr = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
                 intArr[i] = new RefX1<int>(i);
             }
 
-            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>();
+            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>(test);
             ValX1<string>[] stringArr = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -90,7 +99,7 @@ namespace SortedListClear
             StringDriver.NonGenericIDictionaryClear(new ValX1<string>[] { }, new RefX1<int>[] { }, 1);
             StringDriver.NonGenericIDictionaryClear(new ValX1<string>[] { }, new RefX1<int>[] { }, 10);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

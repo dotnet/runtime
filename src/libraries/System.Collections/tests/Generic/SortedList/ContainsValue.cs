@@ -10,6 +10,13 @@ namespace SortedListContainsValue
 {
     public class Driver<K, V> where K : IComparableValue
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void BasicContainsValue(K[] keys, V[] values)
         {
             SortedList<K, V> tbl = new SortedList<K, V>(new ValueKeyComparer<K>());
@@ -17,11 +24,11 @@ namespace SortedListContainsValue
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < keys.Length; i++)
             {
-                Test.Eval(tbl.ContainsValue(values[i]));
+                m_test.Eval(tbl.ContainsValue(values[i]));
             }
         }
 
@@ -32,11 +39,11 @@ namespace SortedListContainsValue
             {
                 tbl.Add(keys[i], values[i]);
             }
-            Test.Eval(tbl.Count == keys.Length);
+            m_test.Eval(tbl.Count == keys.Length);
 
             for (int i = 0; i < missingvalues.Length; i++)
             {
-                Test.Eval(false == tbl.ContainsValue(missingvalues[i]));
+                m_test.Eval(false == tbl.ContainsValue(missingvalues[i]));
             }
         }
 
@@ -49,7 +56,7 @@ namespace SortedListContainsValue
                 tbl.Add(keys[i], values[i]);
             }
             tbl.Remove(keys[index]);
-            Test.Eval(false == tbl.ContainsValue(values[index]));
+            m_test.Eval(false == tbl.ContainsValue(values[index]));
         }
 
         public void AddRemoveAddKeyContainsValue(K[] keys, V[] values, int index, int repeat)
@@ -63,7 +70,7 @@ namespace SortedListContainsValue
             {
                 tbl.Remove(keys[index]);
                 tbl.Add(keys[index], values[index]);
-                Test.Eval(tbl.ContainsValue(values[index]));
+                m_test.Eval(tbl.ContainsValue(values[index]));
             }
         }
     }
@@ -73,7 +80,9 @@ namespace SortedListContainsValue
         [Fact]
         public static void ContainsValueMain()
         {
-            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>(test);
             RefX1<int>[] intArr1 = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -86,7 +95,7 @@ namespace SortedListContainsValue
                 intArr2[i] = new RefX1<int>(i + 100);
             }
 
-            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>();
+            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>(test);
             ValX1<string>[] stringArr1 = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -127,7 +136,7 @@ namespace SortedListContainsValue
             StringDriver.AddRemoveAddKeyContainsValue(stringArr1, intArr1, 50, 2);
             StringDriver.AddRemoveAddKeyContainsValue(stringArr1, intArr1, 99, 3);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

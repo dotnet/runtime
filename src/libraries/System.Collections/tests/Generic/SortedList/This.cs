@@ -11,13 +11,20 @@ namespace SortedListThis
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void TestVanilla(KeyType[] keys, ValueType[] values)
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
             for (int i = 0; i < keys.Length; i++)
-                Test.Eval(_dic[keys[i]].Equals(values[i]), String.Format("Err_3497gs! Not equal {0}", i));
+                m_test.Eval(_dic[keys[i]].Equals(values[i]), String.Format("Err_3497gs! Not equal {0}", i));
         }
 
         public void TestModify(KeyType[] keys, ValueType[] values)
@@ -29,7 +36,7 @@ namespace SortedListThis
             for (int i = 0; i < half; i++)
                 _dic[keys[i]] = values[i + half];
             for (int i = 0; i < half; i++)
-                Test.Eval(_dic[keys[i]].Equals(values[i + half]), String.Format("Err_3497gs! Not equal {0}", i));
+                m_test.Eval(_dic[keys[i]].Equals(values[i + half]), String.Format("Err_3497gs! Not equal {0}", i));
         }
 
         public void TestNonExistentKeys(KeyType[] keys, ValueType[] values, KeyType[] nonExistentKeys)
@@ -42,14 +49,14 @@ namespace SortedListThis
                 try
                 {
                     ValueType v = _dic[nonExistentKeys[i]];
-                    Test.Eval(false, "Err_23raf! Exception not thrown");
+                    m_test.Eval(false, "Err_23raf! Exception not thrown");
                 }
                 catch (KeyNotFoundException)
                 {
                 }
                 catch (Exception ex)
                 {
-                    Test.Eval(false, String.Format("Err_207092ahpsh! Wrong exception thrown: {0}", ex));
+                    m_test.Eval(false, String.Format("Err_207092ahpsh! Wrong exception thrown: {0}", ex));
                 }
             }
         }
@@ -60,27 +67,27 @@ namespace SortedListThis
             try
             {
                 ValueType v = _dic[(KeyType)(Object)null];
-                Test.Eval(false, "Err_23raf! Exception not thrown");
+                m_test.Eval(false, "Err_23raf! Exception not thrown");
             }
             catch (ArgumentNullException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
 
             try
             {
                 _dic[(KeyType)(Object)null] = values[0];
-                Test.Eval(false, "Err_23raf! Exception not thrown");
+                m_test.Eval(false, "Err_23raf! Exception not thrown");
             }
             catch (ArgumentNullException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
         }
 
@@ -91,7 +98,7 @@ namespace SortedListThis
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
             for (int i = 0; i < keys.Length; i++)
-                Test.Eval(_idic[keys[i]].Equals(values[i]), String.Format("Err_3497gs! Not equal {0}", i));
+                m_test.Eval(_idic[keys[i]].Equals(values[i]), String.Format("Err_3497gs! Not equal {0}", i));
         }
 
         public void NonGenericIDictionaryTestModify(KeyType[] keys, ValueType[] values)
@@ -104,13 +111,13 @@ namespace SortedListThis
             for (int i = 0; i < half; i++)
                 _idic[keys[i]] = values[i + half];
             for (int i = 0; i < half; i++)
-                Test.Eval(_idic[keys[i]].Equals(values[i + half]), String.Format("Err_3497gs! Not equal {0}", i));
+                m_test.Eval(_idic[keys[i]].Equals(values[i + half]), String.Format("Err_3497gs! Not equal {0}", i));
 
             //[] Verify value can be null
             if (null == default(ValueType))
             {
                 _idic[keys[0]] = null;
-                Test.Eval(_idic[keys[0]] == null, "Err_05848aheiiud! Not equal");
+                m_test.Eval(_idic[keys[0]] == null, "Err_05848aheiiud! Not equal");
             }
         }
 
@@ -125,13 +132,13 @@ namespace SortedListThis
                 try
                 {
                     Object v = _idic[nonExistentKeys[i]];
-                    Test.Eval(v == null,
+                    m_test.Eval(v == null,
                         String.Format("Err_5467ahbpa! Expected non existant key to return null actual idic[{0}]={1} at index={2}",
                         nonExistentKeys[i], _idic[nonExistentKeys[i]], i));
                 }
                 catch (Exception ex)
                 {
-                    Test.Eval(false, String.Format("Err_564894ahpa! Unexpected exception thrown: {0}", ex));
+                    m_test.Eval(false, String.Format("Err_564894ahpa! Unexpected exception thrown: {0}", ex));
                 }
             }
         }
@@ -144,64 +151,64 @@ namespace SortedListThis
             try
             {
                 Object v = _idic[null];
-                Test.Eval(false, "Err_21518ahied! Exception not thrown");
+                m_test.Eval(false, "Err_21518ahied! Exception not thrown");
             }
             catch (ArgumentNullException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_546188ahed! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_546188ahed! Wrong exception thrown: {0}", ex));
             }
 
             try
             {
                 Object v = _idic[new Random(-55)];
-                Test.Eval(null == v, "Err_23raf! Expected Indexer to return null with a key that was an invalid type actual {0}", v);
+                m_test.Eval(null == v, "Err_23raf! Expected Indexer to return null with a key that was an invalid type actual {0}", v);
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
 
             try
             {
                 _idic[new Random(-55)] = values[0];
-                Test.Eval(false, "Err_23raf! Exception not thrown");
+                m_test.Eval(false, "Err_23raf! Exception not thrown");
             }
             catch (ArgumentException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
 
             try
             {
                 _idic[keys[0]] = new Random(-55);
-                Test.Eval(false, "Err_23raf! Exception not thrown");
+                m_test.Eval(false, "Err_23raf! Exception not thrown");
             }
             catch (ArgumentException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
 
 
             try
             {
                 _idic[null] = values[0];
-                Test.Eval(false, "Err_10518ajieud! Exception not thrown");
+                m_test.Eval(false, "Err_10518ajieud! Exception not thrown");
             }
             catch (ArgumentNullException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_05158ahied! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_05158ahied! Wrong exception thrown: {0}", ex));
             }
 
             if (null != default(ValueType))
@@ -209,14 +216,14 @@ namespace SortedListThis
                 try
                 {
                     _idic[keys[0]] = null;
-                    Test.Eval(false, "Err_021558aheid! Expected exception to be thrown when setting null a values of the collection are a value type");
+                    m_test.Eval(false, "Err_021558aheid! Expected exception to be thrown when setting null a values of the collection are a value type");
                 }
                 catch (ArgumentException)
                 {
                 }
                 catch (Exception ex)
                 {
-                    Test.Eval(false, String.Format("Err_205484ajhied! Wrong exception thrown: {0}", ex));
+                    m_test.Eval(false, String.Format("Err_205484ajhied! Wrong exception thrown: {0}", ex));
                 }
             }
         }
@@ -229,11 +236,14 @@ namespace SortedListThis
         {
             //This mostly follows the format established by the original author of these tests
 
+            Test test = new Test();
+
+
             //Scenario 1: Vanilla - check that existing values can be accessed via the key
 
-            Driver<int, int> IntDriver = new Driver<int, int>();
-            Driver<SimpleRef<String>, SimpleRef<String>> simpleRef = new Driver<SimpleRef<String>, SimpleRef<String>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> simpleVal = new Driver<SimpleRef<int>, SimpleRef<int>>();
+            Driver<int, int> IntDriver = new Driver<int, int>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> simpleRef = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> simpleVal = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
 
             SimpleRef<int>[] simpleInts;
             SimpleRef<String>[] simpleStrings;
@@ -303,7 +313,7 @@ namespace SortedListThis
             simpleVal.NonGenericIDictionaryTestParm(simpleInts, simpleInts);
             IntDriver.NonGenericIDictionaryTestParm(ints_1, ints_2);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

@@ -18,32 +18,6 @@ namespace TestSupport.Collections
         private IList<T> _collection;
         private bool _indexerReadOnly;
 
-        private IList_T_Test() : base(null, null, null, false) { }
-
-        /// <summary>
-        /// Initializes a new instance of the IList_T_Test.
-        /// </summary>
-        /// <param name="collection">The collection to run the tests on.</param>
-        /// <param name="generateItem"></param>
-        public IList_T_Test(IList<T> collection, GenerateItem<T> generateItem) : this(collection, generateItem, null, false, false) { }
-
-        /// <summary>
-        /// Initializes a new instance of the IList_T_Test
-        /// </summary>
-        /// <param name="collection">The collection to run the tests on.</param>
-        /// <param name="generateItem"></param>
-        /// <param name="items">The items currently in the collection.</param>
-        public IList_T_Test(IList<T> collection, GenerateItem<T> generateItem, T[] items) : this(collection, generateItem, items, false, false) { }
-
-        /// <summary>
-        /// Initializes a new instance of the IList_T_Test.
-        /// </summary>
-        /// <param name="collection">The collection to run the tests on.</param>
-        /// <param name="generateItem"></param>
-        /// <param name="isReadOnly"></param>
-        /// <param name="isFixedSize"></param>
-        public IList_T_Test(IList<T> collection, GenerateItem<T> generateItem, bool isReadOnly, bool isFixedSize) : this(collection, generateItem, null, isReadOnly, isFixedSize) { }
-
         /// <summary>
         /// Initializes a new instance of the IList_T_Test.
         /// </summary>
@@ -52,7 +26,7 @@ namespace TestSupport.Collections
         /// <param name="items">The items currently in the collection.</param>
         /// <param name="isReadOnly"></param>
         /// <param name="isFixedSize"></param>
-        public IList_T_Test(IList<T> collection, GenerateItem<T> generateItem, T[] items, bool isReadOnly, bool isFixedSize) : base(collection, generateItem, items, isReadOnly)
+        public IList_T_Test(Test test, IList<T> collection, GenerateItem<T> generateItem, T[] items, bool isReadOnly, bool isFixedSize) : base(test, collection, generateItem, items, isReadOnly)
         {
             if (isReadOnly && !isFixedSize)
             {
@@ -138,12 +112,12 @@ namespace TestSupport.Collections
             {
                 //[] Verify the initial items in the collection
                 testDescription = "945085ejaida Verify the initial items in the collection";
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Normal),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Normal),
                         "Err_" + testDescription + " FAILED\n");
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "While Verifying the initial items in the colleciton the following exception was thrown:\n{1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "While Verifying the initial items in the colleciton the following exception was thrown:\n{1}\n", testDescription, e);
             }
 
             return retValue;
@@ -163,21 +137,21 @@ namespace TestSupport.Collections
                 //[] Verify get_Item with index=Int32.MinValue
                 testDescription = "65831irea Verify get_Item with index=Int32.MinValue";
 
-                retValue &= Test.Eval(Test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[Int32.MinValue]; }),
+                retValue &= m_test.Eval(m_test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[Int32.MinValue]; }),
                     "Err_7027pha expected calling Item_get with index=In32.MinValue to throw ArgumenOutOfRangeException and no exception was thrown");
 
                 //Verify that the collection was not mutated 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify get_Item with index=-1
                 testDescription = "3649hog Verify get_Item with index=-1";
 
-                retValue &= Test.Eval(Test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[-1]; }),
+                retValue &= m_test.Eval(m_test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[-1]; }),
                     "Err_6977hpas expected calling Item_get with index=-1 to throw ArgumenOutOfRangeException and no exception was thrown");
 
                 //Verify that the collection was not mutated 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify get_Item with index=0 on Empty collection
@@ -191,11 +165,11 @@ namespace TestSupport.Collections
 
                 if (_collection.Count == 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[0]; }),
+                    retValue &= m_test.Eval(m_test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[0]; }),
                         "Err_3167ahps expected calling get_Item with index=0 to throw ArgumenOutOfRangeException and no exception was thrown");
 
                     //Verify that the collection was not mutated 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
 
@@ -209,17 +183,17 @@ namespace TestSupport.Collections
 
                 if (_items.Length != 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[_items.Length]; }),
+                    retValue &= m_test.Eval(m_test.VerifyException<ArgumentOutOfRangeException>(delegate () { T item = _collection[_items.Length]; }),
                         "Err_47778wiapd expected calling get_Item with index=Count to throw ArgumenOutOfRangeException and no exception was thrown");
 
                     //Verify that the collection was not mutated 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Item_get test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Item_get test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -241,7 +215,7 @@ namespace TestSupport.Collections
                     //[] Verify get_Item with valid indicies on ReadOnly/FixedSize Collection
                     testDescription = "3189ahps Verify get_Item with valid indicies on ReadOnly/FixedSize Collection";
 
-                    retValue &= Test.Eval(Verify_get(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(Verify_get(_collection, _items), "Err_" + testDescription + " FAILED\n");
                 }
                 else
                 {
@@ -251,7 +225,7 @@ namespace TestSupport.Collections
                     _collection.Clear();
                     _items = AddItemsToCollection(_collection, 1);
 
-                    retValue &= Test.Eval(Verify_get(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(Verify_get(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     //[] Verify get_Item with valid indicies on a Collection of size 255
                     testDescription = "6931ahp Verify get_Item with valid indicies on a Collection of size 255";
@@ -259,12 +233,12 @@ namespace TestSupport.Collections
                     _collection.Clear();
                     _items = AddItemsToCollection(_collection, 255);
 
-                    retValue &= Test.Eval(Verify_get(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(Verify_get(_collection, _items), "Err_" + testDescription + " FAILED\n");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Item_get test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Item_get test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -303,28 +277,28 @@ namespace TestSupport.Collections
                         //[] Verify set_Item with index=0 on a ReadOnly collection throws NotSupportedException
                         testDescription = "3268ahsp Verify set_Item with index=0 on a ReadOnly collection throws NotSupportedException";
 
-                        retValue &= Test.Eval(Test.VerifyException<NotSupportedException>(delegate () { _collection[0] = _generateItem(); }),
+                        retValue &= m_test.Eval(m_test.VerifyException<NotSupportedException>(delegate () { _collection[0] = _generateItem(); }),
                             "Err_18794hpa Expected set_Item to throw NotSupportedException with index=0 on ReadOnly collection");
 
                         //Verify that the collection was not mutated 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                             "Err_" + testDescription + " verifying item array FAILED\n");
 
                         //[] Verify set_Item with index=Count - 1 on a ReadOnly collection throws NotSupportedException
                         testDescription = "1359ajsph Verify set_Item with index=Count - 1 on a ReadOnly collection throws NotSupportedException";
 
-                        retValue &= Test.Eval(Test.VerifyException<NotSupportedException>(delegate () { _collection[_items.Length - 1] = _generateItem(); }),
+                        retValue &= m_test.Eval(m_test.VerifyException<NotSupportedException>(delegate () { _collection[_items.Length - 1] = _generateItem(); }),
                             "Err_31687ahsp Expected set_Item to throw NotSupportedException with index=0 on ReadOnly collection");
 
                         //Verify that the collection was not mutated 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                             "Err_" + testDescription + " verifying item array FAILED\n");
                     }
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Item_set test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Item_set test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -345,21 +319,21 @@ namespace TestSupport.Collections
                 //[] Verify set_Item with index=Int32.MinValue
                 testDescription = "3078euapzb Verify set_Item with index=Int32.MinValue";
 
-                retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection[Int32.MinValue] = _generateItem(); }),
                     "Err_7027pha expected calling set_Item with index=In32.MinValue to throw ArgumenOutOfRangeException");
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify set_Item with index=-1
                 testDescription = "3649hog Verify set_Item with index=-1";
 
-                retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection[-1] = _generateItem(); }),
                     "Err_6977hpas expected calling set_Item with index=-1 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify set_Item with index=0 on Empty collection
@@ -373,11 +347,11 @@ namespace TestSupport.Collections
 
                 if (_collection.Count == 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                         delegate () { _collection[0] = _generateItem(); }),
                         "Err_3167ahps expected calling set_Item with index=0 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
 
@@ -391,17 +365,17 @@ namespace TestSupport.Collections
 
                 if (_items.Length != 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                         delegate () { _collection[_items.Length] = _generateItem(); }),
                         "Err_82382yueao expected calling set_Item with index=Count to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Item_set test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Item_set test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -445,7 +419,7 @@ namespace TestSupport.Collections
                             _collection[0] = default(T);
                             _items[0] = default(T);
 
-                            retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                             //[] Verify setting the last item to null
                             testDescription = "21456ahp Verify setting the last item to null";
@@ -456,11 +430,11 @@ namespace TestSupport.Collections
                             _collection[_items.Length - 1] = default(T);
                             _items[_items.Length - 1] = default(T);
 
-                            retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                            retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
                         }
                         else
                         {
-                            retValue &= Test.Eval(Test.VerifyException(
+                            retValue &= m_test.Eval(m_test.VerifyException(
                                 typeof(ArgumentNullException),
                                 delegate () { _collection[0] = default(T); }),
                                 "Err_683ahe expected setting indexer to null to throw ArgumentNullException");
@@ -476,7 +450,7 @@ namespace TestSupport.Collections
                             try
                             {
                                 _collection[0] = _items[1];
-                                retValue &= Test.Eval(false, "Err_" + testDescription + " FAILED\n");
+                                retValue &= m_test.Eval(false, "Err_" + testDescription + " FAILED\n");
                             }
                             catch (ArgumentException) { }
                         }
@@ -495,7 +469,7 @@ namespace TestSupport.Collections
 
                         Array.Reverse(_items);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
                     }
 
 
@@ -518,7 +492,7 @@ namespace TestSupport.Collections
 
                     Array.Reverse(_items);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     //[] Verify seting every item in the collection back to the original item
                     testDescription = "5628ahpnz Verify seting every item in the collection back to the original item";
@@ -536,12 +510,12 @@ namespace TestSupport.Collections
 
                     SetItemsInCollection(_collection, _items);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Item_set test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Item_set test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -583,7 +557,7 @@ namespace TestSupport.Collections
 
                     _collection.Clear();
 
-                    retValue &= Test.Eval(-1, _collection.IndexOf(_generateItem()), "Err_67891ajsp IndexOf with non null T on an empty collection");
+                    retValue &= m_test.Eval(-1, _collection.IndexOf(_generateItem()), "Err_67891ajsp IndexOf with non null T on an empty collection");
 
                     if (!_itemsMustBeNonNull)
                     {
@@ -592,7 +566,7 @@ namespace TestSupport.Collections
 
                         _collection.Clear();
 
-                        retValue &= Test.Eval(-1, _collection.IndexOf(default(T)), "Err_32687ahjps IndexOf with null T on an empty collection");
+                        retValue &= m_test.Eval(-1, _collection.IndexOf(default(T)), "Err_32687ahjps IndexOf with null T on an empty collection");
                     }
 
                     //[] With an empty collection call Add with non null value and call IndexOf with that value
@@ -601,7 +575,7 @@ namespace TestSupport.Collections
                     _collection.Clear();
                     _items = AddItemsToCollection(_collection, 1);
 
-                    retValue &= Test.Eval(0, _collection.IndexOf(_items[0]), "Err_7945ahzn IndexOf  with value that was added to an empty collection");
+                    retValue &= m_test.Eval(0, _collection.IndexOf(_items[0]), "Err_7945ahzn IndexOf  with value that was added to an empty collection");
 
                     //[] With an empty collection call Add with non null value and call IndexOf with some other value
                     testDescription = "9974ahps With an empty collection call Add with non null value and call IndexOf with some other value";
@@ -610,7 +584,7 @@ namespace TestSupport.Collections
                     _collection.Add(tempItems[0]);
                     _items = new T[1] { tempItems[0] };
 
-                    retValue &= Test.Eval(-1, _collection.IndexOf(tempItems[1]),
+                    retValue &= m_test.Eval(-1, _collection.IndexOf(tempItems[1]),
                         "Err_9497ahps IndexOf with value other then the value that was added to an empty collection");
 
                     //[] With an empty collection call Add with non null value and call IndexOf with null value
@@ -629,7 +603,7 @@ namespace TestSupport.Collections
                             }
                         }
 
-                        retValue &= Test.Eval(-1, _collection.IndexOf(default(T)),
+                        retValue &= m_test.Eval(-1, _collection.IndexOf(default(T)),
                             "Err_4154ahsa IndexOf with null value on an empty collection with one item added to it");
 
                         //[] On an empty collection call Add with null value and call IndexOf with null value
@@ -638,12 +612,12 @@ namespace TestSupport.Collections
                         _collection.Clear();
                         _collection.Add(default(T));
 
-                        retValue &= Test.Eval(0, _collection.IndexOf(default(T)),
+                        retValue &= m_test.Eval(0, _collection.IndexOf(default(T)),
                             "Err_1479ahps IndexOf  with null value on an empty collection with null added to it");
                     }
                     else
                     {
-                        retValue &= Test.Eval(Test.VerifyException(
+                        retValue &= m_test.Eval(m_test.VerifyException(
                             typeof(ArgumentNullException),
                             delegate () { _collection.IndexOf(default(T)); }),
                             "Err_683ahe Expected calling IndexOf with a null item to throw ArgumentNullException");
@@ -662,11 +636,11 @@ namespace TestSupport.Collections
 
                         for (int i = 0; i < _items.Length; i++)
                         {
-                            retValue &= Test.Eval(i, _collection.IndexOf(_items[i]),
+                            retValue &= m_test.Eval(i, _collection.IndexOf(_items[i]),
                                 "Err_97489ahsp IndexOf with value that exists twice in the collection item {0}", i);
                         }
 
-                        retValue &= Test.Eval(-1, _collection.IndexOf(tempItems[16]),
+                        retValue &= m_test.Eval(-1, _collection.IndexOf(tempItems[16]),
                             "Err_98749ajsp IndexOf with item that does not exist in the collection");
                     }
 
@@ -695,11 +669,11 @@ namespace TestSupport.Collections
 
                         for (int i = 0; i < _items.Length; i++)
                         {
-                            retValue &= Test.Eval(i, _collection.IndexOf(_items[i]),
+                            retValue &= m_test.Eval(i, _collection.IndexOf(_items[i]),
                                 "Err_23897ahsp IndexOf with a collection that contains null somewhere in middle of the collectio item {0}", i);
                         }
 
-                        retValue &= Test.Eval(-1, _collection.IndexOf(_comparer.Equals(tempItems[30], default(T)) ? tempItems[31] : tempItems[30]),
+                        retValue &= m_test.Eval(-1, _collection.IndexOf(_comparer.Equals(tempItems[30], default(T)) ? tempItems[31] : tempItems[30]),
                             "Err_9749ahps IndexOf with item that does not exist in the collection");
 
                         //[] With a collection that contains null at the last item in the collection call Conatains with null, some value that does not exist and with a value that does exist
@@ -724,11 +698,11 @@ namespace TestSupport.Collections
 
                         for (int i = 0; i < _items.Length; i++)
                         {
-                            retValue &= Test.Eval(i, _collection.IndexOf(_items[i]),
+                            retValue &= m_test.Eval(i, _collection.IndexOf(_items[i]),
                                 "Err_679ahps With a collection that contains null at the last item in the collection item {0}", i);
                         }
 
-                        retValue &= Test.Eval(-1, _collection.IndexOf(_comparer.Equals(tempItems[30], default(T)) ? tempItems[31] : tempItems[30]),
+                        retValue &= m_test.Eval(-1, _collection.IndexOf(_comparer.Equals(tempItems[30], default(T)) ? tempItems[31] : tempItems[30]),
                             "Err_88974ahos IndexOf with item that does not exist in the collection");
                     }
 
@@ -742,11 +716,11 @@ namespace TestSupport.Collections
 
                     for (int i = 0; i < _items.Length; i++)
                     {
-                        retValue &= Test.Eval(i, _collection.IndexOf(_items[i]),
+                        retValue &= m_test.Eval(i, _collection.IndexOf(_items[i]),
                             "9779ahsp IndexOf with a collection that all of the _items in the collection are unique item {0}", i);
                     }
 
-                    retValue &= Test.Eval(-1, _collection.IndexOf(_generateItem()), "Err_31659ahnz IndexOf with item that does not exist in the collection");
+                    retValue &= m_test.Eval(-1, _collection.IndexOf(_generateItem()), "Err_31659ahnz IndexOf with item that does not exist in the collection");
                 }
                 else
                 {
@@ -756,16 +730,16 @@ namespace TestSupport.Collections
                     //Here we depend on every item in the ReadOnly Collection being unique
                     for (int i = 0; i < _items.Length; i++)
                     {
-                        retValue &= Test.Eval(i, _collection.IndexOf(_items[i]),
+                        retValue &= m_test.Eval(i, _collection.IndexOf(_items[i]),
                             "Err_23168zhp IndexOf with a collection that all of the _items in the collection are unique item {0}", i);
                     }
 
-                    retValue &= Test.Eval(-1, _collection.IndexOf(_generateItem()), "Err_1389zja IndexOf with item that does not exist in the collection");
+                    retValue &= m_test.Eval(-1, _collection.IndexOf(_generateItem()), "Err_1389zja IndexOf with item that does not exist in the collection");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following IndexOf test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following IndexOf test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -787,7 +761,7 @@ namespace TestSupport.Collections
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Insert test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Insert test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -808,21 +782,21 @@ namespace TestSupport.Collections
                 //[] Verify Insert with index=Int32.MinValue
                 testDescription = "2268aohs Verify Insert with index=Int32.MinValue";
 
-                retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection.Insert(Int32.MinValue, _generateItem()); }),
                     "Err_13597ahs expected calling Insert with index=In32.MinValue to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify Insert with index=-1
                 testDescription = "56948ajsp Verify Insert with index=-1";
 
-                retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection.Insert(-1, _generateItem()); }),
                     "Err_31897ahsp expected calling Insert with index=-1 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify Insert with index=0 on Empty collection
@@ -836,11 +810,11 @@ namespace TestSupport.Collections
 
                 if (_collection.Count == 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                         delegate () { _collection.Insert(1, _generateItem()); }),
                         "Err_97469ahps expected calling Insert with index=0 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
 
@@ -854,24 +828,24 @@ namespace TestSupport.Collections
 
                 if (_items.Length != 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                         delegate () { _collection.Insert(_items.Length + 1, _generateItem()); }),
                         "Err_1159hpa expected calling Insert with index=Count to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
 
                 if (_itemsMustBeNonNull)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentNullException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentNullException), notSupportedExceptionType,
                         delegate () { _collection.Insert(0, default(T)); }),
                         "Err_1159hpa expected calling Insert with null item to throw ArgumentNullException");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Insert test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Insert test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -894,10 +868,10 @@ namespace TestSupport.Collections
                 {
                     testDescription = "8944sjpas Verify if the colleciton is fixed size or readonly that Insert throws";
 
-                    retValue &= Test.Eval(Test.VerifyException<NotSupportedException>(delegate () { _collection.Insert(0, _generateItem()); }),
+                    retValue &= m_test.Eval(m_test.VerifyException<NotSupportedException>(delegate () { _collection.Insert(0, _generateItem()); }),
                         "Err_21389ajhps Expected Insert to throw NotSupportedException on ReadOnly/FixedSize collection");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
                 else
@@ -908,7 +882,7 @@ namespace TestSupport.Collections
                     _collection.Clear();
                     _items = InsertItemsInCollection(_collection, 32);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     if (!_itemsMustBeNonNull)
                     {
@@ -924,7 +898,7 @@ namespace TestSupport.Collections
                         _collection.Insert(0, default(T));
                         _items[0] = default(T);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                         //[] Insert with null in the middle
                         testDescription = "148900aued Insert with null in the middle";
@@ -943,7 +917,7 @@ namespace TestSupport.Collections
 
                         InsertItemsInCollection(_collection, 17, tempItems, 16, 16);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                         //[] Insert with null at the end
                         testDescription = "78989ade Insert with null at the end";
@@ -957,7 +931,7 @@ namespace TestSupport.Collections
                         _collection.Insert(16, default(T));
                         _items[16] = default(T);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
                     }
 
                     //[] Insert with value that already exists in the collection
@@ -970,11 +944,11 @@ namespace TestSupport.Collections
                         try
                         {
                             _collection.Insert(0, _items[0]);
-                            Test.Eval(false, "Err_54848ahjoidi Expected ArgumentException to be thrown");
+                            m_test.Eval(false, "Err_54848ahjoidi Expected ArgumentException to be thrown");
                         }
                         catch (ArgumentException) { } //Expected
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
                     }
                     else
                     {
@@ -988,7 +962,7 @@ namespace TestSupport.Collections
                         InsertItemsInCollection(_collection, tempItems, 16);
                         Array.Copy(tempItems, 0, _items, 16, 16);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
                     }
 
                     //[] Insert some _items call Clear() then Insert more _items
@@ -1000,7 +974,7 @@ namespace TestSupport.Collections
 
                     _items = InsertItemsInCollection(_collection, 16);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     //[] Insert some _items remove only some of them then Insert more _items
                     testDescription = "88491ahps Insert some _items remove only some of them then Insert more _items";
@@ -1020,7 +994,7 @@ namespace TestSupport.Collections
                     tempItems = InsertItemsInCollection(_collection, 16, 8);
                     Array.Copy(tempItems, 0, _items, 8, 16);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     //[] Insert some _items remove all of them then Insert more _items
                     testDescription = "1591anzb Insert some _items remove all of them then Insert more _items";
@@ -1035,7 +1009,7 @@ namespace TestSupport.Collections
 
                     _items = InsertItemsInCollection(_collection, 32);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     //[] Mix Insert and Add methods
                     testDescription = "99469ahps Mix Insert and Add methods";
@@ -1049,7 +1023,7 @@ namespace TestSupport.Collections
                     AddItemsToCollection(_collection, tempItems, 16, 16);
                     InsertItemsInCollection(_collection, 32, tempItems, 32, 16);
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                     //[] With a non empty collection call Insert with index=0 and verify the collection. 
                     //Then remove the item that was just inserted. Repeat this for every valid index in the collection
@@ -1070,7 +1044,7 @@ namespace TestSupport.Collections
                         tempItems[i] = newItem;
                         Array.Copy(_items, i, tempItems, i + 1, _items.Length - i);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, tempItems), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, tempItems), "Err_" + testDescription + " FAILED\n");
 
                         _collection.RemoveAt(i);
                     }
@@ -1078,7 +1052,7 @@ namespace TestSupport.Collections
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following Insert test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following Insert test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -1100,7 +1074,7 @@ namespace TestSupport.Collections
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following RemoveAt test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following RemoveAt test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -1121,21 +1095,21 @@ namespace TestSupport.Collections
                 //[] Verify RemoveAt with index=Int32.MinValue
                 testDescription = "6791anzp Verify RemoveAt with index=Int32.MinValue";
 
-                retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection.RemoveAt(Int32.MinValue); }),
                     "Err_3219ahzp expected calling RemoveAt with index=In32.MinValue to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify RemoveAt with index=-1
                 testDescription = "4946ahzp Verify RemoveAt with index=-1";
 
-                retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection.RemoveAt(-1); }),
                     "Err_4987hzp expected calling RemoveAt with index=-1 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                     "Err_" + testDescription + " verifying item array FAILED\n");
 
                 //[] Verify RemoveAt with index=0 on Empty collection
@@ -1149,11 +1123,11 @@ namespace TestSupport.Collections
 
                 if (_collection.Count == 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                     delegate () { _collection.RemoveAt(0); }),
                     "Err_97416ahzo expected calling RemoveAt with index=0 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
 
@@ -1168,11 +1142,11 @@ namespace TestSupport.Collections
 
                 if (_items.Length == 1)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                         delegate () { _collection.RemoveAt(1); }),
                         "Err_21988ahps expected calling RemoveAt with index=1 to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
 
@@ -1186,17 +1160,17 @@ namespace TestSupport.Collections
 
                 if (_items.Length != 0)
                 {
-                    retValue &= Test.Eval(Test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
+                    retValue &= m_test.Eval(m_test.VerifyException(typeof(ArgumentOutOfRangeException), notSupportedExceptionType,
                         delegate () { _collection.RemoveAt(_items.Length); }),
                         "Err_7949ahzh expected calling RemoveAt with index=Count to throw ArgumenOutOfRangeException and no exception was thrown");
 
-                    retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                    retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED\n");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following RemoveAt test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following RemoveAt test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -1220,10 +1194,10 @@ namespace TestSupport.Collections
                     testDescription = "77894azzhpa Verify if the colleciton is fixed size or readonly that RemoveAt throws";
                     if (0 != _items.Length)
                     {
-                        retValue &= Test.Eval(Test.VerifyException<NotSupportedException>(delegate () { _collection.RemoveAt(0); }),
+                        retValue &= m_test.Eval(m_test.VerifyException<NotSupportedException>(delegate () { _collection.RemoveAt(0); }),
                             "Err_111649ahos Expected RemoveAt to throw NotSupportedException on ReadOnly/FixedSize collection");
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items, VerificationLevel.Extensive),
                             "Err_" + testDescription + " verifying collection FAILED");
                     }
                 }
@@ -1242,7 +1216,7 @@ namespace TestSupport.Collections
                         Array.Copy(tempItems, 0, _items, 0, i);
                         Array.Copy(tempItems, i + 1, _items, i, tempItems.Length - i - 1);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items), "Err_" + testDescription + " FAILED\n");
 
                         _collection.Insert(i, tempItems[i]);
                     }
@@ -1257,7 +1231,7 @@ namespace TestSupport.Collections
                     {
                         _collection.RemoveAt(0);
 
-                        retValue &= Test.Eval(VerifyCollection(_collection, _items, i + 1, _items.Length - i - 1),
+                        retValue &= m_test.Eval(VerifyCollection(_collection, _items, i + 1, _items.Length - i - 1),
                             "Err_" + testDescription + " iteration(" + i + ") FAILED\n");
                     }
 
@@ -1266,7 +1240,7 @@ namespace TestSupport.Collections
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following RemoveAt test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following RemoveAt test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
                 retValue = false;
             }
 
@@ -1293,7 +1267,7 @@ namespace TestSupport.Collections
                     _collection.Clear();
                     _items = new T[0];
 
-                    retValue &= Test.Eval(Verify_ICollection(_collection, _items), "Err_2318ahps ICollection test FAILED for empty collection");
+                    retValue &= m_test.Eval(Verify_ICollection(_collection, _items), "Err_2318ahps ICollection test FAILED for empty collection");
 
                     //[] Add some _items then run all ICollection tests
                     testDescription = "65498ajps Add some _items then run all ICollection tests";
@@ -1301,7 +1275,7 @@ namespace TestSupport.Collections
                     _collection.Clear();
                     _items = AddItemsToCollection(_collection, 32);
 
-                    retValue &= Test.Eval(Verify_ICollection(_collection, _items), "Err_23198ahls ICollection test FAILED for collection some _items added to it");
+                    retValue &= m_test.Eval(Verify_ICollection(_collection, _items), "Err_23198ahls ICollection test FAILED for collection some _items added to it");
 
                     //[] Add some _items then Remove some and run all ICollection tests
                     testDescription = "8463ahopz Add some _items then Remove some and run all ICollection tests";
@@ -1321,7 +1295,7 @@ namespace TestSupport.Collections
                     _collection.RemoveAt(0);
                     _collection.RemoveAt(_collection.Count - 1);
 
-                    retValue &= Test.Eval(Verify_ICollection(_collection, _items),
+                    retValue &= m_test.Eval(Verify_ICollection(_collection, _items),
                         "Err_2252ahz ICollection test FAILED for collection some _items added to it and then some removed");
 
                     //[] Add some _items then Remove all and run all ICollection tests
@@ -1336,7 +1310,7 @@ namespace TestSupport.Collections
                         _collection.Remove(tempItems[i]);
                     }
 
-                    retValue &= Test.Eval(Verify_ICollection(_collection, _items),
+                    retValue &= m_test.Eval(Verify_ICollection(_collection, _items),
                         "Err_11579ahos ICollection test FAILED for collection some _items added to it and then all removed");
 
                     //[] Add some _items then call Clear run all ICollection tests
@@ -1347,7 +1321,7 @@ namespace TestSupport.Collections
                     AddItemsToCollection(_collection, 32);
                     _collection.Clear();
 
-                    retValue &= Test.Eval(Verify_ICollection(_collection, _items),
+                    retValue &= m_test.Eval(Verify_ICollection(_collection, _items),
                         "Err_12549ajps ICollection test FAILED for collection some _items added to it and then clear was called");
 
                     //[] With a collection containing null values run all ICollection tests
@@ -1363,7 +1337,7 @@ namespace TestSupport.Collections
                         _collection.Add(default(T));
                         _items[16] = default(T);
 
-                        retValue &= Test.Eval(Verify_ICollection(_collection, _items),
+                        retValue &= m_test.Eval(Verify_ICollection(_collection, _items),
                             "Err_64888akoed ICollection test FAILED for collection with null values in it");
                     }
 
@@ -1380,7 +1354,7 @@ namespace TestSupport.Collections
 
                         AddItemsToCollection(_collection, tempItems);
 
-                        retValue &= Test.Eval(Verify_ICollection(_collection, _items),
+                        retValue &= m_test.Eval(Verify_ICollection(_collection, _items),
                             "Err_2359apsjh ICollection test FAILED for collection with duplicate values in it");
                     }
                 }
@@ -1389,13 +1363,13 @@ namespace TestSupport.Collections
                     //[] Verify ICollection with ReadOnlyCollection
                     testDescription = "9948aps Verify ICollection with ReadOnlyCollection";
 
-                    retValue &= Test.Eval(Verify_ICollection(_collection, _items),
+                    retValue &= m_test.Eval(Verify_ICollection(_collection, _items),
                         "Err_23894ajhps ICollection test FAILED for ReadOnly/FixedSize collection");
                 }
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false, "The following ICollection IEnumerable  test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
+                retValue &= m_test.Eval(false, "The following ICollection IEnumerable  test: \n{0} threw the following exception: \n {1}\n", testDescription, e);
             }
 
             return retValue;
@@ -1416,16 +1390,16 @@ namespace TestSupport.Collections
             _collection.Add(_items[0]);
 
             //[] Insert(int index, T item);
-            Test.PushScenario("Insert(int index, T item);");
+            m_test.PushScenario("Insert(int index, T item);");
             retValue &= VerifyModifiedEnumerator(_collection, true, _items.Length <= 1, delegate () { _collection.Insert(0, item); });
             _items = ArrayUtils.Prepend(_items, item);
-            Test.PopScenario();
+            m_test.PopScenario();
 
             //[] RemoveAt(int index)
-            Test.PushScenario("RemoveAt(int index)");
+            m_test.PushScenario("RemoveAt(int index)");
             retValue &= VerifyModifiedEnumerator(_collection, true, _items.Length <= 1, delegate () { _collection.RemoveAt(0); });
             _items = ArrayUtils.RemoveAt(_items, 0);
-            Test.PopScenario();
+            m_test.PopScenario();
 
             return retValue;
         }
@@ -1456,12 +1430,12 @@ namespace TestSupport.Collections
                     _items = (T[])_originalItems.Clone();
                 }
 
-                retValue &= Test.Eval(VerifyCollection(_collection, _originalItems, VerificationLevel.Normal),
+                retValue &= m_test.Eval(VerifyCollection(_collection, _originalItems, VerificationLevel.Normal),
                         "Err_" + testDescription + " FAILED\n");
             }
             catch (Exception e)
             {
-                retValue &= Test.Eval(false,
+                retValue &= m_test.Eval(false,
                     "While setting the items in the collection back to the original items the following exception was thrown:\n{1}\n", testDescription, e);
             }
 
@@ -1507,13 +1481,13 @@ namespace TestSupport.Collections
         {
             bool retValue = true;
 
-            if (!(retValue &= Test.Eval(count, collection.Count,
+            if (!(retValue &= m_test.Eval(count, collection.Count,
                 "Err_8702haps Verifying get_Item the Count of the collection")))
             {
                 for (int i = 0; i < count; i++)
                 {
                     int itemsIndex = i + index;
-                    if (!(retValue &= Test.Eval(_comparer.Equals(items[itemsIndex], collection[i]),
+                    if (!(retValue &= m_test.Eval(_comparer.Equals(items[itemsIndex], collection[i]),
                         "Err_1634pnyan Verifying get_Item the item in the collection({0}) and the expected items({1}) differ at={2}", collection[i], items[itemsIndex], itemsIndex)))
                     {
                         break;
@@ -1533,7 +1507,7 @@ namespace TestSupport.Collections
         {
             bool retValue = true;
 
-            if ((retValue &= Test.Eval(count, collection.Count,
+            if ((retValue &= m_test.Eval(count, collection.Count,
                 "Err_669713ahzp Verifying IndexOf the count of the collection")))
             {
                 for (int i = 0; i < count; i++)
@@ -1541,18 +1515,18 @@ namespace TestSupport.Collections
                     int itemsIndex = i + index;
                     int indexOfRetVal = collection.IndexOf(items[itemsIndex]);
 
-                    if (!(retValue &= Test.Eval(-1 != indexOfRetVal,
+                    if (!(retValue &= m_test.Eval(-1 != indexOfRetVal,
                         "Err_1634pnyan Verifying IndexOf and expected item {0} to be in the colleciton", items[itemsIndex])))
                     {
                         break;
                     }
-                    else if (!(retValue &= Test.Eval(_comparer.Equals(items[index + indexOfRetVal], items[itemsIndex]),
+                    else if (!(retValue &= m_test.Eval(_comparer.Equals(items[index + indexOfRetVal], items[itemsIndex]),
                         "Err_88489apps Verifying IndexOf and the index returned is wrong expected to find {0} at {1} actually found {2} at {3}",
                             items[itemsIndex], itemsIndex, items[index + indexOfRetVal], index + indexOfRetVal)))
                     {
                         break;
                     }
-                    else if (!(retValue &= Test.Eval(_comparer.Equals(collection[indexOfRetVal], items[itemsIndex]),
+                    else if (!(retValue &= m_test.Eval(_comparer.Equals(collection[indexOfRetVal], items[itemsIndex]),
                         "Err_32198ahps Verifying IndexOf and the index returned is wrong expected to find {0} at {1} actually found {2} at {3}",
                             items[itemsIndex], itemsIndex, items[index + indexOfRetVal], indexOfRetVal)))
                     {
@@ -1573,7 +1547,7 @@ namespace TestSupport.Collections
         {
             bool retValue = true;
 
-            if ((retValue &= Test.Eval(count, collection.Count,
+            if ((retValue &= m_test.Eval(count, collection.Count,
                 "Err_3567ahps Verifying ICollection the Count of the collection")))
             {
                 T[] originalItemsBeforeTest = _originalItems;

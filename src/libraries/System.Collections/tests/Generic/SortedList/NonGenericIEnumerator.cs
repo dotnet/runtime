@@ -11,6 +11,13 @@ namespace SortedListNoGenIEnum
 {
     public class Driver<K, V> where K : IComparableValue
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void GetEnumeratorBasic(K[] keys, V[] values)
         {
             SortedList<K, V> tbl = new SortedList<K, V>(new TestSortedList<K, V>(keys, values), new ValueKeyComparer<K>());
@@ -25,12 +32,12 @@ namespace SortedListNoGenIEnum
                 vls.Add(values[i]);
             for (int i = 0; i < keys.Length; i++)
             {
-                Test.Eval(Enum.MoveNext());
+                m_test.Eval(Enum.MoveNext());
                 Object entry = Enum.Current;
 
-                Test.Eval(kls.Contains(((KeyValuePair<K, V>)entry).Key));
+                m_test.Eval(kls.Contains(((KeyValuePair<K, V>)entry).Key));
                 kls.Remove(((KeyValuePair<K, V>)entry).Key);
-                Test.Eval(vls.Contains(((KeyValuePair<K, V>)entry).Value));
+                m_test.Eval(vls.Contains(((KeyValuePair<K, V>)entry).Value));
                 vls.Remove(((KeyValuePair<K, V>)entry).Value);
             }
 
@@ -40,9 +47,9 @@ namespace SortedListNoGenIEnum
                 vls.Add(values[i]);
             foreach (Object entry in enumerable)
             {
-                Test.Eval(kls.Contains(((KeyValuePair<K, V>)entry).Key));
+                m_test.Eval(kls.Contains(((KeyValuePair<K, V>)entry).Key));
                 kls.Remove(((KeyValuePair<K, V>)entry).Key);
-                Test.Eval(vls.Contains(((KeyValuePair<K, V>)entry).Value));
+                m_test.Eval(vls.Contains(((KeyValuePair<K, V>)entry).Value));
                 vls.Remove(((KeyValuePair<K, V>)entry).Value);
             }
 
@@ -52,7 +59,7 @@ namespace SortedListNoGenIEnum
             vls = new List<V>();
             for (int i = 0; i < keys.Length; i++)
                 vls.Add(values[i]);
-            Test.Eval(Enum.MoveNext() == false);
+            m_test.Eval(Enum.MoveNext() == false);
         }
         public void GetEnumeratorValidations(K[] keys, V[] values, K nkey, V nvalue)
         {
@@ -64,39 +71,39 @@ namespace SortedListNoGenIEnum
             try
             {
                 entry = Enum.Current;
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (InvalidOperationException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
             catch (Exception)
             {
-                Test.Eval(false);
+                m_test.Eval(false);
             }
 
             Enum.Reset();
 
             for (int i = 0; i < keys.Length; i++)
             {
-                Test.Eval(Enum.MoveNext());
+                m_test.Eval(Enum.MoveNext());
                 entry = Enum.Current;
-                //			Test.Eval(entry.Key.Equals(keys[i]) && ( ((null==(object)entry.Value)&&(null==(object)values[i])) || entry.Value.Equals(values[i])));
+                //			m_test.Eval(entry.Key.Equals(keys[i]) && ( ((null==(object)entry.Value)&&(null==(object)values[i])) || entry.Value.Equals(values[i])));
             }
-            Test.Eval(Enum.MoveNext() == false);
+            m_test.Eval(Enum.MoveNext() == false);
 
             try
             {
                 entry = Enum.Current;
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (InvalidOperationException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
             catch (Exception)
             {
-                Test.Eval(false);
+                m_test.Eval(false);
             }
 
             Enum = enumerable.GetEnumerator();
@@ -106,28 +113,28 @@ namespace SortedListNoGenIEnum
             try
             {
                 Enum.MoveNext();
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (InvalidOperationException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
             catch (Exception)
             {
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             try
             {
                 Enum.Reset();
-                Test.Eval(false);
+                m_test.Eval(false);
             }
             catch (InvalidOperationException)
             {
-                Test.Eval(true);
+                m_test.Eval(true);
             }
             catch (Exception)
             {
-                Test.Eval(false);
+                m_test.Eval(false);
             }
         }
     }
@@ -137,14 +144,16 @@ namespace SortedListNoGenIEnum
         [Fact]
         public static void NoGenIEnumMain()
         {
-            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>();
+            Test test = new Test();
+
+            Driver<RefX1<int>, ValX1<string>> IntDriver = new Driver<RefX1<int>, ValX1<string>>(test);
             RefX1<int>[] intArr = new RefX1<int>[100];
             for (int i = 0; i < 100; i++)
             {
                 intArr[i] = new RefX1<int>(i);
             }
 
-            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>();
+            Driver<ValX1<string>, RefX1<int>> StringDriver = new Driver<ValX1<string>, RefX1<int>>(test);
             ValX1<string>[] stringArr = new ValX1<string>[100];
             for (int i = 0; i < 100; i++)
             {
@@ -165,7 +174,7 @@ namespace SortedListNoGenIEnum
             StringDriver.GetEnumeratorValidations(stringArr, intArr, new ValX1<string>("1000"), new RefX1<int>(1000));
             StringDriver.GetEnumeratorValidations(new ValX1<string>[0], new RefX1<int>[0], new ValX1<string>("1000"), new RefX1<int>(1000));
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

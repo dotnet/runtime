@@ -103,22 +103,21 @@ namespace TestSupport
             /// </summary>
             public const int PASS_EXITCODE = 100;
 
-            private static int s_numErrors = 0;
+            private int m_numErrors = 0;
 
-            private static int s_numTestcaseFailures = 0;
-            private static int s_numTestcases = 0;
+            private int m_numTestcaseFailures = 0;
+            private int m_numTestcases = 0;
 
-            private static int s_failExitCode = DEFAULT_FAIL_EXITCODE;
-            private static bool s_failExitCodeSet = false;
+            private int m_failExitCode = DEFAULT_FAIL_EXITCODE;
+            private bool m_failExitCodeSet = false;
 
-            private static bool s_suppressStackOutput = false;
+            private bool m_suppressStackOutput = false;
 
-            private static bool s_outputExceptionMessages = false;
+            private bool m_outputExceptionMessages = false;
 
-            // TODO: Consider making access to _scenarioDescriptions thread safe
-            private static List<Scenario> s_scenarioDescriptions = new List<Scenario>();
+            private List<Scenario> m_scenarioDescriptions = new List<Scenario>();
 
-            private static System.IO.TextWriter s_outputWriter = Console.Out;
+            private System.IO.TextWriter m_outputWriter = Console.Out;
 
             private class Scenario
             {
@@ -132,76 +131,76 @@ namespace TestSupport
                 }
             }
 
-            public static void InitScenario(string scenarioDescription)
+            public void InitScenario(string scenarioDescription)
             {
-                s_scenarioDescriptions.Clear();
-                s_scenarioDescriptions.Add(new Scenario(scenarioDescription));
+                m_scenarioDescriptions.Clear();
+                m_scenarioDescriptions.Add(new Scenario(scenarioDescription));
             }
 
-            public static void PushScenario(string scenarioDescription)
+            public void PushScenario(string scenarioDescription)
             {
-                s_scenarioDescriptions.Add(new Scenario(scenarioDescription));
+                m_scenarioDescriptions.Add(new Scenario(scenarioDescription));
             }
 
-            public static void PushScenario(string scenarioDescription, int maxScenarioDepth)
+            public void PushScenario(string scenarioDescription, int maxScenarioDepth)
             {
-                while (maxScenarioDepth < s_scenarioDescriptions.Count)
+                while (maxScenarioDepth < m_scenarioDescriptions.Count)
                 {
-                    s_scenarioDescriptions.RemoveAt(s_scenarioDescriptions.Count - 1);
+                    m_scenarioDescriptions.RemoveAt(m_scenarioDescriptions.Count - 1);
                 }
-                s_scenarioDescriptions.Add(new Scenario(scenarioDescription));
+                m_scenarioDescriptions.Add(new Scenario(scenarioDescription));
             }
 
-            public static int ScenarioDepth
+            public int ScenarioDepth
             {
                 get
                 {
-                    return s_scenarioDescriptions.Count;
+                    return m_scenarioDescriptions.Count;
                 }
             }
 
-            public static void PopScenario()
+            public void PopScenario()
             {
-                if (0 < s_scenarioDescriptions.Count)
+                if (0 < m_scenarioDescriptions.Count)
                 {
-                    s_scenarioDescriptions.RemoveAt(s_scenarioDescriptions.Count - 1);
+                    m_scenarioDescriptions.RemoveAt(m_scenarioDescriptions.Count - 1);
                 }
             }
 
-            public static void OutputDebugInfo(string debugInfo)
+            public void OutputDebugInfo(string debugInfo)
             {
                 OutputMessage(debugInfo);
             }
 
-            public static void OutputDebugInfo(string format, params object[] args)
+            public void OutputDebugInfo(string format, params object[] args)
             {
                 OutputDebugInfo(String.Format(format, args));
             }
 
-            private static void OutputMessage(string message)
+            private void OutputMessage(string message)
             {
-                if (0 < s_scenarioDescriptions.Count)
+                if (0 < m_scenarioDescriptions.Count)
                 {
-                    Scenario currentScenario = s_scenarioDescriptions[s_scenarioDescriptions.Count - 1];
+                    Scenario currentScenario = m_scenarioDescriptions[m_scenarioDescriptions.Count - 1];
 
                     if (!currentScenario.DescriptionPrinted)
                     {
-                        s_outputWriter.WriteLine();
-                        s_outputWriter.WriteLine();
-                        s_outputWriter.WriteLine("**********************************************************************");
-                        s_outputWriter.WriteLine("** {0,-64} **", "SCENARIO:");
+                        m_outputWriter.WriteLine();
+                        m_outputWriter.WriteLine();
+                        m_outputWriter.WriteLine("**********************************************************************");
+                        m_outputWriter.WriteLine("** {0,-64} **", "SCENARIO:");
 
-                        for (int i = 0; i < s_scenarioDescriptions.Count; ++i)
+                        for (int i = 0; i < m_scenarioDescriptions.Count; ++i)
                         {
-                            s_outputWriter.WriteLine(s_scenarioDescriptions[i].Description);
+                            m_outputWriter.WriteLine(m_scenarioDescriptions[i].Description);
                         }
 
-                        s_outputWriter.WriteLine("**********************************************************************");
+                        m_outputWriter.WriteLine("**********************************************************************");
                         currentScenario.DescriptionPrinted = true;
                     }
                 }
 
-                s_outputWriter.WriteLine(message);
+                m_outputWriter.WriteLine(message);
             }
 
             /// <summary>
@@ -213,19 +212,21 @@ namespace TestSupport
 #if WINCORESYS
 [System.Security.SecuritySafeCritical]
 #endif
-            public static bool Eval(bool expression, string message)
+            public bool Eval(bool expression, string message)
             {
                 if (!expression)
                 {
                     OutputMessage(message);
-                    ++s_numErrors;
+                    ++m_numErrors;
+
+                    Xunit.Assert.True(false, message);
 
                     //if(!_suppressStackOutput) {
                     //	System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace(true);
                     //	_outputWriter.WriteLine(stackTrace);
                     //}
 
-                    s_outputWriter.WriteLine();
+                    m_outputWriter.WriteLine();
                 }
 
                 return expression;
@@ -239,7 +240,7 @@ namespace TestSupport
             /// <param name="format">A String containing zero or more format items.</param>
             /// <param name="args">An Object array containing zero or more objects to format.</param>
             /// <returns>true if expression is true else false.</returns>
-            public static bool Eval(bool expression, String format, params object[] args)
+            public bool Eval(bool expression, String format, params object[] args)
             {
                 if (!expression)
                 {
@@ -259,7 +260,7 @@ namespace TestSupport
             /// <param name="errorMsg">The message to output. 
             /// Uses String.Format(errorMsg, expected, actual)</param>
             /// <returns>true if expected and actual are equal else false.</returns>
-            public static bool EvalFormatted<T>(T expected, T actual, String errorMsg)
+            public bool EvalFormatted<T>(T expected, T actual, String errorMsg)
             {
                 bool retValue = expected == null ? actual == null : expected.Equals(actual);
 
@@ -278,7 +279,7 @@ namespace TestSupport
             /// <param name="actual">The actual value.</param>
             /// <param name="errorMsg">The message to output.</param>
             /// <returns>true if expected and actual are equal else false.</returns>
-            public static bool Eval<T>(T expected, T actual, String errorMsg)
+            public bool Eval<T>(T expected, T actual, String errorMsg)
             {
                 bool retValue = expected == null ? actual == null : expected.Equals(actual);
 
@@ -290,7 +291,7 @@ namespace TestSupport
                 return true;
             }
 
-            public static bool Eval<T>(IEqualityComparer<T> comparer, T expected, T actual, String errorMsg)
+            public bool Eval<T>(IEqualityComparer<T> comparer, T expected, T actual, String errorMsg)
             {
                 bool retValue = comparer.Equals(expected, actual);
 
@@ -302,7 +303,7 @@ namespace TestSupport
                 return true;
             }
 
-            public static bool Eval<T>(IComparer<T> comparer, T expected, T actual, String errorMsg)
+            public bool Eval<T>(IComparer<T> comparer, T expected, T actual, String errorMsg)
             {
                 bool retValue = 0 == comparer.Compare(expected, actual);
 
@@ -324,7 +325,7 @@ namespace TestSupport
             /// <param name="format">A String containing zero or more format items.</param>
             /// <param name="args">An Object array containing zero or more objects to format.</param>
             /// <returns>true if expected and actual are equal else false.</returns>
-            public static bool Eval<T>(T expected, T actual, String format, params object[] args)
+            public bool Eval<T>(T expected, T actual, String format, params object[] args)
             {
                 bool retValue = expected == null ? actual == null : expected.Equals(actual);
 
@@ -341,22 +342,22 @@ namespace TestSupport
             /// </summary>
             /// <param name="test">The test testscenario to run.</param>
             /// <returns>true if the test passed else false.</returns>
-            public static bool RunTestScenario(TestScenario test)
+            public bool RunTestScenario(TestScenario test)
             {
                 bool retValue;
 
                 if (test())
                 {
-                    s_numTestcases++;
+                    m_numTestcases++;
                     retValue = true;
                 }
                 else
                 {
-                    s_numTestcaseFailures++;
+                    m_numTestcaseFailures++;
                     retValue = false;
                 }
 
-                s_outputWriter.WriteLine("");
+                m_outputWriter.WriteLine("");
                 return retValue;
             }
 
@@ -364,11 +365,11 @@ namespace TestSupport
             /// The number of failed test cases.
             /// </summary>
             /// <value>The number of failed test cases.</value>
-            public static int NumberOfFailedTestcases
+            public int NumberOfFailedTestcases
             {
                 get
                 {
-                    return s_numTestcaseFailures;
+                    return m_numTestcaseFailures;
                 }
             }
 
@@ -376,11 +377,11 @@ namespace TestSupport
             /// The number of test cases.
             /// </summary>
             /// <value>The number of test cases.</value>
-            public static int NumberOfTestcases
+            public int NumberOfTestcases
             {
                 get
                 {
-                    return s_numTestcases;
+                    return m_numTestcases;
                 }
             }
 
@@ -388,11 +389,11 @@ namespace TestSupport
             /// The number of errors.
             /// </summary>
             /// <value>The number of errors.</value>
-            public static int NumberOfErrors
+            public int NumberOfErrors
             {
                 get
                 {
-                    return s_numErrors;
+                    return m_numErrors;
                 }
             }
 
@@ -400,16 +401,16 @@ namespace TestSupport
             /// The exit code to use if the test failed.
             /// </summary>
             /// <value>The exit code to use if the test failed.</value>
-            public static int FailExitCode
+            public int FailExitCode
             {
                 get
                 {
-                    return s_failExitCode;
+                    return m_failExitCode;
                 }
                 set
                 {
-                    s_failExitCodeSet = true;
-                    s_failExitCode = value;
+                    m_failExitCodeSet = true;
+                    m_failExitCode = value;
                 }
             }
 
@@ -417,14 +418,14 @@ namespace TestSupport
             /// The exit code to use.
             /// </summary>
             /// <value></value>
-            public static int ExitCode
+            public int ExitCode
             {
                 get
                 {
                     if (Pass)
                         return PASS_EXITCODE;
 
-                    return s_failExitCode;
+                    return m_failExitCode;
                 }
             }
 
@@ -432,11 +433,11 @@ namespace TestSupport
             /// If the fail exit code was set.
             /// </summary>
             /// <value>If the fail exit code was set.</value>
-            public static bool IsFailExitCodeSet
+            public bool IsFailExitCodeSet
             {
                 get
                 {
-                    return s_failExitCodeSet;
+                    return m_failExitCodeSet;
                 }
             }
 
@@ -444,11 +445,11 @@ namespace TestSupport
             /// Returns true if all test cases passed else false.
             /// </summary>
             /// <value>If all test cases passed else false.</value>
-            public static bool Pass
+            public bool Pass
             {
                 get
                 {
-                    return 0 == s_numErrors && 0 == s_numTestcaseFailures;
+                    return 0 == m_numErrors && 0 == m_numTestcaseFailures;
                 }
             }
 
@@ -456,35 +457,35 @@ namespace TestSupport
             /// Determines if the stack is inlcluded with the output
             /// </summary>
             /// <value>False to output the stack with every failure else true to suppress the stack output</value>
-            public static bool SuppressStackOutput
+            public bool SuppressStackOutput
             {
                 get
                 {
-                    return s_suppressStackOutput;
+                    return m_suppressStackOutput;
                 }
                 set
                 {
-                    s_suppressStackOutput = value;
+                    m_suppressStackOutput = value;
                 }
             }
 
-            public static bool OutputExceptionMessages
+            public bool OutputExceptionMessages
             {
                 get
                 {
-                    return s_outputExceptionMessages;
+                    return m_outputExceptionMessages;
                 }
                 set
                 {
-                    s_outputExceptionMessages = value;
+                    m_outputExceptionMessages = value;
                 }
             }
 
-            public static System.IO.TextWriter OutputWriter
+            public System.IO.TextWriter OutputWriter
             {
                 get
                 {
-                    return s_outputWriter;
+                    return m_outputWriter;
                 }
                 set
                 {
@@ -493,7 +494,7 @@ namespace TestSupport
                         throw new ArgumentNullException("value");
                     }
 
-                    s_outputWriter = value;
+                    m_outputWriter = value;
                 }
             }
 
@@ -501,13 +502,13 @@ namespace TestSupport
             /// <summary>
             /// Resets all of the counters.
             /// </summary>
-            public static void Reset()
+            public void Reset()
             {
-                s_numErrors = 0;
-                s_numTestcaseFailures = 0;
-                s_numTestcases = 0;
-                s_failExitCodeSet = false;
-                s_failExitCode = DEFAULT_FAIL_EXITCODE;
+                m_numErrors = 0;
+                m_numTestcaseFailures = 0;
+                m_numTestcases = 0;
+                m_failExitCodeSet = false;
+                m_failExitCode = DEFAULT_FAIL_EXITCODE;
             }
 
             /// <summary>
@@ -516,7 +517,7 @@ namespace TestSupport
             /// <typeparam name="T">The type of the exception to throw.</typeparam>
             /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of type T.</param>
             /// <returns>true if exceptionGenerator through an exception of type T else false.</returns>
-            public static bool VerifyException<T>(ExceptionGenerator exceptionGenerator) where T : Exception
+            public bool VerifyException<T>(ExceptionGenerator exceptionGenerator) where T : Exception
             {
                 return VerifyException(typeof(T), exceptionGenerator);
             }
@@ -528,7 +529,7 @@ namespace TestSupport
             /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of type T.</param>
             /// <param name="message">The message to output if the verification fails.</param>
             /// <returns>true if exceptionGenerator through an exception of type T else false.</returns>
-            public static bool VerifyException<T>(ExceptionGenerator exceptionGenerator, string message) where T : Exception
+            public bool VerifyException<T>(ExceptionGenerator exceptionGenerator, string message) where T : Exception
             {
                 return VerifyException(typeof(T), exceptionGenerator, message);
             }
@@ -541,7 +542,7 @@ namespace TestSupport
             /// <param name="format">A String containing zero or more format items.</param>
             /// <param name="args">An Object array containing zero or more objects to format.</param>
             /// <returns>true if exceptionGenerator through an exception of type T else false.</returns>
-            public static bool VerifyException<T>(ExceptionGenerator exceptionGenerator, String format, params object[] args) where T : Exception
+            public bool VerifyException<T>(ExceptionGenerator exceptionGenerator, String format, params object[] args) where T : Exception
             {
                 return VerifyException(typeof(T), exceptionGenerator, String.Format(format, args));
             }
@@ -553,7 +554,7 @@ namespace TestSupport
             /// <param name="exceptionGenerator">A delegate that is expected to throw and exception of 
             /// type expectedExceptionType.</param>
             /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType else false.</returns>
-            public static bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator)
+            public bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator)
             {
                 return VerifyException(expectedExceptionType, exceptionGenerator, String.Empty);
             }
@@ -566,7 +567,7 @@ namespace TestSupport
             /// <param name="format">A String containing zero or more format items.</param>
             /// <param name="args">An Object array containing zero or more objects to format.</param>
             /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType else false.</returns>
-            public static bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator, String format, params object[] args)
+            public bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator, String format, params object[] args)
             {
                 return VerifyException(expectedExceptionType, exceptionGenerator, String.Format(format, args));
             }
@@ -579,24 +580,24 @@ namespace TestSupport
             /// type expectedExceptionType.</param>
             /// <param name="message">The message to output if the verification fails.</param>
             /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType else false.</returns>
-            public static bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator, string message)
+            public bool VerifyException(Type expectedExceptionType, ExceptionGenerator exceptionGenerator, string message)
             {
                 bool retValue = true;
 
                 try
                 {
                     exceptionGenerator();
-                    retValue &= Test.Eval(false, (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
+                    retValue &= Eval(false, (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
                         "Err_05940iedz Expected exception of the type {0} to be thrown and nothing was thrown",
                         expectedExceptionType);
                 }
                 catch (Exception exception)
                 {
-                    retValue &= Test.Eval<Type>(expectedExceptionType, exception.GetType(),
+                    retValue &= Eval<Type>(expectedExceptionType, exception.GetType(),
                         (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
                         "Err_38223oipwj Expected exception and actual exception differ.  Expected {0}, got \n{1}", expectedExceptionType, exception);
 
-                    if (retValue && s_outputExceptionMessages)
+                    if (retValue && m_outputExceptionMessages)
                     {
                         OutputDebugInfo("{0} message: {1}" + Environment.NewLine, expectedExceptionType, exception.Message);
                     }
@@ -615,7 +616,7 @@ namespace TestSupport
             /// expectedExceptionType1 or expectedExceptionType2.</param>
             /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType1 
             /// of expectedExceptionType2 else false.</returns>
-            public static bool VerifyException(Type expectedExceptionType1, Type expectedExceptionType2, ExceptionGenerator exceptionGenerator)
+            public bool VerifyException(Type expectedExceptionType1, Type expectedExceptionType2, ExceptionGenerator exceptionGenerator)
             {
                 return VerifyException(new Type[] { expectedExceptionType1, expectedExceptionType2 }, exceptionGenerator);
             }
@@ -631,18 +632,18 @@ namespace TestSupport
             /// expectedExceptionType1 or expectedExceptionType2 or expectedExceptionType3.</param>
             /// <returns>true if exceptionGenerator through an exception of type expectedExceptionType1 
             /// or expectedExceptionType2 or expectedExceptionType3 else false.</returns>
-            public static bool VerifyException(Type expectedExceptionType1, Type expectedExceptionType2,
+            public bool VerifyException(Type expectedExceptionType1, Type expectedExceptionType2,
                 Type expectedExceptionType3, ExceptionGenerator exceptionGenerator)
             {
                 return VerifyException(new Type[] { expectedExceptionType1, expectedExceptionType2, expectedExceptionType3 }, exceptionGenerator);
             }
 
-            public static bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator)
+            public bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator)
             {
                 return VerifyException(expectedExceptionTypes, exceptionGenerator, string.Empty);
             }
 
-            public static bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator, String format, params object[] args)
+            public bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator, String format, params object[] args)
             {
                 return VerifyException(expectedExceptionTypes, exceptionGenerator, String.Format(format, args));
             }
@@ -655,7 +656,7 @@ namespace TestSupport
             /// one of the types in expectedExceptionTypes.</param>
             /// <returns>true if exceptionGenerator through an exception of one of types in 
             /// expectedExceptionTypes else false.</returns>
-            public static bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator, string message)
+            public bool VerifyException(Type[] expectedExceptionTypes, ExceptionGenerator exceptionGenerator, string message)
             {
                 bool retValue = true;
                 bool exceptionNotThrown = false;
@@ -695,13 +696,13 @@ namespace TestSupport
 
                     if (exceptionNotThrown)
                     {
-                        retValue &= Test.Eval(false, (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
+                        retValue &= Eval(false, (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
                             "Err_51584ajied Expected exception of one of the following types to be thrown: {0} and nothing was thrown",
                             exceptionTypeNames.ToString());
                     }
                     else if (exceptionTypeInvalid)
                     {
-                        retValue &= Test.Eval(false, (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
+                        retValue &= Eval(false, (String.IsNullOrEmpty(message) ? String.Empty : (message + Environment.NewLine)) +
                             "Err_51584ajied Expected exception of one of the following types to be thrown: {0} and the following was thrown:\n {1}",
                             exceptionTypeNames.ToString(), exceptionInstance.ToString());
                     }
@@ -711,19 +712,19 @@ namespace TestSupport
             }
 
             [Obsolete]
-            public static bool VerifyException(ExceptionGenerator exceptionGenerator, Type expectedExceptionType)
+            public bool VerifyException(ExceptionGenerator exceptionGenerator, Type expectedExceptionType)
             {
                 bool retValue = true;
 
                 try
                 {
                     exceptionGenerator();
-                    retValue &= Test.Eval(false, "Err_05940iedz Expected exception of the type {0} to be thrown and nothing was thrown",
+                    retValue &= Eval(false, "Err_05940iedz Expected exception of the type {0} to be thrown and nothing was thrown",
                         expectedExceptionType);
                 }
                 catch (Exception exception)
                 {
-                    retValue &= Test.Eval<Type>(expectedExceptionType, exception.GetType(), "Err_38223oipwj Expected exception and actual exception differ");
+                    retValue &= Eval<Type>(expectedExceptionType, exception.GetType(), "Err_38223oipwj Expected exception and actual exception differ");
                 }
 
                 return retValue;
@@ -935,188 +936,6 @@ namespace TestSupport
                     array[i] = generateItem();
 
                 return array;
-            }
-
-            /// <summary>
-            /// Fills array with items returned from generateItem.
-            /// </summary>
-            /// <typeparam name="T"></typeparam>
-            /// <param name="array">The array to to place the items in.</param>
-            /// <param name="generateItem">Returns the items to place into the array.</param>
-            /// <returns>The array with the items in it returned from generateItem.</returns>
-            public static Array FillArray<T>(Array array, GenerateItem<T> generateItem)
-            {
-                if (array.Rank == 1)
-                {
-                    int arrayLength = array.Length;
-                    int lowerBound = array.GetLowerBound(0);
-                    for (int i = 0; i < arrayLength; ++i)
-                        array.SetValue(generateItem(), i + lowerBound);
-                }
-                else
-                {
-                    PerformAction(array, delegate (Array arrayParameter, int[] indicies) { arrayParameter.SetValue(generateItem(), indicies); });
-                }
-
-                return array;
-            }
-
-            /// <summary>
-            /// Calls arrayAction on every item in array.
-            /// </summary>
-            /// <param name="array">The array to call arrayAction for each item in array.</param>
-            /// <param name="arrayAction">The action to perform on every item in the array.</param>
-            public static void PerformAction(Array array, MultiDimArrayAction arrayAction)
-            {
-                bool retValue = true;
-                int rank = array.Rank;
-                int[] indicies = new int[rank];
-                int[] lengths = new int[rank];
-                int[] bases = new int[rank];
-                int[] lowerBounds = new int[rank];
-                int tempLength = array.Length;
-
-                for (int i = 0; i < rank; ++i)
-                {
-                    indicies[i] = -1;
-                    lengths[i] = array.GetLength(i);
-                    lowerBounds[i] = array.GetLowerBound(i);
-                }
-
-                bases[rank - 1] = lengths[rank - 1];
-                for (int i = rank - 2; 0 <= i; --i)
-                {
-                    bases[i] = lengths[i] * bases[i + 1];
-                }
-
-                for (int i = 0; i < tempLength; ++i)
-                {
-                    for (int j = 0; j < rank; ++j)
-                    {
-                        if (i % bases[j] == 0)
-                            ++indicies[j];
-                    }
-
-                    retValue = Test.Eval(array.GetValue(indicies), array.GetValue(indicies), "Err_2920ajie Expected Array index=" + i.ToString());
-                }
-            }
-
-            /// <summary>
-            /// Verifies the contents of the array.
-            /// </summary>
-            /// <param name="expectedArray">The expected items in the array.</param>
-            /// <param name="actualArray">The actual array.</param>
-            /// <returns>true if expectedArray and actualArray have the same contents.</returns>
-            public static bool VerifyArray(Array expectedArray, Array actualArray)
-            {
-                if (!Test.Eval(expectedArray.Length, actualArray.Length, "Err_458665ajeod Array Length"))
-                {
-                    return false;
-                }
-                else
-                {
-                    if (expectedArray.Rank == 1)
-                        return VerifyArray(expectedArray, actualArray, expectedArray.GetLowerBound(0), expectedArray.Length);
-                    else
-                    {
-                        bool retValue = true;
-                        int rank = expectedArray.Rank;
-                        int[] indicies = new int[rank];
-                        int[] lengths = new int[rank];
-                        int[] bases = new int[rank];
-                        int[] lowerBounds = new int[rank];
-                        int tempLength = expectedArray.Length;
-
-                        for (int i = 0; i < rank; ++i)
-                        {
-                            indicies[i] = -1;
-                            lengths[i] = expectedArray.GetLength(i);
-                            lowerBounds[i] = expectedArray.GetLowerBound(i);
-                        }
-
-                        bases[rank - 1] = lengths[rank - 1];
-                        for (int i = rank - 2; 0 <= i; --i)
-                        {
-                            bases[i] = lengths[i] * bases[i + 1];
-                        }
-
-                        for (int i = 0; i < tempLength; ++i)
-                        {
-                            for (int j = 0; j < rank; ++j)
-                            {
-                                if (i % bases[j] == 0)
-                                    ++indicies[j];
-                            }
-
-                            retValue = Test.Eval(expectedArray.GetValue(indicies), actualArray.GetValue(indicies), "Err_2920ajie Expected Array index=" + i.ToString());
-                        }
-
-                        return retValue;
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Verifies the contents of the array.
-            /// </summary>
-            /// <param name="expectedArray">The expected items in the array.</param>
-            /// <param name="actualArray">The actual array.</param>
-            /// <param name="index">The index to start verifying the items at.</param>
-            /// <param name="length">The number of item to verify</param>
-            /// <returns>true if expectedArray and actualArray have the same contents.</returns>
-            public static bool VerifyArray(Array expectedArray, Array actualArray, int index, int length)
-            {
-                bool retValue = true;
-                int tempLength;
-
-                tempLength = length + index;
-                for (int i = index; i < tempLength; ++i)
-                    retValue &= Test.Eval<object>(expectedArray.GetValue(i), actualArray.GetValue(i),
-                    "Err_1028389aiwpzbx Array index=" + i.ToString());
-
-                return retValue;
-            }
-
-            /// <summary>
-            /// Verifies the contents of the array.
-            /// </summary>
-            /// <typeparam name="T"></typeparam>
-            /// <param name="expectedArray">The expected items in the array.</param>
-            /// <param name="actualArray">The actual array.</param>
-            /// <returns>true if expectedArray and actualArray have the same contents.</returns>
-            public static bool VerifyArray<T>(T[] expectedArray, T[] actualArray)
-            {
-                if (!Test.Eval(expectedArray.Length, actualArray.Length, "Err_29289ahieadb Array Length"))
-                {
-                    return false;
-                }
-                else
-                {
-                    return VerifyArray<T>(expectedArray, actualArray, 0, expectedArray.Length);
-                }
-            }
-
-            /// <summary>
-            /// Verifies the contents of the array.
-            /// </summary>
-            /// <typeparam name="T"></typeparam>
-            /// <param name="expectedArray">The expected items in the array.</param>
-            /// <param name="actualArray">The actual array.</param>
-            /// <param name="index">The index to start verifying the items at.</param>
-            /// <param name="length">The number of item to verify</param>
-            /// <returns>true if expectedArray and actualArray have the same contents.</returns>
-            /// <summary>
-            public static bool VerifyArray<T>(T[] expectedArray, T[] actualArray, int index, int length)
-            {
-                bool retValue = true;
-                int tempLength;
-
-                tempLength = length + index;
-                for (int i = index; i < tempLength; ++i)
-                    retValue &= Test.Eval<object>(expectedArray[i], actualArray[i],
-                    "Err_55808aoped Array index=" + i.ToString());
-
-                return retValue;
             }
         }
     }

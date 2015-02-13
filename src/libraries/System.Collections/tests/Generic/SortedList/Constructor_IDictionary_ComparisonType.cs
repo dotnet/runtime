@@ -12,6 +12,13 @@ namespace SortedListCtorIDicComp
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         private CultureInfo _english = new CultureInfo("en");
         private CultureInfo _german = new CultureInfo("de");
         private CultureInfo _danish = new CultureInfo("da");
@@ -52,14 +59,14 @@ namespace SortedListCtorIDicComp
             foreach (StringComparer comparison in predefinedComparers)
             {
                 _dic = new SortedList<String, String>(idic, comparison);
-                Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-                Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-                Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+                m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+                m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+                m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
 
                 for (int i = 0; i < idic.Keys.Count; i++)
                 {
-                    Test.Eval(_dic.ContainsKey(keys[i]), String.Format("Err_234afs! key not found: {0}", keys[i]));
-                    Test.Eval(_dic.ContainsValue(values[i]), String.Format("Err_3497sg! value not found: {0}", values[i]));
+                    m_test.Eval(_dic.ContainsKey(keys[i]), String.Format("Err_234afs! key not found: {0}", keys[i]));
+                    m_test.Eval(_dic.ContainsValue(values[i]), String.Format("Err_3497sg! value not found: {0}", values[i]));
                 }
             }
 
@@ -69,47 +76,47 @@ namespace SortedListCtorIDicComp
             comparer = StringComparer.CurrentCulture;
             _dic = new SortedList<String, String>(idic, comparer);
             _dic.Add(strAE, value);
-            Test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_235rdag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
+            m_test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_235rdag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
 
             //bug #11263 in NDPWhidbey
             CultureInfo.DefaultThreadCurrentCulture = _german;
             _dic = new SortedList<String, String>(idic, StringComparer.CurrentCulture);
             _dic.Add(strAE, value);
             // 
-            Test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_23r7ag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
+            m_test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_23r7ag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
 
             //CurrentCultureIgnoreCase
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<String, String>(idic, StringComparer.CurrentCultureIgnoreCase);
             _dic.Add(straA, value);
-            Test.Eval(_dic.ContainsKey(strAa), String.Format("Err_237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+            m_test.Eval(_dic.ContainsKey(strAa), String.Format("Err_237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<String, String>(idic, StringComparer.CurrentCultureIgnoreCase);
             _dic.Add(straA, value);
-            Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+            m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
             // was for InvariantCulrureIgnoreCase
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<String, String>(idic, StringComparer.OrdinalIgnoreCase);
             _dic.Add(strI, value);
-            Test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234qf! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
+            m_test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234qf! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
 
             CultureInfo.DefaultThreadCurrentCulture = _turkish;
             _dic = new SortedList<String, String>(idic, StringComparer.OrdinalIgnoreCase);
             _dic.Add(strI, value);
-            Test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234ra7g! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
+            m_test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234ra7g! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
 
             //Ordinal - not that many meaningful test
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<String, String>(idic, StringComparer.Ordinal);
             _dic.Add(strBB, value);
-            Test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_1244sd! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
+            m_test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_1244sd! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
 
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<String, String>(idic, StringComparer.Ordinal);
             _dic.Add(strBB, value);
-            Test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_235aeg! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
+            m_test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_235aeg! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
         }
 
         public void TestParm()
@@ -122,14 +129,14 @@ namespace SortedListCtorIDicComp
             {
                 CultureInfo.DefaultThreadCurrentCulture = _english;
                 _dic = new SortedList<String, String>(dic1, StringComparer.CurrentCulture);
-                Test.Eval(false, String.Format("Err_387tsg! exception not thrown"));
+                m_test.Eval(false, String.Format("Err_387tsg! exception not thrown"));
             }
             catch (ArgumentNullException)
             {
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
             }
         }
 
@@ -141,48 +148,48 @@ namespace SortedListCtorIDicComp
             _dic = new SortedList<string, string>(originalDic, StringComparer.Ordinal);
 
             CultureInfo.DefaultThreadCurrentCulture = _english;
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsOrdinal[i], "VerifyProperSortUsedForCasedStrings1: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsOrdinal[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsOrdinal[i], "VerifyProperSortUsedForCasedStrings1: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsOrdinal[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<string, string>(originalDic, StringComparer.Ordinal);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsOrdinal[i], "VerifyProperSortUsedForCasedStrings2: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsOrdinal[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsOrdinal[i], "VerifyProperSortUsedForCasedStrings2: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsOrdinal[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<string, string>(originalDic, StringComparer.CurrentCulture);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsEnCulture[i], "VerifyProperSortUsedForCasedStrings3: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsEnCulture[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsEnCulture[i], "VerifyProperSortUsedForCasedStrings3: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsEnCulture[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<string, string>(originalDic, StringComparer.CurrentCulture);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsDaCulture[i], "VerifyProperSortUsedForCasedStrings4: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsDaCulture[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsDaCulture[i], "VerifyProperSortUsedForCasedStrings4: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsDaCulture[i] + ", but found " + _dic.Keys[i]);
             }
         }
 
@@ -195,48 +202,48 @@ namespace SortedListCtorIDicComp
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<string, string>(originalDic, StringComparer.Ordinal);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i], "VerifyProperSortUsedForNonCasedStrings1: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i], "VerifyProperSortUsedForNonCasedStrings1: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<string, string>(originalDic, StringComparer.Ordinal);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i], "VerifyProperSortUsedForNonCasedStrings2: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i], "VerifyProperSortUsedForNonCasedStrings2: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseOrdinal[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<string, string>(originalDic, StringComparer.CurrentCulture);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i], "VerifyProperSortUsedForNonCasedStrings3: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i], "VerifyProperSortUsedForNonCasedStrings3: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
             originalDic = new SortedList<string, string>(idic, originalComparer);
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<string, string>(originalDic, StringComparer.CurrentCulture);
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i], "VerifyProperSortUsedForNonCasedStrings4: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i], "VerifyProperSortUsedForNonCasedStrings4: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
@@ -246,17 +253,17 @@ namespace SortedListCtorIDicComp
             try
             {
                 _dic.Add("apple", "apple");
-                Test.Eval(false, "VerifyProperSortUsedForNonCasedStrings7: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected adding apple to IgnoreCase that contains Apple to throw ArgumentException but it did not.");
+                m_test.Eval(false, "VerifyProperSortUsedForNonCasedStrings7: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected adding apple to IgnoreCase that contains Apple to throw ArgumentException but it did not.");
             }
             catch (ArgumentException)
             {
             }
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i], "VerifyProperSortUsedForNonCasedStrings8: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i], "VerifyProperSortUsedForNonCasedStrings8: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseEnCulture[i] + ", but found " + _dic.Keys[i]);
             }
 
             CultureInfo.DefaultThreadCurrentCulture = originalCulture;
@@ -266,17 +273,17 @@ namespace SortedListCtorIDicComp
             try
             {
                 _dic.Add("apple", "apple");
-                Test.Eval(false, "VerifyProperSortUsedForNonCasedStrings9: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected adding apple to IgnoreCase that contains Apple to throw ArgumentException but it did not.");
+                m_test.Eval(false, "VerifyProperSortUsedForNonCasedStrings9: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected adding apple to IgnoreCase that contains Apple to throw ArgumentException but it did not.");
             }
             catch (ArgumentException)
             {
             }
-            Test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == idic.Count, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == idic.Count, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == idic.Count, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             for (int i = 0; i < idic.Keys.Count; i++)
             {
-                Test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i], "VerifyProperSortUsedForNonCasedStrings10: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i] + ", but found " + _dic.Keys[i]);
+                m_test.Eval(_dic.Keys[i] == Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i], "VerifyProperSortUsedForNonCasedStrings10: OriginalCulture/StringComparer" + originalCulture + "/" + originalComparer + "Expected key " + i + " to be " + Constructor_IDictionary_StringComparer.stringsNoCaseDaCulture[i] + ", but found " + _dic.Keys[i]);
             }
         }
     }
@@ -303,11 +310,13 @@ namespace SortedListCtorIDicComp
         {
             //This mostly follows the format established by the original author of these tests
 
-            Driver<String, String> driver1 = new Driver<String, String>();
-            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>();
-            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>();
-            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>();
+            Test test = new Test();
+
+            Driver<String, String> driver1 = new Driver<String, String>(test);
+            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>(test);
+            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
 
             SimpleRef<int>[] simpleInts;
             SimpleRef<String>[] simpleStrings;
@@ -451,7 +460,7 @@ namespace SortedListCtorIDicComp
             driver1.VerifyProperSortUsedForNonCasedStrings(justDicComparison2, StringComparer.OrdinalIgnoreCase, s_turkish);
             driver1.VerifyProperSortUsedForNonCasedStrings(justDicComparison2, StringComparer.Ordinal, s_turkish);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
 
         private static SortedList<KeyType, ValueType> FillValues<KeyType, ValueType>(KeyType[] keys, ValueType[] values)

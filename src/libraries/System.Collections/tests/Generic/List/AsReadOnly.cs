@@ -206,7 +206,7 @@ public class VerifyReadOnlyIList<T>
 
     public static bool VerifyIList(IList<T> list, T[] items, GenerateItem<T> generateItem)
     {
-        IList_T_Test<T> genericICollectionTest = new IList_T_Test<T>(list, generateItem, items, true, true);
+        IList_T_Test<T> genericICollectionTest = new IList_T_Test<T>(new TestSupport.Common_TestSupport.Test(), list, generateItem, items, true, true);
 
         return genericICollectionTest.RunAllTests();
     }

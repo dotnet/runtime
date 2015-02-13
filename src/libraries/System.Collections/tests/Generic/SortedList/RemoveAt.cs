@@ -9,13 +9,20 @@ using SortedList_SortedListUtils;
 
 public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue<S>
 {
+    private Test m_test;
+
+    public Driver(Test test)
+    {
+        m_test = test;
+    }
+
     public void BasicRemoveAt(K[] keys, V[] values)
     {
         SortedList<K, V> tbl = new SortedList<K, V>();
         try
         {
             tbl.RemoveAt(0);
-            Test.Eval(false, "BasicRemoveAt0: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException, but it did not.");
+            m_test.Eval(false, "BasicRemoveAt0: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException, but it did not.");
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -27,20 +34,20 @@ public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue
             try
             {
                 tbl.RemoveAt(i + 1);
-                Test.Eval(false, "BasicRemoveAt1: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException");
+                m_test.Eval(false, "BasicRemoveAt1: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException");
             }
             catch (ArgumentOutOfRangeException)
             {
             }
         }
-        Test.Eval(tbl.Count == keys.Length);
+        m_test.Eval(tbl.Count == keys.Length);
 
         for (int i = keys.Length - 1; i >= 0; i--)
         {
             tbl.RemoveAt(i);
-            Test.Eval(!tbl.ContainsKey(keys[i]), "BasicRemoveAt3: Expected RemoveAt to remove items but found one item still in existance: " + keys[i].publicVal);
+            m_test.Eval(!tbl.ContainsKey(keys[i]), "BasicRemoveAt3: Expected RemoveAt to remove items but found one item still in existance: " + keys[i].publicVal);
         }
-        Test.Eval(tbl.Count == 0, "BasicRemoveAt2: Expected RemoveAt to clear the sorted Dictionary, but it did not and count is still " + tbl.Count);
+        m_test.Eval(tbl.Count == 0, "BasicRemoveAt2: Expected RemoveAt to clear the sorted Dictionary, but it did not and count is still " + tbl.Count);
     }
 
     public void RemoveAtNegative(K[] keys, V[] values, V[] missingvalues)
@@ -50,12 +57,12 @@ public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue
         {
             tbl.Add(keys[i], values[i]);
         }
-        Test.Eval(tbl.Count == keys.Length);
+        m_test.Eval(tbl.Count == keys.Length);
 
         try
         {
             tbl.RemoveAt(keys.Length);
-            Test.Eval(false, "RemoveAtNegative0: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException, but it did not.");
+            m_test.Eval(false, "RemoveAtNegative0: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException, but it did not.");
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -64,7 +71,7 @@ public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue
         try
         {
             tbl.RemoveAt(-1);
-            Test.Eval(false, "RemoveAtNegative1: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException, but it did not.");
+            m_test.Eval(false, "RemoveAtNegative1: Expected trying to reference an Index with no value to generate an ArgumentOutOfRangeException, but it did not.");
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -72,7 +79,7 @@ public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue
 
         for (int i = 0; i < missingvalues.Length; i++)
         {
-            Test.Eval(tbl.IndexOfValue(missingvalues[i]) == -1, "RemoveAtNegative2: Expected IndexofValue to return -1, but it returned" + tbl.IndexOfValue(missingvalues[i]) + " for index of " + missingvalues[i].publicVal);
+            m_test.Eval(tbl.IndexOfValue(missingvalues[i]) == -1, "RemoveAtNegative2: Expected IndexofValue to return -1, but it returned" + tbl.IndexOfValue(missingvalues[i]) + " for index of " + missingvalues[i].publicVal);
         }
     }
 
@@ -87,7 +94,7 @@ public class Driver<K, V, R, S> where K : IPublicValue<R> where V : IPublicValue
         try
         {
             tbl.RemoveAt(keys.Length - 1);
-            Test.Eval(false, "AddRemoveKeyRemoveAt: Expected trying to reference an Index that has been removed to throw an exception, but it did not.");
+            m_test.Eval(false, "AddRemoveKeyRemoveAt: Expected trying to reference an Index that has been removed to throw an exception, but it did not.");
         }
         catch (ArgumentOutOfRangeException)
         {
@@ -100,7 +107,9 @@ public class RemoveAt
     [Fact]
     public static void RemoveAtMain()
     {
-        Driver<RefX1<int>, ValX1<string>, int, string> IntDriver = new Driver<RefX1<int>, ValX1<string>, int, string>();
+        Test test = new Test();
+
+        Driver<RefX1<int>, ValX1<string>, int, string> IntDriver = new Driver<RefX1<int>, ValX1<string>, int, string>(test);
         RefX1<int>[] intArr1 = new RefX1<int>[100];
         for (int i = 0; i < 100; i++)
         {
@@ -117,7 +126,7 @@ public class RemoveAt
             intArr2[i] = i + 195;
         }
 
-        Driver<ValX1<string>, RefX1<int>, string, int> StringDriver = new Driver<ValX1<string>, RefX1<int>, string, int>();
+        Driver<ValX1<string>, RefX1<int>, string, int> StringDriver = new Driver<ValX1<string>, RefX1<int>, string, int>(test);
         ValX1<string>[] stringArr1 = new ValX1<string>[100];
         for (int i = 0; i < 100; i++)
         {
@@ -187,7 +196,7 @@ public class RemoveAt
 
         StringDriver.RemoveAtNegative(stringArr1, intArr1, intArr3);
 
-        Assert.True(Test.result);
+        Assert.True(test.result);
     }
 }
 

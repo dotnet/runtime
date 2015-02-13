@@ -12,6 +12,13 @@ namespace SortedListCtorIntComp
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         private CultureInfo _english = new CultureInfo("en");
         private CultureInfo _german = new CultureInfo("de");
         private CultureInfo _danish = new CultureInfo("da");
@@ -48,9 +55,9 @@ namespace SortedListCtorIntComp
             foreach (var comparison in s_predefinedComparers)
             {
                 _dic = new SortedList<String, String>(capacity, comparison);
-                Test.Eval(_dic.Count == 0, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-                Test.Eval(_dic.Keys.Count == 0, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-                Test.Eval(_dic.Values.Count == 0, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+                m_test.Eval(_dic.Count == 0, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+                m_test.Eval(_dic.Keys.Count == 0, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+                m_test.Eval(_dic.Values.Count == 0, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             }
 
 
@@ -59,46 +66,46 @@ namespace SortedListCtorIntComp
             comparer = StringComparer.CurrentCulture;
             _dic = new SortedList<String, String>(capacity, comparer);
             _dic.Add(strAE, value);
-            Test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_235rdag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
+            m_test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_235rdag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
 
             //bug #11263 in NDPWhidbey
             CultureInfo.DefaultThreadCurrentCulture = _german;
             _dic = new SortedList<String, String>(capacity, StringComparer.CurrentCulture);
             _dic.Add(strAE, value);
-            Test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_23r7ag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
+            m_test.Eval(!_dic.ContainsKey(strUC4), String.Format("Err_23r7ag! Wrong result returned: {0}", _dic.ContainsKey(strUC4)));
 
             //CurrentCultureIgnoreCase
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<String, String>(capacity, StringComparer.CurrentCultureIgnoreCase);
             _dic.Add(straA, value);
-            Test.Eval(_dic.ContainsKey(strAa), String.Format("Err_237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+            m_test.Eval(_dic.ContainsKey(strAa), String.Format("Err_237g! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<String, String>(capacity, StringComparer.CurrentCultureIgnoreCase);
             _dic.Add(straA, value);
-            Test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
+            m_test.Eval(!_dic.ContainsKey(strAa), String.Format("Err_0723f! Wrong result returned: {0}", _dic.ContainsKey(strAa)));
 
             //InvariantCultureIgnoreCase
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<String, String>(capacity, StringComparer.OrdinalIgnoreCase);
             _dic.Add(strI, value);
-            Test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234qf! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
+            m_test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234qf! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
 
             CultureInfo.DefaultThreadCurrentCulture = _turkish;
             _dic = new SortedList<String, String>(capacity, StringComparer.OrdinalIgnoreCase);
             _dic.Add(strI, value);
-            Test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234ra7g! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
+            m_test.Eval(!_dic.ContainsKey(strTurkishUpperI), String.Format("Err_234ra7g! Wrong result returned: {0}", _dic.ContainsKey(strTurkishUpperI)));
 
             //Ordinal - not that many meaningful test
             CultureInfo.DefaultThreadCurrentCulture = _english;
             _dic = new SortedList<String, String>(capacity, StringComparer.Ordinal);
             _dic.Add(strBB, value);
-            Test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_1244sd! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
+            m_test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_1244sd! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
 
             CultureInfo.DefaultThreadCurrentCulture = _danish;
             _dic = new SortedList<String, String>(capacity, StringComparer.Ordinal);
             _dic.Add(strBB, value);
-            Test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_235aeg! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
+            m_test.Eval(!_dic.ContainsKey(strbb), String.Format("Err_235aeg! Wrong result returned: {0}", _dic.ContainsKey(strbb)));
         }
 
         public void TestParm()
@@ -114,14 +121,14 @@ namespace SortedListCtorIntComp
                 try
                 {
                     _dic = new SortedList<String, String>(negativeValues[i], comparer);
-                    Test.Eval(false, String.Format("Err_387tsg! No exception thrown"));
+                    m_test.Eval(false, String.Format("Err_387tsg! No exception thrown"));
                 }
                 catch (ArgumentOutOfRangeException)
                 {
                 }
                 catch (Exception ex)
                 {
-                    Test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
+                    m_test.Eval(false, String.Format("Err_387tsg! Wrong exception thrown: {0}", ex));
                 }
             }
         }
@@ -131,11 +138,11 @@ namespace SortedListCtorIntComp
             SortedList<KeyType, ValueType> _dic;
             IComparer<KeyType> comparer = new MyOwnIKeyImplementation<KeyType>();
             _dic = new SortedList<KeyType, ValueType>(capacity, comparer);
-            Test.Eval(_dic.Count == 0, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
-            Test.Eval(_dic.Keys.Count == 0, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
-            Test.Eval(_dic.Values.Count == 0, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
+            m_test.Eval(_dic.Count == 0, String.Format("Err_23497sg! Count different: {0}", _dic.Count));
+            m_test.Eval(_dic.Keys.Count == 0, String.Format("Err_25ag! Count different: {0}", _dic.Keys.Count));
+            m_test.Eval(_dic.Values.Count == 0, String.Format("Err_23agd! Count different: {0}", _dic.Values.Count));
             _dic.Add(key, value);
-            //Test.Eval(_dic[key].Equals(value), String.Format("Err_234e7af! Result different: {0}", _dic[key]));
+            //m_test.Eval(_dic[key].Equals(value), String.Format("Err_234e7af! Result different: {0}", _dic[key]));
         }
     }
 
@@ -146,7 +153,9 @@ namespace SortedListCtorIntComp
         {
             //This mostly follows the format established by the original author of these tests
 
-            Driver<String, String> driver1 = new Driver<String, String>();
+            Test test = new Test();
+
+            Driver<String, String> driver1 = new Driver<String, String>(test);
 
             //Scenario 1: Pass all the enum values and ensure that the behavior is correct
             int[] validCapacityValues = { 0, 1, 2, 5, 10, 16, 32, 50, 500, 5000, 10000 };
@@ -157,10 +166,10 @@ namespace SortedListCtorIntComp
             driver1.TestParm();
 
             //Scenario 3: Non-string implementations and check
-            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>();
-            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>();
-            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>();
+            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>(test);
+            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
 
             for (int i = 0; i < validCapacityValues.Length; i++)
             {
@@ -171,7 +180,7 @@ namespace SortedListCtorIntComp
                 driver5.NonStringImplementation(validCapacityValues[i], new SimpleRef<string>("1"), new SimpleRef<string>("1"));
             }
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 

@@ -10,12 +10,19 @@ namespace SortedListCount
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void TestVanilla(KeyType[] keys, ValueType[] values)
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
-            Test.Eval(keys.Length == _dic.Count, String.Format("Err_234897agf! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
+            m_test.Eval(keys.Length == _dic.Count, String.Format("Err_234897agf! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
         }
 
         public void TestAddClear(KeyType[] keys, ValueType[] values)
@@ -23,12 +30,12 @@ namespace SortedListCount
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
-            Test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
+            m_test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
             _dic.Clear();
-            Test.Eval(_dic.Count == 0, String.Format("Err_234ag! wrong value returned, {0}, expected: {1}", 0, _dic.Count));
+            m_test.Eval(_dic.Count == 0, String.Format("Err_234ag! wrong value returned, {0}, expected: {1}", 0, _dic.Count));
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
-            Test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
+            m_test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
         }
 
 
@@ -37,23 +44,23 @@ namespace SortedListCount
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
-            Test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
+            m_test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
 
             for (int i = 0; i < keys.Length / 2; i++)
                 _dic.Remove(keys[i]);
-            Test.Eval((keys.Length - keys.Length / 2) == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", (keys.Length - keys.Length / 2), _dic.Count));
+            m_test.Eval((keys.Length - keys.Length / 2) == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", (keys.Length - keys.Length / 2), _dic.Count));
 
             for (int i = 0; i < keys.Length / 2; i++)
                 _dic.Add(keys[i], values[i]);
-            Test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
+            m_test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
 
             for (int i = 0; i < keys.Length; i++)
                 _dic.Remove(keys[i]);
-            Test.Eval(0 == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", 0, _dic.Count));
+            m_test.Eval(0 == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", 0, _dic.Count));
 
             for (int i = 0; i < keys.Length; i++)
                 _dic.Add(keys[i], values[i]);
-            Test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
+            m_test.Eval(keys.Length == _dic.Count, String.Format("Err_234af! wrong value returned, {0}, expected: {1}", keys.Length, _dic.Count));
         }
     }
 
@@ -65,11 +72,13 @@ namespace SortedListCount
             //This mostly follows the format established by the original author of these tests
             //Also this property is tested elsewhere in most of the other test cases
 
-            Driver<int, int> driver1 = new Driver<int, int>();
-            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>();
-            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>();
-            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>();
+            Test test = new Test();
+
+            Driver<int, int> driver1 = new Driver<int, int>(test);
+            Driver<SimpleRef<int>, SimpleRef<String>> driver2 = new Driver<SimpleRef<int>, SimpleRef<String>>(test);
+            Driver<SimpleRef<String>, SimpleRef<int>> driver3 = new Driver<SimpleRef<String>, SimpleRef<int>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> driver4 = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> driver5 = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
 
             //Scenario 1: Vanilla - Add 10 values and check that count is correct
 
@@ -121,7 +130,7 @@ namespace SortedListCount
             driver4.TestAddRemove(simpleInts, simpleInts);
             driver5.TestAddRemove(simpleStrings, simpleStrings);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

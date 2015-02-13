@@ -11,6 +11,13 @@ namespace SortedListTryGetValue
 {
     public class Driver<KeyType, ValueType>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void TestVanilla(KeyType[] keys, ValueType[] values)
         {
             SortedList<KeyType, ValueType> _dic = new SortedList<KeyType, ValueType>();
@@ -20,8 +27,8 @@ namespace SortedListTryGetValue
                 _dic.Add(keys[i], values[i]);
             for (int i = 0; i < keys.Length; i++)
             {
-                Test.Eval(_dic.TryGetValue(keys[i], out item), "Err_20727ahpba!! Expected TryGetValue to return true");
-                Test.Eval(item.Equals(values[i]), String.Format("Err_3497gs! Wrong value returned expected={0} actua={1}", values[i], item));
+                m_test.Eval(_dic.TryGetValue(keys[i], out item), "Err_20727ahpba!! Expected TryGetValue to return true");
+                m_test.Eval(item.Equals(values[i]), String.Format("Err_3497gs! Wrong value returned expected={0} actua={1}", values[i], item));
             }
         }
 
@@ -36,8 +43,8 @@ namespace SortedListTryGetValue
                 _dic.Add(keys[i], values[i]);
             for (int i = 0; i < nonExistentKeys.Length; i++)
             {
-                Test.Eval(!_dic.TryGetValue(nonExistentKeys[i], out item), "Err_8027qhapb!!! Expected TryGetValue to return false");
-                Test.Eval((defaultItem == null && item == null) || (null != item && item.Equals(defaultItem)), String.Format("Err_3707washpb!!! Expected value not to be modifed expected={0} actual={1}", origItem, item));
+                m_test.Eval(!_dic.TryGetValue(nonExistentKeys[i], out item), "Err_8027qhapb!!! Expected TryGetValue to return false");
+                m_test.Eval((defaultItem == null && item == null) || (null != item && item.Equals(defaultItem)), String.Format("Err_3707washpb!!! Expected value not to be modifed expected={0} actual={1}", origItem, item));
             }
         }
 
@@ -50,15 +57,15 @@ namespace SortedListTryGetValue
             try
             {
                 _dic.TryGetValue(key, out item);
-                Test.Eval(false, "Err_23raf! Exception not thrown");
+                m_test.Eval(false, "Err_23raf! Exception not thrown");
             }
             catch (ArgumentNullException)
             {
-                Test.Eval((origItem == null && item == null) || (null != origItem && item.Equals(origItem)), String.Format("Err_709809ahpba!!! Expected value not to be modifed expected={0} actual={1}", origItem, item));
+                m_test.Eval((origItem == null && item == null) || (null != origItem && item.Equals(origItem)), String.Format("Err_709809ahpba!!! Expected value not to be modifed expected={0} actual={1}", origItem, item));
             }
             catch (Exception ex)
             {
-                Test.Eval(false, String.Format("Err_7072ahpba! Wrong exception thrown: {0}", ex));
+                m_test.Eval(false, String.Format("Err_7072ahpba! Wrong exception thrown: {0}", ex));
             }
         }
     }
@@ -70,11 +77,13 @@ namespace SortedListTryGetValue
         {
             //This mostly follows the format established by the original author of these tests
 
+            Test test = new Test();
+
             //Scenario 1: Vanilla - check that existing values can be accessed via the key
 
-            Driver<int, int> IntDriver = new Driver<int, int>();
-            Driver<SimpleRef<String>, SimpleRef<String>> simpleRef = new Driver<SimpleRef<String>, SimpleRef<String>>();
-            Driver<SimpleRef<int>, SimpleRef<int>> simpleVal = new Driver<SimpleRef<int>, SimpleRef<int>>();
+            Driver<int, int> IntDriver = new Driver<int, int>(test);
+            Driver<SimpleRef<String>, SimpleRef<String>> simpleRef = new Driver<SimpleRef<String>, SimpleRef<String>>(test);
+            Driver<SimpleRef<int>, SimpleRef<int>> simpleVal = new Driver<SimpleRef<int>, SimpleRef<int>>(test);
 
             SimpleRef<int>[] simpleInts;
             SimpleRef<String>[] simpleStrings;
@@ -140,7 +149,7 @@ namespace SortedListTryGetValue
             simpleRef.TestParm(new SimpleRef<String>[0], new SimpleRef<String>[0], null);
             simpleVal.TestParm(new SimpleRef<int>[0], new SimpleRef<int>[0], null);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
     }
 }

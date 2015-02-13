@@ -11,6 +11,13 @@ namespace SortedListTrim
 {
     public class Driver<K, V>
     {
+        private Test m_test;
+
+        public Driver(Test test)
+        {
+            m_test = test;
+        }
+
         public void DefaultCtor(K[] keys, V[] values, bool expectResize)
         {
             SortedList<K, V> collection = new SortedList<K, V>();
@@ -25,7 +32,7 @@ namespace SortedListTrim
                 collection.Add(existingKeys[i], existingValues[i]);
             }
 
-            Test.Eval(Verify(collection, existingKeys, existingValues, newKeys, newValues, expectResize), "Err_025891anhoy Verify with default ctor FAILD");
+            m_test.Eval(Verify(collection, existingKeys, existingValues, newKeys, newValues, expectResize), "Err_025891anhoy Verify with default ctor FAILD");
         }
 
         public void InitialSizeCtor(K[] keys, V[] values, int initialSize, bool expectResize)
@@ -42,14 +49,14 @@ namespace SortedListTrim
                 collection.Add(existingKeys[i], existingValues[i]);
             }
 
-            Test.Eval(Verify(collection, existingKeys, existingValues, newKeys, newValues, expectResize), "Err_58949ajhba Verify with intial capacity ctor FAILD");
+            m_test.Eval(Verify(collection, existingKeys, existingValues, newKeys, newValues, expectResize), "Err_58949ajhba Verify with intial capacity ctor FAILD");
         }
 
         public void EmptySortedList(K[] keys, V[] values, bool expectResize)
         {
             SortedList<K, V> collection = new SortedList<K, V>();
 
-            Test.Eval(Verify(collection, new K[0], new V[0], keys, values, expectResize), "Err_45648ahpba Verify with empty SortedList FAILD");
+            m_test.Eval(Verify(collection, new K[0], new V[0], keys, values, expectResize), "Err_45648ahpba Verify with empty SortedList FAILD");
         }
 
 
@@ -78,7 +85,7 @@ namespace SortedListTrim
                 collection.Remove(newKeys[i]);
             }
 
-            Test.Eval(Verify(collection, existingKeys, existingValues, newKeys, newValues, expectResize), "Err_70712bas Add then Remove some of the items Test FAILED");
+            m_test.Eval(Verify(collection, existingKeys, existingValues, newKeys, newValues, expectResize), "Err_70712bas Add then Remove some of the items Test FAILED");
         }
 
         public void AddRemoveAll(K[] keys, V[] values, bool expectResize)
@@ -95,7 +102,7 @@ namespace SortedListTrim
                 collection.RemoveAt(0);
             }
 
-            Test.Eval(Verify(collection, new K[0], new V[0], keys, values, expectResize), "Err_56498ahpba Add then Remove all of the items Test FAILED");
+            m_test.Eval(Verify(collection, new K[0], new V[0], keys, values, expectResize), "Err_56498ahpba Add then Remove all of the items Test FAILED");
         }
 
         public void AddClear(K[] keys, V[] values, bool expectResize)
@@ -109,7 +116,7 @@ namespace SortedListTrim
 
             collection.Clear();
 
-            Test.Eval(Verify(collection, new K[0], new V[0], keys, values, expectResize), "Err_46598ahpas Add then Clear Test FAILED");
+            m_test.Eval(Verify(collection, new K[0], new V[0], keys, values, expectResize), "Err_46598ahpas Add then Clear Test FAILED");
         }
 
 
@@ -119,12 +126,12 @@ namespace SortedListTrim
             int expectedCapacity = expectResize ? originalKeys.Length : GetCapacity(collection);
 
 
-            retValue &= Test.Eval(originalKeys.Length == collection.Count, "Err_238897ahpba Expected s.Length=" + originalKeys.Length + " actual=" + collection.Count);
+            retValue &= m_test.Eval(originalKeys.Length == collection.Count, "Err_238897ahpba Expected s.Length=" + originalKeys.Length + " actual=" + collection.Count);
             collection.TrimExcess();
             collection.TrimExcess();
             collection.TrimExcess();
-            retValue &= Test.Eval(originalKeys.Length == collection.Count, "Err_77107ahbpa Expected s.Length=" + originalKeys.Length + " actual=" + collection.Count);
-            retValue &= Test.Eval(expectedCapacity == GetCapacity(collection), "Err_9649ahpba Expected capacity=" + originalKeys.Length + " actual=" + GetCapacity(collection));
+            retValue &= m_test.Eval(originalKeys.Length == collection.Count, "Err_77107ahbpa Expected s.Length=" + originalKeys.Length + " actual=" + collection.Count);
+            retValue &= m_test.Eval(expectedCapacity == GetCapacity(collection), "Err_9649ahpba Expected capacity=" + originalKeys.Length + " actual=" + GetCapacity(collection));
 
             for (int i = 0; i < newKeys.Length; ++i)
             {
@@ -138,7 +145,7 @@ namespace SortedListTrim
 
             for (int i = 0; i < originalKeys.Length; ++i)
             {
-                retValue &= Test.Eval(originalValues[i].Equals(collection[originalKeys[i]]), "Err_70171ahpba Expected s.Remove=" + originalValues[i] + " actual=" + collection[originalKeys[i]]);
+                retValue &= m_test.Eval(originalValues[i].Equals(collection[originalKeys[i]]), "Err_70171ahpba Expected s.Remove=" + originalValues[i] + " actual=" + collection[originalKeys[i]]);
             }
 
             for (int i = 0; i < originalKeys.Length; ++i)
@@ -149,7 +156,7 @@ namespace SortedListTrim
             collection.TrimExcess();
             collection.TrimExcess();
             collection.TrimExcess();
-            retValue &= Test.Eval(0 == collection.Count, "Err_887894ahpba Expected q.Length=" + 0 + " actual=" + collection.Count);
+            retValue &= m_test.Eval(0 == collection.Count, "Err_887894ahpba Expected q.Length=" + 0 + " actual=" + collection.Count);
 
             return retValue;
         }
@@ -186,7 +193,9 @@ namespace SortedListTrim
         [Fact]
         public static void TrimToSizeMain()
         {
-            Driver<int, int> IntDriver = new Driver<int, int>();
+            Test test = new Test();
+
+            Driver<int, int> IntDriver = new Driver<int, int>(test);
 
             IntDriver.DefaultCtor(GenRndIntArray(10), GenRndIntArray(10), true);
             IntDriver.InitialSizeCtor(GenRndIntArray(1000), GenRndIntArray(1000), 1000, true);
@@ -202,7 +211,7 @@ namespace SortedListTrim
             IntDriver.AddRemoveAll(GenRndIntArray(15), GenRndIntArray(15), true);
             IntDriver.AddClear(GenRndIntArray(15), GenRndIntArray(15), true);
 
-            Driver<string, string> StringDriver = new Driver<string, string>();
+            Driver<string, string> StringDriver = new Driver<string, string>(test);
             StringDriver.DefaultCtor(GenRndStrArray(10), GenRndStrArray(10), true);
             StringDriver.InitialSizeCtor(GenRndStrArray(1000), GenRndStrArray(1000), 1000, true);
             StringDriver.EmptySortedList(GenRndStrArray(10), GenRndStrArray(10), true);
@@ -217,7 +226,7 @@ namespace SortedListTrim
             StringDriver.AddRemoveAll(GenRndStrArray(15), GenRndStrArray(15), true);
             StringDriver.AddClear(GenRndStrArray(15), GenRndStrArray(15), true);
 
-            Assert.True(Test.result);
+            Assert.True(test.result);
         }
 
 
