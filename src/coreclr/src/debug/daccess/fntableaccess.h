@@ -143,10 +143,10 @@ class CheckDuplicatedStructLayouts
     CHECK_OFFSET(HeapList, mapBase);
     CHECK_OFFSET(HeapList, pHdrMap);
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
     CHECK_OFFSET(RealCodeHeader,    nUnwindInfos);
     CHECK_OFFSET(RealCodeHeader,    unwindInfos);
-#endif  // _WIN64 || _TARGET_ARM_
+#endif  // !_TARGET_X86_
 
 #ifdef DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
     CHECK_OFFSET(StubUnwindInfoHeader, pNext);

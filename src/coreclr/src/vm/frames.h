@@ -251,7 +251,7 @@ FRAME_TYPE_NAME(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 FRAME_TYPE_NAME(DynamicHelperFrame)
 #endif
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
 FRAME_TYPE_NAME(StubHelperFrame)
 #endif
 FRAME_TYPE_NAME(GCFrame)
