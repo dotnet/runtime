@@ -861,7 +861,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	if (disabled)
 		return;
 
-	if (cfg->num_bblocks < (1 << (32 - BB_ID_SHIFT)))
+	if (cfg->num_bblocks >= (1 << (32 - BB_ID_SHIFT)))
 		/* Ranges would overflow */
 		return;
 
