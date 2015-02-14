@@ -1377,7 +1377,10 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                 }
                 else
                 {
-                    TempInt = NativeVsnprintf(pthrCurrent, TempSprintfStr, TEMP_COUNT, TempBuff, ap);
+                    va_list apcopy;
+
+                    va_copy(apcopy, ap);
+                    TempInt = NativeVsnprintf(pthrCurrent, TempSprintfStr, TEMP_COUNT, TempBuff, apcopy);
 
                     if (TempInt < 0 || static_cast<size_t>(TempInt) >= TEMP_COUNT)
                     {
@@ -1391,10 +1394,13 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                         }
                         
                         TempSprintfStr = TempSprintfStrPtr;
-                        NativeVsnprintf(pthrCurrent, TempSprintfStr, TempInt, TempBuff, ap);
+                        va_end(apcopy);
+                        va_copy(apcopy, ap);
+                        NativeVsnprintf(pthrCurrent, TempSprintfStr, TempInt, TempBuff, apcopy);
                     }
                     
-                    PAL_printf_arg_remover((va_list *)&ap, Precision, Type, Prefix);
+                    va_copy(ap, apcopy);
+                    va_end(apcopy);
                 }
 
                 mbtowcResult = MultiByteToWideChar(CP_ACP, 0,
@@ -1706,7 +1712,6 @@ int CoreVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Fo
                 else
                 {
                      TempInt = NativeVsnprintf(pthrCurrent, BufferPtr, TempCount, TempBuff, ap);
-                     PAL_printf_arg_remover((va_list *)&ap, Precision, Type, Prefix);
                 }
 
                 if (TempInt < 0 || static_cast<size_t>(TempInt) >= TempCount) /* buffer not long enough */
@@ -1969,7 +1974,6 @@ int CoreWvsnprintf(CPalThread *pthrCurrent, LPWSTR Buffer, size_t Count, LPCWSTR
                 else
                 {
                     TempInt = NativeVsnprintf(pthrCurrent, (LPSTR) BufferPtr, TempCount, TempBuff, ap);
-                    PAL_printf_arg_remover((va_list *)&ap, Precision, Type, Prefix);
                 }
 
                 if (TempInt == 0)
@@ -2305,7 +2309,6 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                 else
                 {
                     TempInt = NativeVfprintf(pthrCurrent, stream->bsdFilePtr, TempBuff, ap);
-                    PAL_printf_arg_remover((va_list *)&ap, Precision, Type, Prefix);
                 }
 
                 if (-1 == TempInt)
