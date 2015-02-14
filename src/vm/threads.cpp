@@ -8180,16 +8180,16 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
 
     ::FillRegDisplay(pRD, pctx);
 
-#if defined(DEBUG_REGDISPLAY) && (defined(_WIN64) || defined(_TARGET_ARM_))
+#if defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);
     pRD->_pThread = this;
 
     CheckRegDisplaySP(pRD);
-#endif // defined(DEBUG_REGDISPLAY) && (defined(_WIN64) || defined(_TARGET_ARM_))
+#endif // defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
 }
 
 
-#if defined(DEBUG_REGDISPLAY) && (defined(_WIN64) || defined(_TARGET_ARM_))
+#if defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
 
 void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
@@ -8200,7 +8200,7 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
     }
 }
 
-#endif // defined(DEBUG_REGDISPLAY) && (defined(_WIN64) || defined(_TARGET_ARM_))
+#endif // defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
 
 //                      Trip Functions
 //                      ==============
