@@ -2925,9 +2925,9 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
 
-#if !defined(_TARGET_X86_)
+#if defined(_TARGET_X86_)
     pvReferenceSP = GetRegdisplaySP(m_crawl.pRD);
-#else  // !_TARGET_X86_
+#else // _TARGET_X86_
     // Order the Frames relative to the caller SP of the methods
     // this makes it so that any Frame that is in a managed call
     // frame will be reported before its containing method.
@@ -2935,7 +2935,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
     EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry(), &m_cachedCodeInfo);
     pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
-#endif // !_TARGET_X86_
+#endif // _TARGET_X86_
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) && 
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
