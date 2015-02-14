@@ -2505,6 +2505,7 @@ CorUnix::InternalSetEndOfFile(
     // extend the file to consume the remainder of free space.
     // 
     struct statfs sFileSystemStats;
+    off_t cbFreeSpace;
     if (fstatfs(pLocalData->unix_fd, &sFileSystemStats) != 0)
     {
         ERROR("fstatfs failed\n");
@@ -2513,7 +2514,7 @@ CorUnix::InternalSetEndOfFile(
     } 
 
     // Free space is free blocks times the size of each block in bytes.
-    off_t cbFreeSpace = (off_t)sFileSystemStats.f_bavail * (off_t)sFileSystemStats.f_bsize;
+    cbFreeSpace = (off_t)sFileSystemStats.f_bavail * (off_t)sFileSystemStats.f_bsize;
 
     if (curr > cbFreeSpace)
     {
