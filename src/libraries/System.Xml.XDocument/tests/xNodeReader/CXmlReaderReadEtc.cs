@@ -5,6 +5,7 @@ using System;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.Test.ModuleCore;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
@@ -316,20 +317,6 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(DataReader.ReadInnerXml(), String.Empty, Variation.Desc);
                 }
 
-                //[Variation("ReadInnerXml on DocumentType attributes")]
-                public void TestTextReadInnerXml17()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
-                    try
-                    {
-                        DataReader.MoveToAttribute(DataReader.AttributeCount / 2);
-                        throw new TestException(TestResult.Failed, "");
-                    }
-                    catch (ArgumentOutOfRangeException) { }
-                    TestLog.Compare(DataReader.ReadInnerXml(), String.Empty, "inner");
-                }
-
                 //[Variation("One large element")]
                 public void TestTextReadInnerXml18()
                 {
@@ -363,15 +350,6 @@ namespace CoreXml.Test.XLinq
                 public void TestMoveToContent1()
                 {
                     XmlReader DataReader = GetReader();
-                    TestLog.Compare(DataReader.MoveToContent(), XmlNodeType.Element, Variation.Desc);
-                    TestLog.Compare(DataReader.Name, "PLAY", Variation.Desc);
-                }
-
-                //[Variation("MoveToContent on Skip DocumentType")]
-                public void TestMoveToContent1x()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
                     TestLog.Compare(DataReader.MoveToContent(), XmlNodeType.Element, Variation.Desc);
                     TestLog.Compare(DataReader.Name, "PLAY", Variation.Desc);
                 }
@@ -580,15 +558,6 @@ namespace CoreXml.Test.XLinq
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Comment);
-                    TestLog.Compare(DataReader.IsStartElement(), true, Variation.Desc);
-                    TestLog.Compare(DataReader.NodeType, XmlNodeType.Element, Variation.Desc);
-                }
-
-                //[Variation("IsStartElement on DocumentType")]
-                public void TestIsStartElement14()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
                     TestLog.Compare(DataReader.IsStartElement(), true, Variation.Desc);
                     TestLog.Compare(DataReader.NodeType, XmlNodeType.Element, Variation.Desc);
                 }
@@ -873,25 +842,27 @@ namespace CoreXml.Test.XLinq
                 private const String ST_TEST_ELEM_NS = "NAMESPACE1";
                 private const String ST_TEST_EMPTY_ELEM_NS = "EMPTY_NAMESPACE1";
 
-                //[Variation("ReadEndElement() on EndElement, no namespace", Priority = 0)]
-                public void TestReadEndElement1()
+                [Fact]
+                [ActiveIssue(641)]
+                public void TestReadEndElementOnEndElementWithoutNamespace()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, "NONAMESPACE");
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
                     DataReader.ReadEndElement();
-                    VerifyNode(DataReader, XmlNodeType.EndElement, "NONAMESPACE", String.Empty);
+                    Assert.True(VerifyNode(DataReader, XmlNodeType.EndElement, "NONAMESPACE", String.Empty));
                 }
 
-                //[Variation("ReadEndElement() on EndElement, with namespace", Priority = 0)]
-                public void TestReadEndElement2()
+                [Fact]
+                [ActiveIssue(641)]
+                public void TestReadEndElementOnEndElementWithNamespace()
                 {
                     XmlReader DataReader = GetReader();
                     PositionOnElement(DataReader, ST_TEST_ELEM_NS);
                     PositionOnElement(DataReader, "bar:check");
                     PositionOnNodeType(DataReader, XmlNodeType.EndElement);
                     DataReader.ReadEndElement();
-                    VerifyNode(DataReader, XmlNodeType.EndElement, "bar:check", String.Empty);
+                    Assert.True(VerifyNode(DataReader, XmlNodeType.EndElement, "bar:check", String.Empty));
                 }
 
                 //[Variation("ReadEndElement on Start Element, no namespace")]
@@ -1023,22 +994,6 @@ namespace CoreXml.Test.XLinq
                     throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation("ReadEndElement on DocumentType")]
-                public void TestReadEndElement12()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
-                    try
-                    {
-                        DataReader.ReadEndElement();
-                    }
-                    catch (XmlException)
-                    {
-                        return;
-                    }
-                    throw new TestException(TestResult.Failed, "");
-                }
-
                 //[Variation("ReadEndElement on XmlDeclaration")]
                 public void TestReadEndElement13()
                 {
@@ -1106,16 +1061,6 @@ namespace CoreXml.Test.XLinq
                     PositionOnElement(DataReader, "elem2");
                     TestLog.Compare(!DataReader.MoveToElement(), "MTE on elem2 failed");
                     TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, "elem2", String.Empty), "MTE moved on wrong node");
-                }
-
-                //[Variation("Doctype node")]
-                public void v4()
-                {
-                    XmlReader DataReader = GetReader();
-
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
-                    TestLog.Compare(!DataReader.MoveToElement(), "MTE on doctype failed");
-                    TestLog.Compare(DataReader.NodeType, XmlNodeType.DocumentType, "doctype");
                 }
 
                 //[Variation("Comment node")]
