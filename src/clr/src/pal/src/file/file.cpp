@@ -743,29 +743,6 @@ CorUnix::InternalCreateFile(
             palError = ERROR_INTERNAL_ERROR;
             goto done;
         }
-#elif HAVE_DIRECTIO
-#if !DIRECTIO_DISABLED
-        /* Use of directio is currently disabled on Solaris because
-           this feature doesn't seem to be stable enough on this platform:
-           - directio works on ufs and nfs file systems, but it fails on tmpfs;
-           - on nfs it is not possible to mmap a file if direct I/O is enabled on it;
-           - directio is a per-file persistent suggestion and there is no a real way 
-             to probe it, other than turning it on or off;
-           - the performance impact of blindly turning off directio for each mmap 
-             is roughly 15%;
-           - directio is documented on recent official docs (April 2003) to cause data 
-             corruption, system hangs, or panics when used concurrently with mmap 
-             on clusters.
-           As result on Solaris we currently ignore FILE_FLAG_NO_BUFFERING
-        */
-        if (directio(filed, DIRECTIO_ON) == -1)
-        {
-            ASSERT("Can't set DIRECTIO_ON; directio() failed. errno is %d (%s)\n",
-               errno, strerror(errno));
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-#endif // !DIRECTIO_DISABLED
 #else
 #error Insufficient support for uncached I/O on this platform
 #endif
