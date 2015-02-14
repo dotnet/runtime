@@ -100,7 +100,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name);
 extern void PROCDumpThreadList(void);
 #endif
 
-char g_ExePath[MAX_PATH];
+char g_ExePath[MAX_PATH] = { 0 };
 
 #if defined(__APPLE__)
 static bool RunningNatively()
