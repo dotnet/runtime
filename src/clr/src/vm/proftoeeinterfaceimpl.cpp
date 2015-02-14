@@ -9379,64 +9379,6 @@ FCIMPL2(void, ProfilingFCallHelper::FC_RemotingServerSendingReply, GUID *pId, CL
 }
 FCIMPLEND
 
-//
-// Define wrapper functions for rotor.
-//
-// NOTE: These do not currently implement correctly passing the platform
-// specific handle.  The Rotor people need to implement these correctly if
-// they care to support getting arguments, return value, and generic information.
-//
-#if !defined(_TARGET_X86_) && !defined(_WIN64) && !defined(_TARGET_ARM_) && defined(PROFILING_SUPPORTED)
-
-FCIMPL1(EXTERN_C void, ProfileEnterWrapper, FunctionIDOrClientID functionIDOrClientID)
-{
-    FCALL_CONTRACT;
-
-    //
-    // Create some empty buffer space for the platformSpecificHandle
-    //
-    BYTE buffer[60] = {0};
-
-    PORTABILITY_ASSERT("ProfileEnterWrapper not implemented");
-    REMOVE_STACK_GUARD_FOR_PROFILER_CALL;
-    ProfileEnter(functionIDOrClientID.clientID, &buffer);
-}
-FCIMPLEND
-
-FCIMPL1(EXTERN_C void, ProfileLeaveWrapper, FunctionIDOrClientID functionIDOrClientID)
-{
-    FCALL_CONTRACT;
-
-    //
-    // Create some empty buffer space for the platformSpecificHandle
-    //
-    BYTE buffer[60] = {0};
-
-    PORTABILITY_ASSERT("ProfileLeaveWrapper not implemented");
-
-    REMOVE_STACK_GUARD_FOR_PROFILER_CALL;
-    ProfileLeave(functionIDOrClientID.clientID, &buffer);
-}
-FCIMPLEND
-
-FCIMPL1(EXTERN_C void, ProfileTailcallWrapper, FunctionIDOrClientID functionIDOrClientID)
-{
-    FCALL_CONTRACT;
-
-    //
-    // Create some empty buffer space for the platformSpecificHandle
-    //
-    BYTE buffer[60] = {0};
-
-    PORTABILITY_ASSERT("ProfileTailcallWrapper not implemented");
-
-    REMOVE_STACK_GUARD_FOR_PROFILER_CALL;
-    ProfileTailcall(functionIDOrClientID.clientID, &buffer);
-}
-FCIMPLEND
-
-#endif
-
 
 //*******************************************************************************************
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
