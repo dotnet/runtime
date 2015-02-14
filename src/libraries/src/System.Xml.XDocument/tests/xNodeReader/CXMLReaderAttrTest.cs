@@ -1353,27 +1353,6 @@ namespace CoreXml.Test.XLinq
                 }
             }
 
-            public partial class TCAttributeDocType : BridgeHelpers
-            {
-                //[Variation("AttributeCount and HasAttributes", Priority = 0)]
-                public void TADocType_1()
-                {
-                    XmlReader DataReader = GetReader();
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
-                    TestLog.Compare(DataReader.AttributeCount, 0, "Checking AttributeCount");
-                    TestLog.Compare(DataReader.HasAttributes, false, "Checking HasAttributes");
-                }
-
-                //[Variation("HasValue and Value on DocumentType")]
-                public void TADocType_2()
-                {
-                    XmlReader DataReader = GetReader(new StringReader("<!DOCTYPE dt [<!ENTITY e 'eee'>]><ROOT/>"));
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
-                    TestLog.Compare(DataReader.HasValue, true, "HasValue");
-                    TestLog.Compare(DataReader.Value, "<!ENTITY e 'eee'>", "Value");
-                }
-            }
-
             //[TestCase(Name = "ReadURI", Desc = "Read URI")]
             public partial class TATextReaderDocType : BridgeHelpers
             {

@@ -4,6 +4,7 @@
 using System;
 using System.Xml;
 using Microsoft.Test.ModuleCore;
+using Xunit;
 
 namespace CoreXml.Test.XLinq
 {
@@ -206,8 +207,9 @@ namespace CoreXml.Test.XLinq
                     TestOuterOnNodeType(XmlNodeType.CDATA);
                 }
 
-                //[Variation("ReadOuterXml on XmlDeclaration attributes")]
-                public void ReadOuterXml25()
+                [Fact]
+                [ActiveIssue(641)]
+                public void ReadOuterXmlOnXmlDeclarationAttributes()
                 {
                     XmlReader DataReader = GetReader();//GetReader(pGenericXml);
                     DataReader.Read();
@@ -217,24 +219,8 @@ namespace CoreXml.Test.XLinq
                         throw new TestException(TestResult.Failed, "");
                     }
                     catch (ArgumentOutOfRangeException) { }
-                    TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Attribute, String.Empty, "UTF-8"), false, "vn");
-                }
-
-                //[Variation("ReadOuterXml on DocumentType attributes")]
-                public void ReadOuterXml26()
-                {
-                    XmlReader DataReader = GetReader();//GetReader(pGenericXml);
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
-                    try
-                    {
-                        DataReader.MoveToAttribute(DataReader.AttributeCount / 2);
-                        throw new TestException(TestResult.Failed, "");
-                    }
-                    catch (ArgumentOutOfRangeException) { }
-
-                    TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer");
-                    TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Attribute, "SYSTEM", String.Empty), false, "vn");
+                    Assert.True(TestLog.Compare(DataReader.ReadOuterXml(), String.Empty, "outer"));
+                    Assert.True(TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Attribute, String.Empty, "UTF-8"), false, "vn"));
                 }
 
                 //[Variation("ReadOuterXml on element with entities, EntityHandling = ExpandCharEntities")]
