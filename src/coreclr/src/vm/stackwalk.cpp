@@ -1673,15 +1673,15 @@ ProcessFuncletsForGCReporting:
                     // When enumerating GC references for "liveness" reporting, depending upon the architecture,
                     // the reponsibility of who reports what varies:
                     // 
-                    // 1) On x86, Evanesco (ARM) and X64 (via RyuJIT) the funclet reports all references belonging to itself and its parent method.
+                    // 1) On x86, ARM and X64 (via RyuJIT) the funclet reports all references belonging to itself and its parent method.
                     // 
                     // 2) X64 (via JIT64) has the reporting distributed between the funclets and the parent method.
                     //    If some reference(s) get double reported, JIT64 can handle that by playing conservative.
                     //    
-                    // 3) On Evanesco, the reporting is done by funclets (if present). Otherwise, the primary method
+                    // 3) On ARM, the reporting is done by funclets (if present). Otherwise, the primary method
                     //    does it.
                     //    
-                    // On x64 and Evanesco, the GCStackCrawlCallback is invoked with a new flag indicating that
+                    // On x64 and ARM, the GCStackCrawlCallback is invoked with a new flag indicating that
                     // the stackwalk is being done for GC reporting purposes - this flag is GC_FUNCLET_REFERENCE_REPORTING.
                     // The presence of this flag influences how stackwalker will enumerate frames, which frames will
                     // result in the callback being invoked, etc. The idea is that we want to report only the 
@@ -1689,7 +1689,7 @@ ProcessFuncletsForGCReporting:
                     // double report (even though JIT64 does it today), reporting of dead frames, and makes the
                     // design of reference reporting more consistent (and easier to understand) across architectures.
                     // 
-                    // NOTE: This flag is applicable only to X64 and Evanesco (ARM).
+                    // NOTE: This flag is applicable only to X64 and ARM.
                     // 
                     // The algorithm is as follows (at a conceptual level):
                     // 
@@ -1708,7 +1708,7 @@ ProcessFuncletsForGCReporting:
                     // 2) If another frame enumerated, goto (1). Otherwise, stackwalk is complete.
                     // 
                     // Note: When a flag is passed to the callback indicating that the funclet for a parent frame has already
-                    //       reported the references, RyuJIT (Evanesco) will simply do nothing and return from the callback.
+                    //       reported the references, RyuJIT (ARM) will simply do nothing and return from the callback.
                     //       JIT64, on the other hand, will ignore the flag and perform reporting (again), like it does today.
                     //       
                     // Note: For non-filter funcelts there is a small window during unwind where we have conceptually unwound past a
@@ -2291,7 +2291,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                 goto Cleanup;
             }
 #else // _TARGET_X86_
-            // On WIN64 and ARM, we are done handling the skipped explicit frame at this point.  So move on to the 
+            // We are done handling the skipped explicit frame at this point.  So move on to the 
             // managed stack frame.
             m_crawl.isFrameless = true;
             m_crawl.codeInfo    = m_cachedCodeInfo;
@@ -2309,7 +2309,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
 #ifdef _TARGET_X86_
         //
-        // x86 has the JIT generate try/finallys to leave monitors
+        // For non-x86 platforms, the JIT generates try/finally to leave monitors; for x86, the VM handles the monitor
         //
 #if defined(STACKWALKER_MAY_POP_FRAMES)
         if (m_flags & POPFRAMES)
