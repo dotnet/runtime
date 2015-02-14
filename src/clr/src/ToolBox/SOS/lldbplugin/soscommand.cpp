@@ -35,7 +35,6 @@ public:
                         str.append(" ");
                     }
                     const char* sosArgs = str.c_str();
-                    result.Printf("calling %s %s\n", sosCommand, sosArgs);
 
                     hr = commandFunc(client, sosArgs);
                     if (hr != S_OK)
