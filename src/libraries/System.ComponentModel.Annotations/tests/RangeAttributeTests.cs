@@ -101,25 +101,25 @@ namespace System.ComponentModel.DataAnnotations
         [Fact]
         public static void Can_validate_valid_values_for_doubles_using_type_and_strings_constructor()
         {
-            var attribute = new RangeAttribute(typeof(double), "1.0", "3.0");
+            var attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
             AssertEx.DoesNotThrow(() => attribute.Validate(null, s_testValidationContext)); // null is valid
             AssertEx.DoesNotThrow(() => attribute.Validate(string.Empty, s_testValidationContext)); // empty string is valid
             AssertEx.DoesNotThrow(() => attribute.Validate(1.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("1.0", s_testValidationContext));
+            AssertEx.DoesNotThrow(() => attribute.Validate((1.0).ToString("F1"), s_testValidationContext));
             AssertEx.DoesNotThrow(() => attribute.Validate(2.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("2.0", s_testValidationContext));
+            AssertEx.DoesNotThrow(() => attribute.Validate((2.0).ToString("F1"), s_testValidationContext));
             AssertEx.DoesNotThrow(() => attribute.Validate(3.0, s_testValidationContext));
-            AssertEx.DoesNotThrow(() => attribute.Validate("3.0", s_testValidationContext));
+            AssertEx.DoesNotThrow(() => attribute.Validate((3.0).ToString("F1"), s_testValidationContext));
         }
 
         [Fact]
         public static void Can_validate_invalid_values_for_doubles_using_type_and_strings_constructor()
         {
-            var attribute = new RangeAttribute(typeof(double), "1.0", "3.0");
+            var attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
             Assert.Throws<ValidationException>(() => attribute.Validate(0.9999999, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("0.9999999", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate((0.9999999).ToString("F7"), s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate(3.0000001, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate("3.0000001", s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate((3.0000001).ToString("F7"), s_testValidationContext));
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace System.ComponentModel.DataAnnotations
             Assert.Throws<InvalidOperationException>(
                 () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
 
-            attribute = new RangeAttribute(typeof(double), "3.0", "1.0");
+            attribute = new RangeAttribute(typeof(double), (3.0).ToString("F1"), (1.0).ToString("F1"));
             Assert.Throws<InvalidOperationException>(
                 () => attribute.Validate("Does not matter - minimum > maximum", s_testValidationContext));
 
@@ -191,11 +191,11 @@ namespace System.ComponentModel.DataAnnotations
         [Fact]
         public static void Validation_throws_Exception_if_min_and_max_values_cannot_be_converted_to_double_OperandType()
         {
-            var attribute = new RangeAttribute(typeof(double), "Cannot Convert", "3.0");
+            var attribute = new RangeAttribute(typeof(double), "Cannot Convert", (3.0).ToString("F1"));
             Assert.Throws<FormatException>(
                 () => attribute.Validate("Does not matter - cannot convert minimum to double", s_testValidationContext));
 
-            attribute = new RangeAttribute(typeof(double), "1.0", "Cannot Convert");
+            attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), "Cannot Convert");
             Assert.Throws<FormatException>(
                 () => attribute.Validate("Does not matter - cannot convert maximum to double", s_testValidationContext));
         }
