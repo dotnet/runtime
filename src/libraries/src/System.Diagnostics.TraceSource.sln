@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{47919FF5-DA40-4D99-AF2D-F560282AA913}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.TraceSource", "System.Diagnostics.TraceSource\src\System.Diagnostics.TraceSource.csproj", "{5380420C-EB1D-4C53-9CFC-916578C18334}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.TraceSource.Tests", "System.Diagnostics.TraceSource\tests\System.Diagnostics.TraceSource.Tests.csproj", "{7B32D24D-969A-4F7F-8461-B43E15E5D553}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5380420C-EB1D-4C53-9CFC-916578C18334}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5380420C-EB1D-4C53-9CFC-916578C18334}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5380420C-EB1D-4C53-9CFC-916578C18334}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5380420C-EB1D-4C53-9CFC-916578C18334}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B32D24D-969A-4F7F-8461-B43E15E5D553}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

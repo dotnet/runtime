@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DebugAssertBanner" xml:space="preserve">
+    <value>---- DEBUG ASSERTION FAILED ----</value>
+  </data>
+  <data name="DebugAssertLongMessage" xml:space="preserve">
+    <value>---- Assert Long Message ----</value>
+  </data>
+  <data name="DebugAssertShortMessage" xml:space="preserve">
+    <value>---- Assert Short Message ----</value>
+  </data>
+  <data name="DebugAssertTitle" xml:space="preserve">
+    <value>Assertion Failed: Cancel=Debug, OK=Continue</value>
+  </data>
+  <data name="ExceptionOccurred" xml:space="preserve">
+    <value>An exception occurred writing trace output to log file '{0}'. {1}</value>
+  </data>
+  <data name="IndentSize" xml:space="preserve">
+    <value>The IndentSize property must be non-negative.</value>
+  </data>
+  <data name="InvalidNullEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be null or zero-length.</value>
+  </data>
+  <data name="MustAddListener" xml:space="preserve">
+    <value>Only TraceListeners can be added to a TraceListenerCollection.</value>
+  </data>
+  <data name="RTL" xml:space="preserve">
+    <value>RTL_False</value>
+  </data>
+  <data name="TraceListenerFail" xml:space="preserve">
+    <value>Fail:</value>
+  </data>
+  <data name="TraceListenerIndentSize" xml:space="preserve">
+    <value>The IndentSize property must be non-negative.</value>
+  </data>
+  <data name="TraceSwitchInvalidLevel" xml:space="preserve">
+    <value>The Level must be set to a value in the enumeration TraceLevel.</value>
+  </data>
+  <data name="TraceSwitchLevelTooHigh" xml:space="preserve">
+    <value>Attempted to set {0} to a value that is too high.  Setting level to TraceLevel.Verbose</value>
+  </data>
+  <data name="TraceSwitchLevelTooLow" xml:space="preserve">
+    <value>Attempted to set {0} to a value that is too low.  Setting level to TraceLevel.Off</value>
+  </data>
+</root>
