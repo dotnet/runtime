@@ -73,6 +73,10 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
   stopping of local system processes.
 
+* **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, such as System.IO.StreamWriter.
+
+* **System.Diagnostics.TraceSource**. Provides classes that help you trace the execution of your code.
+
 * **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string comparisons and support the use of non-ASCII characters for Internet domain names.
 
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
