@@ -67,4 +67,9 @@
     <Touch Files="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath)" />
   </Target>
 
+  <!-- Provide default empty targets for BuildAndTest and Test which can be hooked onto or overridden as necessary -->
+  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
+
+  <Target Name="Test" />
+
 </Project>

@@ -92,14 +92,11 @@
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
 
   <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
-  
+
   <PropertyGroup>
     <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
     <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
     <RunTestsForProject Condition="'$(SkipTests)'=='True'">False</RunTestsForProject>
-    
-    <!-- Don't run unit tests as post-build in VS, use F5 on test project instead (see below). -->
-    <RunTestsForProject Condition="'$(BuildingInsideVisualStudio)' == 'True'">False</RunTestsForProject>
 
     <CLSCompliant Condition="'$(IsTestProject)'=='true'">false</CLSCompliant>
   </PropertyGroup>
@@ -162,7 +159,7 @@
 
   <!-- On command line: run unit tests on CoreCLR as post-build step. -->
   <Target Name="RunTestsForProject"
-          AfterTargets="PrepareForRun"
+          AfterTargets="Test"
           Condition="'$(RunTestsForProject)'=='True'">
 
     <MakeDir Condition="$(CoverageEnabledForDir)" Directories="$(CoverageReportDir)" />
