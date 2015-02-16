@@ -147,6 +147,7 @@ add_library(CoreClrPal
 target_link_libraries(CoreClrPal
   dl
   m
+  unwind
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
