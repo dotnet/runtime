@@ -30,7 +30,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleColor.cs" />
     <Compile Include="System\IO\ConsoleStream.cs" />
@@ -66,9 +65,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
-      <Link>Common\Interop\Interop.IOErrors.cs</Link>
-    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs"> 
+      <Link>Common\Interop\Interop.IOErrors.cs</Link> 
+    </Compile> 
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
       <Link>Common\Interop\Interop.close.cs</Link>
     </Compile>

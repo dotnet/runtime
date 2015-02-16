@@ -2,8 +2,8 @@
   <Import Project="dir.props" />
 
   <ItemGroup>
-    <Project Include="*\src\*.csproj" />
-    <Project Include="*\tests\**\*.csproj" />
+    <Project Include="*\src\*.csproj" Exclude="$(ExcludeProjects)" />
+    <Project Include="*\tests\**\*.csproj" Exclude="$(ExcludeProjects)" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
@@ -12,11 +12,11 @@
   
   <PropertyGroup>
     <!-- Explicity set the OutDir as it is used by the packaging targets -->
-    <OutDir>$(BaseOutputPathWithConfig)</OutDir>
+    <OutDir Condition="'$(OutDir)'==''">$(BaseOutputPathWithConfig)</OutDir>
   </PropertyGroup>
   
-  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
-  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets')">
+  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
+  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'">
     <TraversalBuildDependsOn>
       $(TraversalBuildDependsOn);
       BuildPackages;

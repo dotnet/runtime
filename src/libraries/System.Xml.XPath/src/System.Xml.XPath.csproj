@@ -130,7 +130,6 @@
     <Compile Include="System\Xml\XPath\XPathNodeIterator.cs" />
     <Compile Include="System\Xml\XPath\XPathNodeType.cs" />
     <Compile Include="System\Xml\Xsl\XsltContext.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
