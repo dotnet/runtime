@@ -9,6 +9,7 @@ using Xunit;
 [Collection("Dispose")]
 public class MMF_Dispose
 {
+    private readonly static string s_uniquifier = Guid.NewGuid().ToString();
     private int _iCountErrors = 0;
     private int _iCountTestcases = 0;
 
@@ -39,7 +40,7 @@ public class MMF_Dispose
             // Dispose()
             ////////////////////////////////////////////////////////////////////////
 
-            MemoryMappedFile mmf = MemoryMappedFile.CreateNew("Dispose_mapname101", 100);
+            MemoryMappedFile mmf = MemoryMappedFile.CreateNew("Dispose_mapname101" + s_uniquifier, 100);
             MemoryMappedViewStream viewStream = mmf.CreateViewStream();
             MemoryMappedViewAccessor viewAccessor = mmf.CreateViewAccessor();
             mmf.Dispose();

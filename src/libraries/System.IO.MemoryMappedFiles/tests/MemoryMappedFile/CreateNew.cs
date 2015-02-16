@@ -9,6 +9,8 @@ using Xunit;
 [Collection("CreateNew")]
 public class CreateNew : MMFTestBase
 {
+    private readonly static string s_uniquifier = Guid.NewGuid().ToString();
+
     [Fact]
     public static void CreateNewTestCases()
     {
@@ -39,7 +41,7 @@ public class CreateNew : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            VerifyCreateNew("Loc111", "CreateNew" + new String('a', 1000), 4096);
+            VerifyCreateNew("Loc111", "CreateNew" + new String('a', 1000) + s_uniquifier, 4096);
 
             // null
             VerifyCreateNew("Loc112", null, 4096);
@@ -51,39 +53,39 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc114", "\t\t \n\u00A0", 4096);
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map115", 1000))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map115" + s_uniquifier, 1000))
             {
-                VerifyCreateNewException<IOException>("Loc115", "map115", 1000);
+                VerifyCreateNewException<IOException>("Loc115", "map115" + s_uniquifier, 1000);
             }
 
             // MMF with this mapname existed, but was closed
-            VerifyCreateNew("Loc116", "map115", 500);
+            VerifyCreateNew("Loc116", "map115" + s_uniquifier, 500);
 
             // "global/" prefix
-            VerifyCreateNew("Loc117", "global/CN_0", 4096);
+            VerifyCreateNew("Loc117", "global/CN_0" + s_uniquifier, 4096);
 
             // "local/" prefix
-            VerifyCreateNew("Loc118", "local/CN_1", 4096);
+            VerifyCreateNew("Loc118", "local/CN_1" + s_uniquifier, 4096);
 
             // [] capacity
 
             // >0 capacity
-            VerifyCreateNew("Loc211", "CN_mapname211", 50);
+            VerifyCreateNew("Loc211", "CN_mapname211" + s_uniquifier, 50);
 
             // 0 capacity
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc211", "CN_mapname211", 0);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc211", "CN_mapname211" + s_uniquifier, 0);
 
             // negative
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc213", "CN_mapname213", -1);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc213", "CN_mapname213" + s_uniquifier, -1);
 
             // negative
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc214", "CN_mapname214", -4096);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc214", "CN_mapname214" + s_uniquifier, -4096);
 
             // Int64.MaxValue - cannot exceed local address space
             if (IntPtr.Size == 4)
-                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc215", "CN_mapname215", Int64.MaxValue);
+                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc215", "CN_mapname215" + s_uniquifier, Int64.MaxValue);
             else // 64-bit machine
-                VerifyCreateNewException<IOException>("Loc215b", "CN_mapname215", Int64.MaxValue); // valid but too large
+                VerifyCreateNewException<IOException>("Loc215b", "CN_mapname215" + s_uniquifier, Int64.MaxValue); // valid but too large
 
             ////////////////////////////////////////////////////////////////////////
             // CreateNew(mapName, capcity, MemoryMappedFileAccess)
@@ -92,7 +94,7 @@ public class CreateNew : MMFTestBase
             // [] access
 
             // Write is disallowed
-            VerifyCreateNewException<ArgumentException>("Loc330", "CN_mapname330", 1000, MemoryMappedFileAccess.Write);
+            VerifyCreateNewException<ArgumentException>("Loc330", "CN_mapname330" + s_uniquifier, 1000, MemoryMappedFileAccess.Write);
 
             // valid access
             MemoryMappedFileAccess[] accessList = new MemoryMappedFileAccess[] {
@@ -104,7 +106,7 @@ public class CreateNew : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                VerifyCreateNew("Loc331_" + access, "CN_mapname331_" + access, 1000, access);
+                VerifyCreateNew("Loc331_" + access, "CN_mapname331_" + access + s_uniquifier, 1000, access);
             }
 
             // invalid enum value
@@ -114,7 +116,7 @@ public class CreateNew : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc332_" + ((int)access), "CN_mapname332_" + ((int)access), 1000, access);
+                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc332_" + ((int)access), "CN_mapname332_" + ((int)access) + s_uniquifier, 1000, access);
             }
 
             ////////////////////////////////////////////////////////////////////////
@@ -125,7 +127,7 @@ public class CreateNew : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            VerifyCreateNew("Loc411", "CreateNew2" + new String('a', 1000), 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc411", "CreateNew2" + new String('a', 1000) + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // null
             VerifyCreateNew("Loc412", null, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
@@ -137,44 +139,44 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc414", "\t\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415", 4096))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415" + s_uniquifier, 4096))
             {
-                VerifyCreateNewException<IOException>("Loc415", "map415", 4096, MemoryMappedFileAccess.Read, MemoryMappedFileOptions.None, HandleInheritability.None);
+                VerifyCreateNewException<IOException>("Loc415", "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, MemoryMappedFileOptions.None, HandleInheritability.None);
             }
 
             // MMF with this mapname existed, but was closed
-            VerifyCreateNew("Loc416", "map415", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc416", "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // "global/" prefix
-            VerifyCreateNew("Loc417", "global/CN_2", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc417", "global/CN_2" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // "local/" prefix
-            VerifyCreateNew("Loc418", "local/CN_3", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc418", "local/CN_3" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // [] capacity
 
             // >0 capacity
-            VerifyCreateNew("Loc421", "CN_mapname421", 50, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc421", "CN_mapname421" + s_uniquifier, 50, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // 0 capacity
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc422", "CN_mapname422", 0, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc422", "CN_mapname422" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // negative
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc423", "CN_mapname423", -1, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc423", "CN_mapname423" + s_uniquifier, -1, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // negative
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc424", "CN_mapname424", -4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc424", "CN_mapname424" + s_uniquifier, -4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // Int64.MaxValue - cannot exceed local address space
             if (IntPtr.Size == 4)
-                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc425", "CN_mapname425", Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc425", "CN_mapname425" + s_uniquifier, Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
             else // 64-bit machine
-                VerifyCreateNewException<IOException>("Loc425b", "CN_mapname425", Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None); // valid but too large
+                VerifyCreateNewException<IOException>("Loc425b", "CN_mapname425" + s_uniquifier, Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None); // valid but too large
 
             // [] access
 
             // Write is disallowed
-            VerifyCreateNewException<ArgumentException>("Loc430", "CN_mapname430", 1000, MemoryMappedFileAccess.Write, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNewException<ArgumentException>("Loc430", "CN_mapname430" + s_uniquifier, 1000, MemoryMappedFileAccess.Write, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // valid access
             accessList = new MemoryMappedFileAccess[] {
@@ -186,7 +188,7 @@ public class CreateNew : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                VerifyCreateNew("Loc431_" + access, "CN_mapname431_" + access, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None);
+                VerifyCreateNew("Loc431_" + access, "CN_mapname431_" + access + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None);
             }
 
             // invalid enum value
@@ -196,7 +198,7 @@ public class CreateNew : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc432_" + ((int)access), "CN_mapname432_" + ((int)access), 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None);
+                VerifyCreateNewException<ArgumentOutOfRangeException>("Loc432_" + ((int)access), "CN_mapname432_" + ((int)access) + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None);
             }
 
             // [] options
@@ -206,13 +208,13 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc440b", null, 4096 * 10000);
 
             // None
-            VerifyCreateNew("Loc441", "CN_mapname441", 4096 * 10000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+            VerifyCreateNew("Loc441", "CN_mapname441" + s_uniquifier, 4096 * 10000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // DelayAllocatePages
-            VerifyCreateNew("Loc442", "CN_mapname442", 4096 * 10000, MemoryMappedFileAccess.Read, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
+            VerifyCreateNew("Loc442", "CN_mapname442" + s_uniquifier, 4096 * 10000, MemoryMappedFileAccess.Read, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None);
 
             // invalid
-            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc444", "CN_mapname444", 100, MemoryMappedFileAccess.ReadWrite, (MemoryMappedFileOptions)(-1), HandleInheritability.None);
+            VerifyCreateNewException<ArgumentOutOfRangeException>("Loc444", "CN_mapname444" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, (MemoryMappedFileOptions)(-1), HandleInheritability.None);
 
             /// END TEST CASES
 
