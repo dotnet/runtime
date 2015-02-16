@@ -32,12 +32,6 @@ Implementation of GetComputerNameW and GetUserNameW functions.
 #include <errno.h>
 #include <string.h>
 
-#if HAVE_NETDB_H && NETDB_DEFINES_MAXHOSTNAMELEN
-#include <netdb.h>
-#elif HAVE_SYS_PARAM_H && SYS_PARAM_DEFINES_MAXHOSTNAMELEN
-#include <sys/param.h>
-#endif
-
 #if HAVE_SYSCONF && defined(_SC_GETPW_R_SIZE_MAX)
 #include <limits.h> // for INT_MAX
 #endif
