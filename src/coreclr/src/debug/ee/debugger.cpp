@@ -3956,12 +3956,10 @@ LExit:
         DeleteInteropSafe(rgVal2);
     }
 
-#if defined(_TARGET_X86_) || defined(_WIN64) || defined(_TARGET_ARM_)
     if (pEHRT != NULL)
     {
         delete pEHRT;
     }
-#endif // _TARGET_X86_ || _WIN64
 
     LOG((LF_CORDB, LL_INFO1000, "D::SIP:Returning 0x%x\n", hr));
     return hrAdvise;

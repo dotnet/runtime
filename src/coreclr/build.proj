@@ -46,12 +46,14 @@
   <!-- Setup Nuget properties -->
   <ItemGroup>
     <NuSpecSrcs Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.nuspec" />
-    <NuSpecSrcs Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.Development.nuspec" />
+    <NuSpecSrcs Condition="'$(Configuration)'=='Release'" Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.Development.nuspec" />
+    <NuSpecSrcs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
   </ItemGroup>
   <ItemGroup>
     <!-- Backslash appended, see note in dir.props about the PackagesBinDir property -->
     <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec" />
-    <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
+    <NuSpecs Condition="'$(Configuration)'=='Release'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
+    <NuSpecs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
   </ItemGroup>
 
   <!-- Generate Microsoft.Dotnet.CoreCLR nuget package and associated development package -->

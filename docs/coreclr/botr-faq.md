@@ -2,6 +2,7 @@ Book of the Runtime (BotR) FAQ
 ===
 
 # What is the BotR?
+
 The [Book of the Runtime](https://github.com/dotnet/coreclr#learn-about-coreclr) is a set of documents that describe components in the CLR and BCL. They are intended to focus more on architecture and invariants and not an annotated description of the codebase.
 
 It was originally created within Microsoft in ~ 2007, including this document. Developers were responsible to document their feature areas. This helped new devs joining the team and also helped share the product architecture across the team.
@@ -12,7 +13,7 @@ Each of the BoTR documents were written with a [certain perspective](https://git
 
 # Who is the main audience of BotR?
 
-- Developers who are working on bugs that impinge on an area and need a high level overview of the component. 
+- Developers who are working on bugs that impinge on an area and need a high level overview of the component.
 - Developers working on new features with dependencies on a component need to know enough about it to ensure the new feature will interact correctly with existing components.
 - New developers need this chapter to maintain a given component.
 
