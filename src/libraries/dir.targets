@@ -24,12 +24,12 @@
             try
             {
                 if (!File.Exists(FileName))
-                   File.Move(tempFile, FileName);
+                    File.Move(tempFile, FileName);
             }
             finally
             {
-              if (File.Exists(tempFile))
-                  File.Delete(tempFile);
+                if (File.Exists(tempFile))
+                    File.Delete(tempFile);
             }
         ]]>
       </Code>
@@ -43,7 +43,7 @@
   <Target Name="_RestoreBuildToolsWrapper" DependsOnTargets="_RestoreBuildTools" />
 
   <Target Name="_RestoreBuildTools"
-          Inputs="$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)dir.props"
+          Inputs="$(MSBuildThisFileDirectory)dir.props;$(SourceDir).nuget\packages.config"
           Outputs="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath)">
     <Message Importance="High" Text="Restoring build tools..." />
 
@@ -57,6 +57,14 @@
     
     <Error Condition="'$(ErrorIfBuildToolsRestoredFromIndividualProject)'=='true'"
            Text="The build tools package was just restored and so we cannot continue the build of an individual project because targets from the build tools package were not able to be imported. Please retry the build the individual project again." />
+
+    <!--
+      There are cases where the inputs could be newer than the outputs but the
+      download or restore may not need to update. In such cases we need to touch
+      these files otherwise we continually run this target over and over for
+      every project until these files are cleaned (if the are ever cleaned).
+    -->
+    <Touch Files="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath)" />
   </Target>
 
 </Project>
