@@ -50,7 +50,7 @@
     <!-- Download latest nuget.exe -->
     <DownloadFile FileName="$(NuGetToolPath)"
                   Address="http://nuget.org/nuget.exe" 
-                  Condition="!Exists($(NuGetToolPath))" />
+                  Condition="!Exists('$(NuGetToolPath)')" />
 
     <!-- Restore build tools -->
     <Exec Command="$(NugetRestoreCommand) &quot;$(SourceDir).nuget\packages.config&quot;" StandardOutputImportance="Low" />
