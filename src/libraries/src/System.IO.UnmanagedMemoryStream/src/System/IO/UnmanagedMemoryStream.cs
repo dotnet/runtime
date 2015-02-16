@@ -341,7 +341,6 @@ namespace System.IO
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        [ComVisible(false)]
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -532,7 +531,6 @@ namespace System.IO
         /// <param name="count">Maximum number of bytes to read.</param>       
         /// <param name="cancellationToken">Token that can be used to cancell this operation.</param>
         /// <returns>Task that can be used to access the number of bytes actually read.</returns>
-        [ComVisible(false)]
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -778,7 +776,6 @@ namespace System.IO
         /// <param name="count">Number of bytes to write.</param>
         /// <param name="cancellationToken">Token that can be used to cancell the opetation.</param>
         /// <returns>Task that can be awaited </returns>
-        [ComVisible(false)]
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)

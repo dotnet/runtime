@@ -301,7 +301,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long NonpagedSystemMemorySize64
         {
             get
@@ -311,7 +310,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PagedMemorySize64
         {
             get
@@ -321,7 +319,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PagedSystemMemorySize64
         {
             get
@@ -331,7 +328,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PeakPagedMemorySize64
         {
             get
@@ -341,7 +337,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PeakWorkingSet64
         {
             get
@@ -351,7 +346,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PeakVirtualMemorySize64
         {
             get
@@ -417,7 +411,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PrivateMemorySize64
         {
             get
@@ -528,7 +521,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long VirtualMemorySize64
         {
             get
@@ -639,7 +631,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long WorkingSet64
         {
             get
@@ -1250,7 +1241,6 @@ namespace System.Diagnostics
         /// then the remaining information is returned. The user can add an event handler to OutputDataReceived.
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void BeginOutputReadLine()
         {
             if (_outputStreamReadMode == StreamReadMode.Undefined)
@@ -1289,7 +1279,6 @@ namespace System.Diagnostics
         /// then the remaining information is returned. The user can add an event handler to ErrorDataReceived.
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void BeginErrorReadLine()
         {
             if (_errorStreamReadMode == StreamReadMode.Undefined)
@@ -1327,7 +1316,6 @@ namespace System.Diagnostics
         /// specified by BeginOutputReadLine().
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void CancelOutputRead()
         {
             if (_output != null)
@@ -1348,7 +1336,6 @@ namespace System.Diagnostics
         /// specified by BeginErrorReadLine().
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void CancelErrorRead()
         {
             if (_error != null)

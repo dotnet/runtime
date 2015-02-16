@@ -14,7 +14,6 @@ namespace System.IO
     ///   FILE_SHARE_WRITE, and FILE_SHARE_DELETE in winnt.h
     /// </devdoc>
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileShare
     {
         /// <devdoc>

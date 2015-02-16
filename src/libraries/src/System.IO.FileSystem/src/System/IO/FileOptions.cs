@@ -11,7 +11,6 @@ namespace System.IO
     // a number of them made sense in managed code, at least not yet.
 
     [Flags]
-    [ComVisible(true)]
     /// <devdoc>
     ///   Additional options to how to create a FileStream.
     /// </devdoc>

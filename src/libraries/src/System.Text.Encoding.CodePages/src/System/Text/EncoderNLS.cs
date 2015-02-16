@@ -52,7 +52,6 @@ namespace System.Text
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public new EncoderFallbackBuffer FallbackBuffer
         {
             get

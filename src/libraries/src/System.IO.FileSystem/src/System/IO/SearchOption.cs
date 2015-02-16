@@ -10,7 +10,6 @@ namespace System.IO
     ///   retrieve files/directories from the current directory alone
     ///   or should include all the subdirectories also.
     /// </devdoc>
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum SearchOption
     {
         /// <devdoc>
