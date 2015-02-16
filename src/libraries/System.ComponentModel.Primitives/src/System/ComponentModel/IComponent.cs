@@ -22,7 +22,6 @@ namespace System.ComponentModel
     /// <devdoc>
     ///    <para>Provides functionality required by all components.</para>
     /// </devdoc>
-    [ComVisible(true)]
     public interface IComponent : IDisposable
     {
         // The site of the component.

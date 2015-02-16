@@ -57,7 +57,6 @@ namespace System.Text
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public new DecoderFallbackBuffer FallbackBuffer
         {
             get

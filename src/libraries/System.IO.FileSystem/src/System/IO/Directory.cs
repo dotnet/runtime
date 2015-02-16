@@ -16,7 +16,6 @@ using System.Threading;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     public static class Directory
     {
         public static DirectoryInfo GetParent(String path)

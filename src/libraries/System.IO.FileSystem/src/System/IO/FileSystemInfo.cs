@@ -12,7 +12,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     public abstract class FileSystemInfo
     {
         protected String FullPath;          // fully qualified path of the file or directory
@@ -101,7 +100,6 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
         public DateTime CreationTimeUtc
         {
             [System.Security.SecuritySafeCritical]
@@ -130,7 +128,6 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
         public DateTime LastAccessTimeUtc
         {
             [System.Security.SecuritySafeCritical]
@@ -159,7 +156,6 @@ namespace System.IO
             }
         }
 
-        [ComVisible(false)]
         public DateTime LastWriteTimeUtc
         {
             [System.Security.SecuritySafeCritical]

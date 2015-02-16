@@ -7,7 +7,6 @@ namespace System.Text
 #if INTERNAL_GLOBALIZATION_EXTENSIONS
     internal
 #else
-    [System.Runtime.InteropServices.ComVisible(true)]
     public
 #endif
     enum NormalizationForm

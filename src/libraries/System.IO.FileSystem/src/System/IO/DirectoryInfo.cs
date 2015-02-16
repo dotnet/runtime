@@ -16,7 +16,6 @@ using Microsoft.Win32;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     public sealed class DirectoryInfo : FileSystemInfo
     {
         [System.Security.SecuritySafeCritical]

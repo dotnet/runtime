@@ -16,7 +16,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class Comparer : IComparer
     {
         private CompareInfo _compareInfo;

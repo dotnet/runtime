@@ -18,7 +18,6 @@ namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    [ComVisible(true)]
     public static class File
     {
         public static StreamReader OpenText(String path)
