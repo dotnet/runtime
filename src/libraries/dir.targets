@@ -17,8 +17,6 @@
 
             var tempFile = Path.Combine(directory, Path.GetRandomFileName());
             var client = new System.Net.WebClient();
-            client.Proxy = System.Net.WebRequest.DefaultWebProxy;
-            client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
             client.DownloadFile(Address, tempFile);
 
             try
