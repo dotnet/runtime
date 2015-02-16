@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>System.Numerics.Tests</RootNamespace>
+    <AssemblyName>System.Runtime.Numerics.Tests</AssemblyName>
+    <ProjectGuid>{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.Runtime.Numerics.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BigInteger\absolutevalue.cs" />
+    <Compile Include="BigInteger\add.cs" />
+    <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
+    <Compile Include="BigInteger\BigIntTools.cs" />
+    <Compile Include="BigInteger\cast_from.cs" />
+    <Compile Include="BigInteger\cast_to.cs" />
+    <Compile Include="BigInteger\Comparison.cs" />
+    <Compile Include="BigInteger\ctor.cs" />
+    <Compile Include="BigInteger\divide.cs" />
+    <Compile Include="BigInteger\divrem.cs" />
+    <Compile Include="BigInteger\Driver.cs" />
+    <Compile Include="BigInteger\gcd.cs" />
+    <Compile Include="BigInteger\IsEven.cs" />
+    <Compile Include="BigInteger\IsOne.cs" />
+    <Compile Include="BigInteger\IsPowerOfTwo.cs" />
+    <Compile Include="BigInteger\IsZero.cs" />
+    <Compile Include="BigInteger\log.cs" />
+    <Compile Include="BigInteger\log02.cs" />
+    <Compile Include="BigInteger\log10.cs" />
+    <Compile Include="BigInteger\max.cs" />
+    <Compile Include="BigInteger\min.cs" />
+    <Compile Include="BigInteger\modpow.cs" />
+    <Compile Include="BigInteger\multiply.cs" />
+    <Compile Include="BigInteger\MyBigInt.cs" />
+    <Compile Include="BigInteger\negate.cs" />
+    <Compile Include="BigInteger\op_add.cs" />
+    <Compile Include="BigInteger\op_and.cs" />
+    <Compile Include="BigInteger\op_decrement.cs" />
+    <Compile Include="BigInteger\op_divide.cs" />
+    <Compile Include="BigInteger\op_increment.cs" />
+    <Compile Include="BigInteger\op_leftshift.cs" />
+    <Compile Include="BigInteger\op_minus.cs" />
+    <Compile Include="BigInteger\op_modulus.cs" />
+    <Compile Include="BigInteger\op_multiply.cs" />
+    <Compile Include="BigInteger\op_not.cs" />
+    <Compile Include="BigInteger\op_or.cs" />
+    <Compile Include="BigInteger\op_plus.cs" />
+    <Compile Include="BigInteger\op_rightshift.cs" />
+    <Compile Include="BigInteger\op_subtract.cs" />
+    <Compile Include="BigInteger\op_xor.cs" />
+    <Compile Include="BigInteger\parse.cs" />
+    <Compile Include="BigInteger\pow.cs" />
+    <Compile Include="BigInteger\properties.cs" />
+    <Compile Include="BigInteger\remainder.cs" />
+    <Compile Include="BigInteger\sign.cs" />
+    <Compile Include="BigInteger\stackcalculator.cs" />
+    <Compile Include="BigInteger\subtract.cs" />
+    <Compile Include="Complex\arithmaticOperation_Abs.cs" />
+    <Compile Include="Complex\arithmaticOperation_BinaryDivide_Divide.cs" />
+    <Compile Include="Complex\arithmaticOperation_BinaryMinus_Subtract.cs" />
+    <Compile Include="Complex\arithmaticOperation_BinaryMultiply_Multiply.cs" />
+    <Compile Include="Complex\arithmaticOperation_BinaryPlus_Add.cs" />
+    <Compile Include="Complex\arithmaticOperation_Conjugate.cs" />
+    <Compile Include="Complex\arithmaticOperation_Reciprocal.cs" />
+    <Compile Include="Complex\arithmaticOperation_UnaryMinus_Negate.cs" />
+    <Compile Include="Complex\ComplexTestSupport.cs" />
+    <Compile Include="Complex\ctor.cs" />
+    <Compile Include="Complex\factoryMethod.cs" />
+    <Compile Include="Complex\formattingOperations.cs" />
+    <Compile Include="Complex\implicitExplicitCastOperators.cs" />
+    <Compile Include="Complex\operation_ComparisonHashCode.cs" />
+    <Compile Include="Complex\standardNumericalFunctions_Exp.cs" />
+    <Compile Include="Complex\standardNumericalFunctions_Log.cs" />
+    <Compile Include="Complex\standardNumericalFunctions_Pow.cs" />
+    <Compile Include="Complex\standardNumericalFunctions_Sqrt.cs" />
+    <Compile Include="Complex\staticConstants.cs" />
+    <Compile Include="Complex\trigonometricOperations_ACos.cs" />
+    <Compile Include="Complex\trigonometricOperations_ASin.cs" />
+    <Compile Include="Complex\trigonometricOperations_ATan.cs" />
+    <Compile Include="Complex\trigonometricOperations_Cos.cs" />
+    <Compile Include="Complex\trigonometricOperations_Cosh.cs" />
+    <Compile Include="Complex\trigonometricOperations_Sin.cs" />
+    <Compile Include="Complex\trigonometricOperations_Sinh.cs" />
+    <Compile Include="Complex\trigonometricOperations_Tan.cs" />
+    <Compile Include="Complex\trigonometricOperations_Tanh.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
