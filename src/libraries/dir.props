@@ -1,4 +1,5 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
   <!-- Build Tools Version -->
   <PropertyGroup>
     <BuildToolsVersion>1.0.25-prerelease-4</BuildToolsVersion>
@@ -8,15 +9,15 @@
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(ProjectDir)bin\</BinDir>
+    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin\</BinDir>
     <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
-    <PackagesDir>$(ProjectDir)packages\</PackagesDir>
+    <PackagesDir Condition="'$(PackagesDir)' == ''">$(ProjectDir)packages\</PackagesDir>
     <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
   </PropertyGroup>
 
   <!-- Common nuget properties -->
   <PropertyGroup>
-    <NuGetToolPath>$(PackagesDir)NuGet.exe</NuGetToolPath>
+    <NuGetToolPath Condition="'$(NuGetToolPath)' == ''">$(PackagesDir)NuGet.exe</NuGetToolPath>
     <NuGetConfigFile>$(SourceDir)NuGet.Config</NuGetConfigFile>
     <NuGetConfigCommandLine>-ConfigFile "$(NuGetConfigFile)"</NuGetConfigCommandLine>
 
@@ -74,14 +75,14 @@
 
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPath>$(ProjectDir)bin\</BaseOutputPath>
+    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProjectDir)bin\</BaseOutputPath>
     <BaseOutputPathWithConfig>$(BaseOutputPath)$(OS)\$(Configuration)\</BaseOutputPathWithConfig>
     <BaseOutputPathWithConfig Condition="'$(Platform)' != 'AnyCPU'">$(BaseOutputPath)$(Platform)\$(OS)\$(Configuration)\</BaseOutputPathWithConfig>
     <OutputPath>$(BaseOutputPathWithConfig)$(MSBuildProjectName)\</OutputPath>
 
-    <BaseIntermediateOutputPath>$(BaseOutputPath)obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(OS)\$(Configuration)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(Platform)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(Platform)\$(OS)\$(Configuration)\</IntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(BaseOutputPath)obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(OS)\$(Configuration)\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == '' and '$(Platform)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(Platform)\$(OS)\$(Configuration)\</IntermediateOutputPath>
     
     <TestPath>$(TestWorkingDir)$(MSBuildProjectName)\$(OS)\$(Configuration)\</TestPath>
     <TestPath Condition="'$(Platform)' != 'AnyCPU'">$(TestWorkingDir)$(MSBuildProjectName)\$(Platform)\$(OS)\$(Configuration)\</TestPath>

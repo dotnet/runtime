@@ -9,6 +9,7 @@
     <AssemblyName>Assembly1</AssemblyName>
     <NuGetPackageImportStamp>62805582</NuGetPackageImportStamp>
     <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

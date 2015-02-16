@@ -38,6 +38,7 @@
     -->
   </PropertyGroup>
 
+
   <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
   <Target Name="AddDesignTimeFacadeReferences"
       Condition="'$(TargetingDefaultPlatform)' == 'true'"
@@ -46,7 +47,8 @@
   >
     <ItemGroup>
       <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
-      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" />
+      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" 
+                     Condition="'%(PossibleTargetFrameworks.Identity)' != '' and Exists('%(PossibleTargetFrameworks.Identity)mscorlib.dll')" />
     </ItemGroup>
   </Target>
 
@@ -74,6 +76,19 @@
 
   <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
 
+  <!-- Version assemblies -->
+  <PropertyGroup>
+    <!--
+      For now to avoid conflicts with files coming from packages default assembly version to 999.999.999.999
+      until we correctly add the AssemblyVersion property to each of the projects.
+    -->
+    <AssemblyVersion Condition="'$(AssemblyVersion)'==''">999.999.999.999</AssemblyVersion>
+    <GenerateAssemblyInfo Condition="'$(GenerateAssemblyInfo)'==''">true</GenerateAssemblyInfo>
+    <CLSCompliant Condition="'$(CLSCompliant)'==''">true</CLSCompliant>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsDir)versioning.targets" Condition="Exists('$(ToolsDir)versioning.targets')" />
+
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
 
   <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
@@ -85,6 +100,8 @@
     
     <!-- Don't run unit tests as post-build in VS, use F5 on test project instead (see below). -->
     <RunTestsForProject Condition="'$(BuildingInsideVisualStudio)' == 'True'">False</RunTestsForProject>
+
+    <CLSCompliant Condition="'$(IsTestProject)'=='true'">false</CLSCompliant>
   </PropertyGroup>
 
   <PropertyGroup>
