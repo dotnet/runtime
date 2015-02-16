@@ -50,7 +50,12 @@
     <Compile Include="System\Diagnostics\TraceEventCache.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="Interop\Interop.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getpid.cs">
+      <Link>Common\Interop\Unix\Interop.getpid.cs</Link>
+    </Compile>
     <Compile Include="System\Diagnostics\TraceEventCache.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
