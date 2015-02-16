@@ -32,7 +32,7 @@
 #include "stackwalktypes.h"
 #include "bitvector.h"
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
 #define USE_GC_INFO_DECODER
 #endif
 

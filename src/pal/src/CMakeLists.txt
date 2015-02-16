@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12.2)
+
+include(configure.cmake)
+
 project(CoreClrPal)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -16,7 +19,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     arch/i386/dispatchexceptionwrapper.S
     exception/machexception.cpp
     exception/machmessage.cpp
-    locale/locale.cpp
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
