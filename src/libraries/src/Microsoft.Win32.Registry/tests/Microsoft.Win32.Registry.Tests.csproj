@@ -44,6 +44,7 @@
     <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
