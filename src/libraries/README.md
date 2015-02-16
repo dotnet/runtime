@@ -125,10 +125,13 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
 
+* The overall list of items we currently plan to move onto GitHub is [here][typelist].
+
 [roslyn]: https://roslyn.codeplex.com/
 [immutable-msdn]: http://msdn.microsoft.com/en-us/library/dn385366(v=vs.110).aspx
 [simd-post-1]: http://blogs.msdn.com/b/dotnet/archive/2014/04/07/the-jit-finally-proposed-jit-and-simd-are-getting-married.aspx
 [simd-post-2]: http://blogs.msdn.com/b/dotnet/archive/2014/05/13/update-to-simd-support.aspx
+[typelist]: http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-components-postattachments/00-10-58-94-19/NetCore_5F00_OpenSourceUpdate.xlsx
 
 ## License
 
