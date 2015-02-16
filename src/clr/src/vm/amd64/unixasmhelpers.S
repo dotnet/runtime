@@ -139,8 +139,8 @@ NESTED_END NDirectImportThunk, _TEXT
 // MOVDQA is not an atomic operation.  You need to call this function in a crst.
 // </NOTE>
 LEAF_ENTRY moveOWord, _TEXT
-        movdqa          xmm0, [rdi]
-        movdqa          [rsi], xmm0
+        movdqu          xmm0, [rdi]
+        movdqu          [rsi], xmm0
 
         ret
 LEAF_END moveOWord, _TEXT
