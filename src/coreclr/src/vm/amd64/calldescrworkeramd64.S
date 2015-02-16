@@ -42,8 +42,12 @@ NESTED_END FastCallFinalizeWorker, _TEXT
 
 NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHandler
         push_nonvol_reg rbx             // save nonvolatile registers
+        .cfi_def_cfa_offset 16          //
         push_nonvol_reg rbp             // 
+        .cfi_adjust_cfa_offset 8        //
+        .cfi_offset rbp, -24            //
         set_frame rbp, 0                // set frame pointer
+        .cfi_def_cfa_register rbp       //
         lea     rsp, [rsp - 8]          // ensure proper alignment of the rsp
 
         END_PROLOGUE
@@ -53,22 +57,22 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHand
         mov     ecx, dword ptr [rbx + CallDescrData__numStackSlots]
 
         and     ecx, ecx
-        jz      NoStackArguments
+        jz      .LNoStackArguments
 
         test    ecx, 1
-        jz      StackAligned
+        jz      .LStackAligned
         push    rax
-StackAligned:
+.LStackAligned:
 
         mov     rsi, [rbx + CallDescrData__pSrc] // set source argument list address
         lea     rsi, [rsi + 8 * rcx]
 
-StackCopyLoop:                          // copy the arguments to stack top-down to carefully probe for sufficient stack space
+.LStackCopyLoop:                          // copy the arguments to stack top-down to carefully probe for sufficient stack space
         sub     rsi, 8
         push    qword ptr [rsi]
         dec     ecx
-        jnz     StackCopyLoop
-NoStackArguments:
+        jnz     .LStackCopyLoop
+.LNoStackArguments:
         // All argument registers are loaded regardless of the actual number
         // of arguments.
 
@@ -85,7 +89,7 @@ NoStackArguments:
 
         mov     rax, [rbx + CallDescrData__pFloatArgumentRegisters] 
         and     rax, rax
-        jz      NoFloatArguments
+        jz      .LNoFloatArguments
         movsd   xmm0, [rax + 0]
         movsd   xmm1, [rax + 16]
         movsd   xmm2, [rax + 32]
@@ -94,38 +98,41 @@ NoStackArguments:
         movsd   xmm5, [rax + 80]
         movsd   xmm6, [rax + 96]
         movsd   xmm7, [rax + 112]
-NoFloatArguments:        
+.LNoFloatArguments:
         call    qword ptr [rbx + CallDescrData__pTarget]     // call target function
 
         // Save FP return value
 
         mov     ecx, dword ptr [rbx + CallDescrData__fpReturnSize]
         test    ecx, ecx
-        jz      ReturnsInt
+        jz      .LReturnsInt
         
         cmp     ecx, 4
-        je      ReturnsFloat
+        je      .LReturnsFloat
         cmp     ecx, 8
-        je      ReturnsDouble
+        je      .LReturnsDouble
         // unexpected
-        jmp     Epilog
+        jmp     .LEpilog
 
-ReturnsInt:
+.LReturnsInt:
         mov     [rbx+CallDescrData__returnValue], rax
 
-Epilog:
+.LEpilog:
         lea     rsp, 0[rbp]             // deallocate argument list
+        .cfi_def_cfa_register rsp
         pop     rbp                     // restore nonvolatile register
+        .cfi_adjust_cfa_offset -8       //
         pop     rbx                     //
+        .cfi_adjust_cfa_offset -8       //
         ret
 
-ReturnsFloat:
+.LReturnsFloat:
         movss   real4 ptr [rbx+CallDescrData__returnValue], xmm0
-        jmp     Epilog
+        jmp     .LEpilog
 
-ReturnsDouble:
+.LReturnsDouble:
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
-        jmp     Epilog
+        jmp     .LEpilog
 
 NESTED_END CallDescrWorkerInternal, _TEXT
 
