@@ -51,6 +51,7 @@
     <Compile Include="UnionIntersectDistinctTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="WithCancellationTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipJoinGroupJoinTests.cs" />
   </ItemGroup>
   <!-- Common or Common-branched source files -->
