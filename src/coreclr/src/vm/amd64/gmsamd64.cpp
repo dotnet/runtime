@@ -30,8 +30,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     ctx.Rip = baseState->m_CaptureRip;
     ctx.Rsp = baseState->m_CaptureRsp + 8; // +8 for return addr pushed before calling LazyMachStateCaptureState
     
+#ifndef UNIX_AMD64_ABI
     ctx.Rdi = unwoundState->m_CaptureRdi = baseState->m_CaptureRdi;
     ctx.Rsi = unwoundState->m_CaptureRsi = baseState->m_CaptureRsi;
+#endif
     ctx.Rbx = unwoundState->m_CaptureRbx = baseState->m_CaptureRbx;
     ctx.Rbp = unwoundState->m_CaptureRbp = baseState->m_CaptureRbp;
     ctx.R12 = unwoundState->m_CaptureR12 = baseState->m_CaptureR12;
@@ -42,8 +44,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 #if !defined(DACCESS_COMPILE)
     // For DAC, if we get here, it means that the LazyMachState is uninitialized and we have to unwind it.
     // The API we use to unwind in DAC is StackWalk64(), which does not support the context pointers.
+#ifndef UNIX_AMD64_ABI
     nonVolRegPtrs.Rdi = &unwoundState->m_CaptureRdi;
     nonVolRegPtrs.Rsi = &unwoundState->m_CaptureRsi;
+#endif
     nonVolRegPtrs.Rbx = &unwoundState->m_CaptureRbx;
     nonVolRegPtrs.Rbp = &unwoundState->m_CaptureRbp;
     nonVolRegPtrs.R12 = &unwoundState->m_CaptureR12;
@@ -58,7 +62,13 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     
     do 
     {
+
+#ifndef FEATURE_PAL
         pvControlPc = Thread::VirtualUnwindCallFrame(&ctx, &nonVolRegPtrs);
+#else // !FEATURE_PAL
+        VirtualUnwind(&ctx, &nonVolRegPtrs);
+        pvControlPc = GetIP(&ctx);
+#endif // !FEATURE_PAL
 
         if (funCallDepth > 0)
         {
@@ -105,8 +115,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     
 #if defined(DACCESS_COMPILE)
     // For DAC, we have to update the registers directly, since we don't have context pointers.
+#ifndef UNIX_AMD64_ABI
     unwoundState->m_CaptureRdi = ctx.Rdi;
     unwoundState->m_CaptureRsi = ctx.Rsi;
+#endif
     unwoundState->m_CaptureRbx = ctx.Rbx;
     unwoundState->m_CaptureRbp = ctx.Rbp;
     unwoundState->m_CaptureR12 = ctx.R12;
@@ -115,8 +127,10 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     unwoundState->m_CaptureR15 = ctx.R15;
 
 #else  // !DACCESS_COMPILE 
+#ifndef UNIX_AMD64_ABI
     unwoundState->m_pRdi = PTR_ULONG64(nonVolRegPtrs.Rdi);
     unwoundState->m_pRsi = PTR_ULONG64(nonVolRegPtrs.Rsi);
+#endif
     unwoundState->m_pRbx = PTR_ULONG64(nonVolRegPtrs.Rbx);
     unwoundState->m_pRbp = PTR_ULONG64(nonVolRegPtrs.Rbp);
     unwoundState->m_pR12 = PTR_ULONG64(nonVolRegPtrs.R12);

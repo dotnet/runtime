@@ -47,6 +47,7 @@ C_FUNC(\Name):
         .text
 #else
         .type \Name, %function
+        .cfi_startproc
 #endif
 C_FUNC(\Name):
 .endm
@@ -55,6 +56,7 @@ C_FUNC(\Name):
 C_FUNC(\Name\()_End):
         .global C_FUNC(\Name\()_End)
 #if !defined(__APPLE__)
+        .cfi_endproc
         .size \Name, .-\Name
 #endif
 .endm
@@ -74,6 +76,9 @@ C_FUNC(\Name\()_End):
 
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
+        .ifnc \Handler, NoHandler
+        .cfi_personality 0, \Handler // 4 == DW_EH_PE_udata8 0 == DW_EH_PE_absptr
+        .endif
 .endm
 
 .macro NESTED_END Name, Section
@@ -298,4 +303,3 @@ C_FUNC(\Name\()_End):
         POP_CALLEE_SAVED_REGISTERS
 
 .endm
-

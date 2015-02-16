@@ -1705,6 +1705,8 @@ typedef LONG (WINAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
     );
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
 
+BOOL VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
+
 /******************* ntdef ************************************/
 
 #ifndef ANYSIZE_ARRAY
