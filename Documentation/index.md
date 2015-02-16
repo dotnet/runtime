@@ -7,6 +7,7 @@ This repo includes several documents that explain both high-level and low-level 
 
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
+- [Type Loader](type-loader.md)
 - [Stack Walking](stackwalking.md)
 - [Book of the Runtime FAQ](botr-faq.md)
 
