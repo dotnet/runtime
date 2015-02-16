@@ -73,19 +73,7 @@ struct __cxa_exception
 
 static void UnwindContextToWinContext(_Unwind_Context *fromContext, CONTEXT *toContext)
 {
-#if defined(_PPC_)
-    // TODO: what about FPR14-FPR31, V20-V31, VRSAVE, CR2-CR4?
-    // Technically, these are all callee-saved, but the DWARF unwind info
-    // does not seem to track them.
-    toContext->Gpr1 = (ULONG) _Unwind_GetCFA(fromContext);
-    toContext->Gpr11 = (ULONG) _Unwind_GetGR(fromContext, 0x46);
-    for (int i = 13; i <= 31; i++)
-    {
-        (&toContext->Gpr0)[i] = (ULONG) _Unwind_GetGR(fromContext, i);
-    }
-    toContext->Lr = (ULONG) _Unwind_GetGR(fromContext, 0x41);
-    toContext->Iar = (ULONG) _Unwind_GetIP(fromContext);
-#elif defined(_X86_)
+#if defined(_X86_)
     toContext->Ebx = (ULONG) _Unwind_GetGR(fromContext, 3);
     toContext->Ebp = (ULONG) _Unwind_GetGR(fromContext, 4);
     toContext->Esp = (ULONG) _Unwind_GetCFA(fromContext);
@@ -161,9 +149,7 @@ static BOOL VirtualUnwind(CONTEXT *context, int nFramesToUnwind)
 {
     VirtualUnwindParam param;
     param.nFramesToUnwind = nFramesToUnwind;
-#if defined(_PPC_)
-    param.cfa = (void *) context->Gpr1;
-#elif defined(_X86_)
+#if defined(_X86_)
     param.cfa = (void *) context->Esp;
 #elif defined(_AMD64_)
     param.cfa = (void *) context->Rsp;
@@ -194,15 +180,6 @@ void DisplayContext(_Unwind_Context *context)
     fprintf(stderr, "  cfa=0x%p", _Unwind_GetCFA(context));
 #if defined(_X86_)
     // TODO: display more registers
-#elif defined(_PPC_)
-    fprintf(stderr, "  ra =0x%p", _Unwind_GetGR(context, 0x41));
-    fprintf(stderr, "  r11=0x%p\n", _Unwind_GetGR(context, 0x46));
-    for (int i = 13; i < 32; i++)
-    {
-        fprintf(stderr, "  r%02d=0x%p", i, _Unwind_GetGR(context, i));
-        if ((i - 13) % 4 == 3)
-            fprintf(stderr, "\n");
-    }
 #endif
     fprintf(stderr, "\n");
 }
@@ -491,9 +468,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
     // The frame we're looking at now is either RaiseException or PAL_TryExcept.
     // If it's RaiseException, we have to unwind one level further to get the
     // actual context user code could be resumed at.
-#if defined(_PPC_)
-    void *pc = (void *) ContextRecord.Iar;
-#elif defined(_X86_)
+#if defined(_X86_)
     void *pc = (void *) ContextRecord.Eip;
 #elif defined(_AMD64_)
     void *pc = (void *) ContextRecord.Rip;
@@ -503,9 +478,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
     if ((SIZE_T) pc - (SIZE_T) RaiseException < (SIZE_T) pc - (SIZE_T) PAL_TryExcept)
     {
         VirtualUnwind(&ContextRecord, 1);
-#if defined(_PPC_)
-        pc = (void *) ContextRecord.Iar;
-#elif defined(_X86_)
+#if defined(_X86_)
         pc = (void *) ContextRecord.Eip;
 #elif defined(_AMD64_)
         pc = (void *) ContextRecord.Rip;
@@ -833,10 +806,7 @@ _Unwind_Reason_Code PAL_SEHPersonalityRoutine(
         // Obtain the filter and parameter from the original frame.
         PFN_PAL_EXCEPTION_FILTER pfnFilter;
         void *pvParam;
-#if defined(_PPC_)
-        pfnFilter = (PFN_PAL_EXCEPTION_FILTER) _Unwind_GetGR(context, 28);
-        pvParam = _Unwind_GetGR(context, 29);
-#elif defined(_X86_)
+#if defined(_X86_)
         pfnFilter = ((PFN_PAL_EXCEPTION_FILTER *) _Unwind_GetGR(context, 4))[3]; // [ebp+12]
         pvParam = ((void **) _Unwind_GetGR(context, 4))[4]; // [ebp+16]
 #elif defined(_AMD64_)
@@ -915,10 +885,7 @@ _Unwind_Reason_Code PAL_SEHPersonalityRoutine(
         // platform, wich unwinds the stack also to run destructors for
         // objects allocated on the stack.  By behaving in the same way,
         // we can deal with C++ exceptions colliding with SEH unwinds.
-#if defined(_PPC_)
-        _Unwind_SetGR(context, 3, (void *) actions);
-        _Unwind_SetGR(context, 4, exceptionObject);
-#elif defined(_X86_) 
+#if defined(_X86_) 
         void **args = (void **) _Unwind_GetCFA(context);
         args[0] = (void *) actions;
         args[1] = exceptionObject;
@@ -1051,9 +1018,7 @@ _Unwind_Reason_Code PAL_SEHFilterPersonalityRoutine(
 
     // Retrieve the dispatcher context of the outer _Unwind_RaiseException.
     PAL_DISPATCHER_CONTEXT *outerDispatcherContext;
-#if defined(_PPC_)
-    outerDispatcherContext = (PAL_DISPATCHER_CONTEXT *) _Unwind_GetGR(context, 29);
-#elif defined(_X86_)
+#if defined(_X86_)
     outerDispatcherContext = (PAL_DISPATCHER_CONTEXT *) ((void **) _Unwind_GetGR(context, 4))[3]; // [ebp+12]
 #elif defined(_AMD64_)
     // Filter address is stored at RSP+8
@@ -1102,14 +1067,3 @@ _Unwind_Reason_Code PAL_SEHFilterPersonalityRoutine(
         return _URC_CONTINUE_UNWIND;
     }
 }
-
-#ifdef _PPC_
-// This function does not do anything.  It ist just here to be called by
-// PAL_TRY, so we can avoid the body of PAL_TRY being translated by the
-// compiler into a leaf function (i.e., one that does not set up its
-// own frame), because on a hardware fault in a leaf function, we would
-// get a stack that would not be unwindable.
-EXTERN_C VOID PALAPI PAL_DummyCall()
-{
-}
-#endif // _PPC_
