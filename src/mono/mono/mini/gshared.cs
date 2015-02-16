@@ -1579,6 +1579,10 @@ public class Tests
 	struct EmptyStruct {
 	}
 
+	public struct BStruct {
+		public int a, b, c, d;
+	}
+
 	interface IFoo3<T> {
 		int Bytes (T t, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
 				   byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7, byte b8);
@@ -1592,6 +1596,8 @@ public class Tests
 				  int i1, int i2, int i3, int i4);
 		int UInts (T t, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
 				   uint i1, uint i2, uint i3, uint i4);
+		int Structs (T t, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
+					 BStruct s);
 	}
 
 	class Foo3<T> : IFoo3<T> {
@@ -1619,6 +1625,10 @@ public class Tests
 						  uint i1, uint i2, uint i3, uint i4) {
 			return (int)(i1 + i2 + i3 + i4);
 		}
+		public int Structs (T t, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
+							BStruct s) {
+			return s.a + s.b + s.c + s.d;
+		}
 	}
 
 	// Passing small normal arguments on the stack
@@ -1642,6 +1652,15 @@ public class Tests
 		int res6 = o.UInts (new EmptyStruct (), 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4);
 		if (res6 != 10)
 			return 6;
+		return 0;
+	}
+
+	// Passing vtype normal arguments on the stack
+	public static int test_0_arm64_vtype_stack_args () {
+		IFoo3<EmptyStruct> o = (IFoo3<EmptyStruct>)Activator.CreateInstance (typeof (Foo3<>).MakeGenericType (new Type [] { typeof (EmptyStruct) }));
+		int res = o.Structs (new EmptyStruct (), 1, 2, 3, 4, 5, 6, 7, 8, new BStruct () { a = 1, b = 2, c = 3, d = 4 });
+		if (res != 10)
+			return 1;
 		return 0;
 	}
 }
