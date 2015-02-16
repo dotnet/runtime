@@ -15,5 +15,7 @@
 #include <common.h>
 #include <debugger.h>
 #include <methoditer.h>
+#ifdef DACCESS_COMPILE
 #include <dacprivate.h>
 #include <dacimpl.h>
+#endif // DACCESS_COMPILE

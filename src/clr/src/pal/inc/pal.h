@@ -1492,6 +1492,17 @@ CreateSemaphoreA(
 PALIMPORT
 HANDLE
 PALAPI
+CreateSemaphoreExA(
+         IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
+         IN LONG lInitialCount,
+         IN LONG lMaximumCount,
+         IN LPCSTR lpName,
+         IN /*_Reserved_*/  DWORD dwFlags,
+         IN DWORD dwDesiredAccess);
+
+PALIMPORT
+HANDLE
+PALAPI
 CreateSemaphoreW(
          IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
          IN LONG lInitialCount,
