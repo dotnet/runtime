@@ -123,8 +123,6 @@ monoutils_sources = \
 	mono-conc-hashtable.c	\
 	sha1.h		\
 	sha1.c	\
-	json.h	\
-	json.c	\	
 	networking.c	\
 	networking-posix.c	\
 	networking-fallback.c	\
