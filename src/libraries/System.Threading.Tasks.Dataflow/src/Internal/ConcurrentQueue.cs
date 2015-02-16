@@ -31,7 +31,6 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
     /// All public  and protected members of <see cref="ConcurrentQueue{T}"/> are thread-safe and may be used
     /// concurrently from multiple threads.
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
     internal class ConcurrentQueue<T> : IProducerConsumerCollection<T>

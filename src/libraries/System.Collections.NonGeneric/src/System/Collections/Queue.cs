@@ -20,7 +20,6 @@ namespace System.Collections
     // buffer, so Enqueue can be O(n).  Dequeue is O(1).
     [DebuggerTypeProxy(typeof(System.Collections.Queue.QueueDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class Queue : ICollection
     {
         private Object[] _array;

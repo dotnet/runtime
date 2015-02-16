@@ -6,7 +6,6 @@ using System;
 namespace System.IO
 {
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileAttributes
     {
         ReadOnly = 0x0001,

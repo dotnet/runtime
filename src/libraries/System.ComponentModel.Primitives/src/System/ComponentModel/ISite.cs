@@ -21,7 +21,6 @@ namespace System.ComponentModel
     ///       and enable communication between them, as well as provide a way
     ///       for the container to manage its components.</para>
     /// </devdoc>
-    [ComVisible(true)]
     public interface ISite : IServiceProvider
     {
         // The component sited by this component site.

@@ -9,7 +9,6 @@ namespace System.ComponentModel
     /// <devdoc>
     ///    <para>Converts the value of an object into a different data type.</para>
     /// </devdoc>
-    [ComVisible(true)]
     public class TypeConverter
     {
         /// <devdoc>

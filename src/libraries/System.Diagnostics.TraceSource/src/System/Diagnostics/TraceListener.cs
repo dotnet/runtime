@@ -111,9 +111,6 @@ namespace System.Diagnostics
             }
         }
 
-        [
-        ComVisible(false)
-        ]
         public TraceFilter Filter
         {
             get
@@ -143,9 +140,6 @@ namespace System.Diagnostics
             }
         }
 
-        [
-        ComVisible(false)
-        ]
         public TraceOptions TraceOutputOptions
         {
             get { return _traceOptions; }
@@ -312,9 +306,6 @@ namespace System.Diagnostics
 
         // new write methods used by TraceSource
 
-        [
-        ComVisible(false)
-        ]
         public virtual void TraceData(TraceEventCache eventCache, String source, TraceEventType eventType, int id, object data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data))
@@ -329,9 +320,6 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        [
-        ComVisible(false)
-        ]
         public virtual void TraceData(TraceEventCache eventCache, String source, TraceEventType eventType, int id, params object[] data)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
@@ -356,18 +344,12 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        [
-        ComVisible(false)
-        ]
         public virtual void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id)
         {
             TraceEvent(eventCache, source, eventType, id, String.Empty);
         }
 
         // All other TraceEvent methods come through this one.
-        [
-        ComVisible(false)
-        ]
         public virtual void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string message)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message))
@@ -379,9 +361,6 @@ namespace System.Diagnostics
             WriteFooter(eventCache);
         }
 
-        [
-        ComVisible(false)
-        ]
         public virtual void TraceEvent(TraceEventCache eventCache, String source, TraceEventType eventType, int id, string format, params object[] args)
         {
             if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args))

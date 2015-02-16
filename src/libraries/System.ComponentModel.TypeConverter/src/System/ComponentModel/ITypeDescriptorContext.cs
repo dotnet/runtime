@@ -10,7 +10,6 @@ namespace System.ComponentModel
     ///       Provides information about a context to a type converter or a value editor,
     ///       so that the type converter or editor can perform a conversion.</para>
     /// </devdoc>
-    [ComVisible(true)]
     public interface ITypeDescriptorContext : IServiceProvider
     {
         /// <devdoc>
