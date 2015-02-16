@@ -395,7 +395,7 @@ internal static partial class Interop
             int dwOptions
         );
 
-        [DllImport("api-ms-win-core-processsecurity-l1-1-0", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        [DllImport("api-ms-win-core-processthreads-l1-1-0", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
         public static extern bool OpenProcessToken(SafeProcessHandle ProcessHandle, int DesiredAccess, out SafeTokenHandle TokenHandle);
 
         [DllImport("api-ms-win-security-lsalookup-l2-1-0", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true, BestFitMapping = false)]

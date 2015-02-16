@@ -28,7 +28,6 @@
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\ArrayT.cs" />

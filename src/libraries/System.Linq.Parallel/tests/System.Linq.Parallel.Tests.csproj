@@ -24,7 +24,6 @@
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllAnyTests.cs" />
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AverageMaxMinTests.cs" />
     <Compile Include="CastOfTypeTests.cs" />
     <Compile Include="ContainsTests.cs" />

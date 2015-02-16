@@ -15,7 +15,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>  
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\ComponentModel\ComponentCollection.cs" />
     <Compile Include="System\ComponentModel\IComponent.cs" />
     <Compile Include="System\ComponentModel\IContainer.cs" />

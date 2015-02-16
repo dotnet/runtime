@@ -9,7 +9,6 @@
     <AssemblyName>System.IO.FileSystem.Primitives</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\IO\FileAccess.cs" />
     <Compile Include="System\IO\FileAttributes.cs" />
     <Compile Include="System\IO\FileMode.cs" />
