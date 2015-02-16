@@ -35,8 +35,6 @@ Revision History:
 #if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
-#elif HAVE_SOLARIS_THREADS
-#include <thread.h>
 #elif HAVE_MACH_THREADS
 #include <mach/thread_act.h>
 #include "sys/types.h"
@@ -1766,8 +1764,6 @@ CThreadSuspensionInfo::THREADHandleSuspendNative(CPalThread *pthrTarget)
     
 #if HAVE_PTHREAD_SUSPEND
     dwPthreadRet = pthread_suspend((pthread_t)pthrTarget->GetThreadId());
-#elif HAVE_SOLARIS_THREADS
-    dwPthreadRet = thr_suspend((thread_t)pthrTarget->GetThreadId());
 #elif HAVE_MACH_THREADS
     dwPthreadRet = thread_suspend(pthread_mach_thread_np((pthread_t)pthrTarget->GetThreadId()));
 #elif HAVE_PTHREAD_SUSPEND_NP
@@ -1844,8 +1840,6 @@ CThreadSuspensionInfo::THREADHandleResumeNative(CPalThread *pthrTarget)
     {
 #if HAVE_PTHREAD_CONTINUE
         dwPthreadRet = pthread_continue((pthread_t)pthrTarget->GetThreadId());
-#elif HAVE_SOLARIS_THREADS
-        dwPthreadRet = thr_continue((thread_t)pthrTarget->GetThreadId());
 #elif HAVE_MACH_THREADS
         dwPthreadRet = thread_resume(pthread_mach_thread_np((pthread_t)pthrTarget->GetThreadId()));
 #elif HAVE_PTHREAD_CONTINUE_NP
