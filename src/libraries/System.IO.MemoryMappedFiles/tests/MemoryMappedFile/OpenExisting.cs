@@ -11,6 +11,9 @@ using Xunit;
 [Collection("OpenExisting")]
 public class OpenExisting : MMFTestBase
 {
+    private readonly static string s_uniquifier = Guid.NewGuid().ToString();
+    private readonly static string s_fileNameTest = "OpenExisting_test_" + s_uniquifier + ".txt";
+
     [Fact]
     public static void OpenExistingTestCases()
     {
@@ -41,9 +44,9 @@ public class OpenExisting : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("OpenExisting_" + new String('a', 1000), 4096))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("OpenExisting_" + new String('a', 1000) + s_uniquifier, 4096))
             {
-                VerifyOpenExisting("Loc111", "OpenExisting_" + new String('a', 1000), MemoryMappedFileAccess.ReadWrite);
+                VerifyOpenExisting("Loc111", "OpenExisting_" + new String('a', 1000) + s_uniquifier, MemoryMappedFileAccess.ReadWrite);
             }
 
             // null
@@ -62,21 +65,21 @@ public class OpenExisting : MMFTestBase
             }
 
             // MMF with this mapname already exists (pagefile backed)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("OpenExisting_map115a", 1000))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("OpenExisting_map115a" + s_uniquifier, 1000))
             {
-                VerifyOpenExisting("Loc115a", "OpenExisting_map115a", MemoryMappedFileAccess.ReadWrite);
+                VerifyOpenExisting("Loc115a", "OpenExisting_map115a" + s_uniquifier, MemoryMappedFileAccess.ReadWrite);
             }
 
             // MMF with this mapname already exists (filesystem backed)
             String fileText = "Non-empty file for MMF testing.";
-            File.WriteAllText("OpenExisting_test2.txt", fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("OpenExisting_test2.txt", FileMode.Open, "map115b"))
+            File.WriteAllText(s_fileNameTest, fileText);
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest, FileMode.Open, "map115b" + s_uniquifier))
             {
-                VerifyOpenExisting("Loc115b", "map115b", MemoryMappedFileAccess.ReadWrite);
+                VerifyOpenExisting("Loc115b", "map115b" + s_uniquifier, MemoryMappedFileAccess.ReadWrite);
             }
 
             // MMF with this mapname existed, but was closed - new MMF
-            VerifyOpenExistingException<FileNotFoundException>("Loc116", "OpenExisting_map115a");
+            VerifyOpenExistingException<FileNotFoundException>("Loc116", "OpenExisting_map115a" + s_uniquifier);
 
 
             ////////////////////////////////////////////////////////////////////////
@@ -86,10 +89,10 @@ public class OpenExisting : MMFTestBase
             // [] rights
             MemoryMappedFileRights[] rightsList;
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname334", 1000))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname334" + s_uniquifier, 1000))
             {
                 // default security - AccessSystemSecurity fails
-                VerifyOpenExistingException<IOException>("Loc333", "mapname334", MemoryMappedFileRights.AccessSystemSecurity);
+                VerifyOpenExistingException<IOException>("Loc333", "mapname334" + s_uniquifier, MemoryMappedFileRights.AccessSystemSecurity);
 
                 // default security - all others valid
                 rightsList = new MemoryMappedFileRights[] {
@@ -110,7 +113,7 @@ public class OpenExisting : MMFTestBase
                 {
                     //Console.WriteLine("{0}  {1}", rights, RightsToMinAccess(rights));
                     // include ReadPermissions or we won't be able to verify the security object
-                    VerifyOpenExisting("Loc334_" + rights, "mapname334", rights | MemoryMappedFileRights.ReadPermissions, RightsToMinAccess(rights));
+                    VerifyOpenExisting("Loc334_" + rights, "mapname334" + s_uniquifier, rights | MemoryMappedFileRights.ReadPermissions, RightsToMinAccess(rights));
                 }
 
                 // invalid enum value
@@ -120,7 +123,7 @@ public class OpenExisting : MMFTestBase
                 };
                 foreach (MemoryMappedFileRights rights in rightsList)
                 {
-                    VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc335_" + ((int)rights), "mapname334", rights);
+                    VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc335_" + ((int)rights), "mapname334" + s_uniquifier, rights);
                 }
             }
 
@@ -131,9 +134,9 @@ public class OpenExisting : MMFTestBase
             // [] mapName
 
             // mapname > 260 chars
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(new String('a', 1000), 4096))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(new String('a', 1000) + s_uniquifier, 4096))
             {
-                VerifyOpenExisting("Loc411", new String('a', 1000), MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc411", new String('a', 1000) + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
             // null
@@ -152,25 +155,25 @@ public class OpenExisting : MMFTestBase
             }
 
             // MMF with this mapname already exists (pagefile backed)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415a", 1000))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415a" + s_uniquifier, 1000))
             {
-                VerifyOpenExisting("Loc415a", "map415a", MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc415a", "map415a" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
             // MMF with this mapname already exists (filesystem backed)
-            File.WriteAllText("OpenExisting_test2.txt", fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("OpenExisting_test2.txt", FileMode.Open, "map415b"))
+            File.WriteAllText(s_fileNameTest, fileText);
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest, FileMode.Open, "map415b" + s_uniquifier))
             {
-                VerifyOpenExisting("Loc415b", "map415b", MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc415b", "map415b" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
             // MMF with this mapname existed, but was closed
-            VerifyOpenExistingException<FileNotFoundException>("Loc416", "map415a", MemoryMappedFileRights.FullControl, HandleInheritability.None);
+            VerifyOpenExistingException<FileNotFoundException>("Loc416", "map415a" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None);
 
             // [] rights
 
             // invalid enum value
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname432", 1000))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname432" + s_uniquifier, 1000))
             {
                 rightsList = new MemoryMappedFileRights[] {
                     (MemoryMappedFileRights)(-1),
@@ -178,12 +181,12 @@ public class OpenExisting : MMFTestBase
                 };
                 foreach (MemoryMappedFileRights rights in rightsList)
                 {
-                    VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc432_" + ((int)rights), "mapname432", rights, HandleInheritability.None);
+                    VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc432_" + ((int)rights), "mapname432" + s_uniquifier, rights, HandleInheritability.None);
                 }
             }
 
             // default security - all valid
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname433", 1000))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname433" + s_uniquifier, 1000))
             {
                 rightsList = new MemoryMappedFileRights[] {
                     MemoryMappedFileRights.CopyOnWrite,
@@ -202,15 +205,15 @@ public class OpenExisting : MMFTestBase
                 foreach (MemoryMappedFileRights rights in rightsList)
                 {
                     // include ReadPermissions or we won't be able to verify the security object
-                    VerifyOpenExisting("Loc433_" + rights, "mapname433", rights | MemoryMappedFileRights.ReadPermissions, HandleInheritability.None, RightsToMinAccess(rights));
+                    VerifyOpenExisting("Loc433_" + rights, "mapname433" + s_uniquifier, rights | MemoryMappedFileRights.ReadPermissions, HandleInheritability.None, RightsToMinAccess(rights));
                 }
 
                 // default security - AccessSystemSecurity fails
-                VerifyOpenExistingException<IOException>("Loc433b", "mapname433", MemoryMappedFileRights.AccessSystemSecurity);
+                VerifyOpenExistingException<IOException>("Loc433b", "mapname433" + s_uniquifier, MemoryMappedFileRights.AccessSystemSecurity);
             }
 
             // default security, original (lesser) viewAccess is respected
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname434", 1000, MemoryMappedFileAccess.Read))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.Read))
             {
                 rightsList = new MemoryMappedFileRights[] {
                     MemoryMappedFileRights.CopyOnWrite,
@@ -229,71 +232,71 @@ public class OpenExisting : MMFTestBase
                 foreach (MemoryMappedFileRights rights in rightsList)
                 {
                     // include ReadPermissions or we won't be able to verify the security object
-                    VerifyOpenExisting("Loc434_" + rights, "mapname434", rights | MemoryMappedFileRights.ReadPermissions, HandleInheritability.None, RightsToMinAccess(rights & ~MemoryMappedFileRights.Write));
+                    VerifyOpenExisting("Loc434_" + rights, "mapname434" + s_uniquifier, rights | MemoryMappedFileRights.ReadPermissions, HandleInheritability.None, RightsToMinAccess(rights & ~MemoryMappedFileRights.Write));
                 }
             }
 
             // [] inheritability
 
             // None - existing file w/None
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname463", 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname463" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
             {
-                VerifyOpenExisting("Loc463a", "mapname463", MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc463a", "mapname463" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
-            using (FileStream fs = new FileStream("OpenExisting_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest, FileMode.Open))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname463", 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname463" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
                 {
-                    VerifyOpenExisting("Loc463b", "mapname463", MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                    VerifyOpenExisting("Loc463b", "mapname463" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
                 }
             }
 
             // None - existing file w/Inheritable
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname464", 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname464" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))
             {
-                VerifyOpenExisting("Loc464a", "mapname464", MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc464a", "mapname464" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
-            using (FileStream fs = new FileStream("OpenExisting_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest, FileMode.Open))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname464", 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname464" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false))
                 {
-                    VerifyOpenExisting("Loc464b", "mapname464", MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
+                    VerifyOpenExisting("Loc464b", "mapname464" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.None, MemoryMappedFileAccess.ReadWriteExecute);
                 }
             }
 
             // Inheritable - existing file w/None
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname465", 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname465" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
             {
-                VerifyOpenExisting("Loc465a", "mapname465", MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc465a", "mapname465" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
-            using (FileStream fs = new FileStream("OpenExisting_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest, FileMode.Open))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname465", 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname465" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
                 {
-                    VerifyOpenExisting("Loc465b", "mapname465", MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
+                    VerifyOpenExisting("Loc465b", "mapname465" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
                 }
             }
 
             // Inheritable - existing file w/Inheritable
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname466", 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("mapname466" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))
             {
-                VerifyOpenExisting("Loc466a", "mapname466", MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
+                VerifyOpenExisting("Loc466a", "mapname466" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
             }
 
-            using (FileStream fs = new FileStream("OpenExisting_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest, FileMode.Open))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname466", 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "mapname466" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false))
                 {
-                    VerifyOpenExisting("Loc466b", "mapname466", MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
+                    VerifyOpenExisting("Loc466b", "mapname466" + s_uniquifier, MemoryMappedFileRights.FullControl, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWriteExecute);
                 }
             }
 
             // invalid
-            VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc467", "mapname467", MemoryMappedFileRights.FullControl, (HandleInheritability)(-1));
-            VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc468", "mapname468", MemoryMappedFileRights.FullControl, (HandleInheritability)(2));
+            VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc467", "mapname467" + s_uniquifier, MemoryMappedFileRights.FullControl, (HandleInheritability)(-1));
+            VerifyOpenExistingException<ArgumentOutOfRangeException>("Loc468", "mapname468" + s_uniquifier, MemoryMappedFileRights.FullControl, (HandleInheritability)(2));
 
             /// END TEST CASES
 
