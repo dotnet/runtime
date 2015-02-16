@@ -10,7 +10,6 @@ namespace System.IO
     ///   access to a file.
     /// </devdoc>
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileAccess
     {
         /// <devdoc>

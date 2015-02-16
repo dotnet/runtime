@@ -45,7 +45,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     internal sealed partial class Win32FileStream : FileStreamBase
     {
         internal const int DefaultBufferSize = 4096;
@@ -1812,8 +1811,6 @@ namespace System.IO
             return numBytesWritten;
         }
 
-
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -1854,7 +1851,6 @@ namespace System.IO
 #endif
         }
 
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -2016,7 +2012,6 @@ namespace System.IO
         // Legend is that we chose not to flush the OS file buffers in Flush() in fear of 
         // perf problems with frequent, long running FlushFileBuffers() calls. But we don't 
         // have that problem with FlushAsync() because we will call FlushFileBuffers() in the background.
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
         public override Task FlushAsync(CancellationToken cancellationToken)
         {

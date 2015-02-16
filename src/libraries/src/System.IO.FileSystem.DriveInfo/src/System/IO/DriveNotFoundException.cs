@@ -6,7 +6,6 @@ using System;
 namespace System.IO
 {
     //Thrown when trying to access a drive that is not availabe.
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class DriveNotFoundException : IOException
     {
         public DriveNotFoundException()

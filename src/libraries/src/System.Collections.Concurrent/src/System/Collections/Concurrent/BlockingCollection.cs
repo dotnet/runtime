@@ -38,7 +38,6 @@ namespace System.Collections.Concurrent
     /// away as an <see cref="T:System.Collections.Concurrent.IProducerConsumerCollection{T}"/>. 
     /// </remarks>
     /// <typeparam name="T">Specifies the type of elements in the collection.</typeparam>
-    [ComVisible(false)]
     [DebuggerTypeProxy(typeof(BlockingCollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}, Type = {_collection}")]
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>

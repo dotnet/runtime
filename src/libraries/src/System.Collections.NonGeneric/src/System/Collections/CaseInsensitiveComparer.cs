@@ -17,7 +17,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class CaseInsensitiveComparer : IComparer
     {
         private CompareInfo _compareInfo;

@@ -34,7 +34,6 @@ namespace System.Collections
 #endif
     [DebuggerTypeProxy(typeof(System.Collections.ArrayList.ArrayListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class ArrayList : IList
     {
         private Object[] _items;

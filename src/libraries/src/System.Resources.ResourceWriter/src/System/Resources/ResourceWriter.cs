@@ -36,7 +36,6 @@ namespace System.Resources
     // See the RuntimeResourceSet overview for details on the system 
     // default file format.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ResourceWriter : System.IDisposable
     {
         // An initial size for our internal sorted list, to avoid extra resizes.
