@@ -30,6 +30,10 @@ if(WIN32)
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
 else(WIN32)
+    # This option is necessary to ensure that the overloaded delete operator defined inside
+    # of the utilcode will be used instead of the standard library delete operator.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic-functions")
+
     # The following linked options can be inserted into the linker libraries list to 
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
