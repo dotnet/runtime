@@ -1175,15 +1175,9 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     {
         *pContext = *pRegDisp->pContext;
     }
-
-#elif defined(_WIN64) || defined(_TARGET_ARM_)
+#else
     *pContext = *pRegDisp->pCurrentContext;
-
-#else  // !_TARGET_X86_ && !_WIN64
-    _ASSERTE(!"DDII::UpdateContextFromRegDisplay() - NYI on this platform\n");
-    ThrowHR(E_NOTIMPL);
-
-#endif // !_TARGET_X86_ && !_WIN64
+#endif
 }
 
 //---------------------------------------------------------------------------------------

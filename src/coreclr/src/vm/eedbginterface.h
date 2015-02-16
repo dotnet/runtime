@@ -328,7 +328,6 @@ public:
     virtual void DebuggerModifyingLogSwitch (int iNewLevel,
                                              const WCHAR *pLogSwitchName) = 0;
 
-#if defined(_TARGET_X86_) || defined(_WIN64) || defined(_TARGET_ARM_)
     virtual HRESULT SetIPFromSrcToDst(Thread *pThread,
                           SLOT addrStart,
                           DWORD offFrom,
@@ -338,7 +337,6 @@ public:
                           PT_CONTEXT pCtx,
                           void *pDji,
                           EHRangeTree *pEHRT) = 0;
-#endif // _TARGET_X86_ || _WIN64 || _TARGET_ARM_
 
     virtual void SetDebugState(Thread *pThread,
                                CorDebugThreadState state) = 0;

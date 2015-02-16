@@ -1,9 +1,16 @@
-﻿What Every CLR Developer Must Know Before Writing Code
-===
+What Every CLR Developer Must Know Before Writing Code
+=== 
+
+Written in 2006, by:
+
+- Rick Byers ([@RByers](https://github.com/RByers))
+- Jan Kotas ([@jkotas](https://github.com/jkotas))
+- Mike Stall ([@mikestall](https://github.com/mikestall))
+- Rudi Martin ([@Rudi-Martin](https://github.com/Rudi-Martin))
 
 # Why you must read this document
 
-Like most large codebases, the CLR codebase has many internal invariants and an extensive debug build infrastructure for detecting problems. Clearly, it is important that developers working on the CLR understand these rules and conventions. 
+Like most large codebases, the CLR codebase has many internal invariants and an extensive debug build infrastructure for detecting problems. Clearly, it is important that developers working on the CLR understand these rules and conventions.
 
 The information contained here is considered the minimum set of knowledge required of developers who work on any part of the CLR. This is the document we wished we had all throughout the CLR's history, especially when fixing a bug that could have been prevented had this information been more readily available.
 
@@ -65,8 +72,8 @@ The code fragment below is the simplest way to introduce a GC hole into the syst
 	     OBJECTREF a = AllocateObject(pMT);
 	     OBJECTREF b = AllocateObject(pMT);
 
-	     //WRONG!!! “a” may point to garbage if the second 
-	     //“AllocateObject” triggered a GC.
+	     //WRONG!!! "a" may point to garbage if the second
+	     //"AllocateObject" triggered a GC.
 	     DoSomething (a, b);
 	}
 
@@ -82,16 +89,16 @@ This point is worth repeating. The GC has no intrinsic knowledge of root referen
 
 Here's how to fix our buggy code fragment.
 
-	#include “frames.h”
+	#include "frames.h"
 	{
 	     MethodTable *pMT = g_pObjectClass->GetMethodTable();
 
 	    //RIGHT
 	    OBJECTREF a = AllocateObject(pMT);
-	  
+
 	    GCPROTECT_BEGIN(a);
 	    OBJECTREF b = AllocateObject(pMT);
-	  
+
 	    DoSomething (a, b);
 
 	    GCPROTECT_END();
@@ -122,7 +129,7 @@ Why is GCPROTECT not implemented via a C++ smart pointer? The GCPROTECT macro or
 
 The following is illegal and will cause some sort of crash:
 
-	// WRONG: Can’t GCPROTECT twice.
+	// WRONG: Can't GCPROTECT twice.
 	OBJECTREF a = AllocateObject(...);
 	GCPROTECT_BEGIN(a);
 	GCPROTECT_BEGIN(a);
@@ -172,9 +179,8 @@ The following code fragment shows how handles are used. In practice, of course, 
 	    ah = CreateHandle(AllocateObject(pMT));
 	    bh = CreateHandle(AllocateObject(pMT));
 
-
 	    DoSomething (ObjectFromHandle(ah),
-	                            ObjectFromhandle(bh));
+	                 ObjectFromhandle(bh));
 
 	    DestroyHandle(bh);
 	    DestroyHandle(ah);
@@ -183,14 +189,14 @@ The following code fragment shows how handles are used. In practice, of course, 
 There are actually several flavors of handles. This section lists the most common ones. ([objecthandle.h][objecthandle.h] contains the complete list.)
 
 - **HNDTYPE_STRONG**: This is the default and acts like a normal reference. Created by calling CreateHandle(OBJECTREF).
-- **HNDTYPE_WEAK_LONG**: Tracks an object as long as one strong reference to its exists but does not itself prevent the object from being GC'd. Created by calling CreateWeakHandle(OBJECTREF). 
+- **HNDTYPE_WEAK_LONG**: Tracks an object as long as one strong reference to its exists but does not itself prevent the object from being GC'd. Created by calling CreateWeakHandle(OBJECTREF).
 - **HNDTYPE_PINNED**: Pinned handles are strong handles which have the added property that they prevent an object from moving during a garbage collection cycle. This is useful when passing a pointer to object innards out of the runtime while GC may be enabled.
 
 NOTE: PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS. THIS TYPE OF HANDLE SHOULD BE USED SPARINGLY!
 
 ### Use the right GC Mode – Preemptive vs. Cooperative
 
-Earlier, we implied that GC doesn't occur spontaneously. This is true… for a given thread. But the CLR is multithreaded. Even if your thread does all the right things, it has no control over other threads.
+Earlier, we implied that GC doesn't occur spontaneously. This is true... for a given thread. But the CLR is multithreaded. Even if your thread does all the right things, it has no control over other threads.
 
 Consider two possible ways to schedule GC:
 
@@ -206,7 +212,7 @@ Both have their strengths and drawbacks. Preemptive mode sounds attractive and e
 Now, while the compiler can generate any valid code for this, it's very likely it will look something like this:
 
 	call	AllocateObject
-	mov	[A],eax  ;;store result in “a”
+	mov	[A],eax  ;;store result in "a"
 	... code for GCPROTECT_BEGIN omitted...
 	push	[A]        ;push argument to DoSomething
 	call	DoSomething
@@ -217,19 +223,18 @@ How about the alternative: cooperative GC? With cooperative GC, the above proble
 
 Because neither policy alone suffices for the CLR, the CLR supports both: and you, as a developer, are responsible for switching the threads accordingly. Note that the GC-scheduling mode is a property of an individual thread; not a global system property.
 
-Put precisely: as long as a thread is in cooperative mode, it is guaranteed that a GC will only occur when your thread triggers an object allocation, calls out to interruptable managed code or explicitly requests a GC. All other threads are blocked from GC. As long as your thread is in preemptive mode, then you must assume that a GC can be started any time (by some other thread) and is running concurrently with your thread.
+Put precisely: as long as a thread is in cooperative mode, it is guaranteed that a GC will only occur when your thread triggers an object allocation, calls out to interruptible managed code or explicitly requests a GC. All other threads are blocked from GC. As long as your thread is in preemptive mode, then you must assume that a GC can be started any time (by some other thread) and is running concurrently with your thread.
 
 A good rule of thumb is this: a CLR thread runs in cooperative mode any time it is running managed code or any time it needs to manipulate object references in any way. An Execution Engine (EE) thread that is running in preemptive mode is usually running unmanaged code; i.e. it has left the managed world. Process threads that have never entered CLR in any way are effectively running in preemptive mode. Much of the code inside CLR runs in cooperative mode.
 
-While you are running in preemptive mode, OBJECTREF's are strictly hands-off; their values are completely unreliable. In fact, the checked build asserts if you even touch an OBJECTREF in preemptive mode. In cooperative mode, you are blocking other threads from GC so you must avoid long or blocking operations. Also be aware of any critical sections or semaphores you wait on. They must not guard sections that themselves trigger GC. 
+While you are running in preemptive mode, OBJECTREF's are strictly hands-off; their values are completely unreliable. In fact, the checked build asserts if you even touch an OBJECTREF in preemptive mode. In cooperative mode, you are blocking other threads from GC so you must avoid long or blocking operations. Also be aware of any critical sections or semaphores you wait on. They must not guard sections that themselves trigger GC.
 
 **Setting the GC mode:** The preferred way to set the GC mode are the GCX_COOP and GCX_PREEMP macros. These macros operate as holders. That is, you declare them at the start of the block of code you want to execute in a certain mode. Upon any local or non-local exit out of that scope, a destructor automatically restores the original mode.
 
 	{ // always open a new C++ scope to switch modes
-	    GCX_COOP();  
-	    Code you want run in cooperative mode	
+	    GCX_COOP();
+	    Code you want run in cooperative mode
 	} // leaving scope automatically restores original mode
-
 
 It's perfectly legal to invoke GCX_COOP() when the thread is already in cooperative mode. GCX_COOP will be a NOP in that case. Likewise for GCX_PREEMP.
 
@@ -242,11 +247,11 @@ There are a couple of variants for special situations:
 - **GCX_MAYBE_\*(BOOL)**: This version only performs the switch if the boolean parameter is TRUE. Note that the mode restore at the end of the scope still occurs whether or not you passed TRUE. (Of course, this is only important if the mode got switched some other way inside the scope. Usually, this shouldn't happen.)
 - **GCX_\*_THREAD_EXISTS(Thread\*)**: If you're concerned about the repeated GetThread() and null Thread checks inside this holder, use this "performance" version which lets you cache the Thread pointer and pass it to all the GCX_\* calls. You cannot use this to change the mode of another thread. You also cannot pass NULL here.
 
-To switch modes multiple times in a function, you must introduce a new scope for each switch. You can also call GCX_POP(), which performs a mode restore prior to the end of the scope. (The mode restore will happen again at the end of the scope, however. Since mode restore is idempodent, this shouldn't matter.) Do not, however, do this:
+To switch modes multiple times in a function, you must introduce a new scope for each switch. You can also call GCX_POP(), which performs a mode restore prior to the end of the scope. (The mode restore will happen again at the end of the scope, however. Since mode restore is idempotent, this shouldn't matter.) Do not, however, do this:
 
 	{
 	     GCX_COOP();
-	     …
+	     ...
 	     GCX_PREEMP():	//WRONG!
 	}
 
@@ -259,7 +264,7 @@ While the holder-based macros are the preferred way to switch modes, sometimes o
 
 There is no automatic mode-restore with these functions so the onus is on you to manage the lifetime of the mode. Also, mode changes cannot be nested. You will get an assert if you try to change to a mode you're already in. The "this" argument must be the currently executing thread. You cannot use this to change the mode of another thread.
 
-**Key Takeway:** Use GCX_COOP/PREEMP rather than unscoped calls to DisablePreemptiveGC() whenever possible.
+**Key Takeaway:** Use GCX_COOP/PREEMP rather than unscoped calls to DisablePreemptiveGC() whenever possible.
 
 **Testing/asserting the GC mode:**
 
@@ -270,7 +275,6 @@ You can assert the need to be in a particular mode in the contract by using one 
 	    MODE_COOPERATIVE
 	}
 	CONTRACTL_END
-
 
 	CONTRACTL
 	{
@@ -287,7 +291,6 @@ There are also standalone versions:
 	{
 	    GCX_ASSERT_PREEMP();
 	}
-
 
 You'll notice that the standalone versions are actually holders rather than simple statements. The intention was that these holders would assert again on scope exit to ensure that any backout holders are correctly restoring the mode. However, that exit check was disabled initially with the idea of enabling it eventually once all the backout code was clean. Unfortunately, the "eventually" has yet to arrive. As long as you use the GCX holders to manage mode changes, this shouldn't really be a problem.
 
@@ -315,7 +318,7 @@ OBJECTREF's pointer mimicry isn't perfect. In certain cases, the checked build r
 compiles fine under retail but breaks under checked. The usual workaround is something like this:
 
 	pv = (LPVOID)OBJECTREFToObject(o);
-    
+
 ### How to know if a function can trigger a GC.
 
 The GC behavior of every function in the source base must be documented in its contract. Every function must have a contract that declares one of the following:
@@ -332,7 +335,7 @@ The GC behavior of every function in the source base must be documented in its c
 
 or
 
-	// If you call me and the thread is in cooperative mode, I guarantee no GC 
+	// If you call me and the thread is in cooperative mode, I guarantee no GC
 	// will occur.
 	void Quiet()
 	{
@@ -355,7 +358,7 @@ A GC_NOTRIGGER function cannot:
 - Call any other function marked GC_TRIGGERS
 - Call any other code that does these things
 
-[1] With one exception: GCX_COOP (which effects a preemp->coop->preemp roundtrip) is permitted. The rationale is that GCX_COOP becomes a NOP if the thread was cooperative to begin with so it’s safe to allow this (and necessary to avoid some awkward code in our product.) 
+[1] With one exception: GCX_COOP (which effects a preemp->coop->preemp roundtrip) is permitted. The rationale is that GCX_COOP becomes a NOP if the thread was cooperative to begin with so it's safe to allow this (and necessary to avoid some awkward code in our product.)
 
 **Note that for GC to be truly prevented, the caller must also ensure that the thread is in cooperative mode.** Otherwise, all the precautions above are in vain since any other thread can start a GC at any time. Given that, you might be wondering why cooperative mode is not part of the definition of GC_NOTRIGGER. In fact, there is a third thread state called GC_FORBID which is exactly that: GC_TRIGGERS plus forced cooperative mode. As its name implies, GC_FORBID _guarantees_ that no GC will occur on any thread.
 
@@ -397,30 +400,30 @@ The following shows explicit backout vs. holders:
 
 **Wrong**
 
-    HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, …);
-    if (hFile == INVALID_HANDLE_VALUE) {
-       COMPlusThrow(…);
-    }
+	HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, ...);
+	if (hFile == INVALID_HANDLE_VALUE) {
+	    COMPlusThrow(...);
+	}
 
-    DWORD dwFileLen = SafeGetFileSize(hFile, 0);
-    If (dwFileLen == 0xffffffff) {
-	 CloseHandle(hFile);
-        COMPlusThrow(…);
-    }
-    CloseHandle(hFile);
-    return S_OK;
+	DWORD dwFileLen = SafeGetFileSize(hFile, 0);
+	if (dwFileLen == 0xffffffff) {
+	    CloseHandle(hFile);
+	    COMPlusThrow(...);
+	}
+	CloseHandle(hFile);
+	return S_OK;
 
 **Right**
 
-    HandleHolder hFile(ClrCreateFile(szFileName, GENERIC_READ, …));
-    if (hFile == INVALID_HANDLE_VALUE)
-        COMPlusThrow(…);
+	HandleHolder hFile(ClrCreateFile(szFileName, GENERIC_READ, ...));
+	if (hFile == INVALID_HANDLE_VALUE)
+	    COMPlusThrow(...);
 
-    DWORD dwFileLen = SafeGetFileSize(hFile, 0);
-    If (dwFileLen == 0xffffffff)
-	 COMPlusThrow(…);
-    
-    return S_OK;
+	DWORD dwFileLen = SafeGetFileSize(hFile, 0);
+	if (dwFileLen == 0xffffffff)
+	    COMPlusThrow(...);
+
+	return S_OK;
 
 The difference is that hFile is now a HandleHolder rather than a HANDLE and that there are no more explicit CloseHandle calls. That call is now implicit in the holder's destructor and executes no matter how control leaves the scope.
 
@@ -430,29 +433,28 @@ Suppose you want to auto-close the handle if an error occurs but keep the handle
 
 **Wrong:**
 
-    HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, …);
-    if (hFile == INVALID_HANDLE_VALUE) {
-       COMPlusThrow(…);
-    }
-    if (FAILED(SomeOperation())) {
-	CloseHandle(hFile);
-	COMPlusThrow(…);
-    }
-    return hFile;
+	HANDLE hFile = ClrCreateFile(szFileName, GENERIC_READ, ...);
+	if (hFile == INVALID_HANDLE_VALUE) {
+	    COMPlusThrow(...);
+	}
+	if (FAILED(SomeOperation())) {
+	    CloseHandle(hFile);
+	    COMPlusThrow(...);
+	}
+	return hFile;
 
 **Right:**
 
-    HandleHolder hFile = ClrCreateFile(szFileName, GENERIC_READ, …);
-    if (hFile == INVALID_HANDLE_VALUE) {
-       COMPlusThrow(…);
-    }
-    if (FAILED(SomeOperation())) {
-	COMPlusThrow(…);
-    }
-    // No failures allowed after this!
-    hFile.SuppressRelease();
-    return hFile;
-
+	HandleHolder hFile = ClrCreateFile(szFileName, GENERIC_READ, ...);
+	if (hFile == INVALID_HANDLE_VALUE) {
+	    COMPlusThrow(...);
+	}
+	if (FAILED(SomeOperation())) {
+	    COMPlusThrow(...);
+	}
+	// No failures allowed after this!
+	hFile.SuppressRelease();
+	return hFile;
 
 ### Common Features of Holders
 
@@ -462,7 +464,7 @@ All holders, no matter how complex or simple, offer these basic services:
 - A holder declared without an explicit initializer will be initialized to a default value. The precise value of the default is supplied by the holder's designer.
 - Holders know about "null" values. The holder guarantees never to call RELEASE or ACQUIRE on a null value. The designer can specify any number of null values or no null value at all.
 - Holders expose a public SuppressRelease() method which eliminates the auto-release in the destructor. Use this for conditional backout.
-- Holders also support an ACQUIRE method when a resource can be meaningfully released and reacquired (e.g. locks.) 
+- Holders also support an ACQUIRE method when a resource can be meaningfully released and reacquired (e.g. locks.)
 
 In addition, some holders derive from the Wrapper class. Wrappers are like holders but also implement operator overloads for type casting, assignment, comparison, etc. so that the holder proxies the object smart-pointer style. The HandleHolder object is actually a wrapper.
 
@@ -511,9 +513,8 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 
 ### New'ed array:
 
-
 **Wrong:**
-   	
+
    	Foo *pFoo = new Foo[30];
 	delete pFoo;
 
@@ -537,12 +538,12 @@ Holders consistently release on destruction – that's their whole purpose. Sadl
 ### Critical Section Holder:
 
 **Wrong:**
-    pCrst->Enter();
+	pCrst->Enter();
 	pCrst->Leave();
 
 **Right:**
 
-	{	
+	{
 	    CrstHolder(pCrst);	//implicit Enter
 	}			       		//implicit Leave
 
@@ -554,9 +555,9 @@ OOM stands for "Out of Memory." The CLR must be fully robust in the face of OOM 
 
 This means that:
 
-- Any operation that fails due to an OOM must allow future retries. This means any changes to global data structures must be rolled back and OOM exceptions cannot be cached. 
-- OOM failures must be distinguishable from other error results. OOM's must never be transformed into some other error code. Doing so may cause some operations to cache the error and return the same error on each retry. 
-- Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declation is done by the INJECT_FAULT and FORBID_FAULT contract annotations. 
+- Any operation that fails due to an OOM must allow future retries. This means any changes to global data structures must be rolled back and OOM exceptions cannot be cached.
+- OOM failures must be distinguishable from other error results. OOM's must never be transformed into some other error code. Doing so may cause some operations to cache the error and return the same error on each retry.
+- Every function must declare whether or not it can generate an OOM error. We cannot write OOM-safe code if we have no way to know what calls can generate OOM's. This declaration is done by the INJECT_FAULT and FORBID_FAULT contract annotations.
 
 ### Documenting where OOM's can happen.
 
@@ -564,22 +565,22 @@ Sometimes, a code sequence requires that no opportunities for OOM occur. Backout
 
 To document that a function _can_ fail due to OOM:
 
-**Runtime-based (preferred)**		
+**Runtime-based (preferred)**
 
 	void AllocateThingie()
 	{
-		CONTRACTL
-		{
-	  	    INJECT_FAULT(COMPlusThrowOM(););	 	
-	   	} 
-	   	CONTRACTL_END
-	}	
+	    CONTRACTL
+	    {
+	        INJECT_FAULT(COMPlusThrowOM(););
+	    }
+	    CONTRACTL_END
+	}
 
 **Static**
 
- 	void AllocateThingie()
-   	{
-		STATIC_CONTRACT_FAULT;
+	void AllocateThingie()
+	{
+	    STATIC_CONTRACT_FAULT;
 	}
 
 To document that a function _cannot_ fail due to OOM:
@@ -588,18 +589,18 @@ To document that a function _cannot_ fail due to OOM:
 
 	BOOL IsARedObject()
 	{
-	   CONTRACTL
-	   {
-	  	    FORBID_FAULT;	 	
-	   } 
-	   CONTRACTL_END
+	    CONTRACTL
+	    {
+	        FORBID_FAULT;
+	    }
+	    CONTRACTL_END
 	}
 
-**Static**		
+**Static**
 
 	BOOL IsARedObject()
 	{
-	   STATIC_CONTRACT_FORBID_FAULT;
+	    STATIC_CONTRACT_FORBID_FAULT;
 	}
 
 INJECT_FAULT()'s argument is the code that executes when the function reports an OOM. Typically this is to throw an OOM exception or return E_OUTOFMEMORY. The original intent for this was for our OOM fault injection test harness to insert simulated OOM's at this point and execute this line. At the moment, this argument is ignored but we may still employ this fault injection idea in the future so please code it appropriately.
@@ -612,7 +613,7 @@ Sometimes, a function handles an internal OOM without needing to notify the call
 
 	{
 	    FAULT_NOT_FATAL();
-	    pv = new Foo();	
+	    pv = new Foo();
 	}
 
 FAULT_NOT_FATAL() is almost identical to a CONTRACT_VIOLATION() but the name indicates that it is by design, not a bug. It is analogous to TRY/CATCH for exceptions.
@@ -621,7 +622,7 @@ FAULT_NOT_FATAL() is almost identical to a CONTRACT_VIOLATION() but the name ind
 
 If you wish to set the OOM state for a scope rather than a function, use the FAULT_FORBID() holder. To test the current state, use the ARE_FAULTS_FORBIDDEN() predicate.
 
-#### Remember…
+#### Remember...
 
 - Do not use INJECT_FAULT to indicate the possibility of non-OOM errors such as entries not existing in a hash table or a COM object not supporting an interface. INJECT_FAULT indicates OOM errors and no other type.
 - Be very suspicious if your INJECT_FAULT() argument is anything other than throwing an OOM exception or returning E_OUTOFMEMORY. OOM errors must distinguishable from other types of errors so if you're merely returning NULL without indicating the type of error, you'd better be a simple memory allocator or some other function that will never fail for any reason other than an OOM.
@@ -643,7 +644,7 @@ An SString object represents a Unicode string. It has its own buffer which it in
 
 When SStrings are used as local variables, they are typically used via the StackSString type, which uses a bit of stack space as a preallocated buffer for optimization purposes. When SStrings are use in structures, the SString type may be used directly (if it is likely that the string will be empty), or through the InlineSString template, which allows an arbitrary amount of preallocated space to be declared inline in the structure with the SString. Since InlineSStrings and StackSStrings are subtypes of SString, they have the same API, and can be passed wherever an SString is required.
 
-As parameters, SStrings should always be declared as reference parameters. Similarly, SStrings as return value should also use a "by reference" style. 
+As parameters, SStrings should always be declared as reference parameters. Similarly, SStrings as return value should also use a "by reference" style.
 
 An SString's contents can be initialized by a "raw" string, or from another SString. A WCHAR based string is assumed to be Unicode, but for a CHAR based string, you must specify the encoding by explicitly invoking one of the tagged constructors with the appropriate encoding (currently Utf8, Ansi, or Console).
 
@@ -661,11 +662,11 @@ For easy creation of an SString for a string literal, use the SL macro. This can
 
 Integer overflow bugs are an insidious source of buffer overrun vulnerabilities.Here is a simple example of how such a bug can occur:
 
-  void *pInput = whatever;
-  UINT32 cbSizeOfData = GetSizeOfData();
-  UINT32 cbAllocSize = SIZE_OF_HEADER + cbSizeOfData;
-  void *pBuffer = Allocate(cbAllocSize);
-  memcpy(pBuffer + SIZE_OF_HEADER, pInput, cbSizeOfData);
+	void *pInput = whatever;
+	UINT32 cbSizeOfData = GetSizeOfData();
+	UINT32 cbAllocSize = SIZE_OF_HEADER + cbSizeOfData;
+	void *pBuffer = Allocate(cbAllocSize);
+	memcpy(pBuffer + SIZE_OF_HEADER, pInput, cbSizeOfData);
 
 If GetSizeOfData() obtains its result from untrusted data, it could return a huge value just shy of UINT32_MAX. Adding SIZE_OF_HEADER causes a silent overflow, resulting in a very small (and incorrect) value being passed to Allocate() which dutifully returns a short buffer. The memcpy, however, copies a huge number of bytes and overflows the buffer.
 
@@ -675,15 +676,15 @@ We have now standardized on an infrastructure for performing overflow-safe arith
 
 The _safe_ version of the above code follows:
 
-	#include “safemath.h”
+	#include "safemath.h"
 
 	void *pInput = whatever;
 	S_UINT32 cbSizeOfData = S_UINT32(GetSizeOfData());
 	S_UINT32 cbAllocSize =  S_UINT32(SIZE_OF_HEADER) + cbSizeOfData;
 	if (cbAllocSize.IsOverflow())
 	{
-	  return E_OVERFLOW;
-	} 
+	    return E_OVERFLOW;
+	}
 	void *pBuffer = Allocate(cbAllocSize.Value());
 	memcpy(pBuffer + SIZE_OF_HEADER, pInput, cbSizeOfData);
 
@@ -700,13 +701,11 @@ As you might _not_ expect, Value() also asserts if you never called IsOverflow()
 
 Currently, the "S_" types are available only for unsigned ints and SIZE_T. Check in [safemath.h][safemath.h] for what's currently defined. Also, only addition and multiplication are supported although other operations could be added if needed.
 
-**Key Takeaway: Use safemath.h for computing allocation sizes and pointer offsets.** Don't rely on the fact that the caller may have already validated the data. You never know what new paths might be added to your vulnerable code. 
+**Key Takeaway: Use safemath.h for computing allocation sizes and pointer offsets.** Don't rely on the fact that the caller may have already validated the data. You never know what new paths might be added to your vulnerable code.
 
 **Key Takeaway: If you're working on existing code that does dynamic memory allocation, check for this bug.**
 
 **Key Takeaway: Do not roll your own overflow checks. Always use safemath.h.** Writing correct overflow-safe arithmetic code is harder than you might think (take a look at the implementation in [safemath.h][safemath.h] if you don't believe me.) Every unauthorized version is another security hotspot that has to be watched carefully. If safemath.h doesn't support the functionality you need, please get the functionality added to safemath.h rather than creating a new infrastructure.
-
-
 
 **Key Takeaway: Don't let premature perf concerns stop you from using safemath.h.** Despite the apparently complexity, the optimized codegen for this helper is very efficient and in most cases, at least as efficient as any hand-rolled version you might be tempted to create.
 
@@ -730,8 +729,8 @@ A CLR host must be able to detect and break deadlocks. To do this, it must know 
 We have the following approved synchronization mechanisms in the CLR:
 
 1. **Crst:** This is our replacement for the Win32 CRITICAL_SECTION. We should be using Crst's pretty much everywhere we need a lock in the CLR.
-2. **Events:** A host can provide event handles that replace the Win32 events. 
-3. **InterlockedIncrement/Decrement/CompareExchange:** These operations may be used for lightweight ref-counting and initialization scenarios. 
+2. **Events:** A host can provide event handles that replace the Win32 events.
+3. **InterlockedIncrement/Decrement/CompareExchange:** These operations may be used for lightweight ref-counting and initialization scenarios.
 
 Make sure you aren't using events to build the equivalent of a critical section. The problem with this is that we cannot identify the thread that "owns" the critical section and hence, the host cannot trace and break deadlocks. In general, if you're creating a situation that could result in a deadlock, even if only due to bad user code, you must ensure that a CLR host can detect and break the deadlock.
 
@@ -753,7 +752,7 @@ To create a Crst:
 
 	Crst *pcrst = new Crst(type [, flags]);
 
-Where “type” is a member of the CrstType enumeration (defined in the automatically generated src\inc\CrstTypes.h file). These types indicate the usage of the Crst, particularly with regard to which other Crsts may be obtained simultaneously, There is a direct mapping for the CrstType to a level (see CrstTypes.h) though the reverse is not true.
+Where "type" is a member of the CrstType enumeration (defined in the automatically generated src\inc\CrstTypes.h file). These types indicate the usage of the Crst, particularly with regard to which other Crsts may be obtained simultaneously, There is a direct mapping for the CrstType to a level (see CrstTypes.h) though the reverse is not true.
 
 Don't create static instances of Crsts<sup>[2]</sup>. Use CrstStatic class for this purpose, instead.
 
@@ -774,11 +773,9 @@ To enter or leave a crst, you must wrap the crst inside a CrstHolder. All operat
 	{
 	    CrstHolder ch(pcrst);	// implicit enter
 
-	    … do your thing… may also throw…
+	    ... do your thing... may also throw...
 
-    }							// implicit leave
-
-
+	}							// implicit leave
 
 **You can only enter and leave Crsts in preemptive GC mode.** Attempting to enter a Crst in cooperative mode will forcibly switch your thread into preemptive mode.
 
@@ -789,13 +786,12 @@ You can also manually acquire and release crsts by calling the appropriate metho
 	{
 	    CrstHolder ch(pcrst);	// implicit enter
 
-	    … 
+	    ...
 	    ch.Release();		// temporarily leave
-	    …
+	    ...
 	    ch.Acquire();		// temporarily enter
 
-       }					// implicit leave
-
+	}					// implicit leave
 
 Note that holders do not let you nest Acquires or Releases. You will get an assert if you try. Introduce a new scope and a new holder if you need to do this.
 
@@ -804,18 +800,15 @@ If you need to create a CrstHolder without actually entering the critical sectio
 	{
 	    CrstHolder ch(pcrst, FALSE);	// no implicit enter
 
-	    … 
+	    ...
 	}									// no implicit leave
 
-	
 If you want to exit the scope without leaving the Crst, call SuppressRelease() on the holder:
 
 	{
 	    CrstHolder ch(pcrst);	// implicit enter
-	    ch.SuppressRelease();		
-    }							// no implicit leave
-
-
+	    ch.SuppressRelease();
+	}							// no implicit leave
 
 ### Other Crst Operations
 
@@ -856,7 +849,7 @@ By default, Crsts can only be acquired and released in preemptive GC mode and th
 
 **CRST_UNSAFE_COOPGC**
 
-If you pass this flag, it says that your Crst will always be taken in Cooperative GC mode. This is dangerous because you cannot allow a GC to occur while the lock is held<sup>[3]</sup>. Entering a coop mode lock puts your thread in ForbidGC mode until you leave the lock. For handy reference, some of the things you can't do in ForbidGC mode are: 
+If you pass this flag, it says that your Crst will always be taken in Cooperative GC mode. This is dangerous because you cannot allow a GC to occur while the lock is held<sup>[3]</sup>. Entering a coop mode lock puts your thread in ForbidGC mode until you leave the lock. For handy reference, some of the things you can't do in ForbidGC mode are:
 
 - Allocate managed memory
 - Call managed code
@@ -882,21 +875,21 @@ In order to use CRST_UNSAFE_SAMELEVEL, you should write a paragraph explaining w
 
 Under no circumstances may you use CRST_UNSAFE_SAMELEVEL for a non-host-breakable lock.
 
-[3] More precisely, you cannot allow a GC to block your thread at a GC-safe point. If it does, the GC could deadlock because the GC thread itself blocks waiting for a third cooperative mode thread to reach its GC-safe point… which it can’t do because it’s trying to acquire the very lock that your first thread owns. This wouldn’t be an issue if acquiring a coop-mode lock was itself a GC-safe point. But too much code relies on this not being a GC-safe point to fix this easily
+[3] More precisely, you cannot allow a GC to block your thread at a GC-safe point. If it does, the GC could deadlock because the GC thread itself blocks waiting for a third cooperative mode thread to reach its GC-safe point... which it can't do because it's trying to acquire the very lock that your first thread owns. This wouldn't be an issue if acquiring a coop-mode lock was itself a GC-safe point. But too much code relies on this not being a GC-safe point to fix this easily
 
-### Bypassing leveling (CRSTUNORDEREDnordered) 
+### Bypassing leveling (CRSTUNORDEREDnordered)
 
 CrstUnordered (used in rules inside CrstTypes.def) is a special level that says that the lock does not participate in any of the leveling required for deadlock avoidance. This is the most heinous of the ways you can construct a Crst. Though there are still some uses of this in the CLR, it should be avoided by any means possible.
 
-### So what _are _the prerequisites and side-effects of entering a Crst? 
+### So what _are _the prerequisites and side-effects of entering a Crst?
 
 The following matrix lists the effective contract and side-effects of entering a crst for all combinations of CRST_HOST_BREAKABLE and CRST_UNSAFE_\* flags. The SAMELEVEL flag has no effect on any of these parameters.
 
-|     | Default | CRST_HOST_BREAKABLE|
-| --- | --- | --- | 
-|Default| NOTHROW<br> FORBID_FAULT<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive) | THROWS<br>INJECT_FAULT<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive) |
-| CRST_UNSAFE_COOPGC| NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) |
-| CRST_UNSAFE_ANYMODE | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode) |
+|                     | Default                                                                                   | CRST_HOST_BREAKABLE                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Default             | NOTHROW<br> FORBID_FAULT<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)    | THROWS<br>INJECT_FAULT<br>GC_TRIGGERS<br>MODE_ANY<br>(switches thread to preemptive)     |
+| CRST_UNSAFE_COOPGC  | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_COOP<br>(puts thread in GCNoTrigger mode) |
+| CRST_UNSAFE_ANYMODE | NOTHROW<br>FORBID_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  | THROWS<br>INJECT_FAULT<br>GC_NOTRIGGER<br>MODE_ANY<br>(puts thread in GCNoTrigger mode)  |
 
 ### Using Events and Waitable Handles
 
@@ -945,7 +938,7 @@ The managed debugging services have some very unique properties in the CLR, and 
 Be aware of things that make the debugger subsystem different than other subsystems:
 
 - The debugger runs mostly out-of-process.
-- The debugger generally inspects things at a very intimate level. For example, the debugger can see private fields, the offsets of those fields, and what registers an object may be stored in. 
+- The debugger generally inspects things at a very intimate level. For example, the debugger can see private fields, the offsets of those fields, and what registers an object may be stored in.
 - The debugger needs to be able to stop and synchronize the debuggee, in a similar way as the GC. That means all those GC-contracts, GC-triggers, GC-toggling, etc, may heavily affect the debugger's synchronization too.
 - Whereas most subsystems can just patiently wait for a GC to complete, the debugger will need to do complicated work during a GC-suspension.
 
@@ -955,18 +948,18 @@ Here are some immediate tips for working well with the managed-debugging service
 - Don't disassemble your own code. Breakpoints generally work by writing a "break opcode" (int3 on x86) into the instruction stream. Thus when you disassemble your code, you may get the breakpoint opcode instead of your own original opcode. Currently, we have to workaround this by having all runtime disassembly ask the debugger if there's a break opcode at the targeted address, and that's painful.
 - Avoid self-modifying code. Avoid this for the same reasons that you shouldn't disassemble your own code. If you modify your own code, that would conflict with the debugger adding breakpoints there.
 - Do not change behavior when under the debugger. An app should behave identically when run outside or under the debugger. This is absolutely necessary else we get complaints like "my program only crashes when run under the debugger". This is also necessary because somebody may attach a debugger to an app after the fact. Specific examples of this:
-  	- Don't assume that just because an app is under the debugger that somebody is trying to debug it. 
-  	- Don't add additional run-time error checks when under the debugger. For example, avoid code like:  if ((IsDebuggerPresent() && (argument == null)) { throw MyException(); }
-	- Avoid massive perf changes when under the debugger. For example, don't use an interpreted stub just because you're under the debugger. We then get bugs like [my app is 100x slower when under a debugger](http://blogs.msdn.com/b/jmstall/archive/2006/01/17/pinvoke-100x-slower.aspx).
-  	-Avoid algorithmic changes. For example, do not make the JIT generate non-optimized code just because an app is under the debugger. Do not make the loader policy resolve to a debuggable-ngen image just because an app is under the debugger.
+  - Don't assume that just because an app is under the debugger that somebody is trying to debug it.
+  - Don't add additional run-time error checks when under the debugger. For example, avoid code like:  if ((IsDebuggerPresent() && (argument == null)) { throw MyException(); }
+  - Avoid massive perf changes when under the debugger. For example, don't use an interpreted stub just because you're under the debugger. We then get bugs like [my app is 100x slower when under a debugger](http://blogs.msdn.com/b/jmstall/archive/2006/01/17/pinvoke-100x-slower.aspx).
+  - Avoid algorithmic changes. For example, do not make the JIT generate non-optimized code just because an app is under the debugger. Do not make the loader policy resolve to a debuggable-ngen image just because an app is under the debugger.
 - Separate your code into a) side-effect-free (non-mutating) read-only accessors and b) functions that change state. The motivation is that the debugger needs to be able to read-state in a non-invasive way. For example, don't just have GetFoo() that will lazily create a Foo if it's not available. Instead, split it out like so:
-  	- GetFoo() - fails if a Foo does not exist. Being non-mutating, this should also be GC_NOTRIGGER. Non-mutating will also make it much easier to DAC-ize. This is what the debugger will call.
-  	- and GetOrCreateFoo() that is built around GetFoo(). The rest of the runtime can call this.
-	- The debugger can then just call GetFoo(), and deal with the failure accordingly.
+  - GetFoo() - fails if a Foo does not exist. Being non-mutating, this should also be GC_NOTRIGGER. Non-mutating will also make it much easier to DAC-ize. This is what the debugger will call.
+  - and GetOrCreateFoo() that is built around GetFoo(). The rest of the runtime can call this.
+  - The debugger can then just call GetFoo(), and deal with the failure accordingly.
 - If you add a new stub (or way to call managed code), make sure that you can source-level step-in (F11) it under the debugger. The debugger is not psychic. A source-level step-in needs to be able to go from the source-line before a call to the source-line after the call, or managed code developers will be very confused. If you make that call transition be a giant 500 line stub, you must cooperate with the debugger for it to know how to step-through it. (This is what StubManagers are all about. See [src\vm\stubmgr.h](https://github.com/dotnet/coreclr/blob/master/src/vm/stubmgr.h)). Try doing a step-in through your new codepath under the debugger.
-- **Beware of timeouts** : The debugger may completely suspend your process at arbitrary points. In most cases, the debugger will do the right thing (and suspend your timeout too), but not always. For example, if you have some other process waiting for info from the debuggee, it [may hit a timeout](http://blogs.msdn.com/b/jmstall/archive/2005/11/11/contextswitchdeadlock.aspx). 
+- **Beware of timeouts** : The debugger may completely suspend your process at arbitrary points. In most cases, the debugger will do the right thing (and suspend your timeout too), but not always. For example, if you have some other process waiting for info from the debuggee, it [may hit a timeout](http://blogs.msdn.com/b/jmstall/archive/2005/11/11/contextswitchdeadlock.aspx).
 - **Use CLR synchronization primitives (like Crst)**. In addition to all the reasons listed in the synchronization section, the CLR-aware primitives can cooperate with the debugging services. For example:
-  - The debugger needs to know when threads are modifying sensitive data (which correlates to when the threads lock that data). 
+  - The debugger needs to know when threads are modifying sensitive data (which correlates to when the threads lock that data).
   - Timeouts for CLR synchronization primitives may operate better in the face of being debugged.
 - **Optimized != Non-debuggable:** While performance is important, you should make sure your perf changes do not break the debugger. This is especially important in stepping, which requires the debugger to know exactly where we are going to execute managed code. For example, when we started using IL stubs for reverse pinvoke calls in the .NET Framework 2, the debugger was no longer notified that a thread was coming back to managed code, which broke stepping. You can probably find a way to make your feature area debuggable without sacrificing performance.
 
@@ -995,7 +988,7 @@ The types are grouped into several categories.
 - Large count-sized integral types (COUNT_T, SCOUNT_T) These are used when you would normally use a SIZE_T or SSIZE_T on a 32 bit machine, but you know you won't ever need more than 32 bits, even on a 64 bit machine. Use this type where practical to avoid bloated data sizes.
 - Semantic content types: (BOOL, BYTE). Use these types to indicate additional semantic context to an integral type. BYTE indicates "raw data", and BOOL indicates a value which can be either TRUE or FALSE.
 - Character data types (CHAR, SCHAR, UCHAR, WCHAR, ASCII, ANSI, UTF8). These have fixed sizes and represent single characters in strings. CHAR may be either signed or unsigned. Note that CHAR/SCHAR/UCHAR specify no semantics about character set; use ASCII, ANSI, and UTF8 to indicate when a specific encoding is used.It is worth mentioning that manipulation of strings as raw character arrays is discouraged; instead code should use the SString class wherever possible.
-- Pointer to executable code PCODE. Use these for any pointers to (managed) executable code. 
+- Pointer to executable code PCODE. Use these for any pointers to (managed) executable code.
 
 All standard integral types have *_MIN and *_MAX values declared as well.
 
@@ -1014,18 +1007,17 @@ Here is a typical contract:
 
 	LPVOID Foo(char *name, Blob *pBlob)
 	{
-	    CONTRACTL 
-	    {    
-		THROWS;			    // This function may throw
-		INJECT_FAULT(COMPlusThrowOM());// This function may fail due to OOM
-		GC_TRIGGERS;			    // This function may trigger a GC
-		MODE_COOPERATIVE;		    // Must be in GC-cooperative mode to call  
-		CAN_TAKE_LOCK;	// This function may take a Crst, spinlock, etc.
-		EE_THREAD_REQUIRED;		    // This function expects an EE Thread
-						    // object in the TLS
-		PRECONDITION(CheckPointer(name)); // Invalid to pass NULL
-		PRECONDITION(CheckPointer(pBlob, NULL_OK)); // Ok to pass NULL
-	    } 
+	    CONTRACTL
+	    {
+	        THROWS;                                     // This function may throw
+	        INJECT_FAULT(COMPlusThrowOM());             // This function may fail due to OOM
+	        GC_TRIGGERS;                                // This function may trigger a GC
+	        MODE_COOPERATIVE;                           // Must be in GC-cooperative mode to call
+	        CAN_TAKE_LOCK;                              // This function may take a Crst, spinlock, etc.
+	        EE_THREAD_REQUIRED;                         // This function expects an EE Thread object in the TLS
+	        PRECONDITION(CheckPointer(name));           // Invalid to pass NULL
+	        PRECONDITION(CheckPointer(pBlob, NULL_OK)); // Ok to pass NULL
+	    }
 	    CONTRACTL_END;
 
 	    ...
@@ -1075,16 +1067,16 @@ In TLS we keep track of the current intent (whether to lock), and actual reality
 
 [contract.h]: https://github.com/dotnet/coreclr/blob/master/src/inc/contract.h
 
-- SCAN 
-  	- A CANNOT_TAKE_LOCK function calling a CAN_TAKE_LOCK function is illegal (just like THROWS/NOTHROWS) 
-- Dynamic checking: 
-  	- A CANNOT_TAKE_LOCK function calling a CAN_TAKE_LOCK function is illegal 
-  	- *_LOCK_TAKEN / *_LOCK_RELEASED macros (contract.h): 
-	    - Sprinkled at all places we take/release actual or conceptual locks 
-	    - Asserts if taking a lock in a CANNOT_TAKE_LOCK scope 
-	    - Keeps count of locks currently taken by thread 
-	    - Remembers stack of lock pointers for diagnosis 
-	- ASSERT_NO_EE_LOCKS_HELD(): Handy way for you to verify no locks are held right now on this thread (i.e., lock count == 0)
+- SCAN
+  - A CANNOT_TAKE_LOCK function calling a CAN_TAKE_LOCK function is illegal (just like THROWS/NOTHROWS)
+- Dynamic checking:
+  - A CANNOT_TAKE_LOCK function calling a CAN_TAKE_LOCK function is illegal
+  - *_LOCK_TAKEN / *_LOCK_RELEASED macros (contract.h):
+    - Sprinkled at all places we take/release actual or conceptual locks
+    - Asserts if taking a lock in a CANNOT_TAKE_LOCK scope
+    - Keeps count of locks currently taken by thread
+    - Remembers stack of lock pointers for diagnosis
+  - ASSERT_NO_EE_LOCKS_HELD(): Handy way for you to verify no locks are held right now on this thread (i.e., lock count == 0)
 
 #### EE_THREAD_REQUIRED / EE_THREAD_NOT_REQUIRED
 
@@ -1099,11 +1091,10 @@ Of course, there are exceptions to this. In particular, if there is a clear code
 	Thread* pThread = GetThreadNULLOk();
 	if (pThread != NULL)
 	{
-		pThread->m_dwAVInRuntimeImplOkayCount++;
+	    pThread->m_dwAVInRuntimeImplOkayCount++;
 	}
 
 Rule: You should only use GetThreadNULLOk if it is patently obvious from the call site that NULL is dealt with directly. Obviously, this would be bad:
-
 
 	GetThreadNULLOk()->BeginCriticalRegion();
 
@@ -1122,7 +1113,7 @@ In more complex situations, a caller may be able to vouch for an EE Thread's exi
 	if (pThread == NULL)
 	    return;
 
-	// We know there’s an EE Thread now, so it’s safe to call GetThread()
+	// We know there's an EE Thread now, so it's safe to call GetThread()
 	// and expect a non-NULL return.
 	BEGIN_GETTHREAD_ALLOWED;
 	CallCodeThatRequiresThread();
@@ -1132,8 +1123,8 @@ BEGIN/END_GETTHREAD_ALLOWED simply instantiate a holder that temporarily disable
 
 You should only use BEGIN/END_GETTHREAD_ALLOWED(_IN_NO_THROW_REGION) if:
 
-- It is provably impossible for GetThread() to ever return NULL from within that scope, or 
-- All code within that scope directly deals with GetThread()==NULL. 
+- It is provably impossible for GetThread() to ever return NULL from within that scope, or
+- All code within that scope directly deals with GetThread()==NULL.
 
 If the latter is true, it's generally best to push BEGIN/END_GETTHREAD_ALLOWED down the callee chain so all callers benefit.
 
@@ -1164,7 +1155,7 @@ Preconditions and postconditions will execute in the order declared. The "intrin
 Contracts come in several forms:
 
 - CONTRACTL: This is the most common type. It does runtime checks as well as being visible to the static scanner. It is suitable for all runtime contracts except those that use postconditions. When in doubt, use this form.
-- CONTRACT(returntype): This is an uglier version that's needed if you include a POSTCONDITION. You must supply the correct function return type for this form and it cannot be "void" (use CONTRACT_VOID instead.) You must also use the special RETURN macro rather than the normal return keyword. 
+- CONTRACT(returntype): This is an uglier version that's needed if you include a POSTCONDITION. You must supply the correct function return type for this form and it cannot be "void" (use CONTRACT_VOID instead.) You must also use the special RETURN macro rather than the normal return keyword.
 - CONTRACT_VOID: Use this if you need a postcondition and the return type is void. CONTRACT(void) will not work.
 - STATIC_CONTRACT_\*: This form generates no runtime code but still emits the hidden tags visible to the static contract scanner. Use this only if checked build perf would suffer greatly by putting a runtime contract there or if for some technical reason, the runtime-based contract is not possible..
 - LIMITED_METHOD_CONTRACT: A static contract equivalent to NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY/CANNOT_TAKE_LOCK. Use this form only for trivial one-liner functions. Remember it does not do runtime checks so it should not be used for complex functions.
@@ -1179,21 +1170,21 @@ Contracts can and are used outside of the files that build CLR. However, the GC_
 You cannot use runtime contracts if:
 
 - Your code is callable from the implementation of FLS (Fiber Local Storage). This may result in an infinite recursion as the contract infrastructure itself uses FLS.
-- Your code makes a net change to the ClrDebugState. Only the contract infrastructure should be doing this but see below for more details. 
+- Your code makes a net change to the ClrDebugState. Only the contract infrastructure should be doing this but see below for more details.
 
 ### Do not make unscoped changes to the ClrDebugState.
 
-The ClrDebugState is the per-thread data structure that houses all of the flag bits set and tested by contracts (i.e. NOTHROW, NOTRIGGER.). You should never modify this data directly. Always go through contracts or the specific holders (such as GCX_NOTRIGGER.) 
+The ClrDebugState is the per-thread data structure that houses all of the flag bits set and tested by contracts (i.e. NOTHROW, NOTRIGGER.). You should never modify this data directly. Always go through contracts or the specific holders (such as GCX_NOTRIGGER.)
 
 This data is meant to be changed in a scoped manner only. In particular, the CONTRACT destructor always restores the _entire_ ClrDebugState from a copy saved on function entry. This means that any net changes made by the function body itself will be wiped out when the function exits via local _or_ non-local control. The same caveat is true for holders such as GCX_NOTRIGGER.
 
-### For more details…
+### For more details...
 
 See the big block comment at the start of [src\inc\contract.h][contract.h].
 
 ## Is your code DAC compliant?
 
-At a high level, DAC is a technique to enable execution of CLR algorithms from out-of-process (eg. on a memory dump). Core CLR code is compiled in a special mode (with DACCESS_COMPILE defined) where all pointer dereferences are intercepted. 
+At a high level, DAC is a technique to enable execution of CLR algorithms from out-of-process (eg. on a memory dump). Core CLR code is compiled in a special mode (with DACCESS_COMPILE defined) where all pointer dereferences are intercepted.
 
 Various tools (most notably the debugger and SOS) rely on portions of the CLR code being properly "DACized". Writing code in this way can be tricky and error-prone. Use the following references for more details:
 
