@@ -205,17 +205,17 @@ namespace System.Threading.Tasks
 
             // replace shared LowestBreakIteration with CurrentIteration, but only if CurrentIteration
             // is less than LowestBreakIteration.
-            int oldLBI = pflags.m_lowestBreakIteration;
+            int oldLBI = pflags._lowestBreakIteration;
             if (iteration < oldLBI)
             {
                 SpinWait wait = new SpinWait();
                 while (Interlocked.CompareExchange(
-                    ref pflags.m_lowestBreakIteration,
+                    ref pflags._lowestBreakIteration,
                         iteration,
                         oldLBI) != oldLBI)
                 {
                     wait.SpinOnce();
-                    oldLBI = pflags.m_lowestBreakIteration;
+                    oldLBI = pflags._lowestBreakIteration;
                     if (iteration > oldLBI) break;
                 }
             }
@@ -251,7 +251,7 @@ namespace System.Threading.Tasks
             {
                 SpinWait wait = new SpinWait();
                 while (Interlocked.CompareExchange(
-                    ref pflags.m_lowestBreakIteration,
+                    ref pflags._lowestBreakIteration,
                         iteration,
                         oldLBI) != oldLBI)
                 {
@@ -465,24 +465,24 @@ namespace System.Threading.Tasks
         // Records the lowest iteration at which a Break() has been called,
         // or Int32.MaxValue if no break has been called.  Used directly
         // by Break().
-        internal volatile int m_lowestBreakIteration = Int32.MaxValue;
+        internal volatile int _lowestBreakIteration = Int32.MaxValue;
 
         // Not strictly necessary, but maintains consistency with ParallelStateFlags64
         internal int LowestBreakIteration
         {
-            get { return m_lowestBreakIteration; }
+            get { return _lowestBreakIteration; }
         }
 
-        // Does some processing to convert m_lowestBreakIteration to a long?.
+        // Does some processing to convert _lowestBreakIteration to a long?.
         internal long? NullableLowestBreakIteration
         {
             get
             {
-                if (m_lowestBreakIteration == Int32.MaxValue) return null;
+                if (_lowestBreakIteration == Int32.MaxValue) return null;
                 else
                 {
                     // protect against torn read of 64-bit value
-                    long rval = m_lowestBreakIteration;
+                    long rval = _lowestBreakIteration;
                     if (IntPtr.Size >= 8) return rval;
                     else return Interlocked.Read(ref rval);
                 }
@@ -531,28 +531,28 @@ namespace System.Threading.Tasks
         // Records the lowest iteration at which a Break() has been called,
         // or Int64.MaxValue if no break has been called.  Used directly
         // by Break().
-        internal long m_lowestBreakIteration = Int64.MaxValue;
+        internal long _lowestBreakIteration = Int64.MaxValue;
 
-        // Performs a conditionally interlocked read of m_lowestBreakIteration.
+        // Performs a conditionally interlocked read of _lowestBreakIteration.
         internal long LowestBreakIteration
         {
             get
             {
-                if (IntPtr.Size >= 8) return m_lowestBreakIteration;
-                else return Interlocked.Read(ref m_lowestBreakIteration);
+                if (IntPtr.Size >= 8) return _lowestBreakIteration;
+                else return Interlocked.Read(ref _lowestBreakIteration);
             }
         }
 
-        // Does some processing to convert m_lowestBreakIteration to a long?.
+        // Does some processing to convert _lowestBreakIteration to a long?.
         internal long? NullableLowestBreakIteration
         {
             get
             {
-                if (m_lowestBreakIteration == Int64.MaxValue) return null;
+                if (_lowestBreakIteration == Int64.MaxValue) return null;
                 else
                 {
-                    if (IntPtr.Size >= 8) return m_lowestBreakIteration;
-                    else return Interlocked.Read(ref m_lowestBreakIteration);
+                    if (IntPtr.Size >= 8) return _lowestBreakIteration;
+                    else return Interlocked.Read(ref _lowestBreakIteration);
                 }
             }
         }
@@ -602,14 +602,14 @@ namespace System.Threading.Tasks
     /// </remarks>
     public struct ParallelLoopResult
     {
-        internal bool m_completed;
-        internal long? m_lowestBreakIteration;
+        internal bool _completed;
+        internal long? _lowestBreakIteration;
 
         /// <summary>
         /// Gets whether the loop ran to completion, such that all iterations of the loop were executed
         /// and the loop didn't receive a request to end prematurely.
         /// </summary>
-        public bool IsCompleted { get { return m_completed; } }
+        public bool IsCompleted { get { return _completed; } }
 
         /// <summary>
         /// Gets the index of the lowest iteration from which <see
@@ -620,7 +620,7 @@ namespace System.Threading.Tasks
         /// If <see cref="System.Threading.Tasks.ParallelLoopState.Break()"/> was not employed, this property will
         /// return null.
         /// </remarks>
-        public long? LowestBreakIteration { get { return m_lowestBreakIteration; } }
+        public long? LowestBreakIteration { get { return _lowestBreakIteration; } }
     }
 }
 
