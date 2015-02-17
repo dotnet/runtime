@@ -186,6 +186,9 @@ DECL_OFFSET(MonoLMF, fregs)
 #elif defined(TARGET_ARM64)
 DECL_OFFSET(MonoLMF, pc)
 DECL_OFFSET(MonoLMF, gregs)
+DECL_OFFSET(DynCallArgs, fpregs)
+DECL_OFFSET(DynCallArgs, n_fpargs)
+DECL_OFFSET(DynCallArgs, n_fpret)
 #endif
 
 #ifdef TARGET_AMD64
