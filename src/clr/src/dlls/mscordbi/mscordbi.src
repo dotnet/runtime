@@ -25,9 +25,6 @@ EXPORTS
 #endif // FEATURE_CORECLR
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    InitDbgTransportManager
-    ShutdownDbgTransportManager
-    CreateCoreClrDebugTarget
     DllGetClassObject private
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
