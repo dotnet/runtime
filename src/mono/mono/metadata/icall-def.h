@@ -213,6 +213,9 @@ ICALL (PROCESSHANDLE_1, "ProcessHandle_close(intptr)", ves_icall_System_Diagnost
 ICALL (PROCESSHANDLE_2, "ProcessHandle_duplicate(intptr)", ves_icall_System_Diagnostics_Process_ProcessHandle_duplicate)
 #endif /* !DISABLE_PROCESS_HANDLING */
 
+ICALL_TYPE(SFRAME, "System.Diagnostics.StackFrame", SFRAME_1)
+ICALL(SFRAME_1, "GetILOffsetFromFile", ves_icall_System_StackFrame_GetILOffsetFromFile)
+
 ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
 ICALL(STOPWATCH_1, "GetTimestamp", mono_100ns_ticks)
 

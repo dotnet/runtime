@@ -477,3 +477,24 @@ seq_point_data_get (SeqPointData *data, guint32 token, MonoSeqPointInfo** info)
 	}
 	return FALSE;
 }
+
+gboolean
+seq_point_data_get_il_offset (char *path, guint32 token, guint32 native_offset, guint32 *il_offset)
+{
+	SeqPointData sp_data;
+	MonoSeqPointInfo *seq_points;
+	SeqPoint sp;
+
+	if (!seq_point_data_read (&sp_data, path))
+		return FALSE;
+
+	if (!seq_point_data_get (&sp_data, token, &seq_points))
+		return FALSE;
+
+	if (!seq_point_find_prev_by_native_offset (seq_points, native_offset, &sp))
+		return FALSE;
+
+	*il_offset = sp.il_offset;
+
+	return TRUE;
+}
