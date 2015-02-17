@@ -3254,7 +3254,7 @@ namespace System.Threading.Tasks
                                     else if (bodyWithStateAndLocal != null)
                                         localValue = bodyWithStateAndLocal(t, state, localValue);
                                     else
-                                        Debug.Assert(false, "PartitionerForEach: illegal body type in Partitioner handler");
+                                        Debug.Fail("PartitionerForEach: illegal body type in Partitioner handler");
 
                                     // Any break, stop or exception causes us to halt
                                     // We don't have the global indexing information to discriminate whether or not
