@@ -1033,7 +1033,7 @@ namespace System.Threading.Tasks
             // We just return immediately if 'to' is smaller (or equal to) 'from'.
             if (toExclusive <= fromInclusive)
             {
-                result.m_completed = true;
+                result._completed = true;
                 return result;
             }
 
@@ -1224,10 +1224,10 @@ namespace System.Threading.Tasks
                     ctr.Dispose();
 
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result.m_completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
+                result._completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
                 if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
                 {
-                    result.m_lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
+                    result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
                 }
 
                 // ETW event for Parallel For End
@@ -1288,7 +1288,7 @@ namespace System.Threading.Tasks
             // We just return immediately if 'to' is smaller (or equal to) 'from'.
             if (toExclusive <= fromInclusive)
             {
-                result.m_completed = true;
+                result._completed = true;
                 return result;
             }
 
@@ -1483,10 +1483,10 @@ namespace System.Threading.Tasks
                     ctr.Dispose();
 
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result.m_completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
+                result._completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
                 if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
                 {
-                    result.m_lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
+                    result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
                 }
 
                 // ETW event for Parallel For End
@@ -3318,10 +3318,10 @@ namespace System.Threading.Tasks
                     ctr.Dispose();
 
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result.m_completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
+                result._completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
                 if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
                 {
-                    result.m_lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
+                    result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
                 }
 
                 //dispose the partitioner source if it implements IDisposable

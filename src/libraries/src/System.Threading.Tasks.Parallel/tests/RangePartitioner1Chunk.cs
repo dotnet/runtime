@@ -291,7 +291,7 @@ namespace System.Threading.Tasks.Test
     /// <typeparam name="T"></typeparam>
     public class UserActionEnumerable<T> : IEnumerable<T>
     {
-        protected List<T> m_data;
+        protected List<T> _data;
 
         //keeps track of how many enumerators are created
         //in case of an exception in parallel foreach
@@ -303,13 +303,13 @@ namespace System.Threading.Tasks.Test
 
         public UserActionEnumerable(List<T> enumerable, Action<int> moveNextAction)
         {
-            m_data = enumerable;
+            _data = enumerable;
             _moveNextAction = moveNextAction;
         }
 
         public UserActionEnumerable(List<T> enumerable)
         {
-            m_data = enumerable;
+            _data = enumerable;
         }
 
         /// <summary>
@@ -331,7 +331,7 @@ namespace System.Threading.Tasks.Test
 
         public IEnumerator<T> GetEnumerator()
         {
-            UserActionEnumerator<T> en = new UserActionEnumerator<T>(m_data, _moveNextAction);
+            UserActionEnumerator<T> en = new UserActionEnumerator<T>(_data, _moveNextAction);
             _allEnumerators.Add(en);
 
             return en;

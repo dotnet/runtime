@@ -779,7 +779,7 @@ namespace System.Threading.Tasks.Test.Unit
 
         /// <summary>
         /// Each Parallel.For loop stores the result of its compuatation in the 'result' array.
-        /// This function checks if result[i] for each i from 0 to m_parameters.Count is correct
+        /// This function checks if result[i] for each i from 0 to _parameters.Count is correct
         /// A result[i] == double[i] means that the body for index i was run more than once
         /// </summary>
         /// <param name="i">index to check</param>
@@ -879,10 +879,10 @@ namespace System.Threading.Tasks.Test.Unit
         public int StartIndex;        // the real start index (base + offset) for the loop
         public long StartIndex64;     // the real start index (base + offset) for the 64 version loop
 
-        public readonly StartIndexBase StartIndexBase; // the base of the m_parameters.StartIndex for boundary testing 
+        public readonly StartIndexBase StartIndexBase; // the base of the _parameters.StartIndex for boundary testing 
         public int StartIndexOffset;          // the offset to be added to the base 
 
-        public int Count;   // the m_parameters.Count of loop range
+        public int Count;   // the _parameters.Count of loop range
         public int ChunkSize; // the chunk size to use for the range Partitioner
 
         public ActionWithState StateOption;    // the ParallelLoopState option of the action body
