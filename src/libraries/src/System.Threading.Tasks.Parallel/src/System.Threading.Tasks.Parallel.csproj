@@ -30,7 +30,6 @@
     <Compile Include="System\Threading\Tasks\ParallelLoopState.cs" />
     <Compile Include="System\Threading\Tasks\ParallelRangeManager.cs" />
     <Compile Include="System\Threading\Tasks\TaskReplicator.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\SR.cs">
