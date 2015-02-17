@@ -9544,10 +9544,11 @@ static int elem_addr_cache_next = 0;
  * @rank: rank of the array type
  * @elem_size: size in bytes of an element of an array.
  *
- * Returns a MonoMethd that implements the code to get the address
+ * Returns a MonoMethod that implements the code to get the address
  * of an element in a multi-dimenasional array of @rank dimensions.
  * The returned method takes an array as the first argument and then
  * @rank indexes for the @rank dimensions.
+ * If ELEM_SIZE is 0, read the array size from the array object.
  */
 MonoMethod*
 mono_marshal_get_array_address (int rank, int elem_size)
@@ -9556,6 +9557,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
 	WrapperInfo *info;
+	char *name;
 	int i, bounds, ind, realidx;
 	int branch_pos, *branch_positions;
 	int cached;
@@ -9583,7 +9585,9 @@ mono_marshal_get_array_address (int rank, int elem_size)
 		sig->params [i + 1] = &mono_defaults.int32_class->byval_arg;
 	}
 
-	mb = mono_mb_new (mono_defaults.object_class, "ElementAddr", MONO_WRAPPER_MANAGED_TO_MANAGED);
+	name = g_strdup_printf ("ElementAddr_%d", elem_size);
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	g_free (name);
 	
 #ifndef DISABLE_JIT
 	bounds = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
@@ -9651,8 +9655,24 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
 	mono_mb_emit_ldloc (mb, ind);
-	mono_mb_emit_icon (mb, elem_size);
-	mono_mb_emit_byte (mb, CEE_MUL);
+	if (elem_size) {
+		mono_mb_emit_icon (mb, elem_size);
+	} else {
+		/* Load arr->vtable->klass->sizes.element_class */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		/* sizes is an union, so this reads sizes.element_size */
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoClass, sizes));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	}
+		mono_mb_emit_byte (mb, CEE_MUL);
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_RET);
 

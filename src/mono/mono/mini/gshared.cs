@@ -1663,6 +1663,36 @@ public class Tests
 			return 1;
 		return 0;
 	}
+
+	interface IFoo4<T> {
+		T Get(T[,] arr, T t);
+	}
+
+	class Foo4<T> : IFoo4<T> {
+		public T Get(T[,] arr, T t) {
+			arr [1, 1] = t;
+			return arr [1, 1];
+		}
+	}
+
+	struct AStruct {
+		public int a, b;
+	}
+
+	public static int test_0_multi_dim_arrays_2 () {
+		IFoo4<int> foo = new Foo4<int> ();
+		var arr = new int [10, 10];
+		int res = foo.Get (arr, 10);
+		if (res != 10)
+			return 1;
+
+		IFoo4<AStruct> foo2 = new Foo4<AStruct> ();
+		var arr2 = new AStruct [10, 10];
+		var res2 = foo2.Get (arr2, new AStruct () { a = 1, b = 2 });
+		if (res2.a != 1 || res2.b != 2)
+			return 2;
+		return 0;
+	}
 }
 
 // #13191
