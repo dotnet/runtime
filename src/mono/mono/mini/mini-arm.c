@@ -971,7 +971,7 @@ mono_arch_init (void)
 	 */
 	const char *soft = g_getenv ("MONO_ARM_FORCE_SOFT_FLOAT");
 
-	if (!strncmp (soft, "1", 1))
+	if (soft && !strncmp (soft, "1", 1))
 		arm_fpu = MONO_ARM_FPU_NONE;
 #endif
 #endif
