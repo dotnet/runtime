@@ -62,7 +62,7 @@ libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_log_la_SOURCES = proflog.c
-libmono_profiler_log_la_LIBADD = $(LIBMONO) $(Z_LIBS)
+libmono_profiler_log_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(Z_LIBS)
 if HAVE_VTUNE
 libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
 libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
