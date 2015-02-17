@@ -6,28 +6,18 @@ include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 
-check_include_files(wchar.h HAVE_WCHAR_H)
 check_include_files(ieeefp.h HAVE_IEEEFP_H)
 check_include_files(alloca.h HAVE_ALLOCA_H)
-check_include_files(stdint.h HAVE_STDINT_H)
-check_include_files(netdb.h HAVE_NETDB_H)
-check_include_files(inttypes.h HAVE_INTTYPES_H)
-check_include_files(stropts.h HAVE_STROPTS_H)
 check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
 check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
 check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
-check_include_files(sys/param.h HAVE_SYS_PARAM_H)
-check_include_files(sys/filio.h HAVE_SYS_FILIO_H)
-check_include_files(sys/sockio.h HAVE_SYS_SOCKIO_H)
 check_include_files(procfs.h HAVE_PROCFS_H)
 check_include_files(crt_externs.h HAVE_CRT_EXTERNS_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files(sys/lwp.h HAVE_SYS_LWP_H)
-check_include_files(xlocale.h HAVE_XLOCALE)
 
 check_function_exists(kqueue HAVE_KQUEUE)
-check_function_exists(tolower HAVE_TOLOWER)
 check_function_exists(getpwuid_r HAVE_GETPWUID_R)
 check_function_exists(pthread_suspend HAVE_PTHREAD_SUSPEND)
 check_function_exists(pthread_suspend_np HAVE_PTHREAD_SUSPEND_NP)
@@ -44,14 +34,11 @@ check_function_exists(futimes HAVE_FUTIMES)
 check_function_exists(utimes HAVE_UTIMES)
 check_function_exists(sysctl HAVE_SYSCTL)
 check_function_exists(sysconf HAVE_SYSCONF)
-check_function_exists(strtok_r HAVE_STRTOK_R)
 check_function_exists(localtime_r HAVE_LOCALTIME_R)
-check_function_exists(ctime_r HAVE_CTIME_R)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(_snwprintf HAVE__SNWPRINTF)
 check_function_exists(poll HAVE_POLL)
-check_function_exists(statfs HAVE_STATFS)
 check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
 check_function_exists(_lwp_self HAVE__LWP_SELF)
@@ -67,7 +54,6 @@ check_function_exists(ttrace HAVE_TTRACE)
 set(CMAKE_REQUIRED_DEFINITIONS "-D_DEFAULT_SOURCE")
 check_struct_has_member ("struct stat" st_atimespec "sys/types.h;sys/stat.h" HAVE_STAT_TIMESPEC)
 check_struct_has_member ("struct stat" st_atimensec "sys/types.h;sys/stat.h" HAVE_STAT_NSEC)
-check_struct_has_member ("struct sockaddr" sa_len "sys/types.h;sys/socket.h" HAVE_SOCKADDR_SA_LEN)
 check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 
@@ -82,13 +68,6 @@ check_type_size(siginfo_t SIGINFO_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
 check_type_size(ucontext_t UCONTEXT_T)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES netinet/in.h sys/types.h)
-check_type_size(in_addr_t IN_ADDR_T)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
-check_type_size(socklen_t SOCKLEN_T)
-check_type_size(sockaddr_ext SOCKADDR_EXT)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES pthread.h)
 check_type_size(pthread_rwlock_t PTHREAD_RWLOCK_T)
@@ -331,7 +310,7 @@ int main(void)
   }
 
   exit(has_bug ? 0 : 1);
-}" HAS_FTRUNCATE_LENGTH_BUG)
+}" HAS_FTRUNCATE_LENGTH_ISSUE)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdio.h>
@@ -648,88 +627,6 @@ int main(void) {
   }
   exit(0);
 }" HAVE_PROCFS_CTL)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-
-int main()
-{
-  int ret = 0;
-  int s;
-  struct sockaddr_in targetAddr;
-  char buff[10];
-
-  s = socket(AF_INET, SOCK_DGRAM, 0);
-  if (-1 == s)
-  {
-    exit (1);
-  }
-
-  memset (&targetAddr, 0, sizeof(targetAddr));
-  targetAddr.sin_family = AF_INET;
-  targetAddr.sin_addr.s_addr = htonl(inet_addr(\"127.0.0.1\"));
-  targetAddr.sin_port = htons(11000);
-
-  ret = shutdown(s,2);
-  if ((ret < 0) && (errno == ENOTCONN))
-    ret = 0;
-  else
-    ret = 1;
-
-  close(s);
-  exit(ret);
-}" SHUTDOWN_FAILS_ON_CONNECTIONLESS_SOCKETS)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-
-int main()
-{
-  int ret = 0;
-  int ival = 0;
-  int s;
-  struct sockaddr_in targetAddr;
-  char chr;
-
-  s = socket(AF_INET, SOCK_DGRAM, 0);
-  if (-1 == s)
-  {
-    exit (1);
-  }
-
-  /* Make sure SO_BROADCAST it is off (it should be by default) */
-  ret = setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&ival, sizeof(int));
-  if (-1 == ret)
-  {
-    exit (1);
-  }
-
-  memset (&targetAddr, 0, sizeof(targetAddr));
-  targetAddr.sin_family = AF_INET;
-  targetAddr.sin_addr.s_addr = htonl(inet_addr(\"255.255.255.255\"));
-  targetAddr.sin_port = htons(11000);
-
-  ret = sendto(s, &chr, 1, 0, (struct sockaddr *)&targetAddr, sizeof(targetAddr));
-  if ((ret < 0) && (errno == EACCES))
-    ret = 1;
-  else
-    ret = 0;
-
-  close(s);
-  exit(ret);
-}" BROADCAST_ALLOWED_WITHOUT_SO_BROADCAST)
 set(CMAKE_REQUIRED_LIBRARIES m)
 check_cxx_source_runs("
 #include <math.h>
@@ -995,53 +892,6 @@ int main()
 
   return 1;
 }" FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
-
-int main()
-{
-  int ret = 0;
-  int ival = 0;
-  int s;
-  struct sockaddr_in targetAddr;
-  char chr;
-
-  s = socket(AF_INET, SOCK_DGRAM, 0);
-  if (-1 == s)
-  {
-    exit (1);
-  }
-
-  /* Make sure SO_BROADCAST it is off (it should be by default) */
-  ret = setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)&ival, sizeof(int));
-  if (-1 == ret)
-  {
-    exit (1);
-  }
-
-  memset (&targetAddr, 0, sizeof(targetAddr));
-  targetAddr.sin_family = AF_INET;
-  targetAddr.sin_addr.s_addr = htonl(inet_addr(\"255.255.255.255\"));
-  targetAddr.sin_port = htons(11000);
-
-  ret = sendto(s, &chr, 1, 0, (struct sockaddr *)&targetAddr, sizeof(targetAddr));
-  if ((ret < 0) && (errno == EACCES))
-    ret = 1;
-  else
-    ret = 0;
-
-  close(s);
-  exit(ret);
-}" BROADCAST_ALLOWED_WITHOUT_SO_BROADCAST)
-
-
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(HAVE_COREFOUNDATION 1)
