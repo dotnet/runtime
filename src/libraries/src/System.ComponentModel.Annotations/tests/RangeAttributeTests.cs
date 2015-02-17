@@ -117,9 +117,9 @@ namespace System.ComponentModel.DataAnnotations
         {
             var attribute = new RangeAttribute(typeof(double), (1.0).ToString("F1"), (3.0).ToString("F1"));
             Assert.Throws<ValidationException>(() => attribute.Validate(0.9999999, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate((0.9999999).ToString("F7"), s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate((0.9999999).ToString(), s_testValidationContext));
             Assert.Throws<ValidationException>(() => attribute.Validate(3.0000001, s_testValidationContext));
-            Assert.Throws<ValidationException>(() => attribute.Validate((3.0000001).ToString("F7"), s_testValidationContext));
+            Assert.Throws<ValidationException>(() => attribute.Validate((3.0000001).ToString(), s_testValidationContext));
         }
 
         [Fact]
