@@ -1,5 +1,6 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Geoff Norton. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
@@ -73,6 +74,7 @@ struct __cxa_exception
 // Virtual Unwinding
 //----------------------------------------------------------------------
 
+#if UNWIND_CONTEXT_IS_UCONTEXT_T
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
 #if defined(_AMD64_)
@@ -88,18 +90,35 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 #error unsupported architecture
 #endif
 }
+#else
+static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
+{
+#if defined(_AMD64_)
+    unw_set_reg(cursor, UNW_REG_IP, winContext->Rip);
+    unw_set_reg(cursor, UNW_REG_SP, winContext->Rsp);
+    unw_set_reg(cursor, UNW_X86_64_RBP, winContext->Rbp);
+    unw_set_reg(cursor, UNW_X86_64_RBX, winContext->Rbx);
+    unw_set_reg(cursor, UNW_X86_64_R12, winContext->R12);
+    unw_set_reg(cursor, UNW_X86_64_R13, winContext->R13);
+    unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
+    unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
+#else
+#error unsupported architecture
+#endif
+}
+#endif
 
 static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 {
 #if defined(_AMD64_)
-    unw_get_reg(cursor, UNW_X86_64_RIP, &winContext->Rip);
-    unw_get_reg(cursor, UNW_X86_64_RSP, &winContext->Rsp);
-    unw_get_reg(cursor, UNW_X86_64_RBP, &winContext->Rbp);
-    unw_get_reg(cursor, UNW_X86_64_RBX, &winContext->Rbx);
-    unw_get_reg(cursor, UNW_X86_64_R12, &winContext->R12);
-    unw_get_reg(cursor, UNW_X86_64_R13, &winContext->R13);
-    unw_get_reg(cursor, UNW_X86_64_R14, &winContext->R14);
-    unw_get_reg(cursor, UNW_X86_64_R15, &winContext->R15);
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Rip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Rsp);
+    unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &winContext->Rbp);
+    unw_get_reg(cursor, UNW_X86_64_RBX, (unw_word_t *) &winContext->Rbx);
+    unw_get_reg(cursor, UNW_X86_64_R12, (unw_word_t *) &winContext->R12);
+    unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
+    unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
+    unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
 #else
 #error unsupported architecture
 #endif
@@ -107,12 +126,16 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 
 static void GetContextPointer(unw_cursor_t *cursor, int reg, PDWORD64 *contextPointer)
 {
+#if defined(__APPLE__)
+    //OSXTODO
+#else
     unw_save_loc_t saveLoc;
     unw_get_save_loc(cursor, reg, &saveLoc);
     if (saveLoc.type == UNW_SLT_MEMORY)
     {
         *contextPointer = (PDWORD64)saveLoc.u.addr;
     }
+#endif
 }
 
 static void GetContextPointers(unw_cursor_t *cursor, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
@@ -135,14 +158,26 @@ BOOL VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPoint
     unw_context_t unwContext;
     unw_cursor_t cursor;
 
-    // Set the unwind context to the specified windows context
+#if UNWIND_CONTEXT_IS_UCONTEXT_T
     WinContextToUnwindContext(context, &unwContext);
+#else
+    st = unw_getcontext(&unwContext);
+    if (st < 0)
+    {
+        return FALSE;
+    }
+#endif
 
     st = unw_init_local(&cursor, &unwContext);
     if (st < 0)
     {
         return FALSE;
     }
+
+#if !UNWIND_CONTEXT_IS_UCONTEXT_T
+    // Set the unwind context to the specified windows context
+    WinContextToUnwindCursor(context, &cursor);
+#endif
 
     st = unw_step(&cursor);
     if (st < 0)
