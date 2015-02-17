@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Parallel_ForEach_NullEnumerator" xml:space="preserve">
+    <value>The Partitioner source returned a null enumerator.</value>
+  </data>
+  <data name="Parallel_ForEach_OrderedPartitionerKeysNotNormalized" xml:space="preserve">
+    <value>This method requires the use of an OrderedPartitioner with the KeysNormalized property set to true.</value>
+  </data>
+  <data name="Parallel_ForEach_PartitionerNotDynamic" xml:space="preserve">
+    <value>The Partitioner used here must support dynamic partitioning.</value>
+  </data>
+  <data name="Parallel_ForEach_PartitionerReturnedNull" xml:space="preserve">
+    <value>The Partitioner used here returned a null partitioner source.</value>
+  </data>
+  <data name="Parallel_Invoke_ActionNull" xml:space="preserve">
+    <value>One of the actions was null.</value>
+  </data>
+  <data name="ParallelState_Break_InvalidOperationException_BreakAfterStop" xml:space="preserve">
+    <value>Break was called after Stop was called.</value>
+  </data>
+  <data name="ParallelState_NotSupportedException_UnsupportedMethod" xml:space="preserve">
+    <value>This method is not supported.</value>
+  </data>
+  <data name="ParallelState_Stop_InvalidOperationException_StopAfterBreak" xml:space="preserve">
+    <value>Stop was called after Break was called.</value>
+  </data>
+</root>
