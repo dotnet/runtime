@@ -9,7 +9,7 @@
 
 using System;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 #pragma warning disable 0420
 namespace System.Threading.Tasks
@@ -20,16 +20,16 @@ namespace System.Threading.Tasks
     internal struct IndexRange
     {
         // the From and To values for this range. These do not change.
-        internal long m_nFromInclusive;
-        internal long m_nToExclusive;
+        internal long _nFromInclusive;
+        internal long _nToExclusive;
 
         // The shared index, stored as the offset from nFromInclusive. Using an offset rather than the actual 
         // value saves us from overflows that can happen due to multiple workers racing to increment this.
         // All updates to this field need to be interlocked.
-        internal volatile Box<long> m_nSharedCurrentIndexOffset;
+        internal volatile Box<long> _nSharedCurrentIndexOffset;
 
         // to be set to 1 by the worker that finishes this range. It's OK to do a non-interlocked write here.
-        internal int m_bRangeFinished;
+        internal int _bRangeFinished;
     }
 
 
@@ -39,35 +39,35 @@ namespace System.Threading.Tasks
     internal struct RangeWorker
     {
         // reference to the IndexRange array allocated by the range manager
-        internal readonly IndexRange[] m_indexRanges;
+        internal readonly IndexRange[] _indexRanges;
 
         // index of the current index range that this worker is grabbing chunks from
-        internal int m_nCurrentIndexRange;
+        internal int _nCurrentIndexRange;
 
         // the step for this loop. Duplicated here for quick access (rather than jumping to rangemanager)
-        internal long m_nStep;
+        internal long _nStep;
 
         // increment value is the current amount that this worker will use 
         // to increment the shared index of the range it's working on
-        internal long m_nIncrementValue;
+        internal long _nIncrementValue;
 
         // the increment value is doubled each time this worker finds work, and is capped at this value
-        internal readonly long m_nMaxIncrementValue;
+        internal readonly long _nMaxIncrementValue;
 
-        internal bool IsInitialized { get { return m_indexRanges != null; } }
+        internal bool IsInitialized { get { return _indexRanges != null; } }
 
         /// <summary>
         /// Initializes a RangeWorker struct
         /// </summary>
         internal RangeWorker(IndexRange[] ranges, int nInitialRange, long nStep)
         {
-            m_indexRanges = ranges;
-            m_nCurrentIndexRange = nInitialRange;
-            m_nStep = nStep;
+            _indexRanges = ranges;
+            _nCurrentIndexRange = nInitialRange;
+            _nStep = nStep;
 
-            m_nIncrementValue = nStep;
+            _nIncrementValue = nStep;
 
-            m_nMaxIncrementValue = Parallel.DEFAULT_LOOP_STRIDE * nStep;
+            _nMaxIncrementValue = Parallel.DEFAULT_LOOP_STRIDE * nStep;
         }
 
         /// <summary>
@@ -84,44 +84,44 @@ namespace System.Threading.Tasks
         {
             // since we iterate over index ranges circularly, we will use the
             // count of visited ranges as our exit condition
-            int numIndexRangesToVisit = m_indexRanges.Length;
+            int numIndexRangesToVisit = _indexRanges.Length;
 
             do
             {
                 // local snap to save array access bounds checks in places where we only read fields
-                IndexRange currentRange = m_indexRanges[m_nCurrentIndexRange];
+                IndexRange currentRange = _indexRanges[_nCurrentIndexRange];
 
-                if (currentRange.m_bRangeFinished == 0)
+                if (currentRange._bRangeFinished == 0)
                 {
-                    if (m_indexRanges[m_nCurrentIndexRange].m_nSharedCurrentIndexOffset == null)
+                    if (_indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset == null)
                     {
-                        Interlocked.CompareExchange(ref m_indexRanges[m_nCurrentIndexRange].m_nSharedCurrentIndexOffset, new Box<long>(0), null);
+                        Interlocked.CompareExchange(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset, new Box<long>(0), null);
                     }
 
                     // this access needs to be on the array slot
-                    long nMyOffset = Interlocked.Add(ref m_indexRanges[m_nCurrentIndexRange].m_nSharedCurrentIndexOffset.Value,
-                                                    m_nIncrementValue) - m_nIncrementValue;
+                    long nMyOffset = Interlocked.Add(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset.Value,
+                                                    _nIncrementValue) - _nIncrementValue;
 
-                    if (currentRange.m_nToExclusive - currentRange.m_nFromInclusive > nMyOffset)
+                    if (currentRange._nToExclusive - currentRange._nFromInclusive > nMyOffset)
                     {
                         // we found work
 
-                        nFromInclusiveLocal = currentRange.m_nFromInclusive + nMyOffset;
-                        nToExclusiveLocal = nFromInclusiveLocal + m_nIncrementValue;
+                        nFromInclusiveLocal = currentRange._nFromInclusive + nMyOffset;
+                        nToExclusiveLocal = nFromInclusiveLocal + _nIncrementValue;
 
                         // Check for going past end of range, or wrapping
-                        if ((nToExclusiveLocal > currentRange.m_nToExclusive) || (nToExclusiveLocal < currentRange.m_nFromInclusive))
+                        if ((nToExclusiveLocal > currentRange._nToExclusive) || (nToExclusiveLocal < currentRange._nFromInclusive))
                         {
-                            nToExclusiveLocal = currentRange.m_nToExclusive;
+                            nToExclusiveLocal = currentRange._nToExclusive;
                         }
 
                         // We will double our unit of increment until it reaches the maximum.
-                        if (m_nIncrementValue < m_nMaxIncrementValue)
+                        if (_nIncrementValue < _nMaxIncrementValue)
                         {
-                            m_nIncrementValue *= 2;
-                            if (m_nIncrementValue > m_nMaxIncrementValue)
+                            _nIncrementValue *= 2;
+                            if (_nIncrementValue > _nMaxIncrementValue)
                             {
-                                m_nIncrementValue = m_nMaxIncrementValue;
+                                _nIncrementValue = _nMaxIncrementValue;
                             }
                         }
 
@@ -130,12 +130,12 @@ namespace System.Threading.Tasks
                     else
                     {
                         // this index range is completed, mark it so that others can skip it quickly
-                        Interlocked.Exchange(ref m_indexRanges[m_nCurrentIndexRange].m_bRangeFinished, 1);
+                        Interlocked.Exchange(ref _indexRanges[_nCurrentIndexRange]._bRangeFinished, 1);
                     }
                 }
 
                 // move on to the next index range, in circular order.
-                m_nCurrentIndexRange = (m_nCurrentIndexRange + 1) % m_indexRanges.Length;
+                _nCurrentIndexRange = (_nCurrentIndexRange + 1) % _indexRanges.Length;
                 numIndexRangesToVisit--;
             } while (numIndexRangesToVisit > 0);
             // we've visited all index ranges possible => there's no work remaining
@@ -157,7 +157,7 @@ namespace System.Threading.Tasks
 
             bool bRetVal = FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal);
 
-            Contract.Assert((nFromInclusiveLocal <= Int32.MaxValue) && (nFromInclusiveLocal >= Int32.MinValue) &&
+            Debug.Assert((nFromInclusiveLocal <= Int32.MaxValue) && (nFromInclusiveLocal >= Int32.MinValue) &&
                             (nToExclusiveLocal <= Int32.MaxValue) && (nToExclusiveLocal >= Int32.MinValue));
 
             // convert to 32 bit before returning
@@ -180,18 +180,18 @@ namespace System.Threading.Tasks
     ///       and they keep interacting with that struct until the end of the loop
     internal class RangeManager
     {
-        internal readonly IndexRange[] m_indexRanges;
+        internal readonly IndexRange[] _indexRanges;
 
-        internal int m_nCurrentIndexRangeToAssign;
-        internal long m_nStep;
+        internal int _nCurrentIndexRangeToAssign;
+        internal long _nStep;
 
         /// <summary>
         /// Initializes a RangeManager with the given loop parameters, and the desired number of outer ranges
         /// </summary>
         internal RangeManager(long nFromInclusive, long nToExclusive, long nStep, int nNumExpectedWorkers)
         {
-            m_nCurrentIndexRangeToAssign = 0;
-            m_nStep = nStep;
+            _nCurrentIndexRangeToAssign = 0;
+            _nStep = nStep;
 
             // Our signed math breaks down w/ nNumExpectedWorkers == 1.  So change it to 2.
             if (nNumExpectedWorkers == 1)
@@ -215,7 +215,7 @@ namespace System.Threading.Tasks
             //
             // find the actual number of index ranges we will need
             //
-            Contract.Assert((uSpan / uRangeSize) < Int32.MaxValue);
+            Debug.Assert((uSpan / uRangeSize) < Int32.MaxValue);
 
             int nNumRanges = (int)(uSpan / uRangeSize);
 
@@ -230,15 +230,15 @@ namespace System.Threading.Tasks
             long nRangeSize = (long)uRangeSize;
 
             // allocate the array of index ranges
-            m_indexRanges = new IndexRange[nNumRanges];
+            _indexRanges = new IndexRange[nNumRanges];
 
             long nCurrentIndex = nFromInclusive;
             for (int i = 0; i < nNumRanges; i++)
             {
                 // the fromInclusive of the new index range is always on nCurrentIndex
-                m_indexRanges[i].m_nFromInclusive = nCurrentIndex;
-                m_indexRanges[i].m_nSharedCurrentIndexOffset = null;
-                m_indexRanges[i].m_bRangeFinished = 0;
+                _indexRanges[i]._nFromInclusive = nCurrentIndex;
+                _indexRanges[i]._nSharedCurrentIndexOffset = null;
+                _indexRanges[i]._bRangeFinished = 0;
 
                 // now increment it to find the toExclusive value for our range
                 nCurrentIndex += nRangeSize;
@@ -248,13 +248,13 @@ namespace System.Threading.Tasks
                     nCurrentIndex > nToExclusive)
                 {
                     // this should only happen at the last index
-                    Contract.Assert(i == nNumRanges - 1);
+                    Debug.Assert(i == nNumRanges - 1);
 
                     nCurrentIndex = nToExclusive;
                 }
 
                 // now that the end point of the new range is calculated, assign it.
-                m_indexRanges[i].m_nToExclusive = nCurrentIndex;
+                _indexRanges[i]._nToExclusive = nCurrentIndex;
             }
         }
 
@@ -264,11 +264,11 @@ namespace System.Threading.Tasks
         /// </summary>
         internal RangeWorker RegisterNewWorker()
         {
-            Contract.Assert(m_indexRanges != null && m_indexRanges.Length != 0);
+            Debug.Assert(_indexRanges != null && _indexRanges.Length != 0);
 
-            int nInitialRange = (Interlocked.Increment(ref m_nCurrentIndexRangeToAssign) - 1) % m_indexRanges.Length;
+            int nInitialRange = (Interlocked.Increment(ref _nCurrentIndexRangeToAssign) - 1) % _indexRanges.Length;
 
-            return new RangeWorker(m_indexRanges, nInitialRange, m_nStep);
+            return new RangeWorker(_indexRanges, nInitialRange, _nStep);
         }
     }
 }

@@ -22,7 +22,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Defines the singleton instance for the Task.Parallel ETW provider.
         /// </summary>
-        public static ParallelEtwProvider Log = new ParallelEtwProvider();
+        public static readonly ParallelEtwProvider Log = new ParallelEtwProvider();
 
         /// <summary>Prevent external instantiation. All logging should go through the Log instance.</summary>
         private ParallelEtwProvider() { }

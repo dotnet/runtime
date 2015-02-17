@@ -26,23 +26,23 @@ namespace System.Threading.Tasks
 
         private abstract class Replica
         {
-            protected readonly TaskReplicator m_replicator;
-            protected readonly int m_timeout;
-            protected int m_remainingConcurrency;
-            protected volatile Task m_pendingTask; // the most recently queued Task for this replica, or null if we're done.
+            protected readonly TaskReplicator _replicator;
+            protected readonly int _timeout;
+            protected int _remainingConcurrency;
+            protected volatile Task _pendingTask; // the most recently queued Task for this replica, or null if we're done.
 
             protected Replica(TaskReplicator replicator, int maxConcurrency, int timeout)
             {
-                m_replicator = replicator;
-                m_timeout = timeout;
-                m_remainingConcurrency = maxConcurrency - 1;
-                m_pendingTask = new Task(s => ((Replica)s).Execute(), this);
-                m_replicator._pendingReplicas.Enqueue(this);
+                _replicator = replicator;
+                _timeout = timeout;
+                _remainingConcurrency = maxConcurrency - 1;
+                _pendingTask = new Task(s => ((Replica)s).Execute(), this);
+                _replicator._pendingReplicas.Enqueue(this);
             }
 
             public void Start()
             {
-                m_pendingTask.RunSynchronously(m_replicator._scheduler);
+                _pendingTask.RunSynchronously(_replicator._scheduler);
             }
 
             public void Wait()
@@ -58,7 +58,7 @@ namespace System.Threading.Tasks
                 // in the case where all other threads are blocked for other reasons.
                 //
                 Task pendingTask;
-                while ((pendingTask = m_pendingTask) != null)
+                while ((pendingTask = _pendingTask) != null)
                     pendingTask.Wait();
             }
 
@@ -66,10 +66,10 @@ namespace System.Threading.Tasks
             {
                 try
                 {
-                    if (!m_replicator._stopReplicating && m_remainingConcurrency > 0)
+                    if (!_replicator._stopReplicating && _remainingConcurrency > 0)
                     {
                         CreateNewReplica();
-                        m_remainingConcurrency = 0; // new replica is responsible for adding concurrency from now on.
+                        _remainingConcurrency = 0; // new replica is responsible for adding concurrency from now on.
                     }
 
                     bool userActionYieldedBeforeCompletion;
@@ -78,21 +78,21 @@ namespace System.Threading.Tasks
 
                     if (userActionYieldedBeforeCompletion)
                     {
-                        m_pendingTask = new Task(s => ((Replica)s).Execute(), this, CancellationToken.None, TaskCreationOptions.PreferFairness);
-                        m_pendingTask.Start(m_replicator._scheduler);
+                        _pendingTask = new Task(s => ((Replica)s).Execute(), this, CancellationToken.None, TaskCreationOptions.PreferFairness);
+                        _pendingTask.Start(_replicator._scheduler);
                     }
                     else
                     {
-                        m_replicator._stopReplicating = true;
-                        m_pendingTask = null;
+                        _replicator._stopReplicating = true;
+                        _pendingTask = null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    LazyInitializer.EnsureInitialized(ref m_replicator._exceptions).Enqueue(ex);
-                    if (m_replicator._stopOnFirstFailure)
-                        m_replicator._stopReplicating = true;
-                    m_pendingTask = null;
+                    LazyInitializer.EnsureInitialized(ref _replicator._exceptions).Enqueue(ex);
+                    if (_replicator._stopOnFirstFailure)
+                        _replicator._stopReplicating = true;
+                    _pendingTask = null;
                 }
             }
 
@@ -113,13 +113,13 @@ namespace System.Threading.Tasks
 
             protected override void CreateNewReplica()
             {
-                Replica<TState> newReplica = new Replica<TState>(m_replicator, m_remainingConcurrency, GenerateCooperativeMultitaskingTaskTimeout(), _action);
-                newReplica.m_pendingTask.Start(m_replicator._scheduler);
+                Replica<TState> newReplica = new Replica<TState>(_replicator, _remainingConcurrency, GenerateCooperativeMultitaskingTaskTimeout(), _action);
+                newReplica._pendingTask.Start(_replicator._scheduler);
             }
 
             protected override void ExecuteAction(out bool yieldedBeforeCompletion)
             {
-                _action(ref _state, m_timeout, out yieldedBeforeCompletion);
+                _action(ref _state, _timeout, out yieldedBeforeCompletion);
             }
         }
 
