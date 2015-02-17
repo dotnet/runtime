@@ -137,11 +137,6 @@ private:
             m_pProxy->ReleaseTransport(m_pTransport);
         }
         m_pTransport = NULL;
-
-        if (m_pProxy)
-        {
-            g_pDbgTransportManager->ReleaseTarget(m_pProxy);
-        }
         m_pProxy = NULL;
     }
 
@@ -209,16 +204,17 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
     // Connect to the debugger proxy on the remote machine and ask it to create a process for us.
     HRESULT hr  = E_FAIL;
 
-    // Establish a connection to the proxy of the remote machine.
-    hr = g_pDbgTransportManager->ConnectToTarget(machineInfo.GetIPAddress(), machineInfo.GetPort(), &m_pProxy);
-    if (SUCCEEDED(hr))
-    {
-        hr = m_pProxy->CreateProcess(lpApplicationName,
-                                     lpCommandLine,
-                                     lpCurrentDirectory,
-                                     lpEnvironment,
-                                     &(lpProcessInformation->dwProcessId));
-    }
+    m_pProxy = g_pDbgTransportTarget;
+    hr = m_pProxy->CreateProcess(lpApplicationName,
+                                 lpCommandLine,
+                                 lpProcessAttributes,
+                                 lpThreadAttributes,
+                                 bInheritHandles,
+                                 dwCreationFlags,
+                                 lpEnvironment,
+                                 lpCurrentDirectory,
+                                 lpStartupInfo,
+                                 lpProcessInformation);
 
     if (SUCCEEDED(hr))
     {
@@ -288,25 +284,23 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, DWORD 
 
     HRESULT hr = E_FAIL;
 
-    // Establish a connection to the proxy of the remote machine.
-    hr = g_pDbgTransportManager->ConnectToTarget(machineInfo.GetIPAddress(), machineInfo.GetPort(), &m_pProxy);
+    m_pProxy = g_pDbgTransportTarget;
+
+    // Establish a connection to the actual runtime to be debugged.
+    hr = m_pProxy->GetTransportForProcess(processId, &m_pTransport, &m_hProcess);
     if (SUCCEEDED(hr))
     {
-        // Establish a connection to the actual runtime to be debugged.
-        hr = m_pProxy->GetTransportForProcess(processId, &m_pTransport, &m_hProcess);
-        if (SUCCEEDED(hr))
+        // TODO: Pass this timeout as a parameter all the way from debugger
+        // Wait for the connection to become useable (or time out).
+        if (!m_pTransport->WaitForSessionToOpen(10000))
         {
-            // Wait for the connection to become useable (or time out).
-            if (!m_pTransport->WaitForSessionToOpen(10000))
+            hr = CORDBG_E_TIMEOUT;
+        }
+        else
+        {
+            if (!m_pTransport->UseAsDebugger(&m_ticket))
             {
-                hr = CORDBG_E_TIMEOUT;
-            }
-            else
-            {
-                if (!m_pTransport->UseAsDebugger(&m_ticket))
-                {
-                    hr = CORDBG_E_DEBUGGER_ALREADY_ATTACHED;
-                }
+                hr = CORDBG_E_DEBUGGER_ALREADY_ATTACHED;
             }
         }
     }
