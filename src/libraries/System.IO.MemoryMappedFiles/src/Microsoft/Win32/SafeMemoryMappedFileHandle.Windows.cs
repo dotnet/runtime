@@ -9,7 +9,16 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandle
     {
-        private const int DefaultInvalidHandleValue = 0;
+        internal SafeMemoryMappedFileHandle()
+            : base(IntPtr.Zero, true)
+        {
+        }
+
+        internal SafeMemoryMappedFileHandle(IntPtr handle, bool ownsHandle)
+            : base(IntPtr.Zero, ownsHandle)
+        {
+            SetHandle(handle);
+        }
 
         protected override bool ReleaseHandle()
         {
@@ -19,10 +28,7 @@ namespace Microsoft.Win32.SafeHandles
         public override bool IsInvalid
         {
             [SecurityCritical]
-            get
-            {
-                return handle == IntPtr.Zero || handle == new IntPtr(-1);
-            }
+            get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }
         }
     }
 }

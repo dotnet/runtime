@@ -1,19 +1,24 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Runtime.InteropServices;
+
+using size_t = System.IntPtr;
 
 internal static partial class Interop
 {
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int sysconf(int name);
+        internal static extern int msync(IntPtr __addr, size_t __len, MemoryMappedSyncFlags __flags);
 
-        internal static class SysConfNames
+        [Flags]
+        internal enum MemoryMappedSyncFlags
         {
-            internal const int _SC_CLK_TCK  = 2;
-            internal const int _SC_PAGESIZE = 30;
+            MS_ASYNC = 1,
+            MS_INVALIDATE = 2,
+            MS_SYNC = 4
         }
     }
 }

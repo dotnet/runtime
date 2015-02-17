@@ -27,7 +27,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileOptions.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileAccess.cs" />
@@ -37,7 +36,6 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewStream.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileRights.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
@@ -48,17 +46,39 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
-      <Link>Common\System\NotImplemented.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.madvise.cs">
+      <Link>Common\Interop\Unix\Interop.madvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mmap.cs">
+      <Link>Common\Interop\Unix\Interop.mmap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.munmap.cs">
+      <Link>Common\Interop\Unix\Interop.munmap.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.msync.cs">
+      <Link>Common\Interop\Unix\Interop.msync.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
+      <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.cs" />
   </ItemGroup>
-
   <!-- Resource files -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
