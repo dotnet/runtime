@@ -124,7 +124,7 @@ monoutils_sources = \
 	sha1.h		\
 	sha1.c	\
 	json.h	\
-	json.c	\	
+	json.c	\
 	networking.c	\
 	networking-posix.c	\
 	networking-fallback.c	\
