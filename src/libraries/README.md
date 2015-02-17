@@ -107,7 +107,7 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
  
-* **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Decimal.
+* **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Complex.
 
 * **System.ServiceProcess.ServiceController**. Provides the ServiceController class that represents a Windows service
   and allows you to connect to a running or stopped service, manipulate it, or get information about it.
