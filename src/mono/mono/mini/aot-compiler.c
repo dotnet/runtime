@@ -8941,7 +8941,6 @@ static void aot_dump (MonoAotCompile *acfg)
 		MonoCompile *cfg;
 		MonoMethod *method;
 		MonoClass *klass;
-		int index;
 
 		cfg = acfg->cfgs [i];
 		if (!cfg)
