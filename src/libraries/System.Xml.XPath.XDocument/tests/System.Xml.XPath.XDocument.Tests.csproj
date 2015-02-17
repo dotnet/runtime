@@ -9,7 +9,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XDocument.Tests</AssemblyName>
     <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
-    <CoverageEnabledForProject>false</CoverageEnabledForProject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
