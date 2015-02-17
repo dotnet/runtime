@@ -24,34 +24,40 @@
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\IO\DriveInfo.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Interop.Errors.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs"> 
-      <Link>Common\Interop\Interop.IOErrors.cs</Link> 
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link> 
     </Compile> 
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.statvfs.cs">
-      <Link>Common\Interop\Interop.statvfs.cs</Link>
+      <Link>Common\Interop\Unix\Interop.statvfs.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Interop.strerror.cs</Link>
+      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.endmntent.cs">
-      <Link>Common\Interop\Interop.endmntent.cs</Link>
+      <Link>Common\Interop\Unix\Interop.endmntent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.getmntent.cs">
-      <Link>Common\Interop\Interop.getmntent.cs</Link>
+      <Link>Common\Interop\Unix\Interop.getmntent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.setmntent.cs">
-      <Link>Common\Interop\Interop.setmntent.cs</Link>
+      <Link>Common\Interop\Unix\Interop.setmntent.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\DriveInfo.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
