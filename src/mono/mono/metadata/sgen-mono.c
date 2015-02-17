@@ -849,7 +849,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	major_collector.finish_sweeping ();
 
 	sgen_process_fin_stage_entries ();
-	sgen_process_dislink_stage_entries ();
 
 	sgen_clear_nursery_fragments ();
 
@@ -2599,10 +2598,10 @@ mono_gc_ensure_weak_links_accessible (void)
 	mono_gc_wait_for_bridge_processing ();
 }
 
-gboolean
-mono_gc_object_older_than (MonoObject *object, int generation)
+void
+mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 {
-	return generation == GENERATION_NURSERY && !sgen_ptr_in_nursery (object);
+	sgen_gchandle_set_target (gchandle, obj);
 }
 
 gboolean

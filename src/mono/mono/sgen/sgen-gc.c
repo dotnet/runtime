@@ -1537,7 +1537,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 		sgen_check_consistency ();
 
 	sgen_process_fin_stage_entries ();
-	sgen_process_dislink_stage_entries ();
 
 	/* pin from pinned handles */
 	sgen_init_pinning ();
@@ -1719,7 +1718,6 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	}
 
 	sgen_process_fin_stage_entries ();
-	sgen_process_dislink_stage_entries ();
 
 	TV_GETTIME (atv);
 	sgen_init_pinning ();
@@ -3199,6 +3197,8 @@ sgen_gc_init (void)
 	memset (&remset, 0, sizeof (remset));
 
 	sgen_card_table_init (&remset);
+
+	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, "normal gc handles");
 
 	gc_initialized = 1;
 }

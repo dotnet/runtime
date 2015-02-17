@@ -43,6 +43,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include "mono/sgen/sgen-conf.h"
 #include "mono/sgen/sgen-hash-table.h"
 #include "mono/sgen/sgen-protocol.h"
+#include "mono/sgen/gc-internal-agnostic.h"
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -796,7 +797,6 @@ void sgen_object_register_for_finalization (GCObject *obj, void *user_data);
 int sgen_gather_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, GCObject **out_array, int out_size);
 void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
 
-void sgen_process_dislink_stage_entries (void);
 void sgen_register_disappearing_link (GCObject *obj, void **link, gboolean track, gboolean in_gc);
 
 GCObject* sgen_weak_link_get (void **link_addr);
@@ -1049,6 +1049,27 @@ gboolean nursery_canaries_enabled (void);
 					else				\
 						g_warning ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
 				} }
+
+#define MONO_GC_POINTER_TAG(p) ((size_t)(p) & 3UL)
+
+#define MONO_GC_HANDLE_OCCUPIED_MASK (1)
+#define MONO_GC_HANDLE_VALID_MASK (2)
+#define MONO_GC_HANDLE_TAG_MASK (MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK)
+
+#define MONO_GC_HANDLE_OCCUPIED(slot) ((size_t)(slot) & MONO_GC_HANDLE_OCCUPIED_MASK)
+#define MONO_GC_HANDLE_VALID(slot) ((size_t)(slot) & MONO_GC_HANDLE_VALID_MASK)
+
+#define MONO_GC_HANDLE_TAG(slot) ((size_t)(slot) & MONO_GC_HANDLE_TAG_MASK)
+
+#define MONO_GC_HANDLE_IS_OBJECT_POINTER(slot) (MONO_GC_HANDLE_TAG (slot) == (MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK))
+#define MONO_GC_HANDLE_IS_DOMAIN_POINTER(slot) (MONO_GC_HANDLE_TAG (slot) == MONO_GC_HANDLE_OCCUPIED_MASK)
+
+#define MONO_GC_HANDLE_DOMAIN_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK, (h)))
+#define MONO_GC_HANDLE_OBJECT_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK, (h)))
+
+void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
+void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(GCObject*, GCHandleType, gpointer), gpointer user);
+void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
 
 #endif /* HAVE_SGEN_GC */
 

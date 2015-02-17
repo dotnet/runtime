@@ -111,6 +111,8 @@ void mono_gc_weak_link_register (volatile gpointer *link_addr, MonoObject *obj, 
 void mono_gc_weak_link_unregister (volatile gpointer *link_addr, gboolean track);
 void mono_gc_ensure_weak_links_accessible (void);
 
+void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
+
 /*Ephemeron functionality. Sgen only*/
 gboolean    mono_gc_ephemeron_array_add (MonoObject *obj);
 
@@ -374,8 +376,6 @@ extern gboolean log_finalizers;
 
 /* If set, do not run finalizers. */
 extern gboolean do_not_finalize;
-
-gboolean mono_gc_object_older_than (MonoObject *object, int generation);
 
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 
