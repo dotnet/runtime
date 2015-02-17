@@ -359,7 +359,7 @@ mono_threads_add_async_job (THREAD_INFO_TYPE *info, MonoAsyncJob job) MONO_INTER
 MonoAsyncJob
 mono_threads_consume_async_jobs (void) MONO_INTERNAL;
 
-void
+MONO_API void
 mono_threads_attach_tools_thread (void);
 
 
