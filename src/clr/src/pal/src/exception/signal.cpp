@@ -556,12 +556,12 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
         CONTEXTToNativeContext(&context, ucontext,
                                CONTEXT_CONTROL | CONTEXT_INTEGER);
 
-#if HAVE_SIGRETURN
-        sigreturn(ucontext);
+#if HAVE_SETCONTEXT
+        setcontext(ucontext);
 #elif HAVE__THREAD_SYS_SIGRETURN
         _thread_sys_sigreturn(ucontext);
-#elif HAVE_SETCONTEXT
-        setcontext(ucontext);
+#elif HAVE_SIGRETURN
+        sigreturn(ucontext);
 #else
 #error Missing a sigreturn equivalent on this platform!
 #endif

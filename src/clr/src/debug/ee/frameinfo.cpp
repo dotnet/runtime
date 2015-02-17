@@ -2128,7 +2128,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
             data.regDisplay.ControlPC = context->Eip;
             data.regDisplay.PCTAddr = (TADDR)&(context->Eip);
 
-#elif defined(_WIN64) || defined(_TARGET_ARM_)
+#else
             //
             // @TODO: this should be the code for all platforms now that it uses FillRegDisplay,
             // which encapsulates the platform variances.  This could all be avoided if we used
@@ -2139,9 +2139,6 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
             FillRegDisplay(&data.regDisplay, context);
 
             ::SetSP(data.regDisplay.pCallerContext, 0);
-#else
-            PORTABILITY_ASSERT("DebuggerWalkStack needs extended register information on this platform.");
-
 #endif
     }
 
