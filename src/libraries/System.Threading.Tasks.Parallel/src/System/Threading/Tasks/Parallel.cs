@@ -11,9 +11,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Diagnostics.Contracts;
 using System.Collections.ObjectModel;
 using System.Runtime.ExceptionServices;
+using System.Diagnostics;
 
 namespace System.Threading.Tasks
 {
@@ -1022,9 +1022,9 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal> bodyWithLocal,
             Func<TLocal> localInit, Action<TLocal> localFinally)
         {
-            Contract.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,
+            Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,
                 "expected exactly one body function to be supplied");
-            Contract.Assert(bodyWithLocal != null || (localInit == null && localFinally == null),
+            Debug.Assert(bodyWithLocal != null || (localInit == null && localFinally == null),
                 "thread local functions should only be supplied for loops w/ thread local bodies");
 
             // Instantiate our result.  Specifics will be filled in later.
@@ -1118,12 +1118,12 @@ namespace System.Threading.Tasks
 
                             if (bodyWithState != null)
                             {
-                                Contract.Assert(sharedPStateFlags != null);
+                                Debug.Assert(sharedPStateFlags != null);
                                 state = new ParallelLoopState32(sharedPStateFlags);
                             }
                             else if (bodyWithLocal != null)
                             {
-                                Contract.Assert(sharedPStateFlags != null);
+                                Debug.Assert(sharedPStateFlags != null);
                                 state = new ParallelLoopState32(sharedPStateFlags);
                                 if (localInit != null)
                                 {
@@ -1277,9 +1277,9 @@ namespace System.Threading.Tasks
             Func<long, ParallelLoopState, TLocal, TLocal> bodyWithLocal,
             Func<TLocal> localInit, Action<TLocal> localFinally)
         {
-            Contract.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,
+            Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,
                 "expected exactly one body function to be supplied");
-            Contract.Assert(bodyWithLocal != null || (localInit == null && localFinally == null),
+            Debug.Assert(bodyWithLocal != null || (localInit == null && localFinally == null),
                 "thread local functions should only be supplied for loops w/ thread local bodies");
 
             // Instantiate our result.  Specifics will be filled in later.
@@ -1375,12 +1375,12 @@ namespace System.Threading.Tasks
 
                             if (bodyWithState != null)
                             {
-                                Contract.Assert(sharedPStateFlags != null);
+                                Debug.Assert(sharedPStateFlags != null);
                                 state = new ParallelLoopState64(sharedPStateFlags);
                             }
                             else if (bodyWithLocal != null)
                             {
-                                Contract.Assert(sharedPStateFlags != null);
+                                Debug.Assert(sharedPStateFlags != null);
                                 state = new ParallelLoopState64(sharedPStateFlags);
 
                                 // If a thread-local selector was supplied, invoke it. Otherwise, use the default.
@@ -2091,10 +2091,10 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> bodyWithEverything,
             Func<TLocal> localInit, Action<TLocal> localFinally)
         {
-            Contract.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) +
+            Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) +
                 (bodyWithStateAndIndex == null ? 0 : 1) + (bodyWithStateAndLocal == null ? 0 : 1) + (bodyWithEverything == null ? 0 : 1)) == 1,
                 "expected exactly one body function to be supplied");
-            Contract.Assert((bodyWithStateAndLocal != null) || (bodyWithEverything != null) || (localInit == null && localFinally == null),
+            Debug.Assert((bodyWithStateAndLocal != null) || (bodyWithEverything != null) || (localInit == null && localFinally == null),
                 "thread local functions should only be supplied for loops w/ thread local bodies");
 
             // Before getting started, do a quick peek to see if we have been canceled already
@@ -2154,8 +2154,8 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> bodyWithEverything,
             Func<TLocal> localInit, Action<TLocal> localFinally)
         {
-            Contract.Assert(array != null);
-            Contract.Assert(parallelOptions != null, "ForEachWorker(array): parallelOptions is null");
+            Debug.Assert(array != null);
+            Debug.Assert(parallelOptions != null, "ForEachWorker(array): parallelOptions is null");
 
             int from = array.GetLowerBound(0);
             int to = array.GetUpperBound(0) + 1;
@@ -2213,8 +2213,8 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> bodyWithEverything,
             Func<TLocal> localInit, Action<TLocal> localFinally)
         {
-            Contract.Assert(list != null);
-            Contract.Assert(parallelOptions != null, "ForEachWorker(list): parallelOptions is null");
+            Debug.Assert(list != null);
+            Debug.Assert(parallelOptions != null, "ForEachWorker(list): parallelOptions is null");
 
             if (body != null)
             {
@@ -3067,14 +3067,14 @@ namespace System.Threading.Tasks
             Func<TLocal> localInit,
             Action<TLocal> localFinally)
         {
-            Contract.Assert(((simpleBody == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) +
+            Debug.Assert(((simpleBody == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) +
                 (bodyWithStateAndIndex == null ? 0 : 1) + (bodyWithStateAndLocal == null ? 0 : 1) + (bodyWithEverything == null ? 0 : 1)) == 1,
                 "PartitionForEach: expected exactly one body function to be supplied");
-            Contract.Assert((bodyWithStateAndLocal != null) || (bodyWithEverything != null) || (localInit == null && localFinally == null),
+            Debug.Assert((bodyWithStateAndLocal != null) || (bodyWithEverything != null) || (localInit == null && localFinally == null),
                 "PartitionForEach: thread local functions should only be supplied for loops w/ thread local bodies");
 
             OrderablePartitioner<TSource> orderedSource = source as OrderablePartitioner<TSource>;
-            Contract.Assert((orderedSource != null) || (bodyWithStateAndIndex == null && bodyWithEverything == null),
+            Debug.Assert((orderedSource != null) || (bodyWithStateAndIndex == null && bodyWithEverything == null),
                 "PartitionForEach: bodies with indices are only allowable for OrderablePartitioner");
 
             if (!source.SupportsDynamicPartitions)
@@ -3254,7 +3254,7 @@ namespace System.Threading.Tasks
                                     else if (bodyWithStateAndLocal != null)
                                         localValue = bodyWithStateAndLocal(t, state, localValue);
                                     else
-                                        Contract.Assert(false, "PartitionerForEach: illegal body type in Partitioner handler");
+                                        Debug.Assert(false, "PartitionerForEach: illegal body type in Partitioner handler");
 
                                     // Any break, stop or exception causes us to halt
                                     // We don't have the global indexing information to discriminate whether or not
@@ -3369,7 +3369,7 @@ namespace System.Threading.Tasks
             Exception first = null;
             foreach (Object exObj in exceptions)
             {
-                Contract.Assert(exObj is Exception);
+                Debug.Assert(exObj is Exception);
                 Exception ex = (Exception)exObj;
 
                 if (first == null)
@@ -3382,7 +3382,7 @@ namespace System.Threading.Tasks
             }
 
             // All exceptions are OCEs with this token, let's just pick the first:
-            Contract.Assert(first is OperationCanceledException);
+            Debug.Assert(first is OperationCanceledException);
             return (OperationCanceledException)first;
         }
 
