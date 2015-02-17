@@ -5018,6 +5018,21 @@ ves_icall_System_Reflection_Assembly_LoadPermissions (MonoReflectionAssembly *as
 	return result;	
 }
 
+static gboolean
+mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
+{
+	guint32 attrs, visibility;
+	do {
+		attrs = mono_metadata_decode_row_col (tdef, type - 1, MONO_TYPEDEF_FLAGS);
+		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+		if (visibility != TYPE_ATTRIBUTE_PUBLIC && visibility != TYPE_ATTRIBUTE_NESTED_PUBLIC)
+			return FALSE;
+
+	} while ((type = mono_metadata_token_index (mono_metadata_nested_in_typedef (image, type))));
+
+	return TRUE;
+}
+
 static MonoArray*
 mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **exceptions, MonoBoolean exportedOnly)
 {
@@ -5025,15 +5040,12 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **excepti
 	MonoClass *klass;
 	MonoTableInfo *tdef = &image->tables [MONO_TABLE_TYPEDEF];
 	int i, count;
-	guint32 attrs, visibility;
 
 	/* we start the count from 1 because we skip the special type <Module> */
 	if (exportedOnly) {
 		count = 0;
 		for (i = 1; i < tdef->rows; ++i) {
-			attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
-			visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
-			if (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)
+			if (mono_module_type_is_visible (tdef, image, i + 1))
 				count++;
 		}
 	} else {
@@ -5043,9 +5055,7 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **excepti
 	*exceptions = mono_array_new (domain, mono_defaults.exception_class, count);
 	count = 0;
 	for (i = 1; i < tdef->rows; ++i) {
-		attrs = mono_metadata_decode_row_col (tdef, i, MONO_TYPEDEF_FLAGS);
-		visibility = attrs & TYPE_ATTRIBUTE_VISIBILITY_MASK;
-		if (!exportedOnly || (visibility == TYPE_ATTRIBUTE_PUBLIC || visibility == TYPE_ATTRIBUTE_NESTED_PUBLIC)) {
+		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i + 1)) {
 			MonoError error;
 			klass = mono_class_get_checked (image, (i + 1) | MONO_TOKEN_TYPE_DEF, &error);
 			g_assert (!mono_loader_get_last_error ()); /* Plug any leaks */
