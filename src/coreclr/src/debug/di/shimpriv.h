@@ -518,10 +518,8 @@ protected:
     HANDLE  m_markAttachPendingEvent;
     HANDLE  m_terminatingEvent;
 
-#if !defined(FEATURE_CORESYSTEM)
-    // Finds the base address of mscorwks.dll 
+    // Finds the base address of [core]clr.dll 
     CORDB_ADDRESS GetCLRInstanceBaseAddress();
-#endif // !defined(FEATURE_CORESYSTEM)
 
     //
     // Event Queues

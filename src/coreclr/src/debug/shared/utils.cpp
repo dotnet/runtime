@@ -71,6 +71,9 @@ CORDB_ADDRESS IsEventDebuggerNotification(
         return NULL;
     }
 
+    // TODO: We don't do this check in case of non-windows debugging now, because we don't support
+    // multi-instance debugging.
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM) && !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     // If base-address doesn't match, then it's likely an event from another version of the CLR
     // in the target.
     // We need to be careful here.  CORDB_ADDRESS is a ULONG64, whereas ExceptionInformation[1] 
@@ -80,6 +83,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     {
         return NULL;        
     }
+#endif
 
     // It passes all the format checks. So now get the payload.
     CORDB_ADDRESS ptrRemoteManagedEvent = GetExceptionInfoAsAddress(pRecord, 2);

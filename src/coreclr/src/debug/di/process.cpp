@@ -1198,6 +1198,7 @@ HRESULT ShimProcess::DebugActiveProcess(
 
         _ASSERTE(SUCCEEDED(hr));
 
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
         // Don't do this when we are remote debugging since we won't be getting the loader breakpoint.
         // We don't support JIT attach in remote debugging scenarios anyway.
         //
@@ -1229,6 +1230,7 @@ HRESULT ShimProcess::DebugActiveProcess(
             // Wait for the completion of marking pending attach bit or debugger detaching
             WaitForMultipleObjectsEx(dwHandles, arrHandles, FALSE, INFINITE, FALSE);
         }
+#endif //!FEATURE_DBGIPC_TRANSPORT_DI
     }
     EX_CATCH_HRESULT(hr);
     
@@ -2138,10 +2140,10 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess7*>(this);
     }
-	else if (id == IID_ICorDebugProcess8)
-	{
-		*pInterface = static_cast<ICorDebugProcess8*>(this);
-	}
+    else if (id == IID_ICorDebugProcess8)
+    {
+        *pInterface = static_cast<ICorDebugProcess8*>(this);
+    }
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
     else if (id == IID_ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly)
     {
@@ -7491,7 +7493,7 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
             // Verify that the control block is valid.
             // This  will throw on error. 
             VerifyControlBlock();   
-			
+            
             *pfBlockExists = true;
         }
         else 
@@ -7654,8 +7656,8 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 #elif FEATURE_PAL
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
-		m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
-		CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
+        m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
+        CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
 #endif
     }
 
@@ -9825,12 +9827,11 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
     {
 
 #ifdef FEATURE_CORESYSTEM
-		_ASSERTE(m_cordb->GetTargetCLR() != 0);
-		if(m_cordb->GetTargetCLR() != 0)
-		{
-			m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
-			return S_OK;
-		}
+        if(m_cordb->GetTargetCLR() != 0)
+        {
+            m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
+            return S_OK;
+        }
 #endif
 
         // The only case in which we're allowed to request the "default" CLR instance
@@ -11827,26 +11828,26 @@ CordbUnmanagedThread * CordbProcess::GetUnmanagedThreadFromEvent(const DEBUG_EVE
 
             this->GetEventBlock(&fBlockExists);
 
-	        // If we have the debugger control block, and if that control block has the address of the thread proc for
-	        // the helper thread, then we're initialized enough on the Left Side to recgonize the helper thread based on
-	        // its thread proc's address.
-	        if (this->GetDCB() != NULL) 
-	        {
-	            // get the latest LS DCB information
-	            UpdateRightSideDCB();
-	            if ((this->GetDCB()->m_helperThreadStartAddr != NULL) && (pUnmanagedThread != NULL))
-	            {
-	                void * pStartAddr = GetThreadUserStartAddr(pEvent);
+            // If we have the debugger control block, and if that control block has the address of the thread proc for
+            // the helper thread, then we're initialized enough on the Left Side to recgonize the helper thread based on
+            // its thread proc's address.
+            if (this->GetDCB() != NULL) 
+            {
+                // get the latest LS DCB information
+                UpdateRightSideDCB();
+                if ((this->GetDCB()->m_helperThreadStartAddr != NULL) && (pUnmanagedThread != NULL))
+                {
+                    void * pStartAddr = GetThreadUserStartAddr(pEvent);
 
-	                if (pStartAddr == this->GetDCB()->m_helperThreadStartAddr)
-	                {
-	                    // Remember the ID of the helper thread.
-	                    this->m_helperThreadId = pEvent->dwThreadId;
+                    if (pStartAddr == this->GetDCB()->m_helperThreadStartAddr)
+                    {
+                        // Remember the ID of the helper thread.
+                        this->m_helperThreadId = pEvent->dwThreadId;
 
-	                    LOG((LF_CORDB, LL_INFO1000, "W32ET::W32EL: Left Side Helper Thread is 0x%x\n", pEvent->dwThreadId));
-	                }
-	            }
-	        }
+                        LOG((LF_CORDB, LL_INFO1000, "W32ET::W32EL: Left Side Helper Thread is 0x%x\n", pEvent->dwThreadId));
+                    }
+                }
+            }
         }
         EX_CATCH_HRESULT(hr)
         {
