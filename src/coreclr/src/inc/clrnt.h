@@ -752,11 +752,7 @@ typedef VM_COUNTERS *PVM_COUNTERS;
 
 #endif // !defined(FEATURE_PAL)
 
-//
-//  WIN64
-//
-
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
 
 typedef enum _FUNCTION_TABLE_TYPE {
     RF_SORTED,
@@ -786,7 +782,7 @@ typedef struct _DYNAMIC_FUNCTION_TABLE {
     ULONG EntryCount;
 } DYNAMIC_FUNCTION_TABLE, *PDYNAMIC_FUNCTION_TABLE;
 
-#endif // defined(_WIN64) || defined(_TARGET_ARM_)
+#endif // !_TARGET_X86_
 
 //
 //   AMD64

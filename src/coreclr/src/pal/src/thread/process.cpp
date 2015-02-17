@@ -857,12 +857,7 @@ CorUnix::InternalCreateProcess(
         
 
     /* fork the new process */
-#if HAVE_SOLARIS_THREADS
-    /* On Solaris, we use fork1 so that only the calling thread (LWP) is duplicated */
-    processId = fork1();
-#else
     processId = fork();
-#endif
 
     if (processId == -1)
     {
@@ -1558,14 +1553,14 @@ PAL_GetCPUBusyTime(
     if (nCurrentTime > nLastRecordedCurrentTime)
     {
         nCpuTotalTime = (nCurrentTime - nLastRecordedCurrentTime);
-#if HAVE_SOLARIS_THREADS || HAVE_THREAD_SELF || HAVE__LWP_SELF || HAVE_VM_READ
+#if HAVE_THREAD_SELF || HAVE__LWP_SELF || HAVE_VM_READ
         // For systems that run multiple threads of a process on multiple processors,
         // the accumulated userTime and kernelTime of this process may exceed
         // the elapsed time. In this case, the cpuTotalTime needs to be adjusted
         // according to number of processors so that the cpu utilization
         // will not be greater than 100.
         nCpuTotalTime *= dwNumberOfProcessors;
-#endif // HAVE_SOLARIS_THREADS || HAVE_THREAD_SELF || HAVE__LWP_SELF || HAVE_VM_READ
+#endif // HAVE_THREAD_SELF || HAVE__LWP_SELF || HAVE_VM_READ
     }
 
     if (nUserTime >= nLastRecordedUserTime &&
