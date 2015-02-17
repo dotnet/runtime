@@ -73,7 +73,7 @@
  * of classes the runtime knows about, changing icall signature or
  * semantics etc), increment this variable. Also increment the
  * pair of this variable in mscorlib in:
- *       mcs/class/mscorlib/System/Environment.cs
+ *       mcs/class/corlib/System/Environment.cs
  *
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
