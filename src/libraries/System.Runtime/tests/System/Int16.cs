@@ -141,7 +141,7 @@ public static class Int16Tests
         Assert.Equal("-8249", i2.ToString("g"));
 
         Int16 i3 = -2468;
-        Assert.Equal("-2,468.00", i3.ToString("N"));
+        Assert.Equal(string.Format("{0:N}", -2468.00), i3.ToString("N"));
 
         Int16 i4 = 0x248;
         Assert.Equal("248", i4.ToString("x"));
@@ -177,7 +177,7 @@ public static class Int16Tests
     public static void TestParseNumberStyle()
     {
         Assert.Equal(0x123, Int16.Parse("123", NumberStyles.HexNumber));
-        Assert.Equal(1000, Int16.Parse("1,000", NumberStyles.AllowThousands));
+        Assert.Equal(1000, Int16.Parse((1000).ToString("N0"), NumberStyles.AllowThousands));
         //TODO: Negative tests once we get better exceptions
     }
 
@@ -197,6 +197,7 @@ public static class Int16Tests
         Assert.Equal(0x123, Int16.Parse("123", NumberStyles.HexNumber, nfi));
 
         nfi.CurrencySymbol = "$";
+        nfi.CurrencyGroupSeparator = ",";
         Assert.Equal(1000, Int16.Parse("$1,000", NumberStyles.Currency, nfi));
         //TODO: Negative tests once we get better exception support
     }
@@ -216,10 +217,11 @@ public static class Int16Tests
         Assert.True(Int16.TryParse(" 678 ", out i));   // Leading/Trailing whitespace
         Assert.Equal(678, i);
 
-        Assert.False(Int16.TryParse("$1000", out i));  // Currency
-        Assert.False(Int16.TryParse("1,000", out i));  // Thousands
+        var nfi = new NumberFormatInfo() { CurrencyGroupSeparator = "" };
+        Assert.False(Int16.TryParse((1000).ToString("C0", nfi), out i));  // Currency
+        Assert.False(Int16.TryParse((1000).ToString("N0"), out i));  // Thousands
         Assert.False(Int16.TryParse("abc", out i));    // Hex digits
-        Assert.False(Int16.TryParse("678.90", out i)); // Decimal
+        Assert.False(Int16.TryParse((678.90).ToString("F2"), out i)); // Decimal
         Assert.False(Int16.TryParse("(135)", out i));  // Parentheses
         Assert.False(Int16.TryParse("1E23", out i));   // Exponent
     }
