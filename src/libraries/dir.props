@@ -32,7 +32,7 @@
     <_CoverageEnabled>false</_CoverageEnabled>
     <_CoverageEnabled Condition="'$(SkipTests)' != 'true' and '$(OS)' == 'Windows_NT' and '$(Coverage)' == 'true'">true</_CoverageEnabled>
     <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$(BinDir)\tests\coverage\</CoverageReportDir>
-    <CoverageVersion>4.5.3522</CoverageVersion>
+    <CoverageVersion>4.5.3711-rc52</CoverageVersion>
     <CoverageToolPath>$(PackagesDir)OpenCover.$(CoverageVersion)\OpenCover.Console.exe</CoverageToolPath>
     <!-- When coverage is enabled, we disallow building projects in parallel. There appear to be issues with the OpenCover tool
          in these scenarios. -->
