@@ -25,7 +25,7 @@ namespace System.Threading.Tasks
         // Derived classes will track a ParallelStateFlags32 or ParallelStateFlags64.
         // So this is slightly redundant, but it enables us to implement some 
         // methods in this base class.
-        private ParallelLoopStateFlags _flagsBase;
+        private readonly ParallelLoopStateFlags _flagsBase;
 
         internal ParallelLoopState(ParallelLoopStateFlags fbase)
         {
@@ -265,7 +265,7 @@ namespace System.Threading.Tasks
 
     internal class ParallelLoopState32 : ParallelLoopState
     {
-        private ParallelLoopStateFlags32 _sharedParallelStateFlags;
+        private readonly ParallelLoopStateFlags32 _sharedParallelStateFlags;
         private int _currentIteration = 0;
 
         /// <summary>
@@ -329,7 +329,7 @@ namespace System.Threading.Tasks
     /// </summary>
     internal class ParallelLoopState64 : ParallelLoopState
     {
-        private ParallelLoopStateFlags64 _sharedParallelStateFlags;
+        private readonly ParallelLoopStateFlags64 _sharedParallelStateFlags;
         private long _currentIteration = 0;
 
         /// <summary>
