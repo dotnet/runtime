@@ -9,7 +9,7 @@
 
 using System;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 #pragma warning disable 0420
 namespace System.Threading.Tasks
@@ -157,7 +157,7 @@ namespace System.Threading.Tasks
 
             bool bRetVal = FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal);
 
-            Contract.Assert((nFromInclusiveLocal <= Int32.MaxValue) && (nFromInclusiveLocal >= Int32.MinValue) &&
+            Debug.Assert((nFromInclusiveLocal <= Int32.MaxValue) && (nFromInclusiveLocal >= Int32.MinValue) &&
                             (nToExclusiveLocal <= Int32.MaxValue) && (nToExclusiveLocal >= Int32.MinValue));
 
             // convert to 32 bit before returning
@@ -215,7 +215,7 @@ namespace System.Threading.Tasks
             //
             // find the actual number of index ranges we will need
             //
-            Contract.Assert((uSpan / uRangeSize) < Int32.MaxValue);
+            Debug.Assert((uSpan / uRangeSize) < Int32.MaxValue);
 
             int nNumRanges = (int)(uSpan / uRangeSize);
 
@@ -248,7 +248,7 @@ namespace System.Threading.Tasks
                     nCurrentIndex > nToExclusive)
                 {
                     // this should only happen at the last index
-                    Contract.Assert(i == nNumRanges - 1);
+                    Debug.Assert(i == nNumRanges - 1);
 
                     nCurrentIndex = nToExclusive;
                 }
@@ -264,7 +264,7 @@ namespace System.Threading.Tasks
         /// </summary>
         internal RangeWorker RegisterNewWorker()
         {
-            Contract.Assert(m_indexRanges != null && m_indexRanges.Length != 0);
+            Debug.Assert(m_indexRanges != null && m_indexRanges.Length != 0);
 
             int nInitialRange = (Interlocked.Increment(ref m_nCurrentIndexRangeToAssign) - 1) % m_indexRanges.Length;
 

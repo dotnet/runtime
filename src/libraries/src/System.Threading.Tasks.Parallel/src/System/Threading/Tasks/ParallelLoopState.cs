@@ -9,7 +9,6 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 // Prevents compiler warnings/errors regarding the use of ref params in Interlocked methods
 
@@ -40,7 +39,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Contract.Assert(false);
+                Debug.Fail(SR.ParallelState_NotSupportedException_UnsupportedMethod);
                 throw new NotSupportedException(
                     SR.ParallelState_NotSupportedException_UnsupportedMethod);
             }
@@ -97,7 +96,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                Contract.Assert(false);
+                Debug.Fail(SR.ParallelState_NotSupportedException_UnsupportedMethod);
                 throw new NotSupportedException(
                     SR.ParallelState_NotSupportedException_UnsupportedMethod);
             }
@@ -145,7 +144,7 @@ namespace System.Threading.Tasks
         // Internal/virtual support for Break().
         internal virtual void InternalBreak()
         {
-            Contract.Assert(false);
+            Debug.Fail(SR.ParallelState_NotSupportedException_UnsupportedMethod);
             throw new NotSupportedException(
                     SR.ParallelState_NotSupportedException_UnsupportedMethod);
         }
