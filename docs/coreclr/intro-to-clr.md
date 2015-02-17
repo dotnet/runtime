@@ -251,13 +251,13 @@ Phew!  The runtime does a lot! It has taken many pages just to describe _some_ o
 
 - [MSDN Entry for the CLR][clr]
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
-- [ECMA Standard for the Common Language Infrastructure (CLI)](http://msdn.microsoft.com/en-us/netframework/aa569283.aspx)
+- [ECMA Standard for the Common Language Infrastructure (CLI)][ecma-spec]
   - [Partition I Concepts and Architecture](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20I.pdf)
   - [Partition II Meta Data Definition and Semantics](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20II.pdf)
   - [Partition III CIL Instruction Set][cil-spec]
 - [.NET Framework Design Guidelines](http://msdn.microsoft.com/en-us/library/ms229042.aspx)
 
-[ecma-spec]: http://msdn.microsoft.com/en-us/netframework/aa569283.aspx
+[ecma-spec]: http://www.ecma-international.org/publications/standards/Ecma-335.htm
 [clr]: http://msdn.microsoft.com/en-us/library/8bs2ecf4(VS.71).aspx
 [cil-spec]: http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf
 [fx-design-guidelines]: http://msdn.microsoft.com/en-us/library/ms229042.aspx
