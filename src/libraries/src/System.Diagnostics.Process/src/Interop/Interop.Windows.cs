@@ -424,16 +424,6 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-console-l1-1-0.dll")]
         internal extern static uint GetConsoleOutputCP();
-
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, EntryPoint = "FormatMessageW")]
-        internal extern static uint FormatMessage(
-                    uint dwFlags,
-                    IntPtr lpSource,
-                    uint dwMessageId,
-                    uint dwLanguageId,
-                    char[] lpBuffer,
-                    uint nSize,
-                    IntPtr Arguments);
     }
 
     [StructLayout(LayoutKind.Sequential)]
