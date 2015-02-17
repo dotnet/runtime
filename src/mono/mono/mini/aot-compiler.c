@@ -6825,8 +6825,12 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 					}
 					add_generic_class_with_depth (acfg, m->klass, depth + 5, "method");
 				}
-				if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && !strcmp (m->name, "ElementAddr"))
-					add_extra_method_with_depth (acfg, m, depth + 1);
+				if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED) {
+					WrapperInfo *info = mono_marshal_get_wrapper_info (m);
+
+					if (info && info->subtype == WRAPPER_SUBTYPE_ELEMENT_ADDR)
+						add_extra_method_with_depth (acfg, m, depth + 1);
+				}
 				break;
 			}
 			case MONO_PATCH_INFO_VTABLE: {
