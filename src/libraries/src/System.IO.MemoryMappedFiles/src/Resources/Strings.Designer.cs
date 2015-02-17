@@ -143,6 +143,15 @@ namespace Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Specified file length was too large for the file system..
+        /// </summary>
+        internal static string ArgumentOutOfRange_FileLengthTooBig {
+            get {
+                return ResourceManager.GetString("ArgumentOutOfRange_FileLengthTooBig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Non negative number is required..
         /// </summary>
         internal static string ArgumentOutOfRange_NeedNonNegNum {
@@ -346,6 +355,15 @@ namespace Resources {
         internal static string ObjectDisposed_ViewAccessorClosed {
             get {
                 return ResourceManager.GetString("ObjectDisposed_ViewAccessorClosed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Named maps are not supported..
+        /// </summary>
+        internal static string PlatformNotSupported_NamedMaps {
+            get {
+                return ResourceManager.GetString("PlatformNotSupported_NamedMaps", resourceCulture);
             }
         }
         

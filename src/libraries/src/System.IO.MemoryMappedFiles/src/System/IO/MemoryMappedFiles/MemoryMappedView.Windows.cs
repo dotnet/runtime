@@ -12,6 +12,10 @@ namespace System.IO.MemoryMappedFiles
 {
     internal partial class MemoryMappedView
     {
+        // These control the retry behaviour when lock violation errors occur during Flush:
+        private const Int32 MaxFlushWaits = 15;  // must be <=30
+        private const Int32 MaxFlushRetriesPerWait = 20;
+
         [SecurityCritical]
         public unsafe static MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
                                             MemoryMappedFileAccess access, Int64 offset, Int64 size)
@@ -22,21 +26,10 @@ namespace System.IO.MemoryMappedFiles
             // extra memory we allocate before the start of the requested view. MapViewOfFile will also round the 
             // capacity of the view to the nearest multiple of the system page size.  Once again, we hide this 
             // from the user by preventing them from writing to any memory that they did not request.
-            ulong extraMemNeeded = (ulong)offset % (ulong)GetSystemPageAllocationGranularity();
-
-            // newOffset takes into account the fact that we have some extra memory allocated before the requested view
-            ulong newOffset = (ulong)offset - extraMemNeeded;
-            Debug.Assert(newOffset >= 0, "newOffset = (offset - extraMemNeeded) < 0");
-
-            // determine size to pass to MapViewOfFile
-            ulong nativeSize = (size != MemoryMappedFile.DefaultSize) ?
-                (ulong)size + (ulong)extraMemNeeded :
-                0;
-
-            if (IntPtr.Size == 4 && nativeSize > UInt32.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
-            }
+            ulong nativeSize, extraMemNeeded, newOffset;
+            ValidateSizeAndOffset(
+                size, offset, GetSystemPageAllocationGranularity(), 
+                out nativeSize, out extraMemNeeded, out newOffset);
 
             // if request is >= than total virtual, then MapViewOfFile will fail with meaningless error message 
             // "the parameter is incorrect"; this provides better error message in advance
