@@ -526,6 +526,8 @@ because gcc will complain about %I64d and %S
 // Define as 1 if using stack protection, but need implementation
 #define NEED_STACK_PROTECTOR_IMPL 0
 
+#define UNWIND_CONTEXT_IS_UCONTEXT_T 1
+
 #endif // _PAL_CONFIG_H_INCLUDED
 
 
