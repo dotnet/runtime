@@ -57,6 +57,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 
 	CloseHandle (handle);
 
+#if !defined(MONO_CROSS_COMPILE)
 #ifdef USE_MONO_CTX
 	memset (&info->ctx, 0, sizeof (MonoContext));
 #ifdef TARGET_AMD64
@@ -103,6 +104,7 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	info->regs [7] = context.Esp;
 	info->stopped_ip = (gpointer)context.Eip;
 	info->stack_start = (char*)context.Esp - REDZONE_SIZE;
+#endif
 #endif
 
 	/* Notify the JIT */
