@@ -73,7 +73,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                return ((_flagsBase.LoopStateFlags & ParallelLoopStateFlags.PLS_STOPPED) != 0);
+                return ((_flagsBase.LoopStateFlags & ParallelLoopStateFlags.ParallelLoopStateStopped) != 0);
             }
         }
 
@@ -85,7 +85,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                return ((_flagsBase.LoopStateFlags & ParallelLoopStateFlags.PLS_EXCEPTIONAL) != 0);
+                return ((_flagsBase.LoopStateFlags & ParallelLoopStateFlags.ParallelLoopStateExceptional) != 0);
             }
         }
 
@@ -183,15 +183,15 @@ namespace System.Threading.Tasks
         // Helper method to avoid repeating Break() logic between ParallelState32 and ParallelState32<TLocal>
         internal static void Break(int iteration, ParallelLoopStateFlags32 pflags)
         {
-            int oldValue = ParallelLoopStateFlags.PLS_NONE;
+            int oldValue = ParallelLoopStateFlags.ParallelLoopStateNone;
 
             // Attempt to change state from "not stopped or broken or canceled or exceptional" to "broken".
-            if (!pflags.AtomicLoopStateUpdate(ParallelLoopStateFlags.PLS_BROKEN,
-                                             ParallelLoopStateFlags.PLS_STOPPED | ParallelLoopStateFlags.PLS_EXCEPTIONAL | ParallelLoopStateFlags.PLS_CANCELED,
+            if (!pflags.AtomicLoopStateUpdate(ParallelLoopStateFlags.ParallelLoopStateBroken,
+                                             ParallelLoopStateFlags.ParallelLoopStateStopped | ParallelLoopStateFlags.ParallelLoopStateExceptional | ParallelLoopStateFlags.ParallelLoopStateCanceled,
                                              ref oldValue))
             {
                 // If we were already stopped, we have a problem
-                if ((oldValue & ParallelLoopStateFlags.PLS_STOPPED) != 0)
+                if ((oldValue & ParallelLoopStateFlags.ParallelLoopStateStopped) != 0)
                 {
                     throw new InvalidOperationException(
                         SR.ParallelState_Break_InvalidOperationException_BreakAfterStop);
@@ -224,15 +224,15 @@ namespace System.Threading.Tasks
         // Helper method to avoid repeating Break() logic between ParallelState64 and ParallelState64<TLocal>
         internal static void Break(long iteration, ParallelLoopStateFlags64 pflags)
         {
-            int oldValue = ParallelLoopStateFlags.PLS_NONE;
+            int oldValue = ParallelLoopStateFlags.ParallelLoopStateNone;
 
             // Attempt to change state from "not stopped or broken or canceled or exceptional" to "broken".
-            if (!pflags.AtomicLoopStateUpdate(ParallelLoopStateFlags.PLS_BROKEN,
-                                             ParallelLoopStateFlags.PLS_STOPPED | ParallelLoopStateFlags.PLS_EXCEPTIONAL | ParallelLoopStateFlags.PLS_CANCELED,
+            if (!pflags.AtomicLoopStateUpdate(ParallelLoopStateFlags.ParallelLoopStateBroken,
+                                             ParallelLoopStateFlags.ParallelLoopStateStopped | ParallelLoopStateFlags.ParallelLoopStateExceptional | ParallelLoopStateFlags.ParallelLoopStateCanceled,
                                              ref oldValue))
             {
                 // If we were already stopped, we have a problem
-                if ((oldValue & ParallelLoopStateFlags.PLS_STOPPED) != 0)
+                if ((oldValue & ParallelLoopStateFlags.ParallelLoopStateStopped) != 0)
                 {
                     throw new InvalidOperationException(
                         SR.ParallelState_Break_InvalidOperationException_BreakAfterStop);
@@ -398,13 +398,13 @@ namespace System.Threading.Tasks
     /// </summary>
     internal class ParallelLoopStateFlags
     {
-        internal const int PLS_NONE = 0;
-        internal const int PLS_EXCEPTIONAL = 1;
-        internal const int PLS_BROKEN = 2;
-        internal const int PLS_STOPPED = 4;
-        internal const int PLS_CANCELED = 8;
+        internal const int ParallelLoopStateNone = 0;
+        internal const int ParallelLoopStateExceptional = 1;
+        internal const int ParallelLoopStateBroken = 2;
+        internal const int ParallelLoopStateStopped = 4;
+        internal const int ParallelLoopStateCanceled = 8;
 
-        private volatile int _loopStateFlags = PLS_NONE;
+        private volatile int _loopStateFlags = ParallelLoopStateNone;
 
         internal int LoopStateFlags
         {
@@ -436,23 +436,23 @@ namespace System.Threading.Tasks
         internal void SetExceptional()
         {
             // we can set the exceptional flag regardless of the state of other bits.
-            AtomicLoopStateUpdate(PLS_EXCEPTIONAL, PLS_NONE);
+            AtomicLoopStateUpdate(ParallelLoopStateExceptional, ParallelLoopStateNone);
         }
 
         internal void Stop()
         {
-            // disallow setting of PLS_STOPPED bit only if PLS_BROKEN was already set
-            if (!AtomicLoopStateUpdate(PLS_STOPPED, PLS_BROKEN))
+            // disallow setting of ParallelLoopStateStopped bit only if ParallelLoopStateBroken was already set
+            if (!AtomicLoopStateUpdate(ParallelLoopStateStopped, ParallelLoopStateBroken))
             {
                 throw new InvalidOperationException(SR.ParallelState_Stop_InvalidOperationException_StopAfterBreak);
             }
         }
 
-        // Returns true if StoppedBroken is updated to PLS_CANCELED.
+        // Returns true if StoppedBroken is updated to ParallelLoopStateCanceled.
         internal bool Cancel()
         {
             // we can set the canceled flag regardless of the state of other bits.
-            return (AtomicLoopStateUpdate(PLS_CANCELED, PLS_NONE));
+            return (AtomicLoopStateUpdate(ParallelLoopStateCanceled, ParallelLoopStateNone));
         }
     }
 
@@ -508,9 +508,9 @@ namespace System.Threading.Tasks
         internal bool ShouldExitLoop(int CallerIteration)
         {
             int flags = LoopStateFlags;
-            return (flags != PLS_NONE && (
-                            ((flags & (PLS_EXCEPTIONAL | PLS_STOPPED | PLS_CANCELED)) != 0) ||
-                            (((flags & PLS_BROKEN) != 0) && (CallerIteration > LowestBreakIteration))));
+            return (flags != ParallelLoopStateNone && (
+                            ((flags & (ParallelLoopStateExceptional | ParallelLoopStateStopped | ParallelLoopStateCanceled)) != 0) ||
+                            (((flags & ParallelLoopStateBroken) != 0) && (CallerIteration > LowestBreakIteration))));
         }
 
         // This lighter version of ShouldExitLoop will be used when the body type doesn't contain a state.
@@ -518,7 +518,7 @@ namespace System.Threading.Tasks
         internal bool ShouldExitLoop()
         {
             int flags = LoopStateFlags;
-            return ((flags != PLS_NONE) && ((flags & (PLS_EXCEPTIONAL | PLS_CANCELED)) != 0));
+            return ((flags != ParallelLoopStateNone) && ((flags & (ParallelLoopStateExceptional | ParallelLoopStateCanceled)) != 0));
         }
     }
 
@@ -575,9 +575,9 @@ namespace System.Threading.Tasks
         internal bool ShouldExitLoop(long CallerIteration)
         {
             int flags = LoopStateFlags;
-            return (flags != PLS_NONE && (
-                            ((flags & (PLS_EXCEPTIONAL | PLS_STOPPED | PLS_CANCELED)) != 0) ||
-                            (((flags & PLS_BROKEN) != 0) && (CallerIteration > LowestBreakIteration))));
+            return (flags != ParallelLoopStateNone && (
+                            ((flags & (ParallelLoopStateExceptional | ParallelLoopStateStopped | ParallelLoopStateCanceled)) != 0) ||
+                            (((flags & ParallelLoopStateBroken) != 0) && (CallerIteration > LowestBreakIteration))));
         }
 
         // This lighter version of ShouldExitLoop will be used when the body type doesn't contain a state.
@@ -585,7 +585,7 @@ namespace System.Threading.Tasks
         internal bool ShouldExitLoop()
         {
             int flags = LoopStateFlags;
-            return ((flags != PLS_NONE) && ((flags & (PLS_EXCEPTIONAL | PLS_CANCELED)) != 0));
+            return ((flags != ParallelLoopStateNone) && ((flags & (ParallelLoopStateExceptional | ParallelLoopStateCanceled)) != 0));
         }
     }
 

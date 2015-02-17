@@ -1141,7 +1141,7 @@ namespace System.Threading.Tasks
                                 if (body != null)
                                 {
                                     for (int j = nFromInclusiveLocal;
-                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE  // fast path check as SEL() doesn't inline
+                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
                                                                    || !sharedPStateFlags.ShouldExitLoop()); // the no-arg version is used since we have no state
                                          j += 1)
                                     {
@@ -1151,7 +1151,7 @@ namespace System.Threading.Tasks
                                 else if (bodyWithState != null)
                                 {
                                     for (int j = nFromInclusiveLocal;
-                                        j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE  // fast path check as SEL() doesn't inline
+                                        j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
                                                                    || !sharedPStateFlags.ShouldExitLoop(j));
                                         j += 1)
                                     {
@@ -1162,7 +1162,7 @@ namespace System.Threading.Tasks
                                 else
                                 {
                                     for (int j = nFromInclusiveLocal;
-                                        j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE  // fast path check as SEL() doesn't inline
+                                        j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
                                                                    || !sharedPStateFlags.ShouldExitLoop(j));
                                         j += 1)
                                     {
@@ -1181,7 +1181,7 @@ namespace System.Threading.Tasks
                                 }
                                 // Exit DO-loop if we can't find new work, or if the loop was stoppped:
                             } while (currentWorker.FindNewWork32(out nFromInclusiveLocal, out nToExclusiveLocal) &&
-                                      ((sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE) ||
+                                      ((sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
                                         !sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
                         }
                         catch (Exception ex)
@@ -1224,8 +1224,8 @@ namespace System.Threading.Tasks
                     ctr.Dispose();
 
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result._completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
-                if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
+                result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
+                if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
                 {
                     result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
                 }
@@ -1236,12 +1236,12 @@ namespace System.Threading.Tasks
                     int nTotalIterations = 0;
 
                     // calculate how many iterations we ran in total
-                    if (sb_status == ParallelLoopStateFlags.PLS_NONE)
+                    if (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone)
                         nTotalIterations = toExclusive - fromInclusive;
-                    else if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
+                    else if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
                         nTotalIterations = sharedPStateFlags.LowestBreakIteration - fromInclusive;
                     else
-                        nTotalIterations = -1; //PLS_STOPPED! We can't determine this if we were stopped..
+                        nTotalIterations = -1; //ParallelLoopStateStopped! We can't determine this if we were stopped..
 
                     ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
                 }
@@ -1400,7 +1400,7 @@ namespace System.Threading.Tasks
                                 if (body != null)
                                 {
                                     for (long j = nFromInclusiveLocal;
-                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE  // fast path check as SEL() doesn't inline
+                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
                                                                    || !sharedPStateFlags.ShouldExitLoop()); // the no-arg version is used since we have no state
                                          j += 1)
                                     {
@@ -1410,7 +1410,7 @@ namespace System.Threading.Tasks
                                 else if (bodyWithState != null)
                                 {
                                     for (long j = nFromInclusiveLocal;
-                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE  // fast path check as SEL() doesn't inline
+                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
                                                                    || !sharedPStateFlags.ShouldExitLoop(j));
                                          j += 1)
                                     {
@@ -1421,7 +1421,7 @@ namespace System.Threading.Tasks
                                 else
                                 {
                                     for (long j = nFromInclusiveLocal;
-                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE  // fast path check as SEL() doesn't inline
+                                         j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
                                                                    || !sharedPStateFlags.ShouldExitLoop(j));
                                          j += 1)
                                     {
@@ -1440,7 +1440,7 @@ namespace System.Threading.Tasks
                                 }
                                 // Exit DO-loop if we can't find new work, or if the loop was stoppped:
                             } while (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) &&
-                                      ((sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.PLS_NONE) ||
+                                      ((sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone) ||
                                         !sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal)));
                         }
                         catch (Exception ex)
@@ -1483,8 +1483,8 @@ namespace System.Threading.Tasks
                     ctr.Dispose();
 
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result._completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
-                if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
+                result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
+                if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
                 {
                     result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
                 }
@@ -1495,12 +1495,12 @@ namespace System.Threading.Tasks
                     long nTotalIterations = 0;
 
                     // calculate how many iterations we ran in total
-                    if (sb_status == ParallelLoopStateFlags.PLS_NONE)
+                    if (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone)
                         nTotalIterations = toExclusive - fromInclusive;
-                    else if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
+                    else if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
                         nTotalIterations = sharedPStateFlags.LowestBreakIteration - fromInclusive;
                     else
-                        nTotalIterations = -1; //PLS_STOPPED! We can't determine this if we were stopped..
+                        nTotalIterations = -1; //ParallelLoopStateStopped! We can't determine this if we were stopped..
 
                     ParallelEtwProvider.Log.ParallelLoopEnd(TaskScheduler.Current.Id, Task.CurrentId ?? 0, forkJoinContextID, nTotalIterations);
                 }
@@ -3259,7 +3259,7 @@ namespace System.Threading.Tasks
                                     // Any break, stop or exception causes us to halt
                                     // We don't have the global indexing information to discriminate whether or not
                                     // we are before or after a break point.
-                                    if (sharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.PLS_NONE)
+                                    if (sharedPStateFlags.LoopStateFlags != ParallelLoopStateFlags.ParallelLoopStateNone)
                                         break;
 
                                     // Cooperative multitasking:
@@ -3318,8 +3318,8 @@ namespace System.Threading.Tasks
                     ctr.Dispose();
 
                 int sb_status = sharedPStateFlags.LoopStateFlags;
-                result._completed = (sb_status == ParallelLoopStateFlags.PLS_NONE);
-                if ((sb_status & ParallelLoopStateFlags.PLS_BROKEN) != 0)
+                result._completed = (sb_status == ParallelLoopStateFlags.ParallelLoopStateNone);
+                if ((sb_status & ParallelLoopStateFlags.ParallelLoopStateBroken) != 0)
                 {
                     result._lowestBreakIteration = sharedPStateFlags.LowestBreakIteration;
                 }
