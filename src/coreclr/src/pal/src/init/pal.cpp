@@ -193,22 +193,6 @@ PAL_Initialize(
 
         fFirstTimeInit = true;
 
-#if defined(__ppc__)
-        {
-            int mib[2];
-            size_t len;
-
-            /* Determine the processor's cache line size, for
-               FlushInstructionCache */
-            mib[0] = CTL_HW;
-            mib[1] = HW_CACHELINE;
-            len = sizeof(CacheLineSize);
-            if (sysctl(mib, 2, &CacheLineSize, &len, NULL, 0) == -1) {
-                goto done;
-            }
-        }
-#endif //__ppc__
-
         // Initialize the TLS lookaside cache
         if (FALSE == TLSInitialize())
         {

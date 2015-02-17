@@ -650,11 +650,11 @@ CorUnix::InternalCreateThread(
         TRACE("using the system default thread stack size of %d\n", pthreadStackSize);
     }
 
-#if HAVE_SOLARIS_THREADS || HAVE_THREAD_SELF || HAVE__LWP_SELF
+#if HAVE_THREAD_SELF || HAVE__LWP_SELF
     /* Create new threads as "bound", so each pthread is permanently bound
        to an LWP.  Get/SetThreadContext() depend on this 1:1 mapping. */
     pthread_attr_setscope(&pthreadAttr, PTHREAD_SCOPE_SYSTEM);
-#endif // HAVE_SOLARIS_THREADS || HAVE_THREAD_SELF || HAVE__LWP_SELF
+#endif // HAVE_THREAD_SELF || HAVE__LWP_SELF
 
     //
     // We never call pthread_join, so create the new thread as detached
