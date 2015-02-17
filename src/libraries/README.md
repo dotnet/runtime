@@ -119,6 +119,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   primitives for in-process message passing, dataflow, and pipelining. "TPL Dataflow" builds 
   upon the APIs and scheduling infrastructure provided by the Task Parallel Library
   (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
+  
+* **System.Threading.Tasks.Parallel**.  The Parallel class provides library-based data parallel replacements for common
+  operations such as for loops, for each loops, and execution of a set of statements.
 
 * **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq, and the corresponding XPath extension methods.
