@@ -36,15 +36,6 @@ set(CORDBEE_SOURCES_DAC
   ${CORDBEE_SOURCES_DAC_AND_WKS}
 )
 
-if(WIN32)
-  list(APPEND CORDBEE_SOURCES_WKS
-    # The following files need to be ported to Linux
-    inprocdac.cpp
-    dbgtransportproxy.cpp
-    ddunpack.cpp
-  )
-endif(WIN32)
-
 if (IS_64BIT_BUILD EQUAL 1)
   list(APPEND CORDBEE_SOURCES_WKS amd64/amd64walker.cpp)
 else ()

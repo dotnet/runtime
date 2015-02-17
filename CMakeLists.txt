@@ -294,6 +294,8 @@ add_compile_options(-fms-extensions )
 add_compile_options(-Wno-incompatible-ms-struct)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+add_subdirectory(src/debug/debug-pal)
+
 # Include directory directives
 
 # Include the basic prebuilt headers - required for getting fileversion resource details.
@@ -458,6 +460,11 @@ endif(WIN32)
 add_definitions(-DFEATURE_MULTICOREJIT)
 add_definitions(-DFEATURE_USE_ASM_GC_WRITE_BARRIERS)
 add_definitions(-DFEATURE_SYMDIFF)
+
+if(CLR_CMAKE_PLATFORM_UNIX)
+    add_definitions(-DFEATURE_DBGIPC_TRANSPORT_DI)
+    add_definitions(-DFEATURE_DBGIPC_TRANSPORT_VM)
+endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if (IS_64BIT_BUILD EQUAL 1)
 add_definitions(-D_AMD64_)
