@@ -180,7 +180,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
     bool fReportGCReferences = true;
 #if defined(WIN64EXCEPTIONS)
-    // On Win64 and ARM, we may have unwound this crawlFrame and thus, shouldn't report the invalid
+    // We may have unwound this crawlFrame and thus, shouldn't report the invalid
     // references it may contain.
     fReportGCReferences = pCF->ShouldCrawlframeReportGCReferences();
 #endif // defined(WIN64EXCEPTIONS)
