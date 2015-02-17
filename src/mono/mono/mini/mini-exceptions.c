@@ -716,7 +716,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			if (find_prev_seq_point_for_native_offset (domain, jinfo_get_method (ji), sf->native_offset, NULL, &sp))
 				sf->il_offset = sp.il_offset;
 			else
-				sf->il_offset = 0;
+				sf->il_offset = -1;
 		}
 
 		if (need_file_info) {
