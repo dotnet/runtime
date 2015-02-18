@@ -49,7 +49,7 @@ namespace XPathTests.XPathExpressionTests
         }
 
 
-        private static void EvalauteTestsBoth<T>(string toEvaluate, T expected)
+        private static void EvaluateTestsBoth<T>(string toEvaluate, T expected)
         {
             EvaluateTestNonCompiled(toEvaluate, expected);
             EvaluateTestCompiledXPathExpression(toEvaluate, expected);
@@ -68,7 +68,7 @@ namespace XPathTests.XPathExpressionTests
         [Fact]
         public static void Variation_1()
         {
-            EvalauteTestsBoth("string(1)", "1");
+            EvaluateTestsBoth("string(1)", "1");
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace XPathTests.XPathExpressionTests
         [Fact]
         public static void Variation_2()
         {
-            EvalauteTestsBoth("number('1')", 1);
+            EvaluateTestsBoth("number('1')", 1);
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace XPathTests.XPathExpressionTests
         [Fact]
         public static void Variation_3()
         {
-            EvalauteTestsBoth("true()", true);
+            EvaluateTestsBoth("true()", true);
         }
 
         /// <summary>
