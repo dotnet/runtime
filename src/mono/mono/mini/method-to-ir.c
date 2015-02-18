@@ -11985,6 +11985,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				break;
 			}
+			case CEE_MONO_LDPTR_INT_REQ_FLAG: {
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_thread_interruption_request_flag ());
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
 			case CEE_MONO_LDPTR: {
 				gpointer ptr;
 
@@ -11993,13 +12006,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 
 				ptr = mono_method_get_wrapper_data (method, token);
-				/* FIXME: Generalize this */
-				if (cfg->compile_aot && ptr == mono_thread_interruption_request_flag ()) {
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
-					*sp++ = ins;
-					ip += 6;
-					break;
-				}
 				EMIT_NEW_PCONST (cfg, ins, ptr);
 				*sp++ = ins;
 				ip += 6;
