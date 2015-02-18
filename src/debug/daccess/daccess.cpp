@@ -6958,6 +6958,7 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 // 
 HRESULT ClrDataAccess::VerifyDlls()
 {
+#ifndef FEATURE_PAL
     // Provide a knob for disabling this check if we really want to try and proceed anyway with a 
     // DAC mismatch.  DAC behavior may be arbitrarily bad - globals probably won't be at the same
     // address, data structures may be laid out differently, etc.
@@ -7029,7 +7030,6 @@ HRESULT ClrDataAccess::VerifyDlls()
         // Timestamp mismatch.  This means mscordacwks is being used with a version of
         // mscorwks other than the one it was built for.  This will not work reliably.
 
-#ifndef FEATURE_PAL
 #ifdef _DEBUG
         // Check if verbose asserts are enabled.  The default is up to the specific instantiation of
         // ClrDataAccess, but can be overridden (in either direction) by a COMPLUS knob.
@@ -7075,11 +7075,11 @@ HRESULT ClrDataAccess::VerifyDlls()
             _ASSERTE_MSG(false, szMsgBuf);
         }
 #endif
-#endif
 
         // Return a specific hresult indicating this problem
         return CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS;
     }
+#endif // FEATURE_PAL
 
     return S_OK;
 }
@@ -7179,6 +7179,9 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 HRESULT
 ClrDataAccess::GetDacGlobals()
 {
+#ifdef FEATURE_PAL
+    return S_OK;
+#else
     HRESULT status = E_FAIL;
     DWORD rsrcRVA = 0;
     LPVOID rsrcData = NULL;
@@ -7286,6 +7289,7 @@ ClrDataAccess::GetDacGlobals()
 Exit:
 
     return status;
+#endif
 }
 
 #undef MAKEINTRESOURCE
