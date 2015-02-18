@@ -666,8 +666,8 @@ endif
 
 check-seq-points: mono $(regtests)
 	rm -f TestResults_op_il_seq_point.xml
-	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || ./test_op_il_seq_point_headerfooter.sh && exit 1; done
-	for i in $(regtests); do ./test_op_il_seq_point.sh $$i --aot || ./test_op_il_seq_point_headerfooter.sh && exit 1; done
+	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || (./test_op_il_seq_point_headerfooter.sh && exit 1); done
+	for i in $(regtests); do ./test_op_il_seq_point.sh $$i --aot || (./test_op_il_seq_point_headerfooter.sh && exit 1); done
 	./test_op_il_seq_point_headerfooter.sh
 
 gctest: mono gc-test.exe
