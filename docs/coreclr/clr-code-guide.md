@@ -1,5 +1,12 @@
-﻿What Every CLR Developer Must Know Before Writing Code
-===
+What Every CLR Developer Must Know Before Writing Code
+=== 
+
+Written in 2006, by:
+
+- Rick Byers ([@RByers](https://github.com/RByers))
+- Jan Kotas ([@jkotas](https://github.com/jkotas))
+- Mike Stall ([@mikestall](https://github.com/mikestall))
+- Rudi Martin ([@Rudi-Martin](https://github.com/Rudi-Martin))
 
 # Why you must read this document
 

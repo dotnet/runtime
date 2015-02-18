@@ -26,8 +26,10 @@
 
 #if defined(__APPLE__)
 #define C_FUNC(name) _##name
+#define LOCAL_LABEL(name) L##name
 #else
 #define C_FUNC(name) name
+#define LOCAL_LABEL(name) .L##name
 #endif
 
 #if defined(__APPLE__)
@@ -47,8 +49,8 @@ C_FUNC(\Name):
         .text
 #else
         .type \Name, %function
-        .cfi_startproc
 #endif
+        .cfi_startproc
 C_FUNC(\Name):
 .endm
 
@@ -56,9 +58,9 @@ C_FUNC(\Name):
 C_FUNC(\Name\()_End):
         .global C_FUNC(\Name\()_End)
 #if !defined(__APPLE__)
-        .cfi_endproc
         .size \Name, .-\Name
 #endif
+        .cfi_endproc
 .endm
 
 .macro LEAF_END Name, Section
