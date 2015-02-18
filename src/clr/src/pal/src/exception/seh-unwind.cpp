@@ -152,7 +152,7 @@ static void GetContextPointers(unw_cursor_t *cursor, KNONVOLATILE_CONTEXT_POINTE
 #endif
 }
 
-BOOL VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
+BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
     int st;
     unw_context_t unwContext;
@@ -498,7 +498,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
     // Find the caller of RtlpRaiseException.  This provides the exact context
     // that handlers expect to see, which is the one they would want to fix up
     // to resume after a continuable exception.
-    VirtualUnwind(&ContextRecord, NULL);
+    PAL_VirtualUnwind(&ContextRecord, NULL);
 
     // The frame we're looking at now is either RaiseException or PAL_TryExcept.
     // If it's RaiseException, we have to unwind one level further to get the
@@ -512,7 +512,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 #endif
     if ((SIZE_T) pc - (SIZE_T) RaiseException < (SIZE_T) pc - (SIZE_T) PAL_TryExcept)
     {
-        VirtualUnwind(&ContextRecord, NULL);
+        PAL_VirtualUnwind(&ContextRecord, NULL);
 #if defined(_PPC_)
         pc = (void *) ContextRecord.Iar;
 #elif defined(_X86_)
