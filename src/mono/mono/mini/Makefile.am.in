@@ -660,7 +660,8 @@ rcheck: mono $(regtests)
 if NACL_CODEGEN
 	for i in $(regtests); do echo "running test $$i"; $(RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
 else
-	$(RUNTIME) --regression $(regtests)
+	-($(RUNTIME) --regression $(regtests); echo $$? > regressionexitcode.out) | ./emitnunit.pl
+	exit $$(cat regressionexitcode.out)
 endif
 
 check-seq-points: mono $(regtests)
@@ -727,7 +728,7 @@ docu: mini.sgm
 check-local: rcheck check-seq-points
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe
+	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out
 
 pkgconfigdir = $(libdir)/pkgconfig
 
