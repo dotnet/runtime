@@ -10,39 +10,21 @@ namespace System.IO.MemoryMappedFiles
     {
         /// <summary>
         /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
-        /// memory mapped file should not be associated with an exsiting file on disk (ie start
+        /// memory mapped file should not be associated with an existing file on disk (ie start
         /// out empty).
         /// </summary>
         [SecurityCritical]
-        private static SafeMemoryMappedFileHandle CreateCore(
-            SafeFileHandle fileHandle, String mapName, HandleInheritability inheritability,
-            MemoryMappedFileAccess access, MemoryMappedFileOptions options, Int64 capacity)
+        private static unsafe SafeMemoryMappedFileHandle CreateCore(
+            SafeFileHandle fileHandle, string mapName, 
+            HandleInheritability inheritability, MemoryMappedFileAccess access, 
+            MemoryMappedFileOptions options, long capacity)
         {
-            throw NotImplemented.ByDesign; // TODO: Implement this
-        }
+            if (mapName != null)
+            {
+                throw CreateNamedMapsNotSupportedException();
+            }
 
-        /// <summary>
-        /// Used by the OpenExisting factory method group and by CreateOrOpen if access is write.
-        /// We'll throw an ArgumentException if the file mapping object didn't exist and the
-        /// caller used CreateOrOpen since Create isn't valid with Write access
-        /// </summary>
-        [SecurityCritical]
-        private static SafeMemoryMappedFileHandle OpenCore(
-            String mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, bool createOrOpen)
-        {
-            throw NotImplemented.ByDesign; // TODO: Implement this
-        }
-
-        /// <summary>
-        /// Used by the OpenExisting factory method group and by CreateOrOpen if access is write.
-        /// We'll throw an ArgumentException if the file mapping object didn't exist and the
-        /// caller used CreateOrOpen since Create isn't valid with Write access
-        /// </summary>
-        [SecurityCritical]
-        private static SafeMemoryMappedFileHandle OpenCore(
-            String mapName, HandleInheritability inheritability, MemoryMappedFileRights rights, bool createOrOpen)
-        {
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            return new SafeMemoryMappedFileHandle(fileHandle, inheritability, access, options, capacity);
         }
 
         /// <summary>
@@ -50,15 +32,47 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
-            String mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, 
-            MemoryMappedFileOptions options, Int64 capacity)
+            string mapName, 
+            HandleInheritability inheritability, MemoryMappedFileAccess access,
+            MemoryMappedFileOptions options, long capacity)
         {
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            // Since we don't support mapName != null, CreateOrOpenCore can't
+            // be used to Open an existing map, and thus is identical to CreateCore.
+            return CreateCore(null, mapName, inheritability, access, options, capacity);
+        }
+
+        /// <summary>
+        /// Used by the OpenExisting factory method group and by CreateOrOpen if access is write.
+        /// We'll throw an ArgumentException if the file mapping object didn't exist and the
+        /// caller used CreateOrOpen since Create isn't valid with Write access
+        /// </summary>
+        [SecurityCritical]
+        private static SafeMemoryMappedFileHandle OpenCore(
+            string mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, bool createOrOpen)
+        {
+            throw CreateNamedMapsNotSupportedException();
+        }
+
+        /// <summary>
+        /// Used by the OpenExisting factory method group and by CreateOrOpen if access is write.
+        /// We'll throw an ArgumentException if the file mapping object didn't exist and the
+        /// caller used CreateOrOpen since Create isn't valid with Write access
+        /// </summary>
+        [SecurityCritical]
+        private static SafeMemoryMappedFileHandle OpenCore(
+            string mapName, HandleInheritability inheritability, MemoryMappedFileRights rights, bool createOrOpen)
+        {
+            throw CreateNamedMapsNotSupportedException();
         }
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
+        private static Exception CreateNamedMapsNotSupportedException()
+        {
+            return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
+        }
     }
 }
