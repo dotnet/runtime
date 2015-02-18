@@ -3690,6 +3690,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_U8:
 		case OP_ATOMIC_LOAD_R4:
 		case OP_ATOMIC_LOAD_R8: {
+			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
 #if LLVM_API_VERSION >= 4
 			int size;
 			gboolean sext, zext;
@@ -3733,6 +3734,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_U8:
 		case OP_ATOMIC_STORE_R4:
 		case OP_ATOMIC_STORE_R8: {
+			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
 #if LLVM_API_VERSION >= 4
 			int size;
 			gboolean sext, zext;
