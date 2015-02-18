@@ -21,9 +21,6 @@
 #ifndef __MONO_SGEN_WORKER_H__
 #define __MONO_SGEN_WORKER_H__
 
-#define STEALABLE_STACK_SIZE	512
-
-
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
 	int index;
@@ -31,10 +28,6 @@ struct _WorkerData {
 	void *major_collector_data;
 
 	SgenGrayQueue private_gray_queue; /* only read/written by worker thread */
-
-	mono_mutex_t stealable_stack_mutex;
-	volatile int stealable_stack_fill;
-	GrayQueueEntry stealable_stack [STEALABLE_STACK_SIZE];
 };
 
 typedef void (*JobFunc) (WorkerData *worker_data, void *job_data);
