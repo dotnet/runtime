@@ -102,9 +102,6 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
 
-* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
-  across common cultural standards, as well as support to create custom Encoding Providers.
-
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
 
 * **System.Runtime.Extensions**. Provides a set of unit tests for extensions to the basic runtime functionality
@@ -115,6 +112,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.ServiceProcess.ServiceController**. Provides the ServiceController class that represents a Windows service
   and allows you to connect to a running or stopped service, manipulate it, or get information about it.
 
+* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
+  across common cultural standards, as well as support to create custom Encoding Providers.
+
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
 
@@ -123,7 +123,7 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   upon the APIs and scheduling infrastructure provided by the Task Parallel Library
   (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
   
-* **System.Threading.Tasks.Parallel**.  The Parallel class provides library-based data parallel replacements for common
+* **System.Threading.Tasks.Parallel**.  Provides library-based data parallel replacements for common
   operations such as for loops, for each loops, and execution of a set of statements.
 
 * **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
