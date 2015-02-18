@@ -106,6 +106,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   across common cultural standards, as well as support to create custom Encoding Providers.
 
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
+
+* **System.Runtime.Extensions**. Provides a set of unit tests for extensions to the basic runtime functionality
+  such as System.Convert and System.IO.Path.
  
 * **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Complex.
 
