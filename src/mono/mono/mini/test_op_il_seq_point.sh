@@ -85,9 +85,27 @@ while read line; do
 	fi
 done < $TMP_FILE
 
+echo -n "              <test-case name=\"MonoTests.op_il_seq_point.${TEST_FILE}${USE_AOT}\" executed=\"True\" time=\"0\" asserts=\"0\" success=\"" >> TestResults_op_il_seq_point.xml
+
 if [ $CHANGES != 0 ]
 then
 	METHOD_NAME=$(get_method_name "$METHOD")
+
+	echo "False\">" >> TestResults_op_il_seq_point.xml
+	echo "                <failure>" >> TestResults_op_il_seq_point.xml
+	echo -n "                  <message><![CDATA[" >> TestResults_op_il_seq_point.xml
+	echo "Detected OP_IL_SEQ_POINT incompatibility on $TEST_FILE" >> TestResults_op_il_seq_point.xml
+	echo "  $CHANGES methods differ when sequence points are enabled." >> TestResults_op_il_seq_point.xml
+	echo '  This is probably caused by a runtime optimization that is not handling OP_IL_SEQ_POINT' >> TestResults_op_il_seq_point.xml
+	echo '' >> TestResults_op_il_seq_point.xml
+	echo "Diff $METHOD_NAME" >> TestResults_op_il_seq_point.xml
+	echo "Without IL_OP_SEQ_POINT                                                         With IL_OP_SEQ_POINT" >> TestResults_op_il_seq_point.xml
+	echo -n "$(diff_method $MONO_PATH $RUNTIME $TEST_FILE $METHOD_NAME $USE_AOT)" >> TestResults_op_il_seq_point.xml
+	echo "]]></message>" >> TestResults_op_il_seq_point.xml
+	echo "                  <stack-trace>" >> TestResults_op_il_seq_point.xml
+	echo "                  </stack-trace>" >> TestResults_op_il_seq_point.xml
+	echo "                </failure>" >> TestResults_op_il_seq_point.xml
+	echo "              </test-case>" >> TestResults_op_il_seq_point.xml
 
 	echo ''
 	echo "Detected OP_IL_SEQ_POINT incompatibility on $TEST_FILE"
@@ -99,4 +117,6 @@ then
 	echo "Without IL_OP_SEQ_POINT                                                         With IL_OP_SEQ_POINT"
 	echo "$(diff_method $MONO_PATH $RUNTIME $TEST_FILE $METHOD_NAME $USE_AOT)"
 	exit 1
+else
+	echo "True\" />" >> TestResults_op_il_seq_point.xml
 fi
