@@ -89,7 +89,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                         Assert.False(true, string.Format("Error, Wrong value returned. Expected: {1}, Returned: {2}", suffix, path, drive.Name));
                     }
 
-                    if (!EnsureOtherPrepertiesWork(drive, path))
+                    if (!EnsureOtherPropertiesWork(drive, path))
                     {
                         Assert.False(true, string.Format("Error, Other properties didn't work. Path: {1}", suffix, path));
                     }
@@ -103,7 +103,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                     {
                         Assert.False(true, string.Format("Error, Wrong value returned. Expected: {1}, Returned: {2}", suffix, path, drive.Name));
                     }
-                    if (!EnsureOtherPrepertiesWork(drive, path))
+                    if (!EnsureOtherPropertiesWork(drive, path))
                     {
                         Assert.False(true, string.Format("Error, Other properties didn't work. Path: {1}", suffix, path));
                     }
@@ -117,7 +117,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 {
                     Assert.False(true, string.Format("Error, Wrong value returned. Expected: {0}, Returned: {1}", path, drive.Name));
                 }
-                if (!EnsureOtherPrepertiesWork(drive, path))
+                if (!EnsureOtherPropertiesWork(drive, path))
                 {
                     Assert.False(true, string.Format("Error, Wrong value returned. Path: {0}", path));
                 }
@@ -128,7 +128,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 {
                     Assert.False(true, string.Format("Error, Wrong value returned. Expected: {0}, Returned: {1}", path, drive.Name));
                 }
-                if (!EnsureOtherPrepertiesWork(drive, path))
+                if (!EnsureOtherPropertiesWork(drive, path))
                 {
                     Assert.False(true, string.Format("Error, Wrong value returned. Path: {0}", path));
                 }
@@ -150,7 +150,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                     Assert.False(true, string.Format("Error, Wrong value returned. Expected: {1}, Returned: {2}", c, c, drive.Name));
                 }
 
-                if (!EnsureOtherPrepertiesWork(drive, c.ToString()))
+                if (!EnsureOtherPropertiesWork(drive, c.ToString()))
                 {
                     Assert.False(true, string.Format("Error, Wrong value returned. Path: {0}", c.ToString()));
                 }
@@ -182,7 +182,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             return retValue;
         }
 
-        private Boolean EnsureOtherPrepertiesWork(System.IO.DriveInfo drive, String path)
+        private Boolean EnsureOtherPropertiesWork(System.IO.DriveInfo drive, String path)
         {
             //The DriveInfo was created using different path patterns. Here, we check to make sure that other properties work for these 'exotic' path patterns
 

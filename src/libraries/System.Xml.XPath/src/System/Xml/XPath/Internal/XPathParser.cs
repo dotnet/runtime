@@ -21,7 +21,7 @@ namespace MS.Internal.Xml.XPath
         {
             XPathScanner scanner = new XPathScanner(xpathExpresion);
             XPathParser parser = new XPathParser(scanner);
-            AstNode result = parser.ParseExpresion(null);
+            AstNode result = parser.ParseExpression(null);
             if (scanner.Kind != XPathScanner.LexKind.Eof)
             {
                 throw XPathException.Create(SR.Xp_InvalidToken, scanner.SourceText);
@@ -50,7 +50,7 @@ namespace MS.Internal.Xml.XPath
         private int _parseDepth = 0;
         private const int MaxParseDepth = 200;
 
-        private AstNode ParseExpresion(AstNode qyInput)
+        private AstNode ParseExpression(AstNode qyInput)
         {
             if (++_parseDepth > MaxParseDepth)
             {
@@ -284,7 +284,7 @@ namespace MS.Internal.Xml.XPath
             CheckNodeSet(qyInput.ReturnType);
 
             PassToken(XPathScanner.LexKind.LBracket);
-            opnd = ParseExpresion(qyInput);
+            opnd = ParseExpression(qyInput);
             PassToken(XPathScanner.LexKind.RBracket);
 
             return opnd;
@@ -490,7 +490,7 @@ namespace MS.Internal.Xml.XPath
                     break;
                 case XPathScanner.LexKind.LParens:
                     NextLex();
-                    opnd = ParseExpresion(qyInput);
+                    opnd = ParseExpression(qyInput);
                     if (opnd.Type != AstNode.AstType.ConstantOperand)
                     {
                         opnd = new Group(opnd);
@@ -519,7 +519,7 @@ namespace MS.Internal.Xml.XPath
             {
                 do
                 {
-                    argList.Add(ParseExpresion(qyInput));
+                    argList.Add(ParseExpression(qyInput));
                     if (_scanner.Kind == XPathScanner.LexKind.RParens)
                     {
                         break;
