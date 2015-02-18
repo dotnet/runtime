@@ -3825,7 +3825,7 @@ protected:
 // Returns true if the specified IL offset has a special meaning (eg. prolog, etc.)
 bool DbgIsSpecialILOffset(DWORD offset);
 
-#if defined(_WIN64) || defined(_TARGET_ARM_)
+#if !defined(_TARGET_X86_)
 void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, T_CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 

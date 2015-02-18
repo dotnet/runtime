@@ -9742,9 +9742,10 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
-#ifdef _TARGET_ARM_
-// This is a temporary workaround for an ARM specific C++ compiler bug.
-// It should be removed once the bug is fixed.
+#if defined(_MSC_VER) && defined(_TARGET_ARM_) 
+// This is a temporary workaround for an ARM specific MS C++ compiler bug (internal LKG build 18.1).
+// Branch < if (ptrRemoteManagedEvent == NULL) > was always taken and the function always returned false.
+// TODO: It should be removed once the bug is fixed.
 #pragma optimize("", off)
 #endif
 bool CordbProcess::CopyManagedEventFromTarget(
@@ -9793,7 +9794,7 @@ bool CordbProcess::CopyManagedEventFromTarget(
 
     return true;
 }
-#ifdef _TARGET_ARM_
+#if defined(_MSC_VER) && defined(_TARGET_ARM_) 
 #pragma optimize("", on)
 #endif
 
