@@ -13,12 +13,12 @@ namespace System.IO.MemoryMappedFiles
     internal partial class MemoryMappedView
     {
         // These control the retry behaviour when lock violation errors occur during Flush:
-        private const Int32 MaxFlushWaits = 15;  // must be <=30
-        private const Int32 MaxFlushRetriesPerWait = 20;
+        private const int MaxFlushWaits = 15;  // must be <=30
+        private const int MaxFlushRetriesPerWait = 20;
 
         [SecurityCritical]
         public unsafe static MemoryMappedView CreateView(SafeMemoryMappedFileHandle memMappedFileHandle,
-                                            MemoryMappedFileAccess access, Int64 offset, Int64 size)
+                                            MemoryMappedFileAccess access, long offset, long size)
         {
             // MapViewOfFile can only create views that start at a multiple of the system memory allocation 
             // granularity. We decided to hide this restriction form the user by creating larger views than the
@@ -42,7 +42,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new IOException(SR.IO_NotEnoughMemory);
             }
 
-            // split the Int64 into two ints
+            // split the long into two ints
             int offsetLow = unchecked((int)(newOffset & 0x00000000FFFFFFFFL));
             int offsetHigh = unchecked((int)(newOffset >> 32));
 
@@ -87,7 +87,7 @@ namespace System.IO.MemoryMappedFiles
             // if the user specified DefaultSize as the size, we need to get the actual size
             if (size == MemoryMappedFile.DefaultSize)
             {
-                size = (Int64)(viewSize - extraMemNeeded);
+                size = (long)(viewSize - extraMemNeeded);
             }
             else
             {
@@ -126,16 +126,16 @@ namespace System.IO.MemoryMappedFiles
                         // increasing intervals. Eventually, however, we need to give up. In ad-hoc tests
                         // this strategy successfully flushed the view after no more than 3 retries.
 
-                        Int32 error = Marshal.GetLastWin32Error();
+                        int error = Marshal.GetLastWin32Error();
                         bool canRetry = (!success && error == Interop.ERROR_LOCK_VIOLATION);
 
                         SpinWait spinWait = new SpinWait();
-                        for (Int32 w = 0; canRetry && w < MaxFlushWaits; w++)
+                        for (int w = 0; canRetry && w < MaxFlushWaits; w++)
                         {
-                            Int32 pause = (1 << w);  // MaxFlushRetries should never be over 30
+                            int pause = (1 << w);  // MaxFlushRetries should never be over 30
                             MemoryMappedFile.ThreadSleep(pause);
 
-                            for (Int32 r = 0; canRetry && r < MaxFlushRetriesPerWait; r++)
+                            for (int r = 0; canRetry && r < MaxFlushRetriesPerWait; r++)
                             {
                                 success = Interop.mincore.FlushViewOfFile((IntPtr)firstPagePtr, capacity) != 0;
                                 if (success)
@@ -167,12 +167,12 @@ namespace System.IO.MemoryMappedFiles
         // -----------------------------
 
         [SecurityCritical]
-        private static Int32 GetSystemPageAllocationGranularity()
+        private static int GetSystemPageAllocationGranularity()
         {
             Interop.SYSTEM_INFO info;
             Interop.mincore.GetSystemInfo(out info);
 
-            return (Int32)info.dwAllocationGranularity;
+            return (int)info.dwAllocationGranularity;
         }
     }
 }

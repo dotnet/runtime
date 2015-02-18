@@ -28,7 +28,7 @@ namespace Microsoft.Win32.SafeHandles
         internal readonly MemoryMappedFileOptions _options;
 
         /// <summary>The capacity of the memory-mapped file.</summary>
-        internal readonly Int64 _capacity;
+        internal readonly long _capacity;
 
         /// <summary>Initializes the memory-mapped file handle.</summary>
         /// <param name="fileHandle">The underlying file handle; this may be null in the case of a page-file backed memory-mapped file.</param>
@@ -49,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
             _options = options;
             _capacity = capacity;
 
-            // Fake a unique Int32 handle value > 0.
+            // Fake a unique int handle value > 0.
             int nextHandleValue = (int)((Interlocked.Increment(ref s_counter) % (int.MaxValue - 1)) + 1);
             SetHandle(new IntPtr(nextHandleValue));
         }

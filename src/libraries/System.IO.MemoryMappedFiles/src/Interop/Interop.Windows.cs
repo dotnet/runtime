@@ -8,10 +8,10 @@ using System.Security;
 
 internal static partial class Interop
 {
-    private const String HANDLEDLL = "api-ms-win-core-handle-l1-1-0.dll";
-    private const String MEMORYDLL = "api-ms-win-core-memory-l1-1-0.dll";
-    private const String SYSINFODLL = "api-ms-win-core-sysinfo-l1-1-0.dll";
-    private const String LOCALIZATIONDLL = "api-ms-win-core-localization-l1-2-0.dll";
+    private const string HANDLEDLL = "api-ms-win-core-handle-l1-1-0.dll";
+    private const string MEMORYDLL = "api-ms-win-core-memory-l1-1-0.dll";
+    private const string SYSINFODLL = "api-ms-win-core-sysinfo-l1-1-0.dll";
+    private const string LOCALIZATIONDLL = "api-ms-win-core-localization-l1-2-0.dll";
 
     //
     // Win32 IO

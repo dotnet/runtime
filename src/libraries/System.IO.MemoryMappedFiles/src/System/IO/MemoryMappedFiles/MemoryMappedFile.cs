@@ -88,27 +88,27 @@ namespace System.IO.MemoryMappedFiles
         // page size.  One can use FileStream.SetLength to bring the length back to a desirable size. By default, 
         // the MemoryMappedFile will close the FileStream object when it is disposed.  This behavior can be 
         // changed by the leaveOpen boolean argument.
-        public static MemoryMappedFile CreateFromFile(String path)
+        public static MemoryMappedFile CreateFromFile(string path)
         {
             return CreateFromFile(path, FileMode.Open, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
-        public static MemoryMappedFile CreateFromFile(String path, FileMode mode)
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode)
         {
             return CreateFromFile(path, mode, null, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(String path, FileMode mode, String mapName)
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName)
         {
             return CreateFromFile(path, mode, mapName, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(String path, FileMode mode, String mapName, Int64 capacity)
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName, long capacity)
         {
             return CreateFromFile(path, mode, mapName, capacity, MemoryMappedFileAccess.ReadWrite);
         }
 
         [SecurityCritical]
-        public static MemoryMappedFile CreateFromFile(String path, FileMode mode, String mapName, Int64 capacity,
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
             if (path == null)
@@ -185,7 +185,7 @@ namespace System.IO.MemoryMappedFiles
         }
 
         [SecurityCritical]
-        public static MemoryMappedFile CreateFromFile(FileStream fileStream, String mapName, Int64 capacity,
+        public static MemoryMappedFile CreateFromFile(FileStream fileStream, string mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
         {
@@ -252,20 +252,20 @@ namespace System.IO.MemoryMappedFiles
 
         // Factory Method Group #3: Creates a new empty memory mapped file.  Such memory mapped files are ideal 
         // for IPC, when mapName != null. 
-        public static MemoryMappedFile CreateNew(String mapName, Int64 capacity)
+        public static MemoryMappedFile CreateNew(string mapName, long capacity)
         {
             return CreateNew(mapName, capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None,
                    HandleInheritability.None);
         }
 
-        public static MemoryMappedFile CreateNew(String mapName, Int64 capacity, MemoryMappedFileAccess access)
+        public static MemoryMappedFile CreateNew(string mapName, long capacity, MemoryMappedFileAccess access)
         {
             return CreateNew(mapName, capacity, access, MemoryMappedFileOptions.None,
                    HandleInheritability.None);
         }
 
         [SecurityCritical]
-        public static MemoryMappedFile CreateNew(String mapName, Int64 capacity, MemoryMappedFileAccess access,
+        public static MemoryMappedFile CreateNew(string mapName, long capacity, MemoryMappedFileAccess access,
                                                     MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {
@@ -279,7 +279,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedPositiveNumber);
             }
 
-            if (IntPtr.Size == 4 && capacity > UInt32.MaxValue)
+            if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
@@ -313,20 +313,20 @@ namespace System.IO.MemoryMappedFiles
         // memory mapped file if one exists with the same name.  The capacity, options, and 
         // memoryMappedFileSecurity arguments will be ignored in the case of the later.
         // This is ideal for P2P style IPC.
-        public static MemoryMappedFile CreateOrOpen(String mapName, Int64 capacity)
+        public static MemoryMappedFile CreateOrOpen(string mapName, long capacity)
         {
             return CreateOrOpen(mapName, capacity, MemoryMappedFileAccess.ReadWrite,
                 MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
-        public static MemoryMappedFile CreateOrOpen(String mapName, Int64 capacity,
+        public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access)
         {
             return CreateOrOpen(mapName, capacity, access, MemoryMappedFileOptions.None, HandleInheritability.None);
         }
 
         [SecurityCritical]
-        public static MemoryMappedFile CreateOrOpen(String mapName, Int64 capacity,
+        public static MemoryMappedFile CreateOrOpen(string mapName, long capacity,
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {
@@ -345,7 +345,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedPositiveNumber);
             }
 
-            if (IntPtr.Size == 4 && capacity > UInt32.MaxValue)
+            if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
@@ -385,13 +385,13 @@ namespace System.IO.MemoryMappedFiles
             return CreateViewStream(0, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public MemoryMappedViewStream CreateViewStream(Int64 offset, Int64 size)
+        public MemoryMappedViewStream CreateViewStream(long offset, long size)
         {
             return CreateViewStream(offset, size, MemoryMappedFileAccess.ReadWrite);
         }
 
         [SecurityCritical]
-        public MemoryMappedViewStream CreateViewStream(Int64 offset, Int64 size, MemoryMappedFileAccess access)
+        public MemoryMappedViewStream CreateViewStream(long offset, long size, MemoryMappedFileAccess access)
         {
             if (offset < 0)
             {
@@ -408,7 +408,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException("access");
             }
 
-            if (IntPtr.Size == 4 && size > UInt32.MaxValue)
+            if (IntPtr.Size == 4 && size > uint.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
@@ -423,13 +423,13 @@ namespace System.IO.MemoryMappedFiles
             return CreateViewAccessor(0, DefaultSize, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public MemoryMappedViewAccessor CreateViewAccessor(Int64 offset, Int64 size)
+        public MemoryMappedViewAccessor CreateViewAccessor(long offset, long size)
         {
             return CreateViewAccessor(offset, size, MemoryMappedFileAccess.ReadWrite);
         }
 
         [SecurityCritical]
-        public MemoryMappedViewAccessor CreateViewAccessor(Int64 offset, Int64 size, MemoryMappedFileAccess access)
+        public MemoryMappedViewAccessor CreateViewAccessor(long offset, long size, MemoryMappedFileAccess access)
         {
             if (offset < 0)
             {
@@ -446,7 +446,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException("access");
             }
 
-            if (IntPtr.Size == 4 && size > UInt32.MaxValue)
+            if (IntPtr.Size == 4 && size > uint.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
@@ -511,7 +511,7 @@ namespace System.IO.MemoryMappedFiles
         }
 
         // clean up: close file handle and delete files we created
-        private static void CleanupFile(FileStream fileStream, bool existed, String path)
+        private static void CleanupFile(FileStream fileStream, bool existed, string path)
         {
             fileStream.Dispose();
             if (!existed)
