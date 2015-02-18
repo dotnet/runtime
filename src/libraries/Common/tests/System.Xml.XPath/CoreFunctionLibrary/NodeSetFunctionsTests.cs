@@ -884,7 +884,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// namespace-uri() (namespace node)
         /// </summary>
         [Fact]
@@ -903,7 +903,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// namespace-uri() (namespace node = xml)
         /// </summary>
         [Fact]
@@ -922,7 +922,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// namespace-uri() (namespace node = default ns)
         /// </summary>
         [Fact]
@@ -941,7 +941,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// namespace-uri() (namespace node)
         /// </summary>
         [Fact]
@@ -958,7 +958,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// name() (namespace node)
         /// </summary>
         [Fact]
@@ -977,7 +977,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// name() (namespace node = xml)
         /// </summary>
         [Fact]
@@ -996,7 +996,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// name() (namespace node = default ns)
         /// </summary>
         [Fact]
@@ -1015,7 +1015,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: empty namesapce uri
+        /// Expected: empty namespace uri
         /// name() (namespace node)
         /// </summary>
         [Fact]

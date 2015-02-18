@@ -87,7 +87,7 @@ namespace Microsoft.Win32.RegistryTests
             {
                 Assert.False(true, "Error Could not get subkey");
             }
-            //Remeber, this will be written as a string value
+            //Remember, this will be written as a string value
             Object obj11 = _rk1.GetValue(_testKeyName);
             if (Convert.ToDecimal(_rk1.GetValue(_testKeyName)) != new Decimal(5))
             {
@@ -186,7 +186,7 @@ namespace Microsoft.Win32.RegistryTests
             _str1 = String.Empty;
 
             // Changed the number of times we repeat str1 from 100 to 30 in response to the Windows OS
-            //There is a restriction of 255 charcters for the keyname even if it is multikeys. Not worth to pursue as a bug
+            //There is a restriction of 255 characters for the keyname even if it is multikeys. Not worth to pursue as a bug
             // reduced further to allow for WoW64 changes to the string.
             for (int i = 0; i < 25 && _str1.Length < 230; i++)
                 _str1 = _str1 + i.ToString() + @"\";

@@ -205,7 +205,7 @@ public class CharacterClassSubtraction
         new RegexTestCase(@"([\p{Ll}-[aeiou]]|[^\w-[\s]])+", "aeiobcdxyz!@#aeio", "bcdxyz!@#", "#"),
 
         /****************************************************************************
-        Multiple characater classes using character class subtraction
+        Multiple character classes using character class subtraction
         *****************************************************************************/
         new RegexTestCase(@"98[\d-[9]][\d-[8]][\d-[0]]", "98911 98881 98870 98871", "98871"),
         new RegexTestCase(@"m[\w-[^aeiou]][\w-[^aeiou]]t", "mbbt mect meet", "meet"),

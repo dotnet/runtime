@@ -68,7 +68,7 @@ namespace System.Linq.Parallel
         }
 
         //---------------------------------------------------------------------------------------
-        // Retrives the number of partitions.
+        // Retrieves the number of partitions.
         //
 
         public int PartitionCount

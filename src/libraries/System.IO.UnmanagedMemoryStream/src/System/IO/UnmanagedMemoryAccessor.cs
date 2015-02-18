@@ -125,7 +125,7 @@ namespace System.IO
         #endregion
 
         /// <summary>
-        /// Number of bytes in the acessor.
+        /// Number of bytes in the accessor.
         /// </summary>
         public Int64 Capacity
         {

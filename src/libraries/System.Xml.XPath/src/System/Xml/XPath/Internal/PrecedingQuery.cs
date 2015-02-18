@@ -16,7 +16,7 @@ namespace MS.Internal.Xml.XPath
     // Create descendent iterator from the root. -- "workIterator"
     // Advancing workIterator we meet all nodes from the ancestorStk in stack order. Nodes in ancestorStk do no belong to the
     // the 'preceding' axis and must be ignored.
-    // Last node in ancestorStk is a centinel node; when we pop it from ancestorStk, we should stop iterations.
+    // Last node in ancestorStk is a sentinel node; when we pop it from ancestorStk, we should stop iterations.
 
     internal sealed class PrecedingQuery : BaseAxisQuery
     {

@@ -56,7 +56,7 @@ namespace System.Threading.Tasks.Dataflow
     public class DataflowBlockOptions
     {
         /// <summary>
-        /// A constant used to specify an unlimited quanity for <see cref="DataflowBlockOptions"/> members 
+        /// A constant used to specify an unlimited quantity for <see cref="DataflowBlockOptions"/> members 
         /// that provide an upper bound. This field is constant.
         /// </summary>
         public const Int32 Unbounded = -1;
@@ -134,7 +134,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Gets a MaxMessagesPerTask value that may be used for comparison purposes.</summary>
         /// <returns>The maximum value, usable for comparison purposes.</returns>
-        /// <remarks>Unlinke MaxMessagesPerTask, this property will always return a positive value.</remarks>
+        /// <remarks>Unlike MaxMessagesPerTask, this property will always return a positive value.</remarks>
         internal Int32 ActualMaxMessagesPerTask
         {
             get { return (_maxMessagesPerTask == Unbounded) ? Int32.MaxValue : _maxMessagesPerTask; }
@@ -289,7 +289,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Gets a MaxDegreeOfParallelism value that may be used for comparison purposes.</summary>
         /// <returns>The maximum value, usable for comparison purposes.</returns>
-        /// <remarks>Unlinke MaxDegreeOfParallelism, this property will always return a positive value.</remarks>
+        /// <remarks>Unlike MaxDegreeOfParallelism, this property will always return a positive value.</remarks>
         internal Int32 ActualMaxDegreeOfParallelism
         {
             get { return (_maxDegreeOfParallelism == Unbounded) ? Int32.MaxValue : _maxDegreeOfParallelism; }
@@ -405,7 +405,7 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Gets a MaxNumberOfGroups value that may be used for comparison purposes.</summary>
         /// <returns>The maximum value, usable for comparison purposes.</returns>
-        /// <remarks>Unlinke MaxNumberOfGroups, this property will always return a positive value.</remarks>
+        /// <remarks>Unlike MaxNumberOfGroups, this property will always return a positive value.</remarks>
         internal Int64 ActualMaxNumberOfGroups
         {
             get { return (_maxNumberOfGroups == Unbounded) ? Int64.MaxValue : _maxNumberOfGroups; }

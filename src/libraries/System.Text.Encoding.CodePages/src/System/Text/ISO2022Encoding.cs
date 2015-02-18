@@ -210,7 +210,7 @@ namespace System.Text
                 case 52936:
                     {
                         // Since we don't rely on lead byte marks for 52936, get rid of them so we
-                        // don't end up with extra wierd fffe mappings.
+                        // don't end up with extra weird fffe mappings.
                         if (bytes >= 0x81 && bytes <= 0xfe)
                             return false;
 

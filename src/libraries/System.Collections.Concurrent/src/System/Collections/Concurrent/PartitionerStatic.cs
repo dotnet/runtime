@@ -43,7 +43,7 @@ namespace System.Collections.Concurrent
     // 1. dynamic load balance partitioning for indexable data source (IList and arrays)
     // 2. static partitioning for indexable data source (IList and arrays)
     // 3. dynamic load balance partitioning for enumerables. Enumerables have indexes, which are the natural order
-    //    of elements, but enuemrators are not indexable 
+    //    of elements, but enumerators are not indexable 
     // - data source of type IList/arrays have both dynamic and static partitioning, as 1 and 3.
     //   We assume that the source data of IList/Array is not changing concurrently.
     // - data source of type IEnumerable can only be partitioned dynamically (load-balance)
@@ -300,7 +300,7 @@ namespace System.Collections.Concurrent
         ///   The implementation for GrabNextChunk() method has two versions: one for data source of IndexRange 
         ///   types (IList and the array), one for data source of IEnumerable.
         /// - The method "Reset" is not supported for any partitioning algorithm.
-        /// - The implementation for MoveNext() method is same for all dynanmic partitioners, so we provide it
+        /// - The implementation for MoveNext() method is same for all dynamic partitioners, so we provide it
         ///   in this abstract class.
         /// </summary>
         /// <typeparam name="TSource">Type of the elements in the data source</typeparam>
@@ -313,7 +313,7 @@ namespace System.Collections.Concurrent
         private abstract class DynamicPartitionEnumerator_Abstract<TSource, TSourceReader> : IEnumerator<KeyValuePair<long, TSource>>
         {
             //----------------- common fields and constructor for all dynamic partitioners -----------------
-            //--- shared by all dervied class with souce data type: IList, Array, and IEnumerator
+            //--- shared by all derived class with source data type: IList, Array, and IEnumerator
             protected readonly TSourceReader _sharedReader;
 
             protected static int s_defaultMaxChunkSize = GetDefaultChunkSize<TSource>();
@@ -329,8 +329,8 @@ namespace System.Collections.Concurrent
             private int _doublingCountdown; // Number of grabs remaining until chunk size doubles
             protected readonly int _maxChunkSize; // s_defaultMaxChunkSize unless single-chunking is requested by the caller
 
-            // _sharedIndex shared by this set of partitions, and particularly when _sharedReader is IEnuerable
-            // it serves as tracking of the natual order of elements in _sharedReader
+            // _sharedIndex shared by this set of partitions, and particularly when _sharedReader is IEnumerable
+            // it serves as tracking of the natural order of elements in _sharedReader
             // the value of this field is passed in from outside (already initialized) by the constructor, 
             protected readonly SharedLong _sharedIndex;
 
@@ -359,7 +359,7 @@ namespace System.Collections.Concurrent
             //GrabNextChunk does the following: 
             //  - grab # of requestedChunkSize elements from source data through shared reader, 
             //  - at the time of function returns, _currentChunkSize is updated with the number of 
-            //    elements actually got assgined (<=requestedChunkSize). 
+            //    elements actually got assigned (<=requestedChunkSize). 
             //  - GrabNextChunk returns true if at least one element is assigned to this partition; 
             //    false if the shared reader already hits the last element of the source data before 
             //    we call GrabNextChunk
@@ -523,7 +523,7 @@ namespace System.Collections.Concurrent
             }
 
             /// <summary>
-            /// Overrides OrderablePartitioner.GetOrderableDyanmicPartitions
+            /// Overrides OrderablePartitioner.GetOrderableDynamicPartitions
             /// </summary>
             /// <returns>a enumerable collection of orderable partitions</returns>
             override public IEnumerable<KeyValuePair<long, TSource>> GetOrderableDynamicPartitions()
@@ -645,7 +645,7 @@ namespace System.Collections.Concurrent
                     if (fillBufferLocalRef == null) return;
 
                     // first do a quick check, and give up if the current position is at the end
-                    // so that we don't do an unncessary pair of Interlocked.Increment / Decrement calls
+                    // so that we don't do an unnecessary pair of Interlocked.Increment / Decrement calls
                     if (_fillBufferCurrentPosition >= _fillBufferSize)
                     {
                         return; // no elements in the buffer to copy from
@@ -1051,7 +1051,7 @@ namespace System.Collections.Concurrent
             }
 
             /// <summary>
-            /// Overrides OrderablePartitioner.GetOrderableDyanmicPartitions
+            /// Overrides OrderablePartitioner.GetOrderableDynamicPartitions
             /// </summary>
             /// <returns>a enumerable collection of orderable partitions</returns>
             override public IEnumerable<KeyValuePair<long, TSource>> GetOrderableDynamicPartitions()

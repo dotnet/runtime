@@ -599,7 +599,7 @@ namespace System.Collections.Concurrent.Tests
             int item;
             Assert.Throws<ArgumentNullException>(
                () => dictionary.TryRemove(null, out item));
-            //  "TestExceptions:  FAILED.  TryRmove didn't throw ANE when null key is passed");
+            //  "TestExceptions:  FAILED.  TryRemove didn't throw ANE when null key is passed");
             Assert.Throws<ArgumentNullException>(
                () => dictionary.TryGetValue(null, out item));
             // "TestExceptions:  FAILED.  TryGetValue didn't throw ANE when null key is passed");
@@ -806,7 +806,7 @@ namespace System.Collections.Concurrent.Tests
             var dictionary = new ConcurrentDictionary<string, int>();
             Assert.Throws<ArgumentNullException>(
                () => dictionary.TryUpdate(null, 0, 0));
-            // "TestTryUpdate:  FAILED.  TryUpdte didn't throw ANE when null key is passed");
+            // "TestTryUpdate:  FAILED.  TryUpdate didn't throw ANE when null key is passed");
 
             for (int i = 0; i < 10; i++)
                 dictionary.TryAdd(i.ToString(), i);

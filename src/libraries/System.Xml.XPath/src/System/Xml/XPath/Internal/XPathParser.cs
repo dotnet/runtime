@@ -45,7 +45,7 @@ namespace MS.Internal.Xml.XPath
 
 
         //The recursive is like 
-        //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpresion
+        //ParseOrExpr->ParseAndExpr->ParseEqualityExpr->ParseRelationalExpr...->ParseFilterExpr->ParsePredicate->ParseExpression
         //So put 200 limitation here will max cause about 2000~3000 depth stack.
         private int _parseDepth = 0;
         private const int MaxParseDepth = 200;

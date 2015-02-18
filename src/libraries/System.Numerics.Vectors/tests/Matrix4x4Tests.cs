@@ -717,7 +717,7 @@ namespace System.Numerics.Tests
                 {
                     Vector3 rp = Vector3.Transform(point, m);
 
-                    // Maniually compute refelction point and compare results.
+                    // Manually compute reflection point and compare results.
                     Vector3 v = point - pp;
                     float d = Vector3.Dot(v, plane.Normal);
                     Vector3 vp = point - 2.0f * d * plane.Normal;
@@ -1851,7 +1851,7 @@ namespace System.Numerics.Tests
         }
 
         // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
-        // Object and camera positions are too close and doesn't pass cameraFowardVector.
+        // Object and camera positions are too close and doesn't pass cameraForwardVector.
         [Fact]
         public void Matrix4x4CreateBillboardTooCloseTest1()
         {
@@ -1866,7 +1866,7 @@ namespace System.Numerics.Tests
         }
 
         // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
-        // Object and camera positions are too close and passed cameraFowardVector.
+        // Object and camera positions are too close and passed cameraForwardVector.
         [Fact]
         public void Matrix4x4CreateBillboardTooCloseTest2()
         {
@@ -1874,7 +1874,7 @@ namespace System.Numerics.Tests
             Vector3 cameraPosition = objectPosition;
             Vector3 cameraUpVector = new Vector3(0, 1, 0);
 
-            // Passes Vector3f.Rgiht as camera face direction. Result must be same as -90 degrees rotate along y-axis.
+            // Passes Vector3f.Right as camera face direction. Result must be same as -90 degrees rotate along y-axis.
             Matrix4x4 expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateTranslation(objectPosition);
             Matrix4x4 actual = Matrix4x4.CreateBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(1, 0, 0));
             Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.CreateBillboard did not return the expected value.");
@@ -2038,7 +2038,7 @@ namespace System.Numerics.Tests
             Vector3 cameraPosition = objectPosition;
             Vector3 cameraUpVector = new Vector3(0, 1, 0);
 
-            // Passes Vector3f.Rgiht as camera face direction. Result must be same as -90 degrees rotate along y-axis.
+            // Passes Vector3f.Right as camera face direction. Result must be same as -90 degrees rotate along y-axis.
             Matrix4x4 expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateTranslation(objectPosition);
             Matrix4x4 actual = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(1, 0, 0), new Vector3(0, 0, -1));
             Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.CreateConstrainedBillboard did not return the expected value.");
@@ -2256,7 +2256,7 @@ namespace System.Numerics.Tests
             Matrix4x4 a = GenerateTestMatrix();
             Matrix4x4 b = a;
 
-            // Transfomed vector that has same semantics of property must be same.
+            // Transformed vector that has same semantics of property must be same.
             Vector3 val = new Vector3(a.M41, a.M42, a.M43);
             Assert.Equal(val, a.Translation);
 

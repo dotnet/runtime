@@ -7,7 +7,7 @@
 ** Class:  StringBuilderCache
 **
 ** Purpose: provide a cached reusable instance of stringbuilder
-**          per thread  it's an optimisation that reduces the 
+**          per thread  it's an optimization that reduces the 
 **          number of instances constructed and collected.
 **
 **  Acquire - is used to get a string builder to use of a 

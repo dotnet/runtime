@@ -143,7 +143,7 @@ namespace System.Collections.Specialized.Tests
 
             //
             // [] Case sensitivity
-            // Casing doesn't change ( keya are not converted to lower!)
+            // Casing doesn't change ( keys are not converted to lower!)
             //
             string[] intlValuesLower = new string[len * 2];
 

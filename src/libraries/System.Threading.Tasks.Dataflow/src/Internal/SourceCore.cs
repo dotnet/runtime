@@ -883,7 +883,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             get
             {
-                // Cancellation is honored as soon as the CancellationToken has been signelled.
+                // Cancellation is honored as soon as the CancellationToken has been signaled.
                 // Faulting is honored after an exception has been encountered and the owning block
                 // has invoked Complete on us.
                 return _dataflowBlockOptions.CancellationToken.IsCancellationRequested ||
@@ -945,7 +945,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Clear out the target registry and buffers to help avoid memory leaks.
             lock (OutgoingLock)
             {
-                // Save the linked list of targets so that it could be traveresed later to propagate completion
+                // Save the linked list of targets so that it could be traversed later to propagate completion
                 linkedTargets = _targetRegistry.ClearEntryPoints();
                 lock (ValueLock)
                 {

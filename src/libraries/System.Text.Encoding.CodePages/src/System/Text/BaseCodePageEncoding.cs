@@ -69,7 +69,7 @@ namespace System.Text
             : base(codepage, new InternalEncoderBestFitFallback(null), new InternalDecoderBestFitFallback(null))
         {
             SetFallbackEncoding();
-            // Remember number of code pagess that we'll be using the table for.
+            // Remember number of code pages that we'll be using the table for.
             dataTableCodePage = dataCodePage;
             LoadCodePageTables();
         }

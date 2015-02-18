@@ -419,7 +419,7 @@ namespace System.Diagnostics
                 }
 
                 // We use SetProcessWorkingSetSizeEx which gives an option to follow
-                // the max and min value even in low-memory and abundant-memory situtions.
+                // the max and min value even in low-memory and abundant-memory situations.
                 // However, we do not use these flags to emulate the existing behavior
                 if (!Interop.mincore.SetProcessWorkingSetSizeEx(handle, min, max, 0))
                 {
@@ -525,7 +525,7 @@ namespace System.Diagnostics
                         retVal = Interop.mincore.CreateProcess(
                                 null,                // we don't need this since all the info is in commandLine
                                 commandLine,         // pointer to the command line string
-                                unused_SecAttrs, // address to process security attributes, we don't need to inheriat the handle
+                                unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
                                 unused_SecAttrs, // address to thread security attributes.
                                 true,                // handle inheritance flag
                                 creationFlags,       // creation flags
@@ -780,7 +780,7 @@ namespace System.Diagnostics
         // Overlapped I/O for process input/output as it would break Console apps (managed Console class 
         // methods such as WriteLine as well as native CRT functions like printf) which are making an
         // assumption that the console standard handles (obtained via GetStdHandle()) are opened
-        // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchrnously!
+        // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
         private void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             Interop.SECURITY_ATTRIBUTES securityAttributesParent = new Interop.SECURITY_ATTRIBUTES();

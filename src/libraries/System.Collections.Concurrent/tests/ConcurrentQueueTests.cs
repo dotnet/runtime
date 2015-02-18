@@ -127,7 +127,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         /// <summary>
-        /// Enumerating a ConcurrentQueue while simultaneously enqueueing and dequeueing somteimes returns a null value
+        /// Enumerating a ConcurrentQueue while simultaneously enqueueing and dequeueing sometimes returns a null value
         /// enumerator sometimes returns null
         /// </summary>
         /// <returns></returns>
@@ -263,7 +263,7 @@ namespace System.Collections.Concurrent.Tests
             //call garbage collection
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            //we have to keep the queue object alive in order to catch daggling objects.
+            //we have to keep the queue object alive in order to catch dangling objects.
             GC.KeepAlive(s_queue);
             Assert.True(Finalizable.finalized, "Memory leak in ConcurrentQueue: stale entry is not finalized.");
         }
@@ -349,7 +349,7 @@ namespace System.Collections.Concurrent.Tests
         // a BCL queue on the side to validate contents are correctly maintained.
         private static void Test1_EnqAndDeq(int pushes, int pops)
         {
-            // It utilised a random generator to do x number of queues and enqueues.
+            // It utilized a random generator to do x number of queues and enqueues.
             // Removed because it used System.Runtime.Extensions.
             ConcurrentQueue<int> s = new ConcurrentQueue<int>();
             Queue<int> s2 = new Queue<int>();
@@ -449,7 +449,7 @@ namespace System.Collections.Concurrent.Tests
             {
                 tt[k] = Task.Run(delegate()
                 {
-                    // It utilised a random generator to do x number of queues and enqueues.
+                    // It utilized a random generator to do x number of queues and enqueues.
                     // Removed because it used System.Runtime.Extensions.
                     mre.WaitOne();
 

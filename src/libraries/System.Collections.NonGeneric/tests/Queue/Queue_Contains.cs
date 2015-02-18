@@ -21,7 +21,7 @@ public class Queue_Contains
             /////////////////////////  START TESTS ////////////////////////////
             ///////////////////////////////////////////////////////////////////
 
-            //[]vanila - Contains is a straight forward API
+            //[]vanilla - Contains is a straight forward API
             iCountTestcases++;
 
             que = new Queue();
@@ -74,7 +74,7 @@ public class Queue_Contains
             }
 
 
-            //[]vanila - Contains is a straight forward API SYNCHRONIZED
+            //[]vanilla - Contains is a straight forward API SYNCHRONIZED
             iCountTestcases++;
 
             que = new Queue();

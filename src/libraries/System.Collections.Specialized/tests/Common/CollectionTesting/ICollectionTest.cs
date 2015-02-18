@@ -104,7 +104,7 @@ namespace TestSupport.Collections
 
         /// <summary>
         /// Specifies the types that are valid with CopyTo(Array).
-        /// By defaut this is a Type array containing only typeof(Object).
+        /// By default this is a Type array containing only typeof(Object).
         /// </summary>
         /// <value>Specifies the types that are valid with CopyTo(Array)</value>
         public Type[] ValidArrayTypes
@@ -124,7 +124,7 @@ namespace TestSupport.Collections
 
         /// <summary>
         /// Specifies the types that are not valid with CopyTo(Array).
-        /// By defaut this is a Type array containing only
+        /// By default this is a Type array containing only
         /// typeof(MyInvalidReferenceType) and typeof(MyInvalidValueType).
         /// </summary>
         /// <value>Specifies the types that are invalid with CopyTo(Array)</value>
@@ -357,7 +357,7 @@ namespace TestSupport.Collections
                         "Err_" + testDescription + " verifying item array FAILED");
                 }
 
-                // [] Verify CopyTo with array is multidimetional
+                // [] Verify CopyTo with array is multidimensional
                 testDescription = "Verify CopyTo with array is multidimetional";
                 retValue &= Test.Eval(Test.VerifyException<ArgumentException>(delegate () { _collection.CopyTo(new Object[1, _collection.Count], 0); }),
                     "Err Exception not thrown with multidimentional array");

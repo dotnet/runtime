@@ -34,7 +34,7 @@ namespace System.Linq.Parallel
     /// contiguous chunks. If striping is requested, then each partition j will yield elements
     /// in the data source for which ((i / s)%p) == j, where i is the element's index, s is
     /// a chunk size calculated by the system with the intent of aligning on cache lines, and
-    /// p is the number of partitions. If striping is not requested, we use the same algorith,
+    /// p is the number of partitions. If striping is not requested, we use the same algorithm,
     /// only, instead of aligning on cache lines, we use a chunk size of l / p, where l
     /// is the length of the input and p is the number of partitions.
     ///

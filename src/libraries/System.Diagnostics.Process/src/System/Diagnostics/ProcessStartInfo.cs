@@ -147,7 +147,7 @@ namespace System.Diagnostics
         // 1. ShellExecuteEx is not supported on onecore.
         // 2. ShellExecuteEx needs to run as STA but managed code runs as MTA by default and Thread.SetApartmentState() is not supported on all platforms.
         //
-        // Irrespective of the limited funtionality of the property we still support it in the contract for the below reason.
+        // Irrespective of the limited functionality of the property we still support it in the contract for the below reason.
         // The default value of UseShellExecute is true on desktop and scenarios like redirection mandates the value to be false.
         // So in order to provide maximum code portability we expose UseShellExecute in the contract 
         // and throw PlatformNotSupportedException in portable library in case it is set to true.

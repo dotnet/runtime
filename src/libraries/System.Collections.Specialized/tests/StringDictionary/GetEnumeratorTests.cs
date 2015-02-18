@@ -17,7 +17,7 @@ namespace System.Collections.Specialized.Tests
         {
             StringDictionary sd;
             IEnumerator en;
-            DictionaryEntry curr;        // Eumerator.Current value
+            DictionaryEntry curr;        // Enumerator.Current value
             // simple string values
             string[] values =
             {

@@ -410,7 +410,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (isNextItem)
                 {
                     StoreOutputItemsNonReorderedWithIteration(item);
-                    // here itemCopy remains null, so that base.AddItem will finish our iteractions with the reordering buffer
+                    // here itemCopy remains null, so that base.AddItem will finish our interactions with the reordering buffer
                 }
                 else if (itemAsTrustedList != null)
                 {

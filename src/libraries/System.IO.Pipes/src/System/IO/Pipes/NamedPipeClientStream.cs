@@ -15,7 +15,7 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
     {
-        // Maximum interval in miliseconds between which cancellation is checked.
+        // Maximum interval in milliseconds between which cancellation is checked.
         // Used by ConnectInternal. 50ms is fairly responsive time but really long time for processor.
         private const int CancellationCheckInterval = 50;
         private readonly string _normalizedPipePath;

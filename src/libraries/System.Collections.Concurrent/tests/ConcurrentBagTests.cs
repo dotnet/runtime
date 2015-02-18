@@ -227,7 +227,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         /// <summary>
-        /// Test parallel Add/Take, insert uniqe elements in the bag, and each element should be removed once
+        /// Test parallel Add/Take, insert unique elements in the bag, and each element should be removed once
         /// </summary>
         /// <param name="threadsCount"></param>
         /// <returns>True if succeeded, false otherwise</returns>

@@ -44,7 +44,7 @@ namespace System.Linq.Parallel
         {
             // We just open our child operator.  Do not propagate the preferStriping value, but 
             // instead explicitly set it to false. Regardless of whether the parent prefers striping or range
-            // partitioning, the output will be hash-partititioned.
+            // partitioning, the output will be hash-partitioned.
             QueryResults<TInputOutput> childResults = Child.Open(settings, false);
             return new UnaryQueryOperatorResults(childResults, this, settings, false);
         }
@@ -52,7 +52,7 @@ namespace System.Linq.Parallel
         internal override void WrapPartitionedStream<TKey>(
             PartitionedStream<TInputOutput, TKey> inputStream, IPartitionedStreamRecipient<TInputOutput> recipient, bool preferStriping, QuerySettings settings)
         {
-            // Hash-repartion the source stream
+            // Hash-repartition the source stream
             if (OutputOrdered)
             {
                 WrapPartitionedStreamHelper<TKey>(
@@ -240,7 +240,7 @@ namespace System.Linq.Parallel
 
                         Wrapper<TInputOutput> wrappedElem = new Wrapper<TInputOutput>((TInputOutput)elem.First);
 
-                        // If this is the first occurence of this element, or the order key is lower than all keys we saw previously,
+                        // If this is the first occurrence of this element, or the order key is lower than all keys we saw previously,
                         // update the order key for this element.
                         if (!_hashLookup.TryGetValue(wrappedElem, out oldEntry) || _keyComparer.Compare(orderKey, oldEntry) < 0)
                         {

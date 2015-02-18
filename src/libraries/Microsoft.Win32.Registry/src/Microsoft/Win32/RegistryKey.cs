@@ -658,7 +658,7 @@ namespace Microsoft.Win32
             // Return null if we didn't find the key.
             if (ret == Interop.ERROR_ACCESS_DENIED || ret == Interop.ERROR_BAD_IMPERSONATION_LEVEL)
             {
-                // We need to throw SecurityException here for compatiblity reason,
+                // We need to throw SecurityException here for compatibility reason,
                 // although UnauthorizedAccessException will make more sense.
                 ThrowHelper.ThrowSecurityException(SR.Security_RegistryPermission);
             }
@@ -854,7 +854,7 @@ namespace Microsoft.Win32
                 {
                     for (int i = 0; i < subkeys; i++)
                     {
-                        namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialised.
+                        namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialized.
                         int ret = Interop.mincore.RegEnumKeyEx(hkey,
                             i,
                             namePtr,

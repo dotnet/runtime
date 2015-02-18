@@ -76,7 +76,7 @@ namespace System.Collections.Concurrent
 
 
         /// <summary>
-        /// Local helper function to initalize a new bag object
+        /// Local helper function to initialize a new bag object
         /// </summary>
         /// <param name="collection">An enumeration containing items with which to initialize this bag.</param>
         private void Initialize(IEnumerable<T> collection)
@@ -729,7 +729,7 @@ namespace System.Collections.Concurrent
             ThreadLocalList currentList = _headList;
             while (currentList != null)
             {
-                // Try/Finally bllock to avoid thread aport between acquiring the lock and setting the taken flag
+                // Try/Finally block to avoid thread abort between acquiring the lock and setting the taken flag
                 try
                 {
                     Monitor.Enter(currentList, ref lockTaken);
@@ -864,7 +864,7 @@ namespace System.Collections.Concurrent
             // The current list operation
             internal volatile int _currentOp;
 
-            // The list count from the Add/Take prespective
+            // The list count from the Add/Take perspective
             private int _count;
 
             // The stealing count
