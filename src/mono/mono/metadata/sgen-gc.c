@@ -1406,11 +1406,7 @@ alloc_nursery (void)
 	/* If there isn't enough space even for the nursery we should simply abort. */
 	g_assert (sgen_memgov_try_alloc_space (alloc_size, SPACE_NURSERY));
 
-#ifdef SGEN_ALIGN_NURSERY
 	data = major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
-#else
-	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
-#endif
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
 	SGEN_LOG (4, "Expanding nursery size (%p-%p): %lu, total: %lu", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)mono_gc_get_heap_size ());
 	section->data = section->next_data = data;
@@ -1429,11 +1425,7 @@ void*
 mono_gc_get_nursery (int *shift_bits, size_t *size)
 {
 	*size = sgen_nursery_size;
-#ifdef SGEN_ALIGN_NURSERY
 	*shift_bits = DEFAULT_NURSERY_BITS;
-#else
-	*shift_bits = -1;
-#endif
 	return sgen_get_nursery_start ();
 }
 
@@ -4833,7 +4825,6 @@ mono_gc_base_init (void)
 				size_t val;
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &val)) {
-#ifdef SGEN_ALIGN_NURSERY
 					if ((val & (val - 1))) {
 						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.", "`nursery-size` must be a power of two.");
 						continue;
@@ -4849,9 +4840,6 @@ mono_gc_base_init (void)
 					sgen_nursery_bits = 0;
 					while (ONE_P << (++ sgen_nursery_bits) != sgen_nursery_size)
 						;
-#else
-					sgen_nursery_size = val;
-#endif
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.", "`nursery-size` must be an integer.");
 					continue;
@@ -5143,8 +5131,7 @@ sgen_has_critical_method (void)
 static void
 emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 {
-	memset (nursery_check_return_labels, 0, sizeof (int) * 3);
-#ifdef SGEN_ALIGN_NURSERY
+	memset (nursery_check_return_labels, 0, sizeof (int) * 2);
 	// if (ptr_in_nursery (ptr)) return;
 	/*
 	 * Masking out the bits might be faster, but we would have to use 64 bit
@@ -5165,45 +5152,6 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
 		mono_mb_emit_ptr (mb, (gpointer)((mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS));
 		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
 	}
-#else
-	int label_continue1, label_continue2;
-	int dereferenced_var;
-
-	// if (ptr < (sgen_get_nursery_start ())) goto continue;
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_start ());
-	label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
-
-	// if (ptr >= sgen_get_nursery_end ())) goto continue;
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_end ());
-	label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
-
-	// Otherwise return
-	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BR);
-
-	// continue:
-	mono_mb_patch_branch (mb, label_continue_1);
-	mono_mb_patch_branch (mb, label_continue_2);
-
-	// Dereference and store in local var
-	dereferenced_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, dereferenced_var);
-
-	if (!major_collector.is_concurrent) {
-		// if (*ptr < sgen_get_nursery_start ()) return;
-		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_start ());
-		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BLT);
-
-		// if (*ptr >= sgen_get_nursery_end ()) return;
-		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_end ());
-		nursery_check_return_labels [2] = mono_mb_emit_branch (mb, CEE_BGE);
-	}
-#endif	
 }
 #endif
 
@@ -5214,7 +5162,7 @@ mono_gc_get_write_barrier (void)
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
 #ifdef MANAGED_WBARRIER
-	int i, nursery_check_labels [3];
+	int i, nursery_check_labels [2];
 
 #ifdef HAVE_KW_THREAD
 	int stack_end_offset = -1;
@@ -5271,7 +5219,7 @@ mono_gc_get_write_barrier (void)
 	mono_mb_emit_byte (mb, CEE_STIND_I1);
 
 	// return;
-	for (i = 0; i < 3; ++i) {
+	for (i = 0; i < 2; ++i) {
 		if (nursery_check_labels [i])
 			mono_mb_patch_branch (mb, nursery_check_labels [i]);
 	}

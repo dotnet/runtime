@@ -243,34 +243,22 @@ extern int num_ready_finalizers;
 #define HIDE_POINTER(p,t)	((gpointer)(~((size_t)(p)|((t)?1:0))))
 #define REVEAL_POINTER(p)	((gpointer)((~(size_t)(p))&~3L))
 
-#ifdef SGEN_ALIGN_NURSERY
 #define SGEN_PTR_IN_NURSERY(p,bits,start,end)	(((mword)(p) & ~((1 << (bits)) - 1)) == (mword)(start))
-#else
-#define SGEN_PTR_IN_NURSERY(p,bits,start,end)	((char*)(p) >= (start) && (char*)(p) < (end))
-#endif
 
 #ifdef USER_CONFIG
 
 /* good sizes are 512KB-1MB: larger ones increase a lot memzeroing time */
 #define DEFAULT_NURSERY_SIZE (sgen_nursery_size)
 extern size_t sgen_nursery_size;
-#ifdef SGEN_ALIGN_NURSERY
 /* The number of trailing 0 bits in DEFAULT_NURSERY_SIZE */
 #define DEFAULT_NURSERY_BITS (sgen_nursery_bits)
 extern int sgen_nursery_bits;
-#endif
 
 #else
 
 #define DEFAULT_NURSERY_SIZE (4*1024*1024)
-#ifdef SGEN_ALIGN_NURSERY
 #define DEFAULT_NURSERY_BITS 22
-#endif
 
-#endif
-
-#ifndef SGEN_ALIGN_NURSERY
-#define DEFAULT_NURSERY_BITS -1
 #endif
 
 extern char *sgen_nursery_start;

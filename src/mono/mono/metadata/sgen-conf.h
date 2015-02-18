@@ -52,15 +52,6 @@ typedef guint64 mword;
  */
 #define USER_CONFIG 1
 
-
-/*
- * If this is set, the nursery is aligned to an address aligned to its size, ie.
- * a 1MB nursery will be aligned to an address divisible by 1MB. This allows us to
- * speed up ptr_in_nursery () checks which are very frequent. This requires the
- * nursery size to be a compile time constant.
- */
-#define SGEN_ALIGN_NURSERY 1
-
 /*
  * The binary protocol enables logging a lot of the GC ativity in a way that is not very
  * intrusive and produces a compact file that can be searched using a custom tool.  This
