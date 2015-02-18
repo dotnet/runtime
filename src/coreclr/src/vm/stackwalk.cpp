@@ -778,7 +778,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 #ifndef FEATURE_PAL
         uControlPc = VirtualUnwindCallFrame(pContext);
 #else // !FEATURE_PAL
-        VirtualUnwind(pContext, NULL);
+        PAL_VirtualUnwind(pContext, NULL);
         uControlPc = GetIP(pContext);
 #endif // !FEATURE_PAL
     }
