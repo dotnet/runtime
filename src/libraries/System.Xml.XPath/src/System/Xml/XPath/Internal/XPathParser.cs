@@ -17,9 +17,9 @@ namespace MS.Internal.Xml.XPath
             _scanner = scanner;
         }
 
-        public static AstNode ParseXPathExpresion(string xpathExpresion)
+        public static AstNode ParseXPathExpression(string xpathExpression)
         {
-            XPathScanner scanner = new XPathScanner(xpathExpresion);
+            XPathScanner scanner = new XPathScanner(xpathExpression);
             XPathParser parser = new XPathParser(scanner);
             AstNode result = parser.ParseExpression(null);
             if (scanner.Kind != XPathScanner.LexKind.Eof)

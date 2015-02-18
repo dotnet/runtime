@@ -511,7 +511,7 @@ namespace MS.Internal.Xml.XPath
             _allowVar = allowVar;
             _allowKey = allowKey;
             _allowCurrent = true;
-            return Build(XPathParser.ParseXPathExpresion(query), query);
+            return Build(XPathParser.ParseXPathExpression(query), query);
         }
 
         internal Query Build(string query, out bool needContext)
