@@ -50,6 +50,7 @@ monodis_LDADD = 			\
 	libmonodis.a			\
 	$(runtime_lib)			\
 	$(LLVM_LIBS)			\
+	$(LLVM_LDFLAGS)			\
 	$(GLIB_LIBS)			\
 	$(LIBICONV)
 
