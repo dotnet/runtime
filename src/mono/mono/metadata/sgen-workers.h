@@ -25,9 +25,6 @@
 
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
-	int index;
-	void *major_collector_data;
-
 	SgenGrayQueue private_gray_queue; /* only read/written by worker thread */
 };
 

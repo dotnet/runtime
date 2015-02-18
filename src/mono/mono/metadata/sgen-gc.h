@@ -707,9 +707,6 @@ struct _SgenMajorCollector {
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	void (*post_param_init) (SgenMajorCollector *collector);
-	void* (*alloc_worker_data) (void);
-	void (*init_worker_thread) (void *data);
-	void (*reset_worker_data) (void *data);
 	gboolean (*is_valid_object) (char *object);
 	MonoVTable* (*describe_pointer) (char *pointer);
 	guint8* (*get_cardtable_mod_union_for_object) (char *object);

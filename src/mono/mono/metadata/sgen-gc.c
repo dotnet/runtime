@@ -2347,14 +2347,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_9 (GENERATION_NURSERY);
 
-	/*
-	 * The (single-threaded) finalization code might have done
-	 * some copying/marking so we can only reset the GC thread's
-	 * worker data here instead of earlier when we joined the
-	 * workers.
-	 */
-	sgen_workers_reset_data ();
-
 	if (objects_pinned) {
 		sgen_optimize_pin_queue ();
 		sgen_pinning_setup_section (nursery_section);
@@ -2769,14 +2761,6 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	time_major_finish_gray_stack += TV_ELAPSED (btv, atv);
 
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can't have workers working after joining");
-
-	/*
-	 * The (single-threaded) finalization code might have done
-	 * some copying/marking so we can only reset the GC thread's
-	 * worker data here instead of earlier when we joined the
-	 * workers.
-	 */
-	sgen_workers_reset_data ();
 
 	if (objects_pinned) {
 		g_assert (!concurrent_collection_in_progress);

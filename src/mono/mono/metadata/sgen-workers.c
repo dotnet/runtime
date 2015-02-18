@@ -29,7 +29,6 @@
 
 static int workers_num;
 static WorkerData *workers_data;
-static void *workers_gc_thread_major_collector_data = NULL;
 
 static SgenSectionGrayQueue workers_distribute_gray_queue;
 static gboolean workers_distribute_gray_queue_inited;
@@ -59,17 +58,16 @@ static void
 assert_not_working (State state)
 {
 	SGEN_ASSERT (0, state == STATE_NOT_WORKING, "Can only signal enqueue work when in no work state");
-
 }
 
 static void
-assert_working (State state, gboolean from_worker)
+assert_working (State state)
 {
 	SGEN_ASSERT (0, state == STATE_WORKING, "A worker can't wait without being in working state");
 }
 
 static void
-assert_nursery_collection (State state, gboolean from_worker)
+assert_nursery_collection (State state)
 {
 	SGEN_ASSERT (0, state == STATE_NURSERY_COLLECTION, "Must be in the nursery collection state");
 }
@@ -77,27 +75,22 @@ assert_nursery_collection (State state, gboolean from_worker)
 static void
 assert_working_or_nursery_collection (State state)
 {
-	if (state == STATE_WORKING)
-		assert_working (state, TRUE);
-	else
-		assert_nursery_collection (state, TRUE);
+	if (state != STATE_WORKING)
+		assert_nursery_collection (state);
 }
 
 static void
 workers_signal_enqueue_work (gboolean from_nursery_collection)
 {
 	State old_state = workers_state;
-	State new_state = old_state;
 	gboolean did_set_state;
 
 	if (from_nursery_collection)
-		assert_nursery_collection (old_state, FALSE);
+		assert_nursery_collection (old_state);
 	else
 		assert_not_working (old_state);
 
-	new_state = STATE_WORKING;
-
-	did_set_state = set_state (old_state, new_state);
+	did_set_state = set_state (old_state, STATE_WORKING);
 	SGEN_ASSERT (0, did_set_state, "Nobody else should be mutating the state");
 
 	sgen_thread_pool_idle_signal ();
@@ -120,19 +113,19 @@ sgen_workers_ensure_awake (void)
 static void
 worker_finish (void)
 {
-	State old_state, new_state;
+	State old_state;
 
 	++stat_workers_num_finished;
 
 	do {
-		new_state = old_state = workers_state;
+		old_state = workers_state;
 
 		assert_working_or_nursery_collection (old_state);
+		if (old_state == STATE_NURSERY_COLLECTION)
+			return;
 
 		/* We are the last thread to go to sleep. */
-		if (old_state == STATE_WORKING)
-			new_state = STATE_NOT_WORKING;
-	} while (!set_state (old_state, new_state));
+	} while (!set_state (old_state, STATE_NOT_WORKING));
 }
 
 static gboolean
@@ -162,30 +155,24 @@ sgen_workers_wait_for_jobs_finished (void)
 void
 sgen_workers_signal_start_nursery_collection_and_wait (void)
 {
-	State old_state, new_state;
+	State old_state;
 
 	do {
-		new_state = old_state = workers_state;
+		old_state = workers_state;
 
-		new_state = STATE_NURSERY_COLLECTION;
-
-		if (old_state == STATE_NOT_WORKING) {
-			assert_not_working (old_state);
-		} else {
-			assert_working (old_state, FALSE);
-		}
-	} while (!set_state (old_state, new_state));
+		if (old_state != STATE_NOT_WORKING)
+			assert_working (old_state);
+	} while (!set_state (old_state, STATE_NURSERY_COLLECTION));
 
 	sgen_thread_pool_idle_wait ();
 
-	old_state = workers_state;
-	assert_nursery_collection (old_state, FALSE);
+	assert_nursery_collection (workers_state);
 }
 
 void
 sgen_workers_signal_finish_nursery_collection (void)
 {
-	assert_nursery_collection (workers_state, FALSE);
+	assert_nursery_collection (workers_state);
 	workers_signal_enqueue_work (TRUE);
 }
 
@@ -236,9 +223,6 @@ thread_pool_init_func (void *data_untyped)
 
 	if (!major->is_concurrent)
 		return;
-
-	if (major->init_worker_thread)
-		major->init_worker_thread (data->major_collector_data);
 
 	init_private_gray_queue (data);
 }
@@ -314,17 +298,8 @@ sgen_workers_init (int num_workers)
 
 	init_distribute_gray_queue ();
 
-	if (sgen_get_major_collector ()->alloc_worker_data)
-		workers_gc_thread_major_collector_data = sgen_get_major_collector ()->alloc_worker_data ();
-
-	for (i = 0; i < workers_num; ++i) {
-		workers_data [i].index = i;
-
-		if (sgen_get_major_collector ()->alloc_worker_data)
-			workers_data [i].major_collector_data = sgen_get_major_collector ()->alloc_worker_data ();
-
+	for (i = 0; i < workers_num; ++i)
 		workers_data_ptrs [i] = &workers_data [i];
-	}
 
 	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, workers_data_ptrs);
 
@@ -336,9 +311,6 @@ sgen_workers_start_all_workers (void)
 {
 	if (!collection_needs_workers ())
 		return;
-
-	if (sgen_get_major_collector ()->init_worker_thread)
-		sgen_get_major_collector ()->init_worker_thread (workers_gc_thread_major_collector_data);
 
 	workers_signal_enqueue_work (FALSE);
 }
@@ -372,11 +344,6 @@ sgen_workers_join (void)
 
 	/* At this point all the workers have stopped. */
 
-	if (sgen_get_major_collector ()->reset_worker_data) {
-		for (i = 0; i < workers_num; ++i)
-			sgen_get_major_collector ()->reset_worker_data (workers_data [i].major_collector_data);
-	}
-
 	g_assert (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue));
 	for (i = 0; i < workers_num; ++i)
 		g_assert (sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue));
@@ -407,10 +374,4 @@ sgen_workers_get_distribute_section_gray_queue (void)
 	return &workers_distribute_gray_queue;
 }
 
-void
-sgen_workers_reset_data (void)
-{
-	if (sgen_get_major_collector ()->reset_worker_data)
-		sgen_get_major_collector ()->reset_worker_data (workers_gc_thread_major_collector_data);
-}
 #endif
