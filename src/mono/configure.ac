@@ -540,6 +540,10 @@ if test x"$GCC" = xyes; then
 		CFLAGS="$CFLAGS -fwrapv"
 
 		CFLAGS="$CFLAGS -DMONO_DLL_EXPORT"
+		# Don't export any symbols by default
+		SHARED_CFLAGS="-fvisibility=hidden"
+		CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -fvisibility=hidden"
+		CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
 
 		ORIG_CFLAGS=$CFLAGS
 		CFLAGS="$CFLAGS -Wdeclaration-after-statement"
@@ -683,6 +687,7 @@ if test x$werror_flag = xyes; then
 	WERROR_CFLAGS="-Werror"
 fi
 AC_SUBST([WERROR_CFLAGS])
+AC_SUBST([SHARED_CFLAGS])
 
 ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
 AC_CONFIG_SUBDIRS(eglib)
