@@ -189,7 +189,7 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
         // 
         // It is possible that a managed frame may execute a PInvoke after performing a stackalloc:
         // 
-        // 1) The Evanesco JIT will always inline the PInvoke in the managed frame, whether or not the frame
+        // 1) The ARM JIT will always inline the PInvoke in the managed frame, whether or not the frame
         //    contains EH. As a result, the ICF will live in the same frame which performs stackalloc.
         //    
         // 2) JIT64 will only inline the PInvoke in the managed frame if the frame *does not* contain EH. If it does,
@@ -197,11 +197,11 @@ StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID p
         //    from the one (ILStub) that contains the ICF.
         //    
         // Thus, for the scenario where the catch handler lives in the frame that performed stackalloc, in case of
-        // Evanesco JIT, the SP returned by the OS will be the SP *after* the stackalloc has happened. However,
+        // ARM JIT, the SP returned by the OS will be the SP *after* the stackalloc has happened. However,
         // the stackwalker will invoke this callback with the CrawlFrameSP that was initialized at the time ICF was setup, i.e.,
         // it will be the SP after the prolog has executed (refer to InlinedCallFrame::UpdateRegDisplay). 
         // 
-        // Thus, checking only the SP will not work for this scenario when using the Evanesco JIT.
+        // Thus, checking only the SP will not work for this scenario when using the ARM JIT.
         // 
         // To address this case, the callback data also contains the frame pointer (FP) passed by the OS. This will
         // be the value that is saved in the "CalleeSavedFP" field of the InlinedCallFrame during ICF 

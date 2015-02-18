@@ -57,22 +57,22 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHand
         mov     ecx, dword ptr [rbx + CallDescrData__numStackSlots]
 
         and     ecx, ecx
-        jz      .LNoStackArguments
+        jz      LOCAL_LABEL(NoStackArguments)
 
         test    ecx, 1
-        jz      .LStackAligned
+        jz      LOCAL_LABEL(StackAligned)
         push    rax
-.LStackAligned:
+LOCAL_LABEL(StackAligned):
 
         mov     rsi, [rbx + CallDescrData__pSrc] // set source argument list address
         lea     rsi, [rsi + 8 * rcx]
 
-.LStackCopyLoop:                          // copy the arguments to stack top-down to carefully probe for sufficient stack space
+LOCAL_LABEL(StackCopyLoop):                          // copy the arguments to stack top-down to carefully probe for sufficient stack space
         sub     rsi, 8
         push    qword ptr [rsi]
         dec     ecx
-        jnz     .LStackCopyLoop
-.LNoStackArguments:
+        jnz     LOCAL_LABEL(StackCopyLoop)
+LOCAL_LABEL(NoStackArguments):
         // All argument registers are loaded regardless of the actual number
         // of arguments.
 
@@ -89,7 +89,7 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHand
 
         mov     rax, [rbx + CallDescrData__pFloatArgumentRegisters] 
         and     rax, rax
-        jz      .LNoFloatArguments
+        jz      LOCAL_LABEL(NoFloatArguments)
         movsd   xmm0, [rax + 0]
         movsd   xmm1, [rax + 16]
         movsd   xmm2, [rax + 32]
@@ -98,26 +98,26 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHand
         movsd   xmm5, [rax + 80]
         movsd   xmm6, [rax + 96]
         movsd   xmm7, [rax + 112]
-.LNoFloatArguments:
+LOCAL_LABEL(NoFloatArguments):
         call    qword ptr [rbx + CallDescrData__pTarget]     // call target function
 
         // Save FP return value
 
         mov     ecx, dword ptr [rbx + CallDescrData__fpReturnSize]
         test    ecx, ecx
-        jz      .LReturnsInt
+        jz      LOCAL_LABEL(ReturnsInt)
         
         cmp     ecx, 4
-        je      .LReturnsFloat
+        je      LOCAL_LABEL(ReturnsFloat)
         cmp     ecx, 8
-        je      .LReturnsDouble
+        je      LOCAL_LABEL(ReturnsDouble)
         // unexpected
-        jmp     .LEpilog
+        jmp     LOCAL_LABEL(Epilog)
 
-.LReturnsInt:
+LOCAL_LABEL(ReturnsInt):
         mov     [rbx+CallDescrData__returnValue], rax
 
-.LEpilog:
+LOCAL_LABEL(Epilog):
         lea     rsp, 0[rbp]             // deallocate argument list
         .cfi_def_cfa_register rsp
         pop     rbp                     // restore nonvolatile register
@@ -126,13 +126,13 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHand
         .cfi_adjust_cfa_offset -8       //
         ret
 
-.LReturnsFloat:
+LOCAL_LABEL(ReturnsFloat):
         movss   real4 ptr [rbx+CallDescrData__returnValue], xmm0
-        jmp     .LEpilog
+        jmp     LOCAL_LABEL(Epilog)
 
-.LReturnsDouble:
+LOCAL_LABEL(ReturnsDouble):
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
-        jmp     .LEpilog
+        jmp     LOCAL_LABEL(Epilog)
 
 NESTED_END CallDescrWorkerInternal, _TEXT
 
