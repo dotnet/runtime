@@ -431,7 +431,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        public void TestLinkTo_ArgumentVaidation()
+        public void TestLinkTo_ArgumentValidation()
         {
             var source = new BufferBlock<int>();
             var target = new ActionBlock<int>(i => { });

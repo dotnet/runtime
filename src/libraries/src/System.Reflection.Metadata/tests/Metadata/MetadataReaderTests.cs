@@ -1994,7 +1994,7 @@ namespace System.Reflection.Metadata.Tests
         ///     Association (Token)    
         /// </summary>
         [Fact]
-        public void ValidateMethodSematicsTable()
+        public void ValidateMethodSemanticsTable()
         {
             // ModuleCS01 0x17 - chkec every 5
             var expSems = new ushort[] { 0x10, 0x08, 0x02, 0x10, 0x01, };
