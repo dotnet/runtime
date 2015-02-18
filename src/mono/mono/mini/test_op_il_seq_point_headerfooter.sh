@@ -23,14 +23,14 @@ echo "    </results>" >> TestResults_op_il_seq_point.xml
 echo "  </test-suite>" >> TestResults_op_il_seq_point.xml
 echo "</test-results>" >> TestResults_op_il_seq_point.xml
 
-sed -i -e "1i\ \ \ \ \ \ \ \ \ \ \ \ <results>" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ \ \ \ \ \ \ \ \ <test-suite name=\"op_il_seq_point\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ \ \ \ \ \ \ <results>" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ \ \ \ \ <test-suite name=\"MonoTests\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ \ \ <results>" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ <test-suite name=\"op_il_seq_point-tests.dummy\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ <culture-info current-culture=\"${MYLOCALE}\" current-uiculture=\"${MYLOCALE}\" />" TestResults_op_il_seq_point.xml
-sed -i -e "1i\ \ <environment nunit-version=\"2.4.8.0\" clr-version=\"4.0.30319.17020\" os-version=\"Unix ${MYUNAME}\" platform=\"Unix\" cwd=\"${PWD}\" machine-name=\"${MYHOSTNAME}\" user=\"${USER}\" user-domain=\"${MYFQDN}\" />" TestResults_op_il_seq_point.xml
-sed -i -e "1i<test-results name=\"regression-tests.dummy\" total=\"${TOTAL}\" failures=\"${FAILURES}\" not-run=\"0\" date=\"${MYDATE}\" time=\"${MYTIME}\">" TestResults_op_il_seq_point.xml
-sed -i -e "1i<!--This file represents the results of running a test suite-->" TestResults_op_il_seq_point.xml
-sed -i -e "1i<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ \ \ \ \ \ \ \ \ \ \ <results>" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ \ \ \ \ \ \ \ \ <test-suite name=\"op_il_seq_point\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ \ \ \ \ \ \ <results>" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ \ \ \ \ <test-suite name=\"MonoTests\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ \ \ <results>" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ <test-suite name=\"op_il_seq_point-tests.dummy\" success=\"${PASS}\" time=\"0\" asserts=\"0\">" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ <culture-i .baknfo current-culture=\"${MYLOCALE}\" current-uiculture=\"${MYLOCALE}\" />" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i\ \ <environment nunit-version=\"2.4.8.0\" clr-version=\"4.0.30319.17020\" os-version=\"Unix ${MYUNAME}\" platform=\"Unix\" cwd=\"${PWD}\" machine-name=\"${MYHOSTNAME}\" user=\"${USER}\" user-domain=\"${MYFQDN}\" />" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i<test-results name=\"regression-tests.dummy\" total=\"${TOTAL}\" failures=\"${FAILURES}\" not-run=\"0\" date=\"${MYDATE}\" time=\"${MYTIME}\">" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i<!--This file represents the results of running a test suite-->" TestResults_op_il_seq_point.xml
+sed -i .bak -e "1i<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>" TestResults_op_il_seq_point.xml
