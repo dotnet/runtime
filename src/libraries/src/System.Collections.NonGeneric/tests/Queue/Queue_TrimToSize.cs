@@ -174,7 +174,7 @@ public class Queue_TrimToSize
             }
 
             //    Insert and Remove 75 items in the Queue this should wrap the queue 
-            //    Where there is 25 at the end of the array and 25 at the begining
+            //    Where there is 25 at the end of the array and 25 at the beginning
             for (int i = 0; i < 75; i++)
             {
                 que.Enqueue(i + 50);
@@ -222,7 +222,7 @@ public class Queue_TrimToSize
             }
 
             //    Insert and Remove 75 items in the Queue this should wrap the queue 
-            //    Where there is 25 at the end of the array and 25 at the begining
+            //    Where there is 25 at the end of the array and 25 at the beginning
             for (int i = 0; i < 75; i++)
             {
                 que.Enqueue(i + 50);
@@ -261,7 +261,7 @@ public class Queue_TrimToSize
                 Console.WriteLine("Err_440815ajkejid! wrong value returned Expected={0} Actual={1}", 51, dequeuedValue);
             }
 
-            //[]vanila SYNCHRONIZED
+            //[]vanilla SYNCHRONIZED
 
             iCountTestcases++;
 

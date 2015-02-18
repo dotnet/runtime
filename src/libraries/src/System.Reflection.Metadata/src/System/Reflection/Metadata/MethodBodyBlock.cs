@@ -98,7 +98,7 @@ namespace System.Reflection.Metadata
             int startOffset = reader.Offset;
             int ilSize;
 
-            // Error need to check if the Memory Block is empty. This is calse for all the calls...
+            // Error need to check if the Memory Block is empty. This is false for all the calls...
             byte headByte = reader.ReadByte();
             if ((headByte & ILFormatMask) == ILTinyFormat)
             {

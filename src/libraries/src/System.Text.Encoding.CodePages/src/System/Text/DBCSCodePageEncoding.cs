@@ -827,7 +827,7 @@ namespace System.Text
                     fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
                     fallbackHelper.InternalInitialize(byteEnd - count, null);
 
-                    // Do fallback, we know there're 2 bytes
+                    // Do fallback, we know there are 2 bytes
                     byte[] byteBuffer = new byte[] { unchecked((byte)(iBytes >> 8)), unchecked((byte)iBytes) };
                     charCount += fallbackHelper.InternalFallback(byteBuffer, bytes);
                 }

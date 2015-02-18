@@ -488,7 +488,7 @@ namespace System.Collections.Concurrent.Tests
         }
 
         /// <summary>
-        /// Ensure that the range partitioner doesnt chunk up elements i.e. uses chunk size = 1
+        /// Ensure that the range partitioner doesn't chunk up elements i.e. uses chunk size = 1
         /// </summary>
         [Fact]
         public static void RangePartitionerDynamicChunking()
@@ -521,7 +521,7 @@ namespace System.Collections.Concurrent.Tests
 
             // Ensure that each partition gets one range only
             // we check this by alternating partitions asking for elements and make sure
-            // that we get ranges in a sequence. If chunking were to happen then we wouldnt see a sequence
+            // that we get ranges in a sequence. If chunking were to happen then we wouldn't see a sequence
             long actualCount = partition1.Current.Item2 - partition1.Current.Item1;
             while (true)
             {

@@ -380,7 +380,7 @@ namespace System.Collections.Concurrent
                 lock (tables._locks[lockNo])
                 {
                     // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurence.
+                    // This should be a rare occurrence.
                     if (tables != _tables)
                     {
                         continue;
@@ -527,7 +527,7 @@ namespace System.Collections.Concurrent
                 lock (tables._locks[lockNo])
                 {
                     // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurence.
+                    // This should be a rare occurrence.
                     if (tables != _tables)
                     {
                         continue;
@@ -785,7 +785,7 @@ namespace System.Collections.Concurrent
                         Monitor.Enter(tables._locks[lockNo], ref lockTaken);
 
                     // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurence.
+                    // This should be a rare occurrence.
                     if (tables != _tables)
                     {
                         continue;
@@ -877,7 +877,7 @@ namespace System.Collections.Concurrent
         /// <param name="key">The key of the value to get or set.</param>
         /// <value>The value associated with the specified key. If the specified key is not found, a get
         /// operation throws a
-        /// <see cref="T:Sytem.Collections.Generic.KeyNotFoundException"/>, and a set operation creates a new
+        /// <see cref="T:System.Collections.Generic.KeyNotFoundException"/>, and a set operation creates a new
         /// element with the specified key.</value>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>

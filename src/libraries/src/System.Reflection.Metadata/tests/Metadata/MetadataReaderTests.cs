@@ -1988,7 +1988,7 @@ namespace System.Reflection.Metadata.Tests
         }
 
         /// <summary>
-        /// MethodSematics Table
+        /// MethodSemantics Table
         ///     Semantic (2-byte unsigned)
         ///     Method (RID to method table)
         ///     Association (Token)    

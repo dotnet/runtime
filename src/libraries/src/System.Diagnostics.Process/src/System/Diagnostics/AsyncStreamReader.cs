@@ -6,7 +6,7 @@
 ** Class:  AsyncStreamReader
 **
 ** Purpose: For reading text from streams using a particular 
-** encoding in an asychronous manner used by the process class
+** encoding in an asynchronous manner used by the process class
 **
 **
 ===========================================================*/
@@ -259,7 +259,7 @@ namespace System.Diagnostics
             {
                 _bLastCarriageReturn = true;
             }
-            // Keep the rest characaters which can't form a new line in string builder.
+            // Keep the rest characters which can't form a new line in string builder.
             if (lineStart < len)
             {
                 if (lineStart == 0)

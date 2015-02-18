@@ -60,7 +60,7 @@ namespace System.IO
 
             // Normal is a special case and happens to have different values in WinRT and Win32.
             // It's meant to indicate the absense of other flags.  On WinRT this logically is 0,
-            // however on Win32 it is represented with a descrete value of 128.
+            // however on Win32 it is represented with a discrete value of 128.
             return (fileAttributes == WinRTFileAttributes.Normal) ?
                 FileAttributes.Normal :
                 (FileAttributes)fileAttributes;
@@ -657,7 +657,7 @@ namespace System.IO
             return task.Result;
         }
 
-        // this needs to be seperate from SynchronousResultOf so that SynchronousResultOf<T> can call it.
+        // this needs to be separate from SynchronousResultOf so that SynchronousResultOf<T> can call it.
         private static void WaitForTask(Task task)
         {
             // This should never be called from the UI thread since it can deadlock

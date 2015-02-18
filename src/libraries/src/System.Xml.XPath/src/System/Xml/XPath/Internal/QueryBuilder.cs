@@ -11,7 +11,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class QueryBuilder
     {
-        // Note: Up->Doun, Down->Up:
+        // Note: Up->Down, Down->Up:
         //       For operators order is normal: 1 + 2 --> Operator+(1, 2)
         //       For paths order is reversed: a/b -> ChildQuery_B(input: ChildQuery_A(input: ContextQuery()))
         // Input flags. We pass them Up->Down. 

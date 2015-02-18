@@ -18,10 +18,10 @@ namespace System.Collections.Specialized.Tests
             ListDictionary ld;
             IDictionaryEnumerator en;
 
-            DictionaryEntry curr;        // Eumerator.Current value
-            DictionaryEntry de;        // Eumerator.Entry value
-            Object k;        // Eumerator.Key value
-            Object v;        // Eumerator.Value
+            DictionaryEntry curr;        // Enumerator.Current value
+            DictionaryEntry de;        // Enumerator.Entry value
+            Object k;        // Enumerator.Key value
+            Object v;        // Enumerator.Value
 
             // simple string values
             string[] values =

@@ -125,7 +125,7 @@ namespace System.Diagnostics
         {
             // In order to query information (OpenProcess) on some protected processes
             // like csrss, we need SeDebugPrivilege privilege.
-            // After removing the depenecy on Performance Counter, we don't have a chance
+            // After removing the dependency on Performance Counter, we don't have a chance
             // to run the code in CLR performance counter to ask for this privilege.
             // So we will try to get the privilege here.
             // We could fail if the user account doesn't have right to do this, but that's fair.
@@ -349,7 +349,7 @@ namespace System.Diagnostics
                         // If OS loader is touching module information, this method might fail and copy part of the data.
                         // This is no easy solution to this problem. The only reliable way to fix this is to 
                         // suspend all the threads in target process. Of course we don't want to do this in Process class.
-                        // So we just to try avoid the race by calling the same method 50 (an arbitary number) times.
+                        // So we just to try avoid the race by calling the same method 50 (an arbitrary number) times.
                         //
                         if (!enumResult)
                         {
@@ -863,7 +863,7 @@ namespace System.Diagnostics
         public static ProcessInfo[] GetProcessInfos()
         {
             // On a normal machine, 30k to 40K will be enough.
-            // We use 128K here to tolerate mutilple connections to a machine.
+            // We use 128K here to tolerate multiple connections to a machine.
             int bufferSize = 128 * 1024;
 #if DEBUG
             // on debug build, use a smaller buffer size to make sure we hit the retrying code path  

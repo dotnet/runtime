@@ -368,7 +368,7 @@ namespace System.Collections
         }
 
         // Ensures that the capacity of this list is at least the given minimum
-        // value. If the currect capacity of the list is less than min, the
+        // value. If the current capacity of the list is less than min, the
         // capacity is increased to twice the current capacity or to min,
         // whichever is larger.
         private void EnsureCapacity(int min)
@@ -2829,7 +2829,7 @@ namespace System.Collections
 
                 InternalUpdateRange();
                 // No need to call _bastList.RemoveRange if count is 0.
-                // In addition, _baseList won't change the vresion number if count is 0. 
+                // In addition, _baseList won't change the version number if count is 0. 
                 if (count > 0)
                 {
                     _baseList.RemoveRange(_baseIndex + index, count);

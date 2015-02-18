@@ -296,7 +296,7 @@ namespace System.Reflection.Metadata.Ecma335
                     Debug.Assert(sizes[generation].AggregateInserts == rowId);
 
                     // the row is in a generation that inserted exactly one row -- the one that we are looking for;
-                    // or it's in a preceeding generation if the current one didn't insert any rows of the kind:
+                    // or it's in a preceding generation if the current one didn't insert any rows of the kind:
                     while (generation > 0 && sizes[generation - 1].AggregateInserts == rowId)
                     {
                         generation--;

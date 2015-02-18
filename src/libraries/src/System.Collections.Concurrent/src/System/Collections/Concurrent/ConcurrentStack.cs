@@ -381,7 +381,7 @@ namespace System.Collections.Concurrent
         {
             SpinWait spin = new SpinWait();
 
-            // Keep trying to CAS the exising head with the new node until we succeed.
+            // Keep trying to CAS the existing head with the new node until we succeed.
             do
             {
                 spin.SpinOnce();
@@ -446,7 +446,7 @@ namespace System.Collections.Concurrent
         /// without removing it.
         /// </summary>
         /// <param name="result">When this method returns, <paramref name="result"/> contains an object from
-        /// the top of the <see cref="T:System.Collections.Concurrent.ConccurrentStack{T}"/> or an
+        /// the top of the <see cref="T:System.Collections.Concurrent.ConcurrentStack{T}"/> or an
         /// unspecified value if the operation failed.</param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
         public bool TryPeek(out T result)
@@ -475,7 +475,7 @@ namespace System.Collections.Concurrent
         /// </param>
         /// <returns>true if an element was removed and returned from the top of the <see
         /// cref="ConcurrentStack{T}"/>
-        /// succesfully; otherwise, false.</returns>
+        /// successfully; otherwise, false.</returns>
         public bool TryPop(out T result)
         {
             Node head = _head;
@@ -681,7 +681,7 @@ namespace System.Collections.Concurrent
         /// When this method returns, if the operation was successful, <paramref name="item"/> contains the
         /// object removed. If no object was available to be removed, the value is unspecified.
         /// </param>
-        /// <returns>true if an element was removed and returned succesfully; otherwise, false.</returns>
+        /// <returns>true if an element was removed and returned successfully; otherwise, false.</returns>
         /// <remarks>For <see cref="ConcurrentStack{T}"/>, this operation will attempt to pope the object at
         /// the top of the <see cref="ConcurrentStack{T}"/>.
         /// </remarks>

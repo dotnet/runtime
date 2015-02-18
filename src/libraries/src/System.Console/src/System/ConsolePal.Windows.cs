@@ -391,7 +391,7 @@ namespace System
                     // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                     // // Note that WriteConsoleW has a max limit on num of chars to write (64K)
                     // // [http://msdn.microsoft.com/en-us/library/ms687401.aspx]
-                    // // However, we do not need to worry about that becasue the StreamWriter in Console has
+                    // // However, we do not need to worry about that because the StreamWriter in Console has
                     // // a much shorter buffer size anyway.
                     // Int32 charsWritten;
                     // writeSuccess = Interop.mincore.WriteConsole(hFile, p + offset, count / BytesPerWChar, out charsWritten, IntPtr.Zero);

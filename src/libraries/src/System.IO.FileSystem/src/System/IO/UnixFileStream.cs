@@ -614,7 +614,7 @@ namespace System.IO
             {
                 // If we're not able to seek, then we're not able to rewind the stream (i.e. flushing
                 // a read buffer), in which case we don't want to use a read buffer.  Similarly, if
-                // the user has ssked for more data than we can buffer, we also want to skip the buffer.
+                // the user has asked for more data than we can buffer, we also want to skip the buffer.
                 if (!_parent.CanSeek || (count >= _bufferLength))
                 {
                     // Read directly into the user's buffer

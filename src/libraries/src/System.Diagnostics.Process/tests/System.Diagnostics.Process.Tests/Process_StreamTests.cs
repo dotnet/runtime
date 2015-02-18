@@ -111,7 +111,7 @@ namespace System.Diagnostics.ProcessTests
         {
             // Check whether the input streams works correctly.
 
-            //1. Check with RedirectStandardInut
+            //1. Check with RedirectStandardInput
             Process p = CreateProcessInput();
             p.StartInfo.RedirectStandardInput = true;
             p.StartInfo.RedirectStandardOutput = true;

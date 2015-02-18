@@ -20,7 +20,7 @@ namespace System.Linq.Parallel
 
     //---------------------------------------------------------------------------------------
     // Inlined average operators for primitives (int, long, float, double, decimal), and the
-    // nullable variants.  The difference between the nromal and nullable variety is that
+    // nullable variants.  The difference between the normal and nullable variety is that
     // nulls are skipped in tallying the count and sum for the average.
     //
 

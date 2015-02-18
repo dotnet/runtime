@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    // this class holds manageds native memory used by UnmanagedMemoryStream
+    // this class holds managed native memory used by UnmanagedMemoryStream
     internal class UmsManager : IDisposable
     {
         private UnmanagedMemoryStream _stream;

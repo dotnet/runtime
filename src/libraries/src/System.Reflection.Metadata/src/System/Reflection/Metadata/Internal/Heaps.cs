@@ -351,7 +351,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 blobs[(int)BlobHandle.VirtualIndex.AttributeUsage_AllowSingle] = new byte[]
                 {
-                    // preable:
+                    // preamble:
                     0x01, 0x00,
                     // target (template parameter):
                     0x00, 0x00, 0x00, 0x00,
@@ -371,7 +371,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 blobs[(int)BlobHandle.VirtualIndex.AttributeUsage_AllowMultiple] = new byte[]
                 {
-                    // preable:
+                    // preamble:
                     0x01, 0x00,
                     // target (template parameter):
                     0x00, 0x00, 0x00, 0x00,

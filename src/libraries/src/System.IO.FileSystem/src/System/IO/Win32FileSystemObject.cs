@@ -81,7 +81,7 @@ namespace System.IO
                         Refresh();
                     if (_dataInitialised != 0)
                     {
-                        // Refresh was unable to initialise the data.
+                        // Refresh was unable to initialize the data.
                         // We should normally be throwing an exception here, 
                         // but Exists is supposed to return true or false.
                         return false;
@@ -137,7 +137,7 @@ namespace System.IO
                     Refresh();
                 }
 
-                if (_dataInitialised != 0) // Refresh was unable to initialise the data
+                if (_dataInitialised != 0) // Refresh was unable to initialize the data
                     throw Win32Marshal.GetExceptionForWin32Error(_dataInitialised, _fullPath);
             }
 

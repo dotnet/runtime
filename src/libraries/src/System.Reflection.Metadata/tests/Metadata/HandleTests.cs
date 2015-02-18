@@ -54,7 +54,7 @@ namespace System.Reflection.Metadata.Tests
             assert(default(MethodImplementationHandle), HandleKind.MethodImplementation);
             assert(default(AssemblyFileHandle), HandleKind.AssemblyFile);
 
-            // Bug #: DevDiv: Bug 1048345: [System.Reflection.Metada] For select handles, default(THandle) does not preserve type.
+            // Bug #: DevDiv: Bug 1048345: [System.Reflection.Metadata] For select handles, default(THandle) does not preserve type.
             // Not changing this immediately, because it has been this way for a long time so need to check Roslyn compat.
             // 
             //assertEqual(default(StringHandle), HandleKind.String);

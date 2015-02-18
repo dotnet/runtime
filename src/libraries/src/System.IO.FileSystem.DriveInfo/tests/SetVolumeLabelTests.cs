@@ -88,8 +88,8 @@ namespace System.IO.FileSystem.DriveInfoTests
                 }
             }
 
-            //Scenario 3: Invalid string values. This is really mute since we dont do any error checking in our code. We pass the down to Win32 and report
-            //Any error conditions. And we dont want to test the Win32 API here :-)
+            //Scenario 3: Invalid string values. This is really mute since we don't do any error checking in our code. We pass the down to Win32 and report
+            //Any error conditions. And we don't want to test the Win32 API here :-)
             for (int i = 0; i < drives.Length; i++)
             {
                 if (drives[i].IsReady && drives[i].DriveType != DriveType.CDRom && drives[i].DriveType != DriveType.Network)

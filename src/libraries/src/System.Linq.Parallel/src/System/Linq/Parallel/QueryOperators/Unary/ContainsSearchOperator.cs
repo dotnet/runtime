@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// Contains is quite similar to the any/all operator above. Each partition searches a
     /// subset of elements for a match, and the first one to find a match signals to the rest
-    /// of the partititons to stop searching.
+    /// of the partitions to stop searching.
     /// </summary>
     /// <typeparam name="TInput"></typeparam>
     internal sealed class ContainsSearchOperator<TInput> : UnaryQueryOperator<TInput, bool>
@@ -93,7 +93,7 @@ namespace System.Linq.Parallel
             int partitionCount = inputStream.PartitionCount;
             PartitionedStream<bool, int> outputStream = new PartitionedStream<bool, int>(partitionCount, Util.GetDefaultComparer<int>(), OrdinalIndexState.Correct);
 
-            // Create a shared cancelation variable
+            // Create a shared cancellation variable
             Shared<bool> resultFoundFlag = new Shared<bool>(false);
             for (int i = 0; i < partitionCount; i++)
             {
@@ -126,7 +126,7 @@ namespace System.Linq.Parallel
 
         //---------------------------------------------------------------------------------------
         // This enumerator performs the search over its input data source. It also cancels peer
-        // enumerators when an answer was found, and polls this cancelation flag to stop when
+        // enumerators when an answer was found, and polls this cancellation flag to stop when
         // requested.
         //
 
@@ -191,7 +191,7 @@ namespace System.Linq.Parallel
 
                         if (_resultFoundFlag.Value)
                         {
-                            // If cancelation occurred, it's because a successful answer was found.
+                            // If cancellation occurred, it's because a successful answer was found.
                             return false;
                         }
 

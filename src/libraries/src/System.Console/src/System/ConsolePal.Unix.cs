@@ -117,7 +117,7 @@ namespace System
                     // return the charset from the locale, stripping off everything else
                     string charset = atPos < dotPos ?
                         locale.Substring(dotPos) :                // no modifier
-                        locale.Substring(dotPos, atPos - dotPos); // has modifer
+                        locale.Substring(dotPos, atPos - dotPos); // has modifier
                     return charset.ToLowerInvariant();
                 }
             }
@@ -915,7 +915,7 @@ namespace System
                                         output.Append(elseResult);
                                     }
 
-                                    // Now we should be done (any subsequent elseif logic will have bene handled in the recursive call).
+                                    // Now we should be done (any subsequent elseif logic will have been handled in the recursive call).
                                     if (!AsBool(stack.Pop().Int32))
                                     {
                                         throw new InvalidOperationException(SR.IO_TermInfoInvalid);

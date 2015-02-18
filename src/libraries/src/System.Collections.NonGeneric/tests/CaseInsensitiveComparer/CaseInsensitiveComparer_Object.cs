@@ -23,8 +23,8 @@ public class CaseInsensitiveComparer_Object
             /////////////////////////  START TESTS ////////////////////////////
             ///////////////////////////////////////////////////////////////////
 
-            //[]vanila - the ctor simply sets the ComapreInfo to the current culture - CultureInfo.CurrentCulture.CompareInfo
-            //There is no easy way to test this other than make sure that string comparison is case insenstive
+            //[]vanilla - the ctor simply sets the CompareInfo to the current culture - CultureInfo.CurrentCulture.CompareInfo
+            //There is no easy way to test this other than make sure that string comparison is case insensitive
 
             iCountTestcases++;
 

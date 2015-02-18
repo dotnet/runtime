@@ -78,7 +78,7 @@ namespace System.Linq.Parallel
                 intKeyStream = (PartitionedStream<TSource, int>)(object)inputStream;
             }
 
-            // Create a shared cancelation variable and then return a possibly wrapped new enumerator.
+            // Create a shared cancellation variable and then return a possibly wrapped new enumerator.
             Shared<bool> resultFoundFlag = new Shared<bool>(false);
 
             PartitionedStream<TSource, int> outputStream = new PartitionedStream<TSource, int>(

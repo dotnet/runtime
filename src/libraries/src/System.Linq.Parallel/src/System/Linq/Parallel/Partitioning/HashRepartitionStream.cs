@@ -23,7 +23,7 @@ namespace System.Linq.Parallel
     /// Each partition will "pull" data on-demand instead of partitions "pushing" data, which
     /// allows us to reduce some amount of synchronization overhead.
     ///
-    /// We currently only offer one form of reparitioning via hashing.  This used to be an
+    /// We currently only offer one form of repartitioning via hashing.  This used to be an
     /// abstract base class, but we have eliminated that to get rid of some virtual calls on
     /// hot code paths.  Uses a key selection algorithm with mod'ding to determine destination.
     ///

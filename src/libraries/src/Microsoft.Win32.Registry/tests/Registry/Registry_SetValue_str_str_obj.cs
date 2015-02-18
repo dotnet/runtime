@@ -266,7 +266,7 @@ namespace Microsoft.Win32.RegistryTests
             for (int i = 0; i < keys.Length; i++)
                 Registry.SetValue(_keyString, "ExpandedTest_" + i, "%" + keys[i] + "%");
 
-            //we dont expand for the user, REG_SZ_EXPAND not supported
+            //we don't expand for the user, REG_SZ_EXPAND not supported
             for (int i = 0; i < keys.Length; i++)
             {
                 String result = (String)_rk2.GetValue("ExpandedTest_" + i);
@@ -280,7 +280,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void Test14()
         {
-            // passing emtpy string: Creating REG_SZ key with an empty string value does not add a null terminating char.
+            // passing empty string: Creating REG_SZ key with an empty string value does not add a null terminating char.
             try
             {
                 Registry.SetValue(_keyString, "test_122018", string.Empty);

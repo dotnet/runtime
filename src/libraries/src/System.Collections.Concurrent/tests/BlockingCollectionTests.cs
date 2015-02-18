@@ -83,7 +83,7 @@ namespace System.Collections.Concurrent.Tests
             bc.CompleteAdding();
         }
 
-        // This code was suffering occassional ObjectDisposedExceptions due to
+        // This code was suffering occasional ObjectDisposedExceptions due to
         // the expected race between cts.Dispose and the cts.Cancel coming from the linking sources.
         // Since the change to wait as part of CTS.Dispose, the ODE no longer occurs
         // but we keep the test as a good example of how cleanup of linkedCTS must be carefully handled
@@ -228,7 +228,7 @@ namespace System.Collections.Concurrent.Tests
 
             Assert.Equal(boundedCapacity, blockingQueue.BoundedCapacity);
 
-            // Test for queue properties, Taked item should be i nthe same order of the insertion
+            // Test for queue properties. Taken items should be in the same order of the insertion
             int count = boundedCapacity != -1 ? boundedCapacity : 10;
 
             for (int i = 0; i < count; i++)
@@ -743,13 +743,13 @@ namespace System.Collections.Concurrent.Tests
             Test14_AddAnyTakeAny(10, 10, 16, 1, 9);
         }
 
-        /// <summary>Initializes an array of blocking collections such that all are full except one in case of adds and
+        /// <summary>Initializes an array of blocking collections such that all are full except one in case of Adds and
         /// all are empty except one (the same blocking collection) in case of Takes.
-        /// Adds "numOfAdds" elements to the BlockingCollection and then Takes "numOfTakes" elements and checks
-        /// that the count is as expected, the elements Taked matched those added and verifies the return values of 
+        /// Adds "numOfAdds" elements to the BlockingCollection and then takes "numOfTakes" elements and checks
+        /// that the count is as expected, the elements taken matched those added and verifies the return values of 
         /// TryAdd() and TryTake().</summary>
-        /// <param name="numOfAdds">Number of elements to Add.</param>
-        /// <param name="numOfTakes">Number of elements to Take.</param>
+        /// <param name="numOfAdds">Number of elements to add.</param>
+        /// <param name="numOfTakes">Number of elements to take.</param>
         /// <param name="numOfBlockingCollections">Length of BlockingCollections array.</param>
         /// <param name="indexOfBlockingCollectionUnderTest">Index of the BlockingCollection that will accept the operations.</param>
         /// <param name="boundedCapacity">The bounded capacity of the BlockingCollection under test.</param>
@@ -908,7 +908,7 @@ namespace System.Collections.Concurrent.Tests
             });
         }
 
-        /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
+        /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
         public static void Test17_AddExceptions()
@@ -924,12 +924,12 @@ namespace System.Collections.Concurrent.Tests
                     blockingCollection.TryAdd(0);
                 });
 
-            // test if the underlyingcollection.TryAdd returned flse
+            // test if the underlyingcollection.TryAdd returned false
             BlockingCollection<int> bc = new BlockingCollection<int>(new QueueProxy1<int>());
             Assert.Throws<InvalidOperationException>(() => bc.Add(1));
         }
 
-        /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
+        /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
         public static void Test18_TakeExceptions()
@@ -947,7 +947,7 @@ namespace System.Collections.Concurrent.Tests
                 });
         }
 
-        /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
+        /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
         public static void Test19_AddAnyExceptions()
@@ -973,12 +973,12 @@ namespace System.Collections.Concurrent.Tests
 
             Assert.Throws<ArgumentNullException>(() => BlockingCollection<int>.TryAddToAny(null, 0));
 
-            // test if the underlyingcollection.TryAdd returned flse
+            // test if the underlyingcollection.TryAdd returned false
             BlockingCollection<int> collection = new BlockingCollection<int>(new QueueProxy1<int>());
             Assert.Throws<InvalidOperationException>(() => BlockingCollection<int>.AddToAny(new BlockingCollection<int>[] { collection }, 1) );
         }
 
-        /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
+        /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
         public static void Test20_TakeAnyExceptions()
@@ -998,7 +998,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TryTakeFromAny(new BlockingCollection<int>[0], out item) );
             Assert.Throws<ArgumentNullException>(() => BlockingCollection<int>.TryTakeFromAny(null, out item) );
 
-            // new behaviour for TakeFromAny after Dev10, to throw argumenexception if all the collections are completed, 
+            // new behavior for TakeFromAny after Dev10, to throw ArgumentException if all the collections are completed, 
             // however TryTakeFromAny will return false
             for (int i = 0; i < NUM_OF_COLLECTIONS; ++i)
             {
@@ -1007,7 +1007,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentException>(() => BlockingCollection<int>.TakeFromAny(blockingCollections, out item) );
         }
 
-        /// <summary>Verfies that the correct exceptions are thrown for invalid inputs.</summary>
+        /// <summary>Verifies that the correct exceptions are thrown for invalid inputs.</summary>
         /// <returns>True if test succeeds and false otherwise.</returns>
         [Fact]
         public static void Test21_CopyToExceptions()
@@ -1036,9 +1036,9 @@ namespace System.Collections.Concurrent.Tests
         #region Helper Methods / Classes
 
         /// <summary>Initializes an array of blocking collections (if its not null) such that all are full except one in case 
-        /// of adds and all are empty except one (the same blocking collection) in case of Takes.
-        /// Adds "numOfAdds" elements to the BlockingCollection and then Takes "numOfTakes" elements and checks
-        /// that the count is as expected, the elements Taked matched those added and verifies the return values of 
+        /// of Adds and all are empty except one (the same blocking collection) in case of Takes.
+        /// Adds "numOfAdds" elements to the BlockingCollection and then takes "numOfTakes" elements and checks
+        /// that the count is as expected, the elements taken matched those added and verifies the return values of 
         /// TryAdd() and TryTake().</summary>        
         /// <param name="numOfAdds">Number of elements to Add.</param>
         /// <param name="numOfTakes">Number of elements to Take.</param>
@@ -1225,7 +1225,7 @@ namespace System.Collections.Concurrent.Tests
 
             }
 
-            //Test the new behaviour of TryTakeFromAny after Dev10 to return false if all collections are completed, this is the same as before
+            //Test the new behavior of TryTakeFromAny after Dev10 to return false if all collections are completed, this is the same as before
             // except it was throwing when the timeout is -1, now will return false immediately
 
             var collectionsArray = new[] { new BlockingCollection<int>(), new BlockingCollection<int>() };

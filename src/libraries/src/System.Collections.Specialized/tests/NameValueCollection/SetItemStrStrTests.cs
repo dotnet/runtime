@@ -239,7 +239,7 @@ namespace System.Collections.Specialized.Tests
                 }
             }
 
-            // [] set Item(string) on filled collection - multiple item swith the same key
+            // [] set Item(string) on filled collection - multiple items with the same key
             //
 
             nvc.Clear();
