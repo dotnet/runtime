@@ -1427,7 +1427,7 @@ namespace System.Collections.Concurrent
                         throw new OperationCanceledException(SR.Common_OperationCanceled, externalCancellationToken);
 
 
-                    else if (!linkedTokenSource.IsCancellationRequested)// if no either internal or external cancellation requested
+                    else if (!linkedTokenSource.IsCancellationRequested) // if neither internal nor external cancellation requested
                     {
                         Debug.Assert((index == WaitHandle.WaitTimeout) || (index >= 0 && index < handles.Count));
                         if (index == WaitHandle.WaitTimeout) //case#2
