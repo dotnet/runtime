@@ -171,13 +171,13 @@ namespace System.Linq.Parallel
             object sharedSyncLock = new object();
             Shared<int> sharedCurrentIndex = new Shared<int>(0);
             Shared<int> sharedPartitionCount = new Shared<int>(partitionCount);
-            Shared<bool> sharedExeceptionTracker = new Shared<bool>(false);
+            Shared<bool> sharedExceptionTracker = new Shared<bool>(false);
 
             // Create a new lazy chunking enumerator per partition, sharing the same lock.
             for (int i = 0; i < partitionCount; i++)
             {
                 partitions[i] = new ContiguousChunkLazyEnumerator(
-                    source, sharedExeceptionTracker, sharedSyncLock, sharedCurrentIndex, sharedPartitionCount);
+                    source, sharedExceptionTracker, sharedSyncLock, sharedCurrentIndex, sharedPartitionCount);
             }
 
             return partitions;
