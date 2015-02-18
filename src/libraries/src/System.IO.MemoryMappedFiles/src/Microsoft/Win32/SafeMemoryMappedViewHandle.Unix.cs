@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -10,7 +9,9 @@ namespace Microsoft.Win32.SafeHandles
     {
         protected override bool ReleaseHandle()
         {
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            IntPtr addr = handle;
+            handle = new IntPtr(-1);
+            return Interop.libc.munmap(addr, (IntPtr)base.ByteLength) == 0;
         }
     }
 }
