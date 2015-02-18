@@ -210,7 +210,7 @@ public static class DoubleTests
         Assert.Equal("-8249", i2.ToString("g"));
 
         Double i3 = -2468;
-        Assert.Equal("-2,468.00", i3.ToString("N"));
+        Assert.Equal(string.Format("{0:N}", -2468.00), i3.ToString("N"));
     }
 
     [Fact]
@@ -242,8 +242,8 @@ public static class DoubleTests
     [Fact]
     public static void TestParseNumberStyle()
     {
-        Assert.Equal<Double>((Double)123.1, Double.Parse("123.1", NumberStyles.AllowDecimalPoint));
-        Assert.Equal(1000, Double.Parse("1,000", NumberStyles.AllowThousands));
+        Assert.Equal<Double>((Double)123.1, Double.Parse(string.Format("{0}", 123.1), NumberStyles.AllowDecimalPoint));
+        Assert.Equal(1000, Double.Parse(string.Format("{0}", 1000), NumberStyles.AllowThousands));
         //TODO: Negative tests once we get better exceptions
     }
 
@@ -260,9 +260,11 @@ public static class DoubleTests
     public static void TestParseNumberStyleFormatProvider()
     {
         var nfi = new NumberFormatInfo();
+        nfi.NumberDecimalSeparator = ".";
         Assert.Equal<Double>((Double)123.123, Double.Parse("123.123", NumberStyles.Float, nfi));
 
         nfi.CurrencySymbol = "$";
+        nfi.CurrencyGroupSeparator = ",";
         Assert.Equal(1000, Double.Parse("$1,000", NumberStyles.Currency, nfi));
         //TODO: Negative tests once we get better exception support
     }
@@ -282,16 +284,17 @@ public static class DoubleTests
         Assert.True(Double.TryParse(" 678 ", out i));   // Leading/Trailing whitespace
         Assert.Equal(678, i);
 
-        Assert.True(Double.TryParse("678.90", out i)); // Decimal
+        Assert.True(Double.TryParse((678.90).ToString("F2"), out i)); // Decimal
         Assert.Equal((Double)678.90, i);
 
         Assert.True(Double.TryParse("1E23", out i));   // Exponent
         Assert.Equal((Double)1E23, i);
 
-        Assert.True(Double.TryParse("1,000", out i));  // Thousands
+        Assert.True(Double.TryParse((1000).ToString("N0"), out i));  // Thousands
         Assert.Equal(1000, i);
 
-        Assert.False(Double.TryParse("$1000", out i));  // Currency
+        var nfi = new NumberFormatInfo() { CurrencyGroupSeparator = "" };
+        Assert.False(Double.TryParse((1000).ToString("C0", nfi), out i));  // Currency
         Assert.False(Double.TryParse("abc", out i));    // Hex digits
         Assert.False(Double.TryParse("(135)", out i));  // Parentheses
     }
@@ -301,6 +304,7 @@ public static class DoubleTests
     {
         Double i;
         var nfi = new NumberFormatInfo();
+        nfi.NumberDecimalSeparator = ".";
         Assert.True(Double.TryParse("123.123", NumberStyles.Any, nfi, out i));   // Simple positive
         Assert.Equal((Double)123.123, i);
 
@@ -308,6 +312,7 @@ public static class DoubleTests
         Assert.Equal(123, i);
 
         nfi.CurrencySymbol = "$";
+        nfi.CurrencyGroupSeparator = ",";
         Assert.True(Double.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
         Assert.Equal(1000, i);
 

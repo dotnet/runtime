@@ -144,7 +144,7 @@ public static class Int64Tests
         Assert.Equal("-8249", i2.ToString("g"));
 
         Int64 i3 = -2468;
-        Assert.Equal("-2,468.00", i3.ToString("N"));
+        Assert.Equal(string.Format("{0:N}", -2468.00), i3.ToString("N"));
 
         Int64 i4 = 0x248;
         Assert.Equal("248", i4.ToString("x"));
@@ -183,7 +183,7 @@ public static class Int64Tests
     public static void TestParseNumberStyle()
     {
         Assert.Equal(0x123, Int64.Parse("123", NumberStyles.HexNumber));
-        Assert.Equal(1000, Int64.Parse("1,000", NumberStyles.AllowThousands));
+        Assert.Equal(1000, Int64.Parse((1000).ToString("N0"), NumberStyles.AllowThousands));
         //TODO: Negative tests once we get better exceptions
     }
 
@@ -203,6 +203,7 @@ public static class Int64Tests
         Assert.Equal(0x123, Int64.Parse("123", NumberStyles.HexNumber, nfi));
 
         nfi.CurrencySymbol = "$";
+        nfi.CurrencyGroupSeparator = ",";
         Assert.Equal(1000, Int64.Parse("$1,000", NumberStyles.Currency, nfi));
         //TODO: Negative tests once we get better exception support
     }
@@ -222,10 +223,11 @@ public static class Int64Tests
         Assert.True(Int64.TryParse(" 678 ", out i));   // Leading/Trailing whitespace
         Assert.Equal(678, i);
 
-        Assert.False(Int64.TryParse("$1000", out i));  // Currency
-        Assert.False(Int64.TryParse("1,000", out i));  // Thousands
+        var nfi = new NumberFormatInfo() { CurrencyGroupSeparator = "" };
+        Assert.False(Int64.TryParse((1000).ToString("C0", nfi), out i));  // Currency
+        Assert.False(Int64.TryParse((1000).ToString("N0"), out i));  // Thousands
         Assert.False(Int64.TryParse("abc", out i));    // Hex digits
-        Assert.False(Int64.TryParse("678.90", out i)); // Decimal
+        Assert.False(Int64.TryParse((678.90).ToString("F2"), out i)); // Decimal
         Assert.False(Int64.TryParse("(135)", out i));  // Parentheses
         Assert.False(Int64.TryParse("1E23", out i));   // Exponent
     }
@@ -242,6 +244,7 @@ public static class Int64Tests
         Assert.Equal(0x123, i);
 
         nfi.CurrencySymbol = "$";
+        nfi.CurrencyGroupSeparator = ",";
         Assert.True(Int64.TryParse("$1,000", NumberStyles.Currency, nfi, out i)); // Currency/Thousands postive
         Assert.Equal(1000, i);
 
@@ -249,6 +252,7 @@ public static class Int64Tests
         Assert.True(Int64.TryParse("abc", NumberStyles.HexNumber, nfi, out i));   // Hex Number positive
         Assert.Equal(0xabc, i);
 
+        nfi.NumberDecimalSeparator = ".";
         Assert.False(Int64.TryParse("678.90", NumberStyles.Integer, nfi, out i));  // Decimal
         Assert.False(Int64.TryParse(" 678 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
 
