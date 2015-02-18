@@ -413,11 +413,6 @@ namespace System.Text
 #endif
         public static Encoding GetEncoding(int codepage)
         {
-// TODO: Remove the PLATFOM_UNIX specific code in favor of there regular path.  Right the regular path causes exceptions to be thrown
-//       which hangs the runtime on Unix.
-#if PLATFORM_UNIX            
-            return UTF8;
-#else
             Encoding result = EncodingProvider.GetEncodingFromProvider(codepage);
             if (result != null)
                 return result;
@@ -552,7 +547,6 @@ namespace System.Text
 
             }
             return result;
-#endif
         }
 
         [Pure]
