@@ -42,12 +42,8 @@ NESTED_END FastCallFinalizeWorker, _TEXT
 
 NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHandler
         push_nonvol_reg rbx             // save nonvolatile registers
-        .cfi_def_cfa_offset 16          //
         push_nonvol_reg rbp             // 
-        .cfi_adjust_cfa_offset 8        //
-        .cfi_offset rbp, -24            //
         set_frame rbp, 0                // set frame pointer
-        .cfi_def_cfa_register rbp       //
         lea     rsp, [rsp - 8]          // ensure proper alignment of the rsp
 
         END_PROLOGUE
