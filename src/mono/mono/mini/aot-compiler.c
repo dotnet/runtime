@@ -7338,11 +7338,8 @@ emit_code (MonoAotCompile *acfg)
 			emit_method_code (acfg, cfg);
 	}
 
-	sprintf (symbol, "methods_end");
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment_code (acfg, 8);
-	emit_label (acfg, symbol);
-
 	emit_label (acfg, "jit_code_end");
 
 	/* To distinguish it from the next symbol */
@@ -8317,7 +8314,6 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_pointer (acfg, "llvm_got_info_offsets");
 	else
 		emit_pointer (acfg, NULL);
-	emit_pointer (acfg, "methods_end");
 	emit_pointer (acfg, "unwind_info");
 	emit_pointer (acfg, "mem_end");
 	emit_pointer (acfg, "image_table");
