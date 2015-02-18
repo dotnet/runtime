@@ -13,13 +13,6 @@
   <PropertyGroup>
     <!-- Explicity set the OutDir as it is used by the packaging targets -->
     <OutDir Condition="'$(OutDir)'==''">$(BaseOutputPathWithConfig)</OutDir>
-    
-    <!--
-      Producing packages is currently broken after the recent buildtools update
-      because the GetPackageVersion task gets an incorrect version number.
-      Git hub issue: https://github.com/dotnet/corefx/issues/758
-    -->
-    <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
   
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
