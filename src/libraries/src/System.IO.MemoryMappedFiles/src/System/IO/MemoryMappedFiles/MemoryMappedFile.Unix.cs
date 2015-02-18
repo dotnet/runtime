@@ -15,13 +15,13 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static unsafe SafeMemoryMappedFileHandle CreateCore(
-            SafeFileHandle fileHandle, String mapName, 
+            SafeFileHandle fileHandle, string mapName, 
             HandleInheritability inheritability, MemoryMappedFileAccess access, 
-            MemoryMappedFileOptions options, Int64 capacity)
+            MemoryMappedFileOptions options, long capacity)
         {
             if (mapName != null)
             {
-                throw GetNamedMapsNotSupportedException();
+                throw CreateNamedMapsNotSupportedException();
             }
 
             return new SafeMemoryMappedFileHandle(fileHandle, inheritability, access, options, capacity);
@@ -32,9 +32,9 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateOrOpenCore(
-            String mapName, 
+            string mapName, 
             HandleInheritability inheritability, MemoryMappedFileAccess access,
-            MemoryMappedFileOptions options, Int64 capacity)
+            MemoryMappedFileOptions options, long capacity)
         {
             // Since we don't support mapName != null, CreateOrOpenCore can't
             // be used to Open an existing map, and thus is identical to CreateCore.
@@ -48,9 +48,9 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static SafeMemoryMappedFileHandle OpenCore(
-            String mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, bool createOrOpen)
+            string mapName, HandleInheritability inheritability, MemoryMappedFileAccess access, bool createOrOpen)
         {
-            throw GetNamedMapsNotSupportedException();
+            throw CreateNamedMapsNotSupportedException();
         }
 
         /// <summary>
@@ -60,9 +60,9 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static SafeMemoryMappedFileHandle OpenCore(
-            String mapName, HandleInheritability inheritability, MemoryMappedFileRights rights, bool createOrOpen)
+            string mapName, HandleInheritability inheritability, MemoryMappedFileRights rights, bool createOrOpen)
         {
-            throw GetNamedMapsNotSupportedException();
+            throw CreateNamedMapsNotSupportedException();
         }
 
         // -----------------------------
@@ -70,7 +70,7 @@ namespace System.IO.MemoryMappedFiles
         // -----------------------------
 
         /// <summary>Gets an exception indicating that named maps are not supported on this platform.</summary>
-        private static Exception GetNamedMapsNotSupportedException()
+        private static Exception CreateNamedMapsNotSupportedException()
         {
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }

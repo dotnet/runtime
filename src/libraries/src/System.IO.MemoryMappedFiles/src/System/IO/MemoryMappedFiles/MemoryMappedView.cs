@@ -10,13 +10,13 @@ namespace System.IO.MemoryMappedFiles
     internal partial class MemoryMappedView : IDisposable
     {
         private readonly SafeMemoryMappedViewHandle _viewHandle;
-        private readonly Int64 _pointerOffset;
-        private readonly Int64 _size;
+        private readonly long _pointerOffset;
+        private readonly long _size;
         private readonly MemoryMappedFileAccess _access;
 
         [SecurityCritical]
-        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, Int64 pointerOffset,
-                                            Int64 size, MemoryMappedFileAccess access)
+        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
+                                        long size, MemoryMappedFileAccess access)
         {
             _viewHandle = viewHandle;
             _pointerOffset = pointerOffset;
@@ -30,12 +30,12 @@ namespace System.IO.MemoryMappedFiles
             get { return _viewHandle; }
         }
 
-        public Int64 PointerOffset
+        public long PointerOffset
         {
             get { return _pointerOffset; }
         }
 
-        public Int64 Size
+        public long Size
         {
             get { return _size; }
         }
@@ -81,6 +81,8 @@ namespace System.IO.MemoryMappedFiles
             long size, long offset, int allocationGranularity,
             out ulong newSize, out ulong extraMemNeeded, out ulong newOffset)
         {
+            Debug.Assert(size >= 0);
+            Debug.Assert(offset >= 0);
             Debug.Assert(allocationGranularity > 0);
 
             // Determine how much extra memory needs to be allocated to align on the size of allocationGranularity.
@@ -90,10 +92,7 @@ namespace System.IO.MemoryMappedFiles
             newOffset = (ulong)offset - extraMemNeeded;
             newSize = (size != MemoryMappedFile.DefaultSize) ? (ulong)size + extraMemNeeded : 0;
 
-            Debug.Assert(newOffset >= 0);
-            Debug.Assert(size >= 0);
-
-            if (IntPtr.Size == 4 && newSize > UInt32.MaxValue)
+            if (IntPtr.Size == 4 && newSize > uint.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
             }
