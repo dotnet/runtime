@@ -69,10 +69,6 @@ libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
 libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 endif
 
-if PLATFORM_ANDROID
-libmono_profiler_log_la_LIBADD += $(GLIB_LIBS)
-endif
-
 mprof_report_SOURCES = decode.c
 mprof_report_LDADD = $(Z_LIBS)
 
