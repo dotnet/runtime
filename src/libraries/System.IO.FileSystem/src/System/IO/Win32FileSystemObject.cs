@@ -16,7 +16,7 @@ namespace System.IO
             // We use this field in conjunction with the Refresh method which should never throw.
             // If we succeed we store a zero, on failure we store the HResult so that we can
             // throw an appropriate error when attempting to access the cached info.
-            internal int _dataInitialised;
+            internal int _dataInitialized;
 
             private readonly string _fullPath;
 
@@ -24,7 +24,7 @@ namespace System.IO
             {
                 _asDirectory = asDirectory;
                 _fullPath = fullPath;
-                _dataInitialised = -1;
+                _dataInitialized = -1;
             }
 
             public Win32FileSystemObject(string fullPath, Interop.WIN32_FIND_DATA findData, bool asDirectory)
@@ -41,7 +41,7 @@ namespace System.IO
                 _data.ftLastWriteTimeHigh = findData.ftLastWriteTime.dwHighDateTime;
                 _data.fileSizeHigh = findData.nFileSizeHigh;
                 _data.fileSizeLow = findData.nFileSizeLow;
-                _dataInitialised = 0;
+                _dataInitialized = 0;
             }
 
             public FileAttributes Attributes
@@ -54,7 +54,7 @@ namespace System.IO
                 set
                 {
                     SetAttributesInternal(_fullPath, value);
-                    _dataInitialised = -1;
+                    _dataInitialized = -1;
                 }
             }
 
@@ -69,7 +69,7 @@ namespace System.IO
                 set
                 {
                     SetCreationTimeInternal(_fullPath, value, _asDirectory);
-                    _dataInitialised = -1;
+                    _dataInitialized = -1;
                 }
             }
 
@@ -77,9 +77,9 @@ namespace System.IO
             {
                 get
                 {
-                    if (_dataInitialised == -1)
+                    if (_dataInitialized == -1)
                         Refresh();
-                    if (_dataInitialised != 0)
+                    if (_dataInitialized != 0)
                     {
                         // Refresh was unable to initialize the data.
                         // We should normally be throwing an exception here, 
@@ -101,7 +101,7 @@ namespace System.IO
                 set
                 {
                     SetLastAccessTimeInternal(_fullPath, value, _asDirectory);
-                    _dataInitialised = -1;
+                    _dataInitialized = -1;
                 }
             }
 
@@ -116,7 +116,7 @@ namespace System.IO
                 set
                 {
                     SetLastWriteTimeInternal(_fullPath, value, _asDirectory);
-                    _dataInitialised = -1;
+                    _dataInitialized = -1;
                 }
             }
 
@@ -131,21 +131,21 @@ namespace System.IO
 
             private void EnsureDataInitialized()
             {
-                if (_dataInitialised == -1)
+                if (_dataInitialized == -1)
                 {
                     _data = new Interop.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
                 }
 
-                if (_dataInitialised != 0) // Refresh was unable to initialize the data
-                    throw Win32Marshal.GetExceptionForWin32Error(_dataInitialised, _fullPath);
+                if (_dataInitialized != 0) // Refresh was unable to initialize the data
+                    throw Win32Marshal.GetExceptionForWin32Error(_dataInitialized, _fullPath);
             }
 
             public void Refresh()
             {
                 // This should not throw, instead we store the result so that we can throw it
                 // when someone actually accesses a property
-                _dataInitialised = FillAttributeInfo(_fullPath, ref _data, false, false);
+                _dataInitialized = FillAttributeInfo(_fullPath, ref _data, false, false);
             }
         }
     }
