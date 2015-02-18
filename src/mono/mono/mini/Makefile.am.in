@@ -665,8 +665,10 @@ else
 endif
 
 check-seq-points: mono $(regtests)
+	rm -f TestResults_op_il_seq_point.xml
 	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || exit 1; done
 	for i in $(regtests); do ./test_op_il_seq_point.sh $$i --aot || exit 1; done
+	./test_op_il_seq_point_headerfooter.sh
 
 gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
@@ -728,7 +730,7 @@ docu: mini.sgm
 check-local: rcheck check-seq-points
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out
+	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe regressionexitcode.out TestResults_op_il_seq_point.xml
 
 pkgconfigdir = $(libdir)/pkgconfig
 
@@ -751,6 +753,7 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)					\
 	test_op_il_seq_point.sh			\
+	test_op_il_seq_point_headerfooter.sh	\
 	Makefile.am.in
 
 version.h: Makefile
