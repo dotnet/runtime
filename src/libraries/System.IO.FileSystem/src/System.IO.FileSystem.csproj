@@ -62,7 +62,7 @@
     <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
-    <Compile Include="System\IO\FileStream.Handle.Win32.cs" />
+    <Compile Include="System\IO\FileStream.Win32.cs" />
     <Compile Include="System\IO\Win32FileStream.cs" />
     <Compile Include="System\IO\Win32FileStreamAsyncResult.cs" />
     <Compile Include="System\IO\Win32FileSystem.cs" />
@@ -96,7 +96,7 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(OS)' == 'Unix'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
-    <Compile Include="System\IO\FileStream.Handle.Unix.cs" />
+    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\UnixFileStream.cs" />
     <Compile Include="System\IO\UnixFileSystem.cs" />
