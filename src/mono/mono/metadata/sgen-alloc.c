@@ -524,7 +524,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		arr->max_length = (mono_array_size_t)max_length;
 		EXIT_CRITICAL_REGION;
-		return arr;
+		goto done;
 	}
 	EXIT_CRITICAL_REGION;
 #endif
@@ -539,8 +539,11 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 
 	arr->max_length = (mono_array_size_t)max_length;
 
+
 	UNLOCK_GC;
 
+ done:
+	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_par_object_get_size (vtable, (MonoObject*)arr)), "Vector has incorrect size.");
 	return arr;
 }
 
@@ -564,7 +567,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 		bounds = (MonoArrayBounds*)((char*)arr + size - bounds_size);
 		arr->bounds = bounds;
 		EXIT_CRITICAL_REGION;
-		return arr;
+		goto done;
 	}
 	EXIT_CRITICAL_REGION;
 #endif
@@ -584,6 +587,8 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 
 	UNLOCK_GC;
 
+ done:
+	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_par_object_get_size (vtable, (MonoObject*)arr)), "Array has incorrect size.");
 	return arr;
 }
 
