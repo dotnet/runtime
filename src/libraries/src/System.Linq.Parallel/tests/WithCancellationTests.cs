@@ -517,7 +517,7 @@ namespace Test
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2.  failed.  AggregateExcption was expected, but some other exception occured." + e.ToString()));
+                Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2.  failed.  AggregateException was expected, but some other exception occured." + e.ToString()));
             }
         }
 

@@ -419,7 +419,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Otherwise, we try to postpone if a source was provided
                     else if (source != null)
                     {
-                        Debug.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mopde.");
+                        Debug.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mode.");
 
                         // We always postpone using _nonGreedyState even if we are being greedy with bounding
                         _nonGreedyState.PostponedMessages.Push(source, messageHeader);

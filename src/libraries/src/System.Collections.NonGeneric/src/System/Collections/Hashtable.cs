@@ -653,7 +653,7 @@ namespace System.Collections
             UpdateVersion();
             _isWriterInProgress = false;
             // minimum size of hashtable is 3 now and maximum loadFactor is 0.72 now.
-            Debug.Assert(_loadsize < newsize, "Our current implementaion means this is not possible.");
+            Debug.Assert(_loadsize < newsize, "Our current implementation means this is not possible.");
             return;
         }
 
