@@ -120,7 +120,7 @@ namespace Microsoft.Win32.RegistryTests
 
             if (_rk2.SubKeyCount != 10)
             {
-                Assert.False(true, "Error Incorrect number of subkeys , coun==" + _rk2.SubKeyCount);
+                Assert.False(true, "Error Incorrect number of subkeys , count==" + _rk2.SubKeyCount);
             }
             for (int i = 0; i < 10; i++)
             {

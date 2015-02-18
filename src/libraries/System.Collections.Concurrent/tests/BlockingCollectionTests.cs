@@ -1193,7 +1193,7 @@ namespace System.Collections.Concurrent.Tests
                             numOfTakes,
                             boundedCapacity,
                             indexOfBlockingCollectionUnderTest);
-                        Assert.False(true, String.Format(" > test failed - Taked elements differ : itemFromBlockingCollection = {0}, itemFromConcurrentCollection = {1}",
+                        Assert.False(true, String.Format(" > test failed - Taken elements differ : itemFromBlockingCollection = {0}, itemFromConcurrentCollection = {1}",
                                             itemFromBlockingCollection,
                                             itemFromConcurrentCollection));
                     }
@@ -1235,7 +1235,7 @@ namespace System.Collections.Concurrent.Tests
             int index = BlockingCollection<int>.TryTakeFromAny(collectionsArray, out result, Timeout.Infinite);
             if (index != -1)
             {
-                Assert.False(true, " > test failed - TryTakeFromAny succeeded and exepected failure because all collections are completed");
+                Assert.False(true, " > test failed - TryTakeFromAny succeeded and expected failure because all collections are completed");
             }
         }
 

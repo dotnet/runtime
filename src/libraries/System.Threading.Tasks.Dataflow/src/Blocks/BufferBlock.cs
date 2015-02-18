@@ -135,7 +135,7 @@ namespace System.Threading.Tasks.Dataflow
                 else if (source != null)
                 {
                     Debug.Assert(_boundingState != null && _boundingState.PostponedMessages != null,
-                        "PostponedMessages must have been initialized during construction in bounding mopde.");
+                        "PostponedMessages must have been initialized during construction in bounding mode.");
 
                     _boundingState.PostponedMessages.Push(source, messageHeader);
                     return DataflowMessageStatus.Postponed;

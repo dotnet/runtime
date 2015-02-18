@@ -120,7 +120,7 @@ namespace System.Linq.Parallel
                         {
                             partitions[i] = new ArrayContiguousIndexRangeEnumerator(sourceAsArray, partitionCount, i);
                         }
-                        TraceHelpers.TraceInfo("ContigousRangePartitionExchangeStream::MakePartitions - (array) #{0} {1}", i, maxChunkSize);
+                        TraceHelpers.TraceInfo("ContiguousRangePartitionExchangeStream::MakePartitions - (array) #{0} {1}", i, maxChunkSize);
                     }
                     else
                     {
@@ -133,7 +133,7 @@ namespace System.Linq.Parallel
                         {
                             partitions[i] = new ListContiguousIndexRangeEnumerator(sourceAsList, partitionCount, i);
                         }
-                        TraceHelpers.TraceInfo("ContigousRangePartitionExchangeStream::MakePartitions - (list) #{0} {1})", i, maxChunkSize);
+                        TraceHelpers.TraceInfo("ContiguousRangePartitionExchangeStream::MakePartitions - (list) #{0} {1})", i, maxChunkSize);
                     }
                 }
 
@@ -343,7 +343,7 @@ namespace System.Linq.Parallel
 
             internal ArrayContiguousIndexRangeEnumerator(T[] data, int partitionCount, int partitionIndex)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");
@@ -415,7 +415,7 @@ namespace System.Linq.Parallel
 
             internal ListIndexRangeEnumerator(IList<T> data, int partitionCount, int partitionIndex, int maxChunkSize)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");
@@ -521,7 +521,7 @@ namespace System.Linq.Parallel
 
             internal ListContiguousIndexRangeEnumerator(IList<T> data, int partitionCount, int partitionIndex)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");

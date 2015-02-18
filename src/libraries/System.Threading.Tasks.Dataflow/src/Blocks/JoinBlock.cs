@@ -893,7 +893,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Otherwise, we try to postpone if a source was provided
                 else if (source != null)
                 {
-                    Debug.Assert(_nonGreedy != null, "_nonGreedy must have been initialized during construction in non-greedy mopde.");
+                    Debug.Assert(_nonGreedy != null, "_nonGreedy must have been initialized during construction in non-greedy mode.");
 
                     // Postpone the message now and kick off an async two-phase consumption.
                     _nonGreedy.PostponedMessages.Push(source, messageHeader);

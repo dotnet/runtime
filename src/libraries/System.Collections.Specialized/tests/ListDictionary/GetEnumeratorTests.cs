@@ -227,28 +227,28 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr2 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr2))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // will return just removed item
             DictionaryEntry de2 = en.Entry;
             if (!de.Equals(de2))
             {
-                Assert.False(true, string.Format("Error, Entry returned different value after midification"));
+                Assert.False(true, string.Format("Error, Entry returned different value after modification"));
             }
 
             // will return just removed item
             Object k2 = en.Key;
             if (!k.Equals(k2))
             {
-                Assert.False(true, string.Format("Error, Key returned different value after midification"));
+                Assert.False(true, string.Format("Error, Key returned different value after modification"));
             }
 
             // will return just removed item
             Object v2 = en.Value;
             if (!v.Equals(v2))
             {
-                Assert.False(true, string.Format("Error, Value returned different value after midification"));
+                Assert.False(true, string.Format("Error, Value returned different value after modification"));
             }
 
             // exception expected
@@ -288,28 +288,28 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr3 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr3))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // will return just removed item
             de2 = en.Entry;
             if (!de.Equals(de2))
             {
-                Assert.False(true, string.Format("Error, Entry returned different value after midification"));
+                Assert.False(true, string.Format("Error, Entry returned different value after modification"));
             }
 
             // will return just removed item
             k2 = en.Key;
             if (!k.Equals(k2))
             {
-                Assert.False(true, string.Format("Error, Key returned different value after midification"));
+                Assert.False(true, string.Format("Error, Key returned different value after modification"));
             }
 
             // will return just removed item
             v2 = en.Value;
             if (!v.Equals(v2))
             {
-                Assert.False(true, string.Format("Error, Value returned different value after midification"));
+                Assert.False(true, string.Format("Error, Value returned different value after modification"));
             }
 
             // exception expected

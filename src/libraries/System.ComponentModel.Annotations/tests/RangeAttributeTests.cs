@@ -30,8 +30,8 @@ namespace System.ComponentModel.DataAnnotations
         [Fact]
         public static void Can_construct_and_get_minimum_and_maximum_for_type_with_strings_constructor()
         {
-            var attribute = new RangeAttribute(null, "SomeMimumum", "SomeMaximum");
-            Assert.Equal("SomeMimumum", attribute.Minimum);
+            var attribute = new RangeAttribute(null, "SomeMinimum", "SomeMaximum");
+            Assert.Equal("SomeMinimum", attribute.Minimum);
             Assert.Equal("SomeMaximum", attribute.Maximum);
             Assert.Equal(null, attribute.OperandType);
         }

@@ -93,7 +93,7 @@ namespace MS.Internal.Xml.XPath
                     return currentNode;
                 }
             }
-            Debug.Fail("Algorithm error: we missed the centinel node");
+            Debug.Fail("Algorithm error: we missed the sentinel node");
             return null;
         }
 
