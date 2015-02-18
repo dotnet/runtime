@@ -2374,8 +2374,10 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 	table = (gint32*)p;
 
 	if (fde_count) {
-		*code_start = amodule->code + amodule->code_offsets [table [0]];
-		*code_end = *code_start + amodule->code_offsets [table [(fde_count - 1) * 2]] + table [fde_count * 2];
+		g_assert (fde_count != 1);
+		g_assert (table [0] == -1);
+		*code_start = amodule->code + amodule->code_offsets [table [2]];
+		*code_end = amodule->code + amodule->code_offsets [table [(fde_count - 1) * 2]] + table [fde_count * 2];
 	}
 }
 
