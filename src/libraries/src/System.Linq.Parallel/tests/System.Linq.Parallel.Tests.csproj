@@ -13,7 +13,6 @@
     <SignAssembly>false</SignAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NuGetPackageImportStamp>8be98411</NuGetPackageImportStamp>
-    <CoverageEnabledForProject>false</CoverageEnabledForProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
