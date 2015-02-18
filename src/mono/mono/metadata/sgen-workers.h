@@ -21,38 +21,28 @@
 #ifndef __MONO_SGEN_WORKER_H__
 #define __MONO_SGEN_WORKER_H__
 
+#include "mono/metadata/sgen-thread-pool.h"
+
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
 	int index;
-	MonoNativeThreadId thread;
 	void *major_collector_data;
 
 	SgenGrayQueue private_gray_queue; /* only read/written by worker thread */
 };
 
-typedef void (*JobFunc) (WorkerData *worker_data, void *job_data);
-
-typedef struct _JobQueueEntry JobQueueEntry;
-struct _JobQueueEntry {
-	const char *name;
-	JobFunc func;
-	void *data;
-
-	volatile JobQueueEntry *next;
-};
-
 void sgen_workers_init (int num_workers);
 void sgen_workers_start_all_workers (void);
-gboolean sgen_workers_have_started (void);
 void sgen_workers_ensure_awake (void);
 void sgen_workers_init_distribute_gray_queue (void);
-void sgen_workers_enqueue_job (const char *name, JobFunc func, void *data);
+void sgen_workers_enqueue_job (SgenThreadPoolJob *job);
 void sgen_workers_wait_for_jobs_finished (void);
 void sgen_workers_distribute_gray_queue_sections (void);
 void sgen_workers_reset_data (void);
 void sgen_workers_join (void);
 gboolean sgen_workers_all_done (void);
 gboolean sgen_workers_are_working (void);
+void sgen_workers_wait (void);
 SgenSectionGrayQueue* sgen_workers_get_distribute_section_gray_queue (void);
 
 void sgen_workers_signal_start_nursery_collection_and_wait (void);

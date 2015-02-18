@@ -30,6 +30,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-protocol.h"
 #include "metadata/sgen-memory-governor.h"
+#include "metadata/sgen-thread-pool.h"
 #include "metadata/profiler-private.h"
 #include "utils/mono-time.h"
 #include "utils/dtrace.h"
@@ -397,7 +398,7 @@ sgen_is_thread_in_current_stw (SgenThreadInfo *info)
 	We can't suspend the workers that will do all the heavy lifting.
 	FIXME Use some state bit in SgenThreadInfo for this.
 	*/
-	if (sgen_is_worker_thread (mono_thread_info_get_tid (info))) {
+	if (sgen_thread_pool_is_thread_pool_thread (mono_thread_info_get_tid (info))) {
 		return FALSE;
 	}
 

@@ -31,6 +31,7 @@
 #include "metadata/sgen-gc.h"
 #include "metadata/sgen-archdep.h"
 #include "metadata/sgen-protocol.h"
+#include "metadata/sgen-thread-pool.h"
 #include "metadata/object-internals.h"
 #include "metadata/gc-internal.h"
 
@@ -116,7 +117,7 @@ sgen_thread_handshake (BOOL suspend)
 
 	cur_thread->suspend_done = TRUE;
 	FOREACH_THREAD_SAFE (info) {
-		if (info == cur_thread || sgen_is_worker_thread (mono_thread_info_get_tid (info)))
+		if (info == cur_thread || sgen_thread_pool_is_thread_pool_thread (mono_thread_info_get_tid (info)))
 			continue;
 
 		info->suspend_done = FALSE;

@@ -392,8 +392,6 @@ gboolean sgen_resume_thread (SgenThreadInfo *info);
 void sgen_wait_for_suspend_ack (int count);
 void sgen_os_init (void);
 
-gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
-
 void sgen_update_heap_boundaries (mword low, mword high);
 
 void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags);
@@ -421,7 +419,7 @@ enum {
 	INTERNAL_MEM_MS_BLOCK_INFO_SORT,
 	INTERNAL_MEM_EPHEMERON_LINK,
 	INTERNAL_MEM_WORKER_DATA,
-	INTERNAL_MEM_WORKER_JOB_DATA,
+	INTERNAL_MEM_THREAD_POOL_JOB,
 	INTERNAL_MEM_BRIDGE_DATA,
 	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE,
 	INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY,
@@ -433,7 +431,6 @@ enum {
 	INTERNAL_MEM_TARJAN_BRIDGE_HASH_TABLE_ENTRY,
 	INTERNAL_MEM_TARJAN_OBJ_BUCKET,
 	INTERNAL_MEM_BRIDGE_DEBUG,
-	INTERNAL_MEM_JOB_QUEUE_ENTRY,
 	INTERNAL_MEM_TOGGLEREF_DATA,
 	INTERNAL_MEM_CARDTABLE_MOD_UNION,
 	INTERNAL_MEM_BINARY_PROTOCOL,
@@ -613,12 +610,13 @@ void sgen_split_nursery_init (SgenMinorCollector *collector);
 /* Updating references */
 
 #ifdef SGEN_CHECK_UPDATE_REFERENCE
+gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread) MONO_INTERNAL;
 static inline void
 sgen_update_reference (void **p, void *o, gboolean allow_null)
 {
 	if (!allow_null)
 		SGEN_ASSERT (0, o, "Cannot update a reference with a NULL pointer");
-	SGEN_ASSERT (0, !sgen_is_worker_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
+	SGEN_ASSERT (0, !sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
 	*p = o;
 }
 
@@ -654,6 +652,7 @@ typedef struct _SgenMajorCollector SgenMajorCollector;
 struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_concurrent;
+	gboolean needs_thread_pool;
 	gboolean supports_cardtable;
 	gboolean sweeps_lazily;
 
@@ -707,7 +706,6 @@ struct _SgenMajorCollector {
 	size_t (*get_bytes_survived_last_sweep) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
-	gboolean (*is_worker_thread) (MonoNativeThreadId thread);
 	void (*post_param_init) (SgenMajorCollector *collector);
 	void* (*alloc_worker_data) (void);
 	void (*init_worker_thread) (void *data);

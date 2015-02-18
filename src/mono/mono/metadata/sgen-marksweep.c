@@ -804,12 +804,13 @@ set_sweep_state (int new, int expected)
 
 static gboolean ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *have_checked);
 
-static SgenThreadPoolJob sweep_job;
+static SgenThreadPoolJob * volatile sweep_job;
 
 static void
 major_finish_sweep_checking (void)
 {
 	int block_index;
+	SgenThreadPoolJob *job;
 
  retry:
 	switch (sweep_state) {
@@ -841,7 +842,10 @@ major_finish_sweep_checking (void)
 	set_sweep_state (SWEEP_STATE_SWEEPING, SWEEP_STATE_SWEEPING_AND_ITERATING);
 
  wait:
-	sgen_thread_pool_job_wait (&sweep_job);
+	job = sweep_job;
+	if (job)
+		sgen_thread_pool_job_wait (job);
+	SGEN_ASSERT (0, !sweep_job, "Why did the sweep job not null itself?");
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "How is the sweep job done but we're not swept?");
 }
 
@@ -1061,7 +1065,7 @@ static void
 major_copy_or_mark_object_with_evacuation_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
 {
 	SGEN_ASSERT (9, sgen_concurrent_collection_in_progress (), "Why are we scanning concurrently when there's no concurrent collection on?");
-	SGEN_ASSERT (9, !sgen_workers_are_working () || sgen_is_worker_thread (mono_native_thread_id_get ()), "We must not scan from two threads at the same time!");
+	SGEN_ASSERT (9, !sgen_workers_are_working () || sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "We must not scan from two threads at the same time!");
 
 	g_assert (!SGEN_OBJECT_IS_FORWARDED (obj));
 
@@ -1523,7 +1527,7 @@ ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *
 }
 
 static void
-sweep_job_func (SgenThreadPoolJob *job)
+sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 {
 	int block_index;
 	int num_blocks = num_major_sections_before_sweep;
@@ -1566,6 +1570,8 @@ sweep_job_func (SgenThreadPoolJob *job)
 	sgen_pointer_queue_remove_nulls (&allocated_blocks);
 
 	sweep_finish ();
+
+	sweep_job = NULL;
 }
 
 static void
@@ -1611,11 +1617,12 @@ major_sweep (void)
 	num_major_sections_before_sweep = num_major_sections;
 	num_major_sections_freed_in_sweep = 0;
 
+	SGEN_ASSERT (0, !sweep_job, "We haven't finished the last sweep?");
 	if (concurrent_sweep) {
-		sgen_thread_pool_job_init (&sweep_job, sweep_job_func);
-		sgen_thread_pool_job_enqueue (&sweep_job);
+		sweep_job = sgen_thread_pool_job_alloc ("sweep", sweep_job_func, sizeof (SgenThreadPoolJob));
+		sgen_thread_pool_job_enqueue (sweep_job);
 	} else {
-		sweep_job_func (NULL);
+		sweep_job_func (NULL, NULL);
 	}
 }
 
@@ -2339,6 +2346,7 @@ static void
 post_param_init (SgenMajorCollector *collector)
 {
 	collector->sweeps_lazily = lazy_sweep;
+	collector->needs_thread_pool = concurrent_mark || concurrent_sweep;
 }
 
 static void
@@ -2391,13 +2399,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->section_size = MAJOR_SECTION_SIZE;
 
 	concurrent_mark = is_concurrent;
-	if (is_concurrent) {
-		collector->is_concurrent = TRUE;
+	collector->is_concurrent = is_concurrent;
+	collector->needs_thread_pool = is_concurrent || concurrent_sweep;
+	if (is_concurrent)
 		collector->want_synchronous_collection = &want_evacuation;
-	} else {
-		collector->is_concurrent = FALSE;
+	else
 		collector->want_synchronous_collection = NULL;
-	}
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 
@@ -2475,9 +2482,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 	mono_mutex_init (&scanned_objects_list_lock);
 #endif
-
-	if (concurrent_sweep)
-		sgen_thread_pool_init (1);
 
 	SGEN_ASSERT (0, SGEN_MAX_SMALL_OBJ_SIZE <= MS_BLOCK_FREE / 2, "MAX_SMALL_OBJ_SIZE must be at most MS_BLOCK_FREE / 2");
 

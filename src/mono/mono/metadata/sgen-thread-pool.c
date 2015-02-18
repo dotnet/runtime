@@ -34,6 +34,10 @@ static MonoNativeThreadId thread;
 
 /* Only accessed with the lock held. */
 static SgenPointerQueue job_queue;
+static volatile gboolean idle_working;
+
+static SgenThreadPoolThreadInitFunc thread_init_func;
+static SgenThreadPoolIdleJobFunc idle_job_func;
 
 enum {
 	STATE_WAITING,
@@ -43,64 +47,93 @@ enum {
 
 /* Assumes that the lock is held. */
 static SgenThreadPoolJob*
-get_job (void)
+get_job_and_set_in_progress (void)
 {
 	for (size_t i = 0; i < job_queue.next_slot; ++i) {
 		SgenThreadPoolJob *job = job_queue.data [i];
-		if (job->state == STATE_WAITING)
+		if (job->state == STATE_WAITING) {
+			job->state = STATE_IN_PROGRESS;
 			return job;
+		}
 	}
 	return NULL;
+}
+
+/* Assumes that the lock is held. */
+static ssize_t
+find_job_in_queue (SgenThreadPoolJob *job)
+{
+	for (ssize_t i = 0; i < job_queue.next_slot; ++i) {
+		if (job_queue.data [i] == job)
+			return i;
+	}
+	return -1;
 }
 
 /* Assumes that the lock is held. */
 static void
 remove_job (SgenThreadPoolJob *job)
 {
-	gboolean found = FALSE;
+	ssize_t index;
 	SGEN_ASSERT (0, job->state == STATE_DONE, "Why are we removing a job that's not done?");
-	for (size_t i = 0; i < job_queue.next_slot; ++i) {
-		if (job_queue.data [i] == job) {
-			job_queue.data [i] = NULL;
-			found = TRUE;
-			break;
-		}
-	}
-	SGEN_ASSERT (0, found, "Why is the job we're trying to remove not in the queue?");
+	index = find_job_in_queue (job);
+	SGEN_ASSERT (0, index >= 0, "Why is the job we're trying to remove not in the queue?");
+	job_queue.data [index] = NULL;
 	sgen_pointer_queue_remove_nulls (&job_queue);
+	sgen_thread_pool_job_free (job);
 }
 
 static mono_native_thread_return_t
-thread_func (void *arg)
+thread_func (void *thread_data)
 {
-	mono_thread_info_register_small_id ();
+	thread_init_func (thread_data);
 
 	mono_mutex_lock (&lock);
 	for (;;) {
 		SgenThreadPoolJob *job;
+		gboolean do_idle = idle_working;
 
-		while (!(job = get_job ()))
+		job = get_job_and_set_in_progress ();
+		if (!job && !do_idle) {
 			mono_cond_wait (&work_cond, &lock);
-		SGEN_ASSERT (0, job->state == STATE_WAITING, "The job we got is in the wrong state.  Should be waiting.");
-		job->state = STATE_IN_PROGRESS;
+			do_idle = idle_working;
+			job = get_job_and_set_in_progress ();
+		}
+
 		mono_mutex_unlock (&lock);
 
-		job->func (job);
+		if (job) {
+			job->func (thread_data, job);
 
-		mono_mutex_lock (&lock);
-		SGEN_ASSERT (0, job->state == STATE_IN_PROGRESS, "The job should still be in progress.");
-		job->state = STATE_DONE;
-		remove_job (job);
-		/*
-		 * Only the main GC thread will ever wait on the done condition, so we don't
-		 * have to broadcast.
-		 */
-		mono_cond_signal (&done_cond);
+			mono_mutex_lock (&lock);
+
+			SGEN_ASSERT (0, job->state == STATE_IN_PROGRESS, "The job should still be in progress.");
+			job->state = STATE_DONE;
+			remove_job (job);
+			/*
+			 * Only the main GC thread will ever wait on the done condition, so we don't
+			 * have to broadcast.
+			 */
+			mono_cond_signal (&done_cond);
+		} else {
+			SGEN_ASSERT (0, do_idle, "Why did we unlock if we still have to wait for idle?");
+			SGEN_ASSERT (0, idle_job_func, "Why do we have idle work when there's no idle job function?");
+			do {
+				do_idle = idle_job_func (thread_data);
+			} while (do_idle && !job_queue.next_slot);
+
+			mono_mutex_lock (&lock);
+
+			if (!do_idle) {
+				idle_working = FALSE;
+				mono_cond_signal (&done_cond);
+			}
+		}
 	}
 }
 
 void
-sgen_thread_pool_init (int num_threads)
+sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, void **thread_datas)
 {
 	SGEN_ASSERT (0, num_threads == 1, "We only support 1 thread pool thread for now.");
 
@@ -108,14 +141,28 @@ sgen_thread_pool_init (int num_threads)
 	mono_cond_init (&work_cond, NULL);
 	mono_cond_init (&done_cond, NULL);
 
-	mono_native_thread_create (&thread, thread_func, NULL);
+	thread_init_func = init_func;
+	idle_job_func = idle_func;
+	idle_working = idle_func != NULL;
+
+	mono_native_thread_create (&thread, thread_func, thread_datas ? thread_datas [0] : NULL);
+}
+
+SgenThreadPoolJob*
+sgen_thread_pool_job_alloc (const char *name, SgenThreadPoolJobFunc func, size_t size)
+{
+	SgenThreadPoolJob *job = sgen_alloc_internal_dynamic (size, INTERNAL_MEM_THREAD_POOL_JOB, TRUE);
+	job->name = name;
+	job->size = size;
+	job->state = STATE_WAITING;
+	job->func = func;
+	return job;
 }
 
 void
-sgen_thread_pool_job_init (SgenThreadPoolJob *job, SgenThreadPoolJobFunc func)
+sgen_thread_pool_job_free (SgenThreadPoolJob *job)
 {
-	job->state = STATE_WAITING;
-	job->func = func;
+	sgen_free_internal_dynamic (job, job->size, INTERNAL_MEM_THREAD_POOL_JOB);
 }
 
 void
@@ -136,9 +183,43 @@ sgen_thread_pool_job_enqueue (SgenThreadPoolJob *job)
 void
 sgen_thread_pool_job_wait (SgenThreadPoolJob *job)
 {
+	SGEN_ASSERT (0, job, "Where's the job?");
+
 	mono_mutex_lock (&lock);
 
-	while (job->state != STATE_DONE)
+	while (find_job_in_queue (job) >= 0)
+		mono_cond_wait (&done_cond, &lock);
+
+	mono_mutex_unlock (&lock);
+}
+
+void
+sgen_thread_pool_idle_signal (void)
+{
+	SGEN_ASSERT (0, idle_job_func, "Why are we signaling idle without an idle function?");
+
+	if (idle_working)
+		return;
+
+	mono_mutex_lock (&lock);
+
+	idle_working = TRUE;
+	mono_cond_signal (&work_cond);
+
+	mono_mutex_unlock (&lock);
+}
+
+void
+sgen_thread_pool_idle_wait (void)
+{
+	SGEN_ASSERT (0, idle_job_func, "Why are we waiting for idle without an idle function?");
+
+	if (!idle_working)
+		return;
+
+	mono_mutex_lock (&lock);
+
+	while (idle_working)
 		mono_cond_wait (&done_cond, &lock);
 
 	mono_mutex_unlock (&lock);
@@ -153,6 +234,12 @@ sgen_thread_pool_wait_for_all_jobs (void)
 		mono_cond_wait (&done_cond, &lock);
 
 	mono_mutex_unlock (&lock);
+}
+
+gboolean
+sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread)
+{
+	return some_thread == thread;
 }
 
 #endif
