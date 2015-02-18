@@ -468,13 +468,13 @@ namespace System.IO
             }
         }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
             EnsureBackgroundThread();
-            return SynchronousResultOf(OpenAsync(fullPath, mode, access, share, bufferSize, options));
+            return SynchronousResultOf(OpenAsync(fullPath, mode, access, share, bufferSize, options, parent));
         }
 
-        private async Task<FileStreamBase> OpenAsync(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private async Task<FileStreamBase> OpenAsync(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
             // Win32 CreateFile returns ERROR_PATH_NOT_FOUND when given a path that ends with '\'
             if (PathHelpers.EndsInDirectorySeparator(fullPath))
@@ -540,7 +540,7 @@ namespace System.IO
                 stream.SetLength(0);
             }
 
-            return new WinRTFileStream(stream, file, access, options);
+            return new WinRTFileStream(stream, file, access, options, parent);
         }
 
         public override void RemoveDirectory(string fullPath, bool recursive)
