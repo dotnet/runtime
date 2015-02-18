@@ -23,7 +23,7 @@
     <Compile Include="NegativeTesting.cs" />
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
-    <Compile Include="XUnitAssemblyAttributes.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
