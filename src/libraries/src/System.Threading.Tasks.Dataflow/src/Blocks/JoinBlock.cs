@@ -761,16 +761,16 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 _decliningPermanently = true;
 
-                bool allAreDeclininingPermanently = true;
+                bool allAreDecliningPermanently = true;
                 foreach (JoinBlockTargetBase target in _sharedResources._targets)
                 {
                     if (!target.IsDecliningPermanently)
                     {
-                        allAreDeclininingPermanently = false;
+                        allAreDecliningPermanently = false;
                         break;
                     }
                 }
-                if (allAreDeclininingPermanently) _sharedResources._decliningPermanently = true;
+                if (allAreDecliningPermanently) _sharedResources._decliningPermanently = true;
             }
         }
 

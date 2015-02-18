@@ -259,7 +259,7 @@ namespace System.Collections.Concurrent.Tests
 
             Task.WaitAll(threads);
 
-            int valu = -1;
+            int value = -1;
 
             //validation
             for (int i = 0; i < validation.Length; i++)
@@ -271,11 +271,11 @@ namespace System.Collections.Concurrent.Tests
                 }
                 else if (validation[i] == 0)
                 {
-                    Assert.True(bag.TryTake(out valu), String.Format("Add/Take failed, the list is not empty and TryTake returned false; thread count={0}", threadsCount));
+                    Assert.True(bag.TryTake(out value), String.Format("Add/Take failed, the list is not empty and TryTake returned false; thread count={0}", threadsCount));
                 }
             }
 
-            Assert.False(bag.Count > 0 || bag.TryTake(out valu), String.Format("Add/Take failed, this list is not empty after all remove operations; thread count={0}", threadsCount));
+            Assert.False(bag.Count > 0 || bag.TryTake(out value), String.Format("Add/Take failed, this list is not empty after all remove operations; thread count={0}", threadsCount));
         }
 
         [Fact]
@@ -450,11 +450,11 @@ namespace System.Collections.Concurrent.Tests
         {
             for (int i = 0; i < count; i++)
             {
-                int valu = -1;
+                int value = -1;
 
-                if (bag.TryTake(out valu) && validation != null)
+                if (bag.TryTake(out value) && validation != null)
                 {
-                    Interlocked.Increment(ref validation[valu]);
+                    Interlocked.Increment(ref validation[value]);
                 }
             }
         }

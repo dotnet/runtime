@@ -2107,16 +2107,16 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal AssemblyRefProcessorTableReader(
             uint numberOfRows,
-            int assembyRefTableRowRefSize,
+            int assemblyRefTableRowRefSize,
             MemoryBlock containingBlock,
             int containingBlockOffset
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsAssemblyRefTableRowSizeSmall = assembyRefTableRowRefSize == 2;
+            _IsAssemblyRefTableRowSizeSmall = assemblyRefTableRowRefSize == 2;
             _ProcessorOffset = 0;
             _AssemblyRefOffset = _ProcessorOffset + sizeof(UInt32);
-            this.RowSize = _AssemblyRefOffset + assembyRefTableRowRefSize;
+            this.RowSize = _AssemblyRefOffset + assemblyRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }
@@ -2134,17 +2134,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal AssemblyRefOSTableReader(
             uint numberOfRows,
-            int assembyRefTableRowRefSize,
+            int assemblyRefTableRowRefSize,
             MemoryBlock containingBlock,
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsAssemblyRefTableRowRefSizeSmall = assembyRefTableRowRefSize == 2;
+            _IsAssemblyRefTableRowRefSizeSmall = assemblyRefTableRowRefSize == 2;
             _OSPlatformIdOffset = 0;
             _OSMajorVersionIdOffset = _OSPlatformIdOffset + sizeof(UInt32);
             _OSMinorVersionIdOffset = _OSMajorVersionIdOffset + sizeof(UInt32);
             _AssemblyRefOffset = _OSMinorVersionIdOffset + sizeof(UInt32);
-            this.RowSize = _AssemblyRefOffset + assembyRefTableRowRefSize;
+            this.RowSize = _AssemblyRefOffset + assemblyRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }

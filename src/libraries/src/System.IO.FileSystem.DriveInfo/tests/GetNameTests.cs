@@ -18,7 +18,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         [Fact]
         public void Test01()
         {
-            String[] driveLetterCombinaions =
+            String[] driveLetterCombinations =
             {
                 String.Empty, ":", String.Format("{0}{1}", ":", "\\"),
                 String.Format("{0}{1}", ":", "/")
@@ -76,7 +76,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 //DriveInfo ctor with path with the letter and the : - "C:"
                 //DriveInfo ctor with path with the letter and the :\ - "C:\"
                 //DriveInfo ctor with path with the letter and the :/ - "C:/"
-                foreach (String suffix in driveLetterCombinaions)
+                foreach (String suffix in driveLetterCombinations)
                 {
                     //Uppercase letters
                     path = c.ToString() + suffix;
