@@ -2782,6 +2782,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 					entry->from = decode_value (p, &p);
 				entry->to = decode_value (p, &p);
 			}
+			gi->has_this = 1;
 		} else {
 			if (from_llvm) {
 				gi->has_this = this_reg != -1;
