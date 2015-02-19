@@ -2587,7 +2587,7 @@ void     mono_resume_unwind                     (MonoContext *ctx) MONO_LLVM_INT
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed) MONO_INTERNAL;
 
 typedef gboolean (*MonoExceptionFrameWalk)      (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data);
-gboolean mono_exception_walk_trace              (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);
+MONO_API gboolean mono_exception_walk_trace     (MonoException *ex, MonoExceptionFrameWalk func, gpointer user_data);
 void mono_restore_context                       (MonoContext *ctx) MONO_INTERNAL;
 guint8* mono_jinfo_get_unwind_info              (MonoJitInfo *ji, guint32 *unwind_info_len) MONO_INTERNAL;
 int  mono_jinfo_get_epilog_size                 (MonoJitInfo *ji) MONO_INTERNAL;
@@ -2619,7 +2619,7 @@ void mono_set_cast_details                      (MonoClass *from, MonoClass *to)
  * If no hook has been installed, the runtime will print a message before aborting.
  */
 typedef void  (*MonoUnhandledExceptionFunc)         (MonoObject *exc, gpointer user_data);
-void          mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
+MONO_API void mono_install_unhandled_exception_hook (MonoUnhandledExceptionFunc func, gpointer user_data);
 void          mono_invoke_unhandled_exception_hook  (MonoObject *exc);
 
 /* Dominator/SSA methods */

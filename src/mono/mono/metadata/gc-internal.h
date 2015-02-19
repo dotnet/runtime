@@ -370,7 +370,7 @@ typedef struct {
 	void (*object_queued_for_finalization) (MonoObject *object);
 } MonoGCFinalizerCallbacks;
 
-void mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks);
+MONO_API void mono_gc_register_finalizer_callbacks (MonoGCFinalizerCallbacks *callbacks);
 
 
 #ifdef HOST_WIN32
