@@ -140,7 +140,7 @@
   <!-- xUnit command line with coverage enabled -->
   <PropertyGroup Condition="$(CoverageEnabledForDir)">
     <CoverageHost>$(CoverageToolPath)</CoverageHost>
-    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters</CoverageOptions>
+    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All</CoverageOptions>
     <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user  -target:corerun.exe -output:$(CoverageReportDir)$(TargetFileName).coverage.xml</CoverageCommandLine>
     <TestHost>$(CoverageHost)</TestHost>
     <XunitOptions>$(XunitOptions) -parallel none</XunitOptions>
