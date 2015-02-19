@@ -9,7 +9,7 @@
     <AssemblyName>System.Xml.XPath.XmlDocument</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-    <!-- Default configurations to help VS understand the configurations -->
+  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -56,16 +56,6 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\ArrayT.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj">
-      <Project>{16ee5522-f387-4c9e-9ef2-b5134b043f37}</Project>
-      <Name>System.Xml.XmlDocument</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
-      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
-      <Name>System.Xml.XPath</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.resx">
