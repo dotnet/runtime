@@ -24,6 +24,15 @@ We use GitHub labels on our issues in order to classify them.  We have the follo
  * [feature approved](https://github.com/dotnet/corefx/labels/feature%20approved): Larger scale issues.  Like up for grabs, anyone is free to work on these issues, but they may be tricker or require more work.
  * [grabbed by community](https://github.com/dotnet/corefx/labels/grabbed%20by%20community): Someone outside the CoreFx team has assumed responsibility for addressing this issue and is working on a fix.  The comments for the issue will call out who is working on it.  You shouldn't try to address the issue without coordinating with the owner.
  * [grabbed by assignee](https://github.com/dotnet/corefx/labels/grabbed%20by%20assignee): Like grabbed by community, except the person the issue is assigned to is making a fix.  This will be someone on the CoreFx team.
+* **Project Management**: These labels are used to facilitate the team's [Kanban Board](https://huboard.com/dotnet/corefx).  Labels indicate the current status and swim lane.  
+ * [0 - Backlog](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%220+-+Backlog%22): Tasks that are not yet ready for development or are not yet prioritized for the current development cycle.
+ * [1 - Up Next](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%221+-+Up+Next%22): Tasks that are ready for development and prioritized above the rest of the backlog.
+ * [2 - In Progress](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%222+-+In+Progress%22): Tasks that are under active development.
+ * [3 - Done](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%223+-+Done%22): Tasks that are finished.  There should be no open issues in the Done stage.
+ * [:Community](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3ACommunity): Community Engagement & Open Development Swim Lane. :swimmer: 
+ * [:Port to GitHub](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%22%3APort+to+GitHub%22): Swim lane :swimmer: tracking the work remaining to open source .NET Core Framework
+ * [:Infrastructure](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3AInfrastructure): Swim lane :swimmer: tracking OSS Engineering and Infrastructure
+ * [:X-Plat](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3AX-Plat): Swim lane :swimmer: for Cross Platform Support
 
 In addition to the above, we have a handful of other labels we use to help classify our issues.  Some of these tag cross cutting concerns (e.g. cross platform, performance, serialization impact) where as others are used to help us track additional work needed before closing an issue (e.g. needs api review). Finally, we have the "needs more info" label.  We use this label to mark issues where we need more information in order to proceed.  Usually this will be because we can't reproduce a reported bug.  We'll close these issues after a little bit if we haven't gotten actionable information, but we welcome folks who have acquired more information to reopen the issue.
 
