@@ -52,17 +52,12 @@ internal static partial class Interop
     internal const int STANDARD_RIGHTS_READ = READ_CONTROL;
     internal const int STANDARD_RIGHTS_WRITE = READ_CONTROL;
 
-    internal const String LOCALIZATION_L1_APISET = "api-ms-win-core-localization-l1-2-0.dll";
     internal const String REGISTRY_L1_APISET = "api-ms-win-core-registry-l1-1-0.dll";
     internal const String REGISTRY_L2_APISET = "api-ms-win-core-registry-l2-1-0.dll";
     internal const String PROCESSENVIRONMENT_L1_APISET = "api-ms-win-core-processenvironment-l1-1-0.dll";
 
     // From WinBase.h
     internal const int SEM_FAILCRITICALERRORS = 1;
-
-    private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-    private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-    private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
 
     // Error codes from WinError.h
     internal const int ERROR_SUCCESS = 0x0;
@@ -79,23 +74,6 @@ internal static partial class Interop
 
     internal static partial class mincore
     {
-        // Gets an error message for a Win32 error code.
-        internal static String GetMessage(int errorCode)
-        {
-            char[] buffer = new char[512];
-            uint result = Interop.mincore.FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
-                FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                IntPtr.Zero, (uint)errorCode, 0, buffer, (uint)buffer.Length, IntPtr.Zero);
-            if (result != 0)
-            {
-                return new string(buffer, 0, (int)result);
-            }
-            else
-            {
-                return SR.Format(SR.UnknownError_Num, errorCode);
-            }
-        }
-
         [DllImport(REGISTRY_L2_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegConnectRegistryW")]
         internal static extern int RegConnectRegistry(String machineName,
                     SafeRegistryHandle key, out SafeRegistryHandle result);
@@ -197,17 +175,6 @@ internal static partial class Interop
 
         [DllImport(REGISTRY_L1_APISET)]
         internal extern static int RegCloseKey(IntPtr hKey);
-
-
-        [DllImport(LOCALIZATION_L1_APISET, EntryPoint = "FormatMessageW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static uint FormatMessage(
-                    uint dwFlags,
-                    IntPtr lpSource,
-                    uint dwMessageId,
-                    uint dwLanguageId,
-                    char[] lpBuffer,
-                    uint nSize,
-                    IntPtr Arguments);
     }
 
     internal struct SECURITY_ATTRIBUTES

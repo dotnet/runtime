@@ -11,8 +11,6 @@ internal static partial class Interop
     private const string HANDLEDLL = "api-ms-win-core-handle-l1-1-0.dll";
     private const string MEMORYDLL = "api-ms-win-core-memory-l1-1-0.dll";
     private const string SYSINFODLL = "api-ms-win-core-sysinfo-l1-1-0.dll";
-    private const string LOCALIZATIONDLL = "api-ms-win-core-localization-l1-2-0.dll";
-
     //
     // Win32 IO
     //
@@ -182,16 +180,6 @@ internal static partial class Interop
 
     internal static partial class mincore
     {
-        [DllImport(LOCALIZATIONDLL, EntryPoint = "FormatMessageW", CharSet = CharSet.Unicode)]
-        internal extern static uint FormatMessage(
-                    uint dwFlags,
-                    IntPtr lpSource,
-                    uint dwMessageId,
-                    uint dwLanguageId,
-                    char[] lpBuffer,
-                    uint nSize,
-                    IntPtr Arguments);
-
         [DllImport(MEMORYDLL)]
         internal extern static int FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
 

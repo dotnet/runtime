@@ -127,25 +127,7 @@ namespace System.IO
         /// </summary>
         internal static string GetMessage(int errorCode)
         {
-            const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-            const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-            const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
-
-            char[] buffer = new char[512];
-            uint result = Interop.mincore.FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
-                FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                IntPtr.Zero, (uint)errorCode, 0, buffer, (uint)buffer.Length, IntPtr.Zero);
-            if (result != 0)
-            {
-                // result is the # of characters copied to the StringBuilder on NT,
-                // but on Win9x, it appears to be the number of MBCS buffer.
-                // Just give up and return the String as-is...
-                return new string(buffer, 0, (int)result);
-            }
-            else
-            {
-                return SR.Format(SR.UnknownError_Num, errorCode);
-            }
+            return Interop.mincore.GetMessage(errorCode);
         }
     }
 }
