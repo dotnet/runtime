@@ -7,7 +7,7 @@
     <RootNamespace>ProcessTest_ConsoleApp</RootNamespace>
     <AssemblyName>ProcessTest_ConsoleApp</AssemblyName>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
