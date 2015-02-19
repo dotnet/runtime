@@ -7191,7 +7191,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 * return OverwriteComplete;
 	 * Here, if 'Earlier' refers to a memset, and Later has no size info, it mistakenly thinks the memset is redundant.
 	 */
-	opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
+	opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -inline-cost -inline -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
 #if 1
 	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
 	aot_printf (acfg, "Executing opt: %s\n", command);
