@@ -1679,7 +1679,7 @@ CorElementType MethodTable::GetHFAType()
 
         default:
             // This should never happen. MethodTable::IsHFA() should be set only on types
-            // that have a valid HFA type
+            // that have a valid HFA type when the flag is used to track HFA status.
             _ASSERTE(false);
             return ELEMENT_TYPE_END;
         }

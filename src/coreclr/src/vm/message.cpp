@@ -752,7 +752,7 @@ FCIMPL2(FC_BOOL_RET, CMessage::Dispatch, MessageObject* pMessageUNSAFE, Object* 
     int ofs;
     while ((ofs = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
-        if (TransitionBlock::IsFloatArgumentRegisterOffset(ofs))
+        if (TransitionBlock::HasFloatRegister(ofs, argit.GetArgLocDescForStructInRegs()))
         {
             // Found a floating point argument register. The first time we find this we point
             // pFloatArgumentRegisters to the part of the frame where these values were spilled (we don't do
@@ -772,7 +772,7 @@ FCIMPL2(FC_BOOL_RET, CMessage::Dispatch, MessageObject* pMessageUNSAFE, Object* 
     DWORD_PTR   dwRegTypeMap    = 0;
 
     {
-        int    ofs;
+        int ofs;
         while ((ofs = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
         {
             int regArgNum = TransitionBlock::GetArgumentIndexFromOffset(ofs);

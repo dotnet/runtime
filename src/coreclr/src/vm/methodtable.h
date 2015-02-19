@@ -53,7 +53,6 @@ class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
-class    FieldMarshaler;
 class JIT_TrialAlloc;
 struct LayoutRawFieldInfo;
 class MetaSig;
@@ -80,6 +79,7 @@ class   ComCallWrapperTemplate;
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+class ArgDestination;
 
 //============================================================================
 // This is the in-memory structure of a class and it will evolve.
@@ -625,6 +625,112 @@ public:
 typedef DPTR(MethodTableWriteableData) PTR_MethodTableWriteableData;
 typedef DPTR(MethodTableWriteableData const) PTR_Const_MethodTableWriteableData;
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+inline
+SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeType)
+{
+    static const SystemVClassificationType toSystemVAmd64ClassificationTypeMap[] = {
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_END
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_VOID
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_BOOLEAN
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_CHAR
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_I1
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_U1
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_I2
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_U2
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_I4
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_U4
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_I8
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_U8
+        SystemVClassificationTypeSSE,               // ELEMENT_TYPE_R4
+        SystemVClassificationTypeSSE,               // ELEMENT_TYPE_R8
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_STRING
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_PTR
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_BYREF
+        SystemVClassificationTypeStruct,            // ELEMENT_TYPE_VALUETYPE
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_CLASS
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_VAR              - (type variable)
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_ARRAY
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_GENERICINST
+        SystemVClassificationTypeStruct,            // ELEMENT_TYPE_TYPEDBYREF
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_I
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_U
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_R_UNSUPPORTED
+
+        // put the correct type when we know our implementation
+        SystemVClassificationTypeInteger,           // ELEMENT_TYPE_FNPTR
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_OBJECT
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_SZARRAY
+        SystemVClassificationTypeIntegerReference,  // ELEMENT_TYPE_MVAR
+
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_CMOD_REQD
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_CMOD_OPT
+        SystemVClassificationTypeUnknown,           // ELEMENT_TYPE_INTERNAL
+    };
+
+    _ASSERTE(sizeof(toSystemVAmd64ClassificationTypeMap) == ELEMENT_TYPE_MAX);
+    _ASSERTE(eeType < (CorElementType) sizeof(toSystemVAmd64ClassificationTypeMap));
+    // spot check of the map
+    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_I4] == SystemVClassificationTypeInteger);
+    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_PTR] == SystemVClassificationTypeInteger);
+    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeStruct);
+
+    return (((int)eeType) < ELEMENT_TYPE_MAX) ? (toSystemVAmd64ClassificationTypeMap[eeType]) : SystemVClassificationTypeUnknown;
+};
+
+#define SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES                    8 // Size of an eightbyte in bytes.
+#define SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT    16 // Maximum number of fields in struct passed in registers
+
+struct SystemVStructRegisterPassingHelper
+{
+    SystemVStructRegisterPassingHelper(unsigned int totalStructSize) :
+        structSize(totalStructSize),
+        eightByteCount(0),
+        inEmbeddedStruct(false),
+        currentUniqueOffsetField(0),
+        largestFieldOffset(-1)
+    {
+        for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+        {
+            eightByteClassifications[i] = SystemVClassificationTypeNoClass;
+            eightByteSizes[i] = 0;
+            eightByteOffsets[i] = 0;
+        }
+
+        // Initialize the work arrays
+        for (int i = 0; i < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT; i++)
+        {
+            fieldClassifications[i] = SystemVClassificationTypeNoClass;
+            fieldSizes[i] = 0;
+            fieldLayoutSizes[i] = 0;
+            fieldOffsets[i] = 0;
+        }
+    }
+
+    // Input state.
+    unsigned int                    structSize;
+
+    // These fields are the output; these are what is computed by the classification algorithm.
+    unsigned int                    eightByteCount;
+    SystemVClassificationType       eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    unsigned int                    eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    unsigned int                    eightByteOffsets[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+
+    // Helper members to track state.
+    bool                            inEmbeddedStruct;
+    unsigned int                    currentUniqueOffsetField; // A virtual field that could encompass many overlapping fields.
+    int                             largestFieldOffset;
+    SystemVClassificationType       fieldClassifications[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
+    unsigned int                    fieldSizes[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
+    unsigned int                    fieldLayoutSizes[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
+    unsigned int                    fieldOffsets[SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT];
+};
+
+typedef DPTR(SystemVStructRegisterPassingHelper) SystemVStructRegisterPassingHelperPtr;
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+
 //===============================================================================================
 //
 // GC data appears before the beginning of the MethodTable
@@ -940,6 +1046,16 @@ public:
     // inheritance hierarchy, and runs them if necessary. This simulates the behavior of running class constructors
     // during object construction.
     void CheckRunClassInitAsIfConstructingThrowing();
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+    // Helper function for ClassifyEightBytes
+    static SystemVClassificationType ReClassifyField(SystemVClassificationType originalClassification, SystemVClassificationType newFieldClassification);
+
+    // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
+    bool ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct);
+    bool ClassifyEightBytesForNativeStruct(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct);
+    
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
 
     // Copy m_dwFlags from another method table
     void CopyFlags(MethodTable * pOldMT)
@@ -1929,7 +2045,7 @@ public:
         SetFlag(enum_flag_HasPreciseInitCctors);
     }
 
-#ifdef FEATURE_HFA
+#if defined(FEATURE_HFA)
     inline bool IsHFA()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1941,6 +2057,23 @@ public:
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsHFA);
     }
+#endif // FEATURE_HFA
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+    inline bool IsRegPassedStruct()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !!GetFlag(enum_flag_IsRegStructPassed);
+    }
+
+    inline void SetRegPassedStruct()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetFlag(enum_flag_IsRegStructPassed);
+    }
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+
+#ifdef FEATURE_HFA
 
     CorElementType GetHFAType();
 
@@ -2642,6 +2775,7 @@ public:
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
     BOOL UnBoxInto(void *dest, OBJECTREF src);
+    BOOL UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 
@@ -3775,7 +3909,19 @@ private:
         enum_flag_HasDefaultCtor            = 0x00000200,
         enum_flag_HasPreciseInitCctors      = 0x00000400,   // Do we need to run class constructors at allocation time? (Not perf important, could be moved to EEClass
 
+#if defined(FEATURE_HFA)
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#error Can't define both FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif
         enum_flag_IsHFA                     = 0x00000800,   // This type is an HFA (Homogenous Floating-point Aggregate)
+#endif // FEATURE_HFA
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#if defined(FEATURE_HFA)
+#error Can't define both FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif
+        enum_flag_IsRegStructPassed         = 0x00000800,   // This type is a System V register passed struct.
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
 
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.

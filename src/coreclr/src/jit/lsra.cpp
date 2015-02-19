@@ -2671,14 +2671,14 @@ LinearScan::buildInternalRegisterDefsForNode(GenTree *tree,
     int internalIntCount = tree->gtLsraInfo.internalIntCount;
     regMaskTP internalCands = tree->gtLsraInfo.getInternalCandidates(this);
 
-    // If this is a varArgs call, the internal candidates represent the integer registers that
-    // floating point arguments must be copied into.  These must be handled as fixed regs.
+    // If the number of internal integer registers required is the same as the number of candidate integer registers in the candidate set, 
+    // then they must be handled as fixed registers.
+    // (E.g. for the integer registers that floating point arguments must be copied into for a varargs call.)
     bool fixedRegs = false;
-    if ((internalIntCount != 0) && (tree->OperGet() == GT_CALL))
+    regMaskTP internalIntCandidates = (internalCands & allRegs(TYP_INT));
+    if (((int)genCountBits(internalIntCandidates)) == internalIntCount)
     {
-        assert(tree->gtCall.IsVarargs());
         fixedRegs = true;
-        assert((int)genCountBits(internalCands) == internalIntCount);
     }
 
     for (count = 0; count < internalIntCount; count++)
@@ -3317,6 +3317,50 @@ LinearScan::insertZeroInitRefPositions()
     }
 }
 
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+// -----------------------------------------------------------------------
+// Sets the register state for an argument of type STRUCT for System V systems.
+//     See Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *argDsc) in regalloc.cpp
+//         for how state for argument is updated for unix non-structs and Windows AMD64 structs.
+void
+LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
+{
+    assert(argDsc->lvType == TYP_STRUCT);
+    RegState              * intRegState = &compiler->codeGen->intRegState;
+    RegState              * floatRegState = &compiler->codeGen->floatRegState;
+
+    if ((argDsc->lvArgReg != REG_STK) && (argDsc->lvArgReg != REG_NA))
+    {
+        if (genRegMask(argDsc->lvArgReg) & (RBM_ALLFLOAT))
+        {
+            assert(genRegMask(argDsc->lvArgReg) & (RBM_FLTARG_REGS));
+            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->lvArgReg);
+        }
+        else
+        {
+            assert(genRegMask(argDsc->lvArgReg) & (RBM_ARG_REGS));
+            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->lvArgReg);
+        }
+    }
+
+
+    if ((argDsc->lvOtherArgReg != REG_STK) && (argDsc->lvOtherArgReg != REG_NA))
+    {
+        if (genRegMask(argDsc->lvOtherArgReg) & (RBM_ALLFLOAT))
+        {
+            assert(genRegMask(argDsc->lvOtherArgReg) & (RBM_FLTARG_REGS));
+            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->lvOtherArgReg);
+        }
+        else
+        {
+            assert(genRegMask(argDsc->lvOtherArgReg) & (RBM_ARG_REGS));
+            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->lvOtherArgReg);
+        }
+    }
+}
+
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
 //------------------------------------------------------------------------
 // updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
 //    regState (either compiler->intRegState or compiler->floatRegState),
@@ -3339,31 +3383,41 @@ LinearScan::insertZeroInitRefPositions()
 void
 LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
-    RegState              * intRegState   = &compiler->codeGen->intRegState;
-    RegState              * floatRegState = &compiler->codeGen->floatRegState;
-
-    // In the case of AMD64 we'll still use the floating point registers
-    // to model the register usage for argument on vararg calls, so
-    // we will ignore the varargs condition to determine whether we use 
-    // XMM registers or not for setting up the call.
-    bool isFloat = (isFloatRegType(argDsc->lvType) 
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // For System V AMD64 calls the argDsc can have 2 registers (for structs.)
+    // Handle them here.
+    if (argDsc->lvType == TYP_STRUCT)
+    {
+        unixAmd64UpdateRegStateForArg(argDsc);
+    }
+    else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    {
+        RegState              * intRegState = &compiler->codeGen->intRegState;
+        RegState              * floatRegState = &compiler->codeGen->floatRegState;
+        // In the case of AMD64 we'll still use the floating point registers
+        // to model the register usage for argument on vararg calls, so
+        // we will ignore the varargs condition to determine whether we use 
+        // XMM registers or not for setting up the call.
+        bool isFloat = (isFloatRegType(argDsc->lvType)
 #ifndef _TARGET_AMD64_
-        && !compiler->info.compIsVarArgs
+            && !compiler->info.compIsVarArgs
 #endif
-        );
+            );
 
 #ifdef _TARGET_ARM_
-    if (argDsc->lvIsHfaRegArg) isFloat = true;
+        if (argDsc->lvIsHfaRegArg) isFloat = true;
 #endif // _TARGET_ARM_
-    if (isFloat)
-    {
-        JITDUMP("Float arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->lvArgReg));
-        compiler->raUpdateRegStateForArg(floatRegState, argDsc);
-    } 
-    else
-    {
-        JITDUMP("Int arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->lvArgReg));
-        compiler->raUpdateRegStateForArg(intRegState, argDsc);
+        if (isFloat)
+        {
+            JITDUMP("Float arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->lvArgReg));
+            compiler->raUpdateRegStateForArg(floatRegState, argDsc);
+        }
+        else
+        {
+            JITDUMP("Int arg V%02u in reg %s\n", (argDsc - compiler->lvaTable), getRegName(argDsc->lvArgReg));
+            compiler->raUpdateRegStateForArg(intRegState, argDsc);
+        }
     }
 }
 
@@ -3548,7 +3602,9 @@ LinearScan::buildIntervals()
         // won't have done dataflow on it, but it needs to be marked as live-in so
         // it will get saved in the prolog.
         if (!compiler->compJmpOpUsed && argDsc->lvRefCnt == 0 && !compiler->opts.compDbgCode)
+        {
             continue;
+        }
 
         if (argDsc->lvIsRegArg) updateRegStateForArg(argDsc);
 

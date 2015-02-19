@@ -854,9 +854,13 @@ InterlockedCompareExchangePointer (
 // Interlockedxxx64 that do not have intrinsics are only supported on Windows Server 2003 
 // or higher for X86 so define our own portable implementation
 
+#undef InterlockedIncrement64
 #define InterlockedIncrement64          __InterlockedIncrement64
+#undef InterlockedDecrement64
 #define InterlockedDecrement64          __InterlockedDecrement64
+#undef InterlockedExchange64
 #define InterlockedExchange64           __InterlockedExchange64
+#undef InterlockedExchangeAdd64
 #define InterlockedExchangeAdd64        __InterlockedExchangeAdd64
 
 __forceinline LONGLONG __InterlockedIncrement64(LONGLONG volatile *Addend)
