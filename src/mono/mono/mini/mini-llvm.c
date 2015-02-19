@@ -4838,6 +4838,9 @@ mono_llvm_emit_method (MonoCompile *cfg)
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_NONE)
 			LLVM_FAILURE (ctx, "non-finally/catch clause.");
 	}
+	if (header->num_clauses)
+		/* We can't handle inlined methods with clauses */
+		LLVMAddFunctionAttr (method, LLVMNoInlineAttribute);
 
 	if (linfo->rgctx_arg) {
 		ctx->rgctx_arg = LLVMGetParam (method, sinfo.rgctx_arg_pindex);
