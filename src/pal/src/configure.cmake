@@ -253,64 +253,6 @@ int main(void)
   /* iRet is zero is kevent() works correctly */
   return(iRet==0);
 }" HAVE_BROKEN_FIFO_KEVENT)
-check_cxx_source_runs("
-#include <fcntl.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-/* INT64_MAX */
-#define OFFSET  9223372036854775807
-
-int main(void) {
-  int fd;
-  off_t result;
-  char filename[1024];
-
-  strcpy(filename, \"/tmp/ftruncate_testXXXXXX\");
-  fd = mkstemp(filename);
-  if (fd == -1) {
-    exit(1);
-  }
-
-  result = ftruncate(fd, OFFSET);
-  unlink(filename);
-  close(fd);
-
-  if (result != -1) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_FTRUNCATE_LARGE_LENGTH_SUPPORT)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-int main(void)
-{
-  int fd;
-  struct stat sStat;
-  int has_bug = 0;
-
-  fd = open(\"/tmp/ftruncate_test2\", O_CREAT | O_EXCL | O_RDWR, 0777);
-  if (fd != -1)
-  {
-    if (ftruncate(fd, 0x7fffffffffffffffULL) == -1)
-    {
-      if (fstat(fd, &sStat) != -1)
-        has_bug = sStat.st_size != 0;
-    }
-
-    unlink(\"/tmp/ftruncate_test2\");
-    close(fd);
-  }
-
-  exit(has_bug ? 0 : 1);
-}" HAS_FTRUNCATE_LENGTH_ISSUE)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdio.h>
@@ -908,6 +850,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(KO_KR_LOCALE_NAME ko_KR.eucKR)
   set(ZH_TW_LOCALE_NAME zh_TG.BIG5)
   set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
+  set(HAS_FTRUNCATE_LENGTH_ISSUE 1)
+  set(UNWIND_CONTEXT_IS_UCONTEXT_T 0)
 else()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
@@ -921,6 +865,8 @@ else()
   set(KO_KR_LOCALE_NAME ko_KR_LOCALE_NOT_FOUND)
   set(ZH_TW_LOCALE_NAME zh_TW_LOCALE_NOT_FOUND)
   set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
+  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
+  set(UNWIND_CONTEXT_IS_UCONTEXT_T 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
