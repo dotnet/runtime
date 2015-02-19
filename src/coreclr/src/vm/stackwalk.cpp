@@ -576,6 +576,7 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
     return pRD->ControlPC;
 }
 
+
 // static
 PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext, 
                                         T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers /*= NULL*/, 
@@ -593,8 +594,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     CONTRACTL_END;
 
     PCODE           uControlPc = GetIP(pContext);
-
-#ifndef FEATURE_PAL
     
 #if !defined(DACCESS_COMPILE)
     UINT_PTR            uImageBase;
@@ -602,9 +601,16 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
     if (pCodeInfo == NULL)
     {
+#ifndef FEATURE_PAL
         pFunctionEntry = RtlLookupFunctionEntry(uControlPc,
                                             ARM_ONLY((DWORD*))(&uImageBase),
                                             NULL);
+#else // !FEATURE_PAL
+        // For PAL, this method should never be called without valid pCodeInfo, since there is no
+        // other way to get the function entry.
+        pFunctionEntry = NULL;
+        UNREACHABLE_MSG("VirtualUnwindCallFrame called with NULL pCodeInfo");
+#endif // !FEATURE_PAL
     }
     else
     {
@@ -615,7 +621,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
         // expects this indirection to be resolved, so we use RUNTIME_FUNCTION of the hot code even
         // if we are in cold code.
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
         UINT_PTR            uImageBaseFromOS;
         PRUNTIME_FUNCTION   pFunctionEntryFromOS;
 
@@ -623,7 +629,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                                        ARM_ONLY((DWORD*))(&uImageBaseFromOS),
                                                        NULL);
         _ASSERTE( (uImageBase == uImageBaseFromOS) && (pFunctionEntry == pFunctionEntryFromOS) );
-#endif // _DEBUG
+#endif // _DEBUG && !FEATURE_PAL
     }
 
     if (pFunctionEntry)
@@ -647,8 +653,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     }
 #endif // !DACCESS_COMPILE
 
-#endif // !FEATURE_PAL
-
     return uControlPc;
 }
 
@@ -670,10 +674,9 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 // static
 PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 {
-#ifndef FEATURE_PAL
-
     PCODE uControlPc;
-#ifdef _DEBUG
+
+#if defined(_DEBUG) && !defined(FEATURE_PAL)
     UINT_PTR uImageBase;
 
     PRUNTIME_FUNCTION pFunctionEntry  = RtlLookupFunctionEntry((UINT_PTR)GetIP(pContext),
@@ -681,12 +684,11 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
                                                                 NULL);
 
     CONSISTENCY_CHECK(NULL == pFunctionEntry);
-#endif // _DEBUG
+#endif // _DEBUG && !FEATURE_PAL
 
 #if defined(_TARGET_AMD64_)
 
     uControlPc = *(ULONGLONG*)pContext->Rsp;
-    pContext->Rip = uControlPc;
     pContext->Rsp += sizeof(ULONGLONG);
 
 #elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
@@ -700,10 +702,8 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     SetIP(pContext, uControlPc);
 
+
     return uControlPc;
-#else // !FEATURE_PAL
-    PORTABILITY_ASSERT("UNIXTODO: Implement for PAL");
-#endif
 }
 
 // static
@@ -721,8 +721,6 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
-    
     PCODE           uControlPc = GetIP(pContext);
 #if defined(_WIN64)
     UINT64              EstablisherFrame;
@@ -736,9 +734,11 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
 
     if (NULL == pFunctionEntry)
     {
+#ifndef FEATURE_PAL
         pFunctionEntry  = RtlLookupFunctionEntry(uControlPc,
                                                  ARM_ONLY((DWORD*))(&uImageBase),
                                                  NULL);
+#endif
         if (NULL == pFunctionEntry)
         {
             return NULL;
@@ -756,9 +756,6 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
     
     uControlPc = GetIP(pContext);
     return uControlPc;
-#else // !FEATURE_PAL
-    PORTABILITY_ASSERT("UNIXTODO: Implement for PAL");
-#endif
 }
 
 // static
@@ -772,21 +769,21 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
-
     PCODE uControlPc = GetIP(pContext);
 
     // unwind out of this function and out of our caller to
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
+#ifndef FEATURE_PAL
         uControlPc = VirtualUnwindCallFrame(pContext);
+#else // !FEATURE_PAL
+        PAL_VirtualUnwind(pContext, NULL);
+        uControlPc = GetIP(pContext);
+#endif // !FEATURE_PAL
     }
 
     return uControlPc;
-#else // !FEATURE_PAL
-    PORTABILITY_ASSERT("TODO: Implement for PAL");
-#endif
 }
 
 #endif // DACCESS_COMPILE
