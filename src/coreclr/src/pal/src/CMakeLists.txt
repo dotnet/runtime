@@ -147,15 +147,12 @@ add_library(CoreClrPal
   ${PLATFORM_SOURCES}
 )
 
-target_link_libraries(CoreClrPal
-  dl
-  m
-)
-
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 target_link_libraries(CoreClrPal
   pthread
   rt
+  dl
+  unwind
 )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
@@ -163,10 +160,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
   find_library(SECURITY Security)
+  find_library(SYSTEM System)
   target_link_libraries(CoreClrPal
     ${COREFOUNDATION}
     ${CORESERVICES}
     ${SECURITY}
+    ${SYSTEM}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 

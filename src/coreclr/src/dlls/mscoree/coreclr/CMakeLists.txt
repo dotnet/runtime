@@ -33,6 +33,10 @@ add_library(coreclr
     ${CLR_SOURCES}
 )
 
+if (CLR_CMAKE_PLATFORM_UNIX)
+set(LIB_UNWINDER unwinder_wks)
+endif (CLR_CMAKE_PLATFORM_UNIX)
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared 
 # library.
@@ -40,6 +44,7 @@ set(CORECLR_LIBRARIES
     utilcode
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cordbee_wks
+    ${LIB_UNWINDER}
     cee_wks
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks

@@ -16887,7 +16887,11 @@ void DebuggerHeap::Free(void *pMem)
 #else
     if (pMem != NULL)
     {
+#ifndef FEATURE_PAL
         HANDLE hExecutableHeap  = ClrGetProcessExecutableHeap();
+#else // !FEATURE_PAL
+        HANDLE hExecutableHeap  = ClrGetProcessHeap();
+#endif // !FEATURE_PAL
         _ASSERTE(hExecutableHeap != NULL);
         ClrHeapFree(hExecutableHeap, NULL, pMem);
     }
