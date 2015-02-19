@@ -26,8 +26,10 @@
 
 #if defined(__APPLE__)
 #define C_FUNC(name) _##name
+#define LOCAL_LABEL(name) L##name
 #else
 #define C_FUNC(name) name
+#define LOCAL_LABEL(name) .L##name
 #endif
 
 #if defined(__APPLE__)
@@ -48,6 +50,8 @@ C_FUNC(\Name):
 #else
         .type \Name, %function
 #endif
+        .cfi_startproc
+        .cfi_def_cfa_offset 8
 C_FUNC(\Name):
 .endm
 
@@ -57,6 +61,7 @@ C_FUNC(\Name\()_End):
 #if !defined(__APPLE__)
         .size \Name, .-\Name
 #endif
+        .cfi_endproc
 .endm
 
 .macro LEAF_END Name, Section
@@ -69,11 +74,21 @@ C_FUNC(\Name\()_End):
 
 .macro push_nonvol_reg Register
         push \Register
-        //.pushreg \Register
+        .cfi_adjust_cfa_offset 8
+        .cfi_rel_offset \Register, 0
+.endm
+
+.macro pop_nonvol_reg Register
+        pop \Register
+        .cfi_adjust_cfa_offset -8
+        .cfi_restore \Register
 .endm
 
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
+        .ifnc \Handler, NoHandler
+        .cfi_personality 0, \Handler // 4 == DW_EH_PE_udata8 0 == DW_EH_PE_absptr
+        .endif
 .endm
 
 .macro NESTED_END Name, Section
@@ -87,11 +102,24 @@ C_FUNC(\Name\()_End):
 .att_syntax
         lea -\Size(%rsp), %rsp
 .intel_syntax noprefix
-        //.allocstack \Size
+        .cfi_adjust_cfa_offset \Size
+.endm
+
+.macro free_stack Size
+.att_syntax
+        lea \Size(%rsp), %rsp
+.intel_syntax noprefix
+        .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro set_frame Reg, Offset
         lea     \Reg, \Offset[rsp]
+        .cfi_def_cfa_register \Reg
+.endm
+
+.macro restore_frame Reg, Offset
+        lea     rsp, \Offset[\Reg]
+        .cfi_def_cfa_register rsp
 .endm
 
 .macro save_reg_postrsp Reg, Offset
@@ -102,12 +130,7 @@ C_FUNC(\Name\()_End):
 
         __Offset = \Offset
         mov     qword ptr [rsp + __Offset], \Reg
-
-//
-// TODO: find the right directive
-//       this one gives an "unknown directive" error
-//
-//        .savereg \Reg, \Offset
+        .cfi_rel_offset \Reg, __Offset
 
         ___STACK_ADJUSTMENT_FORBIDDEN = 1
 
@@ -116,6 +139,7 @@ C_FUNC(\Name\()_End):
 .macro restore_reg Reg, Offset
         __Offset = \Offset
         mov             \Reg, [rsp + __Offset]
+        .cfi_restore \Reg
 .endm
 
 .macro save_xmm128_postrsp Reg, Offset
@@ -126,12 +150,7 @@ C_FUNC(\Name\()_End):
 
         __Offset = \Offset
         movdqa  [rsp + __Offset], \Reg
-
-//
-// TODO: find the right directive
-//       this one gives an "unknown directive" error
-//
-//        .savexmm128 \Reg, \Offset
+        .cfi_rel_offset \Reg, __Offset
 
         ___STACK_ADJUSTMENT_FORBIDDEN = 1
 
@@ -140,38 +159,49 @@ C_FUNC(\Name\()_End):
 .macro restore_xmm128 Reg, ofs
         __Offset = \ofs
         movdqa          \Reg, [rsp + __Offset]
+        .cfi_restore \Reg
 .endm
 
 .macro POP_CALLEE_SAVED_REGISTERS
 
-        pop             rbx
-        pop             rbp
-        pop             r12
-        pop             r13
-        pop             r14
-        pop             r15
+        pop_nonvol_reg rbx
+        pop_nonvol_reg rbp
+        pop_nonvol_reg r12
+        pop_nonvol_reg r13
+        pop_nonvol_reg r14
+        pop_nonvol_reg r15
 
+.endm
+
+.macro push_argument_register Reg
+        push            \Reg
+        .cfi_adjust_cfa_offset 8
 .endm
 
 .macro PUSH_ARGUMENT_REGISTERS
 
-        push            r9
-        push            r8
-        push            rdx
-        push            rcx
-        push            rsi
-        push            rdi
+        push_argument_register r9
+        push_argument_register r8
+        push_argument_register rdx
+        push_argument_register rcx
+        push_argument_register rsi
+        push_argument_register rdi
 
+.endm
+
+.macro pop_argument_register Reg
+        pop            \Reg
+        .cfi_adjust_cfa_offset -8
 .endm
 
 .macro POP_ARGUMENT_REGISTERS
 
-        pop             rdi
-        pop             rsi
-        pop             rcx
-        pop             rdx
-        pop             r8
-        pop             r9
+        pop_argument_register rdi
+        pop_argument_register rsi
+        pop_argument_register rcx
+        pop_argument_register rdx
+        pop_argument_register r8
+        pop_argument_register r9
 
 .endm
 
@@ -244,7 +274,7 @@ C_FUNC(\Name\()_End):
         .endif
 
         .if \stackAllocOnEntry > 0
-        //.allocstack \stackAllocOnEntry
+        .cfi_adjust_cfa_offset \stackAllocOnEntry
         .endif
 
         // PUSH_CALLEE_SAVED_REGISTERS expanded here
@@ -293,9 +323,8 @@ C_FUNC(\Name\()_End):
 .macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
-        lea rsp,        [rsp + __PWTB_StackAlloc]
+        free_stack      __PWTB_StackAlloc
         POP_ARGUMENT_REGISTERS
         POP_CALLEE_SAVED_REGISTERS
 
 .endm
-
