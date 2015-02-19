@@ -21,6 +21,8 @@
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
   <Target Name="CleanAllProjects">
@@ -41,6 +43,9 @@
              Condition="'$(SerializeProjects)'!='true'"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
   <PropertyGroup>
