@@ -19,7 +19,7 @@ public:
         {
             DebugClient* client = new DebugClient(debugger, result);
             const char* sosCommand = *arguments++;
-            const char* sosLibrary = "/ssd/coreclr/binaries/Product/amd64/debug/libsos.so";
+            const char* sosLibrary = "/ssd/coreclr/binaries/Product/amd64/debug/" MAKEDLLNAME_A("sos");
             HRESULT hr = E_FAIL;
 
             void *dl_handle = dlopen(sosLibrary, RTLD_LAZY);
