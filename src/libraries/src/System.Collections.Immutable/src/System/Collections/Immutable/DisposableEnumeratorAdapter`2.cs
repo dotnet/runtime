@@ -29,7 +29,7 @@ namespace System.Collections.Immutable
         private TEnumerator _enumeratorStruct;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EnumeratorAdapter{T, TEnumerator}"/> struct
+        /// Initializes a new instance of the <see cref="DisposableEnumeratorAdapter{T, TEnumerator}"/> struct
         /// for enumerating over a strongly typed struct enumerator.
         /// </summary>
         /// <param name="enumerator">The initialized enumerator struct.</param>
@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EnumeratorAdapter{T, TEnumerator}"/> struct
+        /// Initializes a new instance of the <see cref="DisposableEnumeratorAdapter{T, TEnumerator}"/> struct
         /// for enumerating over a (boxed) <see cref="IEnumerable{T}"/> enumerator.
         /// </summary>
         /// <param name="enumerator">The initialized enumerator object.</param>
