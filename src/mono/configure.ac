@@ -546,18 +546,6 @@ if test x"$GCC" = xyes; then
 		CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
 
 		ORIG_CFLAGS=$CFLAGS
-		CFLAGS="$CFLAGS -Wdeclaration-after-statement"
-		AC_MSG_CHECKING(for -Wdeclaration-after-statement option to gcc)
-		AC_TRY_COMPILE([],[
-				return 0;
-		], [
-		   AC_MSG_RESULT(yes)
-		], [
-		   AC_MSG_RESULT(no)
-		   CFLAGS=$ORIG_CFLAGS
-		])
-
-		ORIG_CFLAGS=$CFLAGS
 		# Check for the normal version, since gcc ignores unknown -Wno options
 		CFLAGS="$CFLAGS -Wunused-but-set-variable -Werror"
 		AC_MSG_CHECKING(for -Wno-unused-but-set-variable option to gcc)
