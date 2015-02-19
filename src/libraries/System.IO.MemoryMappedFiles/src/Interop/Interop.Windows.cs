@@ -8,7 +8,6 @@ using System.Security;
 
 internal static partial class Interop
 {
-    private const string HANDLEDLL = "api-ms-win-core-handle-l1-1-0.dll";
     private const string MEMORYDLL = "api-ms-win-core-memory-l1-1-0.dll";
     private const string SYSINFODLL = "api-ms-win-core-sysinfo-l1-1-0.dll";
     //
@@ -234,10 +233,5 @@ internal static partial class Interop
                         UIntPtr dwSize,
                         int flAllocationType,
                         int flProtect);
-
-        [DllImport(HANDLEDLL, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        [SecurityCritical]
-        internal static extern bool CloseHandle(IntPtr handle);
     }
 }

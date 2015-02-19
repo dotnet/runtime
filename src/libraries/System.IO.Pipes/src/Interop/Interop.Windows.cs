@@ -143,11 +143,6 @@ internal static partial class Interop
         // Pipe
         //
 
-        [DllImport(HANDLEDLL, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        [SecurityCritical]
-        internal static extern bool CloseHandle(IntPtr handle);
-
         [DllImport(PROCESSTHREADSDLL, SetLastError = true)]
         [SecurityCritical]
         internal static extern IntPtr GetCurrentProcess();
