@@ -1274,12 +1274,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			pindex += ainfo->nslots;
 			break;
 		}
-		case LLVMArgInIReg:
-		case LLVMArgInFPReg:
-			param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
-			break;
 		default:
-			g_assert_not_reached ();
+			param_types [pindex ++] = type_to_llvm_arg_type (ctx, sig->params [i]);
 			break;
 		}
 	}
@@ -2042,12 +2038,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMBuildStore (ctx->builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
 			break;
 		}
-		case LLVMArgInIReg:
-		case LLVMArgInFPReg:
+		default:
 			ctx->values [reg] = convert_full (ctx, ctx->values [reg], llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->params [i])), type_is_unsigned (ctx, sig->params [i]));
 			break;
-		default:
-			g_assert_not_reached ();
 		}
 	}
 
