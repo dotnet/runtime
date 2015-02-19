@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+  </data>
+  <data name="Arg_NonZeroLowerBound" xml:space="preserve">
+    <value>The lower bound of target array must be zero.</value>
+  </data>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
+  <data name="Argument_InvalidArrayType" xml:space="preserve">
+    <value>Target array type is not compatible with the type of items in the collection.</value>
+  </data>
+  <data name="Argument_ItemNotExist" xml:space="preserve">
+    <value>The specified item does not exist in this KeyedCollection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_InvalidThreshold" xml:space="preserve">
+    <value>The specified threshold for creating dictionary is out of range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="IndexCannotBeNegative" xml:space="preserve">
+    <value>Index cannot be negative.</value>
+  </data>
+  <data name="MustBeResetAddOrRemoveActionForCtor" xml:space="preserve">
+    <value>Constructor only supports either a Reset, Add, or Remove action.</value>
+  </data>
+  <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
+    <value>Collection is read-only.</value>
+  </data>
+  <data name="ObservableCollectionReentrancyNotAllowed" xml:space="preserve">
+    <value>Cannot change ObservableCollection during a CollectionChanged event.</value>
+  </data>
+  <data name="ResetActionRequiresIndexMinus1" xml:space="preserve">
+    <value>Reset action must be initialized with index -1.</value>
+  </data>
+  <data name="ResetActionRequiresNullItem" xml:space="preserve">
+    <value>Reset action must be initialized with no changed items.</value>
+  </data>
+  <data name="WrongActionForCtor" xml:space="preserve">
+    <value>Constructor supports only the '{0}' action.</value>
+  </data>
+</root>
