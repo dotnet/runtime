@@ -688,8 +688,8 @@ class MsbuildGenerator {
 		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
 		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
 		prebuild =
-			"    <PreBuildEvent " + condition_unix + ">\n" + prebuild_unix + "\n    </PreBuildEvent>\n" +
-			"    <PreBuildEvent " + condition_windows + ">\n" + prebuild_windows + "\n    </PreBuildEvent>\n";
+			"    <PreBuildEvent " + condition_unix + ">" + NewLine + prebuild_unix + NewLine + "    </PreBuildEvent>" + NewLine +
+			"    <PreBuildEvent " + condition_windows + ">" + NewLine + prebuild_windows + NewLine + "    </PreBuildEvent>" + NewLine;
 
 		var all_args = new Queue<string []> ();
 		all_args.Enqueue (flags.Split ());
@@ -853,8 +853,8 @@ class MsbuildGenerator {
 		string postbuild_windows = string.Empty;
 
 		var postbuild =  
-			"    <PostBuildEvent " + condition_unix + ">\n" + postbuild_unix + "\n    </PostBuildEvent>\n" +
-			"    <PostBuildEvent " + condition_windows + ">\n" + postbuild_windows + "\n    </PostBuildEvent>";
+			"    <PostBuildEvent " + condition_unix + ">" + NewLine + postbuild_unix + NewLine + "    </PostBuildEvent>" + NewLine +
+			"    <PostBuildEvent " + condition_windows + ">" + NewLine + postbuild_windows + NewLine + "    </PostBuildEvent>";
 			
 
 		bool basic_or_build = (library.Contains ("-basic") || library.Contains ("-build"));
@@ -866,13 +866,13 @@ class MsbuildGenerator {
 		string strongNameSection = "";
 		if (StrongNameKeyFile != null){
 			strongNameSection = String.Format (
-				"  <PropertyGroup>\n" +
-				"    <SignAssembly>true</SignAssembly>\n" +
+				"  <PropertyGroup>" + NewLine +
+				"    <SignAssembly>true</SignAssembly>" + NewLine +
 				"{1}" +
-				"  </PropertyGroup>\n" + 
-				"  <PropertyGroup>\n" + 
-				"    <AssemblyOriginatorKeyFile>{0}</AssemblyOriginatorKeyFile>\n" +
-				"  </PropertyGroup>", StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>\n" : "");
+				"  </PropertyGroup>" + NewLine +
+				"  <PropertyGroup>" + NewLine +
+				"    <AssemblyOriginatorKeyFile>{0}</AssemblyOriginatorKeyFile>" + NewLine +
+				"  </PropertyGroup>", StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>" + NewLine : "");
 		}
 		Csproj.output = template.
 			Replace ("@SIGNATURE@", strongNameSection).
