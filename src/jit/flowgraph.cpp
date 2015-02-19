@@ -8148,17 +8148,67 @@ void                Compiler::fgAddInternal()
 
     // If there is a return value, then create a temp for it.  Real returns will store the value in there and
     // it'll be reloaded by the single return.
-
+    // TODO-ARM-Bug: Deal with multi-register genReturnLocaled structs?
+    // TODO-ARM64: Does this apply for ARM64 too?
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // Create a local temp to store the return if the return type is not void and the
+    // native return type is not a struct or the native return type is a struct that is returned
+    // in registers (no RetBuffArg argument.)
+    // If we fold all returns into a single return statement, create a temp for struct type variables as well.
+    if (genReturnBB && ((info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT) ||
+        (info.compRetNativeType == TYP_STRUCT && info.compRetBuffArg == BAD_VAR_NUM)))
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     if (genReturnBB && (info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT))
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     {
         genReturnLocal = lvaGrabTemp(true DEBUGARG("Single return block return value"));
-        lvaTable[genReturnLocal].lvType = genActualType(info.compRetNativeType);
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        var_types retLocalType = TYP_STRUCT;
+        if (info.compRetNativeType == TYP_STRUCT)
+        {
+            // If the native ret type is a struct, make sure the right 
+            // normalized type is assigned to the local variable.
+            SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+            assert(info.compMethodInfo->args.retTypeClass != nullptr);
+            eeGetSystemVAmd64PassStructInRegisterDescriptor(info.compMethodInfo->args.retTypeClass, &structDesc);
+            if (structDesc.passedInRegisters && structDesc.eightByteCount <= 1)
+            {
+                retLocalType = lvaTable[genReturnLocal].lvType = getEightByteType(structDesc, 0);
+            }
+            else
+            {
+                lvaTable[genReturnLocal].lvType = TYP_STRUCT;
+            }
+        }
+        else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        {
+            lvaTable[genReturnLocal].lvType = genActualType(info.compRetNativeType);
+        }
         
         if (varTypeIsFloating(lvaTable[genReturnLocal].lvType))
         {
             this->compFloatingPointUsed = true;
         }
-        
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        // Handle a struct return type for System V Amd64 systems.
+        if (info.compRetNativeType == TYP_STRUCT)
+        {
+            // Handle the normalized return type.
+            if (retLocalType == TYP_STRUCT)
+            {
+                lvaSetStruct(genReturnLocal, info.compMethodInfo->args.retTypeClass, true);
+            }
+            else
+            {
+                lvaTable[genReturnLocal].lvVerTypeInfo = typeInfo(TI_STRUCT, info.compMethodInfo->args.retTypeClass);
+            }
+
+            lvaTable[genReturnLocal].lvDontPromote = true;
+        }
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
         if (!varTypeIsFloating(info.compRetType))
             lvaTable[genReturnLocal].setPrefReg(REG_INTRET, this);
 #ifdef REG_FLOATRET
@@ -8172,7 +8222,6 @@ void                Compiler::fgAddInternal()
         lvaTable[genReturnLocal].lvKeepType = 1;
 #endif
     }
-
     else
     {
         genReturnLocal = BAD_VAR_NUM;
@@ -8442,7 +8491,11 @@ void                Compiler::fgAddInternal()
         //make sure to reload the return value as part of the return (it is saved by the "real return").
         if (genReturnLocal != BAD_VAR_NUM)
         {
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            noway_assert(info.compRetType != TYP_VOID);
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             noway_assert(info.compRetType != TYP_VOID && info.compRetNativeType != TYP_STRUCT);
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             GenTreePtr retTemp = gtNewLclvNode(genReturnLocal, lvaTable[genReturnLocal].TypeGet());
 
             //make sure copy prop ignores this node (make sure it always does a reload from the temp).
@@ -21424,7 +21477,7 @@ void                Compiler::fgInline()
 #endif // DEBUG
 }
 
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 /*********************************************************************************
  *
@@ -21463,16 +21516,16 @@ GenTreePtr Compiler::fgGetStructAsStructPtr(GenTreePtr tree)
 
 /***************************************************************************************************
  * child     - The inlinee of the retExpr node.
- * retClsHnd - The HFA class handle of the type of the inlinee.
+ * retClsHnd - The struct class handle of the type of the inlinee.
  *
  * Assign the inlinee to a tmp, if it is a call, just assign it to a lclVar, else we can
  * use a copyblock to do the assignment.
  */
-GenTreePtr Compiler::fgAssignHfaInlineeToVar(GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd)
+GenTreePtr Compiler::fgAssignStructInlineeToVar(GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd)
 {
     assert(child->gtOper != GT_RET_EXPR && child->gtOper != GT_MKREFANY);
 
-    unsigned tmpNum = lvaGrabTemp(false DEBUGARG("RetBuf for HFA inline return candidates."));
+    unsigned tmpNum = lvaGrabTemp(false DEBUGARG("RetBuf for struct inline return candidates."));
     lvaSetStruct(tmpNum, retClsHnd, false);
 
     GenTreePtr dst = gtNewLclvNode(tmpNum, TYP_STRUCT);
@@ -21518,7 +21571,7 @@ GenTreePtr Compiler::fgAssignHfaInlineeToVar(GenTreePtr child, CORINFO_CLASS_HAN
 /***************************************************************************************************
  * tree      - The tree pointer that has one of its child nodes as retExpr.
  * child     - The inlinee child.
- * retClsHnd - The HFA class handle of the type of the inlinee.
+ * retClsHnd - The struct class handle of the type of the inlinee.
  *
  * V04 = call() assignments are okay as we codegen it. Everything else needs to be a copy block or
  * would need a temp. For example, a cast(ldobj) will then be, cast(v05 = ldobj, v05); But it is
@@ -21526,7 +21579,7 @@ GenTreePtr Compiler::fgAssignHfaInlineeToVar(GenTreePtr child, CORINFO_CLASS_HAN
  * a lclVar/call. So it is not worthwhile to do pattern matching optimizations like addr(ldobj(op1))
  * can just be op1.
  */
-void Compiler::fgAttachHfaInlineeToAsg(GenTreePtr tree, GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd)
+void Compiler::fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, CORINFO_CLASS_HANDLE retClsHnd)
 {
     // We are okay to have:
     // 1. V02 = call();
@@ -21541,13 +21594,13 @@ void Compiler::fgAttachHfaInlineeToAsg(GenTreePtr tree, GenTreePtr child, CORINF
 
     GenTreePtr dstAddr = fgGetStructAsStructPtr(tree->gtOp.gtOp1);
     GenTreePtr srcAddr = fgGetStructAsStructPtr((child->gtOper == GT_CALL)
-                            ? fgAssignHfaInlineeToVar(child, retClsHnd) // Assign to a variable if it is a call.
+                            ? fgAssignStructInlineeToVar(child, retClsHnd) // Assign to a variable if it is a call.
                             : child);                                   // Just get the address, if not a call.
 
     tree->CopyFrom(gtNewCpObjNode(dstAddr, srcAddr, retClsHnd, false), this);
 }
 
-#endif // _TARGET_ARM_
+#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 /*****************************************************************************
  * Callback to replace the inline return expression place holder (GT_RET_EXPR)
@@ -21562,12 +21615,12 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
 
     if (tree->gtOper == GT_RET_EXPR)
     {
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         // We are going to copy the tree from the inlinee, so save the handle now.
         CORINFO_CLASS_HANDLE retClsHnd = (tree->TypeGet() == TYP_STRUCT)
                                        ? tree->gtRetExpr.gtRetClsHnd
                                        : NO_CLASS_HANDLE;
-#endif // _TARGET_ARM_
+#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
         do
         {
@@ -21605,32 +21658,36 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
         }
         while (tree->gtOper == GT_RET_EXPR);
 
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(_TARGET_ARM_)
         if (retClsHnd != NO_CLASS_HANDLE && comp->IsHfa(retClsHnd))
+#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        if (retClsHnd != NO_CLASS_HANDLE && comp->IsRegisterPassable(retClsHnd))
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         {
             GenTreePtr parent = data->parent;
             // See assert below, we only look one level above for an asg parent.
             if (parent->gtOper == GT_ASG)
             {
                 // Either lhs is a call V05 = call(); or lhs is addr, and asg becomes a copyBlk.
-                comp->fgAttachHfaInlineeToAsg(parent, tree, retClsHnd);
+                comp->fgAttachStructInlineeToAsg(parent, tree, retClsHnd);
             }
             else
             {
                 // Just assign the inlinee to a variable to keep it simple.
-                tree->CopyFrom(comp->fgAssignHfaInlineeToVar(tree, retClsHnd), comp);
+                tree->CopyFrom(comp->fgAssignStructInlineeToVar(tree, retClsHnd), comp);
             }
         }
-#endif // _TARGET_ARM_
+#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     }
 
-#if defined(DEBUG) && defined(_TARGET_ARM_)
+#if defined(DEBUG) && (defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
     // Make sure we don't have a tree like so: V05 = (, , , retExpr);
     // Since we only look one level above for the parent for '=' and
     // do not check if there is a series of COMMAs. See above.
     // Importer and FlowGraph will not generate such a tree, so just
     // leaving an assert in here. This can be fixed by looking ahead
-    // when we visit GT_ASG similar to fgAttachHfaInlineeToAsg.
+    // when we visit GT_ASG similar to fgAttachStructInlineeToAsg.
     else if (tree->gtOper == GT_ASG &&
              tree->gtOp.gtOp2->gtOper == GT_COMMA)
     {
@@ -21642,11 +21699,17 @@ Compiler::fgWalkResult      Compiler::fgUpdateInlineReturnExpressionPlaceHolder(
             // empty
         }
 
+#if defined(_TARGET_ARM_)
         noway_assert(comma->gtType != TYP_STRUCT ||
                      comma->gtOper != GT_RET_EXPR ||
-                     !comp->IsHfa(comma->gtRetExpr.gtRetClsHnd));
+                     (!comp->IsHfa(comma->gtRetExpr.gtRetClsHnd)));
+#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        noway_assert(comma->gtType != TYP_STRUCT ||
+                     comma->gtOper != GT_RET_EXPR ||
+                     (!comp->IsRegisterPassable(comma->gtRetExpr.gtRetClsHnd)));
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     }
-#endif // defined(DEBUG) && defined(_TARGET_ARM_)
+#endif // defined(DEBUG) && (defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING))
 
     return WALK_CONTINUE;
 }

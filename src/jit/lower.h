@@ -134,6 +134,10 @@ private:
     void TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra);
 #endif // FEATURE_SIMD
 
+#if defined(_TARGET_XARCH_)
+    void TreeNodeInfoInitSimple(GenTree* tree, TreeNodeInfo* info, unsigned kind);
+#endif // defined(_TARGET_XARCH_)
+
     void SpliceInUnary(GenTreePtr parent, GenTreePtr* ppChild, GenTreePtr newNode);
     void DumpNodeInfoMap();
 

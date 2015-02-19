@@ -428,21 +428,26 @@ class EEClassLayoutInfo
             // to its unmanaged counterpart (i.e. no internal reference fields,
             // no ansi-unicode char conversions required, etc.) Used to
             // optimize marshaling.
-            e_BLITTABLE             = 0x01,
+            e_BLITTABLE                 = 0x01,
             // Post V1.0 addition: Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL    = 0x02,
+            e_MANAGED_SEQUENTIAL        = 0x02,
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
             // explicit type inherits from this type.
-            e_ZERO_SIZED            = 0x04,
+            e_ZERO_SIZED                =   0x04,
             // The size of the struct is explicitly specified in the meta-data.
-            e_HAS_EXPLICIT_SIZE     = 0x08,
-
+            e_HAS_EXPLICIT_SIZE         = 0x08,
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#ifdef FEATURE_HFA
+#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF defined at the same time.
+#endif // FEATURE_HFA
+            e_NATIVE_PASS_IN_REGISTERS  = 0x10, // Flag wheter a native struct is passed in registers.
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
 #ifdef FEATURE_HFA
             // HFA type of the unmanaged layout
-            e_R4_HFA                = 0x10,
-            e_R8_HFA                = 0x20,
+            e_R4_HFA                    = 0x10,
+            e_R8_HFA                    = 0x20,
 #endif
         };
 
@@ -527,6 +532,14 @@ class EEClassLayoutInfo
             return m_cbPackingSize;
         }
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+        bool IsNativeStructPassedInRegisters()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_NATIVE_PASS_IN_REGISTERS) != 0;
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+
 #ifdef FEATURE_HFA
         bool IsNativeHFA()
         {
@@ -579,6 +592,14 @@ class EEClassLayoutInfo
             m_bFlags |= (hfaType == ELEMENT_TYPE_R4) ? e_R4_HFA : e_R8_HFA;
         }
 #endif
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+        void SetNativeStructPassedInRegisters()
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags |= e_NATIVE_PASS_IN_REGISTERS;
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+
 };
 
 
@@ -712,6 +733,15 @@ class EEClassOptionalFields
     DWORD m_dwReliabilityContract;
 
     SecurityProperties m_SecProps;
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // Number of eightBytes in the following arrays
+    int m_numberEightBytes; 
+    // Classification of the eightBytes
+    SystemVClassificationType m_eightByteClassifications[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    // Size of data the eightBytes
+    unsigned int m_eightByteSizes[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     // Set default values for optional fields.
     inline void Init();
@@ -1810,6 +1840,45 @@ public:
         _ASSERTE(HasOptionalFields());
         GetOptionalFields()->m_dwReliabilityContract = dwValue;
     }
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // Get number of eightbytes used by a struct passed in registers.
+    inline int GetNumberEightBytes()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_numberEightBytes;
+    }
+
+    // Get eightbyte classification for the eightbyte with the specified index.
+    inline SystemVClassificationType GetEightByteClassification(int index)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_eightByteClassifications[index];
+    }
+
+    // Get size of the data in the eightbyte with the specified index.
+    inline unsigned int GetEightByteSize(int index)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        return GetOptionalFields()->m_eightByteSizes[index];
+    }
+
+    // Set the eightByte classification
+    inline void SetEightByteClassification(int eightByteCount, SystemVClassificationType *eightByteClassifications, unsigned int *eightByteSizes)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasOptionalFields());
+        GetOptionalFields()->m_numberEightBytes = eightByteCount;
+        for (int i = 0; i < eightByteCount; i++)
+        {
+            GetOptionalFields()->m_eightByteClassifications[i] = eightByteClassifications[i];
+            GetOptionalFields()->m_eightByteSizes[i] = eightByteSizes[i];
+        }
+    }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING    
 
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()

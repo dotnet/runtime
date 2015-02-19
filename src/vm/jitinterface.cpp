@@ -58,7 +58,6 @@
 #include "runtimehandles.h"
 #include "sigbuilder.h"
 #include "openum.h"
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -1651,7 +1650,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     DWORD fieldFlags = 0;
 
     pResult->offset = pField->GetOffset();
-
     if (pField->IsStatic())
     {
 #ifdef FEATURE_LEGACYNETCF
@@ -1850,7 +1848,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     if (!(flags & CORINFO_ACCESS_INLINECHECK))
     {
-
     //get the field's type.  Grab the class for structs.
     pResult->fieldType = getFieldTypeInternal(pResolvedToken->hField, &pResult->structType, pResolvedToken->hClass);
 
@@ -2568,9 +2565,82 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
                                                 /*IN*/  CORINFO_CLASS_HANDLE structHnd,
                                                 /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
 {
-    LIMITED_METHOD_CONTRACT;
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+    JIT_TO_EE_TRANSITION();
 
+    _ASSERTE(structPassInRegDescPtr != nullptr);
+    TypeHandle th(structHnd);
+    
+    // Make sure this is a value type.
+    if (th.IsValueType())
+    {
+        _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
+
+        MethodTable* methodTablePtr = nullptr;
+        bool isNativeStruct = false;
+        if (!th.IsTypeDesc())
+        {
+            methodTablePtr = th.AsMethodTable();
+            _ASSERTE(methodTablePtr != nullptr);
+        }
+        else if (th.IsTypeDesc())
+        {
+            if (th.IsNativeValueType())
+            {
+                methodTablePtr = th.AsNativeValueType();
+                isNativeStruct = true;
+                _ASSERTE(methodTablePtr != nullptr);
+            }
+            else
+            {
+                _ASSERTE(false && "Unhandled TypeHandle for struct!");
+            }
+        }
+
+        bool isPassableInRegs = false;
+
+        if (isNativeStruct)
+        {
+            isPassableInRegs = methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters();
+        }
+        else
+        {
+            isPassableInRegs = methodTablePtr->IsRegPassedStruct();
+        }
+
+        if (!isPassableInRegs)
+        {
+            structPassInRegDescPtr->passedInRegisters = false;
+        }
+        else
+        {
+            structPassInRegDescPtr->passedInRegisters = true;
+
+            SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+            bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0);
+
+            structPassInRegDescPtr->eightByteCount = helper.eightByteCount;
+            _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+
+            for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+            {
+                structPassInRegDescPtr->eightByteClassifications[i] = helper.eightByteClassifications[i];
+                structPassInRegDescPtr->eightByteSizes[i] = helper.eightByteSizes[i];
+                structPassInRegDescPtr->eightByteOffsets[i] = helper.eightByteOffsets[i];
+            }
+        }
+    }
+    else
+    {
+        structPassInRegDescPtr->passedInRegisters = false;
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return true;
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
     return false;
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
 }
 
 /*********************************************************************/
