@@ -651,7 +651,10 @@ bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type,
     if (type == TYP_STRUCT)
     {
         size = info.compCompHnd->getClassSize(typeClass);
-
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // Account for the classification of the struct.
+        result = IsRegisterPassable(typeClass);
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         switch(size)
         {
             case 1:
@@ -664,6 +667,7 @@ bool   Compiler::VarTypeIsMultiByteAndCanEnreg(var_types type,
             default:
                 break;
         }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
     }
     else
     {
@@ -2268,8 +2272,10 @@ int                 Compiler::lvaFrameAddress(int varNum, bool * pFPbased)
         if (lvaDoneFrameLayout > REGALLOC_FRAME_LAYOUT && !varDsc->lvOnFrame)
         {
 #ifdef _TARGET_AMD64_
-            // On amd64, every param has a stack location.
+            // On amd64, every param has a stack location, except on Unix-like systems.
+#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
             assert(varDsc->lvIsParam);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #elif defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
             // For !LEGACY_BACKEND on x86, a stack parameter that is enregistered will have a stack location. 
             assert(varDsc->lvIsParam && !varDsc->lvIsRegArg);
@@ -2589,6 +2595,8 @@ var_types Compiler::mangleVarArgsType(var_types type)
     return type;
 }
 
+// For CORECLR there is no vararg on System V systems.
+#if FEATURE_VARARG
 inline regNumber Compiler::getCallArgIntRegister(regNumber floatReg)
 {
 #ifdef _TARGET_AMD64_
@@ -2630,10 +2638,11 @@ inline regNumber Compiler::getCallArgFloatRegister(regNumber intReg)
     }
 #else  // !_TARGET_AMD64_
     // How will float args be passed for RyuJIT/x86?
-    NYI("getCallArgIntRegister for RyuJIT/x86");
+    NYI("getCallArgFloatRegister for RyuJIT/x86");
     return REG_NA;
 #endif // !_TARGET_AMD64_
 }
+#endif // FEATURE_VARARG
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

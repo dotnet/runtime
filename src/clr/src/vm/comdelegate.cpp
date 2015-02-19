@@ -72,37 +72,149 @@ static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
 
 #else // Portable default implementation
 
-// Helpers used when calculating shuffle array entries in GenerateShuffleArray below.
-
-// Return true if the current argument still has slots left to shuffle in general registers or on the stack
-// (currently we never shuffle floating point registers since there's no need).
-static bool AnythingToShuffle(ArgLocDesc * pArg)
+// Iterator for extracting shuffle entries for argument desribed by an ArgLocDesc.
+// Used when calculating shuffle array entries in GenerateShuffleArray below.
+class ShuffleIterator
 {
-    return (pArg->m_cGenReg > 0) || (pArg->m_cStack > 0);
-}
+    // Argument location description
+    ArgLocDesc* m_argLocDesc;
 
-// Return an encoded shuffle entry describing a general register or stack offset that needs to be shuffled.
-static UINT16 ShuffleOfs(ArgLocDesc * pArg)
-{
-    // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
-    // over a register we later need to shuffle down as well).
-    if (pArg->m_cGenReg > 0)
-    {        
-        pArg->m_cGenReg--;
-        return (UINT16)(ShuffleEntry::REGMASK | pArg->m_idxGenReg++);
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // Current eightByte used for struct arguments in registers
+    int m_currentEightByte;
+#endif    
+    // Current general purpose register index (relative to the ArgLocDesc::m_idxGenReg)
+    int m_currentGenRegIndex;
+    // Current floating point register index (relative to the ArgLocDesc::m_idxFloatReg)
+    int m_currentFloatRegIndex;
+    // Current stack slot index (relative to the ArgLocDesc::m_idxStack)
+    int m_currentStackSlotIndex;
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
+    UINT16 GetNextOfsInStruct()
+    {
+        EEClass* eeClass = m_argLocDesc->m_eeClass;
+        _ASSERTE(eeClass != NULL);
+        
+        if (m_currentEightByte < eeClass->GetNumberEightBytes())
+        {
+            SystemVClassificationType eightByte = eeClass->GetEightByteClassification(m_currentEightByte);
+            unsigned int eightByteSize = eeClass->GetEightByteSize(m_currentEightByte);
+
+            m_currentEightByte++;
+
+            int index;
+            UINT16 mask = ShuffleEntry::REGMASK;
+
+            if (eightByte == SystemVClassificationTypeSSE)
+            {
+                _ASSERTE(m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg);
+                index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
+                m_currentFloatRegIndex++;
+
+                mask |= ShuffleEntry::FPREGMASK;
+                if (eightByteSize == 4)
+                {
+                    mask |= ShuffleEntry::FPSINGLEMASK;
+                }
+            }
+            else
+            {
+                _ASSERTE(m_currentGenRegIndex < m_argLocDesc->m_cGenReg);
+                index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
+                m_currentGenRegIndex++;
+            }
+
+            return (UINT16)index | mask;
+        }
+
+        // There are no more offsets to get, the caller should not have called us
+        _ASSERTE(false);
+        return 0;
+    }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+public:
+
+    // Construct the iterator for the ArgLocDesc
+    ShuffleIterator(ArgLocDesc* argLocDesc)
+    :
+        m_argLocDesc(argLocDesc),
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        m_currentEightByte(0),
+#endif
+        m_currentGenRegIndex(0),
+        m_currentFloatRegIndex(0),
+        m_currentStackSlotIndex(0)
+    {
     }
 
-    // If we get here we must have at least one stack slot left to shuffle (this method should only be called
-    // when AnythingToShuffle(pArg) == true).
-    _ASSERTE(pArg->m_cStack > 0);
-    pArg->m_cStack--;
+    // Check if there are more offsets to shuffle
+    bool HasNextOfs()
+    {
+        return (m_currentGenRegIndex < m_argLocDesc->m_cGenReg) || 
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+               (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg) ||
+#endif
+               (m_currentStackSlotIndex < m_argLocDesc->m_cStack);        
+    }
 
-    // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
-    if (pArg->m_idxStack >= ShuffleEntry::REGMASK)
-        COMPlusThrow(kNotSupportedException);
+    // Get next offset to shuffle. There has to be at least one offset left.
+    UINT16 GetNextOfs()
+    {
+        int index;
 
-    return (UINT16)(pArg->m_idxStack++);
-}
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+        // Check if the argLocDesc is for a struct in registers
+        EEClass* eeClass = m_argLocDesc->m_eeClass;
+        if (m_argLocDesc->m_eeClass != 0)
+        {
+            return GetNextOfsInStruct();
+        }
+
+        // Shuffle float registers first
+        if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
+        {        
+            index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
+            m_currentFloatRegIndex++;
+
+            return (UINT16)index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+        }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
+        // over a register we later need to shuffle down as well).
+        if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
+        {        
+            index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
+            m_currentGenRegIndex++;
+
+            return (UINT16)index | ShuffleEntry::REGMASK;
+        }
+
+        // If we get here we must have at least one stack slot left to shuffle (this method should only be called
+        // when AnythingToShuffle(pArg) == true).
+        if (m_currentStackSlotIndex < m_argLocDesc->m_cStack)
+        {
+            index = m_argLocDesc->m_idxStack + m_currentStackSlotIndex;
+            m_currentStackSlotIndex++;
+
+            // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
+            if (index >= ShuffleEntry::REGMASK)
+            {
+                COMPlusThrow(kNotSupportedException);
+            }
+
+            return (UINT16)index;
+        }
+
+        // There are no more offsets to get, the caller should not have called us
+        _ASSERTE(false);
+        return 0;
+    }
+};
 
 #endif
 
@@ -247,8 +359,11 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
         sArgPlacerSrc.GetThisLoc(&sArgDst);
 
-        entry.srcofs = ShuffleOfs(&sArgSrc);
-        entry.dstofs = ShuffleOfs(&sArgDst);
+        ShuffleIterator iteratorSrc(&sArgSrc);
+        ShuffleIterator iteratorDst(&sArgDst);
+
+        entry.srcofs = iteratorSrc.GetNextOfs();
+        entry.dstofs = iteratorDst.GetNextOfs();
 
         pShuffleEntryArray->Append(entry);
     }
@@ -261,8 +376,11 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         sArgPlacerSrc.GetRetBuffArgLoc(&sArgSrc);
         sArgPlacerDst.GetRetBuffArgLoc(&sArgDst);
 
-        entry.srcofs = ShuffleOfs(&sArgSrc);
-        entry.dstofs = ShuffleOfs(&sArgDst);
+        ShuffleIterator iteratorSrc(&sArgSrc);
+        ShuffleIterator iteratorDst(&sArgDst);
+
+        entry.srcofs = iteratorSrc.GetNextOfs();
+        entry.dstofs = iteratorDst.GetNextOfs();
 
         // Depending on the type of target method (static vs instance) the return buffer argument may end up
         // in the same register in both signatures. So we only commit the entry (by moving the entry pointer
@@ -271,34 +389,76 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             pShuffleEntryArray->Append(entry);
     }
 
-    // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
-    // destination locations.
-    while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // The shuffle entries are produced in two passes on Unix AMD64. The first pass generates shuffle entries for
+    // all cases except of shuffling struct argument from stack to registers, which is performed in the second pass
+    // The reason is that if such structure argument contained floating point field and it was followed by a 
+    // floating point argument, generating code for transferring the structure from stack into registers would
+    // overwrite the xmm register of the floating point argument before it could actually be shuffled.
+    // For example, consider this case:
+    // struct S { int x; float y; };
+    // void fn(long a, long b, long c, long d, long e, S f, float g);
+    // src: rdi = this, rsi = a, rdx = b, rcx = c, r8 = d, r9 = e, stack: f, xmm0 = g
+    // dst: rdi = a, rsi = b, rdx = c, rcx = d, r8 = e, r9 = S.x, xmm0 = s.y, xmm1 = g
+    for (int pass = 0; pass < 2; pass++)
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
     {
-        ofsDst = sArgPlacerDst.GetNextOffset();
-
-        // Find the argument location mapping for both source and destination signature. A single argument can
-        // occupy a floating point register (in which case we don't need to do anything, they're not shuffled)
-        // or some combination of general registers and the stack.
-        sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
-        sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
-
-        // Shuffle each slot in the argument (register or stack slot) from source to destination.
-        while (AnythingToShuffle(&sArgSrc))
+        // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
+        // destination locations.
+        while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
         {
-            // Locate the next slot to shuffle in the source and destination and encode the transfer into a
-            // shuffle entry.
-            entry.srcofs = ShuffleOfs(&sArgSrc);
-            entry.dstofs = ShuffleOfs(&sArgDst);
+            ofsDst = sArgPlacerDst.GetNextOffset();
 
-            // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
-            // different).
-            if (entry.srcofs != entry.dstofs)
-                pShuffleEntryArray->Append(entry);
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            bool shuffleStructFromStackToRegs = (ofsSrc != TransitionBlock::StructInRegsOffset) && (ofsDst == TransitionBlock::StructInRegsOffset);
+            if (((pass == 0) && shuffleStructFromStackToRegs) || 
+                ((pass == 1) && !shuffleStructFromStackToRegs))
+            {
+                continue;
+            }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+            // Find the argument location mapping for both source and destination signature. A single argument can
+            // occupy a floating point register (in which case we don't need to do anything, they're not shuffled)
+            // or some combination of general registers and the stack.
+            sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
+            sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
+
+            ShuffleIterator iteratorSrc(&sArgSrc);
+            ShuffleIterator iteratorDst(&sArgDst);
+
+            // Shuffle each slot in the argument (register or stack slot) from source to destination.
+            while (iteratorSrc.HasNextOfs())
+            {
+                // Locate the next slot to shuffle in the source and destination and encode the transfer into a
+                // shuffle entry.
+                entry.srcofs = iteratorSrc.GetNextOfs();
+                entry.dstofs = iteratorDst.GetNextOfs();
+
+                // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
+                // different).
+                if (entry.srcofs != entry.dstofs)
+                    pShuffleEntryArray->Append(entry);
+            }
+
+            // We should have run out of slots to shuffle in the destination at the same time as the source.
+            _ASSERTE(!iteratorDst.HasNextOfs());
         }
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        if (pass == 0)
+        {
+            // Reset the iterator for the 2nd pass
+            sSigSrc.Reset();
+            sSigDst.Reset();
 
-        // We should have run out of slots to shuffle in the destination at the same time as the source.
-        _ASSERTE(!AnythingToShuffle(&sArgDst));
+            sArgPlacerSrc = ArgIterator(&sSigSrc);
+            sArgPlacerDst = ArgIterator(&sSigDst);
+
+            if (sSigDst.HasThis())
+            {
+                sArgPlacerSrc.GetNextOffset();
+            }
+        }
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
@@ -1323,7 +1483,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
 
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.
-	// Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
+    // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
     LPVOID DelegateHnd = (pUMEntryThunk != NULL) && ((UPTR)pUMEntryThunk != (UPTR)1)
         ? COMDelegate::s_pDelegateToFPtrHash->LookupValue((UPTR)pUMEntryThunk, 0)
         : (LPVOID)INVALIDENTRY;

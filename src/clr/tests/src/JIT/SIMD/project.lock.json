@@ -242,7 +242,10 @@
         "ref/MonoTouch10/_._",
         "ref/net46/System.Console.dll",
         "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._"
+        "ref/xamarinmac20/_._",
+        "ru/System.Console.xml",
+        "zh-hans/System.Console.xml",
+        "zh-hant/System.Console.xml"
       ]
     },
     "System.Diagnostics.Debug/4.0.10": {

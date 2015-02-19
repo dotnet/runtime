@@ -281,6 +281,16 @@ unsigned           Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_
     // Everything fits into a single 'slot' size
     // to accommodate irregular sized structs, they are passed byref
     // TODO-ARM64-Bug?: structs <= 16 bytes get passed in 2 consecutive registers.
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    CORINFO_CLASS_HANDLE        argClass;
+    CorInfoType argTypeJit = strip(info.compCompHnd->getArgType(sig, list, &argClass));
+    var_types argType = JITtype2varType(argTypeJit);
+    if (argType == TYP_STRUCT)
+    {
+        unsigned structSize = info.compCompHnd->getClassSize(argClass);
+        return structSize;
+    }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     return sizeof(size_t);
 
 #else // !_TARGET_AMD64_ && !_TARGET_ARM64_
@@ -919,6 +929,60 @@ int Compiler::eeGetJitDataOffs(CORINFO_FIELD_HANDLE  field)
         return -1;
     }
 }
+
+
+/*****************************************************************************
+ *
+ *                      ICorStaticInfo wrapper functions
+ */
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+#ifdef DEBUG
+void Compiler::dumpSystemVClassificationType(SystemVClassificationType ct)
+{
+    switch (ct)
+    {
+    case SystemVClassificationTypeUnknown:              printf("UNKNOWN");          break;
+    case SystemVClassificationTypeStruct:               printf("Struct");           break;
+    case SystemVClassificationTypeNoClass:              printf("NoClass");          break;
+    case SystemVClassificationTypeMemory:               printf("Memory");           break;
+    case SystemVClassificationTypeInteger:              printf("Integer");          break;
+    case SystemVClassificationTypeIntegerReference:     printf("IntegerReference"); break;
+    case SystemVClassificationTypeSSE:                  printf("SSE");              break;
+    default:                                            printf("ILLEGAL");          break;
+    }
+}
+#endif // DEBUG
+
+void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(/*IN*/  CORINFO_CLASS_HANDLE structHnd,
+                                                               /*OUT*/ SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
+{
+    bool ok = info.compCompHnd->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
+    noway_assert(ok);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(0x%x (%s), ...) =>\n", dspPtr(structHnd), eeGetClassName(structHnd));
+        printf("        passedInRegisters = %s\n", dspBool(structPassInRegDescPtr->passedInRegisters));
+        if (structPassInRegDescPtr->passedInRegisters)
+        {
+            printf("        eightByteCount   = %d\n", structPassInRegDescPtr->eightByteCount);
+            for (unsigned int i = 0; i < structPassInRegDescPtr->eightByteCount; i++)
+            {
+                printf("        eightByte #%d -- classification: ", i);
+                dumpSystemVClassificationType(structPassInRegDescPtr->eightByteClassifications[i]);
+                printf(", byteSize: %d, byteOffset: %d\n",
+                    structPassInRegDescPtr->eightByteSizes[i],
+                    structPassInRegDescPtr->eightByteOffsets[i]);
+            }
+        }
+    }
+#endif // DEBUG
+}
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 /*****************************************************************************
  *

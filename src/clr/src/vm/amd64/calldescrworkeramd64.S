@@ -108,11 +108,43 @@ LOCAL_LABEL(NoFloatArguments):
         je      LOCAL_LABEL(ReturnsFloat)
         cmp     ecx, 8
         je      LOCAL_LABEL(ReturnsDouble)
-        // unexpected
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        // Struct with two integer eightbytes
+        cmp     ecx, 16
+        jne     LOCAL_LABEL(NotTwoIntegerEightbytes)
+        mov     qword ptr [rbx+CallDescrData__returnValue], rax
+        mov     qword ptr [rbx+CallDescrData__returnValue + 8], rdx
+        jmp     LOCAL_LABEL(Epilog)
+
+LOCAL_LABEL(NotTwoIntegerEightbytes):
+        // Struct with the first eightbyte SSE and the second one integer
+        cmp     ecx, 16 + 1
+        jne     LOCAL_LABEL(NotFirstSSESecondIntegerEightbyte)
+        movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
+        mov     qword ptr [rbx+CallDescrData__returnValue + 8], rax
+        jmp     LOCAL_LABEL(Epilog)
+
+LOCAL_LABEL(NotFirstSSESecondIntegerEightbyte):
+        // Struct with the first eightbyte integer and the second one SSE
+        cmp     ecx, 16 + 2
+        jne     LOCAL_LABEL(NotFirstIntegerSecondSSEEightbyte)
+        mov     qword ptr [rbx+CallDescrData__returnValue], rax
+        movsd   real8 ptr [rbx+CallDescrData__returnValue + 8], xmm0
+        jmp     LOCAL_LABEL(Epilog)
+
+LOCAL_LABEL(NotFirstIntegerSecondSSEEightbyte):
+        // Struct with two SSE eightbytes
+        cmp     ecx, 16 + 3
+        jne     LOCAL_LABEL(Epilog) // unexpected
+        movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
+        movsd   real8 ptr [rbx+CallDescrData__returnValue + 8], xmm1
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
         jmp     LOCAL_LABEL(Epilog)
 
 LOCAL_LABEL(ReturnsInt):
-        mov     [rbx+CallDescrData__returnValue], rax
+        mov     qword ptr [rbx+CallDescrData__returnValue], rax
 
 LOCAL_LABEL(Epilog):
         lea     rsp, [rbp - 8]          // deallocate arguments
