@@ -5758,6 +5758,7 @@ mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, 
 		lbuilder = LLVMCreateBuilder ();
 		LLVMPositionBuilderAtEnd (lbuilder, lbb);
 		LLVMBuildRetVoid (lbuilder);
+		mark_as_used (&aot_module, personality);
 	}
 
 	aot_module.llvm_types = g_hash_table_new (NULL, NULL);

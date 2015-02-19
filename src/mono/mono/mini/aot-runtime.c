@@ -2374,6 +2374,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 	table = (gint32*)p;
 
 	if (fde_count > 1) {
+		/* mono_aot_personality () */
 		g_assert (table [0] == -1);
 		*code_start = amodule->code + amodule->code_offsets [table [2]];
 		*code_end = amodule->code + amodule->code_offsets [table [(fde_count - 1) * 2]] + table [fde_count * 2];
