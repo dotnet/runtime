@@ -212,6 +212,10 @@
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj">
+      <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
+      <Name>System.Xml.XPath.XmlDocument</Name>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.Xml.XPath.XDocument.csproj">
       <Project>{daa1ea56-c318-4d2e-ab8d-1ab87d9f98f5}</Project>
       <Name>System.Xml.XPath.XDocument</Name>
