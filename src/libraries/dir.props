@@ -9,10 +9,16 @@
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
+
+    <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin\</BinDir>
-    <TestWorkingDir>$(BinDir)tests\</TestWorkingDir>
-    <PackagesDir Condition="'$(PackagesDir)' == ''">$(ProjectDir)packages\</PackagesDir>
-    <ToolsDir>$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj\</ObjDir>
+    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests\</TestWorkingDir>
+    <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages\</PackagesOutDir>
+    
+    <!-- Input Directories -->
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages\</PackagesDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
   </PropertyGroup>
 
   <!-- Common nuget properties -->
@@ -36,13 +42,7 @@
     <CoverageToolPath>$(PackagesDir)OpenCover.$(CoverageVersion)\OpenCover.Console.exe</CoverageToolPath>
     <!-- When coverage is enabled, we disallow building projects in parallel. There appear to be issues with the OpenCover tool
          in these scenarios. -->
-    <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
-  
-  <!-- Set default Configuration and Platform -->
-  <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' ==''">Debug</Configuration>
-    <Platform Condition="'$(Platform)'==''">AnyCPU</Platform>
+    <SerializeProjects Condition="'$(_CoverageEnabled)'=='true'">true</SerializeProjects>
   </PropertyGroup>
   
   <!-- 
@@ -56,33 +56,37 @@
   Since now have multiple *Debug and *Release configurations, ConfigurationGroup is set to Debug for any of the
   debug configurations, and to Release for any of the release configurations.
   -->
+
+  <!-- Set default Configuration and Platform -->
+  <PropertyGroup>
+    <Platform Condition="'$(Platform)'==''">AnyCPU</Platform>
+
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">$(Configuration)</ConfigurationGroup>
+ 
+    <OS Condition="$(Configuration.StartsWith('Windows'))">Windows_NT</OS>
+    <OS Condition="$(Configuration.StartsWith('Unix'))">Unix</OS>
+    <!-- TODO: Determine actual settings once we have Linux vs Mac specialization -->
+    <OS Condition="$(Configuration.StartsWith('Linux'))">Unix</OS>
+    <OS Condition="$(Configuration.StartsWith('Mac'))">Unix</OS>
+
+    <OSGroup Condition="'$(OSGroup)'==''">$(OS)</OSGroup>
+  </PropertyGroup>
   
   <!-- Setup Default symbol and optimization for Configuration -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Windows_Debug' or '$(Configuration)' == 'Linux_Debug' or '$(Configuration)' == 'Mac_Debug' or '$(Configuration)' == 'Unix_Debug'">
-    <ConfigurationGroup>Debug</ConfigurationGroup>
+  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release' or '$(Configuration)' == 'Windows_Release' or '$(Configuration)' == 'Linux_Release' or '$(Configuration)' == 'Mac_Release'or '$(Configuration)' == 'Unix_Release'">
-    <ConfigurationGroup>Release</ConfigurationGroup>
+  <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Release'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Windows_Debug' or '$(Configuration)' == 'Windows_Release'">
-    <OS>Windows_NT</OS>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Unix_Debug' or '$(Configuration)' == 'Unix_Release'">
-    <OS>Unix</OS>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Linux_Debug' or '$(Configuration)' == 'Linux_Release'">
-    <OS>Unix</OS> <!-- TODO: Determine actual settings once we have Linux vs Mac specialization -->
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Mac_Debug' or '$(Configuration)' == 'Mac_Release'">
-    <OS>Unix</OS> <!-- TODO: Determine actual settings once we have Linux vs Mac specialization -->
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
@@ -101,17 +105,17 @@
 
   <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProjectDir)bin\</BaseOutputPath>
-    <BaseOutputPathWithConfig>$(BaseOutputPath)$(OS)\$(ConfigurationGroup)\</BaseOutputPathWithConfig>
-    <BaseOutputPathWithConfig Condition="'$(Platform)' != 'AnyCPU'">$(BaseOutputPath)$(Platform)\$(OS)\$(ConfigurationGroup)\</BaseOutputPathWithConfig>
-    <OutputPath>$(BaseOutputPathWithConfig)$(MSBuildProjectName)\</OutputPath>
+    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
 
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(BaseOutputPath)obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(OS)\$(ConfigurationGroup)\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == '' and '$(Platform)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(MSBuildProjectName)\$(Platform)\$(OS)\$(Configuration)\</IntermediateOutputPath>
-    
-    <TestPath>$(TestWorkingDir)$(MSBuildProjectName)\$(OS)\$(ConfigurationGroup)\</TestPath>
-    <TestPath Condition="'$(Platform)' != 'AnyCPU'">$(TestWorkingDir)$(MSBuildProjectName)\$(Platform)\$(OS)\$(ConfigurationGroup)\</TestPath>
+    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\$(MSBuildProjectName)\</OutputPath>
+
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\$(MSBuildProjectName)\</IntermediateOutputPath>
+
+    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
+
+    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
 
   <PropertyGroup>
