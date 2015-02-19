@@ -255,10 +255,6 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-wow64-l1-1-0", SetLastError = true)]
         public static extern bool IsWow64Process(SafeProcessHandle hProcess, ref bool Wow64Process);
 
-        [SecurityCritical]
-        [DllImport("api-ms-win-core-handle-l1-1-0", ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
-        public static extern bool CloseHandle(IntPtr handle);
-
         public static string GetComputerName()
         {
             char[] buffer = new char[256];
