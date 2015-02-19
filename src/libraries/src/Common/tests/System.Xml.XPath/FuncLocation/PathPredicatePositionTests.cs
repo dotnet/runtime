@@ -130,7 +130,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Position on the ancestor axis, uses multiple predicates. Checks that reverse orientation is maintained on all prediactes
+        /// Position on the ancestor axis, uses multiple predicates. Checks that reverse orientation is maintained on all predicates
         /// ancestor::node()[position()&lt;5][position()>2][last()]
         /// </summary>
         [Fact]
@@ -357,7 +357,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Position on the ancestor-or-self axis, uses multiple predicates. Checks that reverse orientation is maintained on all prediactes
+        /// Position on the ancestor-or-self axis, uses multiple predicates. Checks that reverse orientation is maintained on all predicates
         /// ancestor-or-self::node()[position()&lt;5][position()>2][last()]
         /// </summary>
         [Fact]
@@ -715,7 +715,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Cecking for position on a node set. Should always work with reference to the child axis
+        /// Checking for position on a node set. Should always work with reference to the child axis
         /// (ancestor::*)[position()=1]
         /// </summary>
         [Fact]
@@ -742,7 +742,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Cecking for position on a node set. Should give only one node
+        /// Checking for position on a node set. Should give only one node
         /// (child::*/child::*)[position()=last()]
         /// </summary>
         [Fact]
@@ -769,7 +769,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Cecking for position not on a node set. Should give more than one node. This is a regression for the test case above
+        /// Checking for position not on a node set. Should give more than one node. This is a regression for the test case above
         /// child::*/child::*[position()=last()]
         /// </summary>
         [Fact]
@@ -2544,7 +2544,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Use position with a range of numbers. Selects all nodes. In Old Xpath it is a bug that we convert the string ""Infinity"" to the realy infinity. XPath spec under Number function states that only number in string are converted back to number all other string should be converted to NaN.
+        /// Use position with a range of numbers. Selects all nodes. In Old Xpath it is a bug that we convert the string ""Infinity"" to the really infinity. XPath spec under Number function states that only number in string are converted back to number all other string should be converted to NaN.
         /// //*[position()>"-Infinity" or position()<"Infinity"]
         /// </summary>
         [Fact]
@@ -2933,7 +2933,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Complex expression involving position. Uses multiple predicates. Expected : Should select 2 mgazine nodes
+        /// Complex expression involving position. Uses multiple predicates. Expected : Should select 2 magazine nodes
         /// preceding::*[following::price[.="free"]][ancestor::bookstore][child::title][position() = 1]
         /// </summary>
         [Fact]
@@ -3178,7 +3178,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         }
 
         /// <summary>
-        /// Position in mutiple predicates
+        /// Position in multiple predicates
         /// /descendant-or-self::node()[position()> 3 and position() &lt; 30]/child::node()[position()&lt;last() and position()&lt;30 and position()!=13]/preceding::*[position()>=2 and position()&lt;= last() - 2][position()>2][position()>2]
         /// </summary>
         [Fact]

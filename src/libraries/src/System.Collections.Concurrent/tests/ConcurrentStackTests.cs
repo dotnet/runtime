@@ -156,7 +156,7 @@ namespace System.Collections.Concurrent.Tests
         // a BCL stack on the side to validate contents are correctly maintained.
         private static void Test1_PushAndPop(int pushes, int pops)
         {
-            // It utilised a random generator to do x number of pushes and
+            // It utilized a random generator to do x number of pushes and
             // y number of pops where x = random, y = random.  Removed it
             // because it used System.Runtime.Extensions.
 
@@ -205,10 +205,10 @@ namespace System.Collections.Concurrent.Tests
         }
 
         // Pushes and pops a certain number of times, and validates the resulting count.
-        // These operations happen sconcurrently.
+        // These operations happen concurrently.
         private static void Test2_ConcPushAndPop(int threads, int pushes, int pops)
         {
-            // It utilised a random generator to do x number of pushes and
+            // It utilized a random generator to do x number of pushes and
             // y number of pops where x = random, y = random.  Removed it
             // because it used System.Runtime.Extensions.
 
@@ -372,7 +372,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        //Tests ConcurrentStack.PopRange by pushing consecutove numbers and run n threads each thread tries to pop m itmes
+        //Tests ConcurrentStack.PopRange by pushing consecutive numbers and run n threads each thread tries to pop m itmes
         // the popped m items should be consecutive
         private static void Test7_PopRange(int NumOfThreads, int elementsPerThread)
         {

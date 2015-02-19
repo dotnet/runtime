@@ -109,7 +109,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void Test04()
         {
-            // [] Gettig back a string
+            // [] Getting back a string
 
             _rk2 = _rk1.CreateSubKey(_testKeyName);
 

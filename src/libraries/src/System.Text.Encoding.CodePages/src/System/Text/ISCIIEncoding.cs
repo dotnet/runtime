@@ -3,7 +3,7 @@
 
 // ISCIIEncoding
 //
-//  Ported from windows c_iscii.  If you find bugs here, there're likely similar
+//  Ported from windows c_iscii.  If you find bugs here, there are likely similar
 //  bugs in the windows version
 
 using System;
@@ -45,7 +45,7 @@ namespace System.Text
 
         // Ranges
         private const int MultiByteBegin = 0xa0;     // Beginning of MultiByte space in ISCII
-        private const int IndicBegin = 0x0901;   // Beginining of Unicode Indic script code points
+        private const int IndicBegin = 0x0901;   // Beginning of Unicode Indic script code points
         private const int IndicEnd = 0x0d6f;   // End of Unicode Indic Script code points
 
         // ISCII Control Values
@@ -103,7 +103,7 @@ namespace System.Text
         }
 
         // Our MaxCharCount is the same as the byteCount.  There are a few sequences
-        // where 2 (or more) bytes could become 2 chars, but thats still 1 to 1.
+        // where 2 (or more) bytes could become 2 chars, but that's still 1 to 1.
         public override int GetMaxCharCount(int byteCount)
         {
             if (byteCount < 0)
@@ -111,7 +111,7 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // Our MaxCharCount is the same as the byteCount.  There are a few sequences
-            // where 2 (or more) bytes could become 2 chars, but thats still 1 to 1.
+            // where 2 (or more) bytes could become 2 chars, but that's still 1 to 1.
             // Also could have 1 in decoder if we're waiting to see if next char's a nukta.
             long charCount = ((long)byteCount + 1);
 

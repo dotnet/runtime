@@ -56,7 +56,7 @@ namespace System.Threading.Tasks.Dataflow
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
-            // Initalize bounding actions
+            // Initialize bounding actions
             Action<ISourceBlock<T[]>, int> onItemsRemoved = null;
             Func<ISourceBlock<T[]>, T[], IList<T[]>, int> itemCountingFunc = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="batchSize">The batch size used by the BatchBlock.</param>
                 internal NonGreedyState(int batchSize)
                 {
-                    // A non-greedy batch requires at least batchSize sources to be succesful.
+                    // A non-greedy batch requires at least batchSize sources to be successful.
                     // Thus, we initialize our collections to be able to store at least that many elements
                     // in order to avoid unnecessary allocations below that point.
                     Contract.Requires(batchSize > 0, "A positive batch size is required");
@@ -419,7 +419,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Otherwise, we try to postpone if a source was provided
                     else if (source != null)
                     {
-                        Debug.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mopde.");
+                        Debug.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mode.");
 
                         // We always postpone using _nonGreedyState even if we are being greedy with bounding
                         _nonGreedyState.PostponedMessages.Push(source, messageHeader);
@@ -459,7 +459,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 // Release reserved messages if requested.
-                // This must be donoe from outside the lock.
+                // This must be done from outside the lock.
                 if (releaseReservedMessages)
                 {
                     try { ReleaseReservedMessages(throwOnFirstException: false); }
@@ -699,7 +699,7 @@ namespace System.Threading.Tasks.Dataflow
                             madeProgress = MakeBatchIfPossible(evenIfFewerThanBatchSize: triggered);
 
                             // Reset the trigger flag if:
-                            // - We made a batch, regardless of whehther it came due to a trigger or not.
+                            // - We made a batch, regardless of whether it came due to a trigger or not.
                             // - We tried to make a batch due to a trigger, but were unable to, which
                             //   could happen if we're unable to consume any of the postponed messages.
                             if (madeProgress || triggered) _nonGreedyState.AcceptFewerThanBatchSize = false;
@@ -1146,11 +1146,11 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>Counts the input items in a single output item or in a list of output items.</summary>
-            /// <param name="singleOutputItem">A single outptut item. Only considered if multipleOutputItems == null.</param>
-            /// <param name="multipleOutputItems">A list of outptut items. May be null.</param>
+            /// <param name="singleOutputItem">A single output item. Only considered if multipleOutputItems == null.</param>
+            /// <param name="multipleOutputItems">A list of output items. May be null.</param>
             internal static int CountItems(T[] singleOutputItem, IList<T[]> multipleOutputItems)
             {
-                // If multipltOutputItems == null, then singleOutputItem is the subject of couonting
+                // If multipleOutputItems == null, then singleOutputItem is the subject of counting
                 if (multipleOutputItems == null) return singleOutputItem.Length;
 
                 // multipleOutputItems != null. Count the elements in each item.

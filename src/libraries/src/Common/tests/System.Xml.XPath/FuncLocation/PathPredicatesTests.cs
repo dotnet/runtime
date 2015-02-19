@@ -757,7 +757,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Comparing node value to a sting constant, using opreator = - Return all book authors with a last-name equal to ""Bob"".
+        /// Comparing node value to a sting constant, using operator = - Return all book authors with a last-name equal to ""Bob"".
         /// book/author[last-name="Bob"]
         /// </summary>
         [Fact]
@@ -802,7 +802,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Comparing node value to a sting constant, using opreator != - Return all book authors with a last-name not equal to ""Bob"".
+        /// Comparing node value to a sting constant, using operator != - Return all book authors with a last-name not equal to ""Bob"".
         /// book/author[last-name!="Bob"]
         /// </summary>
         [Fact]
@@ -847,7 +847,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Comparing node value to a sting constant, using opreator >= - Return all book authors with a last-name greater than or equal to ""Robinson"".
+        /// Comparing node value to a sting constant, using operator >= - Return all book authors with a last-name greater than or equal to ""Robinson"".
         /// book/author[last-name>="Robinson"]
         /// </summary>
         [Fact]
@@ -863,7 +863,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Comparing node value to a sting constant, using opreator > - Return all book authors with a last-name greater than ""R"".
+        /// Comparing node value to a sting constant, using operator > - Return all book authors with a last-name greater than ""R"".
         /// book/author[last-name>"R"]
         /// </summary>
         [Fact]
@@ -879,7 +879,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Comparing node value to a sting constant, using opreator < - Return all book authors with a last-name less than ""Boc"".
+        /// Comparing node value to a sting constant, using operator < - Return all book authors with a last-name less than ""Boc"".
         /// book/author[last-name<"Boc"]
         /// </summary>
         [Fact]
@@ -1484,7 +1484,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Whaitespace check - (Whitespace test) Return all book's author's last-names.
+        /// Whitespace check - (Whitespace test) Return all book's author's last-names.
         /// book / author  /      last-name
         /// </summary>
         [Fact]
@@ -1563,7 +1563,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Invalid expresison - Error Case.
+        /// Invalid expression - Error Case.
         /// child::node()[Schema|]
         /// </summary>
         [Fact]
@@ -1593,7 +1593,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Predicate containing aatricbute - Return all nodes with a style attribute.
+        /// Predicate containing attribute - Return all nodes with a style attribute.
         /// *[@style]
         /// </summary>
         [Fact]
@@ -1819,7 +1819,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Predicate using or - Return all author's with a degree or an award and a puplication.
+        /// Predicate using or - Return all author's with a degree or an award and a publication.
         /// bookstore//author[(degree or award) and publication]
         /// </summary>
         [Fact]

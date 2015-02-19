@@ -159,7 +159,7 @@ namespace System.Collections.Specialized.Tests
             }
 
             //
-            // add null string wiuth non-null key
+            // add null string with non-null key
             // [] add null string with non-null key and verify ContainsKey()
             //
             cnt = sd.Count;

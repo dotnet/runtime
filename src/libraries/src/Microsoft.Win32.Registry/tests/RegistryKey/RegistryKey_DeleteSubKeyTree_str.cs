@@ -102,7 +102,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void Test05()
         {
-            // [] Add in multople subkeys and then delete the root key
+            // [] Add in multiple subkeys and then delete the root key
 
             _rk2 = _rk1.CreateSubKey(_testKeyName);
             for (int i = 0; i < 10; i++)

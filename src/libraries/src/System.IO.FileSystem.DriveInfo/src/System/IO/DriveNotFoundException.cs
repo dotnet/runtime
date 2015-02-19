@@ -5,7 +5,7 @@ using System;
 
 namespace System.IO
 {
-    //Thrown when trying to access a drive that is not availabe.
+    //Thrown when trying to access a drive that is not available.
     public class DriveNotFoundException : IOException
     {
         public DriveNotFoundException()

@@ -12,7 +12,7 @@ namespace Microsoft.Win32
         MultiString = Interop.REG_MULTI_SZ,
         QWord = Interop.REG_QWORD,
         Unknown = 0,                          // REG_NONE is defined as zero but BCL
-        None = unchecked((int)0xFFFFFFFF), //  mistakingly overrode this value.  
+        None = unchecked((int)0xFFFFFFFF), //  mistakenly overrode this value.  
     }   // Now instead of using Interop.REG_NONE we use "-1".
 }
 

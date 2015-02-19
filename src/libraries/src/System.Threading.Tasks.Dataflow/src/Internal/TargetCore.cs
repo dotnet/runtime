@@ -456,8 +456,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
                             // Try to keep the task alive only if MaxDOP=1
                             if (_dataflowBlockOptions.MaxDegreeOfParallelism != 1) break;
 
-                            // If this task has processed enough messages without beeing kept alive, 
-                            // it has surved its purpose. Don't keep it alive.
+                            // If this task has processed enough messages without being kept alive, 
+                            // it has served its purpose. Don't keep it alive.
                             if (numberOfMessagesProcessedSinceTheLastKeepAlive > Common.KEEP_ALIVE_NUMBER_OF_MESSAGES_THRESHOLD) break;
 
                             // If keep alive is banned, don't attempt it
@@ -470,7 +470,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                             // Reset the keep alive counter. (Keep this line together with TryKeepAliveUntil.)
                             numberOfMessagesProcessedSinceTheLastKeepAlive = 0;
 
-                            // Try to keep the task alive briefly until a new message arives
+                            // Try to keep the task alive briefly until a new message arrives
                             if (!Common.TryKeepAliveUntil(_keepAlivePredicate, this, out messageWithId))
                             {
                                 // Keep alive was unsuccessful. 
@@ -550,7 +550,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // If a parallelism slot was available, try to get an item.
                 // Be careful, because an exception may be thrown from ConsumeMessage
-                // and we have alredy incremented _numberOfOutstandingOperations.
+                // and we have already incremented _numberOfOutstandingOperations.
                 bool gotMessage = false;
                 try
                 {
@@ -682,7 +682,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     if (forPostponementTransfer)
                     {
-                        // We didnt consume message so we need to decrement because we havent consumed the element.
+                        // We didn't consume message so we need to decrement because we havent consumed the element.
                         _boundingState.OutstandingTransfers--;
                     }
                 }

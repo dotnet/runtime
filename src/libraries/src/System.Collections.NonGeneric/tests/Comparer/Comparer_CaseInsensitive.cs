@@ -27,7 +27,7 @@ public class Comparer_CaseInsensitive
                 /////////////////////////  START TESTS ////////////////////////////
                 ///////////////////////////////////////////////////////////////////
 
-                //[] Vanila test case - The TextInfo property of the CultureInfo is used in the CaseInsensitiveHashCodeProvider
+                //[] Vanilla test case - The TextInfo property of the CultureInfo is used in the CaseInsensitiveHashCodeProvider
                 //TextInfo has GetCaseInsensitiveHashCode() methods
 
                 iCountTestcases++;

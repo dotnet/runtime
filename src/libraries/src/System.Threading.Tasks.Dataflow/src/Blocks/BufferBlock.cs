@@ -60,7 +60,7 @@ namespace System.Threading.Tasks.Dataflow
                 _boundingState = new BoundingStateWithPostponedAndTask<T>(dataflowBlockOptions.BoundedCapacity);
             }
 
-            // Initilize the source state
+            // Initialize the source state
             _source = new SourceCore<T>(this, dataflowBlockOptions,
                 owningSource => ((BufferBlock<T>)owningSource).Complete(),
                 onItemsRemoved);
@@ -135,7 +135,7 @@ namespace System.Threading.Tasks.Dataflow
                 else if (source != null)
                 {
                     Debug.Assert(_boundingState != null && _boundingState.PostponedMessages != null,
-                        "PostponedMessages must have been initialized during construction in bounding mopde.");
+                        "PostponedMessages must have been initialized during construction in bounding mode.");
 
                     _boundingState.PostponedMessages.Push(source, messageHeader);
                     return DataflowMessageStatus.Postponed;
@@ -327,7 +327,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>
-        /// Retrieves one postponed message if there's room and if we can consume a postoned message.
+        /// Retrieves one postponed message if there's room and if we can consume a postponed message.
         /// Stores any consumed message into the source half.
         /// </summary>
         /// <returns>true if a message could be consumed and stored; otherwise, false.</returns>

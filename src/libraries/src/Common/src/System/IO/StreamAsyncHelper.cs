@@ -54,7 +54,7 @@ namespace System.IO
             // Create the task to asynchronously run the read or write.  Even though Task implements IAsyncResult,
             // we wrap it in a special IAsyncResult object that stores all of the state for the operation
             // and that we can pass around as a state parameter to all of our delegates.  Even though this
-            // is an allocation, this allows us to avoid any closures or non-statiically-cached delegates
+            // is an allocation, this allows us to avoid any closures or non-statically cached delegates
             // for both the Task and its continuation, saving more allocations.
             var asyncResult = new StreamReadWriteAsyncResult(_stream, buffer, offset, count, callback, state);
             Task t;

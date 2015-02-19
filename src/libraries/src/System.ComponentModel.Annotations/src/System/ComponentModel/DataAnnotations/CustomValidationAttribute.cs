@@ -126,7 +126,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            // If attribute is not valid, throw an exeption right away to inform the developer
+            // If attribute is not valid, throw an exception right away to inform the developer
             ThrowIfAttributeNotWellFormed();
 
             var methodInfo = _methodInfo;
@@ -190,7 +190,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
         public override string FormatErrorMessage(string name)
         {
-            // If attribute is not valid, throw an exeption right away to inform the developer
+            // If attribute is not valid, throw an exception right away to inform the developer
             ThrowIfAttributeNotWellFormed();
 
             if (!string.IsNullOrEmpty(_lastMessage))

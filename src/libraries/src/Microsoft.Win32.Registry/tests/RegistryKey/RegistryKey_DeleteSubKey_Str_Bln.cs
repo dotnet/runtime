@@ -33,7 +33,7 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void Test01()
         {
-            // [] Passing in null should throw ArgumentNullException irrepsective of the flag
+            // [] Passing in null should throw ArgumentNullException irrespective of the flag
             Action a = () => {  _rk1.DeleteSubKey(null, false); };
             Assert.Throws<ArgumentNullException>(() => { a(); });
         }

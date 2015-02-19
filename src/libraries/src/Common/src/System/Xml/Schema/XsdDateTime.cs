@@ -27,7 +27,7 @@ namespace System.Xml.Schema
     }
 
     /// <summary>
-    /// This structure extends System.DateTime to support timeInTicks zone and Gregorian types scomponents of an Xsd Duration.  It is used internally to support Xsd durations without loss
+    /// This structure extends System.DateTime to support timeInTicks zone and Gregorian types components of an Xsd Duration.  It is used internally to support Xsd durations without loss
     /// of fidelity.  XsdDuration structures are immutable once they've been created.
     /// </summary>
     internal struct XsdDateTime

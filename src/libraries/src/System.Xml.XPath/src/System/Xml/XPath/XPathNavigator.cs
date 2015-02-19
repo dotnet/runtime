@@ -817,7 +817,7 @@ namespace System.Xml.XPath
 
             // We should clone query because some Query.MatchNode() alter expression state and this may brake
             // SelectionIterators that are running using this Query
-            // Example of MatchNode() that alret the state is FilterQuery.MatchNode()
+            // Example of MatchNode() that alert the state is FilterQuery.MatchNode()
             Query query = Query.Clone(cexpr.QueryTree);
 
             try

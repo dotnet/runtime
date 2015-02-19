@@ -1102,7 +1102,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 // We need to cleanup if one of a few things happens:
-                // - The target completes sucessfully due to receiving data.
+                // - The target completes successfully due to receiving data.
                 // - The user-specified timeout occurs, such that we should bail on the receive.
                 // - The cancellation token has cancellation requested, such that we should bail on the receive.
                 // - The source completes, since it won't send any more data.
@@ -1509,7 +1509,7 @@ namespace System.Threading.Tasks.Dataflow
                 // and thus any synchronous continuations would run as part of the source block's call.  We don't have to worry
                 // about cancellation, as we've coded cancellation to complete the task asynchronously, and with the continuation
                 // set as NotOnCanceled, so the continuation will be canceled immediately when the antecedent is canceled, which
-                // will thusly be asynchronously from the cancellation token source's cancellation call.
+                // will thus be asynchronously from the cancellation token source's cancellation call.
                 return target.Task.ContinueWith(
                     OutputAvailableAsyncTarget<TOutput>.s_handleCompletion, target,
                     CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
@@ -1517,7 +1517,7 @@ namespace System.Threading.Tasks.Dataflow
             catch (Exception exc)
             {
                 // Source.LinkTo could throw, as could cancellationToken.Register if cancellation was already requested
-                // such that it synchronously invokes the souce's unlinker IDisposable, which could throw.
+                // such that it synchronously invokes the source's unlinker IDisposable, which could throw.
                 target.TrySetException(exc);
 
                 // Undo the link from the source to the target
@@ -1560,7 +1560,7 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Cancel asynchronously so that we're not completing the task as part of the cts.Cancel() call,
                 // since synchronous continuations off that task would then run as part of Cancel.
-                // Take advantage of this task and unlink from there to avoid doing the interlocked operation synchrnously.
+                // Take advantage of this task and unlink from there to avoid doing the interlocked operation synchronously.
                 System.Threading.Tasks.Task.Factory.StartNew(tgt =>
                                                             {
                                                                 var thisTarget = (OutputAvailableAsyncTarget<T>)tgt;
@@ -2458,7 +2458,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
             }
 
-            /// <summary>Resets the observer state to the original, unactive state.</summary>
+            /// <summary>Resets the observer state to the original, inactive state.</summary>
             /// <returns>The list of active observers prior to the reset.</returns>
             private ImmutableList<IObserver<TOutput>> ResetObserverState()
             {

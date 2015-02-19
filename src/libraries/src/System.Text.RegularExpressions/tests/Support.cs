@@ -125,8 +125,8 @@ public class RegexTestCase
 
         if (!ExpectSuccess)
         {
-            //The match was not suppose to suceed and it failed. There is no more checking to do
-            //so the test was a sucess
+            //The match was not suppose to succeed and it failed. There is no more checking to do
+            //so the test was a success
             return true;
         }
 

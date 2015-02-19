@@ -22,7 +22,7 @@ namespace System.Linq.Parallel
         // as soon as a consumer makes room. A consumer can block waiting until a producer
         // enqueues a new element. We use a chunking scheme to adjust the granularity and
         // frequency of synchronization, e.g. by enqueueing/dequeueing N elements at a time.
-        // Because there is only ever a single producer and consumer, we are able to acheive
+        // Because there is only ever a single producer and consumer, we are able to achieve
         // efficient and low-overhead synchronization.
         //
         // In general, the buffer has four logical states:

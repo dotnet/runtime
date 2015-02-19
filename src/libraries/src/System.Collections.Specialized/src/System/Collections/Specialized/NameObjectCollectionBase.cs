@@ -428,7 +428,7 @@ namespace System.Collections.Specialized
         }
 
         //
-        // Keys propetry
+        // Keys property
         //
 
         /// <devdoc>

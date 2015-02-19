@@ -136,7 +136,7 @@ namespace System.Text
                 // so ignore everything above 0x80 except 0xa0 and 0xff
                 if (bytes >= 0x81 && bytes != 0xa0 && bytes != 0xff)
                 {
-                    // We set diffent lead bytes later, so just return false
+                    // We set different lead bytes later, so just return false
                     return false;
                 }
             }

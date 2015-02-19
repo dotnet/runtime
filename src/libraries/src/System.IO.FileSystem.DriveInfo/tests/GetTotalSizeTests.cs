@@ -46,7 +46,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             for (int i = 0; i < drives.Length; i++)
             {
                 tbUser = -1;
-                //We dont want the disk not ready blocking dialog box
+                //We don't want the disk not ready blocking dialog box
                 if (drives[i].IsReady)
                 {
                     win32Result = GetDiskFreeSpaceEx(drives[i].Name, out fbUser, out tbUser, out fbTotal);
@@ -56,7 +56,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 win32Values.Add(drives[i].Name, tbUser);
             }
 
-            //Senario 1: Confirm with PInvoke
+            //Scenario 1: Confirm with PInvoke
             for (int i = 0; i < drives.Length; i++)
             {
                 if (!drives[i].IsReady)
@@ -77,12 +77,12 @@ namespace System.IO.FileSystem.DriveInfoTests
                 }
             }
 
-            //Senario 2: Add files and check that the total size is the same
+            //Scenario 2: Add files and check that the total size is the same
             for (int i = 0; i < drives.Length; i++)
             {
                 if (!drives[i].IsReady)
                     continue;
-                //We will add a random file to these drives and see if that changes anythig - should not at all!
+                //We will add a random file to these drives and see if that changes anything - should not at all!
                 if ((long)win32Values[drives[i].Name] != -1)
                 {
                     String tempFileName = "TotalSizeTests_";

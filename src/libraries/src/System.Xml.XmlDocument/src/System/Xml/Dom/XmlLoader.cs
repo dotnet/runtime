@@ -640,7 +640,7 @@ namespace System.Xml
         {
             //construct a tree underneath the node
             XmlNamespaceManager mgr = ParsePartialContent(node, innerxmltext, XmlNodeType.Element);
-            //remove the duplicate namesapce
+            //remove the duplicate namespace
             if (node.ChildNodes.Count > 0)
                 RemoveDuplicateNamespace((XmlElement)node, mgr, false);
         }
@@ -689,7 +689,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            // Add this namespace, so it we will behave corectly when setting "<bar xmlns:p="BAR"><foo2 xmlns:p="FOO"/></bar>" as
+                            // Add this namespace, so it we will behave correctly when setting "<bar xmlns:p="BAR"><foo2 xmlns:p="FOO"/></bar>" as
                             // InnerXml on this foo elem where foo is like this "<foo xmlns:p="FOO"></foo>"
                             // If do not do this, then we will remove the inner p prefix definition and will let the 1st p to be in scope for
                             // the subsequent InnerXml_set or setting an EntRef inside.

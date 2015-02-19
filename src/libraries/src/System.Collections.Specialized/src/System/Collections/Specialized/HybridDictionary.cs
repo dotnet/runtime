@@ -65,7 +65,7 @@ namespace System.Collections.Specialized
                 // Hashtable supports multiple read, one writer thread safety.
                 // Although we never made the same guarantee for HybridDictionary,
                 // it is still nice to do the same thing here since we have recommended
-                // HybridDictioary as replacement for Hashtable.
+                // HybridDictionary as replacement for Hashtable.
                 ListDictionary cachedList = _list;
                 if (_hashtable != null)
                 {

@@ -20,7 +20,7 @@ namespace System.Threading.Tasks.Test
     {
         #region Member Variables
 
-        private const int SEED = 1000; // mininum seed to be passed into ZetaSequence workload
+        private const int SEED = 1000; // minimum seed to be passed into ZetaSequence workload
 
         private int _count; // no of actions
         private ActionType _actionType; // type of actions

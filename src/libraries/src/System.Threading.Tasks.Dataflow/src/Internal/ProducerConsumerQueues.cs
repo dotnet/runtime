@@ -15,7 +15,7 @@
 //  src\ndp\clr\src\bcl\system\threading\tasks\producerConsumerQueue.cs
 //  src\ndp\fx\src\dataflow\system\threading\tasks\dataflow\internal\producerConsumerQueue.cs
 // Keep both of them consistent by changing the other file when you change this one, also avoid:
-//  1- To reference interneal types in mscorlib
+//  1- To reference internal types in mscorlib
 //  2- To reference any dataflow specific types
 // This should be fixed post Dev11 when this class becomes public.
 //
@@ -505,7 +505,7 @@ namespace System.Threading.Tasks
             internal PaddingFor32 _pad1;
 
             /// <summary>A copy of the current head index.</summary>
-            internal int _firstCopy; // not voliatle as only read and written by the consumer thread
+            internal int _firstCopy; // not volatile as only read and written by the consumer thread
             /// <summary>The index of the current tail in the segment.</summary>
             internal volatile int _last;
 

@@ -782,7 +782,7 @@ namespace System.Numerics.Tests
             Matrix3x2 a = GenerateTestMatrix();
             Matrix3x2 b = a;
 
-            // Transfomed vector that has same semantics of property must be same.
+            // Transformed vector that has same semantics of property must be same.
             Vector2 val = new Vector2(a.M31, a.M32);
             Assert.Equal(val, a.Translation);
 

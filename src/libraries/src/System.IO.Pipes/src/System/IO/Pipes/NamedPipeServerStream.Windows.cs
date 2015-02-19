@@ -173,7 +173,7 @@ namespace System.IO.Pipes
                     return asyncResult;
                 }
 
-                // WaitForConnectionCallback will not be called becasue we completed synchronously.
+                // WaitForConnectionCallback will not be called because we completed synchronously.
                 // Either the pipe is already connected, or there was an error. Unpin and free the overlapped again.
                 Overlapped.Free(intOverlapped);
                 asyncResult._overlapped = null;

@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions
         // *********** Match timeout fields { ***********
 
         // We need this because time is queried using Environment.TickCount for performance reasons
-        // (Environment.TickCount returns millisecs as an int and cycles):
+        // (Environment.TickCount returns milliseconds as an int and cycles):
         private static readonly TimeSpan MaximumMatchTimeout = TimeSpan.FromMilliseconds(Int32.MaxValue - 1);
 
         // InfiniteMatchTimeout specifies that match timeout is switched OFF. It allows for faster code paths
@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions
 
         internal ExclusiveReference _runnerref;             // cached runner
         internal SharedReference _replref;                  // cached parsed replacement pattern
-        internal RegexCode _code;                           // if interpreted, this is the code for RegexIntepreter
+        internal RegexCode _code;                           // if interpreted, this is the code for RegexInterpreter
         internal bool _refsInitialized = false;
 
         internal static LinkedList<CachedCodeEntry> s_livecode = new LinkedList<CachedCodeEntry>();// the cache of code and factories that are currently loaded

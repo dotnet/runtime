@@ -176,7 +176,7 @@ namespace System.IO
             return Encoding.UTF8.GetString(str, length); // TODO: determine correct encoding; UTF8 is good enough for now
         }
 
-        /// <summary>Gets the length of the null-terminated string by searching for its null teminration.</summary>
+        /// <summary>Gets the length of the null-terminated string by searching for its null termination.</summary>
         /// <param name="str">The string.</param>
         /// <returns>The string's length, not including the null termination.</returns>
         private static unsafe int GetNullTerminatedStringLength(byte* str)

@@ -125,7 +125,7 @@ namespace System.Linq.Parallel
                         }
                     }
 
-                    // if all the exceptions were OCE(externalToken), then we will propogate only a single OCE(externalToken) below
+                    // if all the exceptions were OCE(externalToken), then we will propagate only a single OCE(externalToken) below
                     // otherwise, we flatten the aggregate (because the WaitAll above already aggregated) and rethrow.
                     if (!allOCEsOnTrackedExternalCancellationToken)
                         throw flattenedAE;  // Case #1

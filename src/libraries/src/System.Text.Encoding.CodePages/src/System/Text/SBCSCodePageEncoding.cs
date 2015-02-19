@@ -320,7 +320,7 @@ namespace System.Text
             {
                 // Replacement fallback encodes surrogate pairs as two ?? (or two whatever), so return size is always
                 // same as input size.
-                // Note that no existing SBCS code pages map code points to supplimentary characters, so this is easy.
+                // Note that no existing SBCS code pages map code points to supplementary characters, so this is easy.
 
                 // We could however have 1 extra byte if the last call had an encoder and a funky fallback and
                 // if we don't use the funky fallback this time.
@@ -467,7 +467,7 @@ namespace System.Text
 
                     // If we had a leftover character we will have to add a ?  (This happens if they had a funky
                     // fallback last time, but not this time. We can't spit any out though,
-                    // because with fallback encoder each surrogate is treated as a seperate code point)
+                    // because with fallback encoder each surrogate is treated as a separate code point)
                     if (charLeftOver > 0)
                     {
                         // Have to have room
@@ -772,7 +772,7 @@ namespace System.Text
                 // Try it the fast way
                 char replacementChar;
                 if (fallback == null)
-                    replacementChar = '?';  // Best fit alwasy has ? for fallback for SBCS
+                    replacementChar = '?';  // Best fit always has ? for fallback for SBCS
                 else
                     replacementChar = fallback.DefaultString[0];
 

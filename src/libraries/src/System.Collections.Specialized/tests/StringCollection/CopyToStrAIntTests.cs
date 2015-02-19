@@ -66,7 +66,7 @@ namespace System.Collections.Specialized.Tests
                 {
                     if (String.Compare(destination[i], "") != 0)
                     {
-                        Assert.False(true, string.Format("Error, item = \"{1}\" insteead of \"{2}\" after copying empty collection", i, destination[i], ""));
+                        Assert.False(true, string.Format("Error, item = \"{1}\" instead of \"{2}\" after copying empty collection", i, destination[i], ""));
                     }
                 }
             }

@@ -57,9 +57,9 @@ namespace System.Reflection.Metadata.Tests
             mdtMethodImpl = 0x19000000,
             mdtImplMap = 0x1C000000,
             mdtFieldRVA = 0x1D000000,
-            mdtAssemblyProperssor = 0x21000000,
+            mdtAssemblyProcessor = 0x21000000,
             mdtAssemblyOS = 0x22000000,
-            mdtAssemblyRefProperssor = 0x24000000,
+            mdtAssemblyRefProcessor = 0x24000000,
             mdtAssemblyRefOS = 0x25000000,
             mdtNestedClass = 0x29000000,
         }
@@ -1988,13 +1988,13 @@ namespace System.Reflection.Metadata.Tests
         }
 
         /// <summary>
-        /// MethodSematics Table
+        /// MethodSemantics Table
         ///     Semantic (2-byte unsigned)
         ///     Method (RID to method table)
         ///     Association (Token)    
         /// </summary>
         [Fact]
-        public void ValidateMethodSematicsTable()
+        public void ValidateMethodSemanticsTable()
         {
             // ModuleCS01 0x17 - chkec every 5
             var expSems = new ushort[] { 0x10, 0x08, 0x02, 0x10, 0x01, };

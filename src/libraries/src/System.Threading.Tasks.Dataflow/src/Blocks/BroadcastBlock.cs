@@ -326,7 +326,7 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>
-        /// Retrieves one postponed message if there's room and if we can consume a postoned message.
+        /// Retrieves one postponed message if there's room and if we can consume a postponed message.
         /// Stores any consumed message into the source half.
         /// </summary>
         /// <returns>true if a message could be consumed and stored; otherwise, false.</returns>
@@ -984,7 +984,7 @@ namespace System.Threading.Tasks.Dataflow
                 // We do not clear _currentMessage, which should remain as that message forever.
                 lock (OutgoingLock)
                 {
-                    // Save the linked list of targets so that it could be traveresed later to propagate completion
+                    // Save the linked list of targets so that it could be traversed later to propagate completion
                     linkedTargets = _targetRegistry.ClearEntryPoints();
                     lock (ValueLock)
                     {

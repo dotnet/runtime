@@ -131,7 +131,7 @@ namespace System.Resources
             // Write out class name of the ResourceSet class best suited to
             // handling this file.
             // This needs to be the same even with multi-targeting. It's the 
-            // full name -- not the asssembly qualified name.
+            // full name -- not the assembly qualified name.
             resMgrHeaderPart.Write(ResSetTypeName);
             resMgrHeaderPart.Flush();
 
@@ -225,7 +225,7 @@ namespace System.Resources
                     bw.Write(hash);
 
                 //  Write relative positions of all the names in the file.
-                //   Note: this data is 4 byte aligned, occuring immediately 
+                //   Note: this data is 4 byte aligned, occurring immediately 
                 //   after the 8 byte aligned name hashes (whose length may 
                 //   potentially be odd).
                 Debug.Assert((bw.BaseStream.Position & 3) == 0, "ResourceWriter: Name positions array won't be 4 byte aligned!  Ack!");

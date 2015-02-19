@@ -78,7 +78,7 @@ public class AnonymousPipesSimpleTest
             DoStreamOperations(client);
         }
         // If you don't see this message that means that this task crashed.
-        Console.WriteLine("*** Client operations suceedeed. ***");
+        Console.WriteLine("*** Client operations succeeded. ***");
     }
 
     public static Task StartClientAsync(PipeDirection direction, SafePipeHandle clientPipeHandle)
