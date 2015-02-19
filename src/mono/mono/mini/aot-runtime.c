@@ -2971,7 +2971,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	MonoAotModule *amodule = image->aot_module;
 	MonoMethod *method = NULL;
 	MonoJitInfo *jinfo;
-	guint8 *code, *ex_info, *p;
+	guint8 *code, *code_end, *ex_info, *p;
 	guint32 *table;
 	int nmethods;
 	gint32 *code_offsets;
@@ -3023,6 +3023,8 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	code_offsets = amodule->sorted_code_offsets;
 	offsets_len = amodule->sorted_code_offsets_len;
 
+	code_end = amodule->jit_code_end > amodule->llvm_code_end ? amodule->jit_code_end : amodule->llvm_code_end;
+
 	/* Binary search in the sorted_code_offsets table */
 	left = 0;
 	right = offsets_len;
@@ -3030,10 +3032,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 		pos = (left + right) / 2;
 
 		offset1 = code_offsets [(pos * 2)];
-		if (pos + 1 == offsets_len)
-			offset2 = amodule->jit_code_end - amodule->code;
-		else
+		if (pos + 1 == offsets_len) {
+			if (amodule->code + offset1 >= amodule->jit_code_start && amodule->code + offset1 < amodule->jit_code_end)
+				offset2 = amodule->jit_code_end - amodule->code;
+			else
+				offset2 = amodule->llvm_code_end - amodule->code;
+		} else {
 			offset2 = code_offsets [(pos + 1) * 2];
+		}
 
 		if (offset < offset1)
 			right = pos;
@@ -3065,10 +3071,14 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	code = &amodule->code [amodule->code_offsets [method_index]];
 	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 
-	if (pos == offsets_len - 1)
-		code_len = amodule->jit_code_end - code;
-	else
+	if (pos == offsets_len - 1) {
+		if (code >= amodule->jit_code_start && code < amodule->jit_code_end)
+			code_len = amodule->jit_code_end - code;
+		else
+			code_len = amodule->llvm_code_end - code;
+	} else {
 		code_len = code_offsets [(pos + 1) * 2] - code_offsets [pos * 2];
+	}
 
 	g_assert ((guint8*)code <= (guint8*)addr && (guint8*)addr < (guint8*)code + code_len);
 
