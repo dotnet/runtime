@@ -9,7 +9,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>xNodeBuilder.Tests</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
-    
     <!--
       Disable running tests for this project as most of them are failing because of the infrastructure issue
       https://github.com/dotnet/corefx/issues/641
@@ -53,11 +52,11 @@
     </ProjectReference>
     <ProjectReference Include="..\XDocument.Common\XDocument.Common.csproj">
       <Project>{52666206-b6c9-49fa-a1d7-d0a0c68807b0}</Project>
-      <Name>common</Name>
+      <Name>XDocument.Common</Name>
     </ProjectReference>
     <ProjectReference Include="..\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj">
       <Project>{979510ce-9042-4f8d-9c74-ee03b89194cc}</Project>
-      <Name>Microsoft.Test.ModuleCore</Name>
+      <Name>XDocument.Test.ModuleCore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
