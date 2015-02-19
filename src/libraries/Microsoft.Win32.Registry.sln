@@ -14,18 +14,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Win32.Registry.Te
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		Windows_Debug|Any CPU = Windows_Debug|Any CPU
+		Windows_Release|Any CPU = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{20A2BA2C-5517-483F-8FFE-643441A59852}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{20A2BA2C-5517-483F-8FFE-643441A59852}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{20A2BA2C-5517-483F-8FFE-643441A59852}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{20A2BA2C-5517-483F-8FFE-643441A59852}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20A2BA2C-5517-483F-8FFE-643441A59852}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
