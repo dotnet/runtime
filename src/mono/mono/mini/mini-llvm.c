@@ -2978,13 +2978,31 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = LLVMBuildURem (builder, lhs, rhs, dname);
 				break;
 			case OP_IDIV:
-			case OP_LDIV:
+			case OP_LDIV: {
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+				LLVMValueRef cmp;
+
+				cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
+				emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
+				CHECK_FAILURE (ctx);
+				builder = ctx->builder;
+#endif
 				values [ins->dreg] = LLVMBuildSDiv (builder, lhs, rhs, dname);
 				break;
+			}
 			case OP_IDIV_UN:
-			case OP_LDIV_UN:
+			case OP_LDIV_UN: {
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+				LLVMValueRef cmp;
+
+				cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
+				emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
+				CHECK_FAILURE (ctx);
+				builder = ctx->builder;
+#endif
 				values [ins->dreg] = LLVMBuildUDiv (builder, lhs, rhs, dname);
 				break;
+			}
 			case OP_FDIV:
 			case OP_RDIV:
 				values [ins->dreg] = LLVMBuildFDiv (builder, lhs, rhs, dname);
