@@ -7260,7 +7260,7 @@ void STDCALL OnHijackInteriorPointerWorker(HijackArgs * pArgs)
             GC_ON_TRANSITIONS (GCOnTransition);
         }
 #endif
-        pArgs->ReturnValue = (size_t)ptr;
+        *(size_t*)&pArgs->ReturnValue = (size_t)ptr;
     }
     GCPROTECT_END();        // trashes or here!
 
@@ -7326,6 +7326,90 @@ void STDCALL OnHijackScalarWorker(HijackArgs * pArgs)
     PORTABILITY_ASSERT("OnHijackScalarWorker not implemented on this platform.");
 #endif
 }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+// A hijacked method is returning a struct in registers to its caller.
+// The struct can possibly contain object references that we have to
+// protect.
+void STDCALL OnHijackStructInRegsWorker(HijackArgs * pArgs)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        SO_TOLERANT;
+    } CONTRACTL_END;
+
+#ifdef HIJACK_NONINTERRUPTIBLE_THREADS
+    Thread         *thread = GetThread();
+
+    EEClass* eeClass = thread->GetHijackReturnTypeClass();
+
+    OBJECTREF oref[CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS];
+    int orefCount = 0;
+    for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+    {
+        if (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference)
+        {
+            oref[orefCount++] = ObjectToOBJECTREF(*(Object **) &pArgs->ReturnValue[i]);
+        }
+    }
+
+#ifdef FEATURE_STACK_PROBE
+    if (GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain)
+    {
+        RetailStackProbe(ADJUST_PROBE(DEFAULT_ENTRY_PROBE_AMOUNT), thread);
+    }
+#endif
+
+    CONTRACT_VIOLATION(SOToleranceViolation);
+
+    thread->ResetThreadState(Thread::TS_Hijacked);
+
+    // Fix up our caller's stack, so it can resume from the hijack correctly
+    pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
+
+    // Build a frame so that stack crawling can proceed from here back to where
+    // we will resume execution.
+    FrameWithCookie<HijackFrame> frame((void *)pArgs->ReturnAddress, thread, pArgs);
+
+    GCPROTECT_ARRAY_BEGIN(oref[0], orefCount)
+    {
+#ifdef _DEBUG
+        BOOL GCOnTransition = FALSE;
+        if (g_pConfig->FastGCStressLevel()) {
+            GCOnTransition = GC_ON_TRANSITIONS (FALSE);
+        }
+#endif
+
+#ifdef TIME_SUSPEND
+        g_SuspendStatistics.cntHijackTrap++;
+#endif
+
+        CommonTripThread();
+#ifdef _DEBUG
+        if (g_pConfig->FastGCStressLevel()) {
+            GC_ON_TRANSITIONS (GCOnTransition);
+        }
+#endif
+
+        // Update the references in the returned struct
+        orefCount = 0;
+        for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+        {
+            if (eeClass->GetEightByteClassification(i) == SystemVClassificationTypeIntegerReference)
+            {
+                *((OBJECTREF *) &pArgs->ReturnValue[i]) = oref[orefCount++];
+            }
+        }
+    }
+    GCPROTECT_END();
+
+    frame.Pop();
+#else
+    PORTABILITY_ASSERT("OnHijackInteriorPointerWorker not implemented on this platform.");
+#endif
+}
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifndef PLATFORM_UNIX
 
@@ -7806,11 +7890,19 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
                 else
 #endif // _TARGET_X86_
                 {
-                    MetaSig::RETURNTYPE type = esb.m_pFD->ReturnsObject();
+                    MethodTable* pMT = NULL;
+                    MetaSig::RETURNTYPE type = esb.m_pFD->ReturnsObject(INDEBUG_COMMA(false) &pMT);
                     if (type == MetaSig::RETOBJ)
                         pvHijackAddr = OnHijackObjectTripThread;
                     else if (type == MetaSig::RETBYREF)
                         pvHijackAddr = OnHijackInteriorPointerTripThread;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+                    else if (type == MetaSig::RETVALUETYPE)
+                    {
+                        pThread->SetHijackReturnTypeClass(pMT->GetClass());
+                        pvHijackAddr = OnHijackStructInRegsTripThread;
+                    }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
                 }
             }
 
@@ -8354,7 +8446,8 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         // Hijack the return address to point to the appropriate routine based on the method's return type.
         void *pvHijackAddr = OnHijackScalarTripThread;
         MethodDesc *pMethodDesc = codeInfo.GetMethodDesc();
-        MetaSig::RETURNTYPE type = pMethodDesc->ReturnsObject();
+        MethodTable* pMT = NULL;
+        MetaSig::RETURNTYPE type = pMethodDesc->ReturnsObject(INDEBUG_COMMA(false) &pMT);
         if (type == MetaSig::RETOBJ)
         {
             pvHijackAddr = OnHijackObjectTripThread;
@@ -8363,6 +8456,13 @@ void PALAPI HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         {
             pvHijackAddr = OnHijackInteriorPointerTripThread;
         }
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        else if (type == MetaSig::RETVALUETYPE)
+        {
+            pThread->SetHijackReturnTypeClass(pMT->GetClass());
+            pvHijackAddr = OnHijackStructInRegsTripThread;
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
         pThread->HijackThread(pvHijackAddr, &executionState);
     }

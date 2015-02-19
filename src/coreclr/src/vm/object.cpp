@@ -24,6 +24,7 @@
 #endif
 #include "field.h"
 #include "gcscan.h"
+#include "argdestination.h"
 
 #ifdef FEATURE_COMPRESSEDSTACK
 void* CompressedStackObject::GetUnmanagedCompressedStack()
@@ -1498,6 +1499,31 @@ void CopyValueClassChecked(void* dest, void* src, MethodTable *pMT, AppDomain *p
     EX_END_CATCH(SwallowAllExceptions);
     CopyValueClassUnchecked(dest,src,pMT);
 }
+
+// Copy value class into the argument specified by the argDest, performing an appdomain check first.
+// The destOffset is nonzero when copying values into Nullable<T>, it is the offset
+// of the T value inside of the Nullable<T>
+void CopyValueClassArgChecked(ArgDestination *argDest, void* src, MethodTable *pMT, AppDomain *pDomain, int destOffset)
+{
+    STATIC_CONTRACT_DEBUG_ONLY;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FORBID_FAULT;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    DEBUG_ONLY_FUNCTION;
+
+    FAULT_NOT_FATAL();
+    EX_TRY
+    {
+        Object::AssignValueTypeAppDomain(pMT, src, pDomain);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+    CopyValueClassArgUnchecked(argDest, src, pMT, destOffset);
+}
 #endif
     
 void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT) 
@@ -1561,6 +1587,51 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
             cur--;                                                              
         } while (cur >= last);                                              
     }
+}
+
+// Copy value class into the argument specified by the argDest.
+// The destOffset is nonzero when copying values into Nullable<T>, it is the offset
+// of the T value inside of the Nullable<T>
+void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset) 
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FORBID_FAULT;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+    if (argDest->IsStructPassedInRegs())
+    {
+        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes(), destOffset);
+        return;
+    }
+
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // destOffset is only valid for Nullable<T> passed in registers
+    _ASSERTE(destOffset == 0);
+
+    CopyValueClassUnchecked(argDest->GetDestinationAddress(), src, pMT);
+}
+
+// Initialize the value class argument to zeros
+void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
+{ 
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FORBID_FAULT;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
+    if (argDest->IsStructPassedInRegs())
+    {
+        argDest->ZeroStructInRegisters(pMT->GetNumInstanceFieldBytes());
+        return;
+    }
+
+#endif    
+    InitValueClass(argDest->GetDestinationAddress(), pMT);
 }
 
 #if defined (VERIFY_HEAP)
@@ -3245,7 +3316,7 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 
     if (boxedVal == NULL) 
     {
-        // logicall we are doing *dest->HasValueAddr(destMT) = false;
+        // Logically we are doing *dest->HasValueAddr(destMT) = false;
         // We zero out the whole structure becasue it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
@@ -3302,7 +3373,7 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 
     if (boxedVal == NULL) 
     {
-        // logicall we are doing *dest->HasValueAddr(destMT) = false;
+        // Logically we are doing *dest->HasValueAddr(destMT) = false;
         // We zero out the whole structure becasue it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);
@@ -3328,6 +3399,64 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 }
 
 //===============================================================================
+// Special Logic to unbox a boxed T as a nullable<T> into an argument 
+// specified by the argDest.
+// Does not handle type equivalence (may conservatively return FALSE)
+BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    if (argDest->IsStructPassedInRegs())
+    {
+        // We should only get here if we are unboxing a T as a Nullable<T>
+        _ASSERTE(IsNullableType(destMT));
+
+        // We better have a concrete instantiation, or our field offset asserts are not useful
+        _ASSERTE(!destMT->ContainsGenericVariables());
+
+        if (boxedVal == NULL) 
+        {
+            // Logically we are doing *dest->HasValueAddr(destMT) = false;
+            // We zero out the whole structure becasue it may contain GC references
+            // and these need to be initialized to zero.   (could optimize in the non-GC case)
+            InitValueClassArg(argDest, destMT);
+        }
+        else 
+        {
+            if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
+            {
+                // For safety's sake, also allow true nullables to be unboxed normally.  
+                // This should not happen normally, but we want to be robust
+                if (destMT == boxedVal->GetMethodTable())
+                {
+                    CopyValueClassArg(argDest, boxedVal->GetData(), destMT, boxedVal->GetAppDomain(), 0);
+                    return TRUE;
+                }
+                return FALSE;
+            }
+
+            Nullable* dest = (Nullable*)argDest->GetStructGenRegDestinationAddress();
+            *dest->HasValueAddr(destMT) = true;
+            int destOffset = (BYTE*)dest->ValueAddr(destMT) - (BYTE*)dest;
+            CopyValueClassArg(argDest, boxedVal->UnBox(), boxedVal->GetMethodTable(), boxedVal->GetAppDomain(), destOffset);
+        }
+        return TRUE;
+    }
+
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    return UnBoxNoGC(argDest->GetDestinationAddress(), boxedVal, destMT);
+}
+
+//===============================================================================
 // Special Logic to unbox a boxed T as a nullable<T>
 // Does not do any type checks.
 void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
@@ -3350,7 +3479,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
 
     if (boxedVal == NULL) 
     {
-        // logicall we are doing *dest->HasValueAddr(destMT) = false;
+        // Logically we are doing *dest->HasValueAddr(destMT) = false;
         // We zero out the whole structure becasue it may contain GC references
         // and these need to be initialized to zero.   (could optimize in the non-GC case)
         InitValueClass(destPtr, destMT);

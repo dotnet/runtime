@@ -1152,13 +1152,22 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
                                         BasicBlock    * block        /* = NULL */
                                        ) 
 {
-    assert(src->TypeGet() == TYP_STRUCT);
-
+    assert(src->TypeGet() == TYP_STRUCT || (src->gtOper == GT_ADDR && src->TypeGet() == TYP_BYREF));
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // TODO-ARM-BUG: Does ARM need this?
+    // TODO-ARM64-BUG: Does ARM64 need this?
+    assert(src->gtOper == GT_LCL_VAR  || src->gtOper == GT_FIELD    ||
+           src->gtOper == GT_IND      || src->gtOper == GT_LDOBJ    ||
+           src->gtOper == GT_CALL     || src->gtOper == GT_MKREFANY ||
+           src->gtOper == GT_RET_EXPR || src->gtOper == GT_COMMA    ||
+           src->gtOper == GT_ADDR     || GenTree::OperIsSIMD(src->gtOper));
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     assert(src->gtOper == GT_LCL_VAR  || src->gtOper == GT_FIELD    ||
            src->gtOper == GT_IND      || src->gtOper == GT_LDOBJ    ||
            src->gtOper == GT_CALL     || src->gtOper == GT_MKREFANY ||
            src->gtOper == GT_RET_EXPR || src->gtOper == GT_COMMA    ||
            GenTree::OperIsSIMD(src->gtOper));
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     if (src->gtOper == GT_CALL)
     {
@@ -1187,8 +1196,14 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
                 fgLclFldAssign(lcl->gtLclVarCommon.gtLclNum);
                 lcl->gtType = src->gtType;
                 dest = lcl;
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_)
                 impMarkLclDstNotPromotable(lcl->gtLclVarCommon.gtLclNum, src, structHnd);
+#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
+                assert(!src->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
+
+                // Make the struct non promotable. The eightbytes could contain multiple fields.
+                lvaTable[lcl->gtLclVarCommon.gtLclNum].lvDontPromote = true;
 #endif
             }
             else
@@ -1207,6 +1222,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
     {
         GenTreePtr call = src->gtRetExpr.gtInlineCandidate;
         noway_assert(call->gtOper == GT_CALL);
+
         if (call->gtCall.gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)
         {
             // insert the return value buffer into the argument list as first byref parameter
@@ -1274,7 +1290,8 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
     }
     else if (src->gtOper == GT_COMMA)
     {
-        assert(src->gtOp.gtOp2->gtType == TYP_STRUCT);  // Second thing is the struct
+        // Second thing is the struct or it's address.
+        assert(src->gtOp.gtOp2->gtType == TYP_STRUCT || src->gtOp.gtOp2->gtType == TYP_BYREF);
         if (pAfterStmt)
         {
             * pAfterStmt = fgInsertStmtAfter(block, * pAfterStmt, gtNewStmt(src->gtOp.gtOp1, impCurStmtOffs));
@@ -1286,6 +1303,10 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr      dest,
 
         // evaluate the second thing using recursion
         return impAssignStructPtr(dest, src->gtOp.gtOp2, structHnd, curLevel, pAfterStmt, block);
+    }
+    else if (src->gtOper == GT_ADDR)
+    {
+        // In case of address already in src, use it to copy the struct. 
     }
     else
     {
@@ -4528,8 +4549,7 @@ GenTreePtr Compiler::impTransformThis (GenTreePtr thisPtr,
             GenTreePtr obj = thisPtr;
             
             assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
-            obj = new (this, GT_LDOBJ) GenTreeLdObj(TYP_STRUCT, obj, pConstrainedResolvedToken->hClass
-                                                   );
+            obj = new (this, GT_LDOBJ) GenTreeLdObj(TYP_STRUCT, obj, pConstrainedResolvedToken->hClass);
             obj->gtFlags |= GTF_EXCEPT;
             
             CorInfoType jitTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
@@ -5948,7 +5968,14 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
         }
     }
 
-    /* Check for varargs */
+    // Check for varargs
+#if !FEATURE_VARARG
+    if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
+        (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
+    {
+        BADCODE("Varargs not supported.");
+    }
+#endif // !FEATURE_VARARG
 
     if  ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
          (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
@@ -6699,12 +6726,23 @@ bool                Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * 
         return false;
     }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    assert(!info.compIsVarArgs && "Varargs not supported in CoreCLR on Unix.");
+    if (IsRegisterPassable(methInfo->args.retTypeClass))
+    {
+        return false;
+    }
+
+    // The struct is not aligned properly or it is bigger than 16 bytes,
+    // or it is custom layout, or it is not passed in registers for any other reason.
+    return true;
+#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    // Check for TYP_STRUCT argument that can fit into a single register.
     // We don't need a return buffer if:
     //   i) TYP_STRUCT argument that can fit into a single register and
     //  ii) Power of two sized TYP_STRUCT.
     unsigned size = info.compCompHnd->getClassSize(methInfo->args.retTypeClass);
-    return (size > TARGET_POINTER_SIZE) || ((size & (size-1)) != 0);
+    return (size > TARGET_POINTER_SIZE) || ((size & (size - 1)) != 0);
 #elif defined(_TARGET_ARM_)
     // Check for non HFA: in ARM HFAs are returned in registers.
     if (!info.compIsVarArgs && IsHfa(methInfo->args.retTypeClass))
@@ -6717,8 +6755,6 @@ bool                Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO * 
     // TODO-ARM64-NYI: HFA/HVA arguments.
     // Check for TYP_STRUCT argument that is greater than 16 bytes.
     return info.compCompHnd->getClassSize(methInfo->args.retTypeClass) > 16;
-#elif defined(_TARGET_X86_)
-    return true;
 #else // _TARGET_*
 #error Unsupported or unset target architecture
 #endif // _TARGET_*
@@ -6792,7 +6828,6 @@ GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
                                                          CORINFO_CLASS_HANDLE retClsHnd)
 {
     assert(call->gtOper == GT_CALL);
-
     if (call->TypeGet() != TYP_STRUCT)
     {
         return call;
@@ -6826,13 +6861,46 @@ GenTreePtr                Compiler::impFixupStructReturn(GenTreePtr     call,
             return call;
         }
 
-        return impAssignHfaToVar(call, retClsHnd);
+        return impAssignStructToVar(call, retClsHnd);
     }
-#endif
+#elif defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
+    assert(!call->gtCall.IsVarargs() && "varargs not allowed for System V OSs.");
+
+    // The return is a struct if not normalized to a single eightbyte return type below.
+    call->gtCall.gtReturnType = TYP_STRUCT;
+    // Get the classification for the struct.
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+    if (structDesc.passedInRegisters)
+    {
+        call->gtCall.SetRegisterReturningStructState(structDesc);
+
+        if (structDesc.eightByteCount <= 1)
+        {
+            call->gtCall.gtReturnType = getEightByteType(structDesc, 0);
+        }
+        else
+        {
+            if (!call->gtCall.CanTailCall() && ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0))
+            {
+                // If we can tail call returning in registers struct or inline a method that returns
+                // a registers returned struct, then don't assign it to
+                // a variable back and forth.
+                return impAssignStructToVar(call, retClsHnd);
+            }
+        }
+    }
+    else
+    {
+        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+    }
+
+    return call;
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     unsigned size = info.compCompHnd->getClassSize(retClsHnd);
     BYTE gcPtr = 0;
-
     // Check for TYP_STRUCT argument that can fit into a single register
     // change the type on those trees.
     // TODO-ARM64-NYI: what about structs 9 to 16 bytes that fit in two consecutive registers?
@@ -6913,7 +6981,37 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
     assert(info.compRetBuffArg == BAD_VAR_NUM);
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
     assert(info.compRetNativeType != TYP_STRUCT);
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    assert(!info.compIsVarArgs); // No VarArgs for CoreCLR.
+    if (info.compRetNativeType == TYP_STRUCT)
+    {
+        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+        eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+
+        if (structDesc.passedInRegisters)
+        {
+            if (op->gtOper == GT_LCL_VAR)
+            {
+                // This LCL_VAR is a register return value, it stays as a TYP_STRUCT
+                unsigned lclNum = op->gtLclVarCommon.gtLclNum;
+                // Make sure this struct type stays as struct so that we can return it in registers.
+                lvaTable[lclNum].lvDontPromote = true;
+
+                return op;
+            }
+
+            if (op->gtOper == GT_CALL)
+            {
+                return op;
+            }
+
+            return impAssignStructToVar(op, retClsHnd);
+        }
+    }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 #elif defined(_TARGET_ARM_)
     if (!info.compIsVarArgs && IsHfa(retClsHnd))
     {
@@ -6941,7 +7039,7 @@ GenTreePtr          Compiler::impFixupStructReturnType(GenTreePtr op, CORINFO_CL
                 return op;
             }
         }
-        return impAssignHfaToVar(op, retClsHnd);
+        return impAssignStructToVar(op, retClsHnd);
     }
 #endif
 
@@ -7003,7 +7101,22 @@ REDO_RETURN_NODE:
         }
         else
         {
-            assert(info.compRetNativeType == op->gtCall.gtReturnType);
+#ifdef DEBUG
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+            if (op->gtType == TYP_STRUCT)
+            {
+                SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+                eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+                assert(structDesc.eightByteCount < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+                assert(getEightByteType(structDesc, 0) == op->gtCall.gtReturnType);
+            }
+            else
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+            {
+                assert(info.compRetNativeType == op->gtCall.gtReturnType);
+            }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // DEBUG
             // Don't change the gtType node just yet, it will get changed later
             return op;
         }
@@ -7012,8 +7125,19 @@ REDO_RETURN_NODE:
     {
         op->gtOp.gtOp2 = impFixupStructReturnType(op->gtOp.gtOp2, retClsHnd);
     }
-
-    op->gtType = info.compRetNativeType;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    if (op->gtType == TYP_STRUCT)
+    {
+        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+        eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+        assert(structDesc.eightByteCount < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+        op->gtType = getEightByteType(structDesc, 0);
+    }
+    else
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+    {
+        op->gtType = info.compRetNativeType;
+    }
 
     return op;
 }
@@ -11412,7 +11536,6 @@ DO_LDFTN:
             }
 
             eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
-
             // Figure out the type of the member.  We always call canAccessField, so you always need this
             // handle
             CorInfoType ciType = fieldInfo.fieldType;
@@ -11590,7 +11713,6 @@ DO_LDFTN:
 
                 /* Create the data member node */
                 op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, NULL, fieldInfo.offset);
-
                 op1->gtFlags |= GTF_IND_TLS_REF; // fgMorphField will handle the transformation
 
                 if (isLoadAddress)
@@ -11850,7 +11972,6 @@ FIELD_DONE:
 
                 /* Create the data member node */
                 op1 = gtNewFieldRef(lclTyp, resolvedToken.hField, NULL, fieldInfo.offset);
-
                 op1->gtFlags |= GTF_IND_TLS_REF; // fgMorphField will handle the transformation
 
                 break;
@@ -12396,7 +12517,11 @@ FIELD_DONE:
               |           |                         | push the BYREF to this local |
               |--------------------------------------------------------------------- 
               | UNBOX_ANY | push a GT_LDOBJ of      | push the STRUCT              |
-              |           | the BYREF               |                              |
+              |           | the BYREF               | For Linux when the           |
+              |           |                         |  struct is returned in two   |
+              |           |                         |  registers create a temp     |
+              |           |                         |  which address is passed to  |
+              |           |                         |  the unbox_nullable helper.  |
               |---------------------------------------------------------------------
             */
                 
@@ -12434,11 +12559,40 @@ FIELD_DONE:
                     impPushOnStack(op1, tiRetVal);
                     oper = GT_LDOBJ;
                     goto LDOBJ;
-                }   
-                
+                }
+
+                assert(helper == CORINFO_HELP_UNBOX_NULLABLE && "Make sure the helper is nullable!");
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+                if (op1->gtType == TYP_STRUCT)
+                {
+                    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+                    eeGetSystemVAmd64PassStructInRegisterDescriptor(resolvedToken.hClass, &structDesc);
+                    if (structDesc.passedInRegisters && structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS)
+                    {
+                        // Unbox nullable helper returns a TYP_STRUCT.
+                        // We need to spill it to a temp so than we can take the address of it.
+                        // We need the temp so we can pass its address to the unbox_nullable jit helper function.
+                        // This is needed for 2 register returned nullables.
+                        // The one register ones are normalized. For the bigger than 16 bytes ones there is retbuf already passed in rdi.
+
+                        unsigned   tmp = lvaGrabTemp(true DEBUGARG("UNBOXing a register returnable nullable"));
+                        lvaTable[tmp].lvDontPromote = true;
+                        lvaSetStruct(tmp, resolvedToken.hClass, true  /* unsafe value cls check */);
+
+                        op2 = gtNewLclvNode(tmp, TYP_STRUCT);
+                        op1 = impAssignStruct(op2, op1, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+                        assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
+
+                        op2 = gtNewLclvNode(tmp, TYP_STRUCT);
+                        op2 = gtNewOperNode(GT_ADDR, TYP_BYREF, op2);
+                        op1 = gtNewOperNode(GT_COMMA, TYP_STRUCT, op1, op2);
+                    }
+                }
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
                 assert(op1->gtType == TYP_STRUCT);
                 tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
-                assert(tiRetVal.IsValueClass());                       
+                assert(tiRetVal.IsValueClass());
             }
 
             impPushOnStack(op1, tiRetVal);                    
@@ -12946,8 +13100,7 @@ LDOBJ:
            
             // LDOBJ returns a struct
             // and an inline argument which is the class token of the loaded obj
-            op1 = new (this, GT_LDOBJ) GenTreeLdObj(TYP_STRUCT, op1, resolvedToken.hClass
-                                                   );
+            op1 = new (this, GT_LDOBJ) GenTreeLdObj(TYP_STRUCT, op1, resolvedToken.hClass);
             op1->gtFlags |= GTF_EXCEPT;
 
             CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
@@ -13231,7 +13384,7 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
     }            
 }
 
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_)
 /**************************************************************************************
  *
  *  When assigning a vararg call src to a HFA lcl dest, mark that we cannot promote the
@@ -13269,12 +13422,32 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTreePtr src, CORIN
         }
     }
 }
+#endif
 
-GenTreePtr Compiler::impAssignHfaToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+GenTreePtr Compiler::impAssignStructToVar(GenTreePtr op, CORINFO_CLASS_HANDLE hClass)
 {
-    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for HFA structs in ARM."));
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for register returned structs in System V"));
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for HFA structs in ARM"));
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     impAssignTempGen(tmpNum, op, hClass, (unsigned) CHECK_SPILL_NONE);
-    return gtNewLclvNode(tmpNum, TYP_STRUCT);
+    GenTreePtr ret = gtNewLclvNode(tmpNum, TYP_STRUCT);
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#ifdef DEBUG
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+    eeGetSystemVAmd64PassStructInRegisterDescriptor(hClass, &structDesc);
+    // If single eightbyte, the return type would have been normalized and there won't be a temp var.
+    // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
+    assert(structDesc.passedInRegisters && structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+#endif // DEBUG
+    // Mark the var to store the eightbytes on stack non promotable.
+    // The return value is based on eightbytes, so all the fields need 
+    // to be on stack before loading the eightbyte in the corresponding return register.
+    lvaTable[tmpNum].lvDontPromote = true;
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    return ret;
 }
 #endif
 
@@ -13297,7 +13470,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
             Verify(!verIsByRefLike(tiDeclared) ||
                    verIsSafeToReturnByRef(tiVal)
                    , "byref return");
-                    
+
             Verify(tiCompatibleWith(tiVal, tiDeclared.NormaliseForStack(), true), "type mismatch");
             expectedStack=1;
         }
@@ -13502,15 +13675,35 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                                      se.seTypeInfo.GetClassHandle(),
                                      (unsigned) CHECK_SPILL_ALL);
                 }
-#ifdef _TARGET_ARM_
+                // TODO-ARM64-NYI: HFA
+                // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
+                // next ifdefs could be refactored in a single method with the ifdef inside.
+#if defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(_TARGET_ARM_)
                 if (IsHfa(retClsHnd))
                 {
                     // Same as !IsHfa but just don't bother with impAssignStructPtr.
+#else // !defined(_TARGET_ARM_)
+                SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
+                eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
+                if (structDesc.passedInRegisters)
+                {
+                    // If single eightbyte, the return type would have been normalized and there won't be a temp var.
+                    // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes - max allowed.)
+                    assert(structDesc.eightByteCount == CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+                    // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
+#endif // !defined(_TARGET_ARM_)
+
                     if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
                     {
                         if (!impInlineInfo->retExpr)
                         {
+#if defined(_TARGET_ARM_)
                             impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, TYP_STRUCT);
+#else // !defined(_TARGET_ARM_)
+                            // The inlinee compiler has figured out the type of the temp already. Use it here.
+                            impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
+#endif // !defined(_TARGET_ARM_)
                         }
                     }
                     else
@@ -13519,7 +13712,7 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
                     }
                 }
                 else
-#endif
+#endif // defined(_TARGET_ARM_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
                 {
                     assert(iciCall->gtCall.gtCallMoreFlags & GTF_CALL_M_RETBUFFARG);
                     GenTreePtr dest = gtCloneExpr(iciCall->gtCall.gtCallArgs->gtOp.gtOp1);   
@@ -13575,8 +13768,9 @@ bool Compiler::impReturnInstruction(BasicBlock *block, int prefixFlags, OPCODE &
     }
     else if (info.compRetType == TYP_STRUCT)
     {
-#ifndef _TARGET_ARM_
+#if !defined(_TARGET_ARM_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         // In ARM HFA native types are maintained as structs.
+        // The multi register System V AMD64 return structs are also left as structs and not normalized.
         // TODO-ARM64-NYI: HFA
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif

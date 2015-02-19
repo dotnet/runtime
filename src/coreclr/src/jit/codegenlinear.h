@@ -103,6 +103,10 @@
 
     void                genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    void                genConsumePutArgStk(GenTreePutArgStk* putArgStkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
     void                genConsumeRegs(GenTree* tree);
 
     void                genConsumeOperands(GenTreeOp* tree);
@@ -125,6 +129,11 @@
     void                genCodeForCpBlkRepMovs   (GenTreeCpBlk* cpBlkNode);
 
     void                genCodeForCpBlkUnroll    (GenTreeCpBlk* cpBlkNode);
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    void                genCodeForPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
+    void                genCodeForPutArgUnroll(GenTreePutArgStk* putArgStkNode);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     void                genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
 
@@ -149,6 +158,18 @@
     void                genCallInstruction(GenTreePtr call);
     
     void                genJmpMethod(GenTreePtr jmp);
+
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    void genGetStructTypeSizeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
+                                    var_types* type0,
+                                    var_types* type1,
+                                    emitAttr* size0,
+                                    emitAttr* size1,
+                                    unsigned __int8* offset0,
+                                    unsigned __int8* offset1);
+
+    bool                genStoreRegisterReturnInLclVar(GenTreePtr treeNode);
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
     void                genLclHeap(GenTreePtr tree);
 

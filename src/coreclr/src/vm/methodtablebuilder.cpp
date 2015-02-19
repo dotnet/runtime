@@ -1897,8 +1897,23 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #ifdef FEATURE_HFA
         CheckForHFA(pByValueClassCache);
 #endif
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#ifdef FEATURE_HFA
+#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF defined at the same time.
+#endif // FEATURE_HFA
+        SystemVAmd64CheckForPassStructInRegister();
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
     }
 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#ifdef FEATURE_HFA
+#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF defined at the same time.
+#endif // FEATURE_HFA
+    if (HasLayout())
+    {
+        SystemVAmd64CheckForPassNativeStructInRegister();
+    }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
 #ifdef FEATURE_HFA
     if (HasLayout())
     {
@@ -8428,6 +8443,93 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
         return (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
     return (1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass));
 }
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+// checks whether the struct is enregisterable.
+void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
+{
+    STANDARD_VM_CONTRACT;
+
+    // This method should be called for valuetypes only
+    _ASSERTE(IsValueClass());
+
+    TypeHandle th(GetHalfBakedMethodTable());
+
+    if (th.IsTypeDesc())
+    {
+        // Not an enregisterable managed structure.
+        return;
+    }
+
+    DWORD totalStructSize = bmtFP->NumInstanceFieldBytes;
+
+    // If num of bytes for the fields is bigger than CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS
+    // pass through stack
+    if (totalStructSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is too big to pass in registers (%d bytes)\n",
+               this->GetDebugClassName(), totalStructSize));
+        return;
+    }
+
+    // Iterate through the fields and make sure they meet requirements to pass in registers
+    SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
+
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0))
+    {
+        // All the above tests passed. It's registers passed struct!
+        GetHalfBakedMethodTable()->SetRegPassedStruct();
+
+        StoreEightByteClassification(&helper);
+    }
+}
+
+// checks whether the struct is enregisterable.
+void MethodTableBuilder::SystemVAmd64CheckForPassNativeStructInRegister()
+{
+    STANDARD_VM_CONTRACT;
+    DWORD totalStructSize = 0;
+
+    // If not a native value type, return.
+    if (!IsValueClass())
+    {
+        return;
+    }
+
+    totalStructSize = GetLayoutInfo()->GetNativeSize();
+
+    // If num of bytes for the fields is bigger than CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS
+    // pass through stack
+    if (totalStructSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassNativeStructInRegister: struct %s is too big to pass in registers (%d bytes)\n",
+            this->GetDebugClassName(), totalStructSize));
+        return;
+    }
+
+    _ASSERTE(HasLayout());
+
+    // Classify the native layout for this struct.
+   
+    // Iterate through the fields and make sure they meet requirements to pass in registers
+    SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
+    if (GetHalfBakedMethodTable()->ClassifyEightBytesForNativeStruct(&helper, 0, 0))
+    {
+        GetLayoutInfo()->SetNativeStructPassedInRegisters();
+    }
+}
+
+// Store the eightbyte classification into the EEClass
+void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper)
+{
+    EEClass* eeClass = GetHalfBakedMethodTable()->GetClass();
+    LoaderAllocator* pAllocator = MethodTableBuilder::GetLoaderAllocator();
+    AllocMemTracker* pamTracker = MethodTableBuilder::GetMemTracker();
+    EnsureOptionalFieldsAreAllocated(eeClass, pamTracker, pAllocator->GetLowFrequencyHeap());
+    eeClass->SetEightByteClassification(helper->eightByteCount, helper->eightByteClassifications, helper->eightByteSizes);
+}
+
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
 
 #ifdef FEATURE_HFA
 //---------------------------------------------------------------------------------------

@@ -1001,9 +1001,39 @@ void Lowering::SpliceInUnary(GenTreePtr parent, GenTreePtr* ppChild, GenTreePtr 
     oldChild->InsertAfterSelf(newNode);
 }
 
+//------------------------------------------------------------------------
+// NewPutArg: rewrites the tree to put an arg in a register or on the stack.
+//
+// Arguments:
+//    call - the call whose arg is being rewritten.
+//    arg  - the arg being rewritten.
+//    fp   - the ArgTabEntry for the argument.
+//    type - the type of the argument.
+//
+// Return Value:
+//    The new tree that was created to put the arg in the right place
+//    or the incoming arg if the arg tree was not rewritten.
+//
+// Assumptions:
+//    call, arg, and fp must be non-null.
+//
+// Notes:
+//    For System V systems with native struct passing (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined)
+//    this method allocates a single GT_PUTARG_REG for 1 eightbyte structs and a GT_LIST of two GT_PUTARG_REGs
+//    for two eightbyte structs.
+//
+//    For STK passed structs the method generates GT_PUTARG_STK tree. For System V systems with native struct passing 
+//    (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined) this method also sets the GP pointers count and the pointers 
+//    layout object, so the codegen of the GT_PUTARG_STK could use this for optimizing copying to the stack by value.
+//    (using block copy primitives for non GC pointers and a single TARGET_POINTER_SIZE copy with recording GC info.)
+//
 GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryPtr fp, var_types type)
 {
-    GenTreePtr putArg;
+    assert(call != nullptr);
+    assert(arg != nullptr);
+    assert(fp != nullptr);
+
+    GenTreePtr putArg = nullptr;
     bool updateArgTable = true;
 
 #if !defined(_TARGET_64BIT_)
@@ -1015,7 +1045,22 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         type = TYP_INT;
     }
 #endif // !defined(_TARGET_64BIT_)
-    if (fp->regNum != REG_STK)
+
+    bool  isOnStack = true;
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    if (type == TYP_STRUCT)
+    {
+        isOnStack = !fp->structDesc.passedInRegisters;
+    }
+    else
+    {
+        isOnStack = fp->regNum == REG_STK;
+    }
+#else // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    isOnStack = fp->regNum == REG_STK; 
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+    if (!isOnStack)
     {
 #ifdef FEATURE_SIMD
         // We can have SIMD types that are handled as TYP_DOUBLE, but which need to be
@@ -1025,24 +1070,182 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             type = TYP_LONG;
         }
 #endif //FEATURE_SIMD
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        if (fp->isStruct)
+        {
+            // The following code makes sure a register passed struct arg is moved to
+            // the register before the call is made.
+            // There are two cases (comments added in the code below.)
+            // 1. The struct is of size one eightbyte:
+            //    In this case a new tree is created that is GT_PUTARG_REG
+            //    with a op1 the original argument.
+            // 2. The struct is contained in 2 eightbytes:
+            //    in this case the arg comes as a GT_LIST of two GT_LCL_FLDs - the two eightbytes of the struct.
+            //    The code creates a GT_PUTARG_REG node for each GT_LCL_FLD in the GT_LIST
+            //    and splices it in the list with the corresponding original GT_LCL_FLD tree as op1.
 
-        putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
+            assert(fp->structDesc.eightByteCount != 0);
+
+            if (fp->structDesc.eightByteCount == 1)
+            {
+                // Case 1 above: Create a GT_PUTARG_REG node with op1 of the original tree.
+                //
+                // Here the IR for this operation:
+                // lowering call :
+                //     N001(3, 2)[000017] ------ - N---- / --*  &lclVar   byref  V00 loc0
+                //     N003(6, 5)[000052] * --XG------ - / --*  indir     int
+                //     N004(3, 2)[000046] ------ - N---- + --*  &lclVar   byref  V02 tmp0
+                //     (13, 11)[000070] -- - XG-- - R-- - arg0 in out + 00 / --*  storeIndir int
+                //     N009(3, 4)[000054] ------ - N----arg0 in rdi + --*  lclFld    int    V02 tmp0[+0](last use)
+                //     N011(33, 21)[000018] --CXG------ - *call      void   Test.Foo.test1
+                //
+                // args :
+                //     lowering arg : (13, 11)[000070] -- - XG-- - R-- - *storeIndir int
+                //
+                // late :
+                //    lowering arg : N009(3, 4)[000054] ------ - N----             *  lclFld    int    V02 tmp0[+0](last use)
+                //    new node is : (3, 4)[000071] ------------             *  putarg_reg int    RV
+                //
+                // after :
+                //    N001(3, 2)[000017] ------ - N---- / --*  &lclVar   byref  V00 loc0
+                //    N003(6, 5)[000052] * --XG------ - / --*  indir     int
+                //    N004(3, 2)[000046] ------ - N---- + --*  &lclVar   byref  V02 tmp0
+                //    (13, 11)[000070] -- - XG-- - R-- - arg0 in out + 00 / --*  storeIndir int
+                //    N009(3, 4)[000054] ------ - N---- | / --*  lclFld    int    V02 tmp0[+0](last use)
+                //    (3, 4)[000071] ------------arg0 in rdi + --*  putarg_reg int    RV
+                //    N011(33, 21)[000018] --CXG------ - *call      void   Test.Foo.test1
+                //
+
+                putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
+            }
+            else if (fp->structDesc.eightByteCount == 2)
+            {
+                // Case 2 above: Convert the LCL_FLDs to PUTARG_REG
+                //
+                // lowering call :
+                //     N001(3, 2)[000025] ------ - N----Source / --*  &lclVar   byref  V01 loc1
+                //     N003(3, 2)[000056] ------ - N----Destination + --*  &lclVar   byref  V03 tmp1
+                //     N006(1, 1)[000058] ------------ + --*  const     int    16
+                //     N007(12, 12)[000059] - A--G---- - L - arg0 SETUP / --*  copyBlk   void
+                //     N009(3, 4)[000061] ------ - N----arg0 in rdi + --*  lclFld    long   V03 tmp1[+0]
+                //     N010(3, 4)[000063] ------------arg0 in rsi + --*  lclFld    long   V03 tmp1[+8](last use)
+                //     N014(40, 31)[000026] --CXG------ - *call      void   Test.Foo.test2
+                //
+                // args :
+                //     lowering arg : N007(12, 12)[000059] - A--G---- - L - *copyBlk   void
+                //
+                // late :
+                //     lowering arg : N012(11, 13)[000065] ------------             *  <list>    struct
+                //
+                // after :
+                //     N001(3, 2)[000025] ------ - N----Source / --*  &lclVar   byref  V01 loc1
+                //     N003(3, 2)[000056] ------ - N----Destination + --*  &lclVar   byref  V03 tmp1
+                //     N006(1, 1)[000058] ------------ + --*  const     int    16
+                //     N007(12, 12)[000059] - A--G---- - L - arg0 SETUP / --*  copyBlk   void
+                //     N009(3, 4)[000061] ------ - N---- | / --*  lclFld    long   V03 tmp1[+0]
+                //     (3, 4)[000072] ------------arg0 in rdi + --*  putarg_reg long
+                //     N010(3, 4)[000063] ------------ | / --*  lclFld    long   V03 tmp1[+8](last use)
+                //     (3, 4)[000073] ------------arg0 in rsi + --*  putarg_reg long
+                //     N014(40, 31)[000026] --CXG------ - *call      void   Test.Foo.test2
+                //
+
+                assert(arg->OperGet() == GT_LIST);
+                GenTreeArgList* argListPtr = arg->AsArgList();
+                
+                for (unsigned ctr = 0; argListPtr != nullptr; argListPtr = argListPtr->Rest(), ctr++)
+                {
+                    // Create a new GT_PUTARG_REG node with op1 the original GT_LCL_FLD.
+                    GenTreePtr newOper = comp->gtNewOperNode(
+                        GT_PUTARG_REG,
+                        comp->GetTypeFromClassificationAndSizes(fp->structDesc.eightByteClassifications[ctr], fp->structDesc.eightByteSizes[ctr]),
+                        argListPtr->gtOp.gtOp1);
+
+                    // CopyCosts
+                    newOper->CopyCosts(argListPtr->gtOp.gtOp1);
+
+                    // Splice in the new GT_PUTARG_REG node in the GT_LIST
+                    SpliceInUnary(argListPtr, &argListPtr->gtOp.gtOp1, newOper);
+                }
+
+                // Just return arg. The GT_LIST is not replaced.
+                // Nothing more to do.
+                return arg;
+            }
+            else
+            {
+                assert(false && "Illegal count of eightbytes for the CLR type system"); // No more than 2 eightbytes for the CLR.
+                
+            }
+        }
+        else
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        {
+            putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
+        }
     }
     else
     {
         // Mark this one as tail call arg if it is a fast tail call.
         // This provides the info to put this argument in in-coming arg area slot 
         // instead of in out-going arg area slot.
+
+        FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(assert(fp->isStruct == (type == TYP_STRUCT))); // Make sure state is correct
+
 #if FEATURE_FASTTAILCALL
-        putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, type, arg, fp->slotNum, call->IsFastTailCall() DEBUG_ARG(call));
+        putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK,
+                                                            type,
+                                                            arg, 
+                                                            fp->slotNum
+                                                            FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(fp->numSlots)
+                                                            FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(fp->isStruct),
+                                                            call->IsFastTailCall() 
+                                                            DEBUG_ARG(call));
 #else
-        putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, type, arg, fp->slotNum DEBUG_ARG(call));
+        putArg = new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK,
+                                                            type, 
+                                                            arg, 
+                                                            fp->slotNum
+                                                            FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(fp->numSlots)
+                                                            FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(fp->isStruct)
+                                                            DEBUG_ARG(call));
 #endif
+
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // If the ArgTabEntry indicates that this arg is a struct
+        // get and store the number of slots that are references.
+        // This is later used in the codegen for PUT_ARG_STK implementation
+        // for struct to decide whether and how many single eight-byte copies 
+        // to be done (only for reference slots), so gcinfo is emitted.
+        // For non-reference slots faster/smaller size instructions are used - 
+        // pair copying using XMM registers or rep mov instructions.
+        if (fp->isStruct)
+        {
+            assert(arg->OperGet() == GT_LDOBJ);
+            
+            BYTE* gcLayout = new (comp, CMK_Codegen) BYTE[fp->numSlots];
+
+            unsigned numRefs = comp->info.compCompHnd->getClassGClayout(arg->gtLdObj.gtClass, gcLayout);
+
+            putArg->AsPutArgStk()->setGcPointers(numRefs, gcLayout);
+        }
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     }
+
     putArg->CopyCosts(arg);
 
     if (arg->InReg())
+    {
         putArg->SetInReg();
+    }
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    else if (fp->isStruct)
+    {
+        if (fp->structDesc.passedInRegisters)
+        {
+            putArg->SetInReg();
+        }
+    }
+#endif
 
     JITDUMP("new node is : ");
     DISPNODE(putArg);
@@ -1076,10 +1279,14 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
     // assignments/stores at this level are not really placing an arg
     // they are setting up temporary locals that will later be placed into
     // outgoing regs or stack
-    if (!arg->OperIsAssignment()     && 
+    if (
+        !arg->OperIsAssignment()     && 
         !arg->OperIsStore()          &&
         !arg->IsArgPlaceHolderNode() &&
-        !arg->IsNothingNode()        &&
+        !arg->IsNothingNode()        && 
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        !arg->OperIsPutArgStk()      &&
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
         !arg->OperIsCopyBlkOp()) // these are de facto placeholders (apparently)
     {
         fgArgTabEntryPtr fp = comp->gtArgEntryByNode(call, arg);
@@ -1153,7 +1360,15 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
 #endif // !defined(_TARGET_64BIT_)
         {
             putArg = NewPutArg(call, arg, fp, type);
-            SpliceInUnary(call, ppArg, putArg);
+
+            // In the case of register passable struct (in one or two registers)
+            // the NewPutArg returns a new node (GT_PUTARG_REG or a GT_LIST with two GT_PUTARG_REGs.)
+            // If an extra node is returned, splice it in the right place in the tree.
+            if (arg != putArg)
+            {
+                // putArg and arg are equals if arg is GT_LIST (a list of multiple LCL_FLDs to be passed in registers.)
+                SpliceInUnary(call, ppArg, putArg);
+            }
         }
     }
 }

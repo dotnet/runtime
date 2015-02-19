@@ -401,7 +401,7 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
         // Record this call if required
         g_IBCLogger.LogMethodDescAccess(m_pMD);
 
-        // 
+        //  
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
         // also required for critical calls since we cannot inject any failure points between the 
         // caller of MethodDesc::CallDescr and the actual transition to managed code.
@@ -537,9 +537,12 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
             // have at least one such argument we point the call worker at the floating point area of the
             // frame (we leave it null otherwise since the worker can perform a useful optimization if it
             // knows no floating point registers need to be set up).
-            if ((ofs < 0) && (pFloatArgumentRegisters == NULL))
+            if (TransitionBlock::HasFloatRegister(ofs, m_argIt.GetArgLocDescForStructInRegs()) && 
+                (pFloatArgumentRegisters == NULL))
+            {
                 pFloatArgumentRegisters = (FloatArgumentRegisters*)(pTransitionBlock +
                                                                     TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+            }
 #endif
 
 #if CHECK_APP_DOMAIN_LEAKS
@@ -553,6 +556,9 @@ ARG_SLOT MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments)
             }
 #endif // CHECK_APP_DOMAIN_LEAKS
 
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+            _ASSERTE(ofs != TransitionBlock::StructInRegsOffset);
+#endif
             PVOID pDest = pTransitionBlock + ofs;
 
             UINT32 stackSize = m_argIt.GetArgSize();
