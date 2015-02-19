@@ -4166,7 +4166,7 @@ HRESULT LoadClrDebugDll(void)
     }
     if (g_clrData == NULL)
     {
-        HMODULE hdac = LoadLibraryA("/ssd/coreclr/binaries/Product/amd64/debug/libmscordaccore.so");
+        HMODULE hdac = LoadLibraryA("/ssd/coreclr/binaries/Product/amd64/debug/" MAKEDLLNAME_A("mscordaccore"));
         if (hdac == NULL)
         {
             return E_FAIL;
