@@ -175,7 +175,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             RanToCompletion = (int)TaskStatus.RanToCompletion,
             /// <summary>The block completed due to an error.</summary>
             Faulted = (int)TaskStatus.Faulted,
-            /// <summary>The block completed due to cancelation.</summary>
+            /// <summary>The block completed due to cancellation.</summary>
             Canceled = (int)TaskStatus.Canceled
         }
 

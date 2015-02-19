@@ -34,7 +34,7 @@ namespace System.Linq.Parallel
     /// contiguous chunks. If striping is requested, then each partition j will yield elements
     /// in the data source for which ((i / s)%p) == j, where i is the element's index, s is
     /// a chunk size calculated by the system with the intent of aligning on cache lines, and
-    /// p is the number of partitions. If striping is not requested, we use the same algorith,
+    /// p is the number of partitions. If striping is not requested, we use the same algorithm,
     /// only, instead of aligning on cache lines, we use a chunk size of l / p, where l
     /// is the length of the input and p is the number of partitions.
     ///
@@ -120,7 +120,7 @@ namespace System.Linq.Parallel
                         {
                             partitions[i] = new ArrayContiguousIndexRangeEnumerator(sourceAsArray, partitionCount, i);
                         }
-                        TraceHelpers.TraceInfo("ContigousRangePartitionExchangeStream::MakePartitions - (array) #{0} {1}", i, maxChunkSize);
+                        TraceHelpers.TraceInfo("ContiguousRangePartitionExchangeStream::MakePartitions - (array) #{0} {1}", i, maxChunkSize);
                     }
                     else
                     {
@@ -133,7 +133,7 @@ namespace System.Linq.Parallel
                         {
                             partitions[i] = new ListContiguousIndexRangeEnumerator(sourceAsList, partitionCount, i);
                         }
-                        TraceHelpers.TraceInfo("ContigousRangePartitionExchangeStream::MakePartitions - (list) #{0} {1})", i, maxChunkSize);
+                        TraceHelpers.TraceInfo("ContiguousRangePartitionExchangeStream::MakePartitions - (list) #{0} {1})", i, maxChunkSize);
                     }
                 }
 
@@ -171,13 +171,13 @@ namespace System.Linq.Parallel
             object sharedSyncLock = new object();
             Shared<int> sharedCurrentIndex = new Shared<int>(0);
             Shared<int> sharedPartitionCount = new Shared<int>(partitionCount);
-            Shared<bool> sharedExeceptionTracker = new Shared<bool>(false);
+            Shared<bool> sharedExceptionTracker = new Shared<bool>(false);
 
             // Create a new lazy chunking enumerator per partition, sharing the same lock.
             for (int i = 0; i < partitionCount; i++)
             {
                 partitions[i] = new ContiguousChunkLazyEnumerator(
-                    source, sharedExeceptionTracker, sharedSyncLock, sharedCurrentIndex, sharedPartitionCount);
+                    source, sharedExceptionTracker, sharedSyncLock, sharedCurrentIndex, sharedPartitionCount);
             }
 
             return partitions;
@@ -343,7 +343,7 @@ namespace System.Linq.Parallel
 
             internal ArrayContiguousIndexRangeEnumerator(T[] data, int partitionCount, int partitionIndex)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");
@@ -415,7 +415,7 @@ namespace System.Linq.Parallel
 
             internal ListIndexRangeEnumerator(IList<T> data, int partitionCount, int partitionIndex, int maxChunkSize)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");
@@ -521,7 +521,7 @@ namespace System.Linq.Parallel
 
             internal ListContiguousIndexRangeEnumerator(IList<T> data, int partitionCount, int partitionIndex)
             {
-                Debug.Assert(data != null, "data musn't be null");
+                Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
                 Debug.Assert(partitionIndex >= 0, "partitionIndex can't be negative");
                 Debug.Assert(partitionIndex < partitionCount, "partitionIndex must be less than partitionCount");

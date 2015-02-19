@@ -235,7 +235,7 @@ namespace System.Linq.Parallel
                 Debug.Assert(0 <= destinationIndex && destinationIndex < _partitionCount,
                                 "destination partition outside of the legal range of partitions");
 
-                // Get the buffer for the destnation partition, lazily allocating if needed.  We maintain
+                // Get the buffer for the destination partition, lazily allocating if needed.  We maintain
                 // this list in our own private cache so that we avoid accessing shared memory locations
                 // too much.  In the original implementation, we'd access the buffer in the matrix ([N,M],
                 // where N is the current partition and M is the destination), but some rudimentary

@@ -20,7 +20,7 @@ namespace System.Collections.Specialized.Tests
 
             nvc = new NameValueCollection();
 
-            //  [] comapre to null
+            //  [] compare to null
             //
             if (nvc == null)
             {

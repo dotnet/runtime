@@ -2160,7 +2160,7 @@ namespace System.Xml
         public override int Count { get { return 0; } }
     }
 
-    // An iterator that can match any child elements that match the Match condition (overrided in the derived class)
+    // An iterator that can match any child elements that match the Match condition (overridden in the derived class)
     internal abstract class DocumentXPathNodeIterator_ElemDescendants : XPathNodeIterator
     {
         private DocumentXPathNavigator _nav;

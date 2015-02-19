@@ -554,7 +554,7 @@ namespace System.Collections
                     //        (3) compare the key, if equal, go to step 4. Otherwise end.
                     //        (4) return the value contained in the bucket.
                     //     After step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
-                    //     in the same bukcet. So in the reader we need to check if the hash table is modified during above steps.
+                    //     in the same bucket. So in the reader we need to check if the hash table is modified during above steps.
                     //
                     // Writers (Insert, Remove, Clear) will set 'isWriterInProgress' flag before it starts modifying 
                     // the hashtable and will ckear the flag when it is done.  When the flag is cleared, the 'version'
@@ -608,7 +608,7 @@ namespace System.Collections
             rehash(rawsize, false);
         }
 
-        // We occationally need to rehash the table to clean up the collision bits.
+        // We occasionally need to rehash the table to clean up the collision bits.
         private void rehash()
         {
             rehash(_buckets.Length, false);
@@ -652,8 +652,8 @@ namespace System.Collections
             _loadsize = (int)(_loadFactor * newsize);
             UpdateVersion();
             _isWriterInProgress = false;
-            // minimun size of hashtable is 3 now and maximum loadFactor is 0.72 now.
-            Debug.Assert(_loadsize < newsize, "Our current implementaion means this is not possible.");
+            // minimum size of hashtable is 3 now and maximum loadFactor is 0.72 now.
+            Debug.Assert(_loadsize < newsize, "Our current implementation means this is not possible.");
             return;
         }
 
@@ -1261,7 +1261,7 @@ namespace System.Collections
 
 
         // Implements an enumerator for a hashtable. The enumerator uses the
-        // internal version number of the hashtabke to ensure that no modifications
+        // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
         private class HashtableEnumerator : IDictionaryEnumerator
         {
@@ -1451,7 +1451,7 @@ namespace System.Collections
         {
             int newSize = 2 * oldSize;
 
-            // Allow the hashtables to grow to maximum possible size (~2G elements) before encoutering capacity overflow.
+            // Allow the hashtables to grow to maximum possible size (~2G elements) before encountering capacity overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {

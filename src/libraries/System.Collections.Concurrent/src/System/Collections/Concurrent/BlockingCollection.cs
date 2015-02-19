@@ -382,7 +382,7 @@ namespace System.Collections.Concurrent
         /// <summary>Adds an item into the underlying data store using its IProducerConsumerCollection&lt;T&gt;.Add 
         /// method. If a bounded capacity was specified and the collection was full, 
         /// this method will wait for, at most, the timeout period trying to add the item. 
-        /// If the timeout period was exhaused before successfully adding the item this method will 
+        /// If the timeout period was exhausted before successfully adding the item this method will 
         /// return false.</summary>
         /// <param name="item">The item to be added to the collection.</param>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait for the collection to accept the item,
@@ -447,7 +447,7 @@ namespace System.Collections.Concurrent
             {
                 // Update the adders count if the complete adding was not requested, otherwise
                 // spins until all adders finish then throw IOE
-                // The idea behind to spin untill all adders finish, is to avoid to return to the caller with IOE while there are still some adders have
+                // The idea behind to spin until all adders finish, is to avoid to return to the caller with IOE while there are still some adders have
                 // not been finished yet
                 SpinWait spinner = new SpinWait();
                 while (true)
@@ -464,7 +464,7 @@ namespace System.Collections.Concurrent
                     if (Interlocked.CompareExchange(ref _currentAdders, observedAdders + 1, observedAdders) == observedAdders)
 #pragma warning restore 0420
                     {
-                        Debug.Assert((observedAdders + 1) <= (~COMPLETE_ADDING_ON_MASK), "The number of concurrent adders thread excceeded the maximum limit.");
+                        Debug.Assert((observedAdders + 1) <= (~COMPLETE_ADDING_ON_MASK), "The number of concurrent adders thread exceeded the maximum limit.");
                         break;
                     }
                     spinner.SpinOnce();
@@ -657,7 +657,7 @@ namespace System.Collections.Concurrent
 
         /// <summary>Takes an item from the underlying data store using its IProducerConsumerCollection&lt;T&gt;.Take 
         /// method. If the collection was empty, this method will wait for, at most, the timeout period (if AddingIsCompleted is false)
-        /// trying to remove an item. If the timeout period was exhaused before successfully removing an item 
+        /// trying to remove an item. If the timeout period was exhausted before successfully removing an item 
         /// this method will return false.
         /// A <see cref="System.OperationCanceledException"/> is thrown if the <see cref="CancellationToken"/> is
         /// canceled.
@@ -1075,7 +1075,7 @@ namespace System.Collections.Concurrent
             return -1;
         }
         /// <summary>
-        /// Local static method, used by TryAddTakeAny to get the wait handles for the collection, with exclude option to exclude the Compeleted collections
+        /// Local static method, used by TryAddTakeAny to get the wait handles for the collection, with exclude option to exclude the Completed collections
         /// </summary>
         /// <param name="collections">The blocking collections</param>
         /// <param name="externalCancellationToken">The original CancellationToken</param>
@@ -1121,7 +1121,7 @@ namespace System.Collections.Concurrent
         /// Helper function to measure and update the wait time
         /// </summary>
         /// <param name="startTime"> The first time (in milliseconds) observed when the wait started</param>
-        /// <param name="originalWaitMillisecondsTimeout">The orginal wait timeoutout in milliseconds</param>
+        /// <param name="originalWaitMillisecondsTimeout">The original wait timeoutout in milliseconds</param>
         /// <returns>The new wait time in milliseconds, -1 if the time expired</returns>
         private static int UpdateTimeOut(uint startTime, int originalWaitMillisecondsTimeout)
         {
@@ -1427,7 +1427,7 @@ namespace System.Collections.Concurrent
                         throw new OperationCanceledException(SR.Common_OperationCanceled, externalCancellationToken);
 
 
-                    else if (!linkedTokenSource.IsCancellationRequested)// if no eiter internal or external cancellation trquested
+                    else if (!linkedTokenSource.IsCancellationRequested) // if neither internal nor external cancellation requested
                     {
                         Debug.Assert((index == WaitHandle.WaitTimeout) || (index >= 0 && index < handles.Count));
                         if (index == WaitHandle.WaitTimeout) //case#2
@@ -1484,7 +1484,7 @@ namespace System.Collections.Concurrent
                 if ((observedAdders & COMPLETE_ADDING_ON_MASK) != 0)
                 {
                     spinner.Reset();
-                    // If there is another COmpleteAdding in progress waiting the current adders, then spin until it finishes
+                    // If there is another CompleteAdding in progress waiting the current adders, then spin until it finishes
                     while (_currentAdders != COMPLETE_ADDING_ON_MASK) spinner.SpinOnce();
                     return;
                 }
@@ -1749,7 +1749,7 @@ namespace System.Collections.Concurrent
 
         // ---------
         // Private Helpers.
-        /// <summary>Centeralizes the logic of validating the timeout input argument.</summary>
+        /// <summary>Centralizes the logic of validating the timeout input argument.</summary>
         /// <param name="timeout">The TimeSpan to wait for to successfully complete an operation on the collection.</param>
         /// <exception cref="System.ArgumentOutOfRangeException">If the number of millseconds represented by the timeout 
         /// TimeSpan is less than 0 or is larger than Int32.MaxValue and not Timeout.Infinite</exception>

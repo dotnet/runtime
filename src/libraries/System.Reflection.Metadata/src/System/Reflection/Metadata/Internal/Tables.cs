@@ -751,7 +751,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         internal readonly uint NumberOfRows;
         private readonly bool _IsHasCustomAttributeRefSizeSmall;
-        private readonly bool _IsCustomAttriubuteTypeRefSizeSmall;
+        private readonly bool _IsCustomAttributeTypeRefSizeSmall;
         private readonly bool _IsBlobHeapRefSizeSmall;
         private readonly int _ParentOffset;
         private readonly int _TypeOffset;
@@ -774,7 +774,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             this.NumberOfRows = numberOfRows;
             _IsHasCustomAttributeRefSizeSmall = hasCustomAttributeRefSize == 2;
-            _IsCustomAttriubuteTypeRefSizeSmall = customAttributeTypeRefSize == 2;
+            _IsCustomAttributeTypeRefSizeSmall = customAttributeTypeRefSize == 2;
             _IsBlobHeapRefSizeSmall = blobHeapRefSize == 2;
             _ParentOffset = 0;
             _TypeOffset = _ParentOffset + hasCustomAttributeRefSize;
@@ -802,7 +802,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal Handle GetConstructor(CustomAttributeHandle handle)
         {
             int rowOffset = (int)(handle.RowId - 1) * this.RowSize;
-            return CustomAttributeTypeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _TypeOffset, _IsCustomAttriubuteTypeRefSizeSmall));
+            return CustomAttributeTypeTag.ConvertToToken(this.Block.PeekTaggedReference(rowOffset + _TypeOffset, _IsCustomAttributeTypeRefSizeSmall));
         }
 
         internal BlobHandle GetValue(CustomAttributeHandle handle)
@@ -2107,16 +2107,16 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal AssemblyRefProcessorTableReader(
             uint numberOfRows,
-            int assembyRefTableRowRefSize,
+            int assemblyRefTableRowRefSize,
             MemoryBlock containingBlock,
             int containingBlockOffset
         )
         {
             this.NumberOfRows = numberOfRows;
-            _IsAssemblyRefTableRowSizeSmall = assembyRefTableRowRefSize == 2;
+            _IsAssemblyRefTableRowSizeSmall = assemblyRefTableRowRefSize == 2;
             _ProcessorOffset = 0;
             _AssemblyRefOffset = _ProcessorOffset + sizeof(UInt32);
-            this.RowSize = _AssemblyRefOffset + assembyRefTableRowRefSize;
+            this.RowSize = _AssemblyRefOffset + assemblyRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }
@@ -2134,17 +2134,17 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal AssemblyRefOSTableReader(
             uint numberOfRows,
-            int assembyRefTableRowRefSize,
+            int assemblyRefTableRowRefSize,
             MemoryBlock containingBlock,
             int containingBlockOffset)
         {
             this.NumberOfRows = numberOfRows;
-            _IsAssemblyRefTableRowRefSizeSmall = assembyRefTableRowRefSize == 2;
+            _IsAssemblyRefTableRowRefSizeSmall = assemblyRefTableRowRefSize == 2;
             _OSPlatformIdOffset = 0;
             _OSMajorVersionIdOffset = _OSPlatformIdOffset + sizeof(UInt32);
             _OSMinorVersionIdOffset = _OSMajorVersionIdOffset + sizeof(UInt32);
             _AssemblyRefOffset = _OSMinorVersionIdOffset + sizeof(UInt32);
-            this.RowSize = _AssemblyRefOffset + assembyRefTableRowRefSize;
+            this.RowSize = _AssemblyRefOffset + assemblyRefTableRowRefSize;
             this.Block = containingBlock.GetMemoryBlockAt(containingBlockOffset, (int)(this.RowSize * numberOfRows));
         }
     }

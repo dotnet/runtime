@@ -35,7 +35,7 @@ namespace System.Threading.Tasks.Dataflow
         private TaskCompletionSource<VoidResult> _lazyCompletionTaskSource;
         /// <summary>Whether all future messages should be declined.</summary>
         private bool _decliningPermanently;
-        /// <summary>Whether block completion is disallawed.</summary>
+        /// <summary>Whether block completion is disallowed.</summary>
         private bool _completionReserved;
         /// <summary>The header of the singly-assigned value.</summary>
         private DataflowMessageHeader _header;
@@ -177,7 +177,7 @@ namespace System.Threading.Tasks.Dataflow
 
             Contract.Requires(_lazyCompletionTaskSource == null || !_lazyCompletionTaskSource.Task.IsCompleted, "The task completion source must not be completed. This must be the only thread that ever completes the block.");
 
-            // Save the linked list of targets so that it could be traveresed later to propagate completion
+            // Save the linked list of targets so that it could be traversed later to propagate completion
             TargetRegistry<T>.LinkedTargetInfo linkedTargets = _targetRegistry.ClearEntryPoints();
 
             // Complete the block's completion task

@@ -745,7 +745,7 @@ namespace System.Diagnostics.ProcessTests
             );
             //Remove Item
             Environment2.Remove("NewKey98");
-            Environment2.Remove("NewKey98");   //2nd occurence should not assert
+            Environment2.Remove("NewKey98");   //2nd occurrence should not assert
 
             //Exception not thrown with null key
             Assert.Throws<ArgumentNullException>(() => { Environment2.Remove(null); });

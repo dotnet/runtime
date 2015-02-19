@@ -134,7 +134,7 @@ namespace System.IO
             // named pipe server can't impersonate a high privileged client security context
             flagsAndAttributes |= (Interop.SECURITY_SQOS_PRESENT | Interop.SECURITY_ANONYMOUS);
 
-            // Don't pop up a dialog for reading from an emtpy floppy drive
+            // Don't pop up a dialog for reading from an empty floppy drive
             uint oldMode = Interop.mincore.SetErrorMode(Interop.SEM_FAILCRITICALERRORS);
             try
             {
@@ -482,7 +482,7 @@ namespace System.IO
                     VerifyOSHandlePosition();
 
                 // Compensate for buffer that we read from the handle (_readLen) Vs what the user
-                // read so far from the internel buffer (_readPos). Of course add any unwrittern  
+                // read so far from the internal buffer (_readPos). Of course add any unwritten  
                 // buffered data
                 return _pos + (_readPos - _readLen + _writePos);
             }
@@ -610,7 +610,7 @@ namespace System.IO
                 // since that support takes care of the pinning & freeing the 
                 // overlapped struct.  We need to do this when called from
                 // Close so that the handle is closed when Close returns, but
-                // we do't need to call EndWrite from the finalizer.  
+                // we don't need to call EndWrite from the finalizer.  
                 // Additionally, if we do call EndWrite, we block forever 
                 // because AD unloads prevent us from running the managed 
                 // callback from the IO completion port.  Blocking here when 

@@ -24,7 +24,7 @@
 //              0x81 ~ 0xfe, 0x80 ~ 0xfe    (leading byte, trailing byte)
 //          * Four-byte:
 //              0x81 ~ 0xfe, 0x30 ~ 0x39, 0x81 ~ 0xfe, 0x30 ~ 0x39.
-//              The surrogare pair will be encoded from 0x90, 0x30, 0x81, 0x30
+//              The surrogate pair will be encoded from 0x90, 0x30, 0x81, 0x30
 //
 //      The BMP range is fully supported in GB18030 using 1-byte, 2-byte and 4-byte sequences.
 //      In valid 4-byte GB18030, there are two gaps that can not be mapped to Unicode characters.
@@ -71,7 +71,7 @@
 //          81,30,81,32         2
 //          ...                 ...
 //
-//          The value of map4BytesToUnicode cotains the Unicode codepoint for the offset of the
+//          The value of map4BytesToUnicode contains the Unicode codepoint for the offset of the
 //          corresponding 4-byte GB18030.
 //
 //          E.g. map4BytesToUnicode[0] = 0x0080.  This means that GB18030 0x81, 0x30, 0x81, 0x30 will be converted to Unicode U+0800.
@@ -121,7 +121,7 @@ namespace System.Text
         {
         }
 
-        // This loads our base 936 code page and then applys the changes from the tableUnicodeToGBDiffs table.
+        // This loads our base 936 code page and then applies the changes from the tableUnicodeToGBDiffs table.
         // See table comments for table format.
         [System.Security.SecurityCritical]  // auto-generated
         protected override unsafe void LoadManagedCodePage()
@@ -251,7 +251,7 @@ namespace System.Text
                     if (!Char.IsLowSurrogate(ch))
                     {
                         // No low surrogate, fallback high surrogate & try this one again
-                        buffer.MovePrevious(false);                  // (Ignoring this character, don't thow)
+                        buffer.MovePrevious(false);                  // (Ignoring this character, don't throw)
                         if (!buffer.Fallback(charLeftOver))
                         {
                             charLeftOver = (char)0;

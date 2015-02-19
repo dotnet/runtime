@@ -62,19 +62,19 @@ namespace System.ComponentModel
             return true;
         }
 
-        // Windows API FormatMessage lets you format a message string given an errocode.
+        // Windows API FormatMessage lets you format a message string given an error code.
         // Unlike other APIs this API does not support a way to query it for the total message size.
         //
         // So the API can only be used in one of these two ways.
         // a. You pass a buffer of appropriate size and get the resource.
-        // b. Windows creates a buffer and passes the address back and the onus of releasing the bugffer lies on the caller.
+        // b. Windows creates a buffer and passes the address back and the onus of releasing the buffer lies on the caller.
         //
         // Since the error code is coming from the user, it is not possible to know the size in advance.
         // Unfortunately we can't use option b. since the buffer can only be freed using LocalFree and it is a private API on onecore.
         // Also, using option b is ugly for the manged code and could cause memory leak in situations where freeing is unsuccessful.
         // 
         // As a result we use the following approach.
-        // We initially call the API with a buffer size of 256 and then gradually increase the size in case of failure until we reach the maxiumum allowed limit of 65K.
+        // We initially call the API with a buffer size of 256 and then gradually increase the size in case of failure until we reach the maximum allowed limit of 65K.
         private const int MaxAllowedBufferSize = 65 * 1024;
     }
 }

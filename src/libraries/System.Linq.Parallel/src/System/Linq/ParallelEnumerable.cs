@@ -419,7 +419,7 @@ namespace System.Linq
         /// </summary>
         /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
         /// <param name="source">A ParallelQuery on which to set the option.</param>
-        /// <param name="mergeOptions">The merge optiosn to set for this query.</param>
+        /// <param name="mergeOptions">The merge options to set for this query.</param>
         /// <returns>ParallelQuery representing the same query as source, but with the 
         /// <seealso cref="ParallelMergeOptions"/> registered.</returns>
         /// <exception cref="T:System.ArgumentNullException">
@@ -4815,7 +4815,7 @@ namespace System.Linq
          *===================================================================================*/
 
         //-----------------------------------------------------------------------------------
-        // For compatability with LINQ. Changes the static type to be less specific if needed.
+        // For compatibility with LINQ. Changes the static type to be less specific if needed.
         //
 
         /// <summary>
@@ -5427,7 +5427,7 @@ namespace System.Linq
         // First simply returns the first element from the data source; if the predicate
         // overload is used, the first element satisfying the predicate is returned.
         // An exception is thrown for empty data sources. Alternatively, the FirstOrDefault
-        // method can be used which returns defualt(T) if empty (or no elements satisfy the
+        // method can be used which returns default(T) if empty (or no elements satisfy the
         // predicate).
         // 
 
@@ -5603,7 +5603,7 @@ namespace System.Linq
         // Last simply returns the last element from the data source; if the predicate
         // overload is used, the last element satisfying the predicate is returned.
         // An exception is thrown for empty data sources. Alternatively, the LastOrDefault
-        // method can be used which returns defualt(T) if empty (or no elements satisfy the
+        // method can be used which returns default(T) if empty (or no elements satisfy the
         // predicate).
         // 
 

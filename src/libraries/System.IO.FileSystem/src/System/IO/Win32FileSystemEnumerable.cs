@@ -352,7 +352,7 @@ namespace System.IO
                                 _hnd.Dispose();
 
                             // ERROR_FILE_NOT_FOUND is valid here because if the top level
-                            // dir doen't contain any subdirs and matching files then 
+                            // dir doesn't contain any subdirs and matching files then 
                             // we will get here with this errorcode from the searchStack walk
                             if ((errorCode != 0) && (errorCode != Interop.ERROR_NO_MORE_FILES)
                                 && (errorCode != Interop.ERROR_FILE_NOT_FOUND))
@@ -620,7 +620,7 @@ namespace System.IO
 
     internal sealed class SearchResult
     {
-        private String _fullPath;     // fully-qualifed path
+        private String _fullPath;     // fully-qualified path
         private String _userPath;     // user-specified path
         [System.Security.SecurityCritical]
         private Interop.WIN32_FIND_DATA _findData;

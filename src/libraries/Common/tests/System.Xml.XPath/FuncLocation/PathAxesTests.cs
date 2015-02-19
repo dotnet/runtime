@@ -2386,7 +2386,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// preceding (try to access an anscestor)
+        /// preceding (try to access an ancestor)
         /// preceding::Chap
         /// </summary>
         [Fact]
@@ -2978,7 +2978,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// parent (consdition on attr and value, true)
+        /// parent (condition on attr and value, true)
         /// parent::*[@Attr1="only one"][.="only one"]
         /// </summary>
         [Fact]
@@ -6864,7 +6864,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Prefixs are redefined, checks that this is done correctly
+        /// Prefixes are redefined, checks that this is done correctly
         /// NS26: //prefix:*//namespace::node()
         /// </summary>
         [Fact]
@@ -7315,7 +7315,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Nodes are not repeated in a node-set. Magazine nodes should not be repreated
+        /// Nodes are not repeated in a node-set. Magazine nodes should not be repeated
         /// /bookstore/book/following-sibling::magazine
         /// </summary>
         [Fact]

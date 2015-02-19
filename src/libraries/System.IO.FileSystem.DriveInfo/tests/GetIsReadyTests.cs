@@ -25,7 +25,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 
             //There is no easy way to test this fully. The FX tests this internally using Directory.InternalExists which in turn uses a significant
             //code for specific OSs and Win32 functions. We attempt to test this indirectly. We will get all the drives and call IsReady on it. If it 
-            //succeds, we will try to write a file to it.
+            //succeeds, we will try to write a file to it.
             drives = DriveInfo.GetDrives();
             for (int i = 0; i < drives.Length; i++)
             {

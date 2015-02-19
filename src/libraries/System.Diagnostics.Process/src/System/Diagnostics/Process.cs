@@ -66,7 +66,7 @@ namespace System.Diagnostics
         private StreamReadMode _outputStreamReadMode;
         private StreamReadMode _errorStreamReadMode;
 
-        // Support for asynchrously reading streams
+        // Support for asynchronously reading streams
         public event DataReceivedEventHandler OutputDataReceived;
         public event DataReceivedEventHandler ErrorDataReceived;
 
@@ -675,7 +675,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///     This is called from the threadpool when a proces exits.
+        ///     This is called from the threadpool when a process exits.
         /// </devdoc>
         /// <internalonly/>
         private void CompletionCallback(object context, bool wasSignaled)
@@ -1256,7 +1256,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.PendingAsyncOperation);
 
             _pendingOutputRead = true;
-            // We can't detect if there's a pending sychronous read, stream also doesn't.
+            // We can't detect if there's a pending synchronous read, stream also doesn't.
             if (_output == null)
             {
                 if (_standardOutput == null)
@@ -1296,7 +1296,7 @@ namespace System.Diagnostics
             }
 
             _pendingErrorRead = true;
-            // We can't detect if there's a pending sychronous read, stream also doesn't.
+            // We can't detect if there's a pending synchronous read, stream also doesn't.
             if (_error == null)
             {
                 if (_standardError == null)

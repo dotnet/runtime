@@ -87,7 +87,7 @@ public class RegexConstructorTests
                 Console.WriteLine("Err_97878dsaw Expected Regex not to throw and the following exception was thrown:\n {0}", e);
             }
 
-            //[]RegEx with ECMA RegexOptions with all other valid options plus RirghtToLeft
+            //[]RegEx with ECMA RegexOptions with all other valid options plus RightToLeft
             strLoc = "Loc_9875asd";
             iCountTestcases++;
             try

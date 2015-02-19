@@ -24,7 +24,7 @@ namespace System.Linq.Parallel
     /// it will generate intermediate results by folding O across partitions; then it
     /// performs a final reduction by folding O accross the intermediate results. The
     /// analysis engine knows about associativity and commutativity, and will ensure the
-    /// style of partitioning inserted into the tree is compatable with the operator.
+    /// style of partitioning inserted into the tree is compatible with the operator.
     ///
     /// For instance, say O is + (meaning it is AC), our input is {1,2,...,8}, and we
     /// use 4 partitions to calculate the aggregation. Sequentially this would look
@@ -34,7 +34,7 @@ namespace System.Linq.Parallel
     /// The final step is to aggregate O over these intermediaries, i.e.
     /// O(O(O(t1,t2),t3),t4), or ((t1+t2)+t3)+t4. This generalizes to any binary operator.
     ///
-    /// Beause some aggregations use a different input, intermediate, and output types,
+    /// Because some aggregations use a different input, intermediate, and output types,
     /// we support an even more generalized aggregation type. In this model, we have
     /// three operators, an intermediate (used for the incremental aggregations), a
     /// final (used for the final summary of intermediate results), and a result selector

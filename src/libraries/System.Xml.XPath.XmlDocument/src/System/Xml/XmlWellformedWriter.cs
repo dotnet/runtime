@@ -167,7 +167,7 @@ namespace System.Xml
             "DTD",                      // Token.Dtd
             "StartElement",             // Token.StartElement
             "EndElement",               // Token.EndElement
-            "StartAttribute",           // Token.StartAttribut
+            "StartAttribute",           // Token.StartAttribute
             "EndAttribute",             // Token.EndAttribute
             "Text",                     // Token.Text
             "CDATA",                    // Token.CData
@@ -1737,7 +1737,7 @@ namespace System.Xml
         }
 
         // PushNamespaceExplicit is called when a namespace declaration is written out;
-        // It returs true if the namespace declaration should we written out, false if it should be omited (if OmitDuplicateNamespaceDeclarations is true)
+        // It returns true if the namespace declaration should we written out, false if it should be omited (if OmitDuplicateNamespaceDeclarations is true)
         private bool PushNamespaceExplicit(string prefix, string ns)
         {
             bool writeItOut = true;
@@ -2169,7 +2169,7 @@ namespace System.Xml
             return new ArgumentException(SR.Format(SR.Xml_InvalidNameCharsDetail, args));
         }
 
-        // This method translates speficic state transition errors in more friendly error messages
+        // This method translates specific state transition errors in more friendly error messages
         private void ThrowInvalidStateTransition(Token token, State currentState)
         {
             string wrongTokenMessage = SR.Format(SR.Xml_WrongToken, tokenName[(int)token], GetStateName(currentState));

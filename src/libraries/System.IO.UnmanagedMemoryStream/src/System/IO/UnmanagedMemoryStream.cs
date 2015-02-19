@@ -313,7 +313,7 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Closes the stream. The stream's memory needs to be dealt with separatelly.
+        /// Closes the stream. The stream's memory needs to be dealt with separately.
         /// </summary>
         /// <param name="disposing"></param>
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -774,7 +774,7 @@ namespace System.IO
         /// <param name="buffer">Buffer that will be written.</param>
         /// <param name="offset">Starting index in the buffer.</param>
         /// <param name="count">Number of bytes to write.</param>
-        /// <param name="cancellationToken">Token that can be used to cancell the opetation.</param>
+        /// <param name="cancellationToken">Token that can be used to cancell the operation.</param>
         /// <returns>Task that can be awaited </returns>
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {

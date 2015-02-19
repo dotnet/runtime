@@ -23,12 +23,12 @@ namespace System.Linq.Parallel
     ///
     /// This uniformity is used to apply a general purpose algorithm. Both sentences above
     /// take the form of "returns XXX if the predicate for any element evaluates to XXX."
-    /// Therefore, we just parameterize on XXX, called the qualifciation below, and if we
+    /// Therefore, we just parameterize on XXX, called the qualification below, and if we
     /// ever find an occurrence of XXX in the input data source, we also return XXX. Otherwise,
     /// we return !XXX. Obviously, XXX in this case is a bool.
     ///
     /// This is a search algorithm. So once any single partition finds an element, it will
-    /// return so that execution can stop. This is done with a "cancelation" flag that is
+    /// return so that execution can stop. This is done with a "cancellation" flag that is
     /// polled by all parallel workers. The first worker to find an answer sets it, and all
     /// other workers notice it and quit as quickly as possible.
     /// </summary>
@@ -101,7 +101,7 @@ namespace System.Linq.Parallel
         internal override void WrapPartitionedStream<TKey>(
             PartitionedStream<TInput, TKey> inputStream, IPartitionedStreamRecipient<bool> recipient, bool preferStriping, QuerySettings settings)
         {
-            // Create a shared cancelation variable and then return a possibly wrapped new enumerator.
+            // Create a shared cancellation variable and then return a possibly wrapped new enumerator.
             Shared<bool> resultFoundFlag = new Shared<bool>(false);
 
             int partitionCount = inputStream.PartitionCount;
@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
 
         //---------------------------------------------------------------------------------------
         // This enumerator performs the search over its input data source. It also cancels peer
-        // enumerators when an answer was found, and polls this cancelation flag to stop when
+        // enumerators when an answer was found, and polls this cancellation flag to stop when
         // requested.
         //
 
@@ -206,7 +206,7 @@ namespace System.Linq.Parallel
 
                         if (_resultFoundFlag.Value)
                         {
-                            // If cancelation occurred, it's because a successful answer was found.
+                            // If cancellation occurred, it's because a successful answer was found.
                             return false;
                         }
 

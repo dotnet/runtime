@@ -47,14 +47,14 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                int callingCoventionOrKind = _rawValue & CallingConventionOrKindMask;
+                int callingConventionOrKind = _rawValue & CallingConventionOrKindMask;
 
-                if (callingCoventionOrKind <= maxCallingConvention)
+                if (callingConventionOrKind <= maxCallingConvention)
                 {
                     return SignatureKind.Method;
                 }
 
-                return (SignatureKind)callingCoventionOrKind;
+                return (SignatureKind)callingConventionOrKind;
             }
         }
 

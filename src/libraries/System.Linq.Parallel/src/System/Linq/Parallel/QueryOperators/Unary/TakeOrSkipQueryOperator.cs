@@ -105,14 +105,14 @@ namespace System.Linq.Parallel
         {
             int partitionCount = inputStream.PartitionCount;
             FixedMaxHeap<TKey> sharedIndices = new FixedMaxHeap<TKey>(_count, inputStream.KeyComparer); // an array used to track the sequence of indices leading up to the Nth index
-            CountdownEvent sharredBarrier = new CountdownEvent(partitionCount); // a barrier to synchronize before yielding
+            CountdownEvent sharedBarrier = new CountdownEvent(partitionCount); // a barrier to synchronize before yielding
 
             PartitionedStream<TResult, TKey> outputStream =
                 new PartitionedStream<TResult, TKey>(partitionCount, inputStream.KeyComparer, OrdinalIndexState);
             for (int i = 0; i < partitionCount; i++)
             {
                 outputStream[i] = new TakeOrSkipQueryOperatorEnumerator<TKey>(
-                    inputStream[i], _take, sharedIndices, sharredBarrier,
+                    inputStream[i], _take, sharedIndices, sharedBarrier,
                     settings.CancellationState.MergedCancellationToken, inputStream.KeyComparer);
             }
 

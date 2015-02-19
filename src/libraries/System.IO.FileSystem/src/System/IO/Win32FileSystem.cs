@@ -304,7 +304,7 @@ namespace System.IO
                     {
                         if (!returnErrorOnNotFound)
                         {
-                            // Return default value for backward compbatibility
+                            // Return default value for backward compatibility
                             errorCode = 0;
                             data.fileAttributes = -1;
                         }

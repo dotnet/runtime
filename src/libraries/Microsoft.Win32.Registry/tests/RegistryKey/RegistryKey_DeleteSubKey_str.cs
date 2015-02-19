@@ -43,7 +43,7 @@ namespace Microsoft.Win32.RegistryTests
         public void Test02()
         {
             // [] Delete a sub that doesn't exists. //To improve code coverage
-            String strTemp = "This is the key name that doesn't exist's currently";
+            String strTemp = "This is the key name that doesn't exist currently";
             Action a = () => { _rk1.DeleteSubKey(strTemp); };
             Assert.Throws<ArgumentException>(() => { a(); });
         }

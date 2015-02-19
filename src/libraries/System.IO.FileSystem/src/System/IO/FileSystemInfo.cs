@@ -29,7 +29,7 @@ namespace System.IO
             _fileSystemObject = fileSystemObject;
         }
 
-        // Full path of the direcory/file
+        // Full path of the directory/file
         public virtual String FullName
         {
             [System.Security.SecuritySafeCritical]

@@ -1048,7 +1048,7 @@ namespace System.Collections.Immutable.Test
         {
             var array = ImmutableArray.Create(2, 4, 1, 3);
             Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort());
-            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array uneffected.
+            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
         }
 
         [Fact]
@@ -1056,7 +1056,7 @@ namespace System.Collections.Immutable.Test
         {
             var array = ImmutableArray.Create(2, 4, 1, 3);
             Assert.Equal(new[] { 1, 2, 3, 4 }, array.Sort(null));
-            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array uneffected.
+            Assert.Equal(new[] { 2, 4, 1, 3 }, array); // original array unaffected.
         }
 
         [Fact]

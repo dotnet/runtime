@@ -640,7 +640,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 if (!_nonGreedy.PostponedMessages.TryPop(out next)) return false;
             }
 
-            // We'll bail out of this loop either when we have resereved a message (true)
+            // We'll bail out of this loop either when we have reserved a message (true)
             // or when we have exhausted the list of postponed messages (false)
             for (; ;)
             {
@@ -736,7 +736,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 {
                     lock (_sharedResources.IncomingLock)
                     {
-                        // The ranking in highest number of available messages cannot have changed becuase this task is causing OfferMessage to postpone 
+                        // The ranking in highest number of available messages cannot have changed because this task is causing OfferMessage to postpone 
                         if (hasTheHighestNumberOfMessagesAvailable) _sharedResources._boundingState.CurrentCount += 1; // track this new item against our bound
                         _messages.Enqueue(consumedValue);
 
@@ -761,16 +761,16 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 _decliningPermanently = true;
 
-                bool allAreDeclininingPermanently = true;
+                bool allAreDecliningPermanently = true;
                 foreach (JoinBlockTargetBase target in _sharedResources._targets)
                 {
                     if (!target.IsDecliningPermanently)
                     {
-                        allAreDeclininingPermanently = false;
+                        allAreDecliningPermanently = false;
                         break;
                     }
                 }
-                if (allAreDeclininingPermanently) _sharedResources._decliningPermanently = true;
+                if (allAreDecliningPermanently) _sharedResources._decliningPermanently = true;
             }
         }
 
@@ -893,7 +893,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Otherwise, we try to postpone if a source was provided
                 else if (source != null)
                 {
-                    Debug.Assert(_nonGreedy != null, "_nonGreedy must have been initialized during construction in non-greedy mopde.");
+                    Debug.Assert(_nonGreedy != null, "_nonGreedy must have been initialized during construction in non-greedy mode.");
 
                     // Postpone the message now and kick off an async two-phase consumption.
                     _nonGreedy.PostponedMessages.Push(source, messageHeader);
@@ -1222,7 +1222,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 }
             }
 
-            // If we were unable to reserve all meessages, release the reservations
+            // If we were unable to reserve all messages, release the reservations
             if (!reservedAll)
             {
                 foreach (JoinBlockTargetBase target in _targets)

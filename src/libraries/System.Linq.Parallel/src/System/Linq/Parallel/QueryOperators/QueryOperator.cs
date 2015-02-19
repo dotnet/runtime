@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
 
             Debug.Assert(mergeOptions != null);
 
-            // Top-level pre-emptive cancellation test.
+            // Top-level preemptive cancellation test.
             // This handles situations where cancellation has occured before execution commences
             // The handling for in-execution occurs in QueryTaskGroupState.QueryEnd()
 

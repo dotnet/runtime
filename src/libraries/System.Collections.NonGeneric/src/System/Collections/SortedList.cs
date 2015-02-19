@@ -388,7 +388,7 @@ namespace System.Collections
         }
 
         // Ensures that the capacity of this sorted list is at least the given
-        // minimum value. If the currect capacity of the list is less than
+        // minimum value. If the current capacity of the list is less than
         // min, the capacity is increased to twice the current capacity or
         // to min, whichever is larger.
         private void EnsureCapacity(int min)

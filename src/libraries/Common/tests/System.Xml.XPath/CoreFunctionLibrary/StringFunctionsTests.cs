@@ -783,7 +783,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// stirng(NaN)
+        /// string(NaN)
         /// </summary>
         [Fact]
         public static void StringFunctionsTest2455()
@@ -862,7 +862,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Code coverage: covers the substring() funtion with in a query
+        /// Code coverage: covers the substring() function with in a query
         /// child::*[substring(name(),0,1)="b"]
         /// </summary>
         [Fact]
@@ -877,7 +877,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Code coverage: covers the substring-after() funtion with in a query
+        /// Code coverage: covers the substring-after() function with in a query
         /// child::*[substring-after(name(),"b")="ook"]
         /// </summary>
         [Fact]
@@ -892,7 +892,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Code coverage: covers the normalize-space() funtion with in a query
+        /// Code coverage: covers the normalize-space() function with in a query
         /// child::*[normalize-space(" book")=name()]
         /// </summary>
         [Fact]
@@ -907,7 +907,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: namesapce uri
+        /// Expected: namespace uri
         /// string() (namespace node)
         /// </summary>
         [Fact]
@@ -926,8 +926,8 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: xml namesapce uri
-        /// stirng() (namespace node = xml)
+        /// Expected: xml namespace uri
+        /// string() (namespace node = xml)
         /// </summary>
         [Fact]
         public static void StringFunctionsTest2465()
@@ -945,7 +945,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: default namesapce uri
+        /// Expected: default namespace uri
         /// string() (namespace node = default ns)
         /// </summary>
         [Fact]

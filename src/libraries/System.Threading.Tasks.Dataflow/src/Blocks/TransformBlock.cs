@@ -404,7 +404,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the messages waiting to be received.</summary>
             public IEnumerable<TOutput> OutputQueue { get { return _sourceDebuggingInformation.OutputQueue; } }
 
-            /// <summary>Gets the number of oustanding input operations.</summary>
+            /// <summary>Gets the number of outstanding input operations.</summary>
             public Int32 CurrentDegreeOfParallelism { get { return _targetDebuggingInformation.CurrentDegreeOfParallelism; } }
             /// <summary>Gets the task being used for output processing.</summary>
             public Task TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }

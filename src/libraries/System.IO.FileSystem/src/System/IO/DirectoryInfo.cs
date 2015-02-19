@@ -227,8 +227,8 @@ namespace System.IO
             Contract.Requires(searchPattern != null);
             Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            IEnumerable<FileSystemInfo> enble = FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Both);
-            List<FileSystemInfo> fileList = new List<FileSystemInfo>(enble);
+            IEnumerable<FileSystemInfo> enumerable = FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Both);
+            List<FileSystemInfo> fileList = new List<FileSystemInfo>(enumerable);
             return fileList.ToArray();
         }
 
@@ -273,8 +273,8 @@ namespace System.IO
             Contract.Requires(searchPattern != null);
             Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            IEnumerable<DirectoryInfo> enble = (IEnumerable<DirectoryInfo>)FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Directories);
-            List<DirectoryInfo> fileList = new List<DirectoryInfo>(enble);
+            IEnumerable<DirectoryInfo> enumerable = (IEnumerable<DirectoryInfo>)FileSystem.Current.EnumerateFileSystemInfos(FullPath, searchPattern, searchOption, SearchTarget.Directories);
+            List<DirectoryInfo> fileList = new List<DirectoryInfo>(enumerable);
             return fileList.ToArray();
         }
 

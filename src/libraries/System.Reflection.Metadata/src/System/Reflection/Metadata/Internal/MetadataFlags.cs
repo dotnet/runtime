@@ -181,7 +181,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const uint Namespace = 0x7c000000;              // Namespace handle for namespace with types of its own
         internal const uint SyntheticNamespace = 0x7d000000;     // Namespace handle for namespace with child namespaces but no types of its own
         // internal const uint Reserved1Namespace = 0x7e000000;  // [reserved] can only be used for a new namespace kind
-        // internal const uint Resereved2Namespace = 0x7f000000; // [reserved] can only be used for a new namespace kind
+        // internal const uint Reserved2Namespace = 0x7f000000;  // [reserved] can only be used for a new namespace kind
         internal const uint MaxNamespace = SyntheticNamespace;
 
         internal const uint StringOrNamespaceKindMask = 0x03000000;

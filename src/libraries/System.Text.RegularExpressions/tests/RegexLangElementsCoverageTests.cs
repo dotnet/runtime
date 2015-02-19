@@ -111,7 +111,7 @@ public class RegexLangElementsCoverageTests
 
 
         /*********************************************************
-            Miscelaneous { witout matching }
+            Miscellaneous { witout matching }
             *********************************************************/
         new RegexTestCase(@"\p{klsak", typeof(ArgumentException)),
         new RegexTestCase(@"{5", "hello {5 world", new string[] {"{5"}),
@@ -120,7 +120,7 @@ public class RegexLangElementsCoverageTests
 
 
         /*********************************************************
-            Miscelaneous inline options
+            Miscellaneous inline options
             *********************************************************/
         new RegexTestCase(@"(?r:cat)", typeof(ArgumentException)),
         new RegexTestCase(@"(?c:cat)", typeof(ArgumentException)),
@@ -449,8 +449,8 @@ public class RegexLangElementsCoverageTests
        new RegexTestCase(@"([a-d]|[e-i]|[^e]|wxyz])+", "\tonce\n upon\0 a- ()*&^%#time?", new string[] {"\tonce\n upon\0 a- ()*&^%#time?", "?"}),
 
         /*********************************************************
-        canonical and non-cannonical char class, where one group is in it's
-        simplist form [a-e] and another is more complex .
+        canonical and noncanonical char class, where one group is in it's
+        simplest form [a-e] and another is more complex .
         *********************************************************/
        new RegexTestCase(@"^(([^b]+ )|(.* ))$", "aaa ", new string[] {"aaa ", "aaa ", "aaa ", ""}),
        new RegexTestCase(@"^(([^b]+ )|(.*))$", "aaa", new string[] {"aaa", "aaa", "", "aaa"}),
@@ -535,7 +535,7 @@ Use special unicode characters
 
 
         /*********************************************************
-        Balanced Mactching
+        Balanced Matching
         *********************************************************/
        new RegexTestCase(@"<div> 
             (?> 
@@ -582,7 +582,7 @@ Use special unicode characters
            new string[] {"<b>cat</b><a>dog</a>", "", "", "a", "dog"}),
 
         /*********************************************************
-        Balanced Mactching With Backtracking
+        Balanced Matching With Backtracking
         *********************************************************/
        new RegexTestCase(@"(
             (?<start><[^/<>]*>)?
@@ -600,7 +600,7 @@ Use special unicode characters
        new RegexTestCase(@"([0-9]+?)([a-z]+?)", RegexOptions.ECMAScript, "55488aheiaheiad", new string[] {"55488a", "55488", "a"}),
 
         /*********************************************************
-        Misclaneous/Regression scenarios
+        Miscellaneous/Regression scenarios
         *********************************************************/
        new RegexTestCase(@"(?<openingtag>1)(?<content>.*?)(?=2)", RegexOptions.Singleline | RegexOptions.ExplicitCapture,
            "1\r\n<Projecaa DefaultTargets=\"x\"/>\r\n2", new string[] {"1\r\n<Projecaa DefaultTargets=\"x\"/>\r\n", "1", "\r\n<Projecaa DefaultTargets=\"x\"/>\r\n"}),

@@ -64,7 +64,7 @@ namespace System.IO.Pipes
             Debug.Assert(transmissionMode >= PipeTransmissionMode.Byte && transmissionMode <= PipeTransmissionMode.Message, "transmissionMode is out of range");
             Debug.Assert(outBufferSize >= 0, "outBufferSize is negative");
 
-            // always defaults to this until overriden
+            // always defaults to this until overridden
             _readMode = transmissionMode;
             _transmissionMode = transmissionMode;
 
@@ -241,7 +241,7 @@ namespace System.IO.Pipes
 
         // ********************** Public Properties *********************** //
 
-        // Apis use coarser definition of connected, but these map to internal 
+        // APIs use coarser definition of connected, but these map to internal 
         // Connected/Disconnected states. Note that setter is protected; only
         // intended to be called by custom PipeStream concrete children
         public bool IsConnected

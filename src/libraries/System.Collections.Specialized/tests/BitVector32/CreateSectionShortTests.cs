@@ -58,7 +58,7 @@ namespace System.Collections.Specialized.Tests
 
             maxValue = (Int16)max;
             section = BitVector32.CreateSection(maxValue);
-            expected = 0;           // to calculate number of bits required to accomodate maxValue
+            expected = 0;           // to calculate number of bits required to accommodate maxValue
             while (maxValue > (int)System.Math.Pow(2, expected))
                 expected++;
             if (section.Mask != (int)System.Math.Pow(2, expected) - 1 || section.Offset != 0)

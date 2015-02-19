@@ -703,7 +703,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     {
         /// <summary>Initializes the shared resources.</summary>
         /// <param name="batchSize">The size of a batch to create.</param>
-        /// <param name="dataflowBlockOptions">The options used to configur the shared resources.  Assumed to be immutable.</param>
+        /// <param name="dataflowBlockOptions">The options used to configure the shared resources.  Assumed to be immutable.</param>
         /// <param name="batchSizeReachedAction">The action to invoke when a batch is completed.</param>
         /// <param name="allTargetsDecliningAction">The action to invoke when no more targets are accepting input.</param>
         /// <param name="exceptionAction">The action to invoke when an exception needs to be logged.</param>

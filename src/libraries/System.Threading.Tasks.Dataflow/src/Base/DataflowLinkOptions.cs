@@ -47,7 +47,7 @@ namespace System.Threading.Tasks.Dataflow
     public class DataflowLinkOptions
     {
         /// <summary>
-        /// A constant used to specify an unlimited quanity for <see cref="DataflowLinkOptions"/> members 
+        /// A constant used to specify an unlimited quantity for <see cref="DataflowLinkOptions"/> members 
         /// that provide an upper bound. This field is a constant tied to <see cref="DataflowLinkOptions.Unbounded"/>.
         /// </summary>
         internal const Int32 Unbounded = DataflowBlockOptions.Unbounded;

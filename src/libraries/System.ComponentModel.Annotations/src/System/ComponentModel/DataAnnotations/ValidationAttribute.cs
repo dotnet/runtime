@@ -217,7 +217,7 @@ namespace System.ComponentModel.DataAnnotations
 
                 // The following combinations are illegal and throw InvalidOperationException:
                 //   1) Both ErrorMessage and ErrorMessageResourceName are set, or
-                //   2) None of ErrorMessage, ErrorMessageReourceName, and DefaultErrorMessage are set.
+                //   2) None of ErrorMessage, ErrorMessageResourceName, and DefaultErrorMessage are set.
                 if ((resourceNameSet && errorMessageSet) || !(resourceNameSet || errorMessageSet || defaultMessageSet))
                 {
                     throw new InvalidOperationException(
