@@ -22,29 +22,30 @@ public class ExpandEnvironmentVariables
     }
 
     [Fact]
-    public void ExpansionOfAllVariablesReturnedByGetEnvironmentVariablesSucceeds()
+    public void ExpansionOfVariableSucceeds()
     {
-        bool atLeastOne = false;
-        StringBuilder input = new StringBuilder();
-        StringBuilder expected = new StringBuilder();
+        // The test is going to test that we can correctly expand variables.
+        // We are going to do:
+        // envvar1=animal;
+        // and we are going to check that the expanded %envvar1% is animal.
 
-        foreach (DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        Random r = new Random();
+        string envVar1 = "TestVariable_ExpansionOfVariableSucceeds_" + r.Next().ToString();
+        string expectedValue = "animal";
+
+        try
         {
-            string key = (string)entry.Key;
-            if (key.IndexOf('%') >= 0)
-            {
-                continue;
-            }
+            Environment.SetEnvironmentVariable(envVar1, expectedValue);
 
-            input.Append('%');
-            input.Append(key);
-            input.Append('%');
-            expected.Append((string)entry.Value);
-            atLeastOne = true;
+            string result = Environment.ExpandEnvironmentVariables("%" + envVar1 + "%");
+
+            Assert.Equal(expectedValue, result);
         }
-
-        Assert.True(atLeastOne);
-        Assert.Equal(expected.ToString(), Environment.ExpandEnvironmentVariables(input.ToString()));
+        finally
+        {
+            // Clear the variables we just set
+            Environment.SetEnvironmentVariable(envVar1, null);
+        }
     }
 
     [Fact]
