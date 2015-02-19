@@ -2956,6 +2956,29 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			lhs = convert (ctx, lhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
 			rhs = convert (ctx, rhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
 
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+			switch (ins->opcode) {
+			case OP_IDIV:
+			case OP_LDIV:
+			case OP_IREM:
+			case OP_LREM:
+			case OP_IDIV_UN:
+			case OP_LDIV_UN:
+			case OP_IREM_UN:
+			case OP_LREM_UN: {
+				LLVMValueRef cmp;
+
+				cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
+				emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
+				CHECK_FAILURE (ctx);
+				builder = ctx->builder;
+				break;
+			}
+			default:
+				break;
+			}
+#endif
+
 			switch (ins->opcode) {
 			case OP_IADD:
 			case OP_LADD:
@@ -2978,31 +3001,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = LLVMBuildURem (builder, lhs, rhs, dname);
 				break;
 			case OP_IDIV:
-			case OP_LDIV: {
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-				LLVMValueRef cmp;
-
-				cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
-				emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
-				CHECK_FAILURE (ctx);
-				builder = ctx->builder;
-#endif
+			case OP_LDIV:
 				values [ins->dreg] = LLVMBuildSDiv (builder, lhs, rhs, dname);
 				break;
-			}
 			case OP_IDIV_UN:
-			case OP_LDIV_UN: {
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-				LLVMValueRef cmp;
-
-				cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
-				emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
-				CHECK_FAILURE (ctx);
-				builder = ctx->builder;
-#endif
+			case OP_LDIV_UN:
 				values [ins->dreg] = LLVMBuildUDiv (builder, lhs, rhs, dname);
 				break;
-			}
 			case OP_FDIV:
 			case OP_RDIV:
 				values [ins->dreg] = LLVMBuildFDiv (builder, lhs, rhs, dname);
