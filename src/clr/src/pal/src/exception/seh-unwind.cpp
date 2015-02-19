@@ -1,6 +1,7 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+// Copyright (c) Geoff Norton. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 /*++
@@ -27,6 +28,8 @@ Abstract:
 #include "pal/context.h"
 #include <dlfcn.h>
 #include <exception>
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 //----------------------------------------------------------------------
 // Exception Handling ABI Level I: Base ABI
@@ -71,94 +74,126 @@ struct __cxa_exception
 // Virtual Unwinding
 //----------------------------------------------------------------------
 
-static void UnwindContextToWinContext(_Unwind_Context *fromContext, CONTEXT *toContext)
+#if UNWIND_CONTEXT_IS_UCONTEXT_T
+static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
-#if defined(_X86_)
-    toContext->Ebx = (ULONG) _Unwind_GetGR(fromContext, 3);
-    toContext->Ebp = (ULONG) _Unwind_GetGR(fromContext, 4);
-    toContext->Esp = (ULONG) _Unwind_GetCFA(fromContext);
-    toContext->Esi = (ULONG) _Unwind_GetGR(fromContext, 6);
-    toContext->Edi = (ULONG) _Unwind_GetGR(fromContext, 7);
-    toContext->Eip = (ULONG) _Unwind_GetIP(fromContext);
-#elif defined(_AMD64_)
-    toContext->Rbx = (SIZE_T)_Unwind_GetGR(fromContext, 3);
-    toContext->Rbp = (SIZE_T)_Unwind_GetGR(fromContext, 6);
-    toContext->Rsp = (SIZE_T)_Unwind_GetCFA(fromContext);
-    toContext->Rip = (SIZE_T)_Unwind_GetIP(fromContext);
-    
-    // No need to restore RDI/RSI since they are considered volatile per the GCC64 calling convention.
-    //
-    // NOTE: Attemptin to fetch these two registers will result in a crash on 10.5.8 but will "work" (i.e.
-    // not crash) on 10.6.5. Since we dont need them, we dont bother.
-    
-    // Restore the extended non-volatile integer registers
-    DWORD64 *pReg = &toContext->R12;
-    for (int i = 12; i <= 15; i++, pReg++)
-        *pReg = (SIZE_T)_Unwind_GetGR(fromContext, i);
-        
-    // TODO: neither x86 or AMD64 code current supports vector register contexts
+#if defined(_AMD64_)
+    unwContext->uc_mcontext.gregs[REG_RIP] = winContext->Rip;
+    unwContext->uc_mcontext.gregs[REG_RSP] = winContext->Rsp;
+    unwContext->uc_mcontext.gregs[REG_RBP] = winContext->Rbp;
+    unwContext->uc_mcontext.gregs[REG_RBX] = winContext->Rbx;
+    unwContext->uc_mcontext.gregs[REG_R12] = winContext->R12;
+    unwContext->uc_mcontext.gregs[REG_R13] = winContext->R13;
+    unwContext->uc_mcontext.gregs[REG_R14] = winContext->R14;
+    unwContext->uc_mcontext.gregs[REG_R15] = winContext->R15;
+#else
+#error unsupported architecture
+#endif
+}
+#else
+static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
+{
+#if defined(_AMD64_)
+    unw_set_reg(cursor, UNW_REG_IP, winContext->Rip);
+    unw_set_reg(cursor, UNW_REG_SP, winContext->Rsp);
+    unw_set_reg(cursor, UNW_X86_64_RBP, winContext->Rbp);
+    unw_set_reg(cursor, UNW_X86_64_RBX, winContext->Rbx);
+    unw_set_reg(cursor, UNW_X86_64_R12, winContext->R12);
+    unw_set_reg(cursor, UNW_X86_64_R13, winContext->R13);
+    unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
+    unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
+#else
+#error unsupported architecture
+#endif
+}
+#endif
+
+static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
+{
+#if defined(_AMD64_)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Rip);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Rsp);
+    unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &winContext->Rbp);
+    unw_get_reg(cursor, UNW_X86_64_RBX, (unw_word_t *) &winContext->Rbx);
+    unw_get_reg(cursor, UNW_X86_64_R12, (unw_word_t *) &winContext->R12);
+    unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
+    unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
+    unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
 #else
 #error unsupported architecture
 #endif
 }
 
-struct VirtualUnwindParam
+static void GetContextPointer(unw_cursor_t *cursor, int reg, PDWORD64 *contextPointer)
 {
-    // Summarizes the unwinding work that still needs to be done.
-    // If this is > 0, indicates the number of frames to unwind
-    // after we find the starting context (identified by its CFA).
-    // If this is < 0, we already found the starting context and
-    // we're counting until we reach 0.
-    int nFramesToUnwind;
-
-    // CFA of the context from which to count the desired unwind depth.
-    void *cfa;
-
-    // Pointer to a region of memory into which we should store the
-    // context of the target frame.
-    CONTEXT *context;
-};
-
-static _Unwind_Reason_Code VirtualUnwindCallback(_Unwind_Context *context, void *pvParam)
-{
-    VirtualUnwindParam *param = (VirtualUnwindParam *) pvParam;
-    if (param->nFramesToUnwind > 0)
+#if defined(__APPLE__)
+    //OSXTODO
+#else
+    unw_save_loc_t saveLoc;
+    unw_get_save_loc(cursor, reg, &saveLoc);
+    if (saveLoc.type == UNW_SLT_MEMORY)
     {
-        // Stil looking for the starting context.
-        if (_Unwind_GetCFA(context) == param->cfa)
-        {
-            // This is the starting context.
-            param->nFramesToUnwind = -param->nFramesToUnwind;
-        }
+        *contextPointer = (PDWORD64)saveLoc.u.addr;
     }
-    else
-    {
-        // We've found the starting context; unwind as many frames as requested.
-        param->nFramesToUnwind++;
-        if (param->nFramesToUnwind == 0)
-        {
-            // We've unwound all frames requested.
-            UnwindContextToWinContext(context, param->context);
-            return _URC_NORMAL_STOP;
-        }
-    }
-    return _URC_NO_REASON;
+#endif
 }
 
-static BOOL VirtualUnwind(CONTEXT *context, int nFramesToUnwind)
+static void GetContextPointers(unw_cursor_t *cursor, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
-    VirtualUnwindParam param;
-    param.nFramesToUnwind = nFramesToUnwind;
-#if defined(_X86_)
-    param.cfa = (void *) context->Esp;
-#elif defined(_AMD64_)
-    param.cfa = (void *) context->Rsp;
+#if defined(_AMD64_)
+    GetContextPointer(cursor, UNW_X86_64_RBP, &contextPointers->Rbp);
+    GetContextPointer(cursor, UNW_X86_64_RBX, &contextPointers->Rbx);
+    GetContextPointer(cursor, UNW_X86_64_R12, &contextPointers->R12);
+    GetContextPointer(cursor, UNW_X86_64_R13, &contextPointers->R13);
+    GetContextPointer(cursor, UNW_X86_64_R14, &contextPointers->R14);
+    GetContextPointer(cursor, UNW_X86_64_R15, &contextPointers->R15);
 #else
 #error unsupported architecture
 #endif
-    param.context = context;
-    _Unwind_Backtrace(VirtualUnwindCallback, &param);
-    return param.nFramesToUnwind == 0;
+}
+
+BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
+{
+    int st;
+    unw_context_t unwContext;
+    unw_cursor_t cursor;
+
+#if UNWIND_CONTEXT_IS_UCONTEXT_T
+    WinContextToUnwindContext(context, &unwContext);
+#else
+    st = unw_getcontext(&unwContext);
+    if (st < 0)
+    {
+        return FALSE;
+    }
+#endif
+
+    st = unw_init_local(&cursor, &unwContext);
+    if (st < 0)
+    {
+        return FALSE;
+    }
+
+#if !UNWIND_CONTEXT_IS_UCONTEXT_T
+    // Set the unwind context to the specified windows context
+    WinContextToUnwindCursor(context, &cursor);
+#endif
+
+    st = unw_step(&cursor);
+    if (st < 0)
+    {
+        return FALSE;
+    }
+
+    // Update the passed in windows context to reflect the unwind
+    UnwindContextToWinContext(&cursor, context);
+
+    if (contextPointers != NULL)
+    {
+        GetContextPointers(&cursor, contextPointers);
+    }
+
+    return TRUE;
 }
 
 #if _DEBUG
@@ -176,8 +211,8 @@ static BOOL VirtualUnwind(CONTEXT *context, int nFramesToUnwind)
 // (non-static to ease debugging)
 void DisplayContext(_Unwind_Context *context)
 {
-    fprintf(stderr, "  ip =0x%p", _Unwind_GetIP(context));
-    fprintf(stderr, "  cfa=0x%p", _Unwind_GetCFA(context));
+    fprintf(stderr, "  ip =%p", _Unwind_GetIP(context));
+    fprintf(stderr, "  cfa=%p", _Unwind_GetCFA(context));
 #if defined(_X86_)
     // TODO: display more registers
 #endif
@@ -199,7 +234,7 @@ static _Unwind_Reason_Code PrintVirtualUnwindCallback(_Unwind_Context *context, 
         module = dl_info.dli_fname;
         if (dl_info.dli_sname)
         {
-            name = dl_info.dli_sname - 1;
+            name = dl_info.dli_sname;
             offset = (char *) ip - (char *) dl_info.dli_saddr;
         }
         else
@@ -259,12 +294,12 @@ static _Unwind_Reason_Code CheckVirtualUnwindCallback(_Unwind_Context *context, 
     // then we ended up in dynamically-generated code and
     // the stack will not be unwindable past this point.
     Dl_info dl_info;
-    if (dladdr(ip, &dl_info) == 0 || 
+    if (dladdr(ip, &dl_info) == 0 ||
         ((s_mode == CheckUnwindableStacks_Thorough) &&
         ( dl_info.dli_sname == NULL ||
           ( _Unwind_Find_FDE(ip, NULL) == NULL &&
-            strcmp(dl_info.dli_sname - 1, "start") &&
-            strcmp(dl_info.dli_sname - 1, "_thread_create_running")))))
+            strcmp(dl_info.dli_sname, "start") &&
+            strcmp(dl_info.dli_sname, "_thread_create_running")))))
     {
         *(BOOL *) pvParam = FALSE;
     }
@@ -452,7 +487,7 @@ static void RunVectoredHandler(EXCEPTION_POINTERS *pExceptionPointers, _Unwind_E
 }
 
 PAL_NORETURN
-static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord) 
+static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 {
     // Capture the context of RtlpRaiseException.
     CONTEXT ContextRecord;
@@ -463,7 +498,7 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
     // Find the caller of RtlpRaiseException.  This provides the exact context
     // that handlers expect to see, which is the one they would want to fix up
     // to resume after a continuable exception.
-    VirtualUnwind(&ContextRecord, 1);
+    PAL_VirtualUnwind(&ContextRecord, NULL);
 
     // The frame we're looking at now is either RaiseException or PAL_TryExcept.
     // If it's RaiseException, we have to unwind one level further to get the
@@ -477,8 +512,10 @@ static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 #endif
     if ((SIZE_T) pc - (SIZE_T) RaiseException < (SIZE_T) pc - (SIZE_T) PAL_TryExcept)
     {
-        VirtualUnwind(&ContextRecord, 1);
-#if defined(_X86_)
+        PAL_VirtualUnwind(&ContextRecord, NULL);
+#if defined(_PPC_)
+        pc = (void *) ContextRecord.Iar;
+#elif defined(_X86_)
         pc = (void *) ContextRecord.Eip;
 #elif defined(_AMD64_)
         pc = (void *) ContextRecord.Rip;
@@ -503,7 +540,7 @@ static void RaiseExceptionObject(_Unwind_Exception *exceptionObject)
     EXCEPTION_POINTERS ForeignExceptionPointers = { &ForeignExceptionRecord, NULL };
 
     bool fSkipVEH = false;
-    
+
     EXCEPTION_POINTERS *pExceptionPointers = PAL_GetExceptionPointers(exceptionObject);
     if (!pExceptionPointers)
     {
@@ -519,7 +556,7 @@ static void RaiseExceptionObject(_Unwind_Exception *exceptionObject)
             pExceptionPointers->ExceptionRecord->ExceptionInformation[NATIVE_EXCEPTION_ASYNC_SLOT] = (ULONG_PTR)exceptionObject;
         }
     }
-    
+
     if (!fSkipVEH)
     {
         RunVectoredHandler(pExceptionPointers, exceptionObject, VectoredExceptionHandler);
@@ -586,12 +623,12 @@ PAL_CppRethrow()
 }
 
 PAL_NORETURN
-void SEHRaiseException(CPalThread *pthrCurrent, 
-                       PEXCEPTION_POINTERS lpExceptionPointers, 
+void SEHRaiseException(CPalThread *pthrCurrent,
+                       PEXCEPTION_POINTERS lpExceptionPointers,
                        int signal_code)
 {
     _Unwind_Exception *exceptionObject = NULL;
-    
+
     if (lpExceptionPointers->ExceptionRecord->ExceptionFlags & EXCEPTION_SKIP_VEH)
     {
         // If we are going to skip VEH, then it implies we are going to dispatch
@@ -601,7 +638,7 @@ void SEHRaiseException(CPalThread *pthrCurrent,
         exceptionObject = (_Unwind_Exception *)lpExceptionPointers->ExceptionRecord->ExceptionInformation[NATIVE_EXCEPTION_ASYNC_SLOT];
         lpExceptionPointers->ExceptionRecord->ExceptionInformation[NATIVE_EXCEPTION_ASYNC_SLOT] = (ULONG_PTR)NULL;
     }
-    
+
     if (exceptionObject == NULL)
     {
         // Throw the exception using C++ throw, but intercept the exception so that
@@ -611,7 +648,7 @@ void SEHRaiseException(CPalThread *pthrCurrent,
     }
 
     _ASSERTE(exceptionObject != NULL);
-    
+
     // Note: We cannot call PAL_CheckVirtualUnwind here, since we this function
     // may be called for a fault in dynamically-generated code.
 
@@ -619,7 +656,7 @@ void SEHRaiseException(CPalThread *pthrCurrent,
     // When PAL_TryExcept returns, it has executed the second pass for handling the exception
     // that was raised by ThrowHelper. As part of processing the second pass, PAL_RunHandler
     // would have set the EXCEPTION_UNWINDING flag (and possibly, even the EXCEPTION_TARGET_UNWIND flag)
-    // in the ExceptionRecord contained inside the exception object. 
+    // in the ExceptionRecord contained inside the exception object.
     //
     // When this exception object is passed to the RunVectoredExceptionHandler, the exception pointers
     // passed to the vectored handler would be the one extracted from the exception object. Since that
@@ -638,7 +675,7 @@ void SEHRaiseException(CPalThread *pthrCurrent,
     // Note 2: This problem is also applicable to Mac X86. TODO: Fix this problem for MacX86.
     EXCEPTION_POINTERS *pExceptionPointers = PAL_GetExceptionPointers(exceptionObject);
     _ASSERTE(pExceptionPointers != NULL);
-    
+
     // Clear of the EXCEPTION_UNWINDING/EXCEPTION_TARGET_UNWIND flags
     pExceptionPointers->ExceptionRecord->ExceptionFlags =
     (pExceptionPointers->ExceptionRecord->ExceptionFlags & ~(EXCEPTION_UNWINDING|EXCEPTION_TARGET_UNWIND));
@@ -661,9 +698,9 @@ RaiseException(IN DWORD dwExceptionCode,
                IN DWORD nNumberOfArguments,
                IN CONST ULONG_PTR *lpArguments)
 {
-    // PERF_ENTRY_ONLY is used here because RaiseException may or may not 
+    // PERF_ENTRY_ONLY is used here because RaiseException may or may not
     // return. We can not get latency data without PERF_EXIT. For this reason,
-    // PERF_ENTRY_ONLY is used to profile frequency only. 
+    // PERF_ENTRY_ONLY is used to profile frequency only.
     PERF_ENTRY_ONLY(RaiseException);
     ENTRY("RaiseException(dwCode=%#x, dwFlags=%#x, nArgs=%u, lpArguments=%p)\n",
           dwExceptionCode, dwExceptionFlags, nNumberOfArguments, lpArguments);
@@ -679,7 +716,7 @@ RaiseException(IN DWORD dwExceptionCode,
 
     EXCEPTION_RECORD exceptionRecord;
     ZeroMemory(&exceptionRecord, sizeof(EXCEPTION_RECORD));
-    
+
     exceptionRecord.ExceptionCode = dwExceptionCode;
     exceptionRecord.ExceptionFlags = dwExceptionFlags;
     exceptionRecord.ExceptionRecord = NULL;
@@ -745,7 +782,7 @@ struct _Unwind_Exception *PAL_TryExcept(
 {
     // UNIXTODO: Exception handling
     pfnBody(pvParam);
-    *pfExecuteHandler = FALSE; 
+    *pfExecuteHandler = FALSE;
     return NULL;
 }
 #else
@@ -813,8 +850,8 @@ _Unwind_Reason_Code PAL_SEHPersonalityRoutine(
         // Filter address is stored at RSP+8
         // pvParam is stored at RSP+16
         // Refer to PAL_TryExcept implementation for details.
-        pfnFilter = ((PFN_PAL_EXCEPTION_FILTER *) _Unwind_GetCFA(context))[1]; 
-        pvParam = ((void **) _Unwind_GetCFA(context))[2]; 
+        pfnFilter = ((PFN_PAL_EXCEPTION_FILTER *) _Unwind_GetCFA(context))[1];
+        pvParam = ((void **) _Unwind_GetCFA(context))[2];
 #else
 #error unsupported architecture
 #endif
@@ -885,7 +922,10 @@ _Unwind_Reason_Code PAL_SEHPersonalityRoutine(
         // platform, wich unwinds the stack also to run destructors for
         // objects allocated on the stack.  By behaving in the same way,
         // we can deal with C++ exceptions colliding with SEH unwinds.
-#if defined(_X86_) 
+#if defined(_PPC_)
+        _Unwind_SetGR(context, 3, (void *) actions);
+        _Unwind_SetGR(context, 4, exceptionObject);
+#elif defined(_X86_)
         void **args = (void **) _Unwind_GetCFA(context);
         args[0] = (void *) actions;
         args[1] = exceptionObject;
@@ -951,7 +991,7 @@ _Unwind_Exception *PAL_RunHandler(
     EXCEPTION_DISPOSITION disposition;
     PAL_CPP_TRY
     {
-        // MACTODO: Why do we invoke the PAL_EXCEPT macro's filter in the 
+        // MACTODO: Why do we invoke the PAL_EXCEPT macro's filter in the
         // unwind pass when it simply returns with the original disposition that
         // was provided in the first pass?
         disposition = pfnFilter(pSEHException ? &pSEHException->ExceptionPointers : &ForeignExceptionPointers,
@@ -1023,7 +1063,7 @@ _Unwind_Reason_Code PAL_SEHFilterPersonalityRoutine(
 #elif defined(_AMD64_)
     // Filter address is stored at RSP+8
     // Refer to PAL_RunFilter implementation for details.
-    outerDispatcherContext = (PAL_DISPATCHER_CONTEXT *)((void **)_Unwind_GetCFA(context))[1]; 
+    outerDispatcherContext = (PAL_DISPATCHER_CONTEXT *)((void **)_Unwind_GetCFA(context))[1];
 #else
 #error unsupported architecture
 #endif
