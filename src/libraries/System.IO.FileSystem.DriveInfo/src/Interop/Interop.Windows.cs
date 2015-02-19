@@ -54,15 +54,5 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-errorhandling-l1-1-0.dll")]
         internal extern static uint SetErrorMode(uint uMode);
-
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", EntryPoint = "FormatMessageW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static uint FormatMessage(
-                    uint dwFlags,
-                    System.IntPtr lpSource,
-                    uint dwMessageId,
-                    uint dwLanguageId,
-                    char[] lpBuffer,
-                    uint nSize,
-                    System.IntPtr Arguments);
     }
 }

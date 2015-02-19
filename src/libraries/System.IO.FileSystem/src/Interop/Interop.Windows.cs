@@ -392,10 +392,5 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
         internal extern static bool FindClose(IntPtr hFindFile);
-
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", EntryPoint = "FormatMessageW", CharSet = CharSet.Unicode, BestFitMapping = true, SetLastError = true)]
-        internal static extern uint FormatMessage(int dwFlags, IntPtr lpSource,
-                    uint dwMessageId, uint dwLanguageId, [Out]char[] lpBuffer,
-                    uint nSize, IntPtr va_list_arguments);
     }
 }
