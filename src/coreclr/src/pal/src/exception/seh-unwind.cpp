@@ -223,6 +223,11 @@ RaiseException(IN DWORD dwExceptionCode,
         dwExceptionCode ^= RESERVED_SEH_BIT;
     }
 
+    if (nNumberOfArguments > EXCEPTION_MAXIMUM_PARAMETERS) 
+    {
+        nNumberOfArguments = EXCEPTION_MAXIMUM_PARAMETERS;
+    }
+
     EXCEPTION_RECORD exceptionRecord;
     ZeroMemory(&exceptionRecord, sizeof(EXCEPTION_RECORD));
 
