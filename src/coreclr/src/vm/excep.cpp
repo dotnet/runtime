@@ -8010,11 +8010,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
     GCX_NOTRIGGER();
 
-    if (IsInstrModifyFault(pExceptionInfo))
-    {
-        return VEH_CONTINUE_EXECUTION;
-    }
-
 #ifdef USE_REDIRECT_FOR_GCSTRESS
     // NOTE: this is effectively ifdef (_TARGET_AMD64_ || _TARGET_ARM_), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
