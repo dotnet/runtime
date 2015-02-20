@@ -269,5 +269,55 @@ namespace System.IO.FileSystem.Tests
                 }
             }
         }
+
+        [Fact, OuterLoop]
+        public async Task WriteAsyncMiniStress()
+        {
+            TimeSpan testRunTime = TimeSpan.FromSeconds(30);
+            const int MaximumWriteSize = 16 * 1024;
+            const int NormalWriteSize = 4 * 1024;
+
+            Random rand = new Random();
+            DateTime testStartTime = DateTime.UtcNow;
+
+            // Generate data to write (NOTE: Randomizing this is important as some file systems may optimize writing 0s)
+            byte[] dataToWrite = new byte[MaximumWriteSize];
+            rand.NextBytes(dataToWrite);
+
+            string writeFileName = GetTestFilePath();
+            do
+            {
+                // Create a new token that expires between 100-1000ms
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                tokenSource.CancelAfter(rand.Next(100, 1000));
+
+                using (var stream = new FileStream(writeFileName, FileMode.Create, FileAccess.Write))
+                {                    
+                    do
+                    {
+                        try
+                        {
+                            // 20%: random write size
+                            int bytesToWrite = (rand.NextDouble() < 0.2 ? rand.Next(16, MaximumWriteSize) : NormalWriteSize);
+
+                            if (rand.NextDouble() < 0.1)
+                            {
+                                // 10%: Sync write
+                                stream.Write(dataToWrite, 0, bytesToWrite);
+                            }
+                            else
+                            {
+                                // 90%: Async write
+                                await stream.WriteAsync(dataToWrite, 0, bytesToWrite, tokenSource.Token);
+                            }
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            Assert.True(tokenSource.Token.IsCancellationRequested, "Received cancellation exception before token expired");
+                        }
+                    } while (!tokenSource.Token.IsCancellationRequested);
+                }
+            } while (DateTime.UtcNow - testStartTime <= testRunTime);
+        }
     }
 }
