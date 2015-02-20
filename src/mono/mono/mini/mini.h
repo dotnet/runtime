@@ -1616,6 +1616,7 @@ typedef struct {
 	guint32 got_offset, ex_info_offset, method_info_offset, method_index;
 	/* Symbol used to refer to this method in generated assembly */
 	char *asm_symbol;
+	char *asm_debug_symbol;
 	char *llvm_method_name;
 	int castclass_cache_index;
 

@@ -5011,6 +5011,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		 * - it allows the setting of breakpoints of aot-ed methods.
 		 */
 		debug_sym = get_debug_sym (method, "", acfg->method_label_hash);
+		cfg->asm_debug_symbol = g_strdup (debug_sym);
 
 		if (acfg->need_no_dead_strip)
 			fprintf (acfg->fp, "	.no_dead_strip %s\n", debug_sym);
@@ -7447,6 +7448,7 @@ emit_code (MonoAotCompile *acfg)
 #endif
 		}
 	}
+	emit_int32 (acfg, 0);
 }
 
 static void
@@ -8485,7 +8487,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 
 		sprintf (symbol2, "%sme_%x", acfg->temp_prefix, i);
 
-		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
+		mono_dwarf_writer_emit_method (acfg->dwarf, cfg, cfg->method, cfg->asm_symbol, symbol2, cfg->asm_debug_symbol, cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, mono_debug_find_method (cfg->jit_info->d.method, mono_domain_get ()));
 	}
 #endif
 }
@@ -9359,6 +9361,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 				cfg->asm_symbol = get_debug_sym (cfg->orig_method, "", acfg->method_label_hash);
 			else
 				cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
+			cfg->asm_debug_symbol = cfg->asm_symbol;
 		}
 	}
 

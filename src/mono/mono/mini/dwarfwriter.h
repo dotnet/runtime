@@ -33,7 +33,8 @@ int mono_dwarf_writer_get_il_file_line_index (MonoDwarfWriter *w) MONO_INTERNAL;
 void mono_dwarf_writer_emit_trampoline (MonoDwarfWriter *w, const char *tramp_name, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, GSList *unwind_info) MONO_INTERNAL;
 
 void
-mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info) MONO_INTERNAL;
+mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod *method, char *start_symbol, char *end_symbol, char *linkage_name,
+							   guint8 *code, guint32 code_size, MonoInst **args, MonoInst **locals, GSList *unwind_info, MonoDebugMethodJitInfo *debug_info) MONO_INTERNAL;
 
 char *
 mono_dwarf_escape_path (const char *name);

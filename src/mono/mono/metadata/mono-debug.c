@@ -331,6 +331,9 @@ mono_debug_lookup_method (MonoMethod *method)
 {
 	MonoDebugMethodInfo *minfo;
 
+	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
+		return NULL;
+
 	mono_debugger_lock ();
 	minfo = mono_debug_lookup_method_internal (method);
 	mono_debugger_unlock ();
