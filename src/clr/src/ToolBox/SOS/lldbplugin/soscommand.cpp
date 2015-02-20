@@ -35,7 +35,14 @@ public:
                 m_sosHandle = dlopen(sosLibrary, RTLD_LAZY);
                 if (m_sosHandle == NULL)
                 {
-                    client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s\n", sosLibrary, dlerror());
+#ifdef __APPLE__
+                    const char* libraryPathName = "DYLD_LIBRARY_PATH";
+#else
+                    const char* libraryPathName = "LD_LIBRARY_PATH";
+#endif
+                    client->Output(DEBUG_OUTPUT_ERROR, 
+                        "dlopen(%s) failed %s.\nMake sure that the %s environment variable is set to the runtime binaries directory.\n", 
+                        sosLibrary, dlerror(), libraryPathName);
                 }
             }
 
