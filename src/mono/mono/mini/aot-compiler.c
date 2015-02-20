@@ -5860,7 +5860,7 @@ emit_plt (MonoAotCompile *acfg)
 		if (acfg->llvm && !acfg->thumb_mixed) {
 			emit_label (acfg, plt_entry->llvm_symbol);
 			if (acfg->llvm_separate) {
-				emit_global (acfg, plt_entry->llvm_symbol, TRUE);
+				emit_global_inner (acfg, plt_entry->llvm_symbol, TRUE);
 #if defined(TARGET_MACH)
 				fprintf (acfg->fp, ".private_extern %s\n", plt_entry->llvm_symbol);
 #endif
