@@ -39,7 +39,7 @@ Looking for something to work on? The list of [up-for-grabs issues](https://gith
 You are encouraged to start a discussion by filing an issue, creating a
 gist or starting a thread in the [.NET Foundation forums]. For broader topics, please use the forums.
 
-[Contributing Guide]: https://github.com/dotnet/coreclr/wiki/Contributing
+[Contributing Guide]: https://github.com/dotnet/coreclr/wiki/Contribution-Overview
 [Developer Guide]: https://github.com/dotnet/coreclr/wiki/Developer-Guide
 
 [.NET Foundation forums]: http://forums.dotnetfoundation.org/
