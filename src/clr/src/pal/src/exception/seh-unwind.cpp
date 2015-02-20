@@ -32,20 +32,6 @@ Abstract:
 #include <libunwind.h>
 
 //----------------------------------------------------------------------
-// Exception Handling ABI Level I: Base ABI
-//----------------------------------------------------------------------
-
-typedef UINT_PTR _Unwind_Ptr;
-
-struct dwarf_eh_bases
-{
-    _Unwind_Ptr dataRelBase, textRelBase;
-};
-
-typedef BYTE fde;
-extern "C" const fde *_Unwind_Find_FDE(void *ip, dwarf_eh_bases *bases);
-
-//----------------------------------------------------------------------
 // Virtual Unwinding
 //----------------------------------------------------------------------
 
@@ -171,175 +157,6 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     return TRUE;
 }
 
-#if _DEBUG
-//----------------------------------------------------------------------
-// Virtual Unwinding Debugging Assertions
-//----------------------------------------------------------------------
-
-// Print a trace of virtually unwinding the stack.
-// This helps us diagnose non-unwindable stacks.
-// Unfortunately, calling this function from gdb will not be very useful,
-// since gdb makes it look like it had been called directly from "start"
-// (whose unwind info says we reached the end of the stack).
-// You can still call it from, say, RaiseTheExceptionInternalOnly.
-
-// (non-static to ease debugging)
-void DisplayContext(_Unwind_Context *context)
-{
-    fprintf(stderr, "  ip =%p", _Unwind_GetIP(context));
-    fprintf(stderr, "  cfa=%p", _Unwind_GetCFA(context));
-#if defined(_X86_)
-    // TODO: display more registers
-#endif
-    fprintf(stderr, "\n");
-}
-
-static _Unwind_Reason_Code PrintVirtualUnwindCallback(_Unwind_Context *context, void *pvParam)
-{
-    int *pFrameNumber = (int *) pvParam;
-
-    void *ip = _Unwind_GetIP(context);
-    const char *module = NULL;
-    const char *name = 0;
-    int offset = 0;
-
-    Dl_info dl_info;
-    if (dladdr(ip, &dl_info))
-    {
-        module = dl_info.dli_fname;
-        if (dl_info.dli_sname)
-        {
-            name = dl_info.dli_sname;
-            offset = (char *) ip - (char *) dl_info.dli_saddr;
-        }
-        else
-        {
-            name = "<img-base>";
-            offset = (char *) ip - (char *) dl_info.dli_fbase;
-        }
-    }
-
-    if (module)
-        fprintf(stderr, "#%-3d  %s!%s+%d\n", *pFrameNumber, module, name, offset);
-    else
-        fprintf(stderr, "#%-3d  ??\n", *pFrameNumber);
-    DisplayContext(context);
-    (*pFrameNumber)++;
-    return _URC_NO_REASON;
-}
-
-extern "C" void PAL_PrintVirtualUnwind()
-{
-    BOOL fEntered = PAL_ReenterForEH();
-
-    fprintf(stderr, "\nVirtual unwind of PAL thread %p\n", InternalGetCurrentThread());
-    int frameNumber = 0;
-    _Unwind_Reason_Code urc = _Unwind_Backtrace(PrintVirtualUnwindCallback, &frameNumber);
-    fprintf(stderr, "End of stack (return code=%d).\n", urc);
-
-    if (fEntered)
-    {
-        PAL_Leave(PAL_BoundaryEH);
-    }
-}
-
-static const char *PAL_CHECK_UNWINDABLE_STACKS = "PAL_CheckUnwindableStacks";
-
-enum CheckUnwindableStacksMode
-{
-    // special value to indicate we've not initialized yet
-    CheckUnwindableStacks_Uninitialized = -1,
-
-    CheckUnwindableStacks_Off           = 0,
-    CheckUnwindableStacks_On            = 1,
-    CheckUnwindableStacks_Thorough      = 2,
-
-    CheckUnwindableStacks_Default       = CheckUnwindableStacks_On
-};
-
-static CheckUnwindableStacksMode s_mode = CheckUnwindableStacks_Uninitialized;
-
-// A variant of the above.  This one's not meant for CLR developers to use for tracing,
-// but implements debug checks to assert stack consistency.
-static _Unwind_Reason_Code CheckVirtualUnwindCallback(_Unwind_Context *context, void *pvParam)
-{
-    void *ip = _Unwind_GetIP(context);
-
-    // If we reach an IP that we cannot find a module for,
-    // then we ended up in dynamically-generated code and
-    // the stack will not be unwindable past this point.
-    Dl_info dl_info;
-    if (dladdr(ip, &dl_info) == 0 ||
-        ((s_mode == CheckUnwindableStacks_Thorough) &&
-        ( dl_info.dli_sname == NULL ||
-          ( _Unwind_Find_FDE(ip, NULL) == NULL &&
-            strcmp(dl_info.dli_sname, "start") &&
-            strcmp(dl_info.dli_sname, "_thread_create_running")))))
-    {
-        *(BOOL *) pvParam = FALSE;
-    }
-
-    return _URC_NO_REASON;
-}
-
-extern "C" void PAL_CheckVirtualUnwind()
-{
-    if (s_mode == CheckUnwindableStacks_Uninitialized)
-    {
-        const char *checkUnwindableStacks = getenv(PAL_CHECK_UNWINDABLE_STACKS);
-        s_mode = checkUnwindableStacks ?
-            (CheckUnwindableStacksMode) atoi(checkUnwindableStacks) : CheckUnwindableStacks_Default;
-    }
-
-    if (s_mode != CheckUnwindableStacks_Off)
-    {
-        BOOL fUnwindable = TRUE;
-        _ASSERTE(_Unwind_Backtrace(CheckVirtualUnwindCallback, &fUnwindable) == _URC_END_OF_STACK);
-        if (!fUnwindable)
-        {
-            PAL_PrintVirtualUnwind();
-            ASSERT("Stack not unwindable.  Throwing may terminate the process.\n");
-        }
-    }
-}
-#else // _DEBUG
-
-#define PAL_CheckVirtualUnwind()
-
-#endif // _DEBUG
-
-//----------------------------------------------------------------------
-// Registering Vectored Handlers
-//----------------------------------------------------------------------
-
-static PVECTORED_EXCEPTION_HANDLER VectoredExceptionHandler = NULL;
-static PVECTORED_EXCEPTION_HANDLER VectoredContinueHandler = NULL;
-
-void SetVectoredExceptionHandler(PVECTORED_EXCEPTION_HANDLER pHandler)
-{
-    PERF_ENTRY(SetVectoredExceptionHandler);
-    ENTRY("SetVectoredExceptionHandler(pHandler=%p)\n", pHandler);
-
-    _ASSERTE(VectoredExceptionHandler == NULL);
-    VectoredExceptionHandler = pHandler;
-
-    LOGEXIT("SetVectoredExceptionHandler returns\n");
-    PERF_EXIT(SetVectoredExceptionHandler);
-
-}
-
-void SetVectoredContinueHandler(PVECTORED_EXCEPTION_HANDLER pHandler)
-{
-    PERF_ENTRY(SetVectoredContinueHandler);
-    ENTRY("SetVectoredContinueHandler(pHandler=%p)\n", pHandler);
-
-    _ASSERTE(VectoredContinueHandler == NULL);
-    VectoredContinueHandler = pHandler;
-
-    LOGEXIT("SetVectoredContinueHandler returns\n");
-    PERF_EXIT(SetVectoredContinueHandler);
-}
-
 PAL_NORETURN
 static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 {
@@ -405,8 +222,6 @@ RaiseException(IN DWORD dwExceptionCode,
         WARN("Exception code %08x has bit 28 set; clearing it.\n", dwExceptionCode);
         dwExceptionCode ^= RESERVED_SEH_BIT;
     }
-
-    PAL_CheckVirtualUnwind();
 
     EXCEPTION_RECORD exceptionRecord;
     ZeroMemory(&exceptionRecord, sizeof(EXCEPTION_RECORD));
