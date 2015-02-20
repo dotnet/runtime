@@ -30,7 +30,8 @@ public:
 
             if (m_sosHandle == NULL)
             {
-                const char* sosLibrary = "/ssd/coreclr/binaries/Product/amd64/debug/" MAKEDLLNAME_A("sos");
+                // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
+                const char* sosLibrary = MAKEDLLNAME_A("sos");
                 m_sosHandle = dlopen(sosLibrary, RTLD_LAZY);
                 if (m_sosHandle == NULL)
                 {
