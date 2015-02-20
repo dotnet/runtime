@@ -9326,7 +9326,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	{
 		MonoJumpInfo *ji;
 
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_IMAGE;
 		ji->data.image = acfg->image;
 
@@ -9334,18 +9334,18 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		get_got_offset (acfg, TRUE, ji);
 
 		/* Slot 1 is reserved for the mscorlib got addr */
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_MSCORLIB_GOT_ADDR;
 		get_got_offset (acfg, FALSE, ji);
 		get_got_offset (acfg, TRUE, ji);
 
 		/* This is very common */
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
 		get_got_offset (acfg, FALSE, ji);
 		get_got_offset (acfg, TRUE, ji);
 
-		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoAotCompile));
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_JIT_TLS_ID;
 		get_got_offset (acfg, FALSE, ji);
 		get_got_offset (acfg, TRUE, ji);
