@@ -2,86 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
 
-  <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
-  <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
-    <ParameterGroup>
-      <Address ParameterType="System.String" Required="true"/>
-      <FileName ParameterType="System.String" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Reference Include="System" />
-      <Code Type="Fragment" Language="cs">
-        <![CDATA[
-           var directory = System.IO.Path.GetDirectoryName(FileName);
-           System.IO.Directory.CreateDirectory(directory);
-           var client = new System.Net.WebClient();
-           client.Proxy = System.Net.WebRequest.DefaultWebProxy;
-           client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
-           client.DownloadFile(Address, FileName);
-        ]]>
-      </Code>
-    </Task>
-  </UsingTask>
-
-  <Target Name="_RestoreBuildTools"
-    BeforeTargets="Build"
-    Inputs="$(BuildToolsTargetInputs)"
-    Outputs="$(BuildToolsTargetOutputs)"
-    >
-
-    <!-- Download latest nuget.exe -->
-    <DownloadFile
-      Condition="!Exists($(NuGetToolPath))"
-      Address="http://nuget.org/nuget.exe"
-      FileName="$(NuGetToolPath)" />
-
-    <!-- Restore build tools -->
-    <Exec
-      StandardOutputImportance="Low"
-      Command="&quot;$(NuGetToolPath)&quot; install &quot; $(SourceDir).nuget\packages.config &quot;  -o &quot; $(ToolsDir) &quot; $(NuGetConfigCommandLine)" />
-
-    <Touch Files="$(BuildToolsInstallSemaphore)" AlwaysCreate="true" />
-  </Target>
-
-  <!-- Setup Nuget properties -->
   <ItemGroup>
-    <NuSpecSrcs Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.nuspec" />
-    <NuSpecSrcs Condition="'$(Configuration)'=='Release'" Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.Development.nuspec" />
-    <NuSpecSrcs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesDir)Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Backslash appended, see note in dir.props about the PackagesBinDir property -->
-    <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec" />
-    <NuSpecs Condition="'$(Configuration)'=='Release'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
-    <NuSpecs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
+    <!-- We use build.proj instead of dirs.proj so we don't conflict with the TFS build-->
+    <Project Include="src\build.proj" />
   </ItemGroup>
 
-  <!-- Generate Microsoft.Dotnet.CoreCLR nuget package and associated development package -->
-  <Target Name="BuildNuGetPackages" AfterTargets="MovePDB" Condition="'$(BuildNugetPackage)' != 'false'">
-    <MakeDir Directories="$(PackagesBinDir)" Condition="!Exists('$(PackagesBinDir)')" />
-    <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(PackagesBinDir)" />
-    <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(PackagesBinDir)&quot;" />
-  </Target>
-
-  <ItemGroup>
-    <PDBSToMove Include="$(BinDir)mscorlib.pdb"/>
-  </ItemGroup>
-
-  <PropertyGroup>
-    <MscorlibPDBPath>$(BinDir)mscorlib.pdb</MscorlibPDBPath>
-  </PropertyGroup>
-  
-  <Target Name="MovePDB" AfterTargets="Build">
-    <Move Condition="Exists($(MscorlibPDBPath))"
-        SourceFiles="@(PDBSToMove)"
-        DestinationFolder="$(BinDir)PDB"
-    />
-  </Target>
-  
-  <!-- Build mscorlib -->
-  <ItemGroup>
-    <Project Include="src\mscorlib\mscorlib.csproj" />
-  </ItemGroup>
+  <Import Project="dir.targets" />
 
   <Import Project="dir.traversal.targets" />
 
