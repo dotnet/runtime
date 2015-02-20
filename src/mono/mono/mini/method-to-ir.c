@@ -11985,6 +11985,36 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				break;
 			}
+			case CEE_MONO_LDPTR_CARD_TABLE: {
+				int shift_bits;
+				gpointer card_mask;
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_card_table (&shift_bits, &card_mask));
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
+			case CEE_MONO_LDPTR_NURSERY_START: {
+				int shift_bits;
+				size_t size;
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_nursery (&shift_bits, &size));
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
 			case CEE_MONO_LDPTR_INT_REQ_FLAG: {
 				CHECK_STACK_OVF (1);
 

@@ -3545,6 +3545,12 @@ add_wrappers (MonoAotCompile *acfg)
 			}
 		}
 
+		/* write barriers */
+		if (mono_gc_is_moving ()) {
+			add_method (acfg, mono_gc_get_specific_write_barrier (FALSE));
+			add_method (acfg, mono_gc_get_specific_write_barrier (TRUE));
+		}
+
 		/* Stelemref wrappers */
 		{
 			MonoMethod **wrappers;
@@ -4501,6 +4507,9 @@ is_direct_callable (MonoAotCompile *acfg, MonoMethod *method, MonoJumpInfo *patc
 			if (callee_cfg->method->wrapper_type == MONO_WRAPPER_ALLOC)
 				/* sgen does some initialization when the allocator method is created */
 				direct_callable = FALSE;
+			if (callee_cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER)
+				/* we don't know at compile time whether sgen is concurrent or not */
+				direct_callable = FALSE;
 
 			if (direct_callable)
 				return TRUE;
@@ -5075,6 +5084,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_GC_NURSERY_START:
 		break;
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		encode_value (patch_info->data.index, p, &p);
@@ -5349,7 +5359,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			continue;
 		}
 
-		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR) {
+		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR ||
+				patch_info->type == MONO_PATCH_INFO_GC_NURSERY_START) {
 			/* Stored in a GOT slot initialized at module load time */
 			patch_info->type = MONO_PATCH_INFO_NONE;
 			continue;
@@ -6871,6 +6882,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		case MONO_PATCH_INFO_GOT_OFFSET:
 		case MONO_PATCH_INFO_NONE:
 		case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+		case MONO_PATCH_INFO_GC_NURSERY_START:
 			break;
 		case MONO_PATCH_INFO_IMAGE:
 			/* The assembly is stored in GOT slot 0 */
@@ -9342,6 +9354,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		/* This is very common */
 		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
+		get_got_offset (acfg, FALSE, ji);
+		get_got_offset (acfg, TRUE, ji);
+
+		ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+		ji->type = MONO_PATCH_INFO_GC_NURSERY_START;
 		get_got_offset (acfg, FALSE, ji);
 		get_got_offset (acfg, TRUE, ji);
 

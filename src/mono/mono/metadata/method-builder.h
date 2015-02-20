@@ -113,6 +113,9 @@ mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, cons
 void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value);
 
+void
+mono_mb_emit_icon8 (MonoMethodBuilder *mb, gint64 value);
+
 guint32
 mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op);
 
@@ -136,6 +139,9 @@ mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data);
 
 void
 mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data);
+
+void
+mono_mb_emit_i8 (MonoMethodBuilder *mb, gint64 data);
 
 void
 mono_mb_emit_op (MonoMethodBuilder *mb, guint8 op, gpointer data);

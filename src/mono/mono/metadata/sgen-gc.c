@@ -5132,16 +5132,24 @@ sgen_has_critical_method (void)
 static void
 emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gboolean is_concurrent)
 {
+	int shifted_nursery_start = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
 	memset (nursery_check_return_labels, 0, sizeof (int) * 2);
 	// if (ptr_in_nursery (ptr)) return;
 	/*
 	 * Masking out the bits might be faster, but we would have to use 64 bit
 	 * immediates, which might be slower.
 	 */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_START);
+	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_stloc (mb, shifted_nursery_start);
+
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_ptr (mb, (gpointer)((mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS));
+	mono_mb_emit_ldloc (mb, shifted_nursery_start);
 	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
 
 	if (!is_concurrent) {
@@ -5150,7 +5158,7 @@ emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gbo
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 		mono_mb_emit_byte (mb, CEE_SHR_UN);
-		mono_mb_emit_ptr (mb, (gpointer)((mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS));
+		mono_mb_emit_ldloc (mb, shifted_nursery_start);
 		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
 	}
 }
@@ -5216,12 +5224,19 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 	ldc_i4_1
 	stind_i1
 	*/
-	mono_mb_emit_ptr (mb, sgen_cardtable);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_CARD_TABLE);
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, CARD_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_byte (mb, CEE_CONV_I);
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	mono_mb_emit_ptr (mb, (gpointer)CARD_MASK);
+#if SIZEOF_VOID_P == 8
+	mono_mb_emit_icon8 (mb, CARD_MASK);
+#else
+	mono_mb_emit_icon (mb, CARD_MASK);
+#endif
+	mono_mb_emit_byte (mb, CEE_CONV_I);
 	mono_mb_emit_byte (mb, CEE_AND);
 #endif
 	mono_mb_emit_byte (mb, CEE_ADD);

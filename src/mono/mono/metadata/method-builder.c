@@ -330,6 +330,19 @@ mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data)
 }
 
 void
+mono_mb_emit_i8 (MonoMethodBuilder *mb, gint64 data)
+{
+	if ((mb->pos + 8) >= mb->code_size) {
+		mb->code_size += mb->code_size >> 1;
+		mb->code = g_realloc (mb->code, mb->code_size);
+	}
+
+	mono_mb_patch_addr (mb, mb->pos, data);
+	mono_mb_patch_addr (mb, mb->pos + 4, data >> 32);
+	mb->pos += 8;
+}
+
+void
 mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 {
 	if ((mb->pos + 2) >= mb->code_size) {
@@ -438,6 +451,13 @@ mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value)
 		mono_mb_emit_byte (mb, CEE_LDC_I4);
 		mono_mb_emit_i4 (mb, value);
 	}
+}
+
+void
+mono_mb_emit_icon8 (MonoMethodBuilder *mb, gint64 value)
+{
+	mono_mb_emit_byte (mb, CEE_LDC_I8);
+	mono_mb_emit_i8 (mb, value);
 }
 
 int
