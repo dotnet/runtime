@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Diagnostics.Debug</AssemblyName>
+    <RootNamespace>System.Diagnostics.Debug</RootNamespace>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Diagnostics\AssertWrapper.cs" />
+    <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Diagnostics\Debugger.cs" />
+    <Compile Include="System\Diagnostics\DebuggerBrowsableAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerBrowsableState.cs" />
+    <Compile Include="System\Diagnostics\DebuggerDisplayAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerHiddenAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerNonUserCodeAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerStepThroughAttribute.cs" />
+    <Compile Include="System\Diagnostics\DebuggerTypeProxyAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\mincore\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OutputDebugString.cs">
+      <Link>Interop\Windows\mincore\Interop.OutputDebugString.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.MessageBox.cs">
+      <Link>Interop\Windows\user32\Interop.MessageBox.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Diagnostics.Contracts">
+      <HintPath>..\..\..\packages\System.Diagnostics.Contracts.4.0.0-beta-22605\lib\portable-wpa81+wp80+win80+net45+aspnetcore50\System.Diagnostics.Contracts.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
