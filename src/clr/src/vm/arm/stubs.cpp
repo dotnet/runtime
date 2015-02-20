@@ -2192,11 +2192,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-bool IsInstrModifyFault(PEXCEPTION_POINTERS pExceptionInfo)
-{
-    return false;
-}
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
     LIMITED_METHOD_CONTRACT;
