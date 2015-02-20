@@ -31,12 +31,8 @@ Abstract:
 
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
 
-
-void CONTEXT_CaptureContext(LPCONTEXT lpContext)
-{
-    // TODO: this needs to be implemented. See context2.s
-    _ASSERT(FALSE);
-}
+// in context2.S
+extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 
 #ifdef _X86_
 #define CONTEXT_ALL_FLOATING (CONTEXT_FLOATING_POINT | CONTEXT_EXTENDED_REGISTERS)
