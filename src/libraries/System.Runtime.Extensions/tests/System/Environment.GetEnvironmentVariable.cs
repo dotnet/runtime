@@ -78,19 +78,35 @@ public class GetEnvironmentVariable
     [Fact]
     public void CanGetAllVariablesIndividually()
     {
-        bool atLeastOne = false;
+        Random r = new Random();
+        string envVar1 = "TestVariable_CanGetVariablesIndividually_" + r.Next().ToString();
+        string envVar2 = "TestVariable_CanGetVariablesIndividually_" + r.Next().ToString();
 
-        IDictionary envBlock = Environment.GetEnvironmentVariables();
-
-        foreach (DictionaryEntry envEntry in envBlock)
+        try
         {
-            string name = (string)envEntry.Key;
-            string value = Environment.GetEnvironmentVariable(name);
-            Assert.Equal(envEntry.Value, value);
-            atLeastOne = true;
-        }
+            Environment.SetEnvironmentVariable(envVar1, envVar1);
+            Environment.SetEnvironmentVariable(envVar2, envVar2);
 
-        Assert.True(atLeastOne);
+            IDictionary envBlock = Environment.GetEnvironmentVariables();
+
+            // Make sure the environment variables we set are part of the dictionary returned.
+            Assert.True(envBlock.Contains(envVar1));
+            Assert.True(envBlock.Contains(envVar1));
+
+            // Make sure the values match the expected ones.
+            Assert.Equal(envVar1, envBlock[envVar1]);
+            Assert.Equal(envVar2, envBlock[envVar2]);
+
+            // Make sure we can read the individual variables as well
+            Assert.Equal(envVar1, Environment.GetEnvironmentVariable(envVar1));
+            Assert.Equal(envVar2, Environment.GetEnvironmentVariable(envVar2));
+        }
+        finally
+        {
+            // Clear the variables we just set
+            Environment.SetEnvironmentVariable(envVar1, null);
+            Environment.SetEnvironmentVariable(envVar2, null);
+        }
     }
 
     [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
