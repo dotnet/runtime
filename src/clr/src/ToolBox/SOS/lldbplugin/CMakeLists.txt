@@ -2,29 +2,24 @@ project(sosplugin)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(LLDB_SRC_DIR $ENV{LLDB_SRC_DIR})
-set(LLVM_BUILD_DIR $ENV{LLVM_BUILD_DIR})
+set(LLVM_DIR "/usr/lib/llvm-3.5")
+set(LLDB_INCLUDE_DIR "${LLVM_DIR}/include")
+set(LLDB_LIB_DIR "${LLVM_DIR}/lib")
 
-if((NOT ${LLDB_SRC_DIR} STREQUAL "") AND (NOT ${LLVM_BUILD_DIR} STREQUAL ""))
-    add_compile_options(-Wno-delete-non-virtual-dtor)
+add_compile_options(-Wno-delete-non-virtual-dtor)
 
-    set(LLDB_INCLUDE_DIR "${LLDB_SRC_DIR}/include")
+include_directories(inc)
+include_directories("${LLDB_INCLUDE_DIR}")
+link_directories("${LLDB_LIB_DIR}")
 
-    include_directories(inc)
-    include_directories("${LLDB_INCLUDE_DIR}")
+set(SOURCES
+    sosplugin.cpp
+    soscommand.cpp
+    debugclient.cpp
+)
 
-    link_directories("${LLVM_BUILD_DIR}/lib")
+add_library(sosplugin SHARED ${SOURCES})
+add_dependencies(sosplugin sos)
 
-    set(SOURCES
-        sosplugin.cpp
-        soscommand.cpp
-        debugclient.cpp
-    )
-
-    add_library(sosplugin SHARED ${SOURCES})
-    add_dependencies(sosplugin sos)
-    target_link_libraries(sosplugin lldb)
-
-    # add the install targets
-    install (TARGETS sosplugin DESTINATION .)
-endif()
+# add the install targets
+install (TARGETS sosplugin DESTINATION .)
