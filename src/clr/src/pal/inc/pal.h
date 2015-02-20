@@ -5918,12 +5918,18 @@ public:
 
 #endif // __cplusplus
 
+// Start of a try block for exceptions raised by RaiseException
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
     __ParamType __param = __paramRef;                                           \
     auto tryBlock = [](__ParamType __paramDef)                                  \
     {
 
+// Start of an exception handler. If an exception raised by the RaiseException 
+// occurs in the try block and the disposition is EXCEPTION_EXECUTE_HANDLER, 
+// the handler code is executed. If the disposition is EXCEPTION_CONTINUE_SEARCH,
+// the exception is rethrown. The EXCEPTION_CONTINUE_EXECUTION disposition is
+// not supported.
 #define PAL_EXCEPT(dispositionExpression)                                       \
     };                                                                          \
     const bool isFinally = false;                                               \
@@ -5942,14 +5948,19 @@ public:
         }
 
 
+// Start of an exception handler. It works the same way as the PAL_EXCEPT except
+// that the disposition is obtained by calling the specified filter.
 #define PAL_EXCEPT_FILTER(filter) PAL_EXCEPT(filter(&ex.ExceptionPointers, __param))
 
+// Start of a finally block. The finally block is executed both when the try block
+// finishes or when an exception is raised using the RaiseException in it.
 #define PAL_FINALLY                     \
     };                                  \
     const bool isFinally = true;        \
     auto finallyBlock = [&]()           \
     {                       
 
+// End of an except or a finally block.
 #define PAL_ENDTRY                      \
     };                                  \
     if (isFinally)                      \
