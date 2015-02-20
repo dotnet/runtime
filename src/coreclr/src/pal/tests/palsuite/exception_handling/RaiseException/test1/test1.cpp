@@ -17,11 +17,12 @@
 
 #include <palsuite.h>
 
+BOOL bExcept  = FALSE;
+BOOL bTry     = FALSE;
+BOOL bFinally = FALSE;
+
 int __cdecl main(int argc, char *argv[])
 {
-    BOOL bExcept  = FALSE;
-    BOOL bTry     = FALSE;
-    BOOL bFinally = FALSE;
 
     if(0 != (PAL_Initialize(argc, argv)))
     {
@@ -31,7 +32,7 @@ int __cdecl main(int argc, char *argv[])
     /*********************************************************
      * Tests that RaiseException throws a catchable exception
      */
-    PAL_TRY
+    PAL_TRY(VOID*, unused, NULL)
     {
         bTry = TRUE;
         RaiseException(0,0,0,0);
@@ -72,9 +73,9 @@ int __cdecl main(int argc, char *argv[])
      * PAL_FINALLY
      * (bFinally should be set before bExcept)
      */
-    PAL_TRY
+    PAL_TRY(VOID*, unused, NULL)
     {
-        PAL_TRY
+        PAL_TRY(VOID*, unused, NULL)
         {
             bTry = TRUE;
             RaiseException(0,0,0,0);
