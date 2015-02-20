@@ -3,10 +3,9 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class StringComparerTests
+public static class StringComparerTests
 {
     [Fact]
     public static void TestCurrent()
@@ -26,63 +25,38 @@ public static unsafe class StringComparerTests
     {
         String s1 = "Hello";
         String s1a = "Hello";
-        String s1A = "HELLO";
+        String s1b = "HELLO";
         String s2 = "There";
 
-        bool b;
-        int i;
+        Assert.True(sc.Equals(s1, s1a));
+        Assert.True(sc.Equals(s1, s1a));
 
-        b = sc.Equals(s1, s1a);
-        Assert.True(b);
-        b = ((IEqualityComparer)sc).Equals(s1, s1a);
-        Assert.True(b);
+        Assert.Equal(0, sc.Compare(s1, s1a));
+        Assert.Equal(0, ((IComparer)sc).Compare(s1, s1a));
 
-        i = sc.Compare(s1, s1a);
-        Assert.True(i == 0);
-        i = ((IComparer)sc).Compare(s1, s1a);
-        Assert.True(i == 0);
+        Assert.True(sc.Equals(s1, s1));
+        Assert.True(((IEqualityComparer)sc).Equals(s1, s1));
+        Assert.Equal(0, sc.Compare(s1, s1));
+        Assert.Equal(0, ((IComparer)sc).Compare(s1, s1));
 
-        b = sc.Equals(s1, s1);
-        Assert.True(b);
-        b = ((IEqualityComparer)sc).Equals(s1, s1);
-        Assert.True(b);
-        i = sc.Compare(s1, s1);
-        Assert.True(i == 0);
-        i = ((IComparer)sc).Compare(s1, s1);
-        Assert.True(i == 0);
+        Assert.False(sc.Equals(s1, s2));
+        Assert.False(((IEqualityComparer)sc).Equals(s1, s2));
+        Assert.True(sc.Compare(s1, s2) < 0);
+        Assert.True(((IComparer)sc).Compare(s1, s2) < 0);
 
-        b = sc.Equals(s1, s2);
-        Assert.False(b);
-        b = ((IEqualityComparer)sc).Equals(s1, s2);
-        Assert.False(b);
-        i = sc.Compare(s1, s2);
-        Assert.True(i < 0);
-        i = ((IComparer)sc).Compare(s1, s2);
-        Assert.True(i < 0);
+        Assert.Equal(ignoreCase, sc.Equals(s1, s1b));
+        Assert.Equal(ignoreCase, ((IEqualityComparer)sc).Equals(s1, s1b));
 
-        b = sc.Equals(s1, s1A);
+        int result = sc.Compare(s1, s1b);
         if (ignoreCase)
-            Assert.True(b);
+            Assert.Equal(0, result);
         else
-            Assert.False(b);
+            Assert.NotEqual(0, result);
 
-        b = ((IEqualityComparer)sc).Equals(s1, s1A);
+        result = ((IComparer)sc).Compare(s1, s1b);
         if (ignoreCase)
-            Assert.True(b);
+            Assert.Equal(0, result);
         else
-            Assert.False(b);
-
-        i = sc.Compare(s1, s1A);
-        if (ignoreCase)
-            Assert.True(i == 0);
-        else
-            Assert.True(i != 0);
-
-        i = ((IComparer)sc).Compare(s1, s1A);
-        if (ignoreCase)
-            Assert.True(i == 0);
-        else
-            Assert.True(i != 0);
+            Assert.NotEqual(0, result);
     }
 }
-

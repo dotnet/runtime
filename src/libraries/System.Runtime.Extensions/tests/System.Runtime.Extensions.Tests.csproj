@@ -17,8 +17,11 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Convert.BoxedObjectCheck.cs" />
     <Compile Include="System\Convert.FromBase64.cs" />
     <Compile Include="System\Convert.TestBase.cs" />
@@ -42,6 +45,9 @@
     <Compile Include="System\Environment.ExpandEnvironmentVariables.cs" />
     <Compile Include="System\Environment.GetEnvironmentVariable.cs" />
     <Compile Include="System\Environment.SetEnvironmentVariable.cs" />
+    <Compile Include="System\Math.cs" />
+    <Compile Include="System\Random.cs" />
+    <Compile Include="System\StringComparer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
@@ -56,3 +62,4 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
+
