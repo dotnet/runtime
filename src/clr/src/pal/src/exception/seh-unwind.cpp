@@ -28,8 +28,10 @@ Abstract:
 #include "pal/context.h"
 #include <dlfcn.h>
 #include <exception>
+#if HAVE_LIBUNWIND_H
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
+#endif
 
 //----------------------------------------------------------------------
 // Exception Handling ABI Level I: Base ABI
@@ -74,6 +76,7 @@ struct __cxa_exception
 // Virtual Unwinding
 //----------------------------------------------------------------------
 
+#if HAVE_LIBUNWIND_H
 #if UNWIND_CONTEXT_IS_UCONTEXT_T
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
@@ -195,6 +198,9 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
     return TRUE;
 }
+#else
+#error don't know how to unwind on this platform
+#endif
 
 #if _DEBUG
 //----------------------------------------------------------------------
