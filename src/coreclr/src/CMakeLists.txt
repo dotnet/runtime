@@ -10,19 +10,16 @@ include_directories("classlibnative/bcltype")
 include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 
-if(WIN32)
-enable_language(ASM_MASM)
-else()
-enable_language(ASM)
-# This prevents inclusion of standard C compiler headers
-add_compile_options(-nostdinc)
+if(CLR_CMAKE_PLATFORM_UNIX)
+  # This prevents inclusion of standard C compiler headers
+  add_compile_options(-nostdinc)
 
-if(NOT CLR_CMAKE_PLATFORM_DARWIN)
-  # This prevents inclusion of standard C++ compiler headers
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
-endif(NOT CLR_CMAKE_PLATFORM_DARWIN)
+  if(NOT CLR_CMAKE_PLATFORM_DARWIN)
+    # This prevents inclusion of standard C++ compiler headers
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
+  endif(NOT CLR_CMAKE_PLATFORM_DARWIN)
 
-endif(WIN32)
+endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(utilcode)
 add_subdirectory(gcinfo)
