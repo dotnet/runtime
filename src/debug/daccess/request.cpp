@@ -3105,6 +3105,8 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
 
     SOSDacEnter();
 
+// TODO - mikem 2/20/15 - ifdef temporary until the global pointer table is implemented for linux.
+#ifndef FEATURE_PAL
     PTR_ArrayTypeDesc objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
     if (objArray)
         globalsData->ArrayMethodTable = HOST_CDADDR(objArray->GetMethodTable());
@@ -3115,6 +3117,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     globalsData->ObjectMethodTable = HOST_CDADDR(g_pObjectClass);
     globalsData->ExceptionMethodTable = HOST_CDADDR(g_pExceptionClass);
     globalsData->FreeMethodTable = HOST_CDADDR(g_pFreeObjectMethodTable);
+#endif
 
     SOSDacLeave();
     return hr;

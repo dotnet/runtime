@@ -4135,9 +4135,7 @@ void ResetGlobals(void)
     // but should be reset because the next execution of an SOS command could be on
     // another managed process. Reset them to a default state here, as this command
     // is called on every SOS entry point.
-
-    // BUGBUG mikem TEMP
-    //g_sos->GetUsefulGlobals(&g_special_usefulGlobals);
+    g_sos->GetUsefulGlobals(&g_special_usefulGlobals);
 #ifndef FEATURE_PAL
     g_special_mtCache.Clear();
 #endif
@@ -4167,7 +4165,8 @@ HRESULT LoadClrDebugDll(void)
     }
     if (g_clrData == NULL)
     {
-        HMODULE hdac = LoadLibraryA("/ssd/coreclr/binaries/Product/amd64/debug/" MAKEDLLNAME_A("mscordaccore"));
+        // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
+        HMODULE hdac = LoadLibraryA(MAKEDLLNAME_A("mscordaccore"));
         if (hdac == NULL)
         {
             return E_FAIL;

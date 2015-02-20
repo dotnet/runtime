@@ -2,9 +2,19 @@ project(sosplugin)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(LLVM_DIR "/usr/lib/llvm-3.5")
-set(LLDB_INCLUDE_DIR "${LLVM_DIR}/include")
-set(LLDB_LIB_DIR "${LLVM_DIR}/lib")
+if((NOT $ENV{LLDB_INCLUDE_DIR} STREQUAL "") AND (NOT $ENV{LLDB_LIB_DIR} STREQUAL ""))
+    # The OSx build depends on the environment variables LLDB_INCLUDE_DIR and LLDB_LIB_DIR being set
+    set(LLDB_INCLUDE_DIR "$ENV{LLDB_INCLUDE_DIR}")
+    set(LLDB_LIB_DIR "$ENV{LLDB_LIB_DIR}")
+else()
+    # The Linux build depends on the lldb-3.5-dev package
+    set(LLVM_DIR "/usr/lib/llvm-3.5")
+    set(LLDB_INCLUDE_DIR "${LLVM_DIR}/include")
+    set(LLDB_LIB_DIR "${LLVM_DIR}/lib")
+endif()
+
+message(LLDB_INCLUDE_DIR=${LLDB_INCLUDE_DIR})
+message(LLDB_LIB_DIR=${LLDB_LIB_DIR})
 
 add_compile_options(-Wno-delete-non-virtual-dtor)
 

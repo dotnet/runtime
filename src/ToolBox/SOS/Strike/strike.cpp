@@ -280,6 +280,7 @@ DECLARE_API(IP2MD)
         return Status;
     }
     
+    // TODO - mikem 2/20/14 - temporary until the rest of the DAC is working.
     ExtOut("Test output for IP2MD %16x\n", IP);
     return Status;
         
