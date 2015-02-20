@@ -44,9 +44,6 @@
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\StreamAsyncHelper.cs">
-      <Link>Common\System\IO\StreamAsyncHelper.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -55,7 +52,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\FileStream.Win32.cs" />
     <Compile Include="System\IO\Win32FileStream.cs" />
-    <Compile Include="System\IO\Win32FileStreamAsyncResult.cs" />
+    <Compile Include="System\IO\Win32FileStreamCompletionSource.cs" />
     <Compile Include="System\IO\Win32FileSystem.cs" />
     <Compile Include="System\IO\Win32FileSystemEnumerable.cs" />
     <Compile Include="System\IO\Win32FileSystemObject.cs" />
