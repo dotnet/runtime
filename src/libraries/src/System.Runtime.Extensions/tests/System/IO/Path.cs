@@ -3,110 +3,57 @@
 
 using System;
 using System.IO;
-using System.Collections;
-using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class PathTests
+public static class PathTests
 {
     [Fact]
-    public static void TestChangeExtension()
+    public static void ChangeExtension()
     {
-        String s;
-
-        s = Path.ChangeExtension("foo.txt", "exe");
-        Assert.Equal(s, "foo.exe");
-        return;
+        Assert.Equal("file.exe", Path.ChangeExtension("file.txt", "exe"));
     }
 
     [Fact]
-    public static void TestCombine()
+    public static void GetDirectoryName()
     {
-        String s = Path.Combine(@"c:\", "foo", "bar", "baz.exe");
-        Assert.Equal(s, @"c:\foo\bar\baz.exe");
-
-        s = Path.Combine();
-        Assert.Equal(s, String.Empty);
+        Assert.Equal("dir", Path.GetDirectoryName(@"dir\baz"));
+        Assert.Equal(null, Path.GetDirectoryName(@"c:\"));
     }
 
     [Fact]
-    public static void TestGetDirectoryName()
+    public static void GetExtension()
     {
-        String s;
-
-        s = Path.GetDirectoryName(@"foo\baz");
-        Assert.Equal(s, @"foo");
-
-        s = Path.GetDirectoryName(@"c:\");
-        Assert.Equal(s, null);
+        Assert.Equal(".exe", Path.GetExtension("file.exe"));
+        Assert.True(Path.HasExtension("file.exe"));
+        Assert.Equal(string.Empty, Path.GetExtension("file"));
+        Assert.False(Path.HasExtension("file"));
     }
 
     [Fact]
-    public static void TestShortFileName()
+    public static void GetFileName()
     {
-        //@todo: Not implemented yet.
-        //String s = Path.GetDirectoryName(@"c:\x~x\yy\zz.txt");
-        //Console.WriteLine(s);
+        Assert.Equal("file.exe", Path.GetFileName(@"c:\bar\baz\file.exe"));
+        Assert.Equal(string.Empty, Path.GetFileName(@"c:\bar\baz\"));
     }
 
     [Fact]
-    public static void TestGetExtension()
+    public static void GetFileNameWithoutExtension()
     {
-        String s;
-        bool b;
-
-        s = Path.GetExtension("foo.exe");
-        Assert.Equal(s, ".exe");
-
-        b = Path.HasExtension("foo.exe");
-        Assert.True(b);
-
-        s = Path.GetExtension("foo");
-        Assert.Equal(s, "");
-
-        b = Path.HasExtension("foo");
-        Assert.False(b);
+        Assert.Equal("file", Path.GetFileNameWithoutExtension(@"c:\bar\baz\file.exe"));
+        Assert.Equal(string.Empty, Path.GetFileNameWithoutExtension(@"c:\bar\baz\"));
     }
 
     [Fact]
-    public static void TestGetFileName()
+    public static void GetPathRoot()
     {
-        String s;
-        s = Path.GetFileName(@"c:\bar\baz\foo.exe");
-        Assert.Equal(s, "foo.exe");
-
-        s = Path.GetFileName(@"c:\bar\baz\");
-        Assert.Equal(s, "");
+        Assert.Equal(@"c:\", Path.GetPathRoot(@"c:\x\y\z\"));
+        Assert.True(Path.IsPathRooted(@"c:\x\y\z\"));
+        Assert.Equal(string.Empty, Path.GetPathRoot(@"file.exe"));
+        Assert.False(Path.IsPathRooted("file.exe"));
     }
 
     [Fact]
-    public static void TestGetFileNameWithoutExtension()
-    {
-        String s;
-        s = Path.GetFileNameWithoutExtension(@"c:\bar\baz\foo.exe");
-        Assert.Equal(s, "foo");
-
-        s = Path.GetFileNameWithoutExtension(@"c:\bar\baz\");
-        Assert.Equal(s, "");
-    }
-
-    [Fact]
-    public static void TestGetPathRoot()
-    {
-        String s;
-        bool b;
-        s = Path.GetPathRoot(@"c:\foo\bar\bar\");
-        Assert.Equal(s, @"c:\");
-        b = Path.IsPathRooted(@"c:\foo\bar\bar\");
-        Assert.True(b);
-        s = Path.GetPathRoot(@"foo.exe");
-        Assert.Equal(s, @"");
-        b = Path.IsPathRooted(@"foo.exe");
-        Assert.False(b);
-    }
-
-    [Fact]
-    public static void TestGetRandomFileName()
+    public static void GetRandomFileName()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -115,14 +62,4 @@ public static unsafe class PathTests
             Assert.Equal(s[8], '.');
         }
     }
-
-    [Fact]
-    public static void TestShortNamesExpansion()
-    {
-        // we are not sure if 'c:\Program Files' exist so the result should be 
-        // either 'PROGRA~1' or 'Program Files'
-        string s = Path.GetDirectoryName(@"C:\PROGRA~1\");
-        Assert.True(s.Equals(@"c:\PROGRA~1", StringComparison.OrdinalIgnoreCase) || s.Equals(@"c:\Program Files", StringComparison.OrdinalIgnoreCase));
-    }
 }
-

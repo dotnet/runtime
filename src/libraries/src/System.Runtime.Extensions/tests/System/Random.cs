@@ -2,14 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using Xunit;
 
-public static unsafe class RandomTests
+public static class RandomTests
 {
     [Fact]
-    public static void TestUnseeded()
+    public static void Unseeded()
     {
         Random r = new Random();
         for (int i = 0; i < 1000; i++)
@@ -30,7 +28,7 @@ public static unsafe class RandomTests
     }
 
     [Fact]
-    public static void TestSeeded()
+    public static void Seeded()
     {
         int seed = Environment.TickCount;
 
@@ -54,7 +52,7 @@ public static unsafe class RandomTests
     }
 
     [Fact]
-    public static void TestSample()
+    public static void Sample()
     {
         SubRandom r = new SubRandom();
 
@@ -73,4 +71,3 @@ public static unsafe class RandomTests
         }
     }
 }
-
