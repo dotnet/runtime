@@ -6,10 +6,10 @@ using System.Threading;
 
 namespace System.Diagnostics
 {
-    internal static class AssertWrapper
+    public static partial class Debug
     {
         [SecuritySafeCritical]
-        public static void ShowAssert(string stackTrace, string message, string detailMessage)
+        private static void ShowAssertDialog(string stackTrace, string message, string detailMessage)
         {
             string fullMessage = message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace;
 
@@ -23,7 +23,7 @@ namespace System.Diagnostics
             int rval = 0;
 
             // Run the message box on its own thread.
-            rval = new MessageBoxPopup(fullMessage, Res.Strings.DebugAssertTitle, flags).ShowMessageBox();
+            rval = new MessageBoxPopup(fullMessage, SR.DebugAssertTitle, flags).ShowMessageBox();
 
             switch (rval)
             {
@@ -40,11 +40,53 @@ namespace System.Diagnostics
             }
         }
 
+        private static void WriteLineCore(string message)
+        {
+            message = message + "\r\n";
+            Write(message);
+        }
+        
+        private static void WriteCore(string message)
+        {
+            // really huge messages mess up both VS and dbmon, so we chop it up into 
+            // reasonable chunks if it's too big. This is the number of characters 
+            // that OutputDebugstring chunks at.
+            const int WriteChunkLength = 4091;
+
+            // We don't want output from multiple threads to be interleaved.
+            lock (s_ForLock)
+            {
+                if (message == null || message.Length <= WriteChunkLength)
+                {
+                    WriteToDebugger(message);
+                }
+                else
+                {
+                    int offset;
+                    for (offset = 0; offset < message.Length - WriteChunkLength; offset += WriteChunkLength)
+                    {
+                        WriteToDebugger(message.Substring(offset, WriteChunkLength));
+                    }
+                    WriteToDebugger(message.Substring(offset));
+                }
+            }
+        }
+
+        // --------------
+        // PAL ENDS HERE
+        // --------------
+
+        [System.Security.SecuritySafeCritical]
+        private static void WriteToDebugger(string message)
+        {
+            Interop.mincore.OutputDebugString(message ?? string.Empty);
+        }
+
         private static bool IsRTLResources
         {
             get
             {
-                return Res.Strings.RTL != "RTL_False";
+                return SR.RTL != "RTL_False";
             }
         }
     }

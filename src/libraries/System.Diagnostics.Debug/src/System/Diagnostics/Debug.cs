@@ -6,12 +6,9 @@ namespace System.Diagnostics
     /// <summary>
     /// Provides a set of properties and methods for debugging code.
     /// </summary>
-    public static class Debug
+    public static partial class Debug
     {
         private static readonly object s_ForLock = new Object();
-
-        // This is the number of characters that OutputDebugstring chunks at.
-        private const int InternalWriteSize = 4091;
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Assert(bool condition)
@@ -43,7 +40,7 @@ namespace System.Diagnostics
                 }
 
                 WriteAssert(stackTrace, message, detailMessage);
-                AssertWrapper.ShowAssert(stackTrace, message, detailMessage);
+                ShowAssertDialog(stackTrace, message, detailMessage);
             }
         }
 
@@ -61,12 +58,13 @@ namespace System.Diagnostics
 
         private static void WriteAssert(string stackTrace, string message, string detailMessage)
         {
-            string assertMessage = Res.Strings.DebugAssertBanner + Environment.NewLine
-                                            + Res.Strings.DebugAssertShortMessage + Environment.NewLine
-                                            + message + Environment.NewLine
-                                            + Res.Strings.DebugAssertLongMessage + Environment.NewLine +
-                                            detailMessage + Environment.NewLine
-                                            + stackTrace;
+            string assertMessage = SR.DebugAssertBanner + Environment.NewLine
+                                   + SR.DebugAssertShortMessage + Environment.NewLine
+                                   + message + Environment.NewLine
+                                   + SR.DebugAssertLongMessage + Environment.NewLine
+                                   + detailMessage + Environment.NewLine
+                                   + stackTrace;
+
             WriteLine(assertMessage);
         }
 
@@ -79,39 +77,13 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string message)
         {
-            message = message + "\r\n"; // Use Windows end line on *all* Platforms
-            Write(message);
+            WriteLineCore(message);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(string message)
         {
-            // We don't want output from multiple threads to be interleaved.
-            lock (s_ForLock)
-            {
-                // really huge messages mess up both VS and dbmon, so we chop it up into 
-                // reasonable chunks if it's too big
-                if (message == null || message.Length <= InternalWriteSize)
-                {
-                    InternalWrite(message);
-                }
-                else
-                {
-                    int offset;
-                    for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
-                    {
-                        InternalWrite(message.Substring(offset, InternalWriteSize));
-                    }
-                    InternalWrite(message.Substring(offset));
-                }
-            }
-
-        }
-
-        [System.Security.SecuritySafeCritical]
-        private static void InternalWrite(string message)
-        {
-           Interop.mincore.OutputDebugString(message ?? string.Empty);
+            WriteCore(message);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
