@@ -2301,6 +2301,11 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_3 (GENERATION_NURSERY);
 
+	/*
+	 * FIXME: When we finish a concurrent collection we do a nursery collection first,
+	 * as part of which we scan the card table.  Then, later, we scan the mod union
+	 * cardtable.  We should only have to do one.
+	 */
 	frssjd = sgen_alloc_internal_dynamic (sizeof (FinishRememberedSetScanJobData), INTERNAL_MEM_WORKER_JOB_DATA, TRUE);
 	frssjd->heap_start = sgen_get_nursery_start ();
 	frssjd->heap_end = nursery_next;
@@ -2795,7 +2800,7 @@ wait_for_workers_to_finish (void)
 }
 
 static void
-major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean scan_mod_union, gboolean scan_whole_nursery)
+major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean scan_whole_nursery)
 {
 	ScannedObjectCounts counts;
 	LOSObject *bigobj, *prevbo;
@@ -2809,7 +2814,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 		current_object_ops = major_collector.major_concurrent_ops;
 
-		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, scan_mod_union, scan_whole_nursery);
+		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, TRUE, scan_whole_nursery);
 
 		sgen_workers_signal_finish_nursery_collection ();
 
@@ -2996,7 +3001,7 @@ major_do_collection (const char *reason)
 	TV_GETTIME (time_start);
 
 	major_start_collection (FALSE, &old_next_pin_slot);
-	major_finish_collection (reason, old_next_pin_slot, FALSE, FALSE);
+	major_finish_collection (reason, old_next_pin_slot, FALSE);
 
 	TV_GETTIME (time_end);
 	gc_stats.major_gc_time += TV_ELAPSED (time_start, time_end);
@@ -3105,7 +3110,7 @@ major_finish_concurrent_collection (void)
 		sgen_check_mod_union_consistency ();
 
 	current_collection_generation = GENERATION_OLD;
-	major_finish_collection ("finishing", -1, TRUE, late_pinned);
+	major_finish_collection ("finishing", -1, late_pinned);
 
 	if (whole_heap_check_before_collection)
 		sgen_check_whole_heap (FALSE);
