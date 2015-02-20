@@ -650,6 +650,11 @@ sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, i
 
 /* GC Handles */
 
+#ifdef HEAVY_STATISTICS
+static volatile guint64 stat_gc_handles_allocated = 0;
+static volatile guint64 stat_gc_handles_max_allocated = 0;
+#endif
+
 #define BUCKETS (32 - MONO_GC_HANDLE_TYPE_SHIFT)
 #define MIN_BUCKET_BITS (5)
 #define MIN_BUCKET_SIZE (1 << MIN_BUCKET_BITS)
@@ -847,6 +852,11 @@ retry:
 	bucketize (index, &bucket, &offset);
 	if (!try_occupy_slot (handles, bucket, offset, obj, track))
 		goto retry;
+#ifdef HEAVY_STATISTICS
+	InterlockedIncrement64 ((volatile gint64 *)&stat_gc_handles_allocated);
+	if (stat_gc_handles_allocated > stat_gc_handles_max_allocated)
+		stat_gc_handles_max_allocated = stat_gc_handles_allocated;
+#endif
 	if (obj && MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type))
 		binary_protocol_dislink_add ((gpointer)&handles->entries [bucket] [offset], obj, track);
 	/* Ensure that a GC handle cannot be given to another thread without the slot having been set. */
@@ -897,6 +907,8 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer ca
 			result = callback (revealed, handle_type, user);
 			if (result)
 				g_assert (MONO_GC_HANDLE_OCCUPIED (result));
+			else
+				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
 			entries [offset] = result;
 		}
 	}
@@ -1126,6 +1138,7 @@ mono_gchandle_free (guint32 gchandle)
 		if (MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type))
 			binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], handles->type == HANDLE_WEAK_TRACK);
 		handles->entries [bucket] [offset] = NULL;
+		HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
 	} else {
 		/* print a warning? */
 	}
@@ -1176,6 +1189,7 @@ mono_gchandle_free_domain (MonoDomain *unloading)
 				if (MONO_GC_HANDLE_TYPE_IS_WEAK (type) && MONO_GC_REVEAL_POINTER (slot, is_weak))
 					binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], handles->type == HANDLE_WEAK_TRACK);
 				*slot_addr = NULL;
+				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
 			}
 			/* See note [dummy use]. */
 			mono_gc_dummy_use (obj);
@@ -1255,6 +1269,9 @@ sgen_init_fin_weak_hash (void)
 	mono_counters_register ("FinWeak Increment other thread", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_increment_other_thread);
 	mono_counters_register ("FinWeak Index decremented", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_index_decremented);
 	mono_counters_register ("FinWeak Entry invalidated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_entry_invalidated);
+
+	mono_counters_register ("GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gc_handles_allocated);
+	mono_counters_register ("max GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gc_handles_max_allocated);
 #endif
 }
 
