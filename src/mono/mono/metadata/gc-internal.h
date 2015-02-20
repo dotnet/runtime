@@ -231,6 +231,7 @@ guint32 mono_gc_get_managed_allocator_types (void);
 const char *mono_gc_get_gc_name (void);
 
 /* Fast write barriers */
+MonoMethod* mono_gc_get_specific_write_barrier (gboolean is_concurrent);
 MonoMethod* mono_gc_get_write_barrier (void);
 
 /* Fast valuetype copy */

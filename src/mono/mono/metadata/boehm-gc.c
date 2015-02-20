@@ -1100,6 +1100,13 @@ mono_gc_get_write_barrier (void)
 
 #endif
 
+MonoMethod*
+mono_gc_get_specific_write_barrier (gboolean is_concurrent)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 int
 mono_gc_get_aligned_size_for_allocator (int size)
 {
