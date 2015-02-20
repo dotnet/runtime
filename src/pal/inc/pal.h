@@ -5894,53 +5894,7 @@ typedef EXCEPTION_DISPOSITION (*PFN_PAL_EXCEPTION_FILTER)(
     PAL_DISPATCHER_CONTEXT *DispatcherContext,
     void *pvParam);
 
-#define DEBUG_OK_TO_RETURN_BEGIN(arg)
-#define DEBUG_OK_TO_RETURN_END(arg)
-
 #ifdef __cplusplus
-class PAL_CatchHolder
-{
-public:
-    PAL_CatchHolder(_Unwind_Exception *exceptionObject)
-    {
-        __cxa_begin_catch(exceptionObject);
-    }
-
-    ~PAL_CatchHolder()
-    {
-        __cxa_end_catch();
-    }
-};
-
-class PAL_ExceptionHolder
-{
-private:
-    _Unwind_Exception *m_exceptionObject;
-public:
-    PAL_ExceptionHolder(_Unwind_Exception *exceptionObject)
-    {
-        m_exceptionObject = exceptionObject;
-    }
-
-    ~PAL_ExceptionHolder()
-    {
-        if (m_exceptionObject)
-        {
-            _Unwind_DeleteException(m_exceptionObject);
-        }
-    }
-
-    void SuppressRelease()
-    {
-        m_exceptionObject = NULL;
-    }
-};
-
-class PAL_NoHolder
-{
-public:
-    void SuppressRelease() {}
-};
 
 struct PAL_SEHException
 {
@@ -5972,7 +5926,7 @@ public:
 
 #define PAL_EXCEPT(dispositionExpression)                                       \
     };                                                                          \
-    const bool isFinally = false;                                                     \
+    const bool isFinally = false;                                               \
     auto finallyBlock = []() {};                                                \
     try                                                                         \
     {                                                                           \
@@ -5990,27 +5944,27 @@ public:
 
 #define PAL_EXCEPT_FILTER(filter) PAL_EXCEPT(filter(&ex.ExceptionPointers, __param))
 
-#define PAL_FINALLY \
-    }; \
-    const bool isFinally = true; \
-    auto finallyBlock = [&]() \
+#define PAL_FINALLY                     \
+    };                                  \
+    const bool isFinally = true;        \
+    auto finallyBlock = [&]()           \
     {                       
 
-#define PAL_ENDTRY \
-    }; \
-    if (isFinally) \
-    { \
-        try \
-        { \
-            tryBlock(__param);        \
-        } \
-        catch (...) \
-        { \
-            finallyBlock(); \
-            throw; \
-        } \
-        finallyBlock(); \
-    } \
+#define PAL_ENDTRY                      \
+    };                                  \
+    if (isFinally)                      \
+    {                                   \
+        try                             \
+        {                               \
+            tryBlock(__param);          \
+        }                               \
+        catch (...)                     \
+        {                               \
+            finallyBlock();             \
+            throw;                      \
+        }                               \
+        finallyBlock();                 \
+    }                                   \
 }
 
 #endif // FEATURE_PAL_SXS
