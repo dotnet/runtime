@@ -18,6 +18,7 @@
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
     <Compile Include="System\IO\Path.cs" />
     <Compile Include="System\IO\Path.Combine.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
@@ -62,4 +63,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
-
