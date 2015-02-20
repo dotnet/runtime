@@ -62,7 +62,7 @@
   <PropertyGroup>
     <PackagesConfig Condition="Exists('$(MSBuildProjectDirectory)\packages.config')">$(MSBuildProjectDirectory)\packages.config</PackagesConfig>
     <RestorePackages Condition="'$(RestorePackages)' == '' and Exists('$(PackagesConfig)')">true</RestorePackages>
-    <RestorePackagesSemaphore>$(PackagesDir)$(MSBuildProjectFile).package.restored</RestorePackagesSemaphore>
+    <RestorePackagesSemaphore>$(PackagesDir)$(MSBuildProjectFile)-packages.config</RestorePackagesSemaphore>
   </PropertyGroup>
 
   <Target Name="RestorePackages" 
@@ -71,7 +71,7 @@
           Outputs="$(RestorePackagesSemaphore)"
           Condition="'$(RestorePackages)' == 'true'">
     <Exec Command="$(NugetRestoreCommand) &quot;$(PackagesConfig)&quot;" StandardOutputImportance="Low" />
-    <Touch Files="$(RestorePackagesSemaphore)" AlwaysCreate="true" />
+    <Copy SourceFiles="$(PackagesConfig)" DestinationFiles="$(RestorePackagesSemaphore)" ContinueOnError="True" />
   </Target>
 
   <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
@@ -103,7 +103,7 @@
 
   <PropertyGroup>
     <TestRuntimePackageConfig>$(ToolsDir)test-runtime\packages.config</TestRuntimePackageConfig>
-    <TestRuntimePackageSemaphore>$(PackagesDir)Test-Runtime.package.restored</TestRuntimePackageSemaphore>
+    <TestRuntimePackageSemaphore>$(PackagesDir)Test-Runtime-packages.config</TestRuntimePackageSemaphore>
   </PropertyGroup>
 
   <Target Name="RestoreTestRuntimePackage" 
@@ -112,7 +112,7 @@
           Outputs="$(TestRuntimePackageSemaphore)"
           Condition="'$(IsTestProject)' == 'true'">
     <Exec Command="$(NugetRestoreCommand) &quot;$(TestRuntimePackageConfig)&quot;" StandardOutputImportance="Low" />
-    <Touch Files="$(TestRuntimePackageSemaphore)" AlwaysCreate="true" />
+    <Copy SourceFiles="$(TestRuntimePackageConfig)" DestinationFiles="$(TestRuntimePackageSemaphore)" ContinueOnError="true" />
   </Target>
 
   <!-- General xunit options -->
