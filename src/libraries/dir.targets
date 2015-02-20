@@ -47,7 +47,7 @@
 
     <!-- Download latest nuget.exe -->
     <DownloadFile FileName="$(NuGetToolPath)"
-                  Address="http://nuget.org/nuget.exe" 
+                  Address="http://www.nuget.org/nuget.exe" 
                   Condition="!Exists('$(NuGetToolPath)')" />
 
     <!-- Restore build tools -->
