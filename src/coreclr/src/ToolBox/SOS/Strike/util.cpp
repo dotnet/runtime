@@ -64,7 +64,9 @@ const char * const CorElementTypeNamespace[ELEMENT_TYPE_MAX]=
 IXCLRDataProcess *g_clrData = NULL;
 ISOSDacInterface *g_sos = NULL;
 
-#ifndef FEATURE_PAL
+#ifdef FEATURE_PAL
+BOOL g_palInitialized = FALSE;
+#else
 ICorDebugProcess * g_pCorDebugProcess = NULL;
 #endif // FEATURE_PAL
 
@@ -4154,7 +4156,6 @@ void ResetGlobals(void)
 HRESULT LoadClrDebugDll(void)
 {
 #ifdef FEATURE_PAL
-    static BOOL g_palInitialized = FALSE;
     if (!g_palInitialized)
     {
         int err = PAL_Initialize(0, NULL);
@@ -4174,20 +4175,19 @@ HRESULT LoadClrDebugDll(void)
         PFN_CLRDataCreateInstance pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
         if (pCLRDataCreateInstance == NULL)
         {
+            FreeLibrary(hdac);
             return E_FAIL;
         }
         ICLRDataTarget *target = new DataTarget();
         HRESULT hr = pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
         if (FAILED(hr))
         {
+            FreeLibrary(hdac);
             g_clrData = NULL;
             return hr;
         }
     }
-    else
-    {
-        g_clrData->AddRef();
-    }
+    g_clrData->AddRef();
 #else
     WDBGEXTS_CLR_DATA_INTERFACE Query;
 
@@ -4202,7 +4202,6 @@ HRESULT LoadClrDebugDll(void)
 
     if (FAILED(g_clrData->QueryInterface(__uuidof(ISOSDacInterface), (void**)&g_sos)))
     {
-        g_clrData = NULL;
         g_sos = NULL;
         return E_FAIL;
     }
