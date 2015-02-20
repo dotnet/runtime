@@ -7,6 +7,9 @@
 
 #include <clrdata.h>
 
+//
+// This dummy reference to CLRDataCreateInstance prevents the LLVM toolchain from optimizing this important export out.
+//
 void
 DummyReferenceToExportedAPI()
 #ifdef __llvm__
