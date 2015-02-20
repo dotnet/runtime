@@ -33,7 +33,6 @@ typedef int HRESULT;
 
 // Platform-specific library naming
 // 
-#ifdef PLATFORM_UNIX
 #ifdef __APPLE__
 #define MAKEDLLNAME_W(name) u"lib" name u".dylib"
 #define MAKEDLLNAME_A(name)  "lib" name  ".dylib"
@@ -46,8 +45,4 @@ typedef int HRESULT;
 #else
 #define MAKEDLLNAME_W(name) u"lib" name u".so"
 #define MAKEDLLNAME_A(name)  "lib" name  ".so"
-#endif
-#else
-#define MAKEDLLNAME_W(name) name L".dll"
-#define MAKEDLLNAME_A(name) name  ".dll"
 #endif

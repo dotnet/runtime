@@ -5,9 +5,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(LLDB_SRC_DIR $ENV{LLDB_SRC_DIR})
 set(LLVM_BUILD_DIR $ENV{LLVM_BUILD_DIR})
 
-message(LLDB_SRC_DIR='$ENV{LLDB_SRC_DIR}')
-message(LLVM_BUILD_DIR='$ENV{LLVM_BUILD_DIR}')
-
 if((NOT ${LLDB_SRC_DIR} STREQUAL "") AND (NOT ${LLVM_BUILD_DIR} STREQUAL ""))
     add_compile_options(-Wno-delete-non-virtual-dtor)
 
