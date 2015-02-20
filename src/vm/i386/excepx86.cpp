@@ -3619,15 +3619,6 @@ EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
     return retval;
 }
 
-
-bool IsInstrModifyFault(PEXCEPTION_POINTERS pExceptionInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // No longer implemented on x86.
-    return false;
-}
-
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
     WRAPPER_NO_CONTRACT;
