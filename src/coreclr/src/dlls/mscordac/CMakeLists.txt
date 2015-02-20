@@ -47,17 +47,17 @@ add_library(mscordaccore SHARED ${CLR_DAC_SOURCES})
 # library.
 set(COREDAC_LIBRARIES
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-    utilcode_dac
-    cordbee_dac
     cee_dac
-    mdcompiler_dac
-    mdruntime_dac
-    mdruntimerw_dac
-    mdhotdata_dac
+    cordbee_dac
     corguids
     daccess
     dbgutil
+    mdcompiler_dac
+    mdhotdata_dac
+    mdruntime_dac
+    mdruntimerw_dac
     strongname_dac
+    utilcode_dac
     unwinder_dac
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )

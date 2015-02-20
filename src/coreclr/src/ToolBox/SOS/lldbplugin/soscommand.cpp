@@ -9,7 +9,14 @@
 
 class sosCommand : public lldb::SBCommandPluginInterface
 {
+    void *m_sosHandle;
+
 public:
+    sosCommand()
+    {
+        m_sosHandle = NULL;
+    }
+
     virtual bool
     DoExecute (lldb::SBDebugger debugger,
                char** arguments,
@@ -19,18 +26,26 @@ public:
         {
             DebugClient* client = new DebugClient(debugger, result);
             const char* sosCommand = *arguments++;
-            const char* sosLibrary = "/ssd/coreclr/binaries/Product/amd64/debug/" MAKEDLLNAME_A("sos");
             HRESULT hr = E_FAIL;
 
-            void *dl_handle = dlopen(sosLibrary, RTLD_LAZY);
-            if (dl_handle)
+            if (m_sosHandle == NULL)
             {
-                CommandFunc commandFunc = (CommandFunc)dlsym(dl_handle, sosCommand);
+                const char* sosLibrary = "/ssd/coreclr/binaries/Product/amd64/debug/" MAKEDLLNAME_A("sos");
+                m_sosHandle = dlopen(sosLibrary, RTLD_LAZY);
+                if (m_sosHandle == NULL)
+                {
+                    client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s\n", sosLibrary, dlerror());
+                }
+            }
+
+            if (m_sosHandle)
+            {
+                CommandFunc commandFunc = (CommandFunc)dlsym(m_sosHandle, sosCommand);
                 if (commandFunc)
                 {
                     std::string str;
                     for (const char* arg = *arguments; arg; arg = *(++arguments))
-                    { 
+                    {
                         str.append(arg);
                         str.append(" ");
                     }
@@ -46,18 +61,12 @@ public:
                 {
                     client->Output(DEBUG_OUTPUT_ERROR, "SOS command '%s' not found %s\n", sosCommand, dlerror());
                 }
-
-                dlclose(dl_handle);
-            }
-            else
-            {
-                client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s\n", sosLibrary, dlerror());
             }
 
             delete client;
-            return result.Succeeded();
         }
-        return false;
+
+        return result.Succeeded();
     }
 };
 
