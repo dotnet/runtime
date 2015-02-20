@@ -449,7 +449,7 @@ int
 PALAPI
 PAL_Initialize(
             int argc,
-            const char *argv[]);
+            const char * const argv[]);
 
 PALIMPORT
 DWORD
@@ -4736,18 +4736,6 @@ SetUnhandledExceptionFilter(
 
 typedef EXCEPTION_DISPOSITION (PALAPI *PVECTORED_EXCEPTION_HANDLER)(
                            struct _EXCEPTION_POINTERS *ExceptionPointers);
-
-PALIMPORT
-void
-PALAPI
-SetVectoredExceptionHandler(
-    IN PVECTORED_EXCEPTION_HANDLER lpHandler);
-
-PALIMPORT
-void
-PALAPI
-SetVectoredContinueHandler(
-    IN PVECTORED_EXCEPTION_HANDLER lpHandler);
 
 #endif // FEATURE_PAL_SXS
 
