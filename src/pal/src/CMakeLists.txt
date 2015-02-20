@@ -39,6 +39,7 @@ add_compile_options(-fPIC)
 
 set(SOURCES
   arch/i386/context.cpp
+  arch/i386/context2.S
   arch/i386/processor.cpp
   cruntime/file.cpp
   cruntime/filecrt.cpp
