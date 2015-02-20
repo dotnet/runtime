@@ -5894,38 +5894,8 @@ typedef EXCEPTION_DISPOSITION (*PFN_PAL_EXCEPTION_FILTER)(
     PAL_DISPATCHER_CONTEXT *DispatcherContext,
     void *pvParam);
 
-struct _Unwind_Exception *PAL_TryExcept(
-    PFN_PAL_BODY pfnBody,
-    PFN_PAL_EXCEPTION_FILTER pfnFilter,
-    void *pvParam,
-    BOOL *pfExecuteHandler);
-
-//
-// Possible results from PAL_TryExcept:
-//
-//   returned exception  pfExecuteHandler  means
-//   ------------------  ----------------  ----------------------------------------
-//   NULL                any               No exception escaped from the try block.
-//   non-NULL            FALSE             An exception escaped from the try block,
-//                                           but the filter did not want to handle it.
-//   non-NULL            TRUE              An exception escaped from the try block,
-//                                           and the filter wanted to handle it.
-//
-
 #define DEBUG_OK_TO_RETURN_BEGIN(arg)
 #define DEBUG_OK_TO_RETURN_END(arg)
-
-#ifdef _PPC_
-// This function does not do anything.  It is just here to be called by
-// PAL_TRY, so we can avoid the body of PAL_TRY being translated by the
-// compiler into a leaf function (i.e., one that does not set up its
-// own frame), because on a hardware fault in a leaf function, we would
-// get a stack that would not be unwindable.
-PALIMPORT VOID PALAPI PAL_DummyCall();
-#define PAL_DUMMY_CALL PAL_DummyCall();
-#else
-#define PAL_DUMMY_CALL
-#endif
 
 #ifdef __cplusplus
 class PAL_CatchHolder
@@ -5971,129 +5941,82 @@ class PAL_NoHolder
 public:
     void SuppressRelease() {}
 };
+
+struct PAL_SEHException
+{
+public:
+    // Note that the following two are actually embedded in this heap-allocated
+    // instance - in contrast to Win32, where the exception record would usually
+    // be allocated on the stack.  This is needed because foreign cleanup handlers
+    // partially unwind the stack on the second pass.
+    EXCEPTION_POINTERS ExceptionPointers;
+    EXCEPTION_RECORD ExceptionRecord;
+    CONTEXT ContextRecord;
+
+    PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord)
+    {
+        ExceptionPointers.ExceptionRecord = &ExceptionRecord;
+        ExceptionPointers.ContextRecord = &ContextRecord;
+        ExceptionRecord = *pExceptionRecord;
+        ContextRecord = *pContextRecord;
+    }
+};
+
 #endif // __cplusplus
 
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
-    struct __HandlerData                                                        \
-    {                                                                           \
-        __ParamType __param;                                                    \
-        EXCEPTION_DISPOSITION __handlerDisposition;                             \
-        __HandlerData(__ParamType param) : __param(param) {}                    \
-    };                                                                          \
-    __HandlerData __handlerData(__paramRef);                                    \
-    class __Body                                                                \
-    {                                                                           \
-    public:                                                                     \
-        static void Run(void *__pvHandlerData)					                \
-        {                                                                       \
-            __ParamType __paramDef = ((__HandlerData *)__pvHandlerData)->__param;	\
-            PAL_DUMMY_CALL;
-
-// On Windows 32bit, we dont invoke filters on the second pass.
-// To ensure the same happens on the Mac, we check if we are 
-// in the first phase or not. If we are, we invoke the
-// filter and save the disposition in a local static. 
-//
-// However, if we are not in the first phase but in the second,
-// and thus unwinding, then we return the disposition saved 
-// from the first pass back (similar to how CRT
-// does it on x86).
-#define PAL_EXCEPT(dispositionExpression)				\
-        }                                                               \
-        static EXCEPTION_DISPOSITION Handler(							\
-            EXCEPTION_POINTERS *ExceptionPointers,                      \
-            PAL_DISPATCHER_CONTEXT *DispatcherContext,                  \
-            void *pvHandlerData)								\
-        {                                                               \
-            DEBUG_OK_TO_RETURN_BEGIN(PAL_EXCEPT)                        \
-            __HandlerData *pHandlerData = (__HandlerData *)pvHandlerData;                       \
-            void *pvParam = NULL;                                                               \
-            pvParam = pHandlerData->__param;                                                    \
-            if (!(ExceptionPointers->ExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))	\
-                pHandlerData->__handlerDisposition = (EXCEPTION_DISPOSITION) (dispositionExpression);			\
-            return pHandlerData->__handlerDisposition;						\
-            DEBUG_OK_TO_RETURN_END(PAL_EXCEPT)                          \
-        }                                                               \
-    };                                                                  \
-    BOOL __fExecuteHandler;                                             \
-    _Unwind_Exception *__exception =                                    \
-        PAL_TryExcept(__Body::Run, __Body::Handler, &__handlerData, &__fExecuteHandler);	\
-    PAL_NoHolder __exceptionHolder;                                     \
-    if (__exception && __fExecuteHandler)                               \
-    {                                                                   \
-        PAL_CatchHolder __catchHolder(__exception);                     \
-        __exception = NULL;
-
-#define PAL_EXCEPT_FILTER(filter) PAL_EXCEPT(filter(ExceptionPointers, pvParam))
-
-// Executes the handler if the specified exception code matches
-// the one in the exception. Otherwise, returns EXCEPTION_CONTINUE_SEARCH.
-#define PAL_EXCEPT_IF_EXCEPTION_CODE(dwExceptionCode) \
-        PAL_EXCEPT(((ExceptionPointers->ExceptionRecord->ExceptionCode == dwExceptionCode)?EXCEPTION_EXECUTE_HANDLER:EXCEPTION_CONTINUE_SEARCH))
-
-#define PAL_FINALLY                                                     \
-        }                                                               \
-        static EXCEPTION_DISPOSITION Filter(                            \
-            EXCEPTION_POINTERS *ExceptionPointers,                      \
-            PAL_DISPATCHER_CONTEXT *DispatcherContext,                  \
-            void *pvHandlerData)                                        \
-        {                                                               \
-            DEBUG_OK_TO_RETURN_BEGIN(PAL_FINALLY)                       \
-            return EXCEPTION_CONTINUE_SEARCH;                           \
-            DEBUG_OK_TO_RETURN_END(PAL_FINALLY)                         \
-        }                                                               \
-    };                                                                  \
-    BOOL __fExecuteHandler;                                             \
-    _Unwind_Exception *__exception =                                    \
-        PAL_TryExcept(__Body::Run, __Body::Filter, &__handlerData, &__fExecuteHandler); \
-    PAL_ExceptionHolder __exceptionHolder(__exception);                 \
+    __ParamType __param = __paramRef;                                           \
+    auto tryBlock = [](__ParamType __paramDef)                                  \
     {
 
-#define PAL_ENDTRY                              \
-    }                                           \
-    if (__exception)                            \
-    {                                           \
-        __exceptionHolder.SuppressRelease();    \
-        PAL_Leave(PAL_BoundaryBottom);          \
-        _Unwind_Resume(__exception);            \
-    }                                           \
+#define PAL_EXCEPT(dispositionExpression)                                       \
+    };                                                                          \
+    const bool isFinally = false;                                                     \
+    auto finallyBlock = []() {};                                                \
+    try                                                                         \
+    {                                                                           \
+        tryBlock(__param);                                                      \
+    }                                                                           \
+    catch (PAL_SEHException& ex)                                                \
+    {                                                                           \
+        EXCEPTION_DISPOSITION disposition = dispositionExpression;              \
+        _ASSERTE(disposition != EXCEPTION_CONTINUE_EXECUTION);                  \
+        if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
+        {                                                                       \
+            throw;                                                              \
+        }
+
+
+#define PAL_EXCEPT_FILTER(filter) PAL_EXCEPT(filter(&ex.ExceptionPointers, __param))
+
+#define PAL_FINALLY \
+    }; \
+    const bool isFinally = true; \
+    auto finallyBlock = [&]() \
+    {                       
+
+#define PAL_ENDTRY \
+    }; \
+    if (isFinally) \
+    { \
+        try \
+        { \
+            tryBlock(__param);        \
+        } \
+        catch (...) \
+        { \
+            finallyBlock(); \
+            throw; \
+        } \
+        finallyBlock(); \
+    } \
 }
-
-#if _DEBUG
-void PAL_CheckVirtualUnwind();
-#else // _DEBUG
-#define PAL_CheckVirtualUnwind()
-#endif // _DEBUG
-
 
 #endif // FEATURE_PAL_SXS
 
-PALIMPORT
-PAL_NORETURN
-VOID
-PALAPI
-PAL_CppRethrow();
-
-// Define PAL_CPP_THROW in terms of PAL_CPP_RETHROW, which does not throw
-// using the C++ runtime, but our own implementation that will also call
-// vectored handlers.
-#define PAL_CPP_THROW(type,expr)                \
-    {                                           \
-        type __exn = expr;                      \
-        PAL_Leave(PAL_BoundaryBottom);          \
-        PAL_CPP_TRY                             \
-        {                                       \
-            throw __exn;              \
-        }                                       \
-        PAL_CPP_CATCH_ALL                       \
-        {                                       \
-            PAL_CPP_RETHROW;                    \
-        }                                       \
-        PAL_CPP_ENDTRY                          \
-    }
-#define PAL_CPP_RETHROW                 PAL_CppRethrow();
-
+#define PAL_CPP_THROW(type, obj) { throw obj; }
+#define PAL_CPP_RETHROW { throw; }
 #define PAL_CPP_TRY                     try {
 #define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) { PAL_Reenter(PAL_BoundaryBottom);
 #define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) { PAL_Reenter(PAL_BoundaryBottom);
