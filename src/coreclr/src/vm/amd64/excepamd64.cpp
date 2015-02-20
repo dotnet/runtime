@@ -37,11 +37,6 @@ VOID ResetCurrentContext()
     LIMITED_METHOD_CONTRACT;
 }
 
-bool IsInstrModifyFault(PEXCEPTION_POINTERS pExceptionInfo)
-{
-    return false;
-}
-
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
     return EXCEPTION_CONTINUE_SEARCH;
