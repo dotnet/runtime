@@ -640,7 +640,7 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 
 /* ARCHITECTURE SPECIFIC CODE */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_POWERPC)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_POWERPC) || defined(TARGET_ARM64)
 #define EMIT_DWARF_INFO 1
 #endif
 
