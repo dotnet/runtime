@@ -302,6 +302,10 @@ extern "C" void PAL_CheckVirtualUnwind()
         }
     }
 }
+#else // _DEBUG
+
+#define PAL_CheckVirtualUnwind()
+
 #endif // _DEBUG
 
 //----------------------------------------------------------------------
