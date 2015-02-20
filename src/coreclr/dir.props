@@ -16,7 +16,7 @@
     <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)\src\</SourceDir>
 
     <PackagesDir>$(__PackagesDir)\</PackagesDir>
-    <PackagesDir Condition="'$(__PackagesDir)'==''">$(SourceDir)\.nuget\</PackagesDir>
+    <PackagesDir Condition="'$(__PackagesDir)'==''">$(ProjectDir)\packages\</PackagesDir>
 
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)\binaries\</RootBinDir>
@@ -37,6 +37,20 @@
     <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)\tests\$(BuildArch)\$(BuildType)\</TestWorkingDir>
   </PropertyGroup>
 
+  <!-- Setup Nuget properties -->
+  <ItemGroup>
+    <NuSpecSrcs Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.nuspec" />
+    <NuSpecSrcs Condition="'$(Configuration)'=='Release'" Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.Development.nuspec" />
+    <NuSpecSrcs Condition="'$(Configuration)'=='Debug'" Include="$(SourceDir)\.nuget\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Backslash appended, see note in dir.props about the PackagesBinDir property -->
+    <NuSpecs Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.nuspec" />
+    <NuSpecs Condition="'$(Configuration)'=='Release'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Development.nuspec" />
+    <NuSpecs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
+  </ItemGroup>
+
+
   <!-- Common NuGet properties -->
   <PropertyGroup>
     <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>
@@ -47,10 +61,18 @@
 
   <!-- Common build tool properties -->
   <PropertyGroup>
-    <BuildToolsPackageName>Microsoft.DotNet.BuildTools.CoreCLR</BuildToolsPackageName>
-    <BuildToolsVersion>1.0.1-prerelease</BuildToolsVersion>
-    <BuildToolsInstallSempahore>$(ToolsDir)BuildTools.$(BuildToolsVersion).installed.semaphore</BuildToolsInstallSempahore>
-    <BuildToolsTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsTargetInputs>
-    <BuildToolsTargetOutputs>$(BuildToolsInstallSempahore)</BuildToolsTargetOutputs>
+
+    <BuildToolsCoreCLRPackageName>Microsoft.DotNet.BuildTools.CoreCLR</BuildToolsCoreCLRPackageName>
+    <BuildToolsCoreCLRVersion>1.0.1-prerelease</BuildToolsCoreCLRVersion>
+    <BuildToolsCoreCLRInstallSempahore>$(ToolsDir)BuildTools.$(BuildToolsCoreCLRVersion).installed.semaphore</BuildToolsCoreCLRInstallSempahore>
+
+    <BuildToolsPackageName>Microsoft.DotNet.BuildTools</BuildToolsPackageName>
+    <BuildToolsVersion>1.0.25-prerelease-00009</BuildToolsVersion>
+
+    <BuildToolsCoreCLRTargetInputs>$(MSBuildThisFileFullPath);$(MSBuildThisFileDirectory)build.proj</BuildToolsCoreCLRTargetInputs>
+    <BuildToolsCoreCLRTargetOutputs>$(BuildToolsCoreCLRInstallSempahore)</BuildToolsCoreCLRTargetOutputs>
+
+    <BuildToolsCoreCLRLocation>$(ToolsDir)\$(BuildToolsCoreCLRPackageName).$(BuildToolsCoreCLRVersion)</BuildToolsCoreCLRLocation>
+    <BuildToolsLocation>$(ToolsDir)\$(BuildToolsPackageName).$(BuildToolsVersion)</BuildToolsLocation>
   </PropertyGroup>
 </Project>
