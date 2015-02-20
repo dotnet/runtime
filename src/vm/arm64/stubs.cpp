@@ -1000,11 +1000,6 @@ AdjustContextForVirtualStub(
 }
 #endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
 
-bool IsInstrModifyFault(PEXCEPTION_POINTERS pExceptionInfo)
-{
-    return false;
-}
-
 extern "C" {
 
 void FuncEvalHijack(void)
