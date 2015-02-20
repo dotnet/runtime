@@ -114,7 +114,7 @@ __CMakeArgs=DEBUG
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
 __SourceDir="$__ProjectDir/src"
-__PackagesDir="$__SourceDir/.nuget"
+__PackagesDir="$__ProjectDir/packages"
 __RootBinDir="$__ProjectDir/binaries"
 __LogsDir="$__RootBinDir/Logs"
 __CMakeSlnDir="$__RootBinDir/CMake"

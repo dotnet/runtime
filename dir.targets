@@ -1,0 +1,43 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
+  <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <Address ParameterType="System.String" Required="true"/>
+      <FileName ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+           var directory = System.IO.Path.GetDirectoryName(FileName);
+           System.IO.Directory.CreateDirectory(directory);
+           var client = new System.Net.WebClient();
+           client.Proxy = System.Net.WebRequest.DefaultWebProxy;
+           client.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+           client.DownloadFile(Address, FileName);
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="_RestoreBuildTools"
+    BeforeTargets="Build"
+    Inputs="$(BuildToolsCoreCLRTargetInputs)"
+    Outputs="$(BuildToolsCoreCLRTargetOutputs)"
+    >
+
+    <!-- Download latest nuget.exe -->
+    <DownloadFile
+      Condition="!Exists($(NuGetToolPath))"
+      Address="http://nuget.org/nuget.exe"
+      FileName="$(NuGetToolPath)" />
+
+    <!-- Restore build tools -->
+    <Exec
+      StandardOutputImportance="Low"
+      Command="&quot;$(NuGetToolPath)&quot; install &quot; $(SourceDir).nuget\packages.config &quot;  -o &quot; $(ToolsDir) &quot; $(NuGetConfigCommandLine)" />
+
+    <Touch Files="$(BuildToolsInstallSemaphore)" AlwaysCreate="true" />
+  </Target>
+</Project>
