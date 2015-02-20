@@ -223,8 +223,11 @@ RaiseException(IN DWORD dwExceptionCode,
         dwExceptionCode ^= RESERVED_SEH_BIT;
     }
 
-    if (nNumberOfArguments > EXCEPTION_MAXIMUM_PARAMETERS) 
+    if (nNumberOfArguments > EXCEPTION_MAXIMUM_PARAMETERS)
     {
+        WARN("Number of arguments (%d) exceeds the limit "
+            "EXCEPTION_MAXIMUM_PARAMETERS (%d); ignoring extra parameters.\n",
+            nNumberOfArguments, EXCEPTION_MAXIMUM_PARAMETERS);
         nNumberOfArguments = EXCEPTION_MAXIMUM_PARAMETERS;
     }
 
@@ -238,13 +241,6 @@ RaiseException(IN DWORD dwExceptionCode,
     exceptionRecord.NumberParameters = nNumberOfArguments;
     if (nNumberOfArguments)
     {
-        if (nNumberOfArguments > EXCEPTION_MAXIMUM_PARAMETERS)
-        {
-            WARN("Number of arguments (%d) exceeds the limit "
-                 "EXCEPTION_MAXIMUM_PARAMETERS (%d); ignoring extra parameters.\n",
-                  nNumberOfArguments, EXCEPTION_MAXIMUM_PARAMETERS);
-            nNumberOfArguments = EXCEPTION_MAXIMUM_PARAMETERS;
-        }
         CopyMemory(exceptionRecord.ExceptionInformation, lpArguments,
                    nNumberOfArguments * sizeof(ULONG_PTR));
     }
