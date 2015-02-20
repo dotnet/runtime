@@ -437,6 +437,7 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGen(false),
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
+  m_legacyMode(false),
 #ifdef FEATURE_CORECLR
   m_fNoMetaData(s_fNGenNoMetaData),
 #endif
