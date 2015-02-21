@@ -173,9 +173,13 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro push_argument_register Reg
+.macro push_register Reg
         push            \Reg
         .cfi_adjust_cfa_offset 8
+.endm
+
+.macro push_argument_register Reg
+        push_register \Reg
 .endm
 
 .macro PUSH_ARGUMENT_REGISTERS
@@ -189,9 +193,13 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro pop_argument_register Reg
+.macro pop_register Reg
         pop            \Reg
         .cfi_adjust_cfa_offset -8
+.endm
+
+.macro pop_argument_register Reg
+        pop_register \Reg
 .endm
 
 .macro POP_ARGUMENT_REGISTERS
