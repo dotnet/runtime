@@ -526,6 +526,10 @@ AC_CACHE_CHECK([for clang],
 	[])
 ])
 
+AC_ARG_ENABLE(visiblity-hidden,
+[  --disable-visibility-hidden    disable usage of -fvisiblity=hidden]
+   disable_visibility_hidden=no, disable_visibility_hidden=yes)
+
 WARN=''
 if test x"$GCC" = xyes; then
         WARN='-Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value'
@@ -540,10 +544,12 @@ if test x"$GCC" = xyes; then
 		CFLAGS="$CFLAGS -fwrapv"
 
 		CFLAGS="$CFLAGS -DMONO_DLL_EXPORT"
-		# Don't export any symbols by default
-		SHARED_CFLAGS="-fvisibility=hidden"
-		CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -fvisibility=hidden"
-		CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+		if test x"$disable_visibility_hidden" = xno; then
+		   # Don't export any symbols by default
+		   SHARED_CFLAGS="-fvisibility=hidden"
+		   CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -fvisibility=hidden"
+		   CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
+		fi
 
 		ORIG_CFLAGS=$CFLAGS
 		# Check for the normal version, since gcc ignores unknown -Wno options
