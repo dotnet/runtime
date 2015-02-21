@@ -493,7 +493,7 @@ extern gboolean mono_do_x86_stack_align;
 extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
-extern gboolean mono_use_llvm;
+extern MONO_API gboolean mono_use_llvm;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;
 extern MonoMethod *mono_current_single_method;
@@ -2047,7 +2047,7 @@ MONO_API int         mono_main                      (int argc, char* argv[]);
 MONO_API void        mono_set_defaults              (int verbose_level, guint32 opts);
 MonoDomain* mini_init                      (const char *filename, const char *runtime_version) MONO_INTERNAL;
 void        mini_cleanup                   (MonoDomain *domain) MONO_INTERNAL;
-MonoDebugOptions *mini_get_debug_options   (void) MONO_INTERNAL;
+MONO_API MonoDebugOptions *mini_get_debug_options   (void);
 
 /* helper methods */
 void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;

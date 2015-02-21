@@ -3,8 +3,8 @@
 
 #include "mini.h"
 
-void
-mono_debugger_agent_parse_options (char *options) MONO_INTERNAL;
+MONO_API void
+mono_debugger_agent_parse_options (char *options);
 
 void
 mono_debugger_agent_init (void) MONO_INTERNAL;
@@ -49,7 +49,7 @@ mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *mess
 gboolean
 mono_debugger_agent_debug_log_is_enabled (void) MONO_INTERNAL;
 
-gboolean
-mono_debugger_agent_transport_handshake (void) MONO_INTERNAL;
+MONO_API gboolean
+mono_debugger_agent_transport_handshake (void);
 
 #endif

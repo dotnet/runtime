@@ -1455,7 +1455,7 @@ static DebuggerTransport *transport;
 static DebuggerTransport transports [MAX_TRANSPORTS];
 static int ntransports;
 
-void
+MONO_API void
 mono_debugger_agent_register_transport (DebuggerTransport *trans);
 
 void

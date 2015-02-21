@@ -184,7 +184,7 @@ void* mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits,
 
 void  mono_gc_register_for_finalization (MonoObject *obj, void *user_data) MONO_INTERNAL;
 void  mono_gc_add_memory_pressure (gint64 value) MONO_INTERNAL;
-int   mono_gc_register_root (char *start, size_t size, void *descr) MONO_INTERNAL;
+MONO_API int   mono_gc_register_root (char *start, size_t size, void *descr);
 void  mono_gc_deregister_root (char* addr) MONO_INTERNAL;
 int   mono_gc_finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size) MONO_INTERNAL;
 void  mono_gc_run_finalize (void *obj, void *data) MONO_INTERNAL;
