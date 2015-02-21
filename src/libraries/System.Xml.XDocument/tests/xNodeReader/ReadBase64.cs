@@ -367,7 +367,6 @@ namespace CoreXml.Test.XLinq
                 //[Variation("No op node types")]
                 public void TestReadBase64_18()
                 {
-                    TestOnInvalidNodeType(XmlNodeType.DocumentType);
                     TestOnInvalidNodeType(XmlNodeType.EndElement);
                 }
 
@@ -834,12 +833,6 @@ namespace CoreXml.Test.XLinq
 
                     TestLog.Compare(DataReader.NodeType, XmlNodeType.EndElement, "Nodetype not end element");
                     TestLog.Compare(DataReader.Name, "ElemNum", "Nodetype not end element");
-                }
-
-                //[Variation("No op node types")]
-                public void TestReadBase64_18()
-                {
-                    TestOnInvalidNodeType(XmlNodeType.DocumentType);
                 }
 
                 //[Variation("ReadBase64 with incomplete sequence")]

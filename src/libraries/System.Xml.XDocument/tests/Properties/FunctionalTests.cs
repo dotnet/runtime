@@ -55,7 +55,6 @@ namespace CoreXml.Test.XLinq
                 this.AddChild(new XElementName() { Attribute = new TestCaseAttribute() { Name = "XElement.Name with Events", Params = new object[] { true } } });
                 this.AddChild(new XElementName() { Attribute = new TestCaseAttribute() { Name = "XElement.Name", Params = new object[] { false } } });
                 this.AddChild(new XElementValue() { Attribute = new TestCaseAttribute() { Name = "XElement.Value", Params = new object[] { false } } });
-                this.AddChild(new XElementValue() { Attribute = new TestCaseAttribute() { Name = "XElement.Value with Events", Params = new object[] { true } } });
             }
             public partial class DeepEqualsTests : XLinqTestCase
             {

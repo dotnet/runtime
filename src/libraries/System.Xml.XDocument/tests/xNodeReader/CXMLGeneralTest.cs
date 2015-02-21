@@ -1226,9 +1226,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation("Call Skip in while read loop", Priority = 0)]
                 public void skip307543()
                 {
-                    TestLog.Skip("Utf16 encoding");
-                    string fileName = Path.Combine(XLinqTestCase.RootPath, @"TestData\XmlReader\Common\skip307543.xml");
-                    XmlReader DataReader = GetReader(fileName);
+                    XmlReader DataReader = GetReader(@"TestData\XmlReader\Common\skip307543.xml");
                     while (DataReader.Read())
                         DataReader.Skip();
                 }
@@ -1303,12 +1301,6 @@ namespace CoreXml.Test.XLinq
                 public void TestSkip10()
                 {
                     BoolToLTMResult(VerifySkipOnNodeType(XmlNodeType.Comment));
-                }
-
-                //[Variation("Call Skip on Document Type")]
-                public void TestSkip11()
-                {
-                    BoolToLTMResult(VerifySkipOnNodeType(XmlNodeType.DocumentType));
                 }
 
                 //[Variation("Call Skip on Whitespace", Priority = 0)]
@@ -1440,16 +1432,6 @@ namespace CoreXml.Test.XLinq
                     bool bPassed = false;
                     XmlReader DataReader = GetReader();
                     PositionOnNodeType(DataReader, XmlNodeType.Comment);
-                    bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
-                    BoolToLTMResult(bPassed);
-                }
-
-                //[Variation("BaseURI for DTD node")]
-                public void TestBaseURI8()
-                {
-                    bool bPassed = false;
-                    XmlReader DataReader = GetReader();
-                    PositionOnNodeType(DataReader, XmlNodeType.DocumentType);
                     bPassed = TestLog.Equals(DataReader.BaseURI, String.Empty, Variation.Desc);
                     BoolToLTMResult(bPassed);
                 }
