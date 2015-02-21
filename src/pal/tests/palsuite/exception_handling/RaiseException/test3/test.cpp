@@ -17,16 +17,15 @@
 #include <palsuite.h>
 
 BOOL bFilter = FALSE;
-BOOL bTry = FALSE;
-const int nValidator = 0;
-
+BOOL bTry    = FALSE;
+BOOL bExcept = FALSE;
 
 /**
 **
 **  Filter function that checks for the parameters
 **
 **/
-LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
+LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID* unused)
 {
     /* let the main know we've hit the filter function */
     bFilter = TRUE;
@@ -53,7 +52,7 @@ LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
 
 int __cdecl main(int argc, char *argv[])
 {
-    BOOL bExcept = FALSE;
+    bExcept = FALSE;
     
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -64,7 +63,7 @@ int __cdecl main(int argc, char *argv[])
      * Test that the correct arguments are passed 
      * to the filter by RaiseException 
      */
-    PAL_TRY 
+    PAL_TRY(VOID*, unused, NULL)
     {
         bTry = TRUE;    /* indicate we hit the PAL_TRY block */
 
@@ -75,7 +74,7 @@ int __cdecl main(int argc, char *argv[])
         Fail("RaiseException: ERROR -> code was executed after the "
              "exception was raised.\n");
     }
-    PAL_EXCEPT_FILTER(Filter_test1, (LPVOID)&nValidator)
+    PAL_EXCEPT_FILTER(Filter_test1)
     {
         if (!bTry)
         {
