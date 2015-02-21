@@ -22,6 +22,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 msbuild.log
+binaries
 
 # Roslyn stuff
 *.sln.ide
@@ -254,3 +255,7 @@ TestWrappers_x64_release
 Vagrantfile
 .vagrant
 
+# CMake files
+CMakeFiles/
+cmake_install.cmake
+CMakeCache.txt
