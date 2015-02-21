@@ -3577,7 +3577,7 @@ Thread::~Thread()
 #endif
 
 #ifdef _DEBUG
-    if (m_pFiberInfo) {
+    if (m_pFiberInfo != NULL) {
         delete [] (DWORD_PTR*)m_pFiberInfo[0];
     }
 #endif
