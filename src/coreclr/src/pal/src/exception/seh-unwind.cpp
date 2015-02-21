@@ -160,11 +160,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     return TRUE;
 }
 #else
-#if __LINUX__
-#error Cannot find libuwind.  Try installing libunwind8 and libunwind8-dev
-#else
 #error don't know how to unwind on this platform
-#endif
 #endif
 
 PAL_NORETURN
