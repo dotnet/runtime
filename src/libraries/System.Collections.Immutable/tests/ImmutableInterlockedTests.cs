@@ -10,12 +10,12 @@ namespace System.Collections.Immutable.Test
 {
     public class ImmutableInterlockedTests
     {
-        private delegate bool ApplyChangeDelegate<T>(ref T location, Func<T, T> transformer);
+        private delegate bool UpdateDelegate<T>(ref T location, Func<T, T> transformer);
 
         [Fact]
-        public void ApplyChange_StartWithNull()
+        public void Update_StartWithNull()
         {
-            ApplyChangeHelper<ImmutableList<int>>(func =>
+            UpdateHelper<ImmutableList<int>>(func =>
             {
                 ImmutableList<int> list = null;
                 Assert.True(func(ref list, l => { Assert.Null(l); return ImmutableList.Create(1); }));
@@ -25,9 +25,9 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ApplyChange_IncrementalUpdate()
+        public void Update_IncrementalUpdate()
         {
-            ApplyChangeHelper<ImmutableList<int>>(func =>
+            UpdateHelper<ImmutableList<int>>(func =>
             {
                 ImmutableList<int> list = ImmutableList.Create(1);
                 Assert.True(func(ref list, l => l.Add(2)));
@@ -38,9 +38,9 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ApplyChange_FuncThrowsThrough()
+        public void Update_FuncThrowsThrough()
         {
-            ApplyChangeHelper<ImmutableList<int>>(func =>
+            UpdateHelper<ImmutableList<int>>(func =>
             {
                 ImmutableList<int> list = ImmutableList.Create(1);
                 Assert.Throws<InvalidOperationException>(() => func(ref list, l => { throw new InvalidOperationException(); }));
@@ -48,9 +48,9 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ApplyChange_NoEffectualChange()
+        public void Update_NoEffectualChange()
         {
-            ApplyChangeHelper<ImmutableList<int>>(func =>
+            UpdateHelper<ImmutableList<int>>(func =>
             {
                 ImmutableList<int> list = ImmutableList.Create<int>(1);
                 Assert.False(func(ref list, l => l));
@@ -58,9 +58,9 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ApplyChange_HighConcurrency()
+        public void Update_HighConcurrency()
         {
-            ApplyChangeHelper<ImmutableList<int>>(func =>
+            UpdateHelper<ImmutableList<int>>(func =>
             {
                 ImmutableList<int> list = ImmutableList.Create<int>();
                 int concurrencyLevel = Environment.ProcessorCount;
@@ -91,9 +91,9 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ApplyChange_CarefullyScheduled()
+        public void Update_CarefullyScheduled()
         {
-            ApplyChangeHelper<ImmutableHashSet<int>>(func =>
+            UpdateHelper<ImmutableHashSet<int>>(func =>
             {
                 var set = ImmutableHashSet.Create<int>();
                 var task2TransformEntered = new AutoResetEvent(false);
@@ -394,8 +394,8 @@ namespace System.Collections.Immutable.Test
         }
 
         /// <summary>
-        /// Executes a test against both <see cref="ImmutableInterlocked.ApplyChange{T}(ref T, Func{T, T})"/>
-        /// and <see cref="ImmutableInterlocked.ApplyChange{T, TArg}(ref T, Func{T, TArg, T}, TArg)"/>.
+        /// Executes a test against both <see cref="ImmutableInterlocked.Update{T}(ref T, Func{T, T})"/>
+        /// and <see cref="ImmutableInterlocked.Update{T, TArg}(ref T, Func{T, TArg, T}, TArg)"/>.
         /// </summary>
         /// <typeparam name="T">The type of value under test.</typeparam>
         /// <param name="test">
@@ -403,11 +403,11 @@ namespace System.Collections.Immutable.Test
         /// the ImmutableInterlocked method so that the delegate can test both overloads
         /// by being executed twice.
         /// </param>
-        private static void ApplyChangeHelper<T>(Action<ApplyChangeDelegate<T>> test)
+        private static void UpdateHelper<T>(Action<UpdateDelegate<T>> test)
             where T : class
         {
-            test(ImmutableInterlocked.ApplyChange<T>);
-            test(ApplyChangeWrapper<T>);
+            test(ImmutableInterlocked.Update<T>);
+            test(UpdateWrapper<T>);
         }
 
         /// <summary>
@@ -417,10 +417,10 @@ namespace System.Collections.Immutable.Test
         /// <param name="location">The variable or field to be changed.</param>
         /// <param name="transformer">The function that transforms the value.</param>
         /// <returns>The result of the replacement function.</returns>
-        private static bool ApplyChangeWrapper<T>(ref T location, Func<T, T> transformer)
+        private static bool UpdateWrapper<T>(ref T location, Func<T, T> transformer)
             where T : class
         {
-            return ImmutableInterlocked.ApplyChange<T, int>(
+            return ImmutableInterlocked.Update<T, int>(
                 ref location,
                 (t, arg) =>
                 {
