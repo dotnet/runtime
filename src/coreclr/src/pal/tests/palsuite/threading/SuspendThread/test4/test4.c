@@ -19,6 +19,9 @@
 
 #include <palsuite.h>
 
+// Declare sched_yield(), as we cannot include <sched.h> here.
+int sched_yield(void);
+
 #define NUM_MALLOCS 256
 #define MAX_THREADS 64
 int numThreads, numIterations, targetThreadsSelectionAlgo, targetThreadsPos;
