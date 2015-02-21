@@ -230,13 +230,6 @@ namespace CoreXml.Test.XLinq
                     Decimal.One,
                     Decimal.Zero,
 
-                    // date  
-                    DateTime.MaxValue,
-                    DateTime.MinValue,
-                    DateTime.UtcNow,
-                    DateTime.Today,
-                    DateTime.Now,
-
                     //// DateTimeOffset
                     DateTimeOffset.Now,
                     DateTimeOffset.MaxValue,

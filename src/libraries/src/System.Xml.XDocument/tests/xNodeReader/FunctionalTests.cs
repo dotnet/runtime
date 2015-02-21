@@ -55,7 +55,6 @@ namespace CoreXml.Test.XLinq
                 this.AddChild(new TCMoveToFirstAttribute() { Attribute = new TestCaseAttribute() { Name = "MoveToFirstAtribute", Desc = "MoveToFirstAttribute" } });
                 this.AddChild(new TCMoveToNextAttribute() { Attribute = new TestCaseAttribute() { Name = "MoveToNextAttribute", Desc = "MoveToNextAttribute" } });
                 this.AddChild(new TCAttributeTest() { Attribute = new TestCaseAttribute() { Name = "AttributeTest", Desc = "AttributeTest" } });
-                this.AddChild(new TCAttributeDocType() { Attribute = new TestCaseAttribute() { Name = "AttributeDocType", Desc = "AttributeDocType" } });
                 this.AddChild(new TCXmlns() { Attribute = new TestCaseAttribute() { Name = "Xlmns", Desc = "Xlmns" } });
                 this.AddChild(new TCXmlnsPrefix() { Attribute = new TestCaseAttribute() { Name = "XlmnsPrefix", Desc = "XlmnsPrefix" } });
                 this.AddChild(new TCReadState() { Attribute = new TestCaseAttribute() { Name = "ReadState", Desc = "ReadState" } });
@@ -226,19 +225,10 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestSkip8) { Attribute = new VariationAttribute("Call Skip on CDATA") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestSkip9) { Attribute = new VariationAttribute("Call Skip on Processing Instruction") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestSkip10) { Attribute = new VariationAttribute("Call Skip on Comment") { Priority = 0 } });
-                    this.AddChild(new TestVariation(TestSkip11) { Attribute = new VariationAttribute("Call Skip on Document Type") });
                     this.AddChild(new TestVariation(TestSkip12) { Attribute = new VariationAttribute("Call Skip on Whitespace") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestSkip13) { Attribute = new VariationAttribute("Call Skip on EndElement") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestSkip14) { Attribute = new VariationAttribute("Call Skip on root Element") });
                     this.AddChild(new TestVariation(XmlTextReaderDoesNotThrowWhenHandlingAmpersands) { Attribute = new VariationAttribute("XmlTextReader ArgumentOutOfRangeException when handling ampersands") });
-                }
-            }
-            public partial class TCIsDefault : BridgeHelpers
-            {
-                // Type is CoreXml.Test.XLinq.FunctionalTests+XNodeReaderTests+TCIsDefault
-                // Test Case
-                public override void AddChildren()
-                {
                 }
             }
             public partial class TCBaseURI : BridgeHelpers
@@ -253,7 +243,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestBaseURI4) { Attribute = new VariationAttribute("BaseURI for CDATA node") });
                     this.AddChild(new TestVariation(TestBaseURI6) { Attribute = new VariationAttribute("BaseURI for PI node") });
                     this.AddChild(new TestVariation(TestBaseURI7) { Attribute = new VariationAttribute("BaseURI for Comment node") });
-                    this.AddChild(new TestVariation(TestBaseURI8) { Attribute = new VariationAttribute("BaseURI for DTD node") });
                     this.AddChild(new TestVariation(TestBaseURI9) { Attribute = new VariationAttribute("BaseURI for Whitespace node PreserveWhitespaces = true") });
                     this.AddChild(new TestVariation(TestBaseURI10) { Attribute = new VariationAttribute("BaseURI for EndElement node") });
                     this.AddChild(new TestVariation(TestTextReaderBaseURI4) { Attribute = new VariationAttribute("BaseURI for external General Entity") });
@@ -427,16 +416,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestAttributeTestNodeType_EndEntity) { Attribute = new VariationAttribute("AttributeTest On EndEntity") });
                 }
             }
-            public partial class TCAttributeDocType : BridgeHelpers
-            {
-                // Type is CoreXml.Test.XLinq.FunctionalTests+XNodeReaderTests+TCAttributeDocType
-                // Test Case
-                public override void AddChildren()
-                {
-                    this.AddChild(new TestVariation(TADocType_1) { Attribute = new VariationAttribute("AttributeCount and HasAttributes") { Priority = 0 } });
-                    this.AddChild(new TestVariation(TADocType_2) { Attribute = new VariationAttribute("HasValue and Value on DocumentType") });
-                }
-            }
             public partial class TCXmlns : BridgeHelpers
             {
                 // Type is CoreXml.Test.XLinq.FunctionalTests+XNodeReaderTests+TCXmlns
@@ -502,7 +481,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestTextReadInnerXml2) { Attribute = new VariationAttribute("ReadInnerXml with with entity references, EntityHandling = ExpandCharEntites") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml4) { Attribute = new VariationAttribute("ReadInnerXml on EntityReference") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml5) { Attribute = new VariationAttribute("ReadInnerXml on EndEntity") });
-                    this.AddChild(new TestVariation(TestTextReadInnerXml17) { Attribute = new VariationAttribute("ReadInnerXml on DocumentType attributes") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml18) { Attribute = new VariationAttribute("One large element") });
                 }
             }
@@ -513,7 +491,6 @@ namespace CoreXml.Test.XLinq
                 public override void AddChildren()
                 {
                     this.AddChild(new TestVariation(TestMoveToContent1) { Attribute = new VariationAttribute("MoveToContent on Skip XmlDeclaration") { Priority = 0 } });
-                    this.AddChild(new TestVariation(TestMoveToContent1x) { Attribute = new VariationAttribute("MoveToContent on Skip DocumentType") });
                     this.AddChild(new TestVariation(TestMoveToContent2) { Attribute = new VariationAttribute("MoveToContent on Read through All valid Content Node(Element, Text, CDATA, and EndElement)") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestMoveToContent3) { Attribute = new VariationAttribute("MoveToContent on Read through All invalid Content Node(PI, Comment and whitespace)") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestMoveToContent4) { Attribute = new VariationAttribute("MoveToContent on Read through Mix valid and Invalid Content Node") });
@@ -539,7 +516,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestIsStartElement11) { Attribute = new VariationAttribute("IsStartElement on Text") });
                     this.AddChild(new TestVariation(TestIsStartElement12) { Attribute = new VariationAttribute("IsStartElement on ProcessingInstruction") });
                     this.AddChild(new TestVariation(TestIsStartElement13) { Attribute = new VariationAttribute("IsStartElement on Comment") });
-                    this.AddChild(new TestVariation(TestIsStartElement14) { Attribute = new VariationAttribute("IsStartElement on DocumentType") });
                 }
             }
             public partial class TCReadStartElement : BridgeHelpers
@@ -572,8 +548,6 @@ namespace CoreXml.Test.XLinq
                 // Test Case
                 public override void AddChildren()
                 {
-                    this.AddChild(new TestVariation(TestReadEndElement1) { Attribute = new VariationAttribute("ReadEndElement() on EndElement, no namespace") { Priority = 0 } });
-                    this.AddChild(new TestVariation(TestReadEndElement2) { Attribute = new VariationAttribute("ReadEndElement() on EndElement, with namespace") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadEndElement3) { Attribute = new VariationAttribute("ReadEndElement on Start Element, no namespace") });
                     this.AddChild(new TestVariation(TestReadEndElement4) { Attribute = new VariationAttribute("ReadEndElement on Empty Element, no namespace") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadEndElement5) { Attribute = new VariationAttribute("ReadEndElement on regular Element, with namespace") { Priority = 0 } });
@@ -582,7 +556,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadEndElement9) { Attribute = new VariationAttribute("ReadEndElement on Text") });
                     this.AddChild(new TestVariation(TestReadEndElement10) { Attribute = new VariationAttribute("ReadEndElement on ProcessingInstruction") });
                     this.AddChild(new TestVariation(TestReadEndElement11) { Attribute = new VariationAttribute("ReadEndElement on Comment") });
-                    this.AddChild(new TestVariation(TestReadEndElement12) { Attribute = new VariationAttribute("ReadEndElement on DocumentType") });
                     this.AddChild(new TestVariation(TestReadEndElement13) { Attribute = new VariationAttribute("ReadEndElement on XmlDeclaration") });
                     this.AddChild(new TestVariation(TestTextReadEndElement1) { Attribute = new VariationAttribute("ReadEndElement on EntityReference") });
                     this.AddChild(new TestVariation(TestTextReadEndElement2) { Attribute = new VariationAttribute("ReadEndElement on EndEntity") });
@@ -597,7 +570,6 @@ namespace CoreXml.Test.XLinq
                 {
                     this.AddChild(new TestVariation(v1) { Attribute = new VariationAttribute("Attribute node") });
                     this.AddChild(new TestVariation(v2) { Attribute = new VariationAttribute("Element node") });
-                    this.AddChild(new TestVariation(v4) { Attribute = new VariationAttribute("Doctype node") });
                     this.AddChild(new TestVariation(v5) { Attribute = new VariationAttribute("Comment node") });
                 }
             }
@@ -759,7 +731,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadBase64_15) { Attribute = new VariationAttribute("ReadBase64 after failure") });
                     this.AddChild(new TestVariation(TestReadBase64_16) { Attribute = new VariationAttribute("Read after partial ReadBase64") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadBase64_17) { Attribute = new VariationAttribute("Current node on multiple calls") });
-                    this.AddChild(new TestVariation(TestReadBase64_18) { Attribute = new VariationAttribute("No op node types") });
                     this.AddChild(new TestVariation(TestTextReadBase64_23) { Attribute = new VariationAttribute("ReadBase64 with incomplete sequence") });
                     this.AddChild(new TestVariation(TestTextReadBase64_24) { Attribute = new VariationAttribute("ReadBase64 when end tag doesn't exist") });
                     this.AddChild(new TestVariation(TestTextReadBase64_26) { Attribute = new VariationAttribute("ReadBase64 with whitespaces in the mIddle") });
@@ -863,8 +834,6 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(ReadOuterXml15) { Attribute = new VariationAttribute("ReadOuterXml on attribute with entities, EntityHandling = ExpandEntities") { Priority = 0 } });
                     this.AddChild(new TestVariation(ReadOuterXml17) { Attribute = new VariationAttribute("ReadOuterXml on ProcessingInstruction") });
                     this.AddChild(new TestVariation(ReadOuterXml24) { Attribute = new VariationAttribute("ReadOuterXml on CDATA") });
-                    this.AddChild(new TestVariation(ReadOuterXml25) { Attribute = new VariationAttribute("ReadOuterXml on XmlDeclaration attributes") });
-                    this.AddChild(new TestVariation(ReadOuterXml26) { Attribute = new VariationAttribute("ReadOuterXml on DocumentType attributes") });
                     this.AddChild(new TestVariation(TRReadOuterXml27) { Attribute = new VariationAttribute("ReadOuterXml on element with entities, EntityHandling = ExpandCharEntities") });
                     this.AddChild(new TestVariation(TRReadOuterXml28) { Attribute = new VariationAttribute("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntites") });
                     this.AddChild(new TestVariation(TestTextReadOuterXml29) { Attribute = new VariationAttribute("One large element") });
