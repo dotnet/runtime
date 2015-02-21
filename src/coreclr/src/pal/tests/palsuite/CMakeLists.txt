@@ -9,7 +9,7 @@ add_compile_options(-Wno-int-to-void-pointer-cast)
 
 # TODO: make these tests compile
 # add_subdirectory(composite)
-# add_subdirectory(exception_handling)
+add_subdirectory(exception_handling)
 
 add_subdirectory(c_runtime)
 add_subdirectory(debug_api)
