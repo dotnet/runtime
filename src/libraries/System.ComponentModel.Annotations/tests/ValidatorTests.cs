@@ -750,7 +750,7 @@ namespace System.ComponentModel.DataAnnotations
             protected override ValidationResult IsValid(object value, ValidationContext _)
             {
                 if (value == null) { return ValidationResult.Success; }
-                if (value.GetType().Name.ToLower().Contains("invalid"))
+                if (value.GetType().Name.ToLowerInvariant().Contains("invalid"))
                 {
                     return new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName);
                 }
