@@ -86,13 +86,15 @@ goto CheckVS
 :CheckVS
 :: Check presence of VS
 if defined VS120COMNTOOLS goto CheckVSExistence
-echo Installation of VS 2013 is a pre-requisite to build this repository.
+echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
+echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
 goto :eof
 
 :CheckVSExistence
 :: Does VS 2013 really exist?
 if exist "%VS120COMNTOOLS%\..\IDE\devenv.exe" goto CheckMSBuild
-echo Installation of VS 2013 is a pre-requisite to build this repository.
+echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
+echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
 goto :eof
 
 :CheckMSBuild    
@@ -119,9 +121,13 @@ call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to bug in VS Intaller. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
+This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
 at VS install location of previous version. Workaround is to copy DIA SDK folder from VS install location ^
 of previous version to "%VSINSTALLDIR%" and then resume build.
+:: DIA SDK not included in Express editions
+echo Visual Studio 2013 Express does not include the DIA SDK. ^
+You need Visual Studio 2013 Community (free).
+echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
 goto :eof
 
 :GenVSSolution
