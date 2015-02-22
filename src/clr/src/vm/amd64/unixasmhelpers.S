@@ -101,7 +101,7 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         // Make sure to preserve r11 as well as it is used to pass the stack argument size from JIT
         //
         PUSH_ARGUMENT_REGISTERS
-        push            r11
+        push_register r11
         
         //
         // Allocate space for XMM parameter registers
@@ -123,12 +123,12 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         // epilogue, rax contains the native target address
         //
-        add             rsp, 0x80
+        free_stack      0x80
 
         //
         // Restore integer parameter registers and r11
         //
-        pop             r11
+        pop_register r11
         POP_ARGUMENT_REGISTERS
         
     TAILJMP_RAX
@@ -153,9 +153,9 @@ LEAF_END moveOWord, _TEXT
 NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
 
     // First integer return register
-    push rax
+    push_register rax
     // Second integer return register
-    push rdx
+    push_register rdx
     alloc_stack         0x28
     END_PROLOGUE
     // First float return register
@@ -167,9 +167,9 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
 
     movdqa              xmm0, [rsp]
     movdqa              xmm1, [rsp+0x10]
-    add                 rsp, 0x28
-    pop                 rdx
-    pop                 rax
+    free_stack          0x28
+    pop_register        rdx
+    pop_register        rax
     ret
 
 NESTED_END JIT_RareDisableHelper, _TEXT
