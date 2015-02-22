@@ -1107,9 +1107,9 @@ class StringObject : public Object
     static SIZE_T GetSize(DWORD stringLength);
 
     DWORD   GetStringLength()                           { LIMITED_METHOD_DAC_CONTRACT; return( m_StringLength );}
-    WCHAR*  GetBuffer()                                 { LIMITED_METHOD_CONTRACT; _ASSERTE(this); return (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_Characters) );  }
-    WCHAR*  GetBuffer(DWORD *pdwSize)                   { LIMITED_METHOD_CONTRACT; _ASSERTE(this && pdwSize); *pdwSize = GetStringLength(); return GetBuffer();  }
-    WCHAR*  GetBufferNullable()                         { LIMITED_METHOD_CONTRACT; return( (this == 0) ? 0 : (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_Characters) ) );  }
+    WCHAR*  GetBuffer()                                 { LIMITED_METHOD_CONTRACT; _ASSERTE(this != nullptr); return (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_Characters) );  }
+    WCHAR*  GetBuffer(DWORD *pdwSize)                   { LIMITED_METHOD_CONTRACT; _ASSERTE((this != nullptr) && pdwSize); *pdwSize = GetStringLength(); return GetBuffer();  }
+    WCHAR*  GetBufferNullable()                         { LIMITED_METHOD_CONTRACT; return( (this == nullptr) ? nullptr : (WCHAR*)( dac_cast<TADDR>(this) + offsetof(StringObject, m_Characters) ) );  }
 
     DWORD GetHighCharState() {
         WRAPPER_NO_CONTRACT;
