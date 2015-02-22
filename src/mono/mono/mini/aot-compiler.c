@@ -5924,6 +5924,9 @@ emit_plt (MonoAotCompile *acfg)
 
 			emit_label (acfg, plt_entry->llvm_symbol);
 
+			if (acfg->llvm_separate)
+				emit_global_inner (acfg, plt_entry->llvm_symbol, TRUE);
+
 			arch_emit_llvm_plt_entry (acfg, i);
 
 			if (debug_sym) {
