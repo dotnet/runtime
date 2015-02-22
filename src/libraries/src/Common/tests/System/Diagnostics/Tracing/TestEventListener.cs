@@ -8,11 +8,21 @@ namespace System.Diagnostics.Tracing
     /// <summary>Simple event listener than invokes a callback for each event received.</summary>
     internal sealed class TestEventListener : EventListener
     {
+        private readonly string _targetSourceName;
         private readonly Guid _targetSourceGuid;
         private readonly EventLevel _level;
 
         private Action<EventWrittenEventArgs> _eventWritten;
         private List<EventSource> _tmpEventSourceList = new List<EventSource>();
+
+        public TestEventListener(string taretSourceName, EventLevel level)
+        {
+            // Store the arguments
+            _targetSourceName = taretSourceName;
+            _level = level;
+
+            LoadSourceList();
+        }
 
         public TestEventListener(Guid targetSourceGuid, EventLevel level)
         {
@@ -20,6 +30,11 @@ namespace System.Diagnostics.Tracing
             _targetSourceGuid = targetSourceGuid;
             _level = level;
 
+            LoadSourceList();
+        }
+
+        private void LoadSourceList()
+        {
             // The base constructor, which is called before this constructor,
             // will invoke the virtual OnEventSourceCreated method for each
             // existing EventSource, which means OnEventSourceCreated will be
@@ -50,7 +65,8 @@ namespace System.Diagnostics.Tracing
 
         private void EnableSourceIfMatch(EventSource source)
         {
-            if (source.Guid.Equals(_targetSourceGuid))
+            if (source.Name.Equals(_targetSourceName) || 
+                source.Guid.Equals(_targetSourceGuid))
             {
                 EnableEvents(source, _level);
             }
