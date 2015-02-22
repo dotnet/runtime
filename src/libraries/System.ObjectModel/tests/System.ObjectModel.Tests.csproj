@@ -23,6 +23,12 @@
     <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.ObjectModel.csproj">
+      <Project>{F24D3391-2928-4E83-AADE-A4461E5CAE50}</Project>
+      <Name>System.ObjectModel</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
