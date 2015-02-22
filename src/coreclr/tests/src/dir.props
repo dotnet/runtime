@@ -9,9 +9,9 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
-  <!-- Enable LLILC JIT for testing if specified -->
+  <!-- Enable alternative JIT for testing if specified -->
   <PropertyGroup>
-    <_CLRTestPreCommands>IF NOT "%__EnableLLILC%"=="" set COMPLus_AltJit=*;IF NOT "%__EnableLLILC%"=="" set COMPLus_AltJitName=LLILCJit.dll</_CLRTestPreCommands>
+    <_CLRTestPreCommands>IF NOT "%__EnableAltJit%"=="" set COMPLus_AltJit=*;IF NOT "%__EnableAltJit%"=="" set COMPLus_AltJitName=%Alt_Jit_Name%.dll</_CLRTestPreCommands>
   </PropertyGroup>
  
 </Project>
