@@ -31,8 +31,9 @@ You can also run the test for an individual project by building just one test
 project, e.g.:
 ```
 cd src\System.Collections.Immutable\tests
-msbuild
+msbuild /t:BuildAndTest (or /t:Test to just re-run the tests)
 ```
+In some test directories there may be multiple test projects or directories so you may need to specify the specific test project to get it to build and run the tests.
 
 ### Running tests from Visual Studio
 
