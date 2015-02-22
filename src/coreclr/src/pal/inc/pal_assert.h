@@ -23,21 +23,13 @@ extern "C" {
 // C_ASSERT() can be used to perform many compile-time assertions:
 //            type sizes, field offsets, etc.
 //
-// An assertion failure results in error C2118: negative subscript.
-//  or
-// size of array `__C_ASSERT__' is negative
-//
-
-#define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
+#define C_ASSERT(e) static_assert(e, #e)
 
 //
 // CPP_ASSERT() can be used within a class definition, to perform a
 // compile-time assertion involving private names within the class.
 //
-// MS compiler doesn't allow redefinition of the typedef within a template.
-// gcc doesn't allow redefinition of the typedef within a class, though 
-// it does at file scope.
-#define CPP_ASSERT(n, e) typedef char __C_ASSERT__##n[(e) ? 1 : -1];
+#define CPP_ASSERT(n, e) static_assert(e, #e)
 
 #endif // __cplusplus
 

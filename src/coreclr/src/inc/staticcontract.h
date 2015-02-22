@@ -244,6 +244,10 @@ namespace StaticContract
             STATIC_CONTRACT_GC_NOTRIGGER;
             STATIC_CONTRACT_SO_TOLERANT;
         }
+
+        static void used()
+        {
+        }
     };
 
     struct ScanThrowMarkerTerminal
@@ -252,6 +256,10 @@ namespace StaticContract
         {
             METHOD_CANNOT_BE_FOLDED_DEBUG;
         }
+
+        static void used()
+        {
+        }
     };
 
     struct ScanThrowMarkerIgnore
@@ -259,6 +267,10 @@ namespace StaticContract
         __declspec(noinline) ScanThrowMarkerIgnore()
         {
             METHOD_CANNOT_BE_FOLDED_DEBUG;
+        }
+
+        static void used()
+        {
         }
     };
 }
@@ -270,13 +282,13 @@ typedef StaticContract::ScanThrowMarkerStandard ScanThrowMarker;
 #define SCAN_THROW_MARKER do { ScanThrowMarker __throw_marker; } while (0)
 
 #define SCAN_IGNORE_THROW_MARKER                                    \
-    typedef StaticContract::ScanThrowMarkerIgnore ScanThrowMarker
+    typedef StaticContract::ScanThrowMarkerIgnore ScanThrowMarker; if (0) ScanThrowMarker::used();
 
 // Terminal exceptions are asynchronous and cannot be included in THROWS contract
 // analysis. As such, this uses typedef to reassign the ScanThrowMarker to a
 // non-annotating struct so that SCAN does not see the block as throwing.
 #define STATIC_CONTRACT_THROWS_TERMINAL                             \
-    typedef StaticContract::ScanThrowMarkerTerminal ScanThrowMarker;
+    typedef StaticContract::ScanThrowMarkerTerminal ScanThrowMarker; if (0) ScanThrowMarker::used();
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && defined(FEATURE_STACK_PROBE) && !defined(_TARGET_ARM_) // @ARMTODO
 extern void EnsureSOIntolerantOK(const char *szFunction, const char *szFile, int lineNum);
