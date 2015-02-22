@@ -57,7 +57,7 @@ int __cdecl main( int argc, char **argv )
     for (i=0;i<Iterations;i++)
     {
 	RunTest(TRUE);
-	dwAvgDelta += abs(ThreadSleepDelta - InterruptTime);
+	dwAvgDelta += ThreadSleepDelta - InterruptTime;
     }
     dwAvgDelta /= Iterations;
 
@@ -76,7 +76,7 @@ int __cdecl main( int argc, char **argv )
     for (i=0;i<Iterations;i++)
     {
 	RunTest(FALSE);
-	dwAvgDelta += abs(ThreadSleepDelta - ChildThreadSleepTime);
+	dwAvgDelta += ThreadSleepDelta - ChildThreadSleepTime;
     }
     dwAvgDelta /= Iterations;
 
