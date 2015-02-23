@@ -327,6 +327,10 @@ public class TypeTests
         i = t.GetArrayRank();
         Assert.Equal(i, 1);
 
+        t = typeof(int[,,]);
+        i = t.GetArrayRank();
+        Assert.Equal(i, 3);
+
         t = typeof(IList<int>);
         Assert.Throws<ArgumentException>(() => i = t.GetArrayRank());
 
