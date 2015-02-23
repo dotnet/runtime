@@ -93,7 +93,7 @@ static PCRITICAL_SECTION init_critsec = NULL;
 char g_szCoreCLRPath[MAX_PATH] = { 0 };
 
 static BOOL INIT_IncreaseDescriptorLimit(void);
-static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char **argv);
+static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char * const *argv);
 static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name);
 
 #ifdef _DEBUG
@@ -135,7 +135,7 @@ int
 PALAPI
 PAL_Initialize(
             int argc,
-            const char *argv[])
+            const char *const argv[])
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = NULL;
@@ -1064,7 +1064,7 @@ Note : not all peculiarities of Windows command-line processing are supported;
      passed to argv as \\a... there may be other similar cases
     -there may be other characters which must be escaped 
 --*/
-static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char **argv)
+static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char * const *argv)
 {
     LPWSTR retval;
     LPSTR command_line=NULL, command_ptr;

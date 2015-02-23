@@ -18,6 +18,7 @@
 #ifndef __PALSUITE_H__
 #define __PALSUITE_H__
 
+#include <pal_assert.h>
 #include <pal.h>
 
 enum
@@ -27,7 +28,7 @@ enum
 };
 
 
-void Trace(char *format, ...)
+void Trace(const char *format, ...)
 {
     va_list arglist;
 	
@@ -38,7 +39,7 @@ void Trace(char *format, ...)
     va_end(arglist);
 }
 
-void Fail(char *format, ...)
+void Fail(const char *format, ...)
 {
     va_list arglist;
 	

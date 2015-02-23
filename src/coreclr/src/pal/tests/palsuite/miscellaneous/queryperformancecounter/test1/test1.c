@@ -84,7 +84,7 @@ int __cdecl main(int argc, char *argv[])
          */
         TimeDiff[i] = (DWORD)(((EndTime.QuadPart - StartTime.QuadPart)*1000)/
                              (Freq.QuadPart));
-        TotalTimeDiff += abs(TimeDiff[i] - SleepInterval);
+        TotalTimeDiff += TimeDiff[i] - SleepInterval;
 
     }
 
