@@ -208,6 +208,7 @@ namespace System.Reflection.Metadata.Tests
         private unsafe void TestComparisons(string heapValue, int offset, string value, bool unicode = false)
         {
             byte[] heap;
+            MetadataStringDecoder decoder = MetadataStringDecoder.DefaultUTF8;
 
             fixed (byte* heapPtr = (heap = Encoding.UTF8.GetBytes(heapValue)))
             {
@@ -223,39 +224,41 @@ namespace System.Reflection.Metadata.Tests
                 }
 
                 // equals:
-                bool actualEq = block.Utf8NullTerminatedEquals(offset, value);
+                bool actualEq = block.Utf8NullTerminatedEquals(offset, value, decoder);
                 bool expectedEq = StringComparer.Ordinal.Equals(heapSubstr, value);
                 Assert.Equal(expectedEq, actualEq);
 
                 // starts with:
-                bool actualSW = block.Utf8NullTerminatedStartsWith(offset, value);
+                bool actualSW = block.Utf8NullTerminatedStartsWith(offset, value, decoder);
                 bool expectedSW = heapSubstr.StartsWith(value, StringComparison.Ordinal);
                 Assert.Equal(actualSW, expectedSW);
             }
         }
 
         [Fact]
-        [ActiveIssue(26)]
         public unsafe void ComparisonToInvalidByteSequenceMatchesFallback()
         {
+            MetadataStringDecoder decoder = MetadataStringDecoder.DefaultUTF8;
+
             // dangling lead byte
             byte[] buffer;
             fixed (byte* ptr = (buffer = new byte[] { 0xC0 }))
             {
-                Assert.False(new MemoryBlock(ptr, buffer.Length).Utf8NullTerminatedStartsWith(0, new string((char)0xC0, 1)));
-                Assert.False(new MemoryBlock(ptr, buffer.Length).Utf8NullTerminatedStartsWith(0, Encoding.UTF8.GetString(buffer)));
-                Assert.False(new MemoryBlock(ptr, buffer.Length).Utf8NullTerminatedEquals(0, new string((char)0xC0, 1)));
-                Assert.False(new MemoryBlock(ptr, buffer.Length).Utf8NullTerminatedEquals(0, Encoding.UTF8.GetString(buffer)));
+                var block = new MemoryBlock(ptr, buffer.Length);
+                Assert.False(block.Utf8NullTerminatedStartsWith(0, new string((char)0xC0, 1), decoder));
+                Assert.False(block.Utf8NullTerminatedEquals(0, new string((char)0xC0, 1), decoder));
+                Assert.True(block.Utf8NullTerminatedStartsWith(0, "\uFFFD", decoder));
+                Assert.True(block.Utf8NullTerminatedEquals(0, "\uFFFD", decoder));
             }
 
             // overlong encoding
             fixed (byte* ptr = (buffer = new byte[] { (byte)'a', 0xC0, 0xAF, (byte)'b', 0x0 }))
             {
                 var block = new MemoryBlock(ptr, buffer.Length);
-                Assert.False(block.Utf8NullTerminatedStartsWith(0, "a\\"));
-                Assert.False(block.Utf8NullTerminatedEquals(0, "a\\b"));
-                Assert.True(block.Utf8NullTerminatedEquals(0, "a\uFFFD\uFFFD"));
-                Assert.True(block.Utf8NullTerminatedEquals(0, "a\uFFFD"));
+                Assert.False(block.Utf8NullTerminatedStartsWith(0, "a\\", decoder));
+                Assert.False(block.Utf8NullTerminatedEquals(0, "a\\b", decoder));
+                Assert.True(block.Utf8NullTerminatedStartsWith(0, "a\uFFFD", decoder));
+                Assert.True(block.Utf8NullTerminatedEquals(0, "a\uFFFD\uFFFDb", decoder));
             }
         }
 
@@ -287,11 +290,14 @@ namespace System.Reflection.Metadata.Tests
             TestComparisons("Matrix\0", 0, "Matrix3D");
             TestComparisons("Matrix3D\0", 0, "Matrix");
             TestComparisons("\u1234\0", 0, "\u1234", unicode: true);
-            TestComparisons("a\u1234\0", 0, "a", unicode: true);
-            TestComparisons("\u1001\u1002\u1003\0", 0, "\u1001\u1002", unicode: true);
+            TestComparisons("a\u1234\0", 0, "a", unicode: true);            TestComparisons("\u1001\u1002\u1003\0", 0, "\u1001\u1002", unicode: true);
             TestComparisons("\u1001a\u1002\u1003\0", 0, "\u1001a\u1002", unicode: true);
             TestComparisons("\u1001\u1002\u1003\0", 0, "\u1001a\u1002", unicode: true);
             TestComparisons("\uD808\uDF45abc\0", 0, "\uD808\uDF45", unicode: true);
+            TestComparisons("abc\u1234", 0, "abc\u1234", unicode: true);
+            TestComparisons("abc\u1234", 0, "abc\u1235", unicode: true);
+            TestComparisons("abc\u1234", 0, "abcd", unicode: true);
+            TestComparisons("abcd", 0, "abc\u1234", unicode: true);
         }
 
         private unsafe void TestSearch(string heapValue, int offset, string[] values)

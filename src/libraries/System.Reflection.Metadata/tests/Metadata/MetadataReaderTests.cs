@@ -160,11 +160,8 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("<WinRT>\uFFFDSTests.WithNestedType", reader.GetString(handle.WithWinRTPrefix()));
             Assert.Equal("\uFFFDSTests", reader.GetString(handle.WithDotTermination()));
 
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // TODO: MetadataStringComparer needs to use the user-supplied encoding
-            // These still use incorrect code for comparison - uncomment when fixed
-            //Assert.True(reader.StringComparer.Equals(handle, "\uFFFDSTests.WithNestedType"); 
-            //Assert.True(reader.StringComparer.Equals(handle.WithDotTermination(), "\uFFFDSTests"));
+            Assert.True(reader.StringComparer.Equals(handle, "\uFFFDSTests.WithNestedType"));
+            Assert.True(reader.StringComparer.Equals(handle.WithDotTermination(), "\uFFFDSTests"));
 
             // This one calls the decoder already because we don't bother optimizing uncommon winrt prefix case.
             Assert.True(reader.StringComparer.StartsWith(handle.WithWinRTPrefix(), "<WinRT>\uFFFDS"));
