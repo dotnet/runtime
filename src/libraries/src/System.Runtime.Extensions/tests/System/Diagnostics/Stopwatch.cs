@@ -25,8 +25,8 @@ public static class StopwatchTests
         Stopwatch watch = new Stopwatch();
         Assert.False(watch.IsRunning);
         watch.Start();
-        Sleep();
         Assert.True(watch.IsRunning);
+        Sleep();
         Assert.True(watch.Elapsed > TimeSpan.Zero);
 
         watch.Stop();
@@ -43,10 +43,10 @@ public static class StopwatchTests
     public static void StartNewAndReset()
     {
         Stopwatch watch = Stopwatch.StartNew();
-        Sleep();
         Assert.True(watch.IsRunning);
         watch.Start(); // should be no-op
         Assert.True(watch.IsRunning);
+        Sleep();
         Assert.True(watch.Elapsed > TimeSpan.Zero);
 
         watch.Reset();
@@ -54,8 +54,22 @@ public static class StopwatchTests
         Assert.Equal(TimeSpan.Zero, watch.Elapsed);
     }
 
-    private static void Sleep()
+    [Fact]
+    public static void StartNewAndRestart()
     {
-        s_sleepEvent.WaitOne(1);
+        Stopwatch watch = Stopwatch.StartNew();
+        Assert.True(watch.IsRunning);
+        Sleep(10);
+        TimeSpan elapsedSinceStart = watch.Elapsed;
+        Assert.True(elapsedSinceStart > TimeSpan.Zero);
+
+        watch.Restart();
+        Assert.True(watch.IsRunning);
+        Assert.True(watch.Elapsed < elapsedSinceStart);
+    }
+
+    private static void Sleep(int milliseconds = 1)
+    {
+        s_sleepEvent.WaitOne(milliseconds);
     }
 }
