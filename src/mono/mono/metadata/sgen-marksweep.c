@@ -1289,12 +1289,26 @@ count_ref_nonref_objs (void)
 static int
 ms_calculate_block_obj_sizes (double factor, int *arr)
 {
-	double target_size = sizeof (MonoObject);
+	double target_size;
 	int num_sizes = 0;
 	int last_size = 0;
 
+	/*
+	 * Have every possible slot size starting with the minimal
+	 * object size up to and including four times that size.  Then
+	 * proceed by increasing geometrically with the given factor.
+	 */
+
+	for (int size = sizeof (MonoObject); size <= 4 * sizeof (MonoObject); size += SGEN_ALLOC_ALIGN) {
+		if (arr)
+			arr [num_sizes] = size;
+		++num_sizes;
+		last_size = size;
+	}
+	target_size = (double)last_size;
+
 	do {
-		int target_count = (int)ceil (MS_BLOCK_FREE / target_size);
+		int target_count = (int)floor (MS_BLOCK_FREE / target_size);
 		int size = MIN ((MS_BLOCK_FREE / target_count) & ~(SGEN_ALLOC_ALIGN - 1), SGEN_MAX_SMALL_OBJ_SIZE);
 
 		if (size != last_size) {
