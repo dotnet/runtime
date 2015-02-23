@@ -190,6 +190,10 @@ public class TypeTests
         t = typeof(IList<int>);
         b = t.IsPointer;
         Assert.False(b);
+
+        t = typeof (int *);
+        b = t.IsPointer;
+        Assert.True(b);
     }
 
     [Fact]
