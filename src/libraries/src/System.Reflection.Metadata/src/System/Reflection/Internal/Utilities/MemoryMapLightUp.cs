@@ -20,16 +20,11 @@ namespace System.Reflection.Internal
         private static MethodInfo s_lazyCreateViewAccessor;
         private static PropertyInfo s_lazySafeMemoryMappedViewHandle;
         private static PropertyInfo s_lazyPointerOffset;
-        private static FieldInfo s_lazyInternalViewField;
-        private static PropertyInfo s_lazyInternalPointerOffset;
 
         private static readonly object s_MemoryMappedFileAccess_Read = 1;
         private static readonly object s_HandleInheritability_None = 0;
         private static readonly object s_LongZero = (long)0;
         private static readonly object s_True = true;
-
-        // test only:
-        internal static bool Test450Compat;
 
         private static bool? s_lazyIsAvailable;
 
@@ -114,21 +109,10 @@ namespace System.Reflection.Internal
             }
 
             // Available on FW >= 4.5.1:
-            s_lazyPointerOffset = Test450Compat ? null : s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
+            s_lazyPointerOffset = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
             if (s_lazyPointerOffset == null)
             {
-                // FW < 4.5.1
-                s_lazyInternalViewField = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredField("m_view");
-                if (s_lazyInternalViewField == null)
-                {
-                    return false;
-                }
-
-                s_lazyInternalPointerOffset = s_lazyInternalViewField.FieldType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
-                if (s_lazyInternalPointerOffset == null)
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
@@ -196,17 +180,7 @@ namespace System.Reflection.Internal
             byte* ptr = null;
             safeBuffer.AcquirePointer(ref ptr);
 
-            long offset;
-            if (s_lazyPointerOffset != null)
-            {
-                offset = (long)s_lazyPointerOffset.GetValue(accessor);
-            }
-            else
-            {
-                object internalView = s_lazyInternalViewField.GetValue(accessor);
-                offset = (long)s_lazyInternalPointerOffset.GetValue(internalView);
-            }
-
+            long offset = (long)s_lazyPointerOffset.GetValue(accessor);
             return ptr + offset;
         }
     }
