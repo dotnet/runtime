@@ -3,8 +3,6 @@
 
 using Xunit;
 
-// Tests could run slower if PLINQ itself is run in parallel, especially as concurrent
-// queries compete for thread pool resources.  Further, the ETW tests must not be run
-// concurrently with any other tests.
+// Parallel loops are more likely to be serialized if tests are allowed to run in parallel.
+// Further, ETW tests must not be run concurrently with any other tests.
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
-

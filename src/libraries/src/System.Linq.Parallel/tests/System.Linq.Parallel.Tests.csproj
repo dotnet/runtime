@@ -21,6 +21,9 @@
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllAnyTests.cs" />
     <Compile Include="AverageMaxMinTests.cs" />
@@ -29,6 +32,7 @@
     <Compile Include="CountTests.cs" />
     <Compile Include="DegreeOfParallelismTests.cs" />
     <Compile Include="ElementAtPartitionerTests.cs" />
+    <Compile Include="EtwTests.cs" />
     <Compile Include="ExceptConcatReverseTests.cs" />
     <Compile Include="ExceptionAndParallelEnumerableExceptionTests.cs" />
     <Compile Include="ExchangeTests.cs" />
@@ -55,9 +59,9 @@
   </ItemGroup>
   <!-- Common or Common-branched source files -->
   <ItemGroup>
-      <Compile Include="$(CommonTestPath)\System\Console.cs" />
+    <Compile Include="$(CommonTestPath)\System\Console.cs" />
   </ItemGroup>
- <!-- References are resolved from packages.config -->
+  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
