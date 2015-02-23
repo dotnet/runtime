@@ -169,15 +169,7 @@ namespace System.Reflection.Internal
             //
             // Try to bind to Encoding.GetString(byte*, int);
 
-            MethodInfo getStringInfo = null;
-
-            try
-            {
-                getStringInfo = typeof(Encoding).GetRuntimeMethod("GetString", new[] { typeof(byte*), typeof(int) });
-            }
-            catch (AmbiguousMatchException)
-            {
-            }
+            MethodInfo getStringInfo = LightUpHelper.GetMethod(typeof(Encoding), "GetString", typeof(byte*), typeof(int));
 
             if (getStringInfo != null && getStringInfo.ReturnType == typeof(String))
             {
