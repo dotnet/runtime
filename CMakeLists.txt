@@ -20,6 +20,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> -o <OBJECT> -c <SOURCE>")
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
+if(WIN32)
+    enable_language(ASM_MASM)
+else()
+    enable_language(ASM)
+endif(WIN32)
+
 # Build a list of compiler definitions by putting -D in front of each define.
 function(get_compile_definitions DefinitionName)
     # Get the current list of definitions
