@@ -1196,17 +1196,15 @@ mono_profiler_load (const char *desc)
 		}
 		if (!load_embedded_profiler (desc, mname)) {
 			libname = g_strdup_printf ("mono-profiler-%s", mname);
-			if (!load_profiler_from_directory (NULL, libname, desc)) {
-				res = FALSE;
 #if defined (MONO_ASSEMBLIES)
-				res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
+			res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
 #endif
-				if (!res)
-					res = load_profiler_from_mono_instalation (libname, desc);
-
-				if (!res)
-					g_warning ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
-			}
+			if (!res)
+				res = load_profiler_from_directory (NULL, libname, desc);
+			if (!res)
+				res = load_profiler_from_mono_instalation (libname, desc);
+			if (!res)
+				g_warning ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
 			g_free (libname);
 		}
 		g_free (mname);
