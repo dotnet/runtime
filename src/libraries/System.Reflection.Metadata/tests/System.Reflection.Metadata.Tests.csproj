@@ -41,10 +41,6 @@
       <Project>{f3e433c8-352f-4944-bf7f-765ce435370d}</Project>
       <Name>System.Reflection.Metadata</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj">
-      <Project>{1DD0FF15-6234-4BD6-850A-317F05479554}</Project>
-      <Name>System.Collections.Immutable</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Metadata\ClassLayoutRow.cs" />
@@ -99,6 +95,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\..\..\packages\System.Collections.Immutable.1.1.33-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
