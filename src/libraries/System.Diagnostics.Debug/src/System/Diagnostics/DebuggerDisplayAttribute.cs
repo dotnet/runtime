@@ -65,7 +65,6 @@ namespace System.Diagnostics
         {
             get { return targetName; }
             set { targetName = value; }
-
         }
     }
 }

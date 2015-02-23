@@ -40,7 +40,7 @@ namespace System.Diagnostics
                 }
 
                 WriteAssert(stackTrace, message, detailMessage);
-                ShowAssertDialog(stackTrace, message, detailMessage);
+                s_logger.ShowAssertDialog(stackTrace, message, detailMessage);
             }
         }
 
@@ -77,13 +77,13 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string message)
         {
-            WriteLineCore(message);
+            s_logger.WriteLineCore(message);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(string message)
         {
-            WriteCore(message);
+            s_logger.WriteCore(message);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -212,6 +212,13 @@ namespace System.Diagnostics
             {
                 WriteLine(value, category);
             }
+        }
+
+        internal interface IDebugLogger
+        {
+            void ShowAssertDialog(string stackTrace, string message, string detailMessage);
+            void WriteLineCore(string message);
+            void WriteCore(string message);
         }
     }
 }

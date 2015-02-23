@@ -20,6 +20,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU' " />
 
   <ItemGroup>
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="Resources\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
