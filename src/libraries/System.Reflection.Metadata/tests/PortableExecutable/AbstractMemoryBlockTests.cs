@@ -105,21 +105,6 @@ namespace System.Reflection.Metadata.Tests
 
         [Fact]
         [ActiveIssue(264)]
-        public void FileStream450()
-        {
-            try
-            {
-                MemoryMapLightUp.Test450Compat = true;
-                FileStream();
-            }
-            finally
-            {
-                MemoryMapLightUp.Test450Compat = false;
-            }
-        }
-
-        [Fact]
-        [ActiveIssue(264)]
         public void FileStreamWin7()
         {
             try
