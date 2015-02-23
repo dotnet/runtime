@@ -57,7 +57,7 @@ class Tests
 		}
 	}
 
-	[Category ("!AMD64")]
+	[Category ("DYNCALL")]
 	static int test_0_arm64_dyncall_double () {
 		double arg1 = 1.0f;
 		double s = 2.0f;
@@ -67,7 +67,7 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!AMD64")]
+	[Category ("DYNCALL")]
 	static int test_0_arm64_dyncall_float () {
 		double arg1 = 1.0f;
 		float s = 2.0f;
@@ -77,7 +77,7 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!AMD64")]
+	[Category ("DYNCALL")]
 	static int test_0_arm64_dyncall_hfa_double () {
 		double arg1 = 1.0f;
 		// HFA with double members
@@ -90,7 +90,7 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!AMD64")]
+	[Category ("DYNCALL")]
 	static int test_0_arm64_dyncall_hfa_float () {
 		double arg1 = 1.0f;
 		var s = new Struct2 ();
@@ -175,7 +175,7 @@ class Tests
 		}
 	}
 
-	[Category ("!AMD64")]
+	[Category ("DYNCALL")]
 	static int test_0_arm64_dyncall_vtypebyref_ret () {
 		var s = new VTypeByRefStruct () { o1 = 1, o2 = 2, o3 = 3 };
 		Type t = typeof (Foo5<>).MakeGenericType (new Type [] { typeof (VTypeByRefStruct) });
