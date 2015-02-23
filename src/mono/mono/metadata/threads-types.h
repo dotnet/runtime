@@ -238,7 +238,8 @@ void mono_threads_clear_cached_culture (MonoDomain *domain) MONO_INTERNAL;
 
 MonoException* mono_thread_request_interruption (mono_bool running_managed) MONO_INTERNAL;
 gboolean mono_thread_interruption_requested (void) MONO_INTERNAL;
-void mono_thread_interruption_checkpoint (void) MONO_INTERNAL;
+MonoException* mono_thread_interruption_checkpoint (void) MONO_INTERNAL;
+MonoException* mono_thread_force_interruption_checkpoint_noraise (void) MONO_INTERNAL;
 void mono_thread_force_interruption_checkpoint (void) MONO_INTERNAL;
 gint32* mono_thread_interruption_request_flag (void) MONO_INTERNAL;
 

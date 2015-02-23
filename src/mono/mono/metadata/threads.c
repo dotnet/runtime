@@ -4133,7 +4133,8 @@ static void CALLBACK dummy_apc (ULONG_PTR param)
  * Performs the operation that the requested thread state requires (abort,
  * suspend or stop)
  */
-static MonoException* mono_thread_execute_interruption (MonoInternalThread *thread)
+static MonoException*
+mono_thread_execute_interruption (MonoInternalThread *thread)
 {
 	LOCK_THREAD (thread);
 
@@ -4284,35 +4285,56 @@ gboolean mono_thread_interruption_requested ()
 	return FALSE;
 }
 
-static void mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
+static MonoException*
+mono_thread_interruption_checkpoint_request (gboolean bypass_abort_protection)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	/* The thread may already be stopping */
 	if (thread == NULL)
-		return;
+		return NULL;
 
 	if (thread->interruption_requested && (bypass_abort_protection || !is_running_protected_wrapper ())) {
 		MonoException* exc = mono_thread_execute_interruption (thread);
-		if (exc) mono_raise_exception (exc);
+		if (exc)
+			return exc;
 	}
+	return NULL;
 }
 
 /*
  * Performs the interruption of the current thread, if one has been requested,
  * and the thread is not running a protected wrapper.
+ * Return the exception which needs to be thrown, if any.
  */
-void mono_thread_interruption_checkpoint ()
+MonoException*
+mono_thread_interruption_checkpoint (void)
 {
-	mono_thread_interruption_checkpoint_request (FALSE);
+	return mono_thread_interruption_checkpoint_request (FALSE);
 }
 
 /*
  * Performs the interruption of the current thread, if one has been requested.
+ * Return the exception which needs to be thrown, if any.
  */
-void mono_thread_force_interruption_checkpoint ()
+MonoException*
+mono_thread_force_interruption_checkpoint_noraise (void)
 {
-	mono_thread_interruption_checkpoint_request (TRUE);
+	return mono_thread_interruption_checkpoint_request (TRUE);
+}
+
+/*
+ * Performs the interruption of the current thread, if one has been requested.
+ * Throw the exception which needs to be thrown, if any.
+ */
+void
+mono_thread_force_interruption_checkpoint (void)
+{
+	MonoException *ex;
+
+	ex = mono_thread_interruption_checkpoint_request (TRUE);
+	if (ex)
+		mono_raise_exception (ex);
 }
 
 /*

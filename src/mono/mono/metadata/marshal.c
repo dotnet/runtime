@@ -2010,7 +2010,7 @@ emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 static void
 emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoint_func)
 {
-	int pos_noabort;
+	int pos_noabort, pos_noex;
 
 	mono_mb_emit_ptr (mb, (gpointer) mono_thread_interruption_request_flag ());
 	mono_mb_emit_byte (mb, CEE_LDIND_U4);
@@ -2020,6 +2020,12 @@ emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb, gpointer checkpoin
 	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
 
 	mono_mb_emit_icall (mb, checkpoint_func);
+	/* Throw the exception returned by the checkpoint function, if any */
+	mono_mb_emit_byte (mb, CEE_DUP);
+	pos_noex = mono_mb_emit_branch (mb, CEE_BRFALSE);
+	mono_mb_emit_byte (mb, CEE_THROW);
+	mono_mb_patch_branch (mb, pos_noex);
+	mono_mb_emit_byte (mb, CEE_POP);
 	
 	mono_mb_patch_branch (mb, pos_noabort);
 }
@@ -2036,7 +2042,7 @@ emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 static void
 emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
-	emit_thread_interrupt_checkpoint_call (mb, mono_thread_force_interruption_checkpoint);
+	emit_thread_interrupt_checkpoint_call (mb, mono_thread_force_interruption_checkpoint_noraise);
 }
 
 void
