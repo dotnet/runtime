@@ -7,7 +7,8 @@ using Xunit;
 
 public class PathCombineTests
 {
-    private static String s_separator = "\\"; // Was Path.DirectorySeparatorChar
+    private static readonly char s_separator = Path.DirectorySeparatorChar;
+
     [Fact]
     public static void PathIsNull()
     {
@@ -41,12 +42,14 @@ public class PathCombineTests
         //paths has many elements
         Verify(new String[] { "abc" + s_separator + "def", "def", "ghi", "jkl", "mno" });
     }
+
     [Fact]
     public static void PathIsNullWihtoutRootedAfterArgumentNull()
     {
         //any path is null without rooted after (ANE)
         CommonCasesException<ArgumentNullException>(null);
     }
+
     [Fact]
     public static void ContainsInvalidCharWithoutRootedAfterArgumentNull()
     {
@@ -60,6 +63,7 @@ public class PathCombineTests
         CommonCasesException<ArgumentException>("ab\0cd");
         CommonCasesException<ArgumentException>("ab\tcd");
     }
+
     [Fact]
     public static void ContainsInvalidCharWithRootedAfterArgumentNull()
     {
@@ -188,43 +192,37 @@ public class PathCombineTests
 
     private static void VerifyException<T>(string[] paths) where T : Exception
     {
-        String rVal;
-        Assert.Throws<T>(() => { rVal = Path.Combine(paths); });
+        Assert.Throws<T>(() => Path.Combine(paths));
 
         //verify passed as elements case
         if (paths != null)
         {
-            if (paths.Length >= 1 && paths.Length <= 5)
+            Assert.InRange(paths.Length, 1, 5);
+
+            Assert.Throws<T>(() =>
             {
-                Assert.Throws<T>(() =>
+                switch (paths.Length)
                 {
-                    switch (paths.Length)
-                    {
-                        case 0:
-                            rVal = Path.Combine();
-                            break;
-                        case 1:
-                            rVal = Path.Combine(paths[0]);
-                            break;
-                        case 2:
-                            rVal = Path.Combine(paths[0], paths[1]);
-                            break;
-                        case 3:
-                            rVal = Path.Combine(paths[0], paths[1], paths[2]);
-                            break;
-                        case 4:
-                            rVal = Path.Combine(paths[0], paths[1], paths[2], paths[3]);
-                            break;
-                        case 5:
-                            rVal = Path.Combine(paths[0], paths[1], paths[2], paths[3], paths[4]);
-                            break;
-                    }
-                });
-            }
-            else
-            {
-                Assert.True(false, String.Format("Test doesn't cover case with {0} items passed seperately, add it.", paths.Length));
-            }
+                    case 0:
+                        Path.Combine();
+                        break;
+                    case 1:
+                        Path.Combine(paths[0]);
+                        break;
+                    case 2:
+                        Path.Combine(paths[0], paths[1]);
+                        break;
+                    case 3:
+                        Path.Combine(paths[0], paths[1], paths[2]);
+                        break;
+                    case 4:
+                        Path.Combine(paths[0], paths[1], paths[2], paths[3]);
+                        break;
+                    case 5:
+                        Path.Combine(paths[0], paths[1], paths[2], paths[3], paths[4]);
+                        break;
+                }
+            });
         }
     }
 
