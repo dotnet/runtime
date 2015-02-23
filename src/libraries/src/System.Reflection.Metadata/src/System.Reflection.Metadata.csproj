@@ -62,6 +62,7 @@
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
