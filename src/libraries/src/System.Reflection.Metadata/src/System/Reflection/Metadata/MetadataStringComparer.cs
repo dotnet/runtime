@@ -7,10 +7,14 @@ using System.Runtime.CompilerServices;
 namespace System.Reflection.Metadata
 {
     /// <summary>
-    /// Provides zero-allocation string comparison helpers to query strings in metadata.
+    /// Provides string comparison helpers to query strings in metadata while
+    /// avoiding allocation where possible.
     /// </summary>
     ///
     /// <remarks>
+    /// No allocation is performed unless both the handle argument and the
+    /// value argument contain non-ascii text.
+    ///
     /// Obtain instances using <see cref="MetadataReader.StringComparer"/>.
     ///
     /// A default-initialized instance is useless and behaves as a null reference.
