@@ -8,9 +8,10 @@ if((NOT $ENV{LLDB_INCLUDE_DIR} STREQUAL "") AND (NOT $ENV{LLDB_LIB_DIR} STREQUAL
     set(LLDB_LIB_DIR "$ENV{LLDB_LIB_DIR}")
 elseif(CLR_CMAKE_PLATFORM_LINUX)
     # The Linux build depends on the lldb-3.5-dev package
-    set(LLVM_DIR "/usr/lib/llvm-3.5")
-    set(LLDB_INCLUDE_DIR "${LLVM_DIR}/include")
-    set(LLDB_LIB_DIR "${LLVM_DIR}/lib")
+    # TODO 2/23/15 - temporary until we get the lldb-3.5-dev package installed on the CI machine.
+    #set(LLVM_DIR "/usr/lib/llvm-3.5")
+    #set(LLDB_INCLUDE_DIR "${LLVM_DIR}/include")
+    #set(LLDB_LIB_DIR "${LLVM_DIR}/lib")
 endif()
 
 if((NOT ${LLDB_INCLUDE_DIR} STREQUAL "") AND (NOT ${LLDB_LIB_DIR} STREQUAL ""))
