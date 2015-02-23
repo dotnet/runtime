@@ -19,9 +19,9 @@
 
 #include <palsuite.h>
 
-BOOL bFilter = FALSE;
-BOOL bTry = FALSE;
-const int nValidator = 0;
+BOOL bFilter;
+BOOL bTry;
+BOOL bExcept;
 
 ULONG_PTR lpArguments_test1[EXCEPTION_MAXIMUM_PARAMETERS];
 DWORD nArguments_test1 = EXCEPTION_MAXIMUM_PARAMETERS;
@@ -35,7 +35,7 @@ DWORD nArguments_test2 = EXCEPTION_MAXIMUM_PARAMETERS+1;
 **  Filter function that checks for the parameters
 **
 **/
-LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
+LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID *unused)
 {
     int i;
     
@@ -81,7 +81,7 @@ LONG Filter_test1(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
 **  Filter function that checks for the maximum parameters
 **
 **/
-LONG Filter_test2(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
+LONG Filter_test2(EXCEPTION_POINTERS* ep, VOID* unused)
 {
     /* let the main know we've hit the filter function */
     bFilter = TRUE;
@@ -99,8 +99,7 @@ LONG Filter_test2(EXCEPTION_POINTERS* ep, VOID *pnTestInt)
 
 int __cdecl main(int argc, char *argv[])
 {
-    int i;
-    BOOL bExcept = FALSE;
+    bExcept = FALSE;
     
     if (0 != PAL_Initialize(argc, argv))
     {
@@ -111,12 +110,12 @@ int __cdecl main(int argc, char *argv[])
      * Test that the correct arguments are passed 
      * to the filter by RaiseException 
      */
-    PAL_TRY 
+    PAL_TRY(VOID*, unused, NULL)
     {
         bTry = TRUE;    /* indicate we hit the PAL_TRY block */
 
         /* Initialize arguments to pass to filter */
-        for( i = 0; ((DWORD)i) < nArguments_test1; i++ )
+        for(int i = 0; ((DWORD)i) < nArguments_test1; i++ )
         {
             lpArguments_test1[i] = i;
         }
@@ -126,7 +125,7 @@ int __cdecl main(int argc, char *argv[])
         Fail("RaiseException: ERROR -> code was executed after the "
              "exception was raised.\n");
     }
-    PAL_EXCEPT_FILTER(Filter_test1, (LPVOID)&nValidator)
+    PAL_EXCEPT_FILTER(Filter_test1)
     {
         if (!bTry)
         {
@@ -170,12 +169,12 @@ int __cdecl main(int argc, char *argv[])
      * exceeds EXCEPTION_MAXIMUM_PARAMETERS, even though we
      * pass a greater number of arguments 
      */
-    PAL_TRY 
+    PAL_TRY(VOID*, unused, NULL)
     {
         bTry = TRUE;    /* indicate we hit the PAL_TRY block */
 
         /* Initialize arguments to pass to filter */
-        for( i = 0; ((DWORD)i) < nArguments_test2; i++ )
+        for(int i = 0; ((DWORD)i) < nArguments_test2; i++ )
         {
             lpArguments_test2[i] = i;
         }
@@ -185,7 +184,7 @@ int __cdecl main(int argc, char *argv[])
         Fail("RaiseException: ERROR -> code was executed after the "
              "exception was raised.\n");
     }
-    PAL_EXCEPT_FILTER(Filter_test2, (LPVOID)&nValidator)
+    PAL_EXCEPT_FILTER(Filter_test2)
     {
         if (!bTry)
         {

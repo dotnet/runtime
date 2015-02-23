@@ -57,8 +57,8 @@ int __cdecl main( int argc, char **argv )
     // Make sure that the wait returns in time greater than interrupt and less than 
     // wait timeout
     if ( 
-        ((ThreadWaitDelta >= ChildThreadWaitTime) && ( abs( ThreadWaitDelta - ChildThreadWaitTime) > TOLERANCE )) 
-        || (( ThreadWaitDelta < InterruptTime) && ( abs( ThreadWaitDelta - InterruptTime) > TOLERANCE ) )
+        ((ThreadWaitDelta >= ChildThreadWaitTime) && (ThreadWaitDelta - ChildThreadWaitTime) > TOLERANCE) 
+        || (( ThreadWaitDelta < InterruptTime) && (ThreadWaitDelta - InterruptTime) > TOLERANCE)
         )
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
@@ -75,7 +75,7 @@ int __cdecl main( int argc, char **argv )
     // Make sure that time taken for thread to return from wait is more than interrupt
     // and also not less than the complete child thread wait time
 
-    delta = abs( ThreadWaitDelta - ChildThreadWaitTime);
+    delta = ThreadWaitDelta - ChildThreadWaitTime;
     if( (ThreadWaitDelta < ChildThreadWaitTime) && ( delta > TOLERANCE) ) 
     {
         Fail("Expected thread to wait for %d ms (and not get interrupted).\n"

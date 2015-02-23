@@ -8,6 +8,8 @@
 // and is always apply to the current thread.
 //
 
+#include "macros.inc"
+
 #ifdef BIT64
 
 #define CONTEXT_CONTROL 1 // SegSs, Rsp, SegCs, Rip, and EFlags
@@ -76,8 +78,8 @@
 // Incoming:
 //  RDI: Context*
 //
-    .globl _CONTEXT_CaptureContext
-_CONTEXT_CaptureContext:
+    .globl C_FUNC(CONTEXT_CaptureContext)
+C_FUNC(CONTEXT_CaptureContext):
     testb $CONTEXT_INTEGER, CONTEXT_ContextFlags(%rdi)
     je 0f
     mov %rdi, CONTEXT_Rdi(%rdi)
@@ -166,8 +168,8 @@ _CONTEXT_CaptureContext:
 #define CONTEXT_Xmm6 CONTEXT_Xmm5+16
 #define CONTEXT_Xmm7 CONTEXT_Xmm6+16
 
-    .globl _CONTEXT_CaptureContext
-_CONTEXT_CaptureContext:
+    .globl C_FUNC(CONTEXT_CaptureContext)
+C_FUNC(CONTEXT_CaptureContext):
     push %eax
     mov 8(%esp), %eax
     mov %edi, CONTEXT_Edi(%eax)
