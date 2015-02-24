@@ -14,6 +14,7 @@ namespace CoreXml.Test.XLinq
         // Type is CoreXml.Test.XLinq.FunctionalTests
         // Test Module
         [Fact]
+        [OuterLoop]
         public static void RunTests()
         {
             TestInput.CommandLine = "";

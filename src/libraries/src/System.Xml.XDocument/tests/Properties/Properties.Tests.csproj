@@ -9,6 +9,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>Properties.Tests</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
+    <TestCategories>OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
