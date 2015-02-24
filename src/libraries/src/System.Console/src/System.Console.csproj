@@ -67,6 +67,9 @@
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
 
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Devices.cs">
+      <Link>Common\Interop\Unix\Interop.Devices.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

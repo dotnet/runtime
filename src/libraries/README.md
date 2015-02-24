@@ -68,6 +68,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
 
+* **System.Diagnostics.Debug**. Provides a class to interact with the debugger as well as methods for performing runtime assertions.
+
 * **System.Diagnostics.FileVersionInfo**. Provides useful functionality for querying
   and examining the version information of physical files on disk.
 
