@@ -199,6 +199,8 @@ static_assert_no_msg(sizeof(StackwalkCacheEntry) == 2 * sizeof(UINT_PTR));
 
 class StackwalkCache 
 {
+    friend struct _DacGlobals;
+
     public:
         BOOL Lookup(UINT_PTR IP);
         void Insert(StackwalkCacheEntry *pCacheEntry);

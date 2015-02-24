@@ -163,7 +163,6 @@ public:
 #endif
     }
 
-#ifdef DACCESS_COMPILE
     // Special empty CTOR for DAC. We still need to assign to const fields, but they won't actually be used.
     SimpleRWLock()  
         : m_gcMode(COOPERATIVE_OR_PREEMPTIVE)
@@ -174,7 +173,6 @@ public:
         m_countNoTriggerGC = 0;
 #endif //_DEBUG
     }
-#endif
     
 #ifndef DACCESS_COMPILE
     // Acquire the reader lock.

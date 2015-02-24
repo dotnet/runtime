@@ -194,6 +194,7 @@ typedef VPTR(class StubManager) PTR_StubManager;
 class StubManager
 {
     friend class StubManagerIterator;
+
     VPTR_BASE_VTABLE_CLASS(StubManager)
     
   public:
@@ -319,7 +320,7 @@ public:
     // This is used by DAC to provide more information on who owns a stub.
     virtual LPCWSTR GetStubManagerName(PCODE addr) = 0;
 #endif
-
+ 
 private:
     SPTR_DECL(StubManager, g_pFirstManager);
     PTR_StubManager m_pNextManager;

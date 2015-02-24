@@ -246,7 +246,9 @@ namespace Security
 class ISecurityDescriptor
 {
 public:
+#ifndef FEATURE_PAL
     VPTR_BASE_VTABLE_CLASS(ISecurityDescriptor)
+#endif
     virtual ~ISecurityDescriptor() { LIMITED_METHOD_CONTRACT; }
 
     virtual BOOL IsFullyTrusted() = 0;
@@ -274,7 +276,9 @@ public:
 class IApplicationSecurityDescriptor : public ISecurityDescriptor
 {
 public:
+#ifndef FEATURE_PAL
     VPTR_ABSTRACT_VTABLE_CLASS(IApplicationSecurityDescriptor, ISecurityDescriptor)
+#endif
 
 #ifndef DACCESS_COMPILE
 public:
@@ -318,7 +322,9 @@ public:
 class IAssemblySecurityDescriptor : public ISecurityDescriptor
 {
 public:
+#ifndef FEATURE_PAL
     VPTR_ABSTRACT_VTABLE_CLASS(IAssemblySecurityDescriptor, ISecurityDescriptor)
+#endif
 
 #ifndef DACCESS_COMPILE
     virtual SharedSecurityDescriptor *GetSharedSecDesc() = 0;

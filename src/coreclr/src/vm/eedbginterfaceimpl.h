@@ -36,7 +36,7 @@
 
 class EEDbgInterfaceImpl : public EEDebugInterface
 {
-    VPTR_VTABLE_CLASS(EEDbgInterfaceImpl, EEDebugInterface);
+    VPTR_VTABLE_CLASS_AND_CTOR(EEDbgInterfaceImpl, EEDebugInterface);
 
 public:
 
@@ -48,7 +48,7 @@ public:
     static FORCEINLINE void Init(void)
     {
         g_pEEDbgInterfaceImpl = new EEDbgInterfaceImpl(); // new throws on failure
-        }
+    }
 
     //
     // Cleanup any global data used by this interface.
