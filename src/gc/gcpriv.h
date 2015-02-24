@@ -1112,6 +1112,7 @@ extern void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRo
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 class gc_heap
 {
+    friend struct ::_DacGlobals;
 #ifdef DACCESS_COMPILE
     friend class ::ClrDataAccess;
     friend class ::DacHeapWalker;

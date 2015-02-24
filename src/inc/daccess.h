@@ -566,8 +566,6 @@ struct DacTableHeader
     DacTableInfo info;
 };
 
-#ifdef DACCESS_COMPILE
-
 //
 // This version of things wraps pointer access in
 // templates which understand how to retrieve data
@@ -587,7 +585,6 @@ typedef ULONG_PTR TADDR;
 // which reflects the host pointer size.
 typedef SIZE_T TSIZE_T;
 
-extern DacTableInfo g_dacTableInfo;
 
 //
 // The following table contains all the global information that data access needs to begin 
@@ -597,9 +594,18 @@ extern DacTableInfo g_dacTableInfo;
 
 typedef struct _DacGlobals
 {
+#ifdef FEATURE_PAL
+    static void Initialize();
+    void InitializeEntries(TADDR baseAddress);
+#ifdef FEATURE_SVR_GC
+    void InitializeSVREntries(TADDR baseAddress);
+#endif // FEATURE_SVR_GC
+#endif // FEATURE_PAL
+
 // These will define all of the dac related mscorwks static and global variables    
-#define DEFINE_DACVAR(id_type, size, id)                 id_type id;
-#define DEFINE_DACVAR_NO_DUMP(id_type, size, id)        id_type id;
+#define DEFINE_DACVAR(id_type, size, id, var)                 id_type id;
+#define DEFINE_DACVAR_SVR(id_type, size, id, var)             id_type id;
+#define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)         id_type id;
 #include "dacvars.h"
 
     // Global functions.
@@ -625,6 +631,9 @@ typedef struct _DacGlobals
 #undef VPTR_MULTI_CLASS
 } DacGlobals;
 
+#ifdef DACCESS_COMPILE
+
+extern DacTableInfo g_dacTableInfo;
 extern DacGlobals g_dacGlobals;
 
 #ifdef __cplusplus
@@ -1821,6 +1830,9 @@ typedef __VoidPtr PTR_CVOID;
 public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
         VPTR_CLASS_METHODS(name)
 
+#define VPTR_VTABLE_CLASS_AND_CTOR(name, base)                  \
+        VPTR_VTABLE_CLASS(name, base)
+
 #define VPTR_MULTI_VTABLE_CLASS(name, base)                     \
 public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}  \
         VPTR_MULTI_CLASS_METHODS(name, base)
@@ -1841,6 +1853,9 @@ public: name(TADDR addr, TADDR vtAddr);                         \
 #define VPTR_BASE_VTABLE_CLASS(name)                            \
 public: name(TADDR addr, TADDR vtAddr) {}                       \
         virtual ULONG32 VPtrSize(void) = 0;
+
+#define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name)                   \
+        VPTR_BASE_VTABLE_CLASS(name)
 
 #define VPTR_BASE_VTABLE_CLASS_NO_CTOR_BODY(name)               \
 public: name(TADDR addr, TADDR vtAddr);                         \
@@ -2085,11 +2100,48 @@ typedef const void* PTR_CVOID;
 #define S8PTRMAX(type, maxChars) type*
 #define S16PTR(type) type*
 #define S16PTRMAX(type, maxChars) type*
+
+#if defined(FEATURE_PAL)
+
+#define VPTR_VTABLE_CLASS(name, base) \
+        friend struct _DacGlobals; \
+public: name(int dummy) : base(dummy) {}
+
+#define VPTR_VTABLE_CLASS_AND_CTOR(name, base) \
+        VPTR_VTABLE_CLASS(name, base) \
+        name() : base() {}
+
+#define VPTR_MULTI_VTABLE_CLASS(name, base) \
+        friend struct _DacGlobals; \
+public: name(int dummy) : base(dummy) {}
+
+#define VPTR_BASE_CONCRETE_VTABLE_CLASS(name) \
+        friend struct _DacGlobals; \
+public: name(int dummy) {}
+
+#define VPTR_BASE_VTABLE_CLASS(name) \
+        friend struct _DacGlobals; \
+public: name(int dummy) {}
+
+#define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name) \
+        VPTR_BASE_VTABLE_CLASS(name) \
+        name() {}
+
+#define VPTR_ABSTRACT_VTABLE_CLASS(name, base) \
+        friend struct _DacGlobals; \
+public: name(int dummy) : base(dummy) {}
+
+#else // FEATURE_PAL
+
 #define VPTR_VTABLE_CLASS(name, base)
+#define VPTR_VTABLE_CLASS_AND_CTOR(name, base)
 #define VPTR_MULTI_VTABLE_CLASS(name, base)
 #define VPTR_BASE_CONCRETE_VTABLE_CLASS(name)
 #define VPTR_BASE_VTABLE_CLASS(name)
+#define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name)
 #define VPTR_ABSTRACT_VTABLE_CLASS(name, base)
+
+#endif // FEATURE_PAL
 
 // helper macro to make the vtables unique for DAC
 #define VPTR_UNIQUE(unique) virtual int MakeVTableUniqueForDAC() {    STATIC_CONTRACT_SO_TOLERANT; return unique; }
