@@ -70,7 +70,6 @@ do
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
-  echo Running $TEST_COMMAND
   $TEST_COMMAND
 
   # Get exit code of the test process.
