@@ -61,6 +61,8 @@ code_buffer_desc (MonoProfilerCodeBufferType type)
 		return "code_buffer_monitor";
 	case MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE:
 		return "code_buffer_delegate_invoke";
+	case MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING:
+		return "code_buffer_exception_handling";
 	default:
 		return "unspecified";
 	}

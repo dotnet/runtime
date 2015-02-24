@@ -1921,6 +1921,8 @@ code_buffer_desc (int type)
 		return "monitor/lock";
 	case MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE:
 		return "delegate invoke";
+	case MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING:
+		return "exception handling";
 	default:
 		return "unspecified";
 	}
