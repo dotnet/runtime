@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Security;
 using System.Text;
 
 namespace System.Diagnostics
@@ -12,7 +13,7 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
-    public sealed class ProcessStartInfo
+    public sealed partial class ProcessStartInfo
     {
         private string _fileName;
         private string _arguments;
@@ -164,11 +165,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public string FileName
         {
-            get
-            {
-                if (_fileName == null) return string.Empty;
-                return _fileName;
-            }
+            get { return _fileName ?? string.Empty; }
             set { _fileName = value; }
         }
 
@@ -178,15 +175,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public string WorkingDirectory
         {
-            get
-            {
-                if (_directory == null) return string.Empty;
-                return _directory;
-            }
-            set
-            {
-                _directory = value;
-            }
+            get { return _directory ?? string.Empty; }
+            set { _directory = value; }
         }
     }
 }
