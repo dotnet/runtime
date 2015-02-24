@@ -695,12 +695,13 @@ namespace Microsoft.Win32 {
 #if !FEATURE_PAL
         internal const String KERNEL32 = "kernel32.dll";
         internal const String USER32   = "user32.dll";
+        internal const String OLE32    = "ole32.dll";
 #else //FEATURE_PAL
         internal const String KERNEL32 = "libcoreclr.so";
         internal const String USER32   = "libcoreclr.so";
+        internal const String OLE32    = "libcoreclr.so";
 #endif //FEATURE_PAL         
         internal const String ADVAPI32 = "advapi32.dll";
-        internal const String OLE32    = "ole32.dll";
         internal const String OLEAUT32 = "oleaut32.dll";
         internal const String SHELL32  = "shell32.dll";
         internal const String SHIM     = "mscoree.dll";
