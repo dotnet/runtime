@@ -67,7 +67,9 @@
 #include <winver.h>
 #include <winternl.h>
 #include <psapi.h>
+#ifndef FEATURE_PAL
 #include <list>   
+#endif // !FEATURE_PAL
 #include <wchar.h>
 
 #include "platformspecific.h"
@@ -110,7 +112,9 @@
 #define DEFINE_EXT_GLOBALS
 
 #include "data.h"
+#ifndef FEATURE_PAL
 #include "disasm.h"
+#endif // !FEATURE_PAL
 
 #include "predeftlsslot.h"
 
@@ -119,13 +123,13 @@
 #include "sos_md.h"
 
 #ifndef FEATURE_PAL
+
 #include "ExpressionNode.h"
 #include "WatchCmd.h"
 
 #include <set>
 #include <algorithm>
 #include <vector>
-#endif
 
 #include "tls.h"
 
@@ -146,14 +150,16 @@ typedef VM_COUNTERS *PVM_COUNTERS;
 
 const PROCESSINFOCLASS ProcessVmCounters = static_cast<PROCESSINFOCLASS>(3);
 
+#endif // !FEATURE_PAL
+
 BOOL CallStatus;
 BOOL ControlC = FALSE;
 
 IMetaDataDispenserEx *pDisp = NULL;
 WCHAR g_mdName[mdNameLen];
-HMODULE g_hInstance=NULL;
 
-#if !defined(FEATURE_PAL)
+#ifndef FEATURE_PAL
+HMODULE g_hInstance = NULL;
 #include <vector>
 #include <algorithm>
 #endif // !FEATURE_PAL
@@ -243,6 +249,7 @@ DECLARE_API (MinidumpMode)
 
     return Status;
 }
+
 #endif // FEATURE_PAL
 
 /**********************************************************************\
@@ -255,7 +262,7 @@ DECLARE_API(IP2MD)
 {
     INIT_API();
     MINIDUMP_NOT_SUPPORTED();
-        
+
     BOOL dml = FALSE;
     TADDR IP = 0;
     CMDOption option[] = 
@@ -272,7 +279,11 @@ DECLARE_API(IP2MD)
     {
         return Status;
     }
-    
+#ifdef FEATURE_PAL 
+    // TODO - mikem 2/20/14 - temporary until the rest of the DAC is working.
+    ExtOut("Test output for IP2MD %16x\n", IP);
+    return Status;
+#endif 
     EnableDMLHolder dmlHolder(dml);
 
     if (IP == 0)
@@ -294,7 +305,7 @@ DECLARE_API(IP2MD)
     DMLOut("MethodDesc:   %s\n", DMLMethodDesc(pMD));
     DumpMDInfo(TO_TADDR(pMD), cdaStart, FALSE /* fStackTraceFormat */);
 
-
+#ifndef FEATURE_PAL
     char  filename[MAX_PATH+1];
     ULONG linenum;
     // symlines will be non-zero only if SYMOPT_LOAD_LINES was set in the symbol options
@@ -312,9 +323,12 @@ DECLARE_API(IP2MD)
     {
         ExtOut("Source file:  %s @ %d\n", filename, linenum);
     }
+#endif
 
     return Status;
 }
+
+#ifndef FEATURE_PAL
 
 // (MAX_STACK_FRAMES is also used by x86 to prevent infinite loops in _EFN_StackTrace)
 #define MAX_STACK_FRAMES 1000
@@ -13927,3 +13941,5 @@ Help(PDEBUG_CLIENT Client, PCSTR Args)
     
     return S_OK;
 }
+
+#endif // !FEATURE_PAL

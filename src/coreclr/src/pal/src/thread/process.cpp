@@ -120,7 +120,7 @@ Volatile<LONG> terminator = 0;
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
 
-LPWSTR pAppDir;
+LPWSTR pAppDir = NULL;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -1879,40 +1879,40 @@ CorUnix::CreateInitialProcessAndThreadObjects(
     CProcSharedData *pSharedData;
     CObjectAttributes oa;
     HANDLE hProcess;
-    
-    INT n;
-    LPWSTR lpwstr = NULL;
     LPWSTR initial_dir = NULL;
 
     //
     // Save the command line and initial directory
     //
 
-    g_lpwstrCmdLine = lpwstrCmdLine;
+    g_lpwstrCmdLine = lpwstrCmdLine ? lpwstrCmdLine : (LPWSTR)W("");
     
-    lpwstr=PAL_wcsrchr(lpwstrFullPath,'/');
-    lpwstr[0]='\0';
-    n=lstrlenW(lpwstrFullPath)+1;
-
-    int iLen = n;
-    initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, iLen*sizeof(WCHAR)));
-    if (NULL == initial_dir)
+    if (lpwstrCmdLine)
     {
-        ERROR("malloc() failed! (initial_dir) \n");
-        goto CreateInitialProcessAndThreadObjectsExit;
+        LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
+        lpwstr[0] = '\0';
+        INT n = lstrlenW(lpwstrFullPath) + 1;
+
+        int iLen = n;
+        initial_dir = reinterpret_cast<LPWSTR>(InternalMalloc(pThread, iLen*sizeof(WCHAR)));
+        if (NULL == initial_dir)
+        {
+            ERROR("malloc() failed! (initial_dir) \n");
+            goto CreateInitialProcessAndThreadObjectsExit;
+        }
+
+        if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
+        {
+            ERROR("wcscpy_s failed!\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto CreateInitialProcessAndThreadObjectsExit;
+        }
+
+        lpwstr[0] = '/';
     }
-
-    if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
-    {
-        ERROR("wcscpy_s failed!\n");
-        palError = ERROR_INTERNAL_ERROR;
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    lpwstr[0]='/';
-
+    
     pAppDir = initial_dir;
-    
+
     //
     // Create initial thread object
     //
@@ -3434,33 +3434,36 @@ getPath(
     /* first look in directory from which the application loaded */
     lpwstr=pAppDir;
 
-    /* convert path to multibyte, check buffer size */
-    n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, lpPathFileName, iLen,
-                            NULL, NULL);
-    if(n == 0)
+    if (lpwstr)
     {
-        ASSERT("WideCharToMultiByte failure!\n");
-        return FALSE;
-    }
+        /* convert path to multibyte, check buffer size */
+        n = WideCharToMultiByte(CP_ACP, 0, lpwstr, -1, lpPathFileName, iLen,
+            NULL, NULL);
+        if (n == 0)
+        {
+            ASSERT("WideCharToMultiByte failure!\n");
+            return FALSE;
+        }
 
-    n += strlen(lpFileName) + 2;
-    if( n > (INT) iLen )
-    {
-        ERROR("Buffer too small for full path!\n");
-        return FALSE;
-    }
-    
-    if ((strcat_s(lpPathFileName, iLen, "/") != SAFECRT_SUCCESS) ||
-        (strcat_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS))
-    {
-        ERROR("strcat_s failed!\n");
-        return FALSE;
-    }
+        n += strlen(lpFileName) + 2;
+        if (n > (INT)iLen)
+        {
+            ERROR("Buffer too small for full path!\n");
+            return FALSE;
+        }
 
-    if(access(lpPathFileName, F_OK) == 0)
-    {
-        TRACE("found %s in application directory (%s)\n", lpFileName, lpPathFileName);
-        return TRUE;
+        if ((strcat_s(lpPathFileName, iLen, "/") != SAFECRT_SUCCESS) ||
+            (strcat_s(lpPathFileName, iLen, lpFileName) != SAFECRT_SUCCESS))
+        {
+            ERROR("strcat_s failed!\n");
+            return FALSE;
+        }
+
+        if (access(lpPathFileName, F_OK) == 0)
+        {
+            TRACE("found %s in application directory (%s)\n", lpFileName, lpPathFileName);
+            return TRUE;
+        }
     }
 
     /* then try the current directory */
