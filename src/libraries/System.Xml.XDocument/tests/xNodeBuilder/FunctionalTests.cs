@@ -17,6 +17,7 @@ namespace CoreXml.Test.XLinq
         // Type is CoreXml.Test.XLinq.FunctionalTests
         // Test Module
         [Fact]
+        [OuterLoop]
         [ActiveIssue(641)]
         public static void RunTests()
         {

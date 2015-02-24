@@ -9,6 +9,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XmlDocument.Tests</AssemblyName>
     <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
