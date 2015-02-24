@@ -645,7 +645,7 @@ typedef void        (*MonoFreeMethodFunc)	 (MonoDomain *domain, MonoMethod *meth
 /* Used to initialize the method pointers inside vtables */
 typedef gboolean    (*MonoInitVTableFunc)    (MonoVTable *vtable);
 
-void mono_set_pending_exception (MonoException *exc) MONO_INTERNAL;
+MONO_COLD void mono_set_pending_exception (MonoException *exc) MONO_INTERNAL;
 
 /* remoting and async support */
 
