@@ -8,14 +8,14 @@ namespace System.Diagnostics
 {
     public static partial class Debug
     {
-        // Internal so that the tests can override this.
+        // internal and not read only so that the tests can swap this out.
         internal static IDebugLogger s_logger = new WindowsDebugLogger();
 
         // --------------
         // PAL ENDS HERE
         // --------------
 
-        internal class WindowsDebugLogger : IDebugLogger
+        internal sealed class WindowsDebugLogger : IDebugLogger
         {
             [SecuritySafeCritical]
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
@@ -97,34 +97,32 @@ namespace System.Diagnostics
 
             internal class MessageBoxPopup
             {
-                public int ReturnValue { get; set; }
-                private AutoResetEvent m_Event;
-                private string m_Body;
-                private string m_Title;
-                private int m_Flags;
+                private readonly string _body;
+                private readonly string _title;
+                private readonly int _flags;
+                private int _returnValue;
+
 
                 [SecurityCritical]
                 public MessageBoxPopup(string body, string title, int flags)
                 {
-                    m_Event = new AutoResetEvent(false);
-                    m_Body = body;
-                    m_Title = title;
-                    m_Flags = flags;
+                    _body = body;
+                    _title = title;
+                    _flags = flags;
                 }
 
                 public int ShowMessageBox()
                 {
                     Thread t = new Thread(DoPopup);
                     t.Start();
-                    m_Event.WaitOne();
-                    return ReturnValue;
+                    t.Join();
+                    return _returnValue;
                 }
 
                 [SecuritySafeCritical]
                 public void DoPopup()
                 {
-                    ReturnValue = Interop.User32.MessageBox(IntPtr.Zero, m_Body, m_Title, m_Flags);
-                    m_Event.Set();
+                    _returnValue = Interop.User32.MessageBox(IntPtr.Zero, _body, _title, _flags);
                 }
             }
         }

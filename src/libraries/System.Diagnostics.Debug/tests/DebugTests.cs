@@ -1,6 +1,4 @@
-﻿#define DEBUG
-
-using System;
+﻿using System;
 using System.Diagnostics;
 
 using Xunit;
@@ -97,7 +95,11 @@ namespace System.Diagnostics.Tests
             {
                 WriteLogger.Instance.Clear();
                 test();
+#if DEBUG                
                 Assert.Equal(expectedOutput, WriteLogger.Instance.LoggedOutput);
+#else
+                Assert.Equal(string.Empty, WriteLogger.Instance.LoggedOutput);
+#endif
             }
             finally
             {
@@ -114,11 +116,16 @@ namespace System.Diagnostics.Tests
             {
                 WriteLogger.Instance.Clear();
                 test();
+#if DEBUG
                 for (int i = 0; i < expectedOutputStrings.Length; i++)
                 {
                     Assert.Contains(expectedOutputStrings[i], WriteLogger.Instance.LoggedOutput);
                     Assert.Contains(expectedOutputStrings[i], WriteLogger.Instance.AssertUIOutput);
                 }
+#else
+                Assert.Equal(string.Empty, WriteLogger.Instance.LoggedOutput);
+                Assert.Equal(string.Empty, WriteLogger.Instance.AssertUIOutput);
+#endif
 
             }
             finally

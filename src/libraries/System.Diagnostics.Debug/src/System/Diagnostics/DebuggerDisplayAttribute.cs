@@ -8,41 +8,42 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Delegate | AttributeTargets.Enum | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DebuggerDisplayAttribute : Attribute
     {
-        private string name;
-        private string value;
-        private string type;
-        private string targetName;
-        private Type target;
+        private readonly string _value;
+        
+        private string _name;
+        private string _type;
+        private string _targetName;
+        private Type _target;
 
         public DebuggerDisplayAttribute(string value)
         {
             if (value == null)
             {
-                this.value = "";
+                this._value = "";
             }
             else
             {
-                this.value = value;
+                this._value = value;
             }
-            name = "";
-            type = "";
+            _name = "";
+            _type = "";
         }
 
         public string Value
         {
-            get { return this.value; }
+            get { return this._value; }
         }
 
         public string Name
         {
-            get { return name; }
-            set { name = value; }
+            get { return _name; }
+            set { _name = value; }
         }
 
         public string Type
         {
-            get { return type; }
-            set { type = value; }
+            get { return _type; }
+            set { _type = value; }
         }
 
         public Type Target
@@ -55,16 +56,16 @@ namespace System.Diagnostics
                 }
                 Contract.EndContractBlock();
 
-                targetName = value.AssemblyQualifiedName;
-                target = value;
+                _targetName = value.AssemblyQualifiedName;
+                _target = value;
             }
-            get { return target; }
+            get { return _target; }
         }
 
         public string TargetTypeName
         {
-            get { return targetName; }
-            set { targetName = value; }
+            get { return _targetName; }
+            set { _targetName = value; }
         }
     }
 }
