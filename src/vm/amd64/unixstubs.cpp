@@ -47,30 +47,11 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    void TheUMEntryPrestub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void UMThunkStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void VarargPInvokeStub()
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
     
-    void STDCALL UM2MThunk_WrapperHelper(void *pThunkArgs,
-                                         int argLen,
-                                         void *pAddr,
-                                         UMEntryThunk *pEntryThunk,
-                                         Thread *pThread)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void VarargPInvokeStub_RetBuffArg()
     {
         PORTABILITY_ASSERT("Implement for PAL");
