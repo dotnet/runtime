@@ -82,7 +82,8 @@
 #define mono_assert_not_reached() g_assert_not_reached() 
 #endif
 
-#define MONO_CHECK_ARG(arg, expr)		G_STMT_START{		  \
+/* Use this as MONO_CHECK_ARG_NULL (arg,expr,) in functions returning void */
+#define MONO_CHECK_ARG(arg, expr, retval)		G_STMT_START{		  \
 		if (G_UNLIKELY (!(expr)))							  \
        {								  \
 		MonoException *ex;					  \
@@ -91,16 +92,19 @@
 		if (arg) {} /* check if the name exists */		  \
 		ex = mono_get_exception_argument (#arg, msg);		  \
 		g_free (msg);						  \
-		mono_raise_exception (ex);				  \
+		mono_set_pending_exception (ex);					  \
+		return retval;										  \
        };				}G_STMT_END
 
-#define MONO_CHECK_ARG_NULL(arg)	    G_STMT_START{		  \
+/* Use this as MONO_CHECK_ARG_NULL (arg,) in functions returning void */
+#define MONO_CHECK_ARG_NULL(arg, retval)	    G_STMT_START{		  \
 		if (G_UNLIKELY (arg == NULL))						  \
        {								  \
 		MonoException *ex;					  \
 		if (arg) {} /* check if the name exists */		  \
 		ex = mono_get_exception_argument_null (#arg);		  \
-		mono_raise_exception (ex);				  \
+		mono_set_pending_exception (ex);					  \
+		return retval;										  \
        };				}G_STMT_END
 
 /* 16 == default capacity */

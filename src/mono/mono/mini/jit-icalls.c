@@ -935,7 +935,8 @@ mono_rconv_ovf_i8 (float v)
 	res = (gint64)v;
 
 	if (isnan(v) || trunc (v) != res) {
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
 	}
 	return res;
 }
@@ -947,7 +948,8 @@ mono_rconv_ovf_u8 (float v)
 
 	res = (guint64)v;
 	if (isnan(v) || trunc (v) != res) {
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
 	}
 	return res;
 }

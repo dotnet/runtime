@@ -934,7 +934,8 @@ void load_normalization_resource (guint8 **argProps,
 				  guint8 **argCombiningClass)
 {
 #ifdef DISABLE_NORMALIZATION
-	mono_raise_exception (mono_get_exception_not_supported ("This runtime has been compiled without string normalization support."));
+	mono_set_pending_exception (mono_get_exception_not_supported ("This runtime has been compiled without string normalization support."));
+	return;
 #else
 	*argProps = (guint8*)props;
 	*argMappedChars = (guint8*) mappedChars;

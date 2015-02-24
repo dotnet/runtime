@@ -957,7 +957,7 @@ ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 		LockWord lw;
 		lw.sync = mon;
 		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
-			mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+			mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked"));
 			return;
 		}
 		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
@@ -965,11 +965,11 @@ ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 	}
 #endif
 	if (mon == NULL) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
 	}
 	if (mon_status_get_owner (mon->status) != mono_thread_info_get_small_id ()) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return;
 	}
 
@@ -996,7 +996,7 @@ ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 		LockWord lw;
 		lw.sync = mon;
 		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
-			mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+			mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked"));
 			return;
 		}
 		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
@@ -1004,11 +1004,11 @@ ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 	}
 #endif
 	if (mon == NULL) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return;
 	}
 	if (mon_status_get_owner (mon->status) != mono_thread_info_get_small_id ()) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return;
 	}
 
@@ -1041,7 +1041,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		LockWord lw;
 		lw.sync = mon;
 		if (lw.lock_word & LOCK_WORD_THIN_HASH) {
-			mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+			mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked"));
 			return FALSE;
 		}
 		lw.lock_word &= ~LOCK_WORD_BITS_MASK;
@@ -1049,11 +1049,11 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	}
 #endif
 	if (mon == NULL) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked"));
 		return FALSE;
 	}
 	if (mon_status_get_owner (mon->status) != mono_thread_info_get_small_id ()) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Not locked by this thread"));
 		return FALSE;
 	}
 
@@ -1062,7 +1062,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	
 	event = CreateEvent (NULL, FALSE, FALSE, NULL);
 	if (event == NULL) {
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Failed to set up wait event"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Failed to set up wait event"));
 		return FALSE;
 	}
 	
@@ -1117,7 +1117,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		 * SynchronizationLockException
 		 */
 		CloseHandle (event);
-		mono_raise_exception (mono_get_exception_synchronization_lock ("Failed to regain lock"));
+		mono_set_pending_exception (mono_get_exception_synchronization_lock ("Failed to regain lock"));
 		return FALSE;
 	}
 
