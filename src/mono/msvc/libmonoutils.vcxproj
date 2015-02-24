@@ -22,6 +22,7 @@
   <ItemGroup>
     <ClCompile Include="..\mono\utils\dlmalloc.c" />
     <ClCompile Include="..\mono\utils\hazard-pointer.c" />
+    <ClCompile Include="..\mono\utils\json.c" />
     <ClCompile Include="..\mono\utils\lock-free-alloc.c" />
     <ClCompile Include="..\mono\utils\lock-free-array-queue.c" />
     <ClCompile Include="..\mono\utils\lock-free-queue.c" />
@@ -73,7 +74,6 @@
     <ClCompile Include="..\mono\utils\mono-hwcap.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap-x86.c" />
     <ClCompile Include="..\mono\utils\bsearch.c" />
-    <ClInclude Include="..\mono\utils\json.c" />    
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\utils\dlmalloc.h" />
@@ -84,6 +84,7 @@
     <ClInclude Include="..\mono\utils\freebsd-elf_common.h" />
     <ClInclude Include="..\mono\utils\gc_wrapper.h" />
     <ClInclude Include="..\mono\utils\hazard-pointer.h" />
+    <ClInclude Include="..\mono\utils\json.h" />
     <ClInclude Include="..\mono\utils\linux_magic.h" />
     <ClInclude Include="..\mono\utils\lock-free-alloc.h" />
     <ClInclude Include="..\mono\utils\lock-free-array-queue.h" />
@@ -135,7 +136,6 @@
     <ClInclude Include="..\mono\utils\mono-hwcap.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap-x86.h" />
     <ClInclude Include="..\mono\utils\bsearch.h" />
-    <ClInclude Include="..\mono\utils\json.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="..\mono\utils\win64.asm">
