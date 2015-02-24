@@ -91,7 +91,7 @@ __BuildArch=x64
 # Use uname to determine what the OS is.  
 if [ $(uname -o | grep -i Linux) ]; then
     __BuildOS=linux
-elif [ $(uname -o | grep -i Darwin) ]; then
+elif [ $(uname -s | grep -i Darwin) ]; then
     __BuildOS=mac
 else
     echo "Unsupported OS detected, assuming linux"
