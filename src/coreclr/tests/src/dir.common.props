@@ -5,8 +5,10 @@
   <PropertyGroup>
     <__BuildArch Condition="'$(__BuildArch)' == ''">x64</__BuildArch>
     <__BuildType Condition="'$(__BuildType)' == ''">Debug</__BuildType>
+	<__BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</__BuildOS>
     <BuildArch>$(__BuildArch)</BuildArch>
     <BuildType>$(__BuildType)</BuildType>
+	<BuildOS>$(__BuildOS)</BuildOS>
     <Configuration Condition="'$(Configuration)' ==''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)'==''">$(BuildArch)</Platform>
   </PropertyGroup>
@@ -27,13 +29,13 @@
 
 <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
-    <BaseOutputPathWithConfig>$(ProjectDir)\..\binaries\tests\$(Platform)\$(Configuration)\</BaseOutputPathWithConfig>
+    <BaseOutputPathWithConfig>$(ProjectDir)\..\binaries\tests\$(BuildOS).$(Platform).$(Configuration)\</BaseOutputPathWithConfig>
     <BaseOutputPathWithConfig Condition="'$(__TestWorkingDir)' != ''">$(__TestWorkingDir)\</BaseOutputPathWithConfig>
-    <BinDir>$(BaseOutputPathWithConfig)\..\..\</BinDir>
-    <BaseIntermediateOutputPath>$(BinDir)\obj\</BaseIntermediateOutputPath>
+    <BinDir>$(BaseOutputPathWithConfig)\..\..\..\</BinDir>
+    <BaseIntermediateOutputPath>$(BinDir)\intermediates\</BaseIntermediateOutputPath>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(SourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(SourceDir),''))</BuildProjectRelativeDir>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\$(BuildOS).$(Platform).$(Configuration)\</IntermediateOutputPath>
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
   </PropertyGroup>
 
