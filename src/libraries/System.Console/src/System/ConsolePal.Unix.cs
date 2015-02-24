@@ -22,17 +22,17 @@ namespace System
     {
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream("/dev/stdin", FileAccess.Read);
+            return new UnixConsoleStream(Interop.Devices.stdin, FileAccess.Read);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream("/dev/stdout", FileAccess.Write);
+            return new UnixConsoleStream(Interop.Devices.stdout, FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream("/dev/stderr", FileAccess.Write);
+            return new UnixConsoleStream(Interop.Devices.stderr, FileAccess.Write);
         }
 
         public static Encoding InputEncoding
