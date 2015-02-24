@@ -13,26 +13,6 @@
 #include "mono/utils/mono-stack-unwinding.h"
 #include "mono/utils/mono-tls.h"
 
-/* 
- * We should find a better place for this stuff. We can't put it in mono-compiler.h,
- * since that is included by libgc.
- */
-#ifndef G_LIKELY
-#define G_LIKELY(a) (a)
-#define G_UNLIKELY(a) (a)
-#endif
-
-/*
- * glib defines this macro and uses it in the definition of G_LIKELY, and thus,
- * g_assert (). The macro expands to a complex piece of code, preventing some
- * gcc versions like 4.3.0 from handling the __builtin_expect construct properly,
- * causing the generation of the unlikely branch into the middle of the code.
- */
-#ifdef _G_BOOLEAN_EXPR
-#undef _G_BOOLEAN_EXPR
-#define _G_BOOLEAN_EXPR(expr) ((gsize)(expr) != 0)
-#endif
-
 #if 1
 #ifdef __GNUC__
 #define mono_assert(expr)		   G_STMT_START{		  \
