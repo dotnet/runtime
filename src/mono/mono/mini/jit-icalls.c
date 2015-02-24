@@ -34,8 +34,10 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 	MonoError error;
 	MonoMethod *res;
 
-	if (obj == NULL)
-		mono_raise_exception (mono_get_exception_null_reference ());
+	if (obj == NULL) {
+		mono_set_pending_exception (mono_get_exception_null_reference ());
+		return NULL;
+	}
 
 	res = mono_object_get_virtual_method (obj, method);
 
@@ -72,10 +74,14 @@ mono_ldvirtfn_gshared (MonoObject *obj, MonoMethod *method)
 void
 mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 {
-	if (!array)
-		mono_raise_exception (mono_get_exception_null_reference ());
-	if (val && !mono_object_isinst (val, array->obj.vtable->klass->element_class))
-		mono_raise_exception (mono_get_exception_array_type_mismatch ());
+	if (!array) {
+		mono_set_pending_exception (mono_get_exception_null_reference ());
+		return;
+	}
+	if (val && !mono_object_isinst (val, array->obj.vtable->klass->element_class)) {
+		mono_set_pending_exception (mono_get_exception_array_type_mismatch ());
+		return;
+	}
 }
 
 #if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
@@ -112,7 +118,7 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 	return res;
 
  raise_exception:
-	mono_raise_exception (mono_get_exception_overflow ());
+	mono_set_pending_exception (mono_get_exception_overflow ());
 	return 0;
 }
 
@@ -221,7 +227,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 		return res;
 
  raise_exception:
-	mono_raise_exception (mono_get_exception_overflow ());
+	mono_set_pending_exception (mono_get_exception_overflow ());
 	return 0;
 }
 
@@ -229,10 +235,14 @@ gint64
 mono_lldiv (gint64 a, gint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
-		mono_raise_exception (mono_get_exception_arithmetic ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL)) {
+		mono_set_pending_exception (mono_get_exception_arithmetic ());
+		return 0;
+	}
 #endif
 	return a / b;
 }
@@ -241,10 +251,14 @@ gint64
 mono_llrem (gint64 a, gint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
-		mono_raise_exception (mono_get_exception_arithmetic ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL)) {
+		mono_set_pending_exception (mono_get_exception_arithmetic ());
+		return 0;
+	}
 #endif
 	return a % b;
 }
@@ -253,8 +267,10 @@ guint64
 mono_lldiv_un (guint64 a, guint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
 #endif
 	return a / b;
 }
@@ -263,8 +279,10 @@ guint64
 mono_llrem_un (guint64 a, guint64 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
 #endif
 	return a % b;
 }
@@ -317,10 +335,14 @@ gint32
 mono_idiv (gint32 a, gint32 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (0x80000000))
-		mono_raise_exception (mono_get_exception_overflow ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
+	else if (b == -1 && a == (0x80000000)) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
+	}
 #endif
 	return a / b;
 }
@@ -329,8 +351,10 @@ guint32
 mono_idiv_un (guint32 a, guint32 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
 #endif
 	return a / b;
 }
@@ -339,12 +363,15 @@ gint32
 mono_irem (gint32 a, gint32 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (0x80000000))
-		mono_raise_exception (mono_get_exception_overflow ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
+	else if (b == -1 && a == (0x80000000)) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
+	}
 #endif
-
 	return a % b;
 }
 
@@ -352,8 +379,10 @@ guint32
 mono_irem_un (guint32 a, guint32 b)
 {
 #ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	if (!b) {
+		mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+		return 0;
+	}
 #endif
 	return a % b;
 }
@@ -375,8 +404,10 @@ mono_imul_ovf (gint32 a, gint32 b)
 
 	res = (gint64)a * (gint64)b;
 
-	if ((res > 0x7fffffffL) || (res < -2147483648LL))
-		mono_raise_exception (mono_get_exception_overflow ());
+	if ((res > 0x7fffffffL) || (res < -2147483648LL)) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
+	}
 
 	return res;
 }
@@ -388,8 +419,10 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 
 	res = (guint64)a * (guint64)b;
 
-	if ((res >> 32))
-		mono_raise_exception (mono_get_exception_overflow ());
+	if (res >> 32) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
+	}
 
 	return res;
 }
@@ -850,7 +883,8 @@ mono_fconv_ovf_i8 (double v)
 	res = (gint64)v;
 
 	if (isnan(v) || trunc (v) != res) {
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
 	}
 	return res;
 }
@@ -871,13 +905,15 @@ mono_fconv_ovf_u8 (double v)
  */
 #if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
 	if (isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
 	}
 	res = (guint64)v;
 #else
 	res = (guint64)v;
 	if (isnan(v) || trunc (v) != res) {
-		mono_raise_exception (mono_get_exception_overflow ());
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return 0;
 	}
 #endif
 	return res;
@@ -967,8 +1003,10 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 
 	mono_jit_stats.generic_virtual_invocations++;
 
-	if (obj == NULL)
-		mono_raise_exception (mono_get_exception_null_reference ());
+	if (obj == NULL) {
+		mono_set_pending_exception (mono_get_exception_null_reference ());
+		return NULL;
+	}
 	vmethod = mono_object_get_virtual_method (obj, method);
 	g_assert (!vmethod->klass->generic_container);
 	g_assert (!vmethod->klass->generic_class || !vmethod->klass->generic_class->context.class_inst->is_open);
@@ -1062,7 +1100,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 		jit_tls->class_cast_to = klass;
 	}
 
-	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+	mono_set_pending_exception (mono_exception_from_name (mono_defaults.corlib,
 					"System", "InvalidCastException"));
 
 	return NULL;
@@ -1098,7 +1136,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 		jit_tls->class_cast_to = klass;
 	}
 
-	mono_raise_exception (mono_exception_from_name (mono_defaults.corlib,
+	mono_set_pending_exception (mono_exception_from_name (mono_defaults.corlib,
 					"System", "InvalidCastException"));
 
 	return NULL;
@@ -1150,8 +1188,10 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 	MonoMethod *m;
 	int vt_slot;
 
-	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-		mono_raise_exception (mono_get_exception_execution_engine ("Not yet supported."));
+	if (klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
+		mono_set_pending_exception (mono_get_exception_execution_engine ("Not yet supported."));
+		return NULL;
+	}
 
 	if (mono_method_signature (cmethod)->pinvoke) {
 		/* Object.GetType () */
