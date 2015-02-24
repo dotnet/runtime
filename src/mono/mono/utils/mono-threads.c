@@ -57,6 +57,9 @@ static gboolean mono_threads_inited = FALSE;
 
 static void mono_threads_unregister_current_thread (MonoThreadInfo *info);
 
+#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & RUN_STATE_MASK)
+#define mono_thread_info_suspend_state(info) (((MonoThreadInfo*)info)->thread_state & SUSPEND_STATE_MASK)
+
 
 static inline void
 mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
@@ -140,6 +143,8 @@ mono_thread_info_register_small_id (void)
 static void*
 register_thread (MonoThreadInfo *info, gpointer baseptr)
 {
+	size_t stsize = 0;
+	guint8 *staddr = NULL;
 	int small_id = mono_thread_info_register_small_id ();
 	gboolean result;
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
@@ -161,6 +166,12 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 			return NULL;
 		}
 	}
+
+	mono_thread_info_get_stack_bounds (&staddr, &stsize);
+	g_assert (staddr);
+	g_assert (stsize);
+	info->stack_start_limit = staddr;
+	info->stack_end = staddr + stsize;
 
 	mono_threads_platform_register (info);
 	info->thread_state = STATE_RUNNING;
@@ -606,13 +617,25 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 {
 	MonoMethod *method;
 	MonoJitInfo *ji;
+	gpointer stack_start;
 
+	/* Are we inside a system critical region? */
 	if (info->inside_critical_region)
 		return TRUE;
+
+	/* Are we inside a GC critical region? */
+	if (threads_callbacks.mono_thread_in_critical_region && threads_callbacks.mono_thread_in_critical_region (info)) {
+		return TRUE;
+	}
 
 	/* The target thread might be shutting down and the domain might be null, which means no managed code left to run. */
 	if (!info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN])
 		return FALSE;
+
+	stack_start = MONO_CONTEXT_GET_SP (&info->suspend_state.ctx);
+	/* altstack signal handler, sgen can't handle them, so we treat them as critical */
+	if (stack_start < info->stack_start_limit || stack_start >= info->stack_end)
+		return TRUE;
 
 	ji = mono_jit_info_table_find (
 		info->suspend_state.unwind_data [MONO_UNWIND_DATA_DOMAIN],
@@ -977,4 +1000,14 @@ mono_threads_consume_async_jobs (void)
 		return 0;
 
 	return InterlockedExchange (&info->service_requests, 0);
+}
+
+
+/**
+ * Return TRUE is the thread is in an usable (suspendable) state
+ */
+gboolean
+mono_thread_info_is_live (MonoThreadInfo *info)
+{
+	return mono_thread_info_run_state (info) == STATE_RUNNING;
 }

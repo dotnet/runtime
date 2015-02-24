@@ -101,9 +101,6 @@ typedef enum {
 	MONO_SERVICE_REQUEST_SAMPLE = 1,
 } MonoAsyncJob;
 
-#define mono_thread_info_run_state(info) (((MonoThreadInfo*)info)->thread_state & RUN_STATE_MASK)
-#define mono_thread_info_suspend_state(info) (((MonoThreadInfo*)info)->thread_state & SUSPEND_STATE_MASK)
-
 typedef struct {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
@@ -115,6 +112,9 @@ typedef struct {
 
 	/* Tells if this thread should be ignored or not by runtime services such as GC and profiling */
 	gboolean tools_thread;
+
+	/* Max stack bounds, all valid addresses must be between [stack_start_limit, stack_end[ */
+	void *stack_start_limit, *stack_end;
 
 	/* suspend machinery, fields protected by suspend_semaphore */
 	MonoSemType suspend_semaphore;
@@ -191,6 +191,7 @@ typedef struct {
 	void (*thread_detach)(THREAD_INFO_TYPE *info);
 	void (*thread_attach)(THREAD_INFO_TYPE *info);
 	gboolean (*mono_method_is_critical) (void *method);
+	gboolean (*mono_thread_in_critical_region) (THREAD_INFO_TYPE *info);
 	void (*thread_exit)(void *retval);
 #ifndef HOST_WIN32
 	int (*mono_gc_pthread_create) (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
@@ -338,6 +339,9 @@ mono_thread_info_self_interrupt (void);
 
 void
 mono_thread_info_clear_interruption (void);
+
+gboolean
+mono_thread_info_is_live (THREAD_INFO_TYPE *info) MONO_INTERNAL;
 
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);

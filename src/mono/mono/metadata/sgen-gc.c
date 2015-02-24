@@ -3837,8 +3837,8 @@ scan_thread_data (void *start_nursery, void *end_nursery, gboolean precise, Gray
 			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start);
 			continue;
 		}
-		if (mono_thread_info_run_state (info) != STATE_RUNNING) {
-			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %d)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, mono_thread_info_run_state (info));
+		if (!mono_thread_info_is_live (info)) {
+			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, info->info.thread_state);
 			continue;
 		}
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->stack_start, info->stack_end, (char*)info->stack_end - (char*)info->stack_start, sgen_get_pinned_count ());
@@ -4633,6 +4633,12 @@ parse_double_in_interval (const char *env_var, const char *opt_name, const char 
 	return TRUE;
 }
 
+gboolean
+thread_in_critical_region (SgenThreadInfo *info)
+{
+	return info->in_critical_region;
+}
+
 void
 mono_gc_base_init (void)
 {
@@ -4682,6 +4688,7 @@ mono_gc_base_init (void)
 	cb.thread_unregister = sgen_thread_unregister;
 	cb.thread_attach = sgen_thread_attach;
 	cb.mono_method_is_critical = (gpointer)is_critical_method;
+	cb.mono_thread_in_critical_region = thread_in_critical_region;
 #ifndef HOST_WIN32
 	cb.thread_exit = mono_gc_pthread_exit;
 	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
