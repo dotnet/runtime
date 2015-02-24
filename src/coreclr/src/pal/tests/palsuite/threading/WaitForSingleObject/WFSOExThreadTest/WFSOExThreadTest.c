@@ -51,7 +51,7 @@ int __cdecl main( int argc, char **argv )
      */
 
     RunTest(TRUE);
-    if ((ThreadWaitDelta - InterruptTime) > AcceptableDelta)
+    if (abs(ThreadWaitDelta - InterruptTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
             "Thread waited for %d ms! (Acceptable delta: %d)\n", 
@@ -64,7 +64,7 @@ int __cdecl main( int argc, char **argv )
      * it, if it is not in an alertable state.
      */
     RunTest(FALSE);
-    if ((ThreadWaitDelta - ChildThreadWaitTime) > AcceptableDelta)
+    if (abs(ThreadWaitDelta - ChildThreadWaitTime) > AcceptableDelta)
     {
         Fail("Expected thread to wait for %d ms (and not be interrupted).\n"
             "Thread waited for %d ms! (Acceptable delta: %d)\n", 
