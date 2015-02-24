@@ -55,6 +55,7 @@
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
+    <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />

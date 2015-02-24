@@ -167,6 +167,17 @@ namespace Resources {
                 return ResourceManager.GetString("Argument_XObjectValue", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to This operation would create an incorrectly structured document..
+        /// </summary>
+        internal static string InvalidOperation_DeserializeInstance
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidOperation_DeserializeInstance", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to This operation would create an incorrectly structured document..
