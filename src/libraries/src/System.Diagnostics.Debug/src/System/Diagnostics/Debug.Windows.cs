@@ -51,7 +51,7 @@ namespace System.Diagnostics
 
             public void WriteLineCore(string message)
             {
-                message = message + "\r\n";
+                message += Environment.NewLine;
                 Write(message);
             }
 
