@@ -9,14 +9,14 @@ namespace System.Diagnostics
 {
     public static partial class Debug
     {
-        // Internal so that the tests can override this.
+        // internal and not read only so that the tests can swap this out.
         internal static IDebugLogger s_logger = new UnixDebugLogger();
 
         // --------------
         // PAL ENDS HERE
         // --------------
 
-        internal class UnixDebugLogger : IDebugLogger
+        internal sealed class UnixDebugLogger : IDebugLogger
         {
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
@@ -42,10 +42,10 @@ namespace System.Diagnostics
                 unsafe
                 {
                     byte* buf = stackalloc byte[BufferLength];
-                    int bufCount = 0;
+                    int bufCount;
                     int i = 0;
 
-                    using (SafeFileHandle stderr = SafeFileHandle.Open("/dev/stderr", Interop.libc.OpenFlags.O_WRONLY, 0))
+                    using (SafeFileHandle stderr = SafeFileHandle.Open(Interop.Devices.stderr, Interop.libc.OpenFlags.O_WRONLY, 0))
                     {
                         while (i < message.Length)
                         {
@@ -60,8 +60,7 @@ namespace System.Diagnostics
 
                             if (bufCount != 0)
                             {
-                                long result;
-                                while (Interop.CheckIo(result = (long)Interop.libc.write((int)stderr.DangerousGetHandle(), buf, new IntPtr(bufCount)))) ;
+                                while (Interop.CheckIo((long)Interop.libc.write((int)stderr.DangerousGetHandle(), buf, new IntPtr(bufCount)))) ;
                             }
                         }
                     }

@@ -53,6 +53,9 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\Diagnostics\Debug.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Devices.cs">
+      <Link>Common\Interop\Unix\Interop.Devices.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>

@@ -10,18 +10,18 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
     public sealed class DebuggerBrowsableAttribute : Attribute
     {
-        private DebuggerBrowsableState state;
+        private readonly DebuggerBrowsableState _state;
         public DebuggerBrowsableAttribute(DebuggerBrowsableState state)
         {
             if (state < DebuggerBrowsableState.Never || state > DebuggerBrowsableState.RootHidden)
                 throw new ArgumentOutOfRangeException("state");
             Contract.EndContractBlock();
 
-            this.state = state;
+            this._state = state;
         }
         public DebuggerBrowsableState State
         {
-            get { return state; }
+            get { return _state; }
         }
     }
 }

@@ -8,9 +8,9 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DebuggerTypeProxyAttribute : Attribute
     {
-        private string typeName;
-        private string targetName;
-        private Type target;
+        private string _typeName;
+        private string _targetName;
+        private Type _target;
 
         public DebuggerTypeProxyAttribute(Type type)
         {
@@ -20,20 +20,22 @@ namespace System.Diagnostics
             }
             Contract.EndContractBlock();
 
-            this.typeName = type.AssemblyQualifiedName;
+            this._typeName = type.AssemblyQualifiedName;
         }
 
         public DebuggerTypeProxyAttribute(string typeName)
         {
-            this.typeName = typeName;
+            this._typeName = typeName;
         }
         public string ProxyTypeName
         {
-            get { return typeName; }
+            get { return _typeName; }
         }
 
         public Type Target
         {
+            get { return _target; }
+            
             set
             {
                 if (value == null)
@@ -42,17 +44,15 @@ namespace System.Diagnostics
                 }
                 Contract.EndContractBlock();
 
-                targetName = value.AssemblyQualifiedName;
-                target = value;
+                _targetName = value.AssemblyQualifiedName;
+                _target = value;
             }
-
-            get { return target; }
         }
 
         public string TargetTypeName
         {
-            get { return targetName; }
-            set { targetName = value; }
+            get { return _targetName; }
+            set { _targetName = value; }
 
         }
     }
