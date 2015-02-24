@@ -2152,10 +2152,10 @@ VarR4FromDec(MonoDecimal *input, float *result)
 static void
 DecShiftLeft(MonoDecimal* value)
 {
+	unsigned int c0 = DECIMAL_LO32(*value) & 0x80000000? 1: 0;
+    unsigned int c1 = DECIMAL_MID32(*value) & 0x80000000? 1: 0;
     g_assert(value != NULL);
 
-    unsigned int c0 = DECIMAL_LO32(*value) & 0x80000000? 1: 0;
-    unsigned int c1 = DECIMAL_MID32(*value) & 0x80000000? 1: 0;
     DECIMAL_LO32(*value) <<= 1;
     DECIMAL_MID32(*value) = DECIMAL_MID32(*value) << 1 | c0;
     DECIMAL_HI32(*value) = DECIMAL_HI32(*value) << 1 | c1;
@@ -2189,9 +2189,9 @@ DecAdd(MonoDecimal *value, MonoDecimal* d)
 static void
 DecMul10(MonoDecimal* value)
 {
+	MonoDecimal d = *value;
 	g_assert (value != NULL);
 
-	MonoDecimal d = *value;
 	DecShiftLeft(value);
 	DecShiftLeft(value);
 	DecAdd(value, &d);
@@ -2215,6 +2215,7 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 {
 	uint32_t   left_sign;
 	uint32_t   right_sign;
+	MonoDecimal result;
 
 	// First check signs and whether either are zero.  If both are
 	// non-zero and of the same sign, just use subtraction to compare.
@@ -2233,8 +2234,6 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 	if (left_sign == right_sign) {
 		if (left_sign == 0)    // both are zero
 			return MONO_DECIMAL_CMP_EQ; // return equal
-
-		MonoDecimal result;
 
 		DecAddSub(left, right, &result, DECIMAL_NEG);
 		if (DECIMAL_LO64_GET(result) == 0 && result.Hi32 == 0)
@@ -3043,18 +3042,18 @@ int
 mono_decimal_from_number (void *from, MonoDecimal *target)
 {
 	CLRNumber *number = (CLRNumber *) from;
+	uint16_t* p = number->digits;
+	MonoDecimal d;
+	int e = number->scale;
 	g_assert(number != NULL);
 	g_assert(target != NULL);
 
-	MonoDecimal d;
 	d.reserved = 0;
 	DECIMAL_SIGNSCALE(d) = 0;
 	DECIMAL_HI32(d) = 0;
 	DECIMAL_LO32(d) = 0;
 	DECIMAL_MID32(d) = 0;
-	uint16_t* p = number->digits;
 	g_assert(p != NULL);
-	int e = number->scale;
 	if (!*p) {
 		// To avoid risking an app-compat issue with pre 4.5 (where some app was illegally using Reflection to examine the internal scale bits), we'll only force
 		// the scale to 0 if the scale was previously positive
