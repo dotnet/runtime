@@ -4,6 +4,7 @@
 using Xunit;
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +29,7 @@ public class ItemThreadSafetyTests
     private bool _errorOccured = false;
     private bool _timeExpired = false;
 
-    private const long MAX_TEST_TIME_TICKS = 10L * 10000000L; // 10 seconds
+    private const int MAX_TEST_TIME_MS = 10000; // 10 seconds
 
     [Fact]
     [OuterLoop]
@@ -51,7 +52,8 @@ public class ItemThreadSafetyTests
         Task[] readers1 = new Task[taskCount];
         Task[] readers2 = new Task[taskCount];
         Task writer;
-        DateTime startTime = DateTime.Now;
+
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         for (int i = 0; i < readers1.Length; i++)
         {
@@ -68,7 +70,7 @@ public class ItemThreadSafetyTests
         SpinWait spin = new SpinWait();
         while (!_errorOccured && !_timeExpired)
         {
-            if (MAX_TEST_TIME_TICKS < DateTime.Now.Ticks - startTime.Ticks)
+            if (MAX_TEST_TIME_MS < stopwatch.ElapsedMilliseconds)
             {
                 _timeExpired = true;
             }
