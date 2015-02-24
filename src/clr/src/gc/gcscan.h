@@ -43,8 +43,10 @@ typedef void enum_alloc_context_func(alloc_context*);
 
 class CNameSpace
 {
+    friend struct ::_DacGlobals;
+
   public:
-    
+
     // Called on gc start
     static void GcStartDoWork();
 

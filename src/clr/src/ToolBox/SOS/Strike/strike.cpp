@@ -279,11 +279,6 @@ DECLARE_API(IP2MD)
     {
         return Status;
     }
-#ifdef FEATURE_PAL 
-    // TODO - mikem 2/20/14 - temporary until the rest of the DAC is working.
-    ExtOut("Test output for IP2MD %16x\n", IP);
-    return Status;
-#endif 
     EnableDMLHolder dmlHolder(dml);
 
     if (IP == 0)

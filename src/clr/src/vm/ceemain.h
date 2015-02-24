@@ -57,6 +57,8 @@ void InnerCoEEShutDownCOM();
 //        how the g_pCEE and related variables are initialized.
 class CExecutionEngine : public IExecutionEngine, public IEEMemoryManager
 {
+    friend struct _DacGlobals;
+
     //***************************************************************************
     // public API:
     //***************************************************************************

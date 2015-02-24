@@ -153,5 +153,7 @@ VPTR_CLASS(GlobalLoaderAllocator)
 VPTR_CLASS(AppDomainLoaderAllocator)
 VPTR_CLASS(AssemblyLoaderAllocator)
 
+#ifndef FEATURE_PAL
 VPTR_CLASS(AssemblySecurityDescriptor)
 VPTR_CLASS(ApplicationSecurityDescriptor)
+#endif // FEATURE_PAL
