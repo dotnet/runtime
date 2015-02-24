@@ -176,7 +176,7 @@ DebugClient::ReadVirtual(
     ULONG bufferSize,
     PULONG bytesRead)
 {
-    bytesRead = 0;
+    *bytesRead = 0;
 
     lldb::SBTarget target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())

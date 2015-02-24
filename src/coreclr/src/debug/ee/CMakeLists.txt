@@ -43,6 +43,10 @@ if(WIN32)
     dbgtransportproxy.cpp
     ddunpack.cpp
   )
+else()
+  list(APPEND CORDBEE_SOURCES_WKS 
+    dactable.cpp
+  )
 endif(WIN32)
 
 if (IS_64BIT_BUILD EQUAL 1)

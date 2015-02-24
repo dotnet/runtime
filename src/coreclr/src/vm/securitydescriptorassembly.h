@@ -57,7 +57,9 @@ void StoreObjectInLazyHandle(LOADERHANDLE& handle, OBJECTREF ref, LoaderAllocato
 class AssemblySecurityDescriptor : public SecurityDescriptorBase<IAssemblySecurityDescriptor>
 {
 public:
+#ifndef FEATURE_PAL
     VPTR_VTABLE_CLASS(AssemblySecurityDescriptor, SecurityDescriptorBase<IAssemblySecurityDescriptor>)
+#endif
 
 private:
     PsetCacheEntry*   m_arrPassedLinktimeDemands[MAX_PASSED_DEMANDS];
