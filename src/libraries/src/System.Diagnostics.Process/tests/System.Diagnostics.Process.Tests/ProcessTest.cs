@@ -152,7 +152,7 @@ namespace System.Diagnostics.ProcessTests
             DateTime exitTime = p.ExitTime;
             DateTime dt2 = DateTime.Now;
             TimeSpan elapsedTime = new TimeSpan(dt2.Ticks - exitTime.Ticks);
-            Assert.True(elapsedTime.Seconds <= 1, "Process_ExitTime is incorrect.");
+            Assert.True(elapsedTime.TotalSeconds <= 1, "Process_ExitTime is incorrect.");
         }
 
 
