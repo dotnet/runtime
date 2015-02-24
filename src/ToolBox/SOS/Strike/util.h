@@ -17,7 +17,7 @@
 inline void RestoreSOToleranceState() {}
 
 #include <cor.h>
-#include <CorSym.h>
+#include <corsym.h>
 #include <clrdata.h>
 #include <palclr.h>
 
@@ -1733,6 +1733,8 @@ private:
     void Linearize();
 };
 
+#ifndef FEATURE_PAL
+
 class CGCDesc;
 // The information MethodTableCache returns.
 struct MethodTableInfo
@@ -1785,6 +1787,8 @@ private:
 };
 
 extern MethodTableCache g_special_mtCache;
+
+#endif //!FEATURE_PAL
 
 struct DumpArrayFlags
 {
@@ -2072,13 +2076,16 @@ struct StringHolder
 };
 
 
-ULONG TargetPlatform();
 ULONG DebuggeeType();
+
+#ifndef FEATURE_PAL
 
 inline BOOL IsKernelDebugger ()
 {
     return DebuggeeType() == DEBUG_CLASS_KERNEL;
 }
+
+#endif // !FEATURE_PAL
 
 void    ResetGlobals(void);
 HRESULT LoadClrDebugDll(void);
@@ -2314,6 +2321,8 @@ struct MemRange
     MemRange * next;
 }; //struct MemRange
 
+#ifndef FEATURE_PAL
+
 class StressLogMem
 {
 private:
@@ -2333,7 +2342,6 @@ public:
     bool IsInStressLog (ULONG64 addr);
 }; //class StressLogMem
 
-#ifndef FEATURE_PAL
 // An adapter class that DIA consumes so that it can read PE data from the an image
 // This implementation gets the backing data from the image loaded in debuggee memory
 // that has been layed out identical to the disk format (ie not seperated by section)
@@ -2400,7 +2408,8 @@ public:
     HRESULT GetNamedLocalVariable(ICorDebugFrame * pFrame, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue);
     HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, mdMethodDef* pToken, ULONG32* pIlOffset);
 };
-#endif
+
+#endif // !FEATURE_PAL
 
 HRESULT
 GetLineByOffset(
@@ -2795,6 +2804,8 @@ public:
             MoveToPage(start, size);
         }
     }
+
+#ifndef FEATURE_PAL
     
     void ClearStats()
     {
@@ -2815,6 +2826,8 @@ public:
         OutputDebugStringA(buffer);
 #endif
     }
+
+#endif // !FEATURE_PAL
     
 private:
     /* Sets the cache to the page specified by addr, or false if we could not move to

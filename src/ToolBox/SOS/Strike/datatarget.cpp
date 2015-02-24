@@ -1,0 +1,179 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+//
+
+#include "sos.h"
+#include "datatarget.h"
+#include "corhdr.h"
+#include "cor.h"
+#include "dacprivate.h"
+#include "sospriv.h"
+#include "corerror.h"
+
+#define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
+
+DataTarget::DataTarget(void) :
+    m_ref(0)
+{
+}
+
+STDMETHODIMP
+DataTarget::QueryInterface(
+    THIS_
+    __in REFIID InterfaceId,
+    __out PVOID* Interface
+    )
+{
+    if (InterfaceId == IID_IUnknown ||
+        InterfaceId == IID_ICLRDataTarget)
+    {
+        *Interface = (ICLRDataTarget*)this;
+        AddRef();
+        return S_OK;
+    }
+    else
+    {
+        *Interface = NULL;
+        return E_NOINTERFACE;
+    }
+}
+
+STDMETHODIMP_(ULONG)
+DataTarget::AddRef(
+    THIS
+    )
+{
+    LONG ref = InterlockedIncrement(&m_ref);    
+    return ref;
+}
+
+STDMETHODIMP_(ULONG)
+DataTarget::Release(
+    THIS
+    )
+{
+    LONG ref = InterlockedDecrement(&m_ref);
+    if (ref == 0)
+    {
+        delete this;
+    }
+    return ref;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::GetMachineType(
+    /* [out] */ ULONG32 *machine)
+{
+    if (g_ExtControl == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    return g_ExtControl->GetExecutingProcessorType(machine);
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::GetPointerSize(
+    /* [out] */ ULONG32 *size)
+{
+    *size = 8;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::GetImageBase(
+    /* [string][in] */ LPCWSTR name,
+    /* [out] */ CLRDATA_ADDRESS *base)
+{
+    if (g_ExtSymbols == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    CHAR lpstr[MAX_PATH];
+    int name_length = WideCharToMultiByte(CP_ACP, 0, name, -1, lpstr, MAX_PATH, NULL, NULL);
+    if (name_length == 0)
+    {
+        return E_FAIL;
+    }
+    return g_ExtSymbols->GetModuleByModuleName(lpstr, 0, NULL, base);
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::ReadVirtual(
+    /* [in] */ CLRDATA_ADDRESS address,
+    /* [length_is][size_is][out] */ PBYTE buffer,
+    /* [in] */ ULONG32 request,
+    /* [optional][out] */ ULONG32 *done)
+{
+    if (g_ExtData == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    return g_ExtData->ReadVirtual(address, (PVOID)buffer, request, done);
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::WriteVirtual(
+    /* [in] */ CLRDATA_ADDRESS address,
+    /* [size_is][in] */ PBYTE buffer,
+    /* [in] */ ULONG32 request,
+    /* [optional][out] */ ULONG32 *done)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::GetTLSValue(
+    /* [in] */ ULONG32 threadID,
+    /* [in] */ ULONG32 index,
+    /* [out] */ CLRDATA_ADDRESS* value)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::SetTLSValue(
+    /* [in] */ ULONG32 threadID,
+    /* [in] */ ULONG32 index,
+    /* [in] */ CLRDATA_ADDRESS value)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::GetCurrentThreadID(
+    /* [out] */ ULONG32* threadID)
+{
+    *threadID = 0;
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::GetThreadContext(
+    /* [in] */ ULONG32 threadID,
+    /* [in] */ ULONG32 contextFlags,
+    /* [in] */ ULONG32 contextSize,
+    /* [out, size_is(contextSize)] */ PBYTE context)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::SetThreadContext(
+    /* [in] */ ULONG32 threadID,
+    /* [in] */ ULONG32 contextSize,
+    /* [out, size_is(contextSize)] */ PBYTE context)
+{
+    return E_NOTIMPL;
+}
+
+HRESULT STDMETHODCALLTYPE
+DataTarget::Request(
+    /* [in] */ ULONG32 reqCode,
+    /* [in] */ ULONG32 inBufferSize,
+    /* [size_is][in] */ BYTE *inBuffer,
+    /* [in] */ ULONG32 outBufferSize,
+    /* [size_is][out] */ BYTE *outBuffer)
+{
+    return E_NOTIMPL;
+}
