@@ -1721,7 +1721,10 @@ UNATIVE_OFFSET      emitter::emitInsSizeSV(size_t code, int var, int dsp)
 #endif
                 {
                     // Dev10 804810 - failing this assert can lead to bad codegen and runtime crashes
+#ifndef UNIX_AMD64_ABI
+                    // This can happen for SysteV calling convention when a registered passed argument is homed on the stack.
                     noway_assert((int)offs < 0);
+#endif // UNIX_AMD64_ABI
                 }
  
 
