@@ -44,7 +44,7 @@
 #include <wchar.h>
 #include <string>
 
-#define DEPENDENT_SERVICES 2
+#define DEPENDENT_SERVICES 3
 
 // The path to this executable
 TCHAR                   gModulePath[MAX_PATH];
@@ -202,7 +202,7 @@ BOOL CreateTestServices()
 	// Create dependent services
 
 	std::wstring dependencies = gServiceName;
-	dependencies += (TCHAR) 0;
+	dependencies += (TCHAR)0;
 
 	for (int i = 0; i < DEPENDENT_SERVICES; i++)
 	{
@@ -218,6 +218,15 @@ BOOL CreateTestServices()
 			CloseServiceHandle(hScManager);
 			return false;
 		}
+
+		// Make each dependent service depend on all of the services before it
+		// for the sake of testing ServiceController.DependentServices and
+		// ServiceController.ServicesDepended on. We do this by inserting the name
+		// of the last dependent service created into the next dependent service's
+		// dependency list before the double null.
+
+		dependencies.insert(dependencies.end() - 1, (TCHAR)0);
+		dependencies.insert(dependencies.length() - 1, gDependentServiceNames[i]);
 	}
 
 	// Attempt to start the main test service
