@@ -149,8 +149,8 @@ namespace System.Diagnostics.ProcessTests
             p.Start();
             p.Kill();
             p.WaitForExit();
-            DateTime exitTime = p.ExitTime;
-            DateTime dt2 = DateTime.Now;
+            DateTime exitTime = p.ExitTime.ToUniversalTime();
+            DateTime dt2 = DateTime.UtcNow;
             TimeSpan elapsedTime = new TimeSpan(dt2.Ticks - exitTime.Ticks);
             Assert.True(elapsedTime.TotalSeconds <= 1, "Process_ExitTime is incorrect.");
         }
