@@ -40,6 +40,9 @@
     <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$(BinDir)\tests\coverage\</CoverageReportDir>
     <CoverageVersion>4.5.3711-rc52</CoverageVersion>
     <CoverageToolPath>$(PackagesDir)OpenCover.$(CoverageVersion)\OpenCover.Console.exe</CoverageToolPath>
+    <CoverageReportGeneratorVersion>2.0.4.0</CoverageReportGeneratorVersion>
+    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html</CoverageReportGeneratorOptions>
+    <CoverageReportGeneratorCommandLine>$(PackagesDir)ReportGenerator.$(CoverageReportGeneratorVersion)\ReportGenerator.exe $(CoverageReportGeneratorOptions)</CoverageReportGeneratorCommandLine>
     <!-- When coverage is enabled, we disallow building projects in parallel. There appear to be issues with the OpenCover tool
          in these scenarios. -->
     <SerializeProjects Condition="'$(_CoverageEnabled)'=='true'">true</SerializeProjects>

@@ -11,13 +11,13 @@
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget)"
+             Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
@@ -35,12 +35,13 @@
     <MSBuild Targets="$(DefaultCleanAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity)"
+             Properties="Dummy=%(Identity);CleanAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultCleanAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
+             Properties="CleanAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
