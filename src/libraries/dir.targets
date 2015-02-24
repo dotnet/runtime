@@ -94,7 +94,7 @@
   <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
 
   <PropertyGroup>
-    <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)'=='' And $(MSBuildProjectName.EndsWith('.Tests'))">True</IsTestProject>
     <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
     <RunTestsForProject Condition="'$(SkipTests)'=='True'">False</RunTestsForProject>
 
@@ -126,25 +126,25 @@
   
   <!-- Directory specific coverage options -->
   <PropertyGroup>
-    <CoverageEnabledForDir>$(_CoverageEnabled)</CoverageEnabledForDir>
-    <CoverageEnabledForDir Condition="'$(CoverageEnabledForProject)' == 'false'">false</CoverageEnabledForDir>
+    <CoverageEnabledForProject Condition="'$(CoverageEnabledForProject)'=='' and '$(IsTestProject)'=='true'">$(_CoverageEnabled)</CoverageEnabledForProject>
   </PropertyGroup>
 
   <!-- xUnit command line without coverage enabled -->
-  <PropertyGroup Condition="!$(CoverageEnabledForDir)">
+  <PropertyGroup>
     <XunitHost>corerun.exe</XunitHost>
     <TestHost>$(XunitHost)</TestHost>
     <TestCommandLine>$(XunitCommandLine) $(XunitOptions)</TestCommandLine>
   </PropertyGroup>
   
   <!-- xUnit command line with coverage enabled -->
-  <PropertyGroup Condition="$(CoverageEnabledForDir)">
+  <PropertyGroup Condition="'$(CoverageEnabledForProject)'=='true'">
     <CoverageHost>$(CoverageToolPath)</CoverageHost>
+    <CoverageOutputFilePath>$(CoverageReportDir)$(MSBuildProjectName).coverage.xml</CoverageOutputFilePath>
     <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1</CoverageOptions>
-    <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user  -target:corerun.exe -output:$(CoverageReportDir)$(TargetFileName).coverage.xml</CoverageCommandLine>
+    <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user -target:$(XunitHost) -output:$(CoverageOutputFilePath)</CoverageCommandLine>
     <TestHost>$(CoverageHost)</TestHost>
     <XunitOptions>$(XunitOptions) -parallel none</XunitOptions>
-    <TestCommandLine>$(CoverageCommandLine) -targetargs:"$(XunitCommandLine) $(XunitOptions)"</TestCommandLine>
+    <TestCommandLine>$(CoverageCommandLine) -targetargs:"$(TestCommandLine)"</TestCommandLine>
   </PropertyGroup>
   
   <!-- In VS (2015 Preview or later currently required): Debug to run unit tests on CoreCLR. -->
@@ -157,12 +157,12 @@
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
-  <!-- On command line: run unit tests on CoreCLR as post-build step. -->
+  <!-- On command line run unit tests on CoreCLR after the Test target -->
   <Target Name="RunTestsForProject"
           AfterTargets="Test"
-          Condition="'$(RunTestsForProject)'=='True'">
+          Condition="'$(RunTestsForProject)'=='true'">
 
-    <MakeDir Condition="$(CoverageEnabledForDir)" Directories="$(CoverageReportDir)" />
+    <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
           
     <Exec Command="$(TestHost) $(TestCommandLine)"
           WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)"
@@ -172,4 +172,16 @@
 
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="One or more tests failed while running tests from '$(MSBuildProjectName)' please check log for details!" />
   </Target>
+
+  <!-- Generate coverage reports for individual projects. -->
+  <Target Name="GenerateIndividualCoverageReport"
+          AfterTargets="RunTestsForProject"
+          Inputs="$(CoverageOutputFilePath)"
+          Outputs="$(CoverageReportDir)index.htm"
+          Condition="'$(BuildAllProjects)'!='true' and '$(CoverageEnabledForProject)'=='true'">
+
+    <Exec Command="$(CoverageReportGeneratorCommandLine) -reports:$(CoverageOutputFilePath)" 
+          ContinueOnError="ErrorAndContinue" />
+  </Target>
+
 </Project>
