@@ -70,7 +70,7 @@ do
 
   # Create path to a test executable to run
   TEST_COMMAND="$PAL_TEST_BUILD/$TEST_NAME"
-  echo Running $TEST_COMMAND
+  echo -n .
   $TEST_COMMAND
 
   # Get exit code of the test process.
@@ -81,7 +81,8 @@ do
     NUMBER_OF_PASSED_TESTS=$(($NUMBER_OF_PASSED_TESTS + 1))
   else
     FAILED_TEST="$TEST_NAME. Exit code: $TEST_EXIT_CODE"
-    echo FAILED: $FAILED_TEST
+    echo
+	echo FAILED: $FAILED_TEST
     echo
 
     # Store the name of the failed test in the list of failed tests.
