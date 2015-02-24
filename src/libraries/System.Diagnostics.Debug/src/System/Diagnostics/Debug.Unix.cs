@@ -26,7 +26,7 @@ namespace System.Diagnostics
 
             public void WriteLineCore(string message)
             {
-                message = message + "\n";
+                message += Environment.NewLine;
                 Write(message);
             }
 
