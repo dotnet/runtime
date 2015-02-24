@@ -37,8 +37,9 @@ if not defined VSINSTALLDIR echo Error: runtest.cmd should be run from a Visual 
 
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=debug
-if not defined __BinDir    set  __BinDir=%__ProjectFilesDir%..\binaries\Product\%__BuildArch%\%__BuildType%
-if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%..\binaries\tests\%__BuildArch%\%__BuildType%
+if not defined __BuildOS set __BuildOS=Windows_NT
+if not defined __BinDir    set  __BinDir=%__ProjectFilesDir%..\binaries\Product\%__BuildOS%.%__BuildArch%.%__BuildType%
+if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%..\binaries\tests\%__BuildOS%.%__BuildArch%.%__BuildType%
 if not defined __LogsDir        set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs\
 
 :: Default global test environmet variables
@@ -58,10 +59,10 @@ if defined __EnableAltJit          (if not exist %Core_Root%\%Alt_Jit_Name%.dll 
 if not exist %__LogsDir%           md  %__LogsDir%
 
 :SkipDefaultCoreRootSetup
-set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log
-set __TestRunBuildLog=%__LogsDir%\TestRunResults_%__BuildArch%__%__BuildType%.log
-set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildArch%_%__BuildType%.html
-set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildArch%_%__BuildType%.xml
+set __XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __TestRunBuildLog=%__LogsDir%\TestRunResults_%__BuildOS%__%__BuildArch%__%__BuildType%.log
+set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%_%__BuildType%.html
+set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%_%__BuildType%.xml
 
 echo "Core_Root that will be used is : %Core_Root%"
 echo "Starting The Test Run .. "
