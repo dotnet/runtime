@@ -690,7 +690,7 @@ struct _SgenMajorCollector {
 	void (*sweep) (void);
 	gboolean (*have_swept) (void);
 	void (*finish_sweeping) (void);
-	void (*free_swept_blocks) (void);
+	void (*free_swept_blocks) (size_t allowance);
 	void (*check_scan_starts) (void);
 	void (*dump_heap) (FILE *heap_dump_file);
 	gint64 (*get_used_size) (void);

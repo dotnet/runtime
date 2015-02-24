@@ -103,7 +103,7 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 
 	/* FIXME: Why is this here? */
 	if (major_collector.free_swept_blocks)
-		major_collector.free_swept_blocks ();
+		major_collector.free_swept_blocks (allowance);
 
 	major_collection_trigger_size = new_heap_size + allowance;
 

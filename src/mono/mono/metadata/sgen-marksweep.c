@@ -1810,10 +1810,10 @@ compare_pointers (const void *va, const void *vb) {
  * This is called with sweep completed and the world stopped.
  */
 static void
-major_free_swept_blocks (void)
+major_free_swept_blocks (size_t allowance)
 {
-	/* FIXME: use something sensible here. */
-	size_t section_reserve = DEFAULT_NURSERY_SIZE * 2 / MS_BLOCK_SIZE;
+	/* FIXME: This is probably too much.  It's assuming all objects are small. */
+	size_t section_reserve = allowance / MS_BLOCK_SIZE;
 
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Sweeping must have finished before freeing blocks");
 
