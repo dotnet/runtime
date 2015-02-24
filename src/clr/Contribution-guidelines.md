@@ -8,7 +8,7 @@ Because of this and the available bandwidth of our team we are going to have to 
 What this means is that we are putting in place a lightweight process for handling incoming PRs and issues to make sure the right set of people are working on the right set of PRs.
 
 #Bug bar
-In order for a change to be accepted it needs to have a **demonstrably broad impact** of a **mainline scenario** and be **low risk**.
+In order for a change to be accepted it needs to have a **demonstrably broad impact** of a **mainline scenario** and be **low risk**.  The change must also meet these [performance requirements](https://github.com/dotnet/coreclr/wiki/Performance).
 
 While the definitions for mainline scenario and risk can be subjective, the area owner is the right person to ascertain them and provide a recommendation.
 
