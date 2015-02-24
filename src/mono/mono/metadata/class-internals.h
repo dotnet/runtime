@@ -33,7 +33,7 @@ typedef struct _MonoMethodPInvoke MonoMethodPInvoke;
 
 #ifdef ENABLE_ICALL_EXPORT
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
-#define ICALL_EXPORT
+#define ICALL_EXPORT MONO_API
 #else
 #define ICALL_EXPORT static
 #endif
