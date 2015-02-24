@@ -1,13 +1,18 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Common properties -->
   <PropertyGroup>
-    <BuildArch Condition="'$(__BuildArch)'==''">amd64</BuildArch>
-    <BuildArch Condition="'$(__BuildArch)' == 'x64'">amd64</BuildArch>
+    <!-- Set basic properties and normalize -->
+    
+    <BuildArch>$(__BuildArch)</BuildArch>
+    <BuildArch Condition="'$(__BuildArch)'==''">x64</BuildArch>
+    <BuildArch Condition="'$(__BuildArch)' == 'amd64'">x64</BuildArch>
 
     <BuildType Condition="'$(__BuildType)'==''">Debug</BuildType>
     <BuildType Condition="'$(__BuildType)' == 'debug'">Debug</BuildType>
     <BuildType Condition="'$(__BuildType)' == 'release'">Release</BuildType>
-
+    
+    <BuildOS>$(__BuildOS)</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</BuildOS>
 
     <ProjectDir>$(__ProjectDir)\</ProjectDir>
     <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)\</ProjectDir>
@@ -22,9 +27,9 @@
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)\binaries\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)\Product\$(BuildArch)\$(BuildType)\</BinDir>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)\Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
-    <!-- We dont append back slash because this path is used by nuget.exe as output directory and it
+    <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
     -->
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
@@ -34,7 +39,7 @@
     <ToolsDir Condition="'$(__ToolsDir)'==''">$(RootBinDir)\tools\</ToolsDir>
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)\tests\$(BuildArch)\$(BuildType)\</TestWorkingDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)\tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
   </PropertyGroup>
 
   <!-- Setup Nuget properties -->
