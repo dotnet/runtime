@@ -41,46 +41,46 @@ public class ItemThreadSafetyTests
 
         //Setup key1 and key2 so they are different values but have the same hashcode
         //To produce a hashcode long XOR's the first 32bits with the last 32 bits
-        l1 = (((long)i1) << 32) + i2;
-        l2 = (((long)i2) << 32) + i1;
-        _key1 = (object)l1;
-        _key2 = (object)l2;
+        l1 = (((long) i1) << 32) + i2;
+        l2 = (((long) i2) << 32) + i1;
+        _key1 = (object) l1;
+        _key2 = (object) l2;
 
         _ht = new Hashtable(3); //Just one item will be in the hashtable at a time
         int taskCount = 3;
         Task[] readers1 = new Task[taskCount];
         Task[] readers2 = new Task[taskCount];
-            Task writer;
-            DateTime startTime = DateTime.Now;
+        Task writer;
+        DateTime startTime = DateTime.Now;
 
-            for (int i = 0; i < readers1.Length; i++)
+        for (int i = 0; i < readers1.Length; i++)
+        {
+            readers1[i] = Task.Run(new Action(ReaderFunction1));
+        }
+
+        for (int i = 0; i < readers2.Length; i++)
+        {
+            readers2[i] = Task.Run(new Action(ReaderFunction2));
+        }
+
+        writer = Task.Run(new Action(WriterFunction));
+
+        SpinWait spin = new SpinWait();
+        while (!_errorOccured && !_timeExpired)
+        {
+            if (MAX_TEST_TIME_TICKS < DateTime.Now.Ticks - startTime.Ticks)
             {
-                readers1[i] = Task.Run(new Action(ReaderFunction1));
+                _timeExpired = true;
             }
 
-            for (int i = 0; i < readers2.Length; i++)
-            {
-                readers2[i] = Task.Run(new Action(ReaderFunction2));
-            }
+            spin.SpinOnce();
+        }
 
-            writer = Task.Run(new Action(WriterFunction));
+        Task.WaitAll(readers1);
+        Task.WaitAll(readers2);
+        writer.Wait();
 
-            SpinWait spin = new SpinWait();
-            while (!_errorOccured && !_timeExpired)
-            {
-                if (MAX_TEST_TIME_TICKS < DateTime.Now.Ticks - startTime.Ticks)
-                {
-                    _timeExpired = true;
-                }
-
-                spin.SpinOnce();
-            }
-
-            Task.WaitAll(readers1);
-            Task.WaitAll(readers2);
-            writer.Wait();
-
-            Assert.False(_errorOccured);
+        Assert.False(_errorOccured);
     }
 
     private void ReaderFunction1()
