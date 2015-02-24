@@ -1056,7 +1056,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this,
 
 	if ((internal->state & ThreadState_Unstarted) == 0) {
 		UNLOCK_THREAD (internal);
-		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has already been started."));
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has already been started."));
 		return NULL;
 	}
 
@@ -1116,8 +1116,7 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 	}
 }
 
-void
-ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
+void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 {
 	guint32 res;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -1136,8 +1135,7 @@ ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms)
 		if (res == WAIT_IO_COMPLETION) { /* we might have been interrupted */
 			MonoException* exc = mono_thread_execute_interruption (thread);
 			if (exc) {
-				mono_set_pending_exception (exc);
-				return;
+				mono_raise_exception (exc);
 			} else {
 				// FIXME: !INFINITE
 				if (ms != INFINITE)
@@ -1318,9 +1316,8 @@ mono_thread_internal_current (void)
 	return res;
 }
 
-gboolean
-ves_icall_System_Threading_Thread_Join_internal(MonoInternalThread *this,
-												int ms, HANDLE thread)
+gboolean ves_icall_System_Threading_Thread_Join_internal(MonoInternalThread *this,
+							 int ms, HANDLE thread)
 {
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
@@ -1332,7 +1329,7 @@ ves_icall_System_Threading_Thread_Join_internal(MonoInternalThread *this,
 	if ((this->state & ThreadState_Unstarted) != 0) {
 		UNLOCK_THREAD (this);
 		
-		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started."));
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started."));
 		return FALSE;
 	}
 
@@ -2128,8 +2125,7 @@ ves_icall_System_Threading_Thread_ResetAbort (void)
 
 	if (!was_aborting) {
 		const char *msg = "Unable to reset abort because no abort was requested";
-		mono_set_pending_exception (mono_get_exception_thread_state (msg));
-		return;
+		mono_raise_exception (mono_get_exception_thread_state (msg));
 	}
 	thread->abort_exc = NULL;
 	if (thread->abort_state_handle) {
@@ -2183,8 +2179,7 @@ ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *this)
 		MonoException *invalid_op_exc = mono_get_exception_invalid_operation ("Thread.ExceptionState cannot access an ExceptionState from a different AppDomain");
 		if (exc)
 			MONO_OBJECT_SETREF (invalid_op_exc, inner_ex, exc);
-		mono_set_pending_exception (invalid_op_exc);
-		return NULL;
+		mono_raise_exception (invalid_op_exc);
 	}
 
 	return deserialized;
@@ -2222,10 +2217,8 @@ mono_thread_suspend (MonoInternalThread *thread)
 void
 ves_icall_System_Threading_Thread_Suspend (MonoInternalThread *thread)
 {
-	if (!mono_thread_suspend (thread)) {
-		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
-		return;
-	}
+	if (!mono_thread_suspend (thread))
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
 }
 
 static gboolean
@@ -2254,10 +2247,8 @@ mono_thread_resume (MonoInternalThread *thread)
 void
 ves_icall_System_Threading_Thread_Resume (MonoThread *thread)
 {
-	if (!thread->internal_thread || !mono_thread_resume (thread->internal_thread)) {
-		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
-		return;
-	}
+	if (!thread->internal_thread || !mono_thread_resume (thread->internal_thread))
+		mono_raise_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
 }
 
 static gboolean

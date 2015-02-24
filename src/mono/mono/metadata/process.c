@@ -789,8 +789,7 @@ MonoString *ves_icall_System_Diagnostics_Process_ProcessName_internal (HANDLE pr
 }
 
 /* Returns an array of pids */
-MonoArray *
-ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
+MonoArray *ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
 #if !defined(HOST_WIN32)
 	MonoArray *procs;
@@ -798,10 +797,8 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 	int i, count;
 
 	pidarray = mono_process_list (&count);
-	if (!pidarray) {
-		mono_set_pending_exception (mono_get_exception_not_supported ("This system does not support EnumProcesses"));
-		return NULL;
-	}
+	if (!pidarray)
+		mono_raise_exception (mono_get_exception_not_supported ("This system does not support EnumProcesses"));
 	procs = mono_array_new (mono_domain_get (), mono_get_int32_class (), count);
 	if (sizeof (guint32) == sizeof (gpointer)) {
 		memcpy (mono_array_addr (procs, guint32, 0), pidarray, count);
@@ -829,8 +826,8 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 			g_free (pids);
 			pids = NULL;
 			exc = mono_get_exception_not_supported ("This system does not support EnumProcesses");
-			mono_set_pending_exception (exc);
-			return NULL;
+			mono_raise_exception (exc);
+			g_assert_not_reached ();
 		}
 		if (needed < (count * sizeof (guint32)))
 			break;

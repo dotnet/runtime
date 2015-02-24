@@ -610,11 +610,12 @@ ves_icall_System_AppDomain_GetData (MonoAppDomain *ad, MonoString *name)
 	MonoObject *o;
 	char *str;
 
-	MONO_CHECK_ARG_NULL (name, NULL);
-
 	g_assert (ad != NULL);
 	add = ad->data;
 	g_assert (add != NULL);
+
+	if (name == NULL)
+		mono_raise_exception (mono_get_exception_argument_null ("name"));
 
 	str = mono_string_to_utf8 (name);
 
@@ -655,11 +656,12 @@ ves_icall_System_AppDomain_SetData (MonoAppDomain *ad, MonoString *name, MonoObj
 {
 	MonoDomain *add;
 
-	MONO_CHECK_ARG_NULL (name,);
-
 	g_assert (ad != NULL);
 	add = ad->data;
 	g_assert (add != NULL);
+
+	if (name == NULL)
+		mono_raise_exception (mono_get_exception_argument_null ("name"));
 
 	mono_domain_lock (add);
 
@@ -835,7 +837,7 @@ MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
 #ifdef DISABLE_APPDOMAINS
-	mono_set_pending_exception (mono_get_exception_not_supported ("AppDomain creation is not supported on this runtime."));
+	mono_raise_exception (mono_get_exception_not_supported ("AppDomain creation is not supported on this runtime."));
 	return NULL;
 #else
 	char *fname = mono_string_to_utf8 (friendly_name);
@@ -1879,15 +1881,14 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 
 	if (fname == NULL) {
 		MonoException *exc = mono_get_exception_argument_null ("assemblyFile");
-		mono_set_pending_exception (exc);
-		return NULL;
+		mono_raise_exception (exc);
 	}
 		
 	name = filename = mono_string_to_utf8 (fname);
 	
 	ass = mono_assembly_open_full (filename, &status, refOnly);
 	
-	if (!ass) {
+	if (!ass){
 		MonoException *exc;
 
 		if (status == MONO_IMAGE_IMAGE_INVALID)
@@ -1895,8 +1896,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 		else
 			exc = mono_get_exception_file_not_found2 (NULL, fname);
 		g_free (name);
-		mono_set_pending_exception (exc);
-		return NULL;
+		mono_raise_exception (exc);
 	}
 
 	g_free (name);
@@ -1918,7 +1918,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 	MonoImage *image = mono_image_open_from_data_full (mono_array_addr (raw_assembly, gchar, 0), raw_assembly_len, TRUE, NULL, refonly);
 
 	if (!image) {
-		mono_set_pending_exception (mono_get_exception_bad_image_format (""));
+		mono_raise_exception (mono_get_exception_bad_image_format (""));
 		return NULL;
 	}
 
@@ -1930,7 +1930,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad,
 
 	if (!ass) {
 		mono_image_close (image);
-		mono_set_pending_exception (mono_get_exception_bad_image_format (""));
+		mono_raise_exception (mono_get_exception_bad_image_format (""));
 		return NULL; 
 	}
 
@@ -1991,12 +1991,11 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id)
 
 	if (NULL == domain) {
 		MonoException *exc = mono_get_exception_execution_engine ("Failed to unload domain, domain id not found");
-		mono_set_pending_exception (exc);
-		return;
+		mono_raise_exception (exc);
 	}
 	
 	if (domain == mono_get_root_domain ()) {
-		mono_set_pending_exception (mono_get_exception_cannot_unload_appdomain ("The default appdomain can not be unloaded."));
+		mono_raise_exception (mono_get_exception_cannot_unload_appdomain ("The default appdomain can not be unloaded."));
 		return;
 	}
 
@@ -2058,10 +2057,8 @@ ves_icall_System_AppDomain_InternalSetDomain (MonoAppDomain *ad)
 {
 	MonoDomain *old_domain = mono_domain_get();
 
-	if (!mono_domain_set (ad->data, FALSE)) {
-		mono_set_pending_exception (mono_get_exception_appdomain_unloaded ());
-		return NULL;
-	}
+	if (!mono_domain_set (ad->data, FALSE))
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
 	return old_domain->domain;
 }
@@ -2072,10 +2069,8 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid)
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoDomain *domain = mono_domain_get_by_id (domainid);
 
-	if (!domain || !mono_domain_set (domain, FALSE)) {
-		mono_set_pending_exception (mono_get_exception_appdomain_unloaded ());
-		return NULL;
-	}
+	if (!domain || !mono_domain_set (domain, FALSE))	
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
 	return current_domain->domain;
 }
@@ -2091,14 +2086,12 @@ ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id)
 {
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);
 
-	if (!domain) {
+	if (!domain)
 		/* 
 		 * Raise an exception to prevent the managed code from executing a pop
 		 * later.
 		 */
-		mono_set_pending_exception (mono_get_exception_appdomain_unloaded ());
-		return;
-	}
+		mono_raise_exception (mono_get_exception_appdomain_unloaded ());
 
 	mono_thread_push_appdomain_ref (domain);
 }

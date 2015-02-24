@@ -431,7 +431,8 @@ ves_icall_System_GC_KeepAlive (MonoObject *obj)
 void
 ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 {
-	MONO_CHECK_ARG_NULL (obj,);
+	if (!obj)
+		mono_raise_exception (mono_get_exception_argument_null ("obj"));
 
 	object_register_finalizer (obj, mono_gc_run_finalize);
 }
@@ -439,7 +440,8 @@ ves_icall_System_GC_ReRegisterForFinalize (MonoObject *obj)
 void
 ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 {
-	MONO_CHECK_ARG_NULL (obj,);
+	if (!obj)
+		mono_raise_exception (mono_get_exception_argument_null ("obj"));
 
 	/* delegates have no finalizers, but we register them to deal with the
 	 * unmanaged->managed trampoline. We don't let the user suppress it
@@ -485,10 +487,8 @@ void
 ves_icall_System_GC_register_ephemeron_array (MonoObject *array)
 {
 #ifdef HAVE_SGEN_GC
-	if (!mono_gc_ephemeron_array_add (array)) {
-		mono_set_pending_exception (mono_object_domain (array)->out_of_memory_ex);
-		return;
-	}
+	if (!mono_gc_ephemeron_array_add (array))
+		mono_raise_exception (mono_object_domain (array)->out_of_memory_ex);
 #endif
 }
 

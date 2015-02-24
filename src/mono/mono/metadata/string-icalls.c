@@ -45,10 +45,8 @@ ves_icall_System_String_InternalIntern (MonoString *str)
 	MonoString *res;
 
 	res = mono_string_intern(str);
-	if (!res) {
-		mono_set_pending_exception (mono_domain_get ()->out_of_memory_ex);
-		return NULL;
-	}
+	if (!res)
+		mono_raise_exception (mono_domain_get ()->out_of_memory_ex);
 	return res;
 }
 

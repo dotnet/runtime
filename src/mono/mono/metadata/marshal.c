@@ -9890,25 +9890,17 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *s
 	int element_size;
 	void *source_addr;
 
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (dest,);
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (dest);
 
-	if (src->obj.vtable->klass->rank != 1) {
-		mono_set_pending_exception (mono_get_exception_argument ("array", "array is multi-dimensional"));
-		return;
-	}
-	if (start_index < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("startIndex", "Must be >= 0"));
-		return;
-	}
-	if (length < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "Must be >= 0"));
-		return;
-	}
-	if (start_index + length > mono_array_length (src)) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "start_index + length > array length"));
-		return;
-	}
+	if (src->obj.vtable->klass->rank != 1)
+		mono_raise_exception (mono_get_exception_argument ("array", "array is multi-dimensional"));
+	if (start_index < 0)
+		mono_raise_exception (mono_get_exception_argument ("startIndex", "Must be >= 0"));
+	if (length < 0)
+		mono_raise_exception (mono_get_exception_argument ("length", "Must be >= 0"));
+	if (start_index + length > mono_array_length (src))
+		mono_raise_exception (mono_get_exception_argument ("length", "start_index + length > array length"));
 
 	element_size = mono_array_element_size (src->obj.vtable->klass);
 
@@ -9925,25 +9917,18 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 	int element_size;
 	void *dest_addr;
 
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (dest,);
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (dest);
 
-	if (dest->obj.vtable->klass->rank != 1) {
-		mono_set_pending_exception (mono_get_exception_argument ("array", "array is multi-dimensional"));
-		return;
-	}
-	if (start_index < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("startIndex", "Must be >= 0"));
-		return;
-	}
-	if (length < 0) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "Must be >= 0"));
-		return;
-	}
-	if (start_index + length > mono_array_length (dest)) {
-		mono_set_pending_exception (mono_get_exception_argument ("length", "start_index + length > array length"));
-		return;
-	}
+	if (dest->obj.vtable->klass->rank != 1)
+		mono_raise_exception (mono_get_exception_argument ("array", "array is multi-dimensional"));
+	if (start_index < 0)
+		mono_raise_exception (mono_get_exception_argument ("startIndex", "Must be >= 0"));
+	if (length < 0)
+		mono_raise_exception (mono_get_exception_argument ("length", "Must be >= 0"));
+	if (start_index + length > mono_array_length (dest))
+		mono_raise_exception (mono_get_exception_argument ("length", "start_index + length > array length"));
+
 	element_size = mono_array_element_size (dest->obj.vtable->klass);
 	  
 	/* no references should be involved */
@@ -9965,7 +9950,8 @@ MonoString *
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (char *ptr, gint32 len)
 {
 	if (ptr == NULL) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("ptr"));
+		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
+		g_assert_not_reached ();
 		return NULL;
 	} else {
 		return mono_string_new_len (mono_domain_get (), ptr, len);
@@ -9994,7 +9980,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len (guint16 *pt
 	MonoDomain *domain = mono_domain_get (); 
 
 	if (ptr == NULL) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("ptr"));
+		mono_raise_exception (mono_get_exception_argument_null ("ptr"));
+		g_assert_not_reached ();
 		return NULL;
 	} else {
 		return mono_string_new_utf16 (domain, ptr, len);
@@ -10014,14 +10001,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 	MonoType *type;
 	guint32 layout;
 
-	MONO_CHECK_ARG_NULL (rtype, 0);
+	MONO_CHECK_ARG_NULL (rtype);
 
 	type = rtype->type;
 	klass = mono_class_from_mono_type (type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return 0;
-	}
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	layout = (klass->flags & TYPE_ATTRIBUTE_LAYOUT_MASK);
 
@@ -10034,9 +10019,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 		msg = g_strdup_printf ("Type %s cannot be marshaled as an unmanaged structure.", klass->name);
 		exc = mono_get_exception_argument ("t", msg);
 		g_free (msg);
-		mono_set_pending_exception (exc);
-		return 0;
+		mono_raise_exception (exc);
 	}
+
 
 	return mono_class_native_size (klass, NULL);
 }
@@ -10047,8 +10032,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObject *obj
 	MonoMethod *method;
 	gpointer pa [3];
 
-	MONO_CHECK_ARG_NULL (obj,);
-	MONO_CHECK_ARG_NULL (dst,);
+	MONO_CHECK_ARG_NULL (obj);
+	MONO_CHECK_ARG_NULL (dst);
 
 	method = mono_marshal_get_struct_to_ptr (obj->vtable->klass);
 
@@ -10078,8 +10063,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 {
 	MonoType *t;
 
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (dst,);
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (dst);
 	
 	t = mono_type_get_underlying_type (mono_class_get_type (dst->vtable->klass));
 
@@ -10091,7 +10076,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gpointer src, M
 		exc = mono_get_exception_argument ("dst", tmp);
 		g_free (tmp);  
 
-		mono_set_pending_exception (exc);
+		mono_raise_exception (exc);
 		return;
 	}
 
@@ -10107,13 +10092,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 
 	if (src == NULL)
 		return NULL;
-	MONO_CHECK_ARG_NULL (type, NULL);
+	MONO_CHECK_ARG_NULL (type);
 
 	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
-	}
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	res = mono_object_new (domain, klass);
 
@@ -10130,15 +10113,13 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	char *fname;
 	int match_index = -1;
 	
-	MONO_CHECK_ARG_NULL (type, 0);
-	MONO_CHECK_ARG_NULL (field_name, 0);
+	MONO_CHECK_ARG_NULL (type);
+	MONO_CHECK_ARG_NULL (field_name);
 
 	fname = mono_string_to_utf8 (field_name);
 	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return 0;
-	}
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	while (klass && match_index == -1) {
 		MonoClassField* field;
@@ -10171,8 +10152,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 		exc = mono_get_exception_argument ("fieldName", tmp);
 		g_free (tmp);
  
-		mono_set_pending_exception ((MonoException*)exc);
-		return 0;
+		mono_raise_exception ((MonoException*)exc);
 	}
 
 	info = mono_marshal_load_type_info (klass);     
@@ -10274,14 +10254,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 {
 	MonoClass *klass;
 
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL (type,);
+	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (type);
 
 	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return;
-	}
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	mono_struct_delete_old (klass, (char *)src);
 }
@@ -10377,10 +10355,8 @@ MonoDelegate*
 ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type)
 {
 	MonoClass *klass = mono_type_get_class (type->type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
-	}
+	if (!mono_class_init (klass))
+		mono_raise_exception (mono_class_get_exception_for_failure (klass));
 
 	return mono_ftnptr_to_delegate (klass, ftn);
 }
