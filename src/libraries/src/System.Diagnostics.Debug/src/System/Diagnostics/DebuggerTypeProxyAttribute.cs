@@ -8,7 +8,7 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DebuggerTypeProxyAttribute : Attribute
     {
-        private string _typeName;
+        private readonly string _typeName;
         private string _targetName;
         private Type _target;
 
