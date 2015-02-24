@@ -380,12 +380,20 @@ HANDLE STDMETHODCALLTYPE UtilExecutionEngine::ClrGetProcessExecutableHeap()
 
 HANDLE STDMETHODCALLTYPE UtilExecutionEngine::ClrHeapCreate(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize) 
 {
+#ifdef FEATURE_PAL
+    return NULL;
+#else
     return HeapCreate(flOptions, dwInitialSize, dwMaximumSize);
+#endif
 }
 
 BOOL STDMETHODCALLTYPE UtilExecutionEngine::ClrHeapDestroy(HANDLE hHeap) 
 {
+#ifdef FEATURE_PAL
+    return FALSE;
+#else
     return HeapDestroy(hHeap);
+#endif
 }
 
 LPVOID STDMETHODCALLTYPE UtilExecutionEngine::ClrHeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes) 
@@ -404,7 +412,11 @@ BOOL STDMETHODCALLTYPE UtilExecutionEngine::ClrHeapFree(HANDLE hHeap, DWORD dwFl
 
 BOOL STDMETHODCALLTYPE UtilExecutionEngine::ClrHeapValidate(HANDLE hHeap, DWORD dwFlags, LPCVOID lpMem) 
 {
+#ifdef FEATURE_PAL
+    return FALSE;
+#else
     return HeapValidate(hHeap, dwFlags, lpMem);
+#endif
 }
 
 

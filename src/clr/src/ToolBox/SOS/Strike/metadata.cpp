@@ -162,7 +162,7 @@ HRESULT NameForToken_s(mdTypeDef mb, IMetaDataImport *pImport, __out_ecount (cap
                 if (mdClass != mdTypeDefNil && bClassName)
                 {
                     hr = NameForTypeDef_s (mdClass, pImport, mdName, capacity_mdName);
-                    wcscat_s (mdName, capacity_mdName, L".");
+                    wcscat_s (mdName, capacity_mdName, W("."));
                 }
                 name[size] = L'\0';
                 wcscat_s (mdName, capacity_mdName, name);
@@ -180,7 +180,7 @@ HRESULT NameForToken_s(mdTypeDef mb, IMetaDataImport *pImport, __out_ecount (cap
                 if (mdClass != mdTypeDefNil && bClassName)
                 {
                     hr = NameForTypeDef_s (mdClass, pImport, mdName, capacity_mdName);
-                    wcscat_s (mdName, capacity_mdName, L".");
+                    wcscat_s (mdName, capacity_mdName, W("."));
                 }
                 name[size] = L'\0';
                 wcscat_s (mdName, capacity_mdName, name);
@@ -245,7 +245,7 @@ HRESULT NameForTokenNew(mdTypeDef mb, IMDInternalImport *pImport, WCHAR *mdName,
                     if (mdClass != mdTypeDefNil && bClassName)
                     {
                         hr = NameForTypeDefNew (mdClass, pImport, mdName);
-                        wcscat (mdName, L".");
+                        wcscat (mdName, W("."));
                     }
                     name[size] = L'\0';
                     wcscat (mdName, name);
@@ -263,7 +263,7 @@ HRESULT NameForTokenNew(mdTypeDef mb, IMDInternalImport *pImport, WCHAR *mdName,
                     if (mdClass != mdTypeDefNil && bClassName)
                     {
                         hr = NameForTypeDefNew (mdClass, pImport, mdName);
-                        wcscat (mdName, L".");
+                        wcscat (mdName, W("."));
                     }
                     name[size] = L'\0';
                     wcscat (mdName, name);
@@ -335,18 +335,18 @@ void NameForToken_s(DacpModuleData *pModule, mdTypeDef mb, __out_ecount (capacit
             DacpAssemblyData assembly;
             assembly.Request(g_sos,pModule->Assembly);
             if (assembly.isDynamic) {
-                wcscpy_s(moduleName, capacity_moduleName, L"Dynamic ");
+                wcscpy_s(moduleName, capacity_moduleName, W("Dynamic "));
             }
-            wcscat_s (moduleName, capacity_moduleName, L"Module in ");            
+            wcscat_s (moduleName, capacity_moduleName, W("Module in "));            
             if(g_sos->GetAssemblyName(pModule->Assembly, mdNameLen, g_mdName, NULL)==S_OK)
             {
                 wcscat_s(moduleName, capacity_moduleName, g_mdName);
             }
         }
         swprintf_s (mdName, capacity_mdName,
-                   L" mdToken: %08x (%ws)",
+                   W(" mdToken: %08x (%ws)"),
                    mb,
-                   moduleName[0] ? moduleName : L"Unknown Module" );
+                   moduleName[0] ? moduleName : W("Unknown Module") );
     }
 }
 
@@ -427,56 +427,56 @@ void GetMethodName(mdMethodDef methodDef, IMetaDataImport * pImport, CQuickBytes
 
 
 // Tables for mapping element type to text
-WCHAR *g_wszMapElementType[] = 
+const wchar_t *g_wszMapElementType[] = 
 {
-    L"End",          // 0x0
-    L"Void",         // 0x1
-    L"Boolean",
-    L"Char", 
-    L"I1",
-    L"UI1",
-    L"I2",           // 0x6
-    L"UI2",
-    L"I4",
-    L"UI4",
-    L"I8",
-    L"UI8",
-    L"R4",
-    L"R8",
-    L"String",
-    L"Ptr",          // 0xf
-    L"ByRef",        // 0x10
-    L"ValueClass",
-    L"Class",
-    L"CopyCtor",
-    L"MDArray",      // 0x14
-    L"GENArray",
-    L"TypedByRef",
-    L"VALUEARRAY",
-    L"I",
-    L"U",
-    L"R",            // 0x1a
-    L"FNPTR",
-    L"Object",
-    L"SZArray",
-    L"GENERICArray",
-    L"CMOD_REQD",
-    L"CMOD_OPT",
-    L"INTERNAL",
+    W("End"),          // 0x0
+    W("Void"),         // 0x1
+    W("Boolean"),
+    W("Char"), 
+    W("I1"),
+    W("UI1"),
+    W("I2"),           // 0x6
+    W("UI2"),
+    W("I4"),
+    W("UI4"),
+    W("I8"),
+    W("UI8"),
+    W("R4"),
+    W("R8"),
+    W("String"),
+    W("Ptr"),          // 0xf
+    W("ByRef"),        // 0x10
+    W("ValueClass"),
+    W("Class"),
+    W("CopyCtor"),
+    W("MDArray"),      // 0x14
+    W("GENArray"),
+    W("TypedByRef"),
+    W("VALUEARRAY"),
+    W("I"),
+    W("U"),
+    W("R"),            // 0x1a
+    W("FNPTR"),
+    W("Object"),
+    W("SZArray"),
+    W("GENERICArray"),
+    W("CMOD_REQD"),
+    W("CMOD_OPT"),
+    W("INTERNAL"),
 };
  
-WCHAR *g_wszCalling[] = 
+const wchar_t *g_wszCalling[] = 
 {   
-    L"[DEFAULT]",
-    L"[C]",
-    L"[STDCALL]",
-    L"[THISCALL]",
-    L"[FASTCALL]",
-    L"[VARARG]",
-    L"[FIELD]",
-    L"[LOCALSIG]",
-    L"[PROPERTY]",
-    L"[UNMANAGED]",
+    W("[DEFAULT]"),
+    W("[C]"),
+    W("[STDCALL]"),
+    W("[THISCALL]"),
+    W("[FASTCALL]"),
+    W("[VARARG]"),
+    W("[FIELD]"),
+    W("[LOCALSIG]"),
+    W("[PROPERTY]"),
+    W("[UNMANAGED]"),
 };
 
 void MDInfo::GetMethodName(mdTypeDef token, CQuickBytes *fullName)
@@ -513,7 +513,7 @@ void MDInfo::GetMethodName(mdTypeDef token, CQuickBytes *fullName)
     {
         hr = NameForTypeDef_s (memTypeDef, m_pImport, m_szName, _countof(m_szName));
         if (SUCCEEDED (hr)) {
-            wcscat_s (m_szName,_countof(m_szName),L".");
+            wcscat_s (m_szName, _countof(m_szName), W("."));
         }
     }
     wcscat_s (m_szName, _countof(m_szName), szFunctionName);
@@ -624,17 +624,17 @@ HRESULT MDInfo::GetFullNameForMD(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, LON
     ulSigBlob -= cb;
 
     if (ulData & IMAGE_CEE_CS_CALLCONV_HASTHIS)
-        AddToSigBuffer ( L" [hasThis]");
+        AddToSigBuffer ( W(" [hasThis]"));
     if (ulData & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
-        AddToSigBuffer ( L" [explicit]");
+        AddToSigBuffer ( W(" [explicit]"));
 
-    AddToSigBuffer (L" ");
+    AddToSigBuffer (W(" "));
     if ( isCallConv(ulData,IMAGE_CEE_CS_CALLCONV_FIELD) )
     {
         // display field type
         if (FAILED(hr = GetOneElementType(&pbSigBlob[cbCur], ulSigBlob, &cb)))
             goto ErrExit;
-        AddToSigBuffer ( L" ");
+        AddToSigBuffer ( W(" "));
         AddToSigBuffer ( m_szName);
         if (cb>ulSigBlob) 
             goto ErrExit;
@@ -654,9 +654,9 @@ HRESULT MDInfo::GetFullNameForMD(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, LON
             // display return type when it is not a local varsig
             if (FAILED(hr = GetOneElementType(&pbSigBlob[cbCur], ulSigBlob, &cb)))
                 goto ErrExit;
-            AddToSigBuffer (L" ");
+            AddToSigBuffer (W(" "));
             AddToSigBuffer (m_szName);
-            AddToSigBuffer ( L"(");
+            AddToSigBuffer ( W("("));
             if (cb>ulSigBlob) 
                 goto ErrExit;
             cbCur += cb;
@@ -675,7 +675,7 @@ HRESULT MDInfo::GetFullNameForMD(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, LON
             if (FAILED(hr = GetOneElementType(&pbSigBlob[cbCur], ulSigBlob, &cb)))
                 goto ErrExit;
             if (i != ulArgs) {
-                AddToSigBuffer ( L",");
+                AddToSigBuffer ( W(","));
             }
             if (cb>ulSigBlob) 
                 goto ErrExit;
@@ -683,7 +683,7 @@ HRESULT MDInfo::GetFullNameForMD(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, LON
             cbCur += cb;
             ulSigBlob -= cb;
         }
-        AddToSigBuffer ( L")");
+        AddToSigBuffer ( W(")"));
     }
 
     // Nothing consumed but not yet counted.
@@ -700,7 +700,7 @@ ErrExit:
 LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef)
 {
     if (m_pImport == NULL) {
-        return L"";
+        return W("");
     }
 
     HRESULT hr;
@@ -714,13 +714,13 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef)
         NULL,                   // [OUT] Put flags here.
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
 
-    if (FAILED(hr)) return (L"NoName");
+    if (FAILED(hr)) return (W("NoName"));
     return (m_szTempBuf);
 } // LPCWSTR MDInfo::TypeDefName()
 LPCWSTR MDInfo::TypeRefName(mdTypeRef tr)
 {
     if (m_pImport == NULL) {
-        return L"";
+        return W("");
     }
 
     HRESULT hr;
@@ -731,7 +731,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr)
         m_szTempBuf,             // Put the name here.
         MAX_CLASSNAME_LENGTH,             // Size of the name buffer, wide chars.
         NULL);              // Put actual size of name here.
-    if (FAILED(hr)) return (L"NoName");
+    if (FAILED(hr)) return (W("NoName"));
 
     return (m_szTempBuf);
 } // LPCWSTR MDInfo::TypeRefName()
@@ -745,10 +745,10 @@ LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken)
         else if (TypeFromToken(inToken) == mdtTypeRef)
             return (TypeRefName((mdTypeRef) inToken));
         else
-            return (L"[InvalidReference]");
+            return (W("[InvalidReference]"));
     }
     else
-        return (L"");
+        return (W(""));
 } // LPCWSTR MDInfo::TypeDeforRefName()
 
 
@@ -784,9 +784,9 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
     if (ulData & ELEMENT_TYPE_MODIFIER)
     {
         if (ulData == ELEMENT_TYPE_SENTINEL)
-            IfFailGo(AddToSigBuffer(L"<ELEMENT_TYPE_SENTINEL> "));
+            IfFailGo(AddToSigBuffer(W("<ELEMENT_TYPE_SENTINEL> ")));
         else if (ulData == ELEMENT_TYPE_PINNED)
-            IfFailGo(AddToSigBuffer(L"PINNED "));
+            IfFailGo(AddToSigBuffer(W("PINNED ")));
         else
         {
             hr = E_FAIL;
@@ -807,7 +807,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
     while (ulData == ELEMENT_TYPE_PTR || ulData == ELEMENT_TYPE_BYREF)
     {
         IfFailGo(AddToSigBuffer(g_wszMapElementType[ulData]));
-        IfFailGo(AddToSigBuffer(L" "));
+        IfFailGo(AddToSigBuffer(W(" ")));
         cb = CorSigUncompressData(&pbSigBlob[cbCur], &ulData);
         cbCur += cb;
     }
@@ -815,7 +815,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
     // Generics
     if (ulData == ELEMENT_TYPE_VAR)
     {
-        IfFailGo(AddToSigBuffer(L"__Canon"));
+        IfFailGo(AddToSigBuffer(W("__Canon")));
 
         // The next byte represents which generic parameter is referred to.  We
         // do not currently use this information, so just bypass this byte.
@@ -837,16 +837,16 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         cbCur += cb;
 
         // Print out the list of arguments
-        IfFailGo(AddToSigBuffer(L"<"));
+        IfFailGo(AddToSigBuffer(W("<")));
         for (ULONG i = 0; i < numParams; i++)
         {
             if (i > 0) 
-                IfFailGo(AddToSigBuffer(L","));
+                IfFailGo(AddToSigBuffer(W(",")));
             
             IfFailGo(GetOneElementType(&pbSigBlob[cbCur], ulSigBlob-cbCur, &cb));
             cbCur += cb;
         }
-        IfFailGo(AddToSigBuffer(L">"));
+        IfFailGo(AddToSigBuffer(W(">")));
         goto ErrExit;
     }
     
@@ -862,7 +862,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         goto ErrExit;
     }
 
-    AddToSigBuffer(L" ");
+    AddToSigBuffer(W(" "));
     if (ulData == ELEMENT_TYPE_VALUETYPE || 
         ulData == ELEMENT_TYPE_CLASS || 
         ulData == ELEMENT_TYPE_CMOD_REQD ||
@@ -886,7 +886,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         if (ulData == ELEMENT_TYPE_CMOD_REQD ||
             ulData == ELEMENT_TYPE_CMOD_OPT)
         {
-            IfFailGo(AddToSigBuffer(L" "));
+            IfFailGo(AddToSigBuffer(W(" ")));
             if (FAILED(GetOneElementType(&pbSigBlob[cbCur], ulSigBlob-cbCur, &cb)))
                 goto ErrExit;
             cbCur += cb;
@@ -907,9 +907,9 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         cb = CorSigUncompressData(&pbSigBlob[cbCur], &ulData);
         cbCur += cb;
         if (ulData & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
-            IfFailGo(AddToSigBuffer(L"[explicit] "));
+            IfFailGo(AddToSigBuffer(W("[explicit] ")));
         if (ulData & IMAGE_CEE_CS_CALLCONV_HASTHIS)
-            IfFailGo(AddToSigBuffer(L"[hasThis] "));
+            IfFailGo(AddToSigBuffer(W("[hasThis] ")));
 
         IfFailGo(AddToSigBuffer(g_wszCalling[ulData & IMAGE_CEE_CS_CALLCONV_MASK]));
 
@@ -923,7 +923,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
             goto ErrExit;
         cbCur += cb;
 
-        IfFailGo(AddToSigBuffer(L"("));
+        IfFailGo(AddToSigBuffer(W("(")));
         while (numArgs > 0) 
         {
             if (cbCur > ulSigBlob)
@@ -933,15 +933,15 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
             cbCur += cb;
             --numArgs;
             if (numArgs > 0) 
-                IfFailGo(AddToSigBuffer(L","));
+                IfFailGo(AddToSigBuffer(W(",")));
         }
-        IfFailGo(AddToSigBuffer(L")"));
+        IfFailGo(AddToSigBuffer(W(")")));
         goto ErrExit;
     }
 
     if (ulData == ELEMENT_TYPE_INTERNAL)
     {
-        IfFailGo(AddToSigBuffer(L"MT "));
+        IfFailGo(AddToSigBuffer(W("MT ")));
 
         void *pvMethodTable;
         cb = CorSigUncompressPointer(&pbSigBlob[cbCur], (void**)&pvMethodTable);
@@ -952,7 +952,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         itow_s_ptr((INT_PTR)pvMethodTable, szMethodTableValue, capacity_szMethodTableValue, 16);
 
         IfFailGo(AddToSigBuffer(szMethodTableValue));
-        IfFailGo(AddToSigBuffer(L" "));
+        IfFailGo(AddToSigBuffer(W(" ")));
 
         IfFailGo(g_sos->GetMethodTableName(TO_CDADDR(pvMethodTable), mdNameLen, g_mdName, NULL));
         IfFailGo(AddToSigBuffer(g_mdName));
@@ -968,7 +968,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         goto ErrExit;
     cbCur += cb;
 
-    IfFailGo(AddToSigBuffer(L" "));
+    IfFailGo(AddToSigBuffer(W(" ")));
     // display the rank of MDARRAY
     cb = CorSigUncompressData(&pbSigBlob[cbCur], &ulData);
     cbCur += cb;
@@ -979,14 +979,14 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         // we are done if no rank specified
         goto ErrExit;
 
-    IfFailGo(AddToSigBuffer(L" "));
+    IfFailGo(AddToSigBuffer(W(" ")));
     // how many dimensions have size specified?
     cb = CorSigUncompressData(&pbSigBlob[cbCur], &ulData);
     cbCur += cb;
     _itow_s (ulData, buffer, capacity_buffer, 10);
     IfFailGo(AddToSigBuffer(buffer));
     if (ulData == 0) {
-        IfFailGo(AddToSigBuffer(L" "));
+        IfFailGo(AddToSigBuffer(W(" ")));
     }
     while (ulData)
     {
@@ -994,7 +994,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         cb = CorSigUncompressData(&pbSigBlob[cbCur], &ulTemp);
         _itow_s (ulTemp, buffer, capacity_buffer, 10);
         IfFailGo(AddToSigBuffer(buffer));
-        IfFailGo(AddToSigBuffer(L" "));
+        IfFailGo(AddToSigBuffer(W(" ")));
         cbCur += cb;
         ulData--;
     }
@@ -1009,7 +1009,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         cb = CorSigUncompressSignedInt(&pbSigBlob[cbCur], &iTemp);
         _itow_s (iTemp, buffer, capacity_buffer, 10);
         IfFailGo(AddToSigBuffer(buffer));
-        IfFailGo(AddToSigBuffer(L" "));
+        IfFailGo(AddToSigBuffer(W(" ")));
         cbCur += cb;
         ulData--;
     }
