@@ -1493,7 +1493,6 @@ namespace System.Diagnostics.Tracing
                 // OK if we get this far without an exception, then we can at least write out error messages. 
                 // Set m_provider, which allows this.  
                 m_provider = provider;
-#endif
 
 #if !ES_BUILD_STANDALONE
                 // API available on OS >= Win 8 and patched Win 7.
@@ -1511,6 +1510,7 @@ namespace System.Diagnostics.Tracing
                             this.providerMetadata.Length);
                     }
                 }
+#endif // FEATURE_MANAGED_ETW
 
                 Contract.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.  
                 // We are logically completely initialized at this point.  
@@ -2491,6 +2491,7 @@ namespace System.Diagnostics.Tracing
             // We defer commands until we are completely inited.  This allows error messages to be sent.  
             Contract.Assert(m_completelyInited);
 
+#if FEATURE_MANAGED_ETW
             if (m_provider == null)     // If we failed to construct
                 return;
 
@@ -2717,6 +2718,7 @@ namespace System.Diagnostics.Tracing
                 ReportOutOfBandMessage("ERROR: Exception in Command Processing for EventSource " + Name + ": " + e.Message, true);
                 // We never throw when doing a command.  
             }
+#endif // FEATURE_MANAGED_ETW
         }
 
 #if FEATURE_ACTIVITYSAMPLING
