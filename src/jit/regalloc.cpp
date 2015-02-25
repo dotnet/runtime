@@ -3763,6 +3763,9 @@ HANDLE_SHIFT_COUNT:
                         //
                         rpRecordRegIntf(RBM_SHIFT, liveSet
                                         DEBUGARG("Variable Shift Register"));
+                        // In case op2Mask doesn't contain the required shift register,
+                        // we will or it in now.
+                        op2Mask |= RBM_SHIFT;   
                     }
                 }
 

@@ -71,7 +71,9 @@ ValueNumFuncDef(Sin, 1, false, false, false)
 ValueNumFuncDef(Cos, 1, false, false, false)
 ValueNumFuncDef(Sqrt, 1, false, false, false)
 ValueNumFuncDef(Abs, 1, false, false, false)
-ValueNumFuncDef(Round, 1, false, false, false)
+ValueNumFuncDef(RoundDouble, 1, false, false, false)
+ValueNumFuncDef(RoundFloat, 1, false, false, false)
+ValueNumFuncDef(RoundInt, 1, false, false, false)
 
 
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
