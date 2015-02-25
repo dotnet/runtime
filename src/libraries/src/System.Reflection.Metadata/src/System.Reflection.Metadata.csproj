@@ -62,6 +62,7 @@
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
@@ -178,7 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Immutable">
-      <HintPath>$(PackagesDir)\System.Collections.Immutable.1.1.32-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <HintPath>$(PackagesDir)\System.Collections.Immutable.1.1.33-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
