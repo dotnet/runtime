@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
   <metadata minClientVersion="2.8.1">
-    <id>Microsoft.Bcl.Metadata</id>
-    <version>1.0.19-beta</version>
+    <id>System.Reflection.Metadata</id>
+    <version>1.0.19-rc</version>
     <title>Microsoft ECMA-335 Metadata Reader</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -19,6 +19,11 @@ Supported Platforms:
     <summary>Provides a low-level .NET metadata reader.</summary>
     <copyright>Copyright © Microsoft Corporation</copyright>
     <tags>BCL Microsoft System ECMA ECMA335 Metadata Reflection</tags>
+    <dependencies>
+      <group>
+        <dependency id="System.Collections.Immutable" version="1.1.33-beta" />
+      </group>
+    </dependencies>
   </metadata>
   <files>
 
