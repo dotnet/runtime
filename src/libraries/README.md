@@ -129,7 +129,7 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Threading.Tasks.Parallel**.  Provides library-based data parallel replacements for common
   operations such as for loops, for each loops, and execution of a set of statements.
 
-* **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
+* **System.Xml**. Provides low level XML types such as `XmlReader` and `XmlWriter` and also DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq, and the corresponding XPath extension methods.
 
 * **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
