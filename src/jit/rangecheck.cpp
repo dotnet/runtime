@@ -250,7 +250,12 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
     if (m_pCompiler->vnStore->IsVNConstant(idxVn) && arrSize > 0)
     {
-        int idxVal = m_pCompiler->vnStore->ConstantValue<int>(idxVn);
+        ssize_t idxVal = -1;
+        unsigned iconFlags = 0;
+        if (!m_pCompiler->optIsTreeKnownIntValue(true, treeIndex, &idxVal, &iconFlags))
+        {
+            return;
+        }
 
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Is index %d in <0, arrLenVn VN%X sz:%d>.\n", idxVal, arrLenVn, arrSize);
         if (arrSize > 0 && idxVal < arrSize && idxVal >= 0)
