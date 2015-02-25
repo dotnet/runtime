@@ -4687,9 +4687,8 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 
 	LOCK_THREAD (thread);
 	if (thread == mono_thread_internal_current ()) {
-		mono_thread_info_begin_self_suspend ();
 		transition_to_suspended (thread, NULL);
-		mono_thread_info_end_self_suspend ();
+		mono_thread_info_self_suspend ();
 	} else {
 		MonoThreadInfo *info;
 		MonoJitInfo *ji;
@@ -4766,9 +4765,8 @@ self_suspend_internal (MonoInternalThread *thread)
 		return;
 	}
 
-	mono_thread_info_begin_self_suspend ();
 	transition_to_suspended (thread, NULL);
-	mono_thread_info_end_self_suspend ();
+	mono_thread_info_self_suspend ();
 }
 
 /*This is called with @thread synch_cs held and it must release it*/
