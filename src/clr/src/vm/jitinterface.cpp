@@ -7902,6 +7902,61 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
     }
 #endif // PROFILING_SUPPORTED
 
+
+#ifdef PROFILING_SUPPORTED
+    if (CORProfilerPresent())
+    {
+        // #rejit
+        // 
+        // See if rejit-specific flags for the caller disable inlining
+        if ((ReJitManager::GetCurrentReJitFlags(pCaller) &
+            COR_PRF_CODEGEN_DISABLE_INLINING) != 0)
+        {
+            result = INLINE_FAIL;
+            szFailReason = "ReJIT request disabled inlining from caller";
+            goto exit;
+        }
+
+        // If the profiler has set a mask preventing inlining, always return
+        // false to the jit.
+        if (CORProfilerDisableInlining())
+        {
+            result = INLINE_FAIL;
+            szFailReason = "Profiler disabled inlining globally";
+            goto exit;
+        }
+
+        // If the profiler wishes to be notified of JIT events and the result from
+        // the above tests will cause a function to be inlined, we need to tell the
+        // profiler that this inlining is going to take place, and give them a
+        // chance to prevent it.
+        {
+            BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+            if (pCaller->IsILStub() || pCallee->IsILStub())
+            {
+                // do nothing
+            }
+            else
+            {
+                BOOL fShouldInline;
+
+                HRESULT hr = g_profControlBlock.pProfInterface->JITInlining(
+                    (FunctionID)pCaller,
+                    (FunctionID)pCallee,
+                    &fShouldInline);
+
+                if (SUCCEEDED(hr) && !fShouldInline)
+                {
+                    result = INLINE_FAIL;
+                    szFailReason = "Profiler disabled inlining locally";
+                    goto exit;
+                }
+            }
+            END_PIN_PROFILER();
+        }
+    }
+#endif // PROFILING_SUPPORTED
+
 exit: ;
 
     EE_TO_JIT_TRANSITION();
@@ -10544,10 +10599,24 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
 #endif /*_PREFAST_ */
 
 #if defined(_TARGET_AMD64_)
-        // Always call profiler helpers indirectly to avoid going through jump stubs.
-        // Jumps stubs corrupt RAX that has to be preserved for profiler probes.
-        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE ||
+        // To avoid using a jump stub we always call certain helpers using an indirect call.
+        // Because when using a direct call and the target is father away than 2^31 bytes,
+        // the direct call instead goes to a jump stub which jumps to the jit helper.
+        // However in this process the jump stub will corrupt RAX.
+        //
+        // The set of helpers for which RAX must be preserved are the profiler probes
+        // and the STOP_FOR_GC helper which maps to JIT_RareDisableHelper.
+        // In the case of the STOP_FOR_GC helper RAX can be holding a function return value.
+        //
+        // Note that JIT64 (the compat jit) has an issue where it fails when trying
+        // to make an indirect call using OPCONDCALL so we always use a direct call 
+        // for JIT64. UsingCompatJit() == true means that we are using JIT64.
+        // The JIT64 also does not depend upon having RAX preserved across the call
+        // 
+        if (((dynamicFtnNum == DYNAMIC_CORINFO_HELP_STOP_FOR_GC) &&
+             (ExecutionManager::UsingCompatJit() == false)         ) ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER     ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE     ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL)
         {
             _ASSERTE(ppIndirection != NULL);
