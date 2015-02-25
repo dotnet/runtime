@@ -32,7 +32,12 @@ project, e.g.:
 ```
 cd src\System.Collections.Immutable\tests
 msbuild /t:BuildAndTest (or /t:Test to just re-run the tests)
+
+// To build with code coverage pass the /p:Coverage=true property
+msbuild /t:BuildAndTest /p:Coverage=true 
 ```
+
+
 In some test directories there may be multiple test projects or directories so you may need to specify the specific test project to get it to build and run the tests.
 
 ### Running tests from Visual Studio
