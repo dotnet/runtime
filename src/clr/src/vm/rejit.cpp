@@ -1796,6 +1796,7 @@ HRESULT ReJitManager::RequestRevertByToken(PTR_Module pModule, mdMethodDef metho
         _ASSERTE(hr == E_OUTOFMEMORY);
         return hr;
     }
+
     // If there were any errors, return the first one. This matches previous error handling
     // behavior that only returned the first error encountered within Revert().
     for (int i = 0; i < errorRecords.Count(); i++)

@@ -3002,8 +3002,7 @@ BasicBlock* CodeGen::genTransitionBlockStackFP(FlatFPStateX87* pState, BasicBloc
         //
         // Insert pBlock between lastHotBlock and fgFirstColdBlock
         //
-        lastHotBlock->bbNext = pBlock;
-        pBlock->bbNext = compiler->fgFirstColdBlock;
+        compiler->fgInsertBBafter(lastHotBlock, pBlock);
     }
 
     return pBlock;

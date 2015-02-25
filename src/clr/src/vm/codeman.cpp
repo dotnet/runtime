@@ -1162,6 +1162,7 @@ EEJitManager::EEJitManager()
     m_JITCompiler      = NULL;
 #ifdef _TARGET_AMD64_
     m_JITCompilerOther = NULL;
+    m_fUsingCompatJit  = false;
 #endif
 #ifdef ALLOW_SXS_JIT
     m_alternateJit     = NULL;
@@ -1407,6 +1408,7 @@ BOOL EEJitManager::LoadJIT()
     m_JITCompiler = NULL;
 #ifdef _TARGET_AMD64_
     m_JITCompilerOther = NULL;
+    m_fUsingCompatJit  = false;
 #endif
 
     LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler);
@@ -1495,6 +1497,13 @@ BOOL EEJitManager::LoadJIT()
                 // Tell the main JIT to fall back to the "fallback" JIT compiler, in case some
                 // obfuscator tries to directly call the main JIT's getJit() function.
                 newJitCompiler->setRealJit(fallbackICorJitCompiler);
+                // Record the fact that we are using the compat jit so that if the VM
+                // needs to behave differently for the compat jit it can query this value
+                //
+                // Currently we do behave differently when deciding how to call the 
+                // CORINFO_HELP_STOP_FOR_GC jithelper.
+                //
+                m_fUsingCompatJit = true;
             }
         }
     }
