@@ -2508,29 +2508,32 @@ void                RegSet::rsUnspillRegPair(GenTreePtr tree,
         rsMarkRegFree(genRegMask(regLo));
     }
 
-    /* Has the register holding the upper half been spilled? */
-
-    if  (!rsIsTreeInReg(regHi, tree))
+    if (regHi != REG_STK)
     {
-        regMaskTP   regLoUsed;
-
-        /* Temporarily lock the low part so it doesnt get spilled */
-
-        rsLockReg(genRegMask(regLo), &regLoUsed);
-
-        /* Pick a new home for the upper half */
-
-        regHi = rsUnspillOneReg(tree, regHi, keepReg, needReg);
-
-        /* We can unlock the low register now */
-
-        rsUnlockReg(genRegMask(regLo), regLoUsed);
-    }
-    else
-    {
-        /* Free the register holding the upper half */
-
-        rsMarkRegFree(genRegMask(regHi));
+        /* Has the register holding the upper half been spilled? */
+        
+        if  (!rsIsTreeInReg(regHi, tree))
+        {
+            regMaskTP   regLoUsed;
+            
+            /* Temporarily lock the low part so it doesnt get spilled */
+            
+            rsLockReg(genRegMask(regLo), &regLoUsed);
+            
+            /* Pick a new home for the upper half */
+            
+            regHi = rsUnspillOneReg(tree, regHi, keepReg, needReg);
+            
+            /* We can unlock the low register now */
+            
+            rsUnlockReg(genRegMask(regLo), regLoUsed);
+        }
+        else
+        {
+            /* Free the register holding the upper half */
+            
+            rsMarkRegFree(genRegMask(regHi));
+        }
     }
 
     /* The value is now residing in the new register */

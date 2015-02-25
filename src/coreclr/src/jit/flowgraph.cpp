@@ -13965,6 +13965,8 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 // Extracting side-effects won't work in rationalized form.
                 // Instead just transform the JTRUE into a NEG which has the effect of
                 // evaluating the side-effecting tree and perform a benign operation on it.
+                // TODO-CQ: [TFS:1121057] We should be able to simply remove the jump node,
+                // and change gtStmtExpr to its op1.
                 cond->gtStmtExpr->SetOper(GT_NEG);
                 cond->gtStmtExpr->gtType = TYP_I_IMPL;
             }

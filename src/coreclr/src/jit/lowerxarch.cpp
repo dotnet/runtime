@@ -704,6 +704,7 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             {
                 source->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~RBM_RCX);
                 shiftBy->gtLsraInfo.setSrcCandidates(l, RBM_RCX);
+                info->setDstCandidates(l, l->allRegs(TYP_INT) & ~RBM_RCX);
             }
             else
             {
@@ -785,6 +786,15 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                     // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
                     ctrlExpr->gtLsraInfo.setSrcCandidates(l, RBM_RAX);
                 }
+            }
+
+            // If this is a varargs call, we will clear the internal candidates in case we need
+            // to reserve some integer registers for copying float args.
+            // We have to do this because otherwise the default candidates are allRegs, and adding
+            // the individual specific registers will have no effect.
+            if (tree->gtCall.IsVarargs())
+            {
+                tree->gtLsraInfo.setInternalCandidates(l, RBM_NONE);
             }
 
             // Set destination candidates for return value of the call.
@@ -918,6 +928,17 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
                 if (argNode->gtOper == GT_PUTARG_REG)
                 {
                     argNode->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, l->getUseCandidates(argNode));
+                }
+                // In the case of a varargs call, the ABI dictates that if we have floating point args,
+                // we must pass the enregistered arguments in both the integer and floating point registers.
+                // Since the integer register is not associated with this arg node, we will reserve it as
+                // an internal register so that it is not used during the evaluation of the call node
+                // (e.g. for the target).
+                if (tree->gtCall.IsVarargs() && varTypeIsFloating(argNode))
+                {
+                    regNumber targetReg = compiler->getCallArgIntRegister(argReg);
+                    tree->gtLsraInfo.setInternalIntCount(tree->gtLsraInfo.internalIntCount + 1);
+                    tree->gtLsraInfo.addInternalCandidates(l, genRegMask(targetReg));
                 }
             }
 
@@ -2395,6 +2416,12 @@ void Lowering::LowerCmp(GenTreePtr tree)
                         GenTreePtr removeTreeNodeChild = castOp1;
                         tree->gtOp.gtOp1 = castOp1;
                         castOp1->gtType = TYP_UBYTE;
+
+                        // trim down the value if castOp1 is an int constant since its type changed to UBYTE.
+                        if (castOp1Oper == GT_CNS_INT)
+                        {                            
+                            castOp1->gtIntCon.gtIconVal = (UINT8)castOp1->gtIntCon.gtIconVal;
+                        }
 
                         if (op2->isContainedIntOrIImmed())
                         {

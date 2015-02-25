@@ -1843,6 +1843,20 @@ struct GenTreeIntCon: public GenTreeIntConCommon
             assert(fields != NULL);
         }
 
+#ifdef _TARGET_64BIT_
+    void TruncateOrSignExtend32()
+    {        
+        if (gtFlags & GTF_UNSIGNED)
+        {
+            gtIconVal = UINT32(gtIconVal);
+        }
+        else
+        {
+            gtIconVal = INT32(gtIconVal);
+        }
+    }
+#endif // _TARGET_64BIT_
+
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon() {}
 #endif

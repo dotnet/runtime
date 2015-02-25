@@ -2708,8 +2708,7 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(EXPSET_TP assertions, const Ge
             printf("Assertion index=#%02u: ", index);
             printTreeID(op1);
             printf(" %s ", (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=");
-            if (op1->TypeGet() == TYP_INT || op1->TypeGet() == TYP_BYTE || op1->TypeGet() == TYP_SHORT ||
-                op1->TypeGet() == TYP_UINT || op1->TypeGet() == TYP_UBYTE || op1->TypeGet() == TYP_USHORT)
+            if (genActualType(op1->TypeGet()) == TYP_INT)
             {
                 printf("%d\n", vnStore->ConstantValue<int>(vnCns));
             }
@@ -2742,8 +2741,7 @@ GenTreePtr Compiler::optAssertionPropGlobal_RelOp(EXPSET_TP assertions, const Ge
         lvaTable[op1->gtLclVar.gtLclNum].decRefCnts(compCurBB->getBBWeight(this), this);
 
         // Change the oper to const.
-        if (op1->TypeGet() == TYP_INT || op1->TypeGet() == TYP_BYTE || op1->TypeGet() == TYP_SHORT ||
-            op1->TypeGet() == TYP_UINT || op1->TypeGet() == TYP_UBYTE || op1->TypeGet() == TYP_USHORT)
+        if (genActualType(op1->TypeGet()) == TYP_INT)
         {
             op1->ChangeOperConst(GT_CNS_INT);
             op1->gtIntCon.gtIconVal = vnStore->ConstantValue<int>(vnCns);
@@ -3383,12 +3381,12 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(EXPSET_TP assertions, const GenTre
                     assert(index1 != index2);
 
                     // It can always be considered as redundant with any previous higher constant value
-                    //       a[K1] followed by a[K2], with K1 > K2
-                    if (index1 >= index2)
+                    //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
+                    if (index2 >= 0 && index1 >= index2)
                     {
                         isRedundant = true;
 #ifdef  DEBUG
-                        dbgMsg = "a[K1] followed by a[K2], with K1 > K2";
+                        dbgMsg = "a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2";
 #endif
                     }
                 }
