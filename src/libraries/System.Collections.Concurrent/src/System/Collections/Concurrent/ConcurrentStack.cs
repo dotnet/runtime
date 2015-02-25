@@ -598,7 +598,8 @@ namespace System.Collections.Concurrent
         /// When this method returns, if the pop succeeded, contains the removed object. If no object was
         /// available to be removed, the value is unspecified. This parameter is passed uninitialized.
         /// </param>
-        /// <returns>True if an element was removed and returned; otherwise, false.</returns>
+        /// <returns>The number of objects successfully popped from the top of
+        /// the <see cref="ConcurrentStack{T}"/>.</returns>
         private int TryPopCore(int count, out Node poppedHead)
         {
             SpinWait spin = new SpinWait();
