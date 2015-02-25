@@ -119,7 +119,6 @@ namespace System.Reflection.Internal
                 return false;
             }
 
-            // Available on FW >= 4.5.1:
             s_lazyPointerOffset = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
             if (s_lazyPointerOffset == null)
             {

@@ -360,7 +360,7 @@ namespace System.Reflection.Internal
                         return FastComparisonResult.Unequal;
                     }
                 }
-                else if (currentChar < 0x80)
+                else if (currentChar <= 0x7F)
                 {
                     // current byte is not in ascii range, but current char is.
                     // --> strings are unequal.
