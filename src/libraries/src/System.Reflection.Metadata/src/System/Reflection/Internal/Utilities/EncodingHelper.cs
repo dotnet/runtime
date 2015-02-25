@@ -19,7 +19,7 @@ namespace System.Reflection.Internal
     ///       method. 
     ///
     ///       This is a new API that will provide API convergence across all platforms for 
-    ///       this scenario. It is already on .NET 4.5.3+ and ASP.NET vNext, but not yet available 
+    ///       this scenario. It is already on .NET 4.6+ and ASP.NET vNext, but not yet available 
     ///       on every platform we support. See below for how we fall back.
     ///
     ///   (2) Deal with WinRT prefixes. 
@@ -32,9 +32,9 @@ namespace System.Reflection.Internal
     ///
     ///   (3) Deal with platforms that don't yet have Encoding.GetString(byte*, int). 
     ///   
-    ///      If we're running on a full framework earlier than 4.5.3, we will bind to the internal 
+    ///      If we're running on a full framework earlier than 4.6, we will bind to the internal
     ///      String.CreateStringFromEncoding which is equivalent and Encoding.GetString is just a trivial 
-    ///      wrapper around it in .NET 4.5.3. This means that we always have the fast path on every
+    ///      wrapper around it in .NET 4.6. This means that we always have the fast path on every
     ///      full framework version we support.
     ///
     ///      If we can't bind to it via reflection, then we emulate it using what is effectively (2) and 
@@ -165,7 +165,7 @@ namespace System.Reflection.Internal
 
         private static Encoding_GetString LoadGetStringPlatform()
         {
-            // .NET Framework 4.5.3+ and recent versions of other .NET platforms.
+            // .NET Framework 4.6+ and recent versions of other .NET platforms.
             //
             // Try to bind to Encoding.GetString(byte*, int);
 
@@ -182,7 +182,7 @@ namespace System.Reflection.Internal
                 }
             }
 
-            // .NET Framework < 4.5.3
+            // .NET Framework < 4.6
             //
             // Try to bind to String.CreateStringFromEncoding(byte*, int, Encoding)
             //
@@ -201,7 +201,7 @@ namespace System.Reflection.Internal
             //       return null and let us find the best decoding approach for the current platform.
             //
             //       Yet another approach is to use new string('\0', GetCharCount) and use unsafe GetChars to fill it.
-            //       However, on .NET < 4.5.3, there isn't no-op fast path for zero-initialization case so we'd slow down.
+            //       However, on .NET < 4.6, there isn't no-op fast path for zero-initialization case so we'd slow down.
             //       Plus, mutating a System.String is no better than the reflection here.
 
             IEnumerable<MethodInfo> createStringInfos = typeof(String).GetTypeInfo().GetDeclaredMethods("CreateStringFromEncoding");

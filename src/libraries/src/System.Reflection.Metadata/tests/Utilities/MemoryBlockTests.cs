@@ -290,7 +290,8 @@ namespace System.Reflection.Metadata.Tests
             TestComparisons("Matrix\0", 0, "Matrix3D");
             TestComparisons("Matrix3D\0", 0, "Matrix");
             TestComparisons("\u1234\0", 0, "\u1234", unicode: true);
-            TestComparisons("a\u1234\0", 0, "a", unicode: true);            TestComparisons("\u1001\u1002\u1003\0", 0, "\u1001\u1002", unicode: true);
+            TestComparisons("a\u1234\0", 0, "a", unicode: true);
+            TestComparisons("\u1001\u1002\u1003\0", 0, "\u1001\u1002", unicode: true);
             TestComparisons("\u1001a\u1002\u1003\0", 0, "\u1001a\u1002", unicode: true);
             TestComparisons("\u1001\u1002\u1003\0", 0, "\u1001a\u1002", unicode: true);
             TestComparisons("\uD808\uDF45abc\0", 0, "\uD808\uDF45", unicode: true);
