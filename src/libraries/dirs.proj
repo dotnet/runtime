@@ -1,5 +1,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
+  <Import Project="BuildValues.props" />
 
   <ItemGroup>
     <Project Include="*\src\*.csproj" Exclude="$(ExcludeProjects)" />
@@ -11,6 +12,8 @@
   <Import Project="..\dir.traversal.targets" />
 
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
+  <Import Project="$(ToolsDir)UpdateBuildValues.targets" Condition="Exists('$(ToolsDir)UpdateBuildValues.targets')" />
+
   <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'">
     <TraversalBuildDependsOn>
       $(TraversalBuildDependsOn);
