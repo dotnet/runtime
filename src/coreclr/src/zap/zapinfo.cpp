@@ -2513,6 +2513,21 @@ void * ZapInfo::getHelperFtn (CorInfoHelpFunc ftnNum, void **ppIndirection)
     case CORINFO_HELP_PROF_FCN_TAILCALL:
         *ppIndirection = m_pImage->GetInnerPtr(GetProfilingHandleImport(), kZapProfilingHandleImportValueIndexTailcallAddr * sizeof(TADDR));
         return NULL;
+#ifdef _TARGET_AMD64_
+    case CORINFO_HELP_STOP_FOR_GC:
+        // Note that JIT64 (the compat jit) has an issue where it fails when trying
+        // to make an indirect call using OPCONDCALL so we always use a direct call 
+        // for JIT64. m_hJitLegacy == NULL means that we are using RyuJIT.
+        // The JIT64 also does not depend upon having RAX preserved across the call.
+        if (m_zapper->m_hJitLegacy == NULL)
+        {
+            // Force all calls in ngen images for this helper to use an indirect call.
+            // We cannot use a jump stub to reach this helper because 
+            // the RAX register can contain a return value.
+            dwHelper |= CORCOMPILE_HELPER_PTR;
+        }
+   break;
+#endif
     default:
         break;
     }

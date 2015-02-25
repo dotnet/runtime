@@ -28,6 +28,16 @@ namespace System
             }
         }
 
+        private static int _preserveEventListnerObjectIdentity;
+        public static bool PreserveEventListnerObjectIdentity
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return GetCachedSwitchValue(AppContextDefaultValues.SwitchPreserveEventListnerObjectIdentity, ref _preserveEventListnerObjectIdentity);
+            }
+        }
+
         //
         // Implementation details
         //

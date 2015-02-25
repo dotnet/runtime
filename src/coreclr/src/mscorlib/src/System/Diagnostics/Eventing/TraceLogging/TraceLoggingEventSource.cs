@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
+
 #define FEATURE_MANAGED_ETW
 
 #if !ES_BUILD_STANDALONE
@@ -645,7 +647,7 @@ namespace System.Diagnostics.Tracing
                                 pinCount);
 
                             eventTypes.typeInfo.WriteData(TraceLoggingDataCollector.Instance, ref data);
-
+                            
                             this.WriteEventRaw(
                                 ref descriptor,
                                 pActivityId,
@@ -653,11 +655,11 @@ namespace System.Diagnostics.Tracing
                                 (int)(DataCollector.ThreadInstance.Finish() - descriptors),
                                 (IntPtr)descriptors);
 
-                            // TODO enable filtering for listners.
+                            // TODO enable filtering for listeners.
                             if (m_Dispatchers != null)
                             {
                                 var eventData = (EventPayload)(eventTypes.typeInfo.GetData(data));
-                                WriteToAllListeners(eventName, pActivityId, eventData);
+                                WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, eventData);
                             }
 
                         }
@@ -683,12 +685,15 @@ namespace System.Diagnostics.Tracing
                     ThrowEventSourceException(ex);
             }
         }
-        
+
         [SecurityCritical]
-        private unsafe void WriteToAllListeners(string eventName, Guid* pActivityId, EventPayload payload)
+        private unsafe void WriteToAllListeners(string eventName, ref EventDescriptor eventDescriptor, EventTags tags, Guid* pActivityId, EventPayload payload)
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventName = eventName;
+            eventCallbackArgs.m_keywords = (EventKeywords) eventDescriptor.Keywords;
+            eventCallbackArgs.m_opcode = (EventOpcode) eventDescriptor.Opcode;
+            eventCallbackArgs.m_tags = tags;
 
             // Self described events do not have an id attached. We mark it internally with -1.
             eventCallbackArgs.EventId = -1;

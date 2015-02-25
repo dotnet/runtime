@@ -700,14 +700,14 @@ void                Compiler::fgPerBlockLocalVarLiveness()
                 }
 
 
+                // If this is an assignment to local var with no SIDE EFFECTS,
+                // set lhsNode so that genMarkUseDef will flag potential
+                // x=f(x) expressions as GTF_VAR_USEDEF.
+                // Reset the flag before recomputing it - it may have been set before,
+                // but subsequent optimizations could have removed the rhs reference.
+                lhsNode->gtFlags &= ~GTF_VAR_USEDEF;
                 if ((rhsNode->gtFlags & GTF_SIDE_EFFECT) == 0)
                 {
-                    // Assignment to local var with no SIDE EFFECTS.
-                    // Set lhsNode so that genMarkUseDef will flag potential
-                    // x=f(x) expressions as GTF_VAR_USEDEF.
-                    // Reset the flag before recomputing it - it may have been set before,
-                    // but subsequent optimizations could have removed the rhs reference.
-                    lhsNode->gtFlags &= ~GTF_VAR_USEDEF;
                     noway_assert(lhsNode->gtFlags & GTF_VAR_DEF);
                 }
                 else
@@ -1631,7 +1631,8 @@ VARSET_VALRET_TP    Compiler::fgUpdateLiveSet(VARSET_VALARG_TP  liveSet,
 VARSET_VALRET_TP    Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
                                             GenTreePtr       startNode,
                                             GenTreePtr       endNode,
-                                            VARSET_VALARG_TP volatileVars
+                                            VARSET_VALARG_TP volatileVars,
+                                            bool*            pStmtInfoDirty
                                    DEBUGARG(bool*            treeModf))
 {
     GenTreePtr      tree;
@@ -2029,7 +2030,7 @@ SKIP_QMARK:
                            that will be used (e.g. while (i++) or a GT_COMMA) */
 
                         bool doAgain = false;
-                        if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain DEBUGARG(treeModf)))
+                        if (fgRemoveDeadStore(&tree, varDsc, life, &doAgain, pStmtInfoDirty DEBUGARG(treeModf)))
                             break;
 
                         if (doAgain)
@@ -2188,7 +2189,7 @@ SKIP_QMARK:
                                  (nextColonExit == gtQMark->gtOp.gtOp1 ||
                                   nextColonExit == gtQMark->gtOp.gtOp2));
 
-                    VarSetOps::AssignNoCopy(this, life, fgComputeLife(life, tree, nextColonExit, volatileVars DEBUGARG(treeModf)));
+                    VarSetOps::AssignNoCopy(this, life, fgComputeLife(life, tree, nextColonExit, volatileVars, pStmtInfoDirty DEBUGARG(treeModf)));
 
                     /* Continue with exit node (the last node in the enclosing colon branch) */
 
@@ -2228,14 +2229,15 @@ SKIP_QMARK:
 
 // fgRemoveDeadStore - remove a store to a local which has no exposed uses.
 //
-//   pTree   - GenTree** to an assign node (pre-rationalize) or store-form local (post-rationalize)
-//   varDsc  - var that is being stored to
-//   life    - current live tracked vars (maintained as we walk backwards)
-//   doAgain - out parameter, true if we should restart the statement
+//   pTree          - GenTree** to an assign node (pre-rationalize) or store-form local (post-rationalize)
+//   varDsc         - var that is being stored to
+//   life           - current live tracked vars (maintained as we walk backwards)
+//   doAgain        - out parameter, true if we should restart the statement
+//   pStmtInfoDirty - should defer the cost computation to the point after the reverse walk is completed?
 //
 // Returns: true if we should skip the rest of the statement, false if we should continue
 
-bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP life, bool *doAgain DEBUGARG(bool* treeModf))
+bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP life, bool *doAgain, bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     GenTree* asgNode;
     GenTree* rhsNode;
@@ -2355,23 +2357,28 @@ bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP l
             *treeModf = true;
 #endif // DEBUG
 
-            /* Update ordering, costs, FP levels, etc. */
-            gtSetStmtInfo(compCurStmt);
+            // Make sure no previous cousin subtree rooted at a common ancestor has
+            // asked to defer the recomputation of costs.
+            if (!*pStmtInfoDirty)
+            {
+                /* Update ordering, costs, FP levels, etc. */
+                gtSetStmtInfo(compCurStmt);
 
-            /* Re-link the nodes for this statement */
-            fgSetStmtSeq(compCurStmt);
+                /* Re-link the nodes for this statement */
+                fgSetStmtSeq(compCurStmt);
 
-            // Start from the old assign node, as we have changed the order of its operands.
-            // No need to update liveness, as nothing has changed (the target of the asgNode
-            // either goes dead here, in which case the whole expression is now dead, or it
-            // was already live).
+                // Start from the old assign node, as we have changed the order of its operands.
+                // No need to update liveness, as nothing has changed (the target of the asgNode
+                // either goes dead here, in which case the whole expression is now dead, or it
+                // was already live).
 
-            // TODO-Throughput: Redo this so that the graph is modified BEFORE traversing it!
-            // We can determine this case when we first see the asgNode
+                // TODO-Throughput: Redo this so that the graph is modified BEFORE traversing it!
+                // We can determine this case when we first see the asgNode
 
-            *pTree = asgNode;
+                *pTree = asgNode;
 
-            *doAgain = true;
+                *doAgain = true;
+            }
             return false;
         }
 
@@ -2443,6 +2450,10 @@ bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP l
                     /* Re-link the nodes for this statement */
                     fgSetStmtSeq(compCurStmt);
 
+                    // Since the whole statement gets replaced it is safe to
+                    // re-thread and update order. No need to compute costs again.
+                    *pStmtInfoDirty = false;
+
                     /* Compute the live set for the new statement */
                     *doAgain = true;
                     return false;
@@ -2467,6 +2478,13 @@ bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP l
                         goto EXTRACT_SIDE_EFFECTS;
                 }
 
+                // If there is an embedded statement this could be tricky because we need to 
+                // walk them next, and we have already skipped over them because they were
+                // not top level (but will be if we delete the top level statement)
+                if (compCurStmt->gtStmt.gtNextStmt && 
+                    !compCurStmt->gtStmt.gtNextStmt->gtStmtIsTopLevel())
+                    return false;
+                
                 /* No side effects - remove the whole statement from the block->bbTreeList */
 
                 fgRemoveStmt(compCurBB, compCurStmt);
@@ -2589,7 +2607,13 @@ bool Compiler::fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP l
 
             if (!compRationalIRForm)
             {
-                gtSetStmtInfo(compCurStmt);
+                // Do not update costs by calling gtSetStmtInfo. fgSetStmtSeq modifies
+                // the tree threading based on the new costs. Removing nodes could 
+                // cause a subtree to get evaluated first (earlier second) during the
+                // liveness walk. Instead just set a flag that costs are dirty and
+                // caller has to call gtSetStmtInfo.
+                *pStmtInfoDirty = true;
+
                 fgSetStmtSeq(compCurStmt);
             }
 
@@ -2817,8 +2841,15 @@ void                Compiler::fgInterBlockLocalVarLiveness()
                 continue;
 
             /* Compute the liveness for each tree node in the statement */
+            bool stmtInfoDirty = false;
 
-            VarSetOps::AssignNoCopy(this, life, fgComputeLife(life, compCurStmt->gtStmt.gtStmtExpr, NULL, volatileVars DEBUGARG(&treeModf)));
+            VarSetOps::AssignNoCopy(this, life, fgComputeLife(life, compCurStmt->gtStmt.gtStmtExpr, NULL, volatileVars, &stmtInfoDirty DEBUGARG(&treeModf)));
+
+            if (stmtInfoDirty)
+            {
+                gtSetStmtInfo(compCurStmt);
+                fgSetStmtSeq(compCurStmt);
+            }
 
 #ifdef DEBUG
             if (verbose && treeModf)
