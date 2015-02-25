@@ -1023,6 +1023,7 @@ namespace System.Numerics.Tests
 
         // A test for Reflect (Vector2f, Vector2f)
         [Fact]
+        [ActiveIssue(1011)]
         public void Vector2ReflectTest()
         {
             Vector2 a = Vector2.Normalize(new Vector2(1.0f, 1.0f));
@@ -1049,6 +1050,7 @@ namespace System.Numerics.Tests
         // A test for Reflect (Vector2f, Vector2f)
         // Reflection when normal and source are the same
         [Fact]
+        [ActiveIssue(1011)]
         public void Vector2ReflectTest1()
         {
             Vector2 n = new Vector2(0.45f, 1.28f);

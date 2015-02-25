@@ -89,8 +89,6 @@
 
   <Import Project="$(ToolsDir)versioning.targets" Condition="Exists('$(ToolsDir)versioning.targets')" />
 
-  <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
-
   <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
 
   <PropertyGroup>
@@ -100,6 +98,9 @@
 
     <CLSCompliant Condition="'$(IsTestProject)'=='true'">false</CLSCompliant>
   </PropertyGroup>
+
+  <!-- sign.targets relies on the value of IsTestProject so be sure to import it after it's defined -->
+  <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
 
   <PropertyGroup>
     <TestRuntimePackageConfig>$(ToolsDir)test-runtime\packages.config</TestRuntimePackageConfig>
@@ -163,7 +164,7 @@
           Condition="'$(RunTestsForProject)'=='true'">
 
     <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
-          
+
     <Exec Command="$(TestHost) $(TestCommandLine)"
           WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)"
           ContinueOnError="True">
