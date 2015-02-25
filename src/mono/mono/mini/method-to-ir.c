@@ -513,7 +513,7 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
         add_widen_op (cfg, ins, &sp [0], &sp [1]);		 \
         ins->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
-        *sp++ = mono_decompose_opcode ((cfg), (ins)); \
+        *sp++ = mono_decompose_opcode ((cfg), (ins), &bblock);	\
 	} while (0)
 
 #define ADD_UNOP(op) do {	\
@@ -524,7 +524,7 @@ add_widen_op (MonoCompile *cfg, MonoInst *ins, MonoInst **arg1_ref, MonoInst **a
 		CHECK_TYPE (ins);	\
         (ins)->dreg = alloc_dreg ((cfg), (ins)->type); \
         MONO_ADD_INS ((cfg)->cbb, (ins)); \
-		*sp++ = mono_decompose_opcode (cfg, ins); \
+		*sp++ = mono_decompose_opcode (cfg, ins, &bblock);	\
 	} while (0)
 
 #define ADD_BINCOND(next_block) do {	\
@@ -3004,6 +3004,56 @@ mono_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 	((MonoCallInst*)ins)->fptr_is_patch = TRUE;
 	return ins;
 }
+
+MonoInst*
+mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args, MonoBasicBlock **out_cbb)
+{
+	gboolean no_wrapper = FALSE;
+
+	/*
+	 * Call the jit icall without a wrapper if possible.
+	 * The wrapper is needed for the following reasons:
+	 * - to handle exceptions thrown using mono_raise_exceptions () from the
+	 *   icall function. The EH code needs the lmf frame pushed by the
+	 *   wrapper to be able to unwind back to managed code.
+	 * - to be able to do stack walks for asynchronously suspended
+	 *   threads when debugging.
+	 */
+	if (info->no_raise) {
+		if (cfg->compile_aot) {
+			// FIXME: This might be loaded into a runtime during debugging
+			// even if it is not compiled using 'soft-debug'.
+		} else {
+			if (!cfg->gen_seq_points_debug_data)
+				no_wrapper = TRUE;
+		}
+	}
+
+	if (no_wrapper) {
+		char *name;
+		int costs;
+
+		if (!info->wrapper_method) {
+			name = g_strdup_printf ("__icall_wrapper_%s", info->name);
+			info->wrapper_method = mono_marshal_get_icall_wrapper (info->sig, name, info->func, TRUE);
+			g_free (name);
+			mono_memory_barrier ();
+		}
+
+		/*
+		 * Inline the wrapper method, which is basically a call to the C icall, and
+		 * an exception check.
+		 */
+		costs = inline_method (cfg, info->wrapper_method, NULL,
+							   args, NULL, cfg->real_offset, TRUE, out_cbb);
+		g_assert (costs > 0);
+		g_assert (!MONO_TYPE_IS_VOID (info->sig->ret));
+
+		return args [0];
+	} else {
+		return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
+	}
+}
  
 static MonoInst*
 mono_emit_widen_call_res (MonoCompile *cfg, MonoInst *ins, MonoMethodSignature *fsig)
@@ -4704,10 +4754,10 @@ handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, M
 		ceq->type = STACK_I4;
 
 		if (!is_i4) {
-			load = mono_decompose_opcode (cfg, load);
-			and = mono_decompose_opcode (cfg, and);
-			cmp = mono_decompose_opcode (cfg, cmp);
-			ceq = mono_decompose_opcode (cfg, ceq);
+			load = mono_decompose_opcode (cfg, load, NULL);
+			and = mono_decompose_opcode (cfg, and, NULL);
+			cmp = mono_decompose_opcode (cfg, cmp, NULL);
+			ceq = mono_decompose_opcode (cfg, ceq, NULL);
 		}
 
 		return ceq;
@@ -5838,7 +5888,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				}
 
 				if (opcode == OP_LOADI8_MEMBASE)
-					ins = mono_decompose_opcode (cfg, ins);
+					ins = mono_decompose_opcode (cfg, ins, NULL);
 
 				emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 
@@ -5873,7 +5923,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				MONO_ADD_INS (cfg->cbb, ins);
 
 				if (opcode == OP_STOREI8_MEMBASE_REG)
-					ins = mono_decompose_opcode (cfg, ins);
+					ins = mono_decompose_opcode (cfg, ins, NULL);
 
 				return ins;
 			}
@@ -6733,6 +6783,9 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 		return 0;
 #endif
 
+	if (!fsig)
+		fsig = mono_method_signature (cmethod);
+
 	if (cfg->verbose_level > 2)
 		printf ("INLINE START %p %s -> %s\n", cmethod,  mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -6798,7 +6851,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	prev_ret_var_set = cfg->ret_var_set;
 	prev_disable_inline = cfg->disable_inline;
 
-	if (*ip == CEE_CALLVIRT && !(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
+	if (ip && *ip == CEE_CALLVIRT && !(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
 		virtual = TRUE;
 
 	costs = mono_method_to_ir (cfg, cmethod, sbblock, ebblock, rvar, sp, real_offset, virtual);
@@ -6872,7 +6925,8 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 			cfg->cbb = ebblock;
 		}
 
-		*out_cbb = cfg->cbb;
+		if (out_cbb)
+			*out_cbb = cfg->cbb;
 
 		if (rvar) {
 			/*
@@ -9904,7 +9958,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			MONO_ADD_INS ((cfg)->cbb, (ins));
 
-			*sp++ = mono_decompose_opcode (cfg, ins);
+			*sp++ = mono_decompose_opcode (cfg, ins, &bblock);
 			ip++;
 			break;
 		case CEE_ADD:
@@ -9964,7 +10018,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			MONO_ADD_INS ((cfg)->cbb, (ins));
 
-			*sp++ = mono_decompose_opcode (cfg, ins);
+			*sp++ = mono_decompose_opcode (cfg, ins, &bblock);
 			ip++;
 			break;
 		case CEE_NEG:
@@ -11318,7 +11372,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins->type = STACK_I4;
 				ins->dreg = alloc_ireg (cfg);
 				MONO_ADD_INS (cfg->cbb, ins);
-				*sp = mono_decompose_opcode (cfg, ins);
+				*sp = mono_decompose_opcode (cfg, ins, &bblock);
 			}
 
 			if (context_used) {
@@ -11543,7 +11597,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins->type = STACK_R8;
 			MONO_ADD_INS (bblock, ins);
 
-			*sp++ = mono_decompose_opcode (cfg, ins);
+			*sp++ = mono_decompose_opcode (cfg, ins, &bblock);
 
 			++ip;
 			break;

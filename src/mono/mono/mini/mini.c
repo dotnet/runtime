@@ -2417,7 +2417,8 @@ register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpo
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	info = mono_register_jit_icall_full (func, name, sig, no_throw, symbol);
+	/* Opcode emulation functions are assumed to don't call mono_raise_exception () */
+	info = mono_register_jit_icall_full (func, name, sig, no_throw, TRUE, symbol);
 
 	if (emul_opcode_num >= emul_opcode_alloced) {
 		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
@@ -2447,7 +2448,21 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, save, save ? name : NULL);
+	mono_register_jit_icall_full (func, name, sig, save, FALSE, save ? name : NULL);
+}
+
+/* Register a jit icall which doesn't throw exceptions through mono_raise_exception () */
+static void
+register_icall_noraise (gpointer func, const char *name, const char *sigstr)
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall_full (func, name, sig, TRUE, TRUE, name);
 }
 
 static void
