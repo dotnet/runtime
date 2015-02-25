@@ -1244,7 +1244,7 @@ sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 	}
 }
 
-static gboolean
+static inline gboolean
 try_set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 {
 	gint32 old_state = SGEN_CAS (&block->state, new_state, expected_state);
