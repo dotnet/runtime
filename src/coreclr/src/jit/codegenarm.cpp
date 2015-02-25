@@ -821,64 +821,6 @@ void                CodeGen::genCodeForBBlist()
 
         case BBJ_CALLFINALLY:
 
-#if defined(_TARGET_X86_)
-
-            /* If we are about to invoke a finally locally from a try block,
-               we have to set the hidden slot corresponding to the finally's
-               nesting level. When invoked in response to an exception, the
-               EE usually does it.
-
-               We must have : BBJ_CALLFINALLY followed by a BBJ_ALWAYS.
-
-               This code depends on this order not being messed up.
-               We will emit :
-                    mov [ebp-(n+1)],0
-                    mov [ebp-  n  ],0xFC
-                    push &step
-                    jmp  finallyBlock
-
-              step: mov [ebp-  n  ],0
-                    jmp leaveTarget
-              leaveTarget:
-             */
-
-            noway_assert(isFramePointerUsed());
-
-            // Get the nesting level which contains the finally
-            compiler->fgGetNestingLevel(block, &finallyNesting);
-
-            // The last slot is reserved for ICodeManager::FixContext(ppEndRegion)
-            unsigned filterEndOffsetSlotOffs;
-            filterEndOffsetSlotOffs = (unsigned)(lvaLclSize(lvaShadowSPslotsVar) - (sizeof(void*)));
-
-            unsigned curNestingSlotOffs;
-            curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * sizeof(void*)));
-
-            // Zero out the slot for the next nesting level
-            instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0,
-                                       lvaShadowSPslotsVar, curNestingSlotOffs - sizeof(void*));
-
-            instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, LCL_FINALLY_MARK,
-                                       lvaShadowSPslotsVar, curNestingSlotOffs);
-
-            // Now push the address of where the finally funclet should
-            // return to directly.
-            if ( !(block->bbFlags & BBF_RETLESS_CALL) )
-            {
-                assert(block->isBBCallAlwaysPair());
-                getEmitter()->emitIns_J(INS_push_hide, block->bbNext->bbJumpDest);
-            }
-            else
-            {
-                // EE expects a DWORD, so we give him 0
-                inst_IV(INS_push_hide, 0);
-            }
-
-            // Jump to the finally BB
-            inst_JMP(EJ_jmp, block->bbJumpDest);
-
-#elif defined(_TARGET_ARM_)
-
             // Now set REG_LR to the address of where the finally funclet should
             // return to directly.
 
@@ -921,45 +863,6 @@ void                CodeGen::genCodeForBBlist()
 
             // Jump to the finally BB
             inst_JMP(EJ_jmp, block->bbJumpDest);
-
-#elif defined(_TARGET_AMD64_)
-
-            // Generate a call to the finally, like this:
-            //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
-            //      call        finally-funclet
-            //      jmp         finally-return                  // Only for non-retless finally calls
-
-            getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_RCX, compiler->lvaPSPSym, 0);
-            getEmitter()->emitIns_J(INS_call, block->bbJumpDest);
-
-            if (block->bbFlags & BBF_RETLESS_CALL)
-            {
-                // We have a retless call, and the last instruction generated was a call.
-                // If the next block is in a different EH region (or is the end of the code
-                // block), then we need to generate a breakpoint here (since it will never
-                // get executed) to get proper unwind behavior.
-
-                if ((block->bbNext == nullptr) ||
-                    !BasicBlock::sameEHRegion(block, block->bbNext))
-                {
-                    instGen(INS_BREAKPOINT); // This should never get executed
-                }
-            }
-            else
-            {
-                // because of the way the flowgraph is connected, the liveness info for this one instruction
-                // after the call is not (can not be) correct in cases where a variable has a last use in the
-                // handler.  So turn off GC reporting for this single jmp instruction.
-                getEmitter()->emitMakeRemainderNonInterruptible();
-
-                // Now push the address of where the finally funclet should
-                // return to directly.
-                inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
-            }
-
-#else
-            NYI("TARGET");
-#endif
 
             // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
             // jump target using bbJumpDest - that is already used to point

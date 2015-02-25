@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Collections.Generic;
 using Interlocked = System.Threading.Interlocked;
@@ -17,6 +18,22 @@ namespace System.Diagnostics.Tracing
     internal sealed class NameInfo
         : ConcurrentSetItem<KeyValuePair<string, EventTags>, NameInfo>
     {
+        /// <summary>
+        /// Insure that eventIds strictly less than 'eventId' will not be
+        /// used by the SelfDescribing events.   
+        /// </summary>
+        internal static void ReserveEventIDsBelow(int eventId)
+        {
+            for(;;)
+            {
+                int snapshot =lastIdentity;
+                int newIdentity = (lastIdentity & ~0xFFFFFF) + eventId;
+                newIdentity = Math.Max(newIdentity, snapshot);      // Should be redundant.  as we only create descriptors once.  
+                if (Interlocked.CompareExchange(ref lastIdentity, newIdentity, snapshot) == snapshot)
+                    break;
+            }
+        }
+ 
         private static int lastIdentity = Statics.TraceLoggingChannel << 24;
         internal readonly string name;
         internal readonly EventTags tags;

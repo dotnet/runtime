@@ -1087,12 +1087,6 @@ Location Rationalizer::RewriteSimpleTransforms(Location loc)
         return loc1;
     }
 
-    if (tree->OperIsLocalRead())
-    {
-        comp->lvaTable[tree->AsLclVarCommon()->gtLclNum].decRefCnts(comp->compCurBB->getBBWeight(comp), comp);
-        tree->gtBashToNOP();
-    }
-
     SplitData tmpState = {0};
     tmpState.root = statement;
     tmpState.continueSubtrees = true;
@@ -1103,6 +1097,13 @@ Location Rationalizer::RewriteSimpleTransforms(Location loc)
         SimpleTransformHelper,
         NULL,
         &tmpState);
+
+    tree = statement->gtStmt.gtStmtExpr;
+    if (tree->OperIsLocalRead())
+    {
+        comp->lvaTable[tree->AsLclVarCommon()->gtLclNum].decRefCnts(comp->compCurBB->getBBWeight(comp), comp);
+        tree->gtBashToNOP();
+    }
 
     JITDUMP("After simple transforms:\n");
     DISPTREE(statement);
@@ -1726,7 +1727,6 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree **ppTree, Com
             Compiler::fgSnipNode(tmpState->root->AsStmt(), tree);
             Compiler::fgSnipNode(tmpState->root->AsStmt(), child);
             *ppTree = child->gtOp.gtOp1;
-
             JITDUMP("Rewriting GT_ADDR(GT_IND(X)) to X:\n");
         }
         comp->fgFixupIfCallArg(data->parentStack, tree, *ppTree);
@@ -1741,6 +1741,12 @@ Compiler::fgWalkResult Rationalizer::SimpleTransformHelper(GenTree **ppTree, Com
         Compiler::fgSnipNode(tmpState->root->AsStmt(), tree);
         *ppTree = tree->gtOp.gtOp1;
         comp->fgFixupIfCallArg(data->parentStack, tree, *ppTree);
+
+        // Since GT_NOP(op1) is replaced with op1, pop GT_NOP node (i.e the current node)
+        // and replace it with op1 on parent stack.
+        (void)data->parentStack->Pop();
+        data->parentStack->Push(tree->gtOp.gtOp1);
+
         JITDUMP("Rewriting GT_NOP(X) to X:\n");
         DISPTREE(*ppTree);
         JITDUMP("\n");
