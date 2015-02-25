@@ -10,12 +10,12 @@
 =============================================================================*/
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
-using Conditional = System.Diagnostics.ConditionalAttribute;
 
 namespace System.Numerics
 {
@@ -48,13 +48,13 @@ namespace System.Numerics
         {
             if (_bits != null)
             {
-                Contract.Assert(_sign == 1 || _sign == -1 /*, "_sign must be +1 or -1 when _bits is non-null"*/);
-                Contract.Assert(Length(_bits) > 0 /*, "_bits must contain at least 1 element or be null"*/);
+                Debug.Assert(_sign == 1 || _sign == -1 /*, "_sign must be +1 or -1 when _bits is non-null"*/);
+                Debug.Assert(Length(_bits) > 0 /*, "_bits must contain at least 1 element or be null"*/);
                 if (Length(_bits) == 1)
-                    Contract.Assert(_bits[0] >= kuMaskHighBit /*, "Wasted space _bits[0] could have been packed into _sign"*/);
+                    Debug.Assert(_bits[0] >= kuMaskHighBit /*, "Wasted space _bits[0] could have been packed into _sign"*/);
             }
             else
-                Contract.Assert(_sign > int.MinValue /*, "Int32.MinValue should not be stored in the _sign field"*/);
+                Debug.Assert(_sign > int.MinValue /*, "Int32.MinValue should not be stored in the _sign field"*/);
         }
         #endregion members supporting exposed properties
 
@@ -443,7 +443,7 @@ namespace System.Numerics
             }
             else
             {
-                Contract.Assert(value != 0);
+                Debug.Assert(value != 0);
                 x = (ulong)value;
                 _sign = +1;
             }
@@ -505,7 +505,7 @@ namespace System.Numerics
             // First truncate to get scale to 0 and extract bits
             int[] bits = Decimal.GetBits(Decimal.Truncate(value));
 
-            Contract.Assert(bits.Length == 4 && (bits[3] & DecimalScaleFactorMask) == 0);
+            Debug.Assert(bits.Length == 4 && (bits[3] & DecimalScaleFactorMask) == 0);
 
             int size = 3;
             while (size > 0 && bits[size - 1] == 0)
@@ -1802,7 +1802,7 @@ namespace System.Numerics
             ulong man;
             bool fFinite;
             NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out fFinite);
-            Contract.Assert(sign == +1 || sign == -1);
+            Debug.Assert(sign == +1 || sign == -1);
 
             if (man == 0)
             {
@@ -1810,8 +1810,8 @@ namespace System.Numerics
                 return;
             }
 
-            Contract.Assert(man < (1UL << 53));
-            Contract.Assert(exp <= 0 || man >= (1UL << 52));
+            Debug.Assert(man < (1UL << 53));
+            Debug.Assert(exp <= 0 || man >= (1UL << 52));
 
             if (exp <= 0)
             {
@@ -1840,8 +1840,8 @@ namespace System.Numerics
                 // Compute cu and cbit so that exp == 32 * cu - cbit and 0 <= cbit < 32.
                 int cu = (exp - 1) / kcbitUint + 1;
                 int cbit = cu * kcbitUint - exp;
-                Contract.Assert(0 <= cbit && cbit < kcbitUint);
-                Contract.Assert(cu >= 1);
+                Debug.Assert(0 <= cbit && cbit < kcbitUint);
+                Debug.Assert(cu >= 1);
 
                 // Populate the uints.
                 _bits = new uint[cu + 2];
@@ -1863,7 +1863,7 @@ namespace System.Numerics
             int cu = rgu.Length;
             if (rgu[cu - 1] != 0)
                 return cu;
-            Contract.Assert(cu >= 2 && rgu[cu - 2] != 0);
+            Debug.Assert(cu >= 2 && rgu[cu - 2] != 0);
             return cu - 1;
         }
 

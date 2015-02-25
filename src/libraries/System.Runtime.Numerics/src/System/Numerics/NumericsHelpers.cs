@@ -72,7 +72,7 @@ namespace System.Numerics
                 else
                     man <<= cbitShift;
                 exp -= cbitShift;
-                Contract.Assert((man & 0xFFF0000000000000) == 0x0010000000000000);
+                Debug.Assert((man & 0xFFF0000000000000) == 0x0010000000000000);
 
                 // Move the point to just behind the leading 1: 0x001.0 0000 0000 0000
                 // (52 bits) and skew the exponent (by 0x3FF == 1023).
@@ -95,7 +95,7 @@ namespace System.Numerics
                     else
                     {
                         du.uu = man >> -exp;
-                        Contract.Assert(du.uu != 0);
+                        Debug.Assert(du.uu != 0);
                     }
                 }
                 else
@@ -169,7 +169,7 @@ namespace System.Numerics
             if (u1 < u2)
                 goto LOther;
             LTop:
-            Contract.Assert(u2 <= u1);
+            Debug.Assert(u2 <= u1);
             if (u2 == 0)
                 return u1;
             for (int cv = cvMax; ;)
@@ -184,7 +184,7 @@ namespace System.Numerics
                 }
             }
         LOther:
-            Contract.Assert(u1 < u2);
+            Debug.Assert(u1 < u2);
             if (u1 == 0)
                 return u2;
             for (int cv = cvMax; ;)
@@ -207,7 +207,7 @@ namespace System.Numerics
             if (uu1 < uu2)
                 goto LOther;
             LTop:
-            Contract.Assert(uu2 <= uu1);
+            Debug.Assert(uu2 <= uu1);
             if (uu1 <= uint.MaxValue)
                 goto LSmall;
             if (uu2 == 0)
@@ -224,7 +224,7 @@ namespace System.Numerics
                 }
             }
         LOther:
-            Contract.Assert(uu1 < uu2);
+            Debug.Assert(uu1 < uu2);
             if (uu2 <= uint.MaxValue)
                 goto LSmall;
             if (uu1 == 0)
@@ -248,7 +248,7 @@ namespace System.Numerics
             if (u1 < u2)
                 goto LOtherSmall;
             LTopSmall:
-            Contract.Assert(u2 <= u1);
+            Debug.Assert(u2 <= u1);
             if (u2 == 0)
                 return u1;
             for (int cv = cvMax; ;)
@@ -263,7 +263,7 @@ namespace System.Numerics
                 }
             }
         LOtherSmall:
-            Contract.Assert(u1 < u2);
+            Debug.Assert(u1 < u2);
             if (u1 == 0)
                 return u2;
             for (int cv = cvMax; ;)
