@@ -153,8 +153,8 @@ int main(int argc, char* argv[])
     class My : Object {
     public:
         Object * m_pOther1;
-		int dummy_inbetween;
-		Object * m_pOther2;
+        int dummy_inbetween;
+        Object * m_pOther2;
     };
 
     static struct My_MethodTable
@@ -168,18 +168,18 @@ int main(int argc, char* argv[])
     }
     My_MethodTable;
 
-	My_MethodTable.m_MT.m_baseSize = sizeof(My) + sizeof(void*); //My contains the MethodTable*, the extra void* is for ObjHeader
-	My_MethodTable.m_MT.m_componentSize = 0;    // Array component size
-	My_MethodTable.m_MT.m_flags = MTFlag_ContainsPointers;
+    My_MethodTable.m_MT.m_baseSize = sizeof(My) + sizeof(void*); //My contains the MethodTable*, the extra void* is for ObjHeader
+    My_MethodTable.m_MT.m_componentSize = 0;    // Array component size
+    My_MethodTable.m_MT.m_flags = MTFlag_ContainsPointers;
 
     My_MethodTable.m_numSeries = 2;
     My_MethodTable.m_series[0].SetSeriesOffset(offsetof(My, m_pOther2));
     My_MethodTable.m_series[0].SetSeriesCount(1);
-	My_MethodTable.m_series[0].seriessize -= My_MethodTable.m_MT.m_baseSize;
+    My_MethodTable.m_series[0].seriessize -= My_MethodTable.m_MT.m_baseSize;
 
-	My_MethodTable.m_series[1].SetSeriesOffset(offsetof(My, m_pOther1));
-	My_MethodTable.m_series[1].SetSeriesCount(1);
-	My_MethodTable.m_series[1].seriessize -= My_MethodTable.m_MT.m_baseSize;
+    My_MethodTable.m_series[1].SetSeriesOffset(offsetof(My, m_pOther1));
+    My_MethodTable.m_series[1].SetSeriesCount(1);
+    My_MethodTable.m_series[1].seriessize -= My_MethodTable.m_MT.m_baseSize;
 
     MethodTable * pMyMethodTable = &My_MethodTable.m_MT;
 
