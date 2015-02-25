@@ -1254,15 +1254,11 @@ try_set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state
 	return success;
 }
 
-/*
- * FIXME: This only CASes to catch errors.  It's not needed for correctness.
- */
-static void
+static inline void
 set_block_state (MSBlockInfo *block, gint32 new_state, gint32 expected_state)
 {
-	gboolean success = try_set_block_state (block, new_state, expected_state);
-	SGEN_ASSERT (0, success, "Couldn't set block state");
-	SGEN_ASSERT (0, block->state == new_state, "Block state incorrect after set");
+	SGEN_ASSERT (6, block->state == expected_state, "Block state incorrect before set");
+	block->state = new_state;
 }
 
 /*
