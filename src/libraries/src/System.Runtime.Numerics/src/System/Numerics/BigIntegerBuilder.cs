@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-using Conditional = System.Diagnostics.ConditionalAttribute;
 
 namespace System.Numerics
 {
@@ -39,13 +39,13 @@ namespace System.Numerics
         {
             if (_iuLast <= 0)
             {
-                Contract.Assert(_iuLast == 0);
-                Contract.Assert(!_fWritable || _rgu != null);
+                Debug.Assert(_iuLast == 0);
+                Debug.Assert(!_fWritable || _rgu != null);
             }
             else
             {
-                Contract.Assert(_rgu != null && _rgu.Length > _iuLast);
-                Contract.Assert(!fTrimmed || _rgu[_iuLast] != 0);
+                Debug.Assert(_rgu != null && _rgu.Length > _iuLast);
+                Debug.Assert(!fTrimmed || _rgu[_iuLast] != 0);
             }
         }
 
@@ -159,7 +159,7 @@ namespace System.Numerics
             sign = signSrc;
 
             int cuExtra = _rgu.Length - _iuLast - 1;
-            Contract.Assert(cuExtra >= 0);
+            Debug.Assert(cuExtra >= 0);
             if (cuExtra <= 1)
             {
                 if (cuExtra == 0 || _rgu[_iuLast + 1] == 0)
@@ -233,7 +233,7 @@ namespace System.Numerics
             if (cuLeft > 0 && (cbit = NumericsHelpers.CbitHighZero(_rgu[cuLeft + 1])) > 0)
             {
                 // Get 64 bits.
-                Contract.Assert(cbit < kcbitUint);
+                Debug.Assert(cbit < kcbitUint);
                 man = (man << cbit) | (_rgu[cuLeft - 1] >> (kcbitUint - cbit));
                 exp -= cbit;
             }
@@ -255,7 +255,7 @@ namespace System.Numerics
         {
             get
             {
-                Contract.Assert(_iuLast > 0);
+                Debug.Assert(_iuLast > 0);
                 int cu = 0;
                 for (int iu = _iuLast; iu >= 0; --iu)
                 {
@@ -373,7 +373,7 @@ namespace System.Numerics
         {
             Contract.Requires(cuExtra >= 0);
             AssertValid(false);
-            Contract.Assert(_iuLast > 0);
+            Debug.Assert(_iuLast > 0);
 
             if (_fWritable)
                 return;
@@ -481,7 +481,7 @@ namespace System.Numerics
             {
                 cuAdd = _iuLast + 1;
                 Array.Copy(reg._rgu, _iuLast + 1, _rgu, _iuLast + 1, reg._iuLast - _iuLast);
-                Contract.Assert(_iuLast > 0);
+                Debug.Assert(_iuLast > 0);
                 _iuLast = reg._iuLast;
             }
 
@@ -490,7 +490,7 @@ namespace System.Numerics
             for (int iu = 0; iu < cuAdd; iu++)
             {
                 uCarry = AddCarry(ref _rgu[iu], reg._rgu[iu], uCarry);
-                Contract.Assert(uCarry <= 1);
+                Debug.Assert(uCarry <= 1);
             }
 
             // Deal with extra carry.
@@ -592,11 +592,11 @@ namespace System.Numerics
 
                 if (u1 < u2)
                 {
-                    Contract.Assert(_iuLast > 0);
+                    Debug.Assert(_iuLast > 0);
                     reg._iuLast = _iuLast;
                     SubRev(ref reg);
                     reg._iuLast = cuSub - 1;
-                    Contract.Assert(reg._iuLast > 0);
+                    Debug.Assert(reg._iuLast > 0);
                     sign = -sign;
                     return;
                 }
@@ -610,11 +610,11 @@ namespace System.Numerics
             for (int iu = 0; iu < cuSub; iu++)
             {
                 uBorrow = SubBorrow(ref _rgu[iu], reg._rgu[iu], uBorrow);
-                Contract.Assert(uBorrow <= 1);
+                Debug.Assert(uBorrow <= 1);
             }
             if (uBorrow != 0)
             {
-                Contract.Assert(uBorrow == 1 && cuSub <= _iuLast);
+                Debug.Assert(uBorrow == 1 && cuSub <= _iuLast);
                 ApplyBorrow(cuSub);
             }
             Trim();
@@ -624,8 +624,8 @@ namespace System.Numerics
         // Asserts that reg is larger in the most significant uint.
         private void SubRev(ref BigIntegerBuilder reg)
         {
-            Contract.Assert(0 < _iuLast && _iuLast <= reg._iuLast);
-            Contract.Assert(_iuLast < reg._iuLast || _rgu[_iuLast] < reg._rgu[_iuLast]);
+            Debug.Assert(0 < _iuLast && _iuLast <= reg._iuLast);
+            Debug.Assert(_iuLast < reg._iuLast || _rgu[_iuLast] < reg._rgu[_iuLast]);
 
             EnsureWritable(reg._iuLast + 1, 0);
 
@@ -633,7 +633,7 @@ namespace System.Numerics
             if (_iuLast < reg._iuLast)
             {
                 Array.Copy(reg._rgu, _iuLast + 1, _rgu, _iuLast + 1, reg._iuLast - _iuLast);
-                Contract.Assert(_iuLast > 0);
+                Debug.Assert(_iuLast > 0);
                 _iuLast = reg._iuLast;
             }
 
@@ -641,11 +641,11 @@ namespace System.Numerics
             for (int iu = 0; iu < cuSub; iu++)
             {
                 uBorrow = SubRevBorrow(ref _rgu[iu], reg._rgu[iu], uBorrow);
-                Contract.Assert(uBorrow <= 1);
+                Debug.Assert(uBorrow <= 1);
             }
             if (uBorrow != 0)
             {
-                Contract.Assert(uBorrow == 1);
+                Debug.Assert(uBorrow == 1);
                 ApplyBorrow(cuSub);
             }
             Trim();
@@ -752,7 +752,7 @@ namespace System.Numerics
             }
             else
             {
-                Contract.Assert(reg1._iuLast > 0 && reg2._iuLast > 0);
+                Debug.Assert(reg1._iuLast > 0 && reg2._iuLast > 0);
                 SetSizeClear(reg1._iuLast + reg2._iuLast + 2);
 
                 uint[] rgu1, rgu2;
@@ -890,13 +890,13 @@ namespace System.Numerics
 
         private static void ModDivCore(ref BigIntegerBuilder regNum, ref BigIntegerBuilder regDen, bool fQuo, ref BigIntegerBuilder regQuo)
         {
-            Contract.Assert(regNum._iuLast > 0 && regDen._iuLast > 0);
+            Debug.Assert(regNum._iuLast > 0 && regDen._iuLast > 0);
 
             regQuo.Set(0);
             if (regNum._iuLast < regDen._iuLast)
                 return;
 
-            Contract.Assert(0 < regDen._iuLast && regDen._iuLast <= regNum._iuLast);
+            Debug.Assert(0 < regDen._iuLast && regDen._iuLast <= regNum._iuLast);
             int cuDen = regDen._iuLast + 1;
             int cuDiff = regNum._iuLast - regDen._iuLast;
 
@@ -935,17 +935,17 @@ namespace System.Numerics
                 if (cuDen > 2)
                     uDenNext |= regDen._rgu[cuDen - 3] >> cbitShiftRight;
             }
-            Contract.Assert((uDen & 0x80000000) != 0);
+            Debug.Assert((uDen & 0x80000000) != 0);
 
             // Allocate and initialize working space.
-            Contract.Assert(cuQuo + cuDen == regNum._iuLast + 1 || cuQuo + cuDen == regNum._iuLast + 2);
+            Debug.Assert(cuQuo + cuDen == regNum._iuLast + 1 || cuQuo + cuDen == regNum._iuLast + 2);
             regNum.EnsureWritable();
 
             for (int iu = cuQuo; --iu >= 0;)
             {
                 // Get the high (normalized) bits of regNum.
                 uint uNumHi = (iu + cuDen <= regNum._iuLast) ? regNum._rgu[iu + cuDen] : 0;
-                Contract.Assert(uNumHi <= regDen._rgu[cuDen - 1]);
+                Debug.Assert(uNumHi <= regDen._rgu[cuDen - 1]);
 
                 ulong uuNum = NumericsHelpers.MakeUlong(uNumHi, regNum._rgu[iu + cuDen - 1]);
                 uint uNumNext = regNum._rgu[iu + cuDen - 2];
@@ -960,7 +960,7 @@ namespace System.Numerics
                 // Divide to get the quotient digit.
                 ulong uuQuo = uuNum / uDen;
                 ulong uuRem = (uint)(uuNum % uDen);
-                Contract.Assert(uuQuo <= (ulong)uint.MaxValue + 2);
+                Debug.Assert(uuQuo <= (ulong)uint.MaxValue + 2);
                 if (uuQuo > uint.MaxValue)
                 {
                     uuRem += uDen * (uuQuo - uint.MaxValue);
@@ -987,7 +987,7 @@ namespace System.Numerics
                         regNum._rgu[iu + iu2] -= uSub;
                     }
 
-                    Contract.Assert(uNumHi == uuBorrow || uNumHi == uuBorrow - 1);
+                    Debug.Assert(uNumHi == uuBorrow || uNumHi == uuBorrow - 1);
                     if (uNumHi < uuBorrow)
                     {
                         // Add, tracking carry.
@@ -995,9 +995,9 @@ namespace System.Numerics
                         for (int iu2 = 0; iu2 < cuDen; iu2++)
                         {
                             uCarry = AddCarry(ref regNum._rgu[iu + iu2], regDen._rgu[iu2], uCarry);
-                            Contract.Assert(uCarry <= 1);
+                            Debug.Assert(uCarry <= 1);
                         }
-                        Contract.Assert(uCarry == 1);
+                        Debug.Assert(uCarry == 1);
                         uuQuo--;
                     }
                     regNum._iuLast = iu + cuDen - 1;
@@ -1012,7 +1012,7 @@ namespace System.Numerics
                 }
             }
 
-            Contract.Assert(cuDen > 1 && regNum._iuLast > 0);
+            Debug.Assert(cuDen > 1 && regNum._iuLast > 0);
             regNum._iuLast = cuDen - 1;
             regNum.Trim();
         }
@@ -1035,7 +1035,7 @@ namespace System.Numerics
         {
             Contract.Requires(cuShift >= 0);
             Contract.Requires(0 <= cbitShift);
-            Contract.Assert(cbitShift < kcbitUint);
+            Debug.Assert(cbitShift < kcbitUint);
             AssertValid(true);
 
             if ((cuShift | cbitShift) == 0)
@@ -1059,7 +1059,7 @@ namespace System.Numerics
                 _uSmall = rguSrc[cuShift] >> cbitShift;
             else
             {
-                Contract.Assert(_rgu.Length > _iuLast);
+                Debug.Assert(_rgu.Length > _iuLast);
                 if (!_fWritable)
                 {
                     _rgu = new uint[_iuLast + 1];
@@ -1094,7 +1094,7 @@ namespace System.Numerics
         {
             Contract.Requires(cuShift >= 0);
             Contract.Requires(0 <= cbitShift);
-            Contract.Assert(cbitShift < kcbitUint);
+            Debug.Assert(cbitShift < kcbitUint);
             AssertValid(true);
 
             int iuLastNew = _iuLast + cuShift;
@@ -1147,8 +1147,8 @@ namespace System.Numerics
         private ulong GetHigh2(int cu)
         {
             Contract.Requires(cu >= 2);
-            Contract.Assert(_iuLast > 0);
-            Contract.Assert(cu > _iuLast);
+            Debug.Assert(_iuLast > 0);
+            Debug.Assert(cu > _iuLast);
 
             if (cu - 1 <= _iuLast)
                 return NumericsHelpers.MakeUlong(_rgu[cu - 1], _rgu[cu - 2]);
@@ -1162,8 +1162,8 @@ namespace System.Numerics
         private void ApplyCarry(int iu)
         {
             Contract.Requires(0 <= iu);
-            Contract.Assert(_fWritable && _iuLast > 0);
-            Contract.Assert(iu <= _iuLast + 1);
+            Debug.Assert(_fWritable && _iuLast > 0);
+            Debug.Assert(iu <= _iuLast + 1);
 
             for (; ; iu++)
             {
@@ -1183,8 +1183,8 @@ namespace System.Numerics
         private void ApplyBorrow(int iuMin)
         {
             Contract.Requires(0 < iuMin);
-            Contract.Assert(_fWritable && _iuLast > 0);
-            Contract.Assert(iuMin <= _iuLast);
+            Debug.Assert(_fWritable && _iuLast > 0);
+            Debug.Assert(iuMin <= _iuLast);
 
             for (int iu = iuMin; iu <= _iuLast; iu++)
             {
@@ -1193,7 +1193,7 @@ namespace System.Numerics
                     return;
             }
             // Borrowed off the end!
-            Contract.Assert(false, "Invalid call to ApplyBorrow");
+            Debug.Fail("Invalid call to ApplyBorrow");
         }
 
         private static uint AddCarry(ref uint u1, uint u2, uint uCarry)
@@ -1273,8 +1273,8 @@ namespace System.Numerics
                     NumericsHelpers.Swap(ref reg1, ref reg2);
                     NumericsHelpers.Swap(ref cuMax, ref cuMin);
                 }
-                Contract.Assert(cuMax == reg1._iuLast + 1);
-                Contract.Assert(cuMin == reg2._iuLast + 1);
+                Debug.Assert(cuMax == reg1._iuLast + 1);
+                Debug.Assert(cuMin == reg2._iuLast + 1);
 
                 if (cuMin == 1)
                 {
@@ -1300,7 +1300,7 @@ namespace System.Numerics
 
                 ulong uu1 = reg1.GetHigh2(cuMax);
                 ulong uu2 = reg2.GetHigh2(cuMax);
-                Contract.Assert(uu1 != 0 && uu2 != 0);
+                Debug.Assert(uu1 != 0 && uu2 != 0);
 
                 int cbit = NumericsHelpers.CbitHighZero(uu1 | uu2);
                 if (cbit > 0)
@@ -1321,15 +1321,15 @@ namespace System.Numerics
                     uu1 >>= 1;
                     uu2 >>= 1;
                 }
-                Contract.Assert(uu1 >= uu2); // We ensured this above.
+                Debug.Assert(uu1 >= uu2); // We ensured this above.
                 if (uu1 == uu2)
                 {
                     // The high bits are the same, so we don't know which
                     // is larger. No matter, just subtract one from the other
                     // and keep the absolute value of the result.
-                    Contract.Assert(cuMax == cuMin);
+                    Debug.Assert(cuMax == cuMin);
                     reg1.Sub(ref signTmp, ref reg2);
-                    Contract.Assert(reg1._iuLast < cuMin - 1);
+                    Debug.Assert(reg1._iuLast < cuMin - 1);
                     continue;
                 }
                 if (NumericsHelpers.GetHi(uu2) == 0)
@@ -1346,11 +1346,11 @@ namespace System.Numerics
 
                 for (; ;)
                 {
-                    Contract.Assert(uu1 + a > a); // no overflow
-                    Contract.Assert(uu2 + d > d);
-                    Contract.Assert(uu1 > b);
-                    Contract.Assert(uu2 > c);
-                    Contract.Assert(uu2 + d <= uu1 - b);
+                    Debug.Assert(uu1 + a > a); // no overflow
+                    Debug.Assert(uu2 + d > d);
+                    Debug.Assert(uu1 > b);
+                    Debug.Assert(uu2 > c);
+                    Debug.Assert(uu2 + d <= uu1 - b);
 
                     uint uQuo = 1;
                     ulong uuNew = uu1 - uu2;
@@ -1375,8 +1375,8 @@ namespace System.Numerics
                     if (uuNew < uuBcNew || uuNew + uuAdNew > uu2 - c)
                         break;
 
-                    Contract.Assert(uQuo == (uu1 + a - 1) / (uu2 - c));
-                    Contract.Assert(uQuo == (uu1 - b) / (uu2 + d));
+                    Debug.Assert(uQuo == (uu1 + a - 1) / (uu2 - c));
+                    Debug.Assert(uQuo == (uu1 - b) / (uu2 + d));
 
                     a = (uint)uuAdNew;
                     b = (uint)uuBcNew;
@@ -1384,15 +1384,15 @@ namespace System.Numerics
 
                     if (uu1 <= b)
                     {
-                        Contract.Assert(uu1 == b);
+                        Debug.Assert(uu1 == b);
                         break;
                     }
 
-                    Contract.Assert(uu1 + a > a); // no overflow
-                    Contract.Assert(uu2 + d > d);
-                    Contract.Assert(uu2 > c);
-                    Contract.Assert(uu1 > b);
-                    Contract.Assert(uu1 + a <= uu2 - c);
+                    Debug.Assert(uu1 + a > a); // no overflow
+                    Debug.Assert(uu2 + d > d);
+                    Debug.Assert(uu2 > c);
+                    Debug.Assert(uu1 > b);
+                    Debug.Assert(uu1 + a <= uu2 - c);
 
                     uQuo = 1;
                     uuNew = uu2 - uu1;
@@ -1417,8 +1417,8 @@ namespace System.Numerics
                     if (uuNew < uuBcNew || uuNew + uuAdNew > uu1 - b)
                         break;
 
-                    Contract.Assert(uQuo == (uu2 + d - 1) / (uu1 - b));
-                    Contract.Assert(uQuo == (uu2 - c) / (uu1 + a));
+                    Debug.Assert(uQuo == (uu2 + d - 1) / (uu1 - b));
+                    Debug.Assert(uQuo == (uu2 - c) / (uu1 + a));
 
                     d = (uint)uuAdNew;
                     c = (uint)uuBcNew;
@@ -1426,15 +1426,15 @@ namespace System.Numerics
 
                     if (uu2 <= c)
                     {
-                        Contract.Assert(uu2 == c);
+                        Debug.Assert(uu2 == c);
                         break;
                     }
                 }
 
                 if (b == 0)
                 {
-                    Contract.Assert(a == 1 && c == 0 && d == 1);
-                    Contract.Assert(uu1 > uu2); // We ensured this above.
+                    Debug.Assert(a == 1 && c == 0 && d == 1);
+                    Debug.Assert(uu1 > uu2); // We ensured this above.
                     if (uu1 / 2 >= uu2)
                         reg1.Mod(ref reg2);
                     else

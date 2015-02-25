@@ -271,7 +271,7 @@
 //
 
 using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security;
@@ -405,7 +405,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    Contract.Assert(c >= 'a' && c <= 'f');
+                    Debug.Assert(c >= 'a' && c <= 'f');
                     b = (byte)((c - 'a') + 10);
                 }
                 if (i == 0 && (b & 0x08) == 0x08)
@@ -573,7 +573,7 @@ namespace System.Numerics
                 uint uCarry = value._bits[iuSrc];
                 for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
-                    Contract.Assert(rguDst[iuDst] < kuBase);
+                    Debug.Assert(rguDst[iuDst] < kuBase);
                     ulong uuRes = NumericsHelpers.MakeUlong(rguDst[iuDst], uCarry);
                     rguDst[iuDst] = (uint)(uuRes % kuBase);
                     uCarry = (uint)(uuRes / kuBase);
@@ -627,7 +627,7 @@ namespace System.Numerics
             for (int iuDst = 0; iuDst < cuDst - 1; iuDst++)
             {
                 uint uDig = rguDst[iuDst];
-                Contract.Assert(uDig < kuBase);
+                Debug.Assert(uDig < kuBase);
                 for (int cch = kcchBase; --cch >= 0;)
                 {
                     rgch[--ichDst] = (char)('0' + uDig % 10);

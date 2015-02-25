@@ -2,13 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Security;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -312,7 +312,7 @@ namespace System.Globalization
             [System.Security.SecurityCritical]  // auto-generated
             private unsafe static char* MatchChars(char* p, char* str)
             {
-                Contract.Assert(p != null && str != null, "");
+                Debug.Assert(p != null && str != null);
 
                 if (*str == '\0')
                 {
@@ -587,7 +587,7 @@ namespace System.Globalization
                 {
                     return false;
                 }
-                Contract.Assert(numfmt != null, "");
+                Debug.Assert(numfmt != null);
 
                 fixed (char* stringPointer = str)
                 {
