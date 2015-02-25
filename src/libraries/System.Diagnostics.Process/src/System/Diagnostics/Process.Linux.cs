@@ -559,10 +559,14 @@ namespace System.Diagnostics
             }
 
             // Use the uptime and the current time to determine the absolute boot time
-            DateTime bootTime = DateTime.Now - TimeSpan.FromSeconds(uptime);
+            DateTime bootTime = DateTime.UtcNow - TimeSpan.FromSeconds(uptime);
 
             // And use that to determine the absolute time for ticksStartedAfterBoot
-            return bootTime + TicksToTimeSpan(ticksAfterBoot);
+            DateTime dt = bootTime + TicksToTimeSpan(ticksAfterBoot);
+
+            // The return value is expected to be in the local time zone.
+            // It is converted here (rather than starting with DateTime.Now) to avoid DST issues.
+            return dt.ToLocalTime();
         }
 
         /// <summary>Convert a number of "jiffies", or ticks, to a TimeSpan.</summary>
