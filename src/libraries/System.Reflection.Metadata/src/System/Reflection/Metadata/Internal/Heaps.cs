@@ -209,10 +209,8 @@ namespace System.Reflection.Metadata.Ecma335
                 return value.Length == 0;
             }
 
-            // TODO: MetadataStringComparer needs to use the user-supplied encoding.
-            // Need to pass the decoder down and use in Utf8NullTerminatedEquals.
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.Utf8NullTerminatedEquals(handle.Index, value, otherTerminator);
+            return this.Block.Utf8NullTerminatedEquals(handle.Index, value, utf8Decoder, otherTerminator);
         }
 
         internal bool StartsWith(StringHandle handle, string value, MetadataStringDecoder utf8Decoder)
@@ -230,10 +228,8 @@ namespace System.Reflection.Metadata.Ecma335
                 return value.Length == 0;
             }
 
-            // TODO: MetadataStringComparer needs to use the user-supplied encoding.
-            // Need to pass the decoder down and use in Utf8NullTerminatedEquals.
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.Utf8NullTerminatedStartsWith(handle.Index, value, otherTerminator);
+            return this.Block.Utf8NullTerminatedStartsWith(handle.Index, value, utf8Decoder, otherTerminator);
         }
 
         /// <summary>

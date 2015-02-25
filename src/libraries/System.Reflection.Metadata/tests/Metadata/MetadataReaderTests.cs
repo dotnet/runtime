@@ -160,11 +160,8 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("<WinRT>\uFFFDSTests.WithNestedType", reader.GetString(handle.WithWinRTPrefix()));
             Assert.Equal("\uFFFDSTests", reader.GetString(handle.WithDotTermination()));
 
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // TODO: MetadataStringComparer needs to use the user-supplied encoding
-            // These still use incorrect code for comparison - uncomment when fixed
-            //Assert.True(reader.StringComparer.Equals(handle, "\uFFFDSTests.WithNestedType"); 
-            //Assert.True(reader.StringComparer.Equals(handle.WithDotTermination(), "\uFFFDSTests"));
+            Assert.True(reader.StringComparer.Equals(handle, "\uFFFDSTests.WithNestedType"));
+            Assert.True(reader.StringComparer.Equals(handle.WithDotTermination(), "\uFFFDSTests"));
 
             // This one calls the decoder already because we don't bother optimizing uncommon winrt prefix case.
             Assert.True(reader.StringComparer.StartsWith(handle.WithWinRTPrefix(), "<WinRT>\uFFFDS"));
@@ -2439,8 +2436,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue(260)]
         public void CanReadFromSameMemoryMappedPEReaderInParallel()
         {
             // See http://roslyn.codeplex.com/workitem/299
@@ -2449,8 +2444,7 @@ namespace System.Reflection.Metadata.Tests
             // to a PEReader and prepared to produce a MetadataReader
             // on demand for callers on different threads.
             //
-
-            /*using (var stream = File.OpenRead(typeof(object).Assembly.Location))
+            using (var stream = GetTemporaryAssemblyLargeEnoughToBeMemoryMapped())
             {
                 Assert.True(stream.Length > StreamMemoryBlockProvider.MemoryMapThreshold);
 
@@ -2463,7 +2457,30 @@ namespace System.Reflection.Metadata.Tests
                         Parallel.For(0, 4, _ => { peReader.GetMetadataReader(); });
                     }
                 }
-            }*/
+            }
+        }
+
+        private static FileStream GetTemporaryAssemblyLargeEnoughToBeMemoryMapped()
+        {
+            var stream = new FileStream(
+                Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()),
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.Read,
+                4096,
+                FileOptions.DeleteOnClose);
+
+            using (var testData = new MemoryStream(TestResources.Misc.Members))
+            {
+                while (stream.Length <= StreamMemoryBlockProvider.MemoryMapThreshold)
+                {
+                    testData.CopyTo(stream);
+                    testData.Position = 0;
+                }
+            }
+
+            stream.Position = 0;
+            return stream;
         }
     }
 }
