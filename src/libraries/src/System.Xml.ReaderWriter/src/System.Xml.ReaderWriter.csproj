@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{C559743A-762E-4D9D-B986-E77BDB97652E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Xml.ReaderWriter</AssemblyName>
+    <RootNamespace>System.Xml</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Include="System\Xml\AsyncHelper.cs" />
+    <Compile Include="System\Xml\Base64Decoder.cs" />
+    <Compile Include="System\Xml\Base64Encoder.cs" />
+    <Compile Include="System\Xml\Base64EncoderAsync.cs" />
+    <Compile Include="System\Xml\BinHexDecoder.cs" />
+    <Compile Include="System\Xml\BinHexEncoder.cs" />
+    <Compile Include="System\Xml\BinHexEncoderAsync.cs" />
+    <Compile Include="System\Xml\Bits.cs" />
+    <Compile Include="System\Xml\BitStack.cs" />
+    <Compile Include="System\Xml\BufferBuilder.cs" />
+    <Compile Include="System\Xml\IxmlLineInfo.cs" />
+    <Compile Include="System\Xml\IXmlNamespaceResolver.cs" />
+    <Compile Include="System\Xml\LineInfo.cs" />
+    <Compile Include="System\Xml\NameTable.cs" />
+    <Compile Include="System\Xml\Ref.cs" />
+    <Compile Include="System\Xml\ValidateNames.cs" />
+    <Compile Include="System\Xml\XmlCharType.cs" />
+    <Compile Include="System\Xml\XmlConvert.cs" />
+    <Compile Include="System\Xml\XmlEncoding.cs" />
+    <Compile Include="System\Xml\XmlException.cs" />
+    <Compile Include="System\Xml\XmlNamespaceManager.cs" />
+    <Compile Include="System\Xml\XmlNamespaceScope.cs" />
+    <Compile Include="System\Xml\XmlNameTable.cs" />
+    <Compile Include="System\Xml\XmlNodeType.cs" />
+    <Compile Include="System\Xml\XmlQualifiedName.cs" />
+    <Compile Include="System\Xml\XmlReservedNS.cs" />
+    <Compile Include="System\Xml\XmlResolver.cs" />
+    <Compile Include="System\Xml\XmlSystemPathResolver.cs" />
+    <Compile Include="System\Xml\Core\CharEntityEncoderFallback.cs" />
+    <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
+    <Compile Include="System\Xml\Core\DtdProcessing.cs" />
+    <Compile Include="System\Xml\Core\IDtdInfo.cs" />
+    <Compile Include="System\Xml\Core\IDtdParser.cs" />
+    <Compile Include="System\Xml\Core\IDtdParserAdapter.cs" />
+    <Compile Include="System\Xml\Core\IncrementalReadDecoders.cs" />
+    <Compile Include="System\Xml\Core\NewLineHandling.cs" />
+    <Compile Include="System\Xml\Core\NamespaceHandling.cs" />
+    <Compile Include="System\Xml\Core\ReadContentAsBinaryHelper.cs" />
+    <Compile Include="System\Xml\Core\ReadContentAsBinaryHelperAsync.cs" />
+    <Compile Include="System\Xml\Core\ReadState.cs" />
+    <Compile Include="System\Xml\Core\SecureStringHasher.cs" />
+    <Compile Include="System\Xml\Core\WhiteSpaceHandling.cs" />
+    <Compile Include="System\Xml\Core\XmlAsyncCheckReader.cs" />
+    <Compile Include="System\Xml\Core\XmlAsyncCheckWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlCharCheckingReader.cs" />
+    <Compile Include="System\Xml\Core\XmlCharCheckingReaderAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlCharCheckingWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlCharCheckingWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlEncodedRawTextWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlEncodedRawTextWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlParserContext.cs" />
+    <Compile Include="System\Xml\Core\XmlRawWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlRawWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlReader.cs" />
+    <Compile Include="System\Xml\Core\XmlReaderAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlReaderSettings.cs" />
+    <Compile Include="System\Xml\Core\XmlSpace.cs" />
+    <Compile Include="System\Xml\Core\XmlSubtreeReader.cs" />
+    <Compile Include="System\Xml\Core\XmlSubtreeReaderAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlTextEncoder.cs" />
+    <Compile Include="System\Xml\Core\XmlTextReaderImpl.cs" />
+    <Compile Include="System\Xml\Core\XmlTextReaderImplAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlTextReaderImplHelpers.cs" />
+    <Compile Include="System\Xml\Core\XmlUtf8RawTextWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlUtf8RawTextWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlWellformedWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlWellformedWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlWellformedWriterHelpers.cs" />
+    <Compile Include="System\Xml\Core\XmlWellformedWriterHelpersAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlWrappingReader.cs" />
+    <Compile Include="System\Xml\Core\XmlWrappingReaderAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlWrappingWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlWrappingWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlWriter.cs" />
+    <Compile Include="System\Xml\Core\XmlWriterAsync.cs" />
+    <Compile Include="System\Xml\Core\XmlWriterSettings.cs" />
+    <Compile Include="System\Xml\Schema\SchemaInfo.cs" />
+    <Compile Include="System\Xml\Schema\XmlTokenizedType.cs" />
+    <Compile Include="System\Xml\Schema\DtdParser.cs" />
+    <Compile Include="System\Xml\Schema\SchemaElementDecl.cs" />
+    <Compile Include="System\Xml\Schema\SchemaDeclBase.cs" />
+    <Compile Include="System\Xml\Schema\SchemaEntity.cs" />
+    <Compile Include="System\Xml\Schema\SchemaAttDef.cs" />
+    <Compile Include="System\Xml\Schema\XmlSchema.cs" />
+    <Compile Include="System\Xml\Schema\XmlSchemaForm.cs" />
+    <Compile Include="System\Xml\Schema\XmlUntypedStringConverter.cs" />
+    <Compile Include="System\Xml\Schema\XsdDateTime.cs" />
+    <Compile Include="System\Xml\Schema\XsdDuration.cs" />
+    <Compile Include="System\Xml\Serialization\IXmlSerializable.cs" />
+    <Compile Include="System\Xml\Serialization\XmlSchemaProviderAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
