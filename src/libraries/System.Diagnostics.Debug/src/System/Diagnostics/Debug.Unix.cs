@@ -26,7 +26,18 @@ namespace System.Diagnostics
 
             public void WriteCore(string message)
             {
-                // We don't want to write UTF-16 to standard error.  Ideally we would transcode this
+                WriteToSyslog(message);
+                WriteToFile(Interop.Devices.stderr, message);
+            }
+
+            private static void WriteToSyslog(string message)
+            {
+                Interop.libc.syslog(Interop.libc.LOG_USER | Interop.libc.LOG_DEBUG, "%s", message);
+            }
+
+            private static void WriteToFile(string filePath, string message)
+            {
+                // We don't want to write UTF-16 to a file like standard error.  Ideally we would transcode this
                 // to UTF8, but the downside of that is it pulls in a bunch of stuff into what is ideally
                 // a path with minimal dependencies (as to prevent re-entrency), so we'll take the strategy
                 // of just throwing away any non ASCII characters from the message and writing the rest
@@ -39,7 +50,7 @@ namespace System.Diagnostics
                     int bufCount;
                     int i = 0;
 
-                    using (SafeFileHandle stderr = SafeFileHandle.Open(Interop.Devices.stderr, Interop.libc.OpenFlags.O_WRONLY, 0))
+                    using (SafeFileHandle fileHandle = SafeFileHandle.Open(filePath, Interop.libc.OpenFlags.O_WRONLY, 0))
                     {
                         while (i < message.Length)
                         {
@@ -54,7 +65,7 @@ namespace System.Diagnostics
 
                             if (bufCount != 0)
                             {
-                                while (Interop.CheckIo((long)Interop.libc.write((int)stderr.DangerousGetHandle(), buf, new IntPtr(bufCount)))) ;
+                                while (Interop.CheckIo((long)Interop.libc.write((int)fileHandle.DangerousGetHandle(), buf, new IntPtr(bufCount)))) ;
                             }
                         }
                     }
