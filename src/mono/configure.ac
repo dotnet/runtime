@@ -454,6 +454,8 @@ AC_CHECK_HEADERS(sys/user.h, [], [],
 #endif
 ])
 
+AC_CHECK_HEADERS(linux/serial.h)
+
 AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
 if test x$have_zlib = xyes; then
    AC_TRY_COMPILE([#include <zlib.h>], [
