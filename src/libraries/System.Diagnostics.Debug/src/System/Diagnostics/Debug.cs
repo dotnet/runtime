@@ -77,7 +77,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string message)
         {
-            s_logger.WriteLineCore(message);
+            Write(message + Environment.NewLine);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -217,7 +217,6 @@ namespace System.Diagnostics
         internal interface IDebugLogger
         {
             void ShowAssertDialog(string stackTrace, string message, string detailMessage);
-            void WriteLineCore(string message);
             void WriteCore(string message);
         }
     }

@@ -166,11 +166,6 @@ namespace System.Diagnostics.Tests
                 AssertUIOutput += stackTrace + message + detailMessage;
             }
 
-            public void WriteLineCore(string message)
-            {
-                LoggedOutput += message + Environment.NewLine;
-            }
-
             public void WriteCore(string message)
             {
                 LoggedOutput += message;
