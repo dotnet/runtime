@@ -897,7 +897,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
  * pinned objects.  Return the number of pinned objects.
  */
 static int
-pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
+pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ctx)
 {
 	GCMemSection *section = nursery_section;
 	void **start =  sgen_pinning_get_entry (section->pin_queue_first_entry);
@@ -1025,7 +1025,7 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 		 * Finally - pin the object!
 		 */
 		desc = sgen_obj_get_descriptor_safe (obj_to_pin);
-		if (scan_func) {
+		if (do_scan_objects) {
 			scan_func (obj_to_pin, desc, queue);
 		} else {
 			SGEN_LOG (4, "Pinned object %p, vtable %p (%s), count %d\n",
@@ -1069,14 +1069,14 @@ pin_objects_from_nursery_pin_queue (ScanCopyContext ctx)
 }
 
 static void
-pin_objects_in_nursery (ScanCopyContext ctx)
+pin_objects_in_nursery (gboolean do_scan_objects, ScanCopyContext ctx)
 {
 	size_t reduced_to;
 
 	if (nursery_section->pin_queue_first_entry == nursery_section->pin_queue_last_entry)
 		return;
 
-	reduced_to = pin_objects_from_nursery_pin_queue (ctx);
+	reduced_to = pin_objects_from_nursery_pin_queue (do_scan_objects, ctx);
 	nursery_section->pin_queue_last_entry = nursery_section->pin_queue_first_entry + reduced_to;
 }
 
@@ -1554,21 +1554,13 @@ sgen_generation_name (int generation)
 	return generation_name (generation);
 }
 
-SgenObjectOperations *
-sgen_get_current_object_ops (void){
-	return &current_object_ops;
-}
-
-
 static void
 finish_gray_stack (int generation, GrayQueue *queue)
 {
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
 	int done_with_ephemerons, ephemeron_rounds = 0;
-	CopyOrMarkObjectFunc copy_func = current_object_ops.copy_or_mark_object;
-	ScanObjectFunc scan_func = current_object_ops.scan_object;
-	ScanCopyContext ctx = { scan_func, copy_func, queue };
+	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (&current_object_ops, queue);
 	char *start_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_start () : NULL;
 	char *end_addr = generation == GENERATION_NURSERY ? sgen_get_nursery_end () : (char*)-1;
 
@@ -1979,17 +1971,23 @@ sgen_concurrent_collection_in_progress (void)
 	return concurrent_collection_in_progress;
 }
 
+typedef struct {
+	SgenThreadPoolJob job;
+	ScanCopyContext ctx;
+} ScanJob;
+
 static void
 job_remembered_set_scan (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
 	WorkerData *worker_data = worker_data_untyped;
-	remset.scan_remsets (sgen_workers_get_job_gray_queue (worker_data));
+	ScanJob *job_data = (ScanJob*)job;
+	ScanCopyContext ctx = CONTEXT_FROM_CONTEXT (job_data->ctx, sgen_workers_get_job_gray_queue (worker_data));
+	remset.scan_remsets (ctx);
 }
 
 typedef struct {
 	SgenThreadPoolJob job;
-	CopyOrMarkObjectFunc copy_or_mark_func;
-	ScanObjectFunc scan_func;
+	ScanCopyContext ctx;
 	char *heap_start;
 	char *heap_end;
 	int root_type;
@@ -2000,8 +1998,7 @@ job_scan_from_registered_roots (void *worker_data_untyped, SgenThreadPoolJob *jo
 {
 	WorkerData *worker_data = worker_data_untyped;
 	ScanFromRegisteredRootsJob *job_data = (ScanFromRegisteredRootsJob*)job;
-	ScanCopyContext ctx = { job_data->scan_func, job_data->copy_or_mark_func,
-		sgen_workers_get_job_gray_queue (worker_data) };
+	ScanCopyContext ctx = CONTEXT_FROM_CONTEXT (job_data->ctx, sgen_workers_get_job_gray_queue (worker_data));
 
 	scan_from_registered_roots (job_data->heap_start, job_data->heap_end, job_data->root_type, ctx);
 }
@@ -2024,6 +2021,7 @@ job_scan_thread_data (void *worker_data_untyped, SgenThreadPoolJob *job)
 
 typedef struct {
 	SgenThreadPoolJob job;
+	ScanCopyContext ctx;
 	FinalizeReadyEntry *list;
 } ScanFinalizerEntriesJob;
 
@@ -2032,25 +2030,31 @@ job_scan_finalizer_entries (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
 	WorkerData *worker_data = worker_data_untyped;
 	ScanFinalizerEntriesJob *job_data = (ScanFinalizerEntriesJob*)job;
-	ScanCopyContext ctx = { NULL, current_object_ops.copy_or_mark_object, sgen_workers_get_job_gray_queue (worker_data) };
+	ScanCopyContext ctx = CONTEXT_FROM_CONTEXT (job_data->ctx, sgen_workers_get_job_gray_queue (worker_data));
 
 	scan_finalizer_entries (job_data->list, ctx);
 }
 
 static void
-job_scan_major_mod_union_cardtable (void *worker_data_untyped, SgenThreadPoolJob *job)
+job_scan_major_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
 	WorkerData *worker_data = worker_data_untyped;
+	ScanJob *job_data = (ScanJob*)job;
+	ScanCopyContext ctx = CONTEXT_FROM_CONTEXT (job_data->ctx, sgen_workers_get_job_gray_queue (worker_data));
+
 	g_assert (concurrent_collection_in_progress);
-	major_collector.scan_card_table (TRUE, sgen_workers_get_job_gray_queue (worker_data));
+	major_collector.scan_card_table (TRUE, ctx);
 }
 
 static void
-job_scan_los_mod_union_cardtable (void *worker_data_untyped, SgenThreadPoolJob *job)
+job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
 	WorkerData *worker_data = worker_data_untyped;
+	ScanJob *job_data = (ScanJob*)job;
+	ScanCopyContext ctx = CONTEXT_FROM_CONTEXT (job_data->ctx, sgen_workers_get_job_gray_queue (worker_data));
+
 	g_assert (concurrent_collection_in_progress);
-	sgen_los_scan_card_table (TRUE, sgen_workers_get_job_gray_queue (worker_data));
+	sgen_los_scan_card_table (TRUE, ctx);
 }
 
 static void
@@ -2153,7 +2157,7 @@ init_gray_queue (void)
 }
 
 static void
-enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end)
+enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end, ScanCopyContext ctx)
 {
 	ScanFromRegisteredRootsJob *scrrj;
 	ScanThreadDataJob *stdj;
@@ -2162,16 +2166,14 @@ enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end)
 	/* registered roots, this includes static fields */
 
 	scrrj = (ScanFromRegisteredRootsJob*)sgen_thread_pool_job_alloc ("scan from registered roots normal", job_scan_from_registered_roots, sizeof (ScanFromRegisteredRootsJob));
-	scrrj->copy_or_mark_func = current_object_ops.copy_or_mark_object;
-	scrrj->scan_func = current_object_ops.scan_object;
+	scrrj->ctx = ctx;
 	scrrj->heap_start = heap_start;
 	scrrj->heap_end = heap_end;
 	scrrj->root_type = ROOT_TYPE_NORMAL;
 	sgen_workers_enqueue_job (&scrrj->job);
 
 	scrrj = (ScanFromRegisteredRootsJob*)sgen_thread_pool_job_alloc ("scan from registered roots wbarrier", job_scan_from_registered_roots, sizeof (ScanFromRegisteredRootsJob));
-	scrrj->copy_or_mark_func = current_object_ops.copy_or_mark_object;
-	scrrj->scan_func = current_object_ops.scan_object;
+	scrrj->ctx = ctx;
 	scrrj->heap_start = heap_start;
 	scrrj->heap_end = heap_end;
 	scrrj->root_type = ROOT_TYPE_WBARRIER;
@@ -2188,10 +2190,12 @@ enqueue_scan_from_roots_jobs (char *heap_start, char *heap_end)
 
 	sfej = (ScanFinalizerEntriesJob*)sgen_thread_pool_job_alloc ("scan finalizer entries", job_scan_finalizer_entries, sizeof (ScanFinalizerEntriesJob));
 	sfej->list = fin_ready_list;
+	sfej->ctx = ctx;
 	sgen_workers_enqueue_job (&sfej->job);
 
 	sfej = (ScanFinalizerEntriesJob*)sgen_thread_pool_job_alloc ("scan critical finalizer entries", job_scan_finalizer_entries, sizeof (ScanFinalizerEntriesJob));
 	sfej->list = critical_fin_list;
+	sfej->ctx = ctx;
 	sgen_workers_enqueue_job (&sfej->job);
 }
 
@@ -2207,6 +2211,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	size_t max_garbage_amount;
 	char *nursery_next;
 	mword fragment_total;
+	ScanJob *sj;
 	ScanCopyContext ctx;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -2289,10 +2294,10 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	/* identify pinned objects */
 	sgen_optimize_pin_queue ();
 	sgen_pinning_setup_section (nursery_section);
-	ctx.scan_func = NULL;
-	ctx.copy_func = NULL;
-	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
-	pin_objects_in_nursery (ctx);
+
+	ctx = CONTEXT_FROM_OBJECT_OPERATIONS (&current_object_ops, &gray_queue);
+
+	pin_objects_in_nursery (FALSE, ctx);
 	sgen_pinning_trim_queue_to_section (nursery_section);
 
 	TV_GETTIME (atv);
@@ -2307,7 +2312,9 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	 * as part of which we scan the card table.  Then, later, we scan the mod union
 	 * cardtable.  We should only have to do one.
 	 */
-	sgen_workers_enqueue_job (sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (SgenThreadPoolJob)));
+	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (ScanJob));
+	sj->ctx = ctx;
+	sgen_workers_enqueue_job (&sj->job);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
@@ -2316,10 +2323,6 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_4 (GENERATION_NURSERY);
 
-	/* FIXME: why is this here? */
-	ctx.scan_func = current_object_ops.scan_object;
-	ctx.copy_func = NULL;
-	ctx.queue = &gray_queue;
 	sgen_drain_gray_stack (-1, ctx);
 
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
@@ -2331,7 +2334,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 
 	MONO_GC_CHECKPOINT_5 (GENERATION_NURSERY);
 
-	enqueue_scan_from_roots_jobs (sgen_get_nursery_start (), nursery_next);
+	enqueue_scan_from_roots_jobs (sgen_get_nursery_start (), nursery_next, ctx);
 
 	TV_GETTIME (btv);
 	time_minor_scan_roots += TV_ELAPSED (atv, btv);
@@ -2558,9 +2561,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	if (profile_roots)
 		notify_gc_roots (&root_report);
 	/* second pass for the sections */
-	ctx.scan_func = concurrent_collection_in_progress ? current_object_ops.scan_object : NULL;
-	ctx.copy_func = NULL;
-	ctx.queue = WORKERS_DISTRIBUTE_GRAY_QUEUE;
+	ctx = CONTEXT_FROM_OBJECT_OPERATIONS (&current_object_ops, WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 	/*
 	 * Concurrent mark never follows references into the nursery.  In the start and
@@ -2591,7 +2592,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	if (scan_whole_nursery || finish_up_concurrent_mark || (concurrent_collection_in_progress && sgen_minor_collector.is_split)) {
 		scan_nursery_objects (ctx);
 	} else {
-		pin_objects_in_nursery (ctx);
+		pin_objects_in_nursery (concurrent_collection_in_progress, ctx);
 		if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 			sgen_check_nursery_objects_pinned (!concurrent_collection_in_progress || finish_up_concurrent_mark);
 	}
@@ -2630,17 +2631,28 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	if (mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS)
 		report_finalizer_roots ();
 
-	enqueue_scan_from_roots_jobs (heap_start, heap_end);
+	/*
+	 * FIXME: is this the right context?  It doesn't seem to contain a copy function
+	 * unless we're concurrent.
+	 */
+	enqueue_scan_from_roots_jobs (heap_start, heap_end, ctx);
 
 	TV_GETTIME (btv);
 	time_major_scan_roots += TV_ELAPSED (atv, btv);
 
 	if (scan_mod_union) {
+		ScanJob *sj;
+
 		g_assert (finish_up_concurrent_mark);
 
 		/* Mod union card table */
-		sgen_workers_enqueue_job (sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_cardtable, sizeof (SgenThreadPoolJob)));
-		sgen_workers_enqueue_job (sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_cardtable, sizeof (SgenThreadPoolJob)));
+		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ScanJob));
+		sj->ctx = ctx;
+		sgen_workers_enqueue_job (&sj->job);
+
+		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ScanJob));
+		sj->ctx = ctx;
+		sgen_workers_enqueue_job (&sj->job);
 
 		TV_GETTIME (atv);
 		time_major_scan_mod_union += TV_ELAPSED (btv, atv);
@@ -5241,12 +5253,6 @@ void
 sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	major_collector.iterate_live_block_ranges (callback);
-}
-
-void
-sgen_major_collector_scan_card_table (SgenGrayQueue *queue)
-{
-	major_collector.scan_card_table (FALSE, queue);
 }
 
 SgenMajorCollector*

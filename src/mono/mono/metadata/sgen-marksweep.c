@@ -2145,8 +2145,10 @@ card_offset (char *obj, char *base)
 }
 
 static void
-scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFunc scan_func, SgenGrayQueue *queue)
+scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanCopyContext ctx)
 {
+	SgenGrayQueue *queue = ctx.queue;
+	ScanObjectFunc scan_func = ctx.scan_func;
 #ifndef SGEN_HAVE_OVERLAPPING_CARDS
 	guint8 cards_copy [CARDS_PER_BLOCK];
 #endif
@@ -2248,7 +2250,7 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFun
 				scan_func (obj, sgen_obj_get_descriptor (obj), queue);
 			} else {
 				size_t offset = card_offset (obj, block_start);
-				sgen_cardtable_scan_object (obj, block_obj_size, card_base + offset, mod_union, queue);
+				sgen_cardtable_scan_object (obj, block_obj_size, card_base + offset, mod_union, ctx);
 			}
 		next_object:
 			obj += block_obj_size;
@@ -2266,9 +2268,8 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanObjectFun
 }
 
 static void
-major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
+major_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 {
-	ScanObjectFunc scan_func = sgen_get_current_object_ops ()->scan_object;
 	MSBlockInfo *block;
 	gboolean has_references;
 
@@ -2291,7 +2292,7 @@ major_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 		if (!has_references)
 			continue;
 
-		scan_card_table_for_block (block, mod_union, scan_func, queue);
+		scan_card_table_for_block (block, mod_union, ctx);
 	} END_FOREACH_BLOCK_NO_LOCK;
 }
 

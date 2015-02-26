@@ -465,6 +465,7 @@ typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue* BINARY_PROTOCOL
 typedef struct
 {
 	ScanObjectFunc scan_func;
+	ScanVTypeFunc scan_vtype_func;
 	CopyOrMarkObjectFunc copy_func;
 	SgenGrayQueue *queue;
 } ScanCopyContext;
@@ -502,7 +503,8 @@ typedef struct {
 	/*FIXME add allocation function? */
 } SgenObjectOperations;
 
-SgenObjectOperations *sgen_get_current_object_ops (void);
+#define CONTEXT_FROM_OBJECT_OPERATIONS(ops, queue) ((ScanCopyContext) { (ops)->scan_object, (ops)->scan_vtype, (ops)->copy_or_mark_object, (queue) })
+#define CONTEXT_FROM_CONTEXT(ctx, queue) ((ScanCopyContext) { (ctx).scan_func, (ctx).scan_vtype_func, (ctx).copy_func, (queue) })
 
 typedef struct _SgenFragment SgenFragment;
 
@@ -683,7 +685,7 @@ struct _SgenMajorCollector {
 	void (*free_non_pinned_object) (char *obj, size_t size);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
-	void (*scan_card_table) (gboolean mod_union, SgenGrayQueue *queue);
+	void (*scan_card_table) (gboolean mod_union, ScanCopyContext ctx);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
@@ -733,7 +735,7 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
-	void (*scan_remsets) (SgenGrayQueue *queue);
+	void (*scan_remsets) (ScanCopyContext ctx);
 
 	void (*clear_cards) (void);
 
@@ -988,10 +990,9 @@ void sgen_los_sweep (void);
 gboolean sgen_ptr_is_in_los (char *ptr, char **start);
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data);
 void sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
-void sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue);
+void sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx);
 void sgen_los_update_cardtable_mod_union (void);
 void sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards);
-void sgen_major_collector_scan_card_table (SgenGrayQueue *queue);
 gboolean sgen_los_is_valid_object (char *object);
 gboolean mono_sgen_los_describe_pointer (char *ptr);
 LOSObject* sgen_los_header_for_object (char *data);

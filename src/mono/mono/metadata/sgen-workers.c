@@ -268,7 +268,7 @@ marker_idle_func (void *data_untyped)
 		SgenObjectOperations *ops = sgen_concurrent_collection_in_progress ()
 			? &major->major_concurrent_ops
 			: &major->major_ops;
-		ScanCopyContext ctx = { ops->scan_object, NULL, &data->private_gray_queue };
+		ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (ops, &data->private_gray_queue);
 
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
 

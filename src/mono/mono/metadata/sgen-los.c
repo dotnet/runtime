@@ -542,7 +542,7 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 }
 
 void
-sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
+sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 {
 	LOSObject *obj;
 
@@ -562,7 +562,7 @@ sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			cards = NULL;
 		}
 
-		sgen_cardtable_scan_object (obj->data, obj->size, cards, mod_union, queue);
+		sgen_cardtable_scan_object (obj->data, obj->size, cards, mod_union, ctx);
 	}
 }
 

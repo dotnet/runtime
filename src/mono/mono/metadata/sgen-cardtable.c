@@ -426,7 +426,7 @@ sgen_card_table_finish_minor_collection (void)
 }
 
 static void
-sgen_card_table_scan_remsets (SgenGrayQueue *queue)
+sgen_card_table_scan_remsets (ScanCopyContext ctx)
 {
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
@@ -443,11 +443,11 @@ sgen_card_table_scan_remsets (SgenGrayQueue *queue)
 	sgen_card_table_clear_cards ();
 #endif
 	SGEN_TV_GETTIME (atv);
-	sgen_major_collector_scan_card_table (queue);
+	sgen_get_major_collector ()->scan_card_table (FALSE, ctx);
 	SGEN_TV_GETTIME (btv);
 	last_major_scan_time = SGEN_TV_ELAPSED (atv, btv); 
 	major_card_scan_time += last_major_scan_time;
-	sgen_los_scan_card_table (FALSE, queue);
+	sgen_los_scan_card_table (FALSE, ctx);
 	SGEN_TV_GETTIME (atv);
 	last_los_scan_time = SGEN_TV_ELAPSED (btv, atv);
 	los_card_scan_time += last_los_scan_time;
@@ -557,7 +557,7 @@ find_next_card (guint8 *card_data, guint8 *end)
 }
 
 void
-sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, SgenGrayQueue *queue)
+sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
 {
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
@@ -635,19 +635,19 @@ LOOP_HEAD:
 
 			elem = first_elem = (char*)mono_array_addr_with_size_fast ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
-				ScanVTypeFunc scan_vtype_func = sgen_get_current_object_ops ()->scan_vtype;
+				ScanVTypeFunc scan_vtype_func = ctx.scan_vtype_func;
 
 				for (; elem < card_end; elem += elem_size)
-					scan_vtype_func (elem, desc, queue BINARY_PROTOCOL_ARG (elem_size));
+					scan_vtype_func (elem, desc, ctx.queue BINARY_PROTOCOL_ARG (elem_size));
 			} else {
-				CopyOrMarkObjectFunc copy_func = sgen_get_current_object_ops ()->copy_or_mark_object;
+				CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
 					gpointer new, old = *(gpointer*)elem;
 					if ((mod_union && old) || G_UNLIKELY (sgen_ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
-						copy_func ((void**)elem, queue);
+						copy_func ((void**)elem, ctx.queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (sgen_ptr_in_nursery (new)))
 							sgen_add_to_global_remset (elem, new);
@@ -672,9 +672,9 @@ LOOP_HEAD:
 		HEAVY_STAT (++bloby_objects);
 		if (cards) {
 			if (sgen_card_table_is_range_marked (cards, (mword)obj, block_obj_size))
-				sgen_get_current_object_ops ()->scan_object (obj, sgen_obj_get_descriptor (obj), queue);
+				ctx.scan_func (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 		} else if (sgen_card_table_region_begin_scanning ((mword)obj, block_obj_size)) {
-			sgen_get_current_object_ops ()->scan_object (obj, sgen_obj_get_descriptor (obj), queue);
+			ctx.scan_func (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 		}
 
 		binary_protocol_card_scan (obj, sgen_safe_object_get_size ((MonoObject*)obj));
