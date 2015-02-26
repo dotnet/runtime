@@ -2427,8 +2427,7 @@ scan_nursery_objects (ScanCopyContext ctx)
 }
 
 static void
-major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurrent_mark, gboolean finish_up_concurrent_mark,
-		gboolean scan_mod_union, gboolean scan_whole_nursery,
+major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurrent_mark, gboolean finish_up_concurrent_mark, gboolean scan_whole_nursery,
 		SgenObjectOperations *object_ops)
 {
 	LOSObject *bigobj;
@@ -2633,10 +2632,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	TV_GETTIME (btv);
 	time_major_scan_roots += TV_ELAPSED (atv, btv);
 
-	if (scan_mod_union) {
+	if (finish_up_concurrent_mark) {
 		ScanJob *sj;
-
-		g_assert (finish_up_concurrent_mark);
 
 		/* Mod union card table */
 		sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ScanJob));
@@ -2713,7 +2710,7 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, concurrent, FALSE, FALSE, FALSE, object_ops);
+	major_copy_or_mark_from_roots (old_next_pin_slot, concurrent, FALSE, FALSE, object_ops);
 	major_finish_copy_or_mark ();
 }
 
@@ -2733,7 +2730,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 		sgen_workers_signal_start_nursery_collection_and_wait ();
 
-		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, TRUE, scan_whole_nursery, object_ops);
+		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, scan_whole_nursery, object_ops);
 
 		sgen_workers_signal_finish_nursery_collection ();
 
