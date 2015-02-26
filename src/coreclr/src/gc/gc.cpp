@@ -554,7 +554,11 @@ enum gc_join_stage
     gc_join_after_reset = 31,
     gc_join_after_ephemeral_sweep = 32,
     gc_join_after_profiler_heap_walk = 33,
-    gc_join_minimal_gc = 34
+    gc_join_minimal_gc = 34,
+    gc_join_after_commit_soh_no_gc = 35,
+    gc_join_expand_loh_no_gc = 36,
+    gc_join_final_no_gc = 37,
+    gc_join_max = 38
 };
 
 enum gc_join_flavor
@@ -2186,6 +2190,7 @@ sorted_table* gc_heap::seg_table;
 
 #ifdef MULTIPLE_HEAPS
 CLREvent    gc_heap::ee_suspend_event;
+size_t      gc_heap::min_balance_threshold = 0;
 #endif //MULTIPLE_HEAPS
 
 VOLATILE(BOOL) gc_heap::gc_started;
@@ -2524,6 +2529,8 @@ size_t      gc_heap::current_obj_size = 0;
 
 #endif //MULTIPLE_HEAPS
 
+no_gc_region_info gc_heap::current_no_gc_region_info;
+BOOL gc_heap::proceed_with_gc_p = FALSE;
 GCSpinLock gc_heap::gc_lock;
 
 size_t gc_heap::eph_gen_starts_size = 0;
@@ -2596,6 +2603,9 @@ unsigned int gc_heap::num_low_msl_acquire = 0;
 #endif //SYNCHRONIZATION_STATS
 
 size_t   gc_heap::alloc_contexts_used = 0;
+size_t   gc_heap::soh_allocation_no_gc = 0;
+size_t   gc_heap::loh_allocation_no_gc = 0;
+heap_segment* gc_heap::saved_loh_segment_no_gc = 0;
 
 #endif //MULTIPLE_HEAPS
 
@@ -4222,7 +4232,8 @@ gc_heap::soh_get_segment_to_expand()
     //compute the size of the new ephemeral heap segment.
     compute_new_ephemeral_size();
 
-    if ((settings.pause_mode != pause_low_latency)
+    if ((settings.pause_mode != pause_low_latency) &&
+        (settings.pause_mode != pause_no_gc)
 #ifdef BACKGROUND_GC
         && (!recursive_gc_sync::background_running_p())
 #endif //BACKGROUND_GC
@@ -5071,7 +5082,15 @@ DWORD gc_heap::gc_thread_function ()
             GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC);
             END_TIMING(suspend_ee_during_log);
 
-            settings.init_mechanisms();
+            proceed_with_gc_p = TRUE;
+
+            if (!should_proceed_with_gc())
+            {
+                update_collection_counts_for_no_gc();
+                proceed_with_gc_p = FALSE;
+            }
+            else
+                settings.init_mechanisms();
             dprintf (3, ("%d gc thread waiting...", heap_number));
             gc_start_event.Set();
         }
@@ -5081,11 +5100,12 @@ DWORD gc_heap::gc_thread_function ()
             dprintf (3, ("%d gc thread waiting... Done", heap_number));
         }
 
-        garbage_collect (GCHeap::GcCondemnedGeneration);
+        if (proceed_with_gc_p)
+            garbage_collect (GCHeap::GcCondemnedGeneration);
 
         if (heap_number == 0)
         {
-            if (!settings.concurrent)
+            if (proceed_with_gc_p && (!settings.concurrent))
             {
                 do_post_gc();
             }
@@ -5746,7 +5766,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
         return FALSE;
     }
 #ifndef MULTIPLE_HEAPS
-    else if ((gen_number == 0))
+    else if ((settings.pause_mode != pause_no_gc) && (gen_number == 0))
     {
         dprintf (3, ("evaluating allocation rate"));
         dynamic_data* dd0 = dynamic_data_of (0);
@@ -9468,6 +9488,7 @@ gc_heap::init_semi_shared()
     mark_list_size = min (150*1024, max (8192, get_valid_segment_size()/(2*10*32)));
     g_mark_list = make_mark_list (mark_list_size*n_heaps);
 
+    min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
 #ifdef PARALLEL_MARK_LIST_SORT
     g_mark_list_copy = make_mark_list (mark_list_size*n_heaps);
     if (!g_mark_list_copy)
@@ -9547,6 +9568,8 @@ gc_heap::init_semi_shared()
         }
 #endif //BACKGROUND_GC
     }
+
+    memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
 
     ret = 1;
 
@@ -14595,6 +14618,38 @@ void gc_heap::free_list_info (int gen_num, const char* msg)
 #endif // BACKGROUND_GC && TRACE_GC
 }
 
+void gc_heap::update_collection_counts_for_no_gc()
+{
+    assert (settings.pause_mode == pause_no_gc);
+
+    settings.condemned_generation = max_generation;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+        g_heaps[i]->update_collection_counts();
+#else //MULTIPLE_HEAPS
+    update_collection_counts();
+#endif //MULTIPLE_HEAPS
+
+    full_gc_counts[gc_type_blocking]++;
+}
+
+BOOL gc_heap::should_proceed_with_gc()
+{
+    if (gc_heap::settings.pause_mode == pause_no_gc)
+    {
+        if (current_no_gc_region_info.started)
+        {
+            // The no_gc mode was already in progress yet we triggered another GC,
+            // this effectively exits the no_gc mode.
+            restore_data_for_no_gc();
+        }
+        else
+            return should_proceed_for_no_gc();
+    }
+
+    return TRUE;
+}
+
 //internal part of gc used by the serial and concurrent version
 void gc_heap::gc1()
 {
@@ -15111,6 +15166,428 @@ void gc_heap::gc1()
 #endif //MULTIPLE_HEAPS
 }
 
+void gc_heap::save_data_for_no_gc()
+{
+    current_no_gc_region_info.saved_pause_mode = settings.pause_mode;
+#ifdef MULTIPLE_HEAPS
+    // This is to affect heap balancing. 
+    for (int i = 0; i < n_heaps; i++)
+    {
+        current_no_gc_region_info.saved_gen0_min_size = dd_min_size (g_heaps[i]->dynamic_data_of (0));
+        dd_min_size (g_heaps[i]->dynamic_data_of (0)) = min_balance_threshold;
+        current_no_gc_region_info.saved_gen3_min_size = dd_min_size (g_heaps[i]->dynamic_data_of (max_generation + 1));
+        dd_min_size (g_heaps[i]->dynamic_data_of (max_generation + 1)) = 0;
+    }
+#endif //MULTIPLE_HEAPS
+}
+
+void gc_heap::restore_data_for_no_gc()
+{
+    gc_heap::settings.pause_mode = current_no_gc_region_info.saved_pause_mode;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        dd_min_size (g_heaps[i]->dynamic_data_of (0)) = current_no_gc_region_info.saved_gen0_min_size;
+        dd_min_size (g_heaps[i]->dynamic_data_of (max_generation + 1)) = current_no_gc_region_info.saved_gen3_min_size;
+    }
+#endif //MULTIPLE_HEAPS
+}
+
+start_no_gc_region_status gc_heap::prepare_for_no_gc_region (ULONGLONG total_size, 
+                                                             BOOL loh_size_known, 
+                                                             ULONGLONG loh_size, 
+                                                             BOOL disallow_full_blocking)
+{
+    if (current_no_gc_region_info.started)
+    {
+        return start_no_gc_in_progress;
+    }
+
+    start_no_gc_region_status status = start_no_gc_success;
+
+    save_data_for_no_gc();
+    settings.pause_mode = pause_no_gc;
+    current_no_gc_region_info.start_status = start_no_gc_success;
+    
+    size_t allocation_no_gc_loh = 0;
+    size_t allocation_no_gc_soh = 0;
+    size_t size_per_heap = 0;
+
+    if (loh_size_known)
+    {
+        allocation_no_gc_loh = (size_t)loh_size;
+        allocation_no_gc_soh = (size_t)(total_size - loh_size);
+    }
+    else
+    {
+        allocation_no_gc_soh = (size_t)total_size;
+        allocation_no_gc_loh = (size_t)total_size;
+    }
+
+    size_t soh_segment_size = get_valid_segment_size();
+
+    int num_heaps = 1;
+#ifdef MULTIPLE_HEAPS
+    num_heaps = n_heaps;
+#endif //MULTIPLE_HEAPS
+    size_t total_allowed_soh_allocation = (soh_segment_size - OS_PAGE_SIZE) * num_heaps;
+
+    if (allocation_no_gc_soh > total_allowed_soh_allocation)
+    {
+        status = start_no_gc_too_large;
+        goto done;
+    }
+
+    if (disallow_full_blocking)
+        current_no_gc_region_info.minimal_gc_p = TRUE;
+
+    if (allocation_no_gc_soh != 0)
+    {
+        current_no_gc_region_info.soh_allocation_size = (size_t)((float)allocation_no_gc_soh * 1.05);
+        //current_no_gc_region_info.soh_allocation_size = allocation_no_gc_soh;
+        size_per_heap = current_no_gc_region_info.soh_allocation_size;
+#ifdef MULTIPLE_HEAPS
+        size_per_heap /= n_heaps;
+        for (int i = 0; i < n_heaps; i++)
+        {
+            // due to heap balancing we need to allow some room before we even look to balance to another heap.
+            g_heaps[i]->soh_allocation_no_gc = min (Align (size_per_heap + min_balance_threshold, get_alignment_constant (TRUE)), (soh_segment_size - OS_PAGE_SIZE));
+        }
+#else //MULTIPLE_HEAPS
+        soh_allocation_no_gc = min (Align (size_per_heap, get_alignment_constant (TRUE)), (soh_segment_size - OS_PAGE_SIZE));
+#endif //MULTIPLE_HEAPS
+    }
+
+    if (allocation_no_gc_loh != 0)
+    {
+        current_no_gc_region_info.loh_allocation_size = (size_t)((float)allocation_no_gc_loh * 1.05);
+        size_per_heap = current_no_gc_region_info.loh_allocation_size;
+#ifdef MULTIPLE_HEAPS
+        size_per_heap /= n_heaps;
+        for (int i = 0; i < n_heaps; i++)
+            g_heaps[i]->loh_allocation_no_gc = Align (size_per_heap, get_alignment_constant (FALSE));
+#else //MULTIPLE_HEAPS
+        loh_allocation_no_gc = Align (size_per_heap, get_alignment_constant (FALSE));
+#endif //MULTIPLE_HEAPS
+    }
+
+done:
+    if (status != start_no_gc_success)
+        restore_data_for_no_gc();
+    return status;
+}
+
+void gc_heap::handle_failure_for_no_gc()
+{
+    gc_heap::restore_data_for_no_gc();
+    // sets current_no_gc_region_info.started to FALSE here.
+    memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
+}
+
+start_no_gc_region_status gc_heap::get_start_no_gc_region_status()
+{
+    return current_no_gc_region_info.start_status;
+}
+
+void gc_heap::record_gcs_during_no_gc()
+{
+    if (current_no_gc_region_info.started)
+    {
+        current_no_gc_region_info.num_gcs++;
+        if (is_induced (settings.reason))
+            current_no_gc_region_info.num_gcs_induced++;
+    }
+}
+
+BOOL gc_heap::find_loh_free_for_no_gc()
+{
+    allocator* loh_allocator = generation_allocator (generation_of (max_generation + 1));
+    size_t sz_list = loh_allocator->first_bucket_size();
+    size_t size = loh_allocation_no_gc;
+    for (unsigned int a_l_idx = 0; a_l_idx < loh_allocator->number_of_buckets(); a_l_idx++)
+    {
+        if ((size < sz_list) || (a_l_idx == (loh_allocator->number_of_buckets()-1)))
+        {
+            BYTE* free_list = loh_allocator->alloc_list_head_of (a_l_idx);
+            while (free_list)
+            {
+                size_t free_list_size = unused_array_size(free_list);
+
+                if (free_list_size > loh_allocation_no_gc)
+                {
+                    dprintf (3, ("free item %Ix(%Id) for no gc", (size_t)free_list, free_list_size));
+                    return TRUE;
+                }
+
+                free_list = free_list_slot (free_list); 
+            }
+        }
+        sz_list = sz_list * 2;
+    }
+
+    return FALSE;
+}
+
+BOOL gc_heap::find_loh_space_for_no_gc()
+{
+    saved_loh_segment_no_gc = 0;
+
+    if (find_loh_free_for_no_gc())
+        return TRUE;
+
+    heap_segment* seg = generation_allocation_segment (generation_of (max_generation + 1));
+
+    while (seg)
+    {
+        size_t remaining = heap_segment_reserved (seg) - heap_segment_allocated (seg);
+        if (remaining >= loh_allocation_no_gc)
+        {
+            saved_loh_segment_no_gc = seg;
+            break;
+        }
+        seg = heap_segment_next (seg);
+    }
+
+    if (!saved_loh_segment_no_gc && current_no_gc_region_info.minimal_gc_p)
+    {
+        // If no full GC is allowed, we try to get a new seg right away.
+        saved_loh_segment_no_gc = get_segment_for_loh (get_large_seg_size (loh_allocation_no_gc)
+#ifdef MULTIPLE_HEAPS
+                                                      , this
+#endif //MULTIPLE_HEAPS
+                                                      );
+    }
+
+    return (saved_loh_segment_no_gc != 0);
+}
+
+BOOL gc_heap::loh_allocated_for_no_gc()
+{
+    if (!saved_loh_segment_no_gc)
+        return FALSE;
+
+    heap_segment* seg = generation_allocation_segment (generation_of (max_generation + 1));
+    do 
+    {
+        if (seg == saved_loh_segment_no_gc)
+        {
+            return FALSE;
+        }
+        seg = heap_segment_next (seg);
+    } while (seg);
+
+    return TRUE;
+}
+
+BOOL gc_heap::commit_loh_for_no_gc (heap_segment* seg)
+{
+    BYTE* end_committed = heap_segment_allocated (seg) + loh_allocation_no_gc;
+    assert (end_committed <= heap_segment_reserved (seg));
+    return (grow_heap_segment (seg, end_committed));
+}
+
+void gc_heap::thread_no_gc_loh_segments()
+{
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        if (hp->loh_allocated_for_no_gc())
+        {
+            hp->thread_loh_segment (hp->saved_loh_segment_no_gc);
+            hp->saved_loh_segment_no_gc = 0;
+        }
+    }
+#else //MULTIPLE_HEAPS
+    if (loh_allocated_for_no_gc())
+    {
+        thread_loh_segment (saved_loh_segment_no_gc);
+        saved_loh_segment_no_gc = 0;
+    }
+#endif //MULTIPLE_HEAPS    
+}
+
+void gc_heap::set_loh_allocations_for_no_gc()
+{
+    if (current_no_gc_region_info.loh_allocation_size != 0)
+    {
+        dynamic_data* dd = dynamic_data_of (max_generation + 1);
+        dd_new_allocation (dd) = loh_allocation_no_gc;
+        dd_gc_new_allocation (dd) = dd_new_allocation (dd);
+    }
+}
+
+void gc_heap::set_soh_allocations_for_no_gc()
+{
+    if (current_no_gc_region_info.soh_allocation_size != 0)
+    {
+        dynamic_data* dd = dynamic_data_of (0);
+        dd_new_allocation (dd) = soh_allocation_no_gc;
+        dd_gc_new_allocation (dd) = dd_new_allocation (dd);
+#ifdef MULTIPLE_HEAPS
+        alloc_context_count = 0;
+#endif //MULTIPLE_HEAPS
+    }
+}
+
+void gc_heap::set_allocations_for_no_gc()
+{
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        hp->set_loh_allocations_for_no_gc();
+        hp->set_soh_allocations_for_no_gc();
+    }
+#else //MULTIPLE_HEAPS
+    set_loh_allocations_for_no_gc();
+    set_soh_allocations_for_no_gc();
+#endif //MULTIPLE_HEAPS
+}
+
+BOOL gc_heap::should_proceed_for_no_gc()
+{
+    BOOL gc_requested = FALSE;
+    BOOL loh_full_gc_requested = FALSE;
+    BOOL soh_full_gc_requested = FALSE;
+    BOOL no_gc_requested = FALSE;
+    BOOL get_new_loh_segments = FALSE;
+
+    if (current_no_gc_region_info.soh_allocation_size)
+    {
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+            if ((size_t)(heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated) < hp->soh_allocation_no_gc)
+            {
+                gc_requested = TRUE;
+                break;
+            }
+        }
+#else //MULTIPLE_HEAPS
+        if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - alloc_allocated) < soh_allocation_no_gc)
+            gc_requested = TRUE;
+#endif //MULTIPLE_HEAPS
+
+        if (!gc_requested)
+        {
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+                if (!(hp->grow_heap_segment (hp->ephemeral_heap_segment, (hp->alloc_allocated + hp->soh_allocation_no_gc))))
+                {
+                    soh_full_gc_requested = TRUE;
+                    break;
+                }
+            }
+#else //MULTIPLE_HEAPS
+            if (!grow_heap_segment (ephemeral_heap_segment, (alloc_allocated + soh_allocation_no_gc)))
+                soh_full_gc_requested = TRUE;
+#endif //MULTIPLE_HEAPS
+        }
+    }
+
+    if (!current_no_gc_region_info.minimal_gc_p && gc_requested)
+    {
+        soh_full_gc_requested = TRUE;
+    }
+
+    no_gc_requested = !(soh_full_gc_requested || gc_requested);
+
+    if (soh_full_gc_requested && current_no_gc_region_info.minimal_gc_p)
+    {
+        current_no_gc_region_info.start_status = start_no_gc_no_memory;
+        goto done;
+    }
+
+    if (!soh_full_gc_requested && current_no_gc_region_info.loh_allocation_size)
+    {
+        // Check to see if we have enough reserved space. 
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+            if (!hp->find_loh_space_for_no_gc())
+            {
+                loh_full_gc_requested = TRUE;
+                break;
+            }
+        }
+#else //MULTIPLE_HEAPS
+        if (!find_loh_space_for_no_gc())
+            loh_full_gc_requested = TRUE;
+#endif //MULTIPLE_HEAPS
+
+        // Check to see if we have committed space.
+        if (!loh_full_gc_requested)
+        {
+#ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+                if (hp->saved_loh_segment_no_gc &&!hp->commit_loh_for_no_gc (hp->saved_loh_segment_no_gc))
+                {
+                    loh_full_gc_requested = TRUE;
+                    break;
+                }
+            }
+#else //MULTIPLE_HEAPS
+            if (saved_loh_segment_no_gc && !commit_loh_for_no_gc (saved_loh_segment_no_gc))
+                loh_full_gc_requested = TRUE;
+#endif //MULTIPLE_HEAPS
+        }
+    }
+
+    if (loh_full_gc_requested || soh_full_gc_requested)
+    {
+        if (current_no_gc_region_info.minimal_gc_p)
+            current_no_gc_region_info.start_status = start_no_gc_no_memory;
+    }
+
+    no_gc_requested = !(loh_full_gc_requested || soh_full_gc_requested || gc_requested);
+
+    if (current_no_gc_region_info.start_status == start_no_gc_success)
+    {
+        if (no_gc_requested)
+            set_allocations_for_no_gc();
+    }
+
+done:
+
+    if ((current_no_gc_region_info.start_status == start_no_gc_success) && !no_gc_requested)
+        return TRUE;
+    else
+    {
+        // We are done with starting the no gc region.
+        current_no_gc_region_info.started = TRUE;
+        return FALSE;
+    }
+}
+
+end_no_gc_region_status gc_heap::end_no_gc_region()
+{
+    dprintf (1, ("end no gc called"));
+
+    end_no_gc_region_status status = end_no_gc_success;
+
+    if (!(current_no_gc_region_info.started))
+        status = end_no_gc_not_in_progress;
+    if (current_no_gc_region_info.num_gcs_induced)
+        status = end_no_gc_induced;
+    else if (current_no_gc_region_info.num_gcs)
+        status = end_no_gc_alloc_exceeded;
+
+    if (settings.pause_mode == pause_no_gc)
+        restore_data_for_no_gc();
+
+    // sets current_no_gc_region_info.started to FALSE here.
+    memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
+
+    return status;
+}
+
 //update counters
 void gc_heap::update_collection_counts ()
 {
@@ -15167,6 +15644,157 @@ void DACNotifyGcMarkEnd(int condemnedGeneration)
 }
 #endif // HEAP_ANALYZE
 
+BOOL gc_heap::expand_soh_with_minimal_gc()
+{
+    if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) >= soh_allocation_no_gc)
+        return TRUE;
+
+    heap_segment* new_seg = soh_get_segment_to_expand();
+    if (new_seg)
+    {
+        settings.promotion = TRUE;
+        settings.demotion = FALSE;
+        ephemeral_promotion = TRUE;
+        save_ephemeral_generation_starts();
+        size_t ephemeral_size = (heap_segment_allocated (ephemeral_heap_segment) - 
+                                generation_allocation_start (generation_of (max_generation - 1)));
+        heap_segment_next (ephemeral_heap_segment) = new_seg;
+        ephemeral_heap_segment = new_seg;
+        BYTE*  start = heap_segment_mem (ephemeral_heap_segment);
+
+        for (int i = (max_generation - 1); i >= 0; i--)
+        {
+            generation* gen = generation_of (i);
+            size_t gen_start_size = Align (min_obj_size);
+            make_generation (generation_table[i], ephemeral_heap_segment, start, 0);
+            generation_plan_allocation_start (gen) = start;
+            generation_plan_allocation_start_size (gen) = gen_start_size;
+            start += gen_start_size;
+        }
+        heap_segment_used (ephemeral_heap_segment) = start - plug_skew;
+        heap_segment_plan_allocated (ephemeral_heap_segment) = start;
+
+        fix_generation_bounds ((max_generation - 1), generation_of (0));
+
+        dd_gc_new_allocation (dynamic_data_of (max_generation)) -= ephemeral_size;
+        dd_new_allocation (dynamic_data_of (max_generation)) = dd_gc_new_allocation (dynamic_data_of (max_generation));
+
+        adjust_ephemeral_limits();
+        return TRUE;
+    }
+    else
+        return FALSE;
+}
+
+void gc_heap::allocate_for_no_gc_after_gc()
+{
+    if (current_no_gc_region_info.minimal_gc_p)
+        repair_allocation_contexts (TRUE);
+
+    if (current_no_gc_region_info.start_status != start_no_gc_no_memory)
+    {
+        if (current_no_gc_region_info.soh_allocation_size != 0)
+        {
+            if (((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) < soh_allocation_no_gc) ||
+                (!grow_heap_segment (ephemeral_heap_segment, (heap_segment_allocated (ephemeral_heap_segment) + soh_allocation_no_gc))))
+            {
+                current_no_gc_region_info.start_status = start_no_gc_no_memory;
+            }
+
+#ifdef MULTIPLE_HEAPS
+            if (!current_no_gc_region_info.minimal_gc_p &&
+                (current_no_gc_region_info.loh_allocation_size != 0))
+            {
+                gc_t_join.join(this, gc_join_after_commit_soh_no_gc);
+                if (gc_t_join.joined())
+                {
+                    gc_t_join.restart();
+                }
+            }
+#endif //MULTIPLE_HEAPS
+        }
+
+        if ((current_no_gc_region_info.start_status == start_no_gc_success) &&
+            !(current_no_gc_region_info.minimal_gc_p) && 
+            (current_no_gc_region_info.loh_allocation_size != 0))
+        {
+            gc_policy = policy_compact;
+            saved_loh_segment_no_gc = 0;
+
+            if (!find_loh_free_for_no_gc())
+            {
+                heap_segment* seg = generation_allocation_segment (generation_of (max_generation + 1));
+                BOOL found_seg_p = FALSE;
+                while (seg)
+                {
+                    if ((size_t)(heap_segment_reserved (seg) - heap_segment_allocated (seg)) >= loh_allocation_no_gc)
+                    {
+                        found_seg_p = TRUE;
+                        if (!commit_loh_for_no_gc (seg))
+                        {
+                            current_no_gc_region_info.start_status = start_no_gc_no_memory;
+                            break;
+                        }
+                    }
+                    seg = heap_segment_next (seg);
+                }
+
+                if (!found_seg_p)
+                    gc_policy = policy_expand;
+            }
+
+#ifdef MULTIPLE_HEAPS
+            gc_t_join.join(this, gc_join_expand_loh_no_gc);
+            if (gc_t_join.joined())
+            {
+                for (int i = 0; i < n_heaps; i++)
+                {
+                    gc_heap* hp = g_heaps[i];
+                    if (hp->gc_policy == policy_expand)
+                    {
+                        hp->saved_loh_segment_no_gc = get_segment_for_loh (get_large_seg_size (loh_allocation_no_gc), hp);
+                        if (!(hp->saved_loh_segment_no_gc))
+                            current_no_gc_region_info.start_status = start_no_gc_no_memory;
+                    }
+                }
+                gc_t_join.restart();
+            }
+#else //MULTIPLE_HEAPS
+            if (gc_policy == policy_expand)
+            {
+                saved_loh_segment_no_gc = get_segment_for_loh (get_large_seg_size (loh_allocation_no_gc));
+                if (!saved_loh_segment_no_gc)
+                    current_no_gc_region_info.start_status = start_no_gc_no_memory;
+            }
+#endif //MULTIPLE_HEAPS
+
+            if ((current_no_gc_region_info.start_status == start_no_gc_success) && saved_loh_segment_no_gc)
+            {
+                if (!commit_loh_for_no_gc (saved_loh_segment_no_gc))
+                {
+                    current_no_gc_region_info.start_status = start_no_gc_no_memory;
+                }                
+            }
+        }
+    }
+
+#ifdef MULTIPLE_HEAPS
+    gc_t_join.join(this, gc_join_final_no_gc);
+    if (gc_t_join.joined())
+    {
+#endif //MULTIPLE_HEAPS
+        if (current_no_gc_region_info.start_status == start_no_gc_success)
+        {
+            set_allocations_for_no_gc();
+            current_no_gc_region_info.started = TRUE;
+        }
+
+#ifdef MULTIPLE_HEAPS
+        gc_t_join.restart();
+    }
+#endif //MULTIPLE_HEAPS
+}
+
 int gc_heap::garbage_collect (int n)
 {
     //TODO BACKGROUND_GC remove these when ready
@@ -15181,6 +15809,36 @@ int gc_heap::garbage_collect (int n)
 #ifdef MULTIPLE_HEAPS
         clear_gen0_bricks();
 #endif //MULTIPLE_HEAPS
+
+        if ((settings.pause_mode == pause_no_gc) && current_no_gc_region_info.minimal_gc_p)
+        {
+#ifdef MULTIPLE_HEAPS
+            gc_t_join.join(this, gc_join_minimal_gc);
+            if (gc_t_join.joined())
+            {
+#endif //MULTIPLE_HEAPS
+
+#ifdef MULTIPLE_HEAPS
+                // this is serialized because we need to get a segment
+                for (int i = 0; i < n_heaps; i++)
+                {
+                    if (!(g_heaps[i]->expand_soh_with_minimal_gc()))
+                        current_no_gc_region_info.start_status = start_no_gc_no_memory;
+                }
+#else
+                if (!expand_soh_with_minimal_gc())
+                    current_no_gc_region_info.start_status = start_no_gc_no_memory;
+#endif //MULTIPLE_HEAPS
+
+                update_collection_counts_for_no_gc();
+
+#ifdef MULTIPLE_HEAPS
+                gc_t_join.restart();
+            }
+#endif //MULTIPLE_HEAPS
+
+            goto done;
+        }
 
 #ifdef BACKGROUND_GC
         if (recursive_gc_sync::background_running_p())
@@ -15294,6 +15952,8 @@ int gc_heap::garbage_collect (int n)
 
         STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10, 
                 "condemned generation num: %d\n", settings.condemned_generation);
+
+        record_gcs_during_no_gc();
 
         if (settings.condemned_generation > 1)
             settings.promotion = TRUE;
@@ -15580,6 +16240,10 @@ int gc_heap::garbage_collect (int n)
         allocation_running_amount = dd_new_allocation (dynamic_data_of (0));
         fgn_last_alloc = dd_new_allocation (dynamic_data_of (0));
 #endif //MULTIPLE_HEAPS
+
+done:
+        if (settings.pause_mode == pause_no_gc)
+            allocate_for_no_gc_after_gc();
     }
 
     //TODO BACKGROUND_GC remove these when ready
@@ -27924,9 +28588,18 @@ generation* gc_heap::expand_heap (int condemned_generation,
     assert (generation_plan_allocation_start (youngest_generation) <
             heap_segment_plan_allocated (ephemeral_heap_segment));
 
-    if (!use_bestfit)
+    if (settings.pause_mode == pause_no_gc)
     {
-        should_promote_ephemeral = dt_low_ephemeral_space_p (tuning_deciding_promote_ephemeral);
+        // We don't reuse for no gc, so the size used on the new eph seg is eph_size.
+        if ((size_t)(heap_segment_reserved (new_seg) - heap_segment_mem (new_seg)) < (eph_size + soh_allocation_no_gc))
+            should_promote_ephemeral = TRUE;
+    }
+    else
+    {
+        if (!use_bestfit)
+        {
+            should_promote_ephemeral = dt_low_ephemeral_space_p (tuning_deciding_promote_ephemeral);
+        }
     }
 
     if (should_promote_ephemeral)
@@ -29022,6 +29695,16 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
                      generation_plan_size (max_generation)));
             //no progress -> lock
             settings.should_lock_elevation = TRUE;
+        }
+    }
+
+    if (settings.pause_mode == pause_no_gc)
+    {
+        should_compact = TRUE;
+        if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_plan_allocated (ephemeral_heap_segment))
+            < soh_allocation_no_gc)
+        {
+            should_expand = TRUE;
         }
     }
 
@@ -33750,8 +34433,13 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
             BEGIN_TIMING(suspend_ee_during_log);
             GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_FOR_GC);
             END_TIMING(suspend_ee_during_log);
-            pGenGCHeap->settings.init_mechanisms();
+            gc_heap::proceed_with_gc_p = gc_heap::should_proceed_with_gc();
             gc_heap::disable_preemptive (current_thread, cooperative_mode);
+            if (gc_heap::proceed_with_gc_p)
+                pGenGCHeap->settings.init_mechanisms();
+            else
+                gc_heap::update_collection_counts_for_no_gc();
+
 #endif //!MULTIPLE_HEAPS
         }
 
@@ -33791,9 +34479,12 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 
         condemned_generation_number = GcCondemnedGeneration;
 #else
-        BEGIN_TIMING(gc_during_log);
-        pGenGCHeap->garbage_collect (condemned_generation_number);
-        END_TIMING(gc_during_log);
+        if (gc_heap::proceed_with_gc_p)
+        {
+            BEGIN_TIMING(gc_during_log);
+            pGenGCHeap->garbage_collect (condemned_generation_number);
+            END_TIMING(gc_during_log);
+        }
 #endif //MULTIPLE_HEAPS
 
 #ifdef TRACE_GC
@@ -34027,6 +34718,9 @@ int GCHeap::GetGcLatencyMode()
 
 int GCHeap::SetGcLatencyMode (int newLatencyMode)
 {
+    if (gc_heap::settings.pause_mode == pause_no_gc)
+        return (int)set_pause_mode_no_gc;
+
     gc_pause_mode new_mode = (gc_pause_mode)newLatencyMode;
 
     if (new_mode == pause_low_latency)
@@ -34124,6 +34818,30 @@ int GCHeap::WaitForFullGCComplete(int millisecondsTimeout)
     int result = gc_heap::full_gc_wait (&(pGenGCHeap->full_gc_end_event), millisecondsTimeout);
     dprintf (2, ("WFGE: End wait"));
     return result;
+}
+
+int GCHeap::StartNoGCRegion(ULONGLONG totalSize, BOOL lohSizeKnown, ULONGLONG lohSize, BOOL disallowFullBlockingGC)
+{
+    AllocLockHolder lh;
+
+    dprintf (1, ("begin no gc called"));
+    start_no_gc_region_status status = gc_heap::prepare_for_no_gc_region (totalSize, lohSizeKnown, lohSize, disallowFullBlockingGC);
+    if (status == start_no_gc_success)
+    {
+        GarbageCollect (max_generation);
+        status = gc_heap::get_start_no_gc_region_status();
+    }
+
+    if (status != start_no_gc_success)
+        gc_heap::handle_failure_for_no_gc();
+
+    return (int)status;
+}
+
+int GCHeap::EndNoGCRegion()
+{
+    AllocLockHolder lh;
+    return (int)gc_heap::end_no_gc_region();
 }
 
 void GCHeap::PublishObject (BYTE* Obj)
