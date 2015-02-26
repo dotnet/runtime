@@ -17,6 +17,7 @@
 #include <glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object-internals.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2254,16 +2255,20 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 void
 mono_decimal_init_single (MonoDecimal *_this, float value)
 {
-	if (VarDecFromR4 (value, _this) == MONO_DECIMAL_OVERFLOW)
-		mono_raise_exception (mono_get_exception_overflow ());
+	if (VarDecFromR4 (value, _this) == MONO_DECIMAL_OVERFLOW) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return;
+	}
 	_this->reserved = 0;
 }
 
 void
 mono_decimal_init_double (MonoDecimal *_this, double value)
 {
-	if (VarDecFromR8 (value, _this) == MONO_DECIMAL_OVERFLOW)
-		mono_raise_exception (mono_get_exception_overflow ());
+	if (VarDecFromR8 (value, _this) == MONO_DECIMAL_OVERFLOW) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return;
+	}
 	_this->reserved = 0;
 }
 
@@ -2312,8 +2317,10 @@ mono_decimal_multiply (MonoDecimal *d1, MonoDecimal *d2)
 	MonoDecimal decRes;
 
 	MonoDecimalStatus status = VarDecMul(d1, d2, &decRes);
-	if (status != MONO_DECIMAL_OK)
-		mono_raise_exception (mono_get_exception_overflow ());
+	if (status != MONO_DECIMAL_OK) {
+		mono_set_pending_exception (mono_get_exception_overflow ());
+		return;
+	}
 
 	COPYDEC(*d1, decRes);
 	d1->reserved = 0;
@@ -2327,8 +2334,10 @@ mono_decimal_round (MonoDecimal *d, int32_t decimals)
 	MonoDecimal decRes;
 	
 	// GC is only triggered for throwing, no need to protect result 
-	if (decimals < 0 || decimals > 28)
-		mono_raise_exception (mono_get_exception_argument_out_of_range ("d"));
+	if (decimals < 0 || decimals > 28) {
+		mono_set_pending_exception (mono_get_exception_argument_out_of_range ("d"));
+		return;
+	}
 
 	VarDecRound(d, decimals, &decRes);
 
@@ -2379,8 +2388,7 @@ mono_decimal_to_int32 (MonoDecimal d)
 		}
 	}
 	
-	mono_raise_exception (mono_get_exception_overflow ());
-	// Not reachable
+	mono_set_pending_exception (mono_get_exception_overflow ());
 	return 0;
 }
 
@@ -2467,8 +2475,10 @@ mono_decimal_addsub (MonoDecimal *left, MonoDecimal *right, uint8_t sign)
 				// The addition carried above 96 bits.  Divide the result by 10,
 				// dropping the scale factor.
 				// 
-				if (DECIMAL_SCALE(result) == 0)
-					mono_raise_exception (mono_get_exception_overflow ());
+				if (DECIMAL_SCALE(result) == 0) {
+					mono_set_pending_exception (mono_get_exception_overflow ());
+					return;
+				}
 				DECIMAL_SCALE(result)--;
 
 				sdlTmp.u.Lo = DECIMAL_HI32(result);
@@ -2653,8 +2663,10 @@ mono_decimal_addsub (MonoDecimal *left, MonoDecimal *right, uint8_t sign)
 			num[1] = DECIMAL_MID32(result);
 			num[2] = DECIMAL_HI32(result);
 			DECIMAL_SCALE(result) = (uint8_t)ScaleResult(num, hi_prod, DECIMAL_SCALE(result));
-			if (DECIMAL_SCALE(result) == (uint8_t)-1)
-				mono_raise_exception (mono_get_exception_overflow ());
+			if (DECIMAL_SCALE(result) == (uint8_t)-1) {
+				mono_set_pending_exception (mono_get_exception_overflow ());
+				return;
+			}
 
 			DECIMAL_LO32(result) = num[0];
 			DECIMAL_MID32(result) = num[1];
@@ -2686,8 +2698,10 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 	if (divisor[1] == 0 && divisor[2] == 0) {
 		// Divisor is only 32 bits.  Easy divide.
 		//
-		if (divisor[0] == 0)
-			mono_raise_exception (mono_get_exception_divide_by_zero ());
+		if (divisor[0] == 0) {
+			mono_set_pending_exception (mono_get_exception_divide_by_zero ());
+			return;
+		}
 
 		quo[0] = DECIMAL_LO32(*left);
 		quo[1] = DECIMAL_MID32(*left);
@@ -2732,8 +2746,10 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 							   (tmp > divisor[0] || (quo[0] & 1)))) {
 				RoundUp:
 					if (!Add32To96(quo, 1)) {
-						if (scale == 0) 
-							mono_raise_exception (mono_get_exception_overflow ());
+						if (scale == 0) {
+							mono_set_pending_exception (mono_get_exception_overflow ());
+							return;
+						}
 						scale--;
 						OverflowUnscale(quo, TRUE);
 						break;
@@ -2742,23 +2758,28 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 				break;
 			}
 
-			if (cur_scale < 0) 
-				mono_raise_exception (mono_get_exception_overflow ());
+			if (cur_scale < 0) {
+				mono_set_pending_exception (mono_get_exception_overflow ());
+				return;
+			}
 
 		HaveScale:
 			pwr = power10[cur_scale];
 			scale += cur_scale;
 
-			if (IncreaseScale(quo, pwr) != 0) 
-				mono_raise_exception (mono_get_exception_overflow ());
-
+			if (IncreaseScale(quo, pwr) != 0) {
+				mono_set_pending_exception (mono_get_exception_overflow ());
+				return;
+			}
 
 			sdlTmp.int64 = DivMod64by32(UInt32x32To64(rem[0], pwr), divisor[0]);
 			rem[0] = sdlTmp.u.Hi;
 
 			if (!Add32To96(quo, sdlTmp.u.Lo)) {
-				if (scale == 0)
-					mono_raise_exception (mono_get_exception_overflow ());					
+				if (scale == 0) {
+					mono_set_pending_exception (mono_get_exception_overflow ());
+					return;
+				}
 				scale--;
 				OverflowUnscale(quo, (rem[0] != 0));
 				break;
@@ -2853,22 +2874,28 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 					break;
 				}
 
-				if (cur_scale < 0) 
-					mono_raise_exception (mono_get_exception_overflow ());
+				if (cur_scale < 0) {
+					mono_set_pending_exception (mono_get_exception_overflow ());
+					return;
+				}
 
 			HaveScale64:
 				pwr = power10[cur_scale];
 				scale += cur_scale;
 
-				if (IncreaseScale(quo, pwr) != 0)
-					mono_raise_exception (mono_get_exception_overflow ());
+				if (IncreaseScale(quo, pwr) != 0) {
+					mono_set_pending_exception (mono_get_exception_overflow ());
+					return;
+				}
 				
 				rem[2] = 0;  // rem is 64 bits, IncreaseScale uses 96
 				IncreaseScale(rem, pwr);
 				tmp = Div96By64(rem, sdlDivisor);
 				if (!Add32To96(quo, tmp)) {
-					if (scale == 0) 
-						mono_raise_exception (mono_get_exception_overflow ());
+					if (scale == 0) {
+						mono_set_pending_exception (mono_get_exception_overflow ());
+						return;
+					}
 					scale--;
 					OverflowUnscale(quo, (rem[0] != 0 || rem[1] != 0));
 					break;
@@ -2928,21 +2955,27 @@ mono_decimal_divide (MonoDecimal *left, MonoDecimal *right)
 					break;
 				}
 
-				if (cur_scale < 0) 
-					mono_raise_exception (mono_get_exception_overflow ());
+				if (cur_scale < 0) {
+					mono_set_pending_exception (mono_get_exception_overflow ());
+					return;
+				}
 				
 			HaveScale96:
 				pwr = power10[cur_scale];
 				scale += cur_scale;
 
-				if (IncreaseScale(quo, pwr) != 0) 
-					mono_raise_exception (mono_get_exception_overflow ());
-				
+				if (IncreaseScale(quo, pwr) != 0) {
+					mono_set_pending_exception (mono_get_exception_overflow ());
+					return;
+				}
+
 				rem[3] = IncreaseScale(rem, pwr);
 				tmp = Div128By96(rem, divisor);
 				if (!Add32To96(quo, tmp)) {
-					if (scale == 0)
-						mono_raise_exception (mono_get_exception_overflow ());
+					if (scale == 0) {
+						mono_set_pending_exception (mono_get_exception_overflow ());
+						return;
+					}
 					
 					scale--;
 					OverflowUnscale(quo, (rem[0] != 0 || rem[1] != 0 || rem[2] != 0 || rem[3] != 0));

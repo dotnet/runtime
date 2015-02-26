@@ -792,10 +792,12 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 
 	*error=ERROR_SUCCESS;
 
-	MONO_CHECK_ARG_NULL (dest);
+	MONO_CHECK_ARG_NULL (dest, 0);
 
-	if (dest_offset > mono_array_length (dest) - count)
-		mono_raise_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
+	if (dest_offset > mono_array_length (dest) - count) {
+		mono_set_pending_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
+		return 0;
+	}
 
 	buffer = mono_array_addr (dest, guchar, dest_offset);
 	result = ReadFile (handle, buffer, count, &n, NULL);
@@ -819,10 +821,12 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 
 	*error=ERROR_SUCCESS;
 
-	MONO_CHECK_ARG_NULL (src);
+	MONO_CHECK_ARG_NULL (src, 0);
 	
-	if (src_offset > mono_array_length (src) - count)
-		mono_raise_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
+	if (src_offset > mono_array_length (src) - count) {
+		mono_set_pending_exception (mono_get_exception_argument ("array", "array too small. numBytes/offset wrong."));
+		return 0;
+	}
 	
 	buffer = mono_array_addr (src, guchar, src_offset);
 	result = WriteFile (handle, buffer, count, &n, NULL);
