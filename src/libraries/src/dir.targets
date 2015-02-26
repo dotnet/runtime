@@ -15,6 +15,22 @@
      <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
   </PropertyGroup>
 
+  <!--
+    Limit the assembly resolution to just explicit locations.
+    Don't search anything machine-wide or build-order dependent.
+   -->
+  <PropertyGroup>
+    <AssemblySearchPaths>{HintPathFromItem};{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+
+  <!--
+    When targeting an explicit platform other than the default,
+    also allow the target framework directory.
+  -->
+  <PropertyGroup Condition="'$(TargetingDefaultPlatform)' != 'true'">
+    <AssemblySearchPaths>$(AssemblySearchPaths);{TargetFrameworkDirectory}</AssemblySearchPaths>
+  </PropertyGroup>
+
   <!-- Setup the default target for projects not already explicitly targeting another platform -->
   <PropertyGroup Condition="'$(TargetingDefaultPlatform)' == 'true'">
     <!-- Setting a default portable profile, although nothing should resolve from there as we want to use the pacakge refs -->
@@ -24,18 +40,6 @@
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
     <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
-
-    <AssemblySearchPaths>
-      {HintPathFromItem};
-      $(OutDir);
-      {RawFileName};
-    </AssemblySearchPaths>
-    <!-- For our projects we don't want to resolve from the usual paths for now only hint paths and output directory 
-      {CandidateAssemblyFiles};
-      $(ReferencePath);
-      {TargetFrameworkDirectory};
-      {Registry:$(FrameworkRegistryBase),$(TargetFrameworkVersion),$(AssemblyFoldersSuffix)$(AssemblyFoldersExConditions)};
-    -->
   </PropertyGroup>
 
 
