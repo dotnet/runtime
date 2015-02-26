@@ -12,16 +12,6 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    void ExternalMethodFixupPatchLabel()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void ExternalMethodFixupStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-    
     void GenericPInvokeCalliHelper()
     {
         PORTABILITY_ASSERT("Implement for PAL");
@@ -48,16 +38,6 @@ extern "C"
     }
     
     void VarargPInvokeStub_RetBuffArg()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void VirtualMethodFixupPatchLabel()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void VirtualMethodFixupStub()
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
@@ -96,16 +76,4 @@ extern "C"
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
-
-#ifdef FEATURE_PREJIT
-    void StubDispatchFixupStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-#endif    
-
-    void StubDispatchFixupPatchLabel()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }    
 };
