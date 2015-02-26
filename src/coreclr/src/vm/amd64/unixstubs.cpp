@@ -11,11 +11,6 @@ extern "C"
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
-    
-    void ErectWriteBarrier_ASM(Object** dst, Object* ref)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
 
     void ExternalMethodFixupPatchLabel()
     {
