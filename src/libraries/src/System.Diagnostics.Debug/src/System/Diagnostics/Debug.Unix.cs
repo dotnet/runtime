@@ -24,12 +24,6 @@ namespace System.Diagnostics
                 throw new NotImplementedException();
             }
 
-            public void WriteLineCore(string message)
-            {
-                message += Environment.NewLine;
-                Write(message);
-            }
-
             public void WriteCore(string message)
             {
                 // We don't want to write UTF-16 to standard error.  Ideally we would transcode this
