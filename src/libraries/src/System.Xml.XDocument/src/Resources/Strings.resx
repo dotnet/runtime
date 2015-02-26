@@ -153,6 +153,9 @@
   <data name="Argument_XObjectValue" xml:space="preserve">
     <value>An XObject cannot be used as a value.</value>
   </data>
+  <data name="InvalidOperation_DeserializeInstance" xml:space="preserve">
+    <value>This instance cannot be deserialized.</value>
+  </data>
   <data name="InvalidOperation_DocumentStructure" xml:space="preserve">
     <value>This operation would create an incorrectly structured document.</value>
   </data>

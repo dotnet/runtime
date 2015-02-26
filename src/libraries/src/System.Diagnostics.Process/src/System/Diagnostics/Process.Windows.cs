@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -519,35 +520,96 @@ namespace System.Diagnostics
                     if (workingDirectory == string.Empty)
                         workingDirectory = Directory.GetCurrentDirectory();
 
-                    try { }
-                    finally
+                    if (startInfo.UserName.Length != 0)
                     {
-                        retVal = Interop.mincore.CreateProcess(
-                                null,                // we don't need this since all the info is in commandLine
-                                commandLine,         // pointer to the command line string
-                                unused_SecAttrs, // address to process security attributes, we don't need to inherit the handle
-                                unused_SecAttrs, // address to thread security attributes.
-                                true,                // handle inheritance flag
-                                creationFlags,       // creation flags
-                                environmentPtr,      // pointer to new environment block
-                                workingDirectory,    // pointer to current directory name
-                                startupInfo,         // pointer to STARTUPINFO
-                                processInfo      // pointer to PROCESS_INFORMATION
-                            );
-                        if (!retVal)
-                            errorCode = Marshal.GetLastWin32Error();
-                        if (processInfo.hProcess != (IntPtr)0 && processInfo.hProcess != (IntPtr)Interop.INVALID_HANDLE_VALUE)
-                            procSH.InitialSetHandle(processInfo.hProcess);
-                        if (processInfo.hThread != (IntPtr)0 && processInfo.hThread != (IntPtr)Interop.INVALID_HANDLE_VALUE)
-                            threadSH.InitialSetHandle(processInfo.hThread);
-                    }
-                    if (!retVal)
-                    {
-                        if (errorCode == Interop.ERROR_BAD_EXE_FORMAT || errorCode == Interop.ERROR_EXE_MACHINE_TYPE_MISMATCH)
+                        Interop.LogonFlags logonFlags = (Interop.LogonFlags)0;
+                        if (startInfo.LoadUserProfile)
                         {
-                            throw new Win32Exception(errorCode, SR.InvalidApplication);
+                            logonFlags = Interop.LogonFlags.LOGON_WITH_PROFILE;
                         }
-                        throw new Win32Exception(errorCode);
+
+                        IntPtr password = IntPtr.Zero;
+                        try
+                        {
+                            if (startInfo.Password == null)
+                            {
+                                password = Marshal.StringToCoTaskMemUni(String.Empty);
+                            }
+                            else
+                            {
+                                password = SecureStringMarshal.SecureStringToCoTaskMemUnicode(startInfo.Password);
+                            }
+
+                            try { }
+                            finally
+                            {
+                                retVal = Interop.mincore.CreateProcessWithLogonW(
+                                        startInfo.UserName,
+                                        startInfo.Domain,
+                                        password,
+                                        logonFlags,
+                                        null,            // we don't need this since all the info is in commandLine
+                                        commandLine,
+                                        creationFlags,
+                                        environmentPtr,
+                                        workingDirectory,
+                                        startupInfo,        // pointer to STARTUPINFO
+                                        processInfo         // pointer to PROCESS_INFORMATION
+                                    );
+                                if (!retVal)
+                                    errorCode = Marshal.GetLastWin32Error();
+                                if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != (IntPtr)Interop.INVALID_HANDLE_VALUE)
+                                    procSH.InitialSetHandle(processInfo.hProcess);
+                                if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != (IntPtr)Interop.INVALID_HANDLE_VALUE)
+                                    threadSH.InitialSetHandle(processInfo.hThread);
+                            }
+                            if (!retVal)
+                            {
+                                if (errorCode == Interop.ERROR_BAD_EXE_FORMAT || errorCode == Interop.ERROR_EXE_MACHINE_TYPE_MISMATCH)
+                                    throw new Win32Exception(errorCode, SR.InvalidApplication);
+
+                                throw new Win32Exception(errorCode);
+                            }
+                        }
+                        finally
+                        {
+                            if (password != IntPtr.Zero)
+                            {
+                                Marshal.ZeroFreeCoTaskMemUnicode(password);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        try { }
+                        finally
+                        {
+                            retVal = Interop.mincore.CreateProcess(
+                                    null,                // we don't need this since all the info is in commandLine
+                                    commandLine,         // pointer to the command line string
+                                    unused_SecAttrs, // address to process security attributes, we don't need to inheriat the handle
+                                    unused_SecAttrs, // address to thread security attributes.
+                                    true,                // handle inheritance flag
+                                    creationFlags,       // creation flags
+                                    environmentPtr,      // pointer to new environment block
+                                    workingDirectory,    // pointer to current directory name
+                                    startupInfo,         // pointer to STARTUPINFO
+                                    processInfo      // pointer to PROCESS_INFORMATION
+                                );
+                            if (!retVal)
+                                errorCode = Marshal.GetLastWin32Error();
+                            if (processInfo.hProcess != (IntPtr)0 && processInfo.hProcess != (IntPtr)Interop.INVALID_HANDLE_VALUE)
+                                procSH.InitialSetHandle(processInfo.hProcess);
+                            if (processInfo.hThread != (IntPtr)0 && processInfo.hThread != (IntPtr)Interop.INVALID_HANDLE_VALUE)
+                                threadSH.InitialSetHandle(processInfo.hThread);
+                        }
+                        if (!retVal)
+                        {
+                            if (errorCode == Interop.ERROR_BAD_EXE_FORMAT || errorCode == Interop.ERROR_EXE_MACHINE_TYPE_MISMATCH)
+                                throw new Win32Exception(errorCode, SR.InvalidApplication);
+
+                            throw new Win32Exception(errorCode);
+                        }
                     }
                 }
                 finally

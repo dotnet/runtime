@@ -420,6 +420,22 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-console-l1-1-0.dll")]
         internal extern static uint GetConsoleOutputCP();
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, BestFitMapping = false)]
+        internal static extern bool CreateProcessWithLogonW(
+            string userName,
+            string domain,
+            IntPtr password,
+            LogonFlags logonFlags,
+            [MarshalAs(UnmanagedType.LPTStr)]            
+            string appName,
+            StringBuilder cmdLine,
+            int creationFlags,
+            IntPtr environmentBlock,
+            [MarshalAs(UnmanagedType.LPTStr)]           
+            string lpCurrentDirectory,                  // LPCTSTR            
+            STARTUPINFO lpStartupInfo,
+            PROCESS_INFORMATION lpProcessInformation);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -452,5 +468,12 @@ internal static partial class Interop
     {
         public int LowPart;
         public int HighPart;
+    }
+
+    [Flags]
+    internal enum LogonFlags
+    {
+        LOGON_WITH_PROFILE = 0x00000001,
+        LOGON_NETCREDENTIALS_ONLY = 0x00000002
     }
 }
