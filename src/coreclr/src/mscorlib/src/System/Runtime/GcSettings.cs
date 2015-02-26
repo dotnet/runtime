@@ -25,11 +25,18 @@ namespace System.Runtime {
         Batch = 0, 
         Interactive = 1,
         LowLatency = 2,
-        SustainedLowLatency = 3
+        SustainedLowLatency = 3,
+        NoGCRegion = 4
     }
 
     public static class GCSettings 
     {
+        enum SetLatencyModeStatus
+        {
+            Succeeded = 0,
+            NoGCInProgress = 1 // NoGCRegion is in progress, can't change pause mode.
+        };
+
         public static GCLatencyMode LatencyMode
         {
             [System.Security.SecuritySafeCritical]  // auto-generated
@@ -51,7 +58,8 @@ namespace System.Runtime {
                 }
                 Contract.EndContractBlock();
 
-                GC.SetGCLatencyMode((int)value);
+                if (GC.SetGCLatencyMode((int)value) == (int)SetLatencyModeStatus.NoGCInProgress)
+                    throw new InvalidOperationException("The NoGCRegion mode is in progress. End it and then set a different mode.");
             }
         }
 

@@ -471,7 +471,8 @@ enum gc_pause_mode
     pause_interactive = 1,     //We are running an interactive app
     pause_low_latency = 2,     //short pauses are essential
     //avoid long pauses from blocking full GCs unless running out of memory
-    pause_sustained_low_latency = 3
+    pause_sustained_low_latency = 3,
+    pause_no_gc = 4
 };
 
 enum gc_loh_compaction_mode
@@ -484,7 +485,7 @@ enum gc_loh_compaction_mode
 enum set_pause_mode_status
 {
     set_pause_mode_success = 0,
-    // for future error status.
+    set_pause_mode_no_gc = 1 // NoGCRegion is in progress, can't change pause mode.
 };
 
 enum gc_tuning_point
@@ -565,6 +566,7 @@ public:
     int  gen0_reduction_count;
     BOOL should_lock_elevation;
     int elevation_locked_count;
+    BOOL minimal_gc;
     gc_reason reason;
     gc_pause_mode pause_mode;
     BOOL found_finalizers;
@@ -1090,6 +1092,20 @@ struct snoop_stats_data
 };
 #endif //SNOOP_STATS
 
+struct no_gc_region_info
+{
+    size_t soh_allocation_size;
+    size_t loh_allocation_size;
+    size_t started;
+    size_t num_gcs;
+    size_t num_gcs_induced;
+    start_no_gc_region_status start_status;
+    gc_pause_mode saved_pause_mode;
+    size_t saved_gen0_min_size;
+    size_t saved_gen3_min_size;
+    BOOL minimal_gc_p;
+};
+
 //class definition of the internal class
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 extern void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
@@ -1261,6 +1277,9 @@ public:
     PER_HEAP
     void do_post_gc();
 
+    PER_HEAP
+    BOOL expand_soh_with_minimal_gc();
+
     // EE is always suspended when this method is called.
     // returning FALSE means we actually didn't do a GC. This happens
     // when we figured that we needed to do a BGC.
@@ -1340,6 +1359,72 @@ protected:
     // synchronized
     PER_HEAP
     void gc1();
+
+    PER_HEAP_ISOLATED
+    void save_data_for_no_gc();
+
+    PER_HEAP_ISOLATED
+    void restore_data_for_no_gc();
+
+    PER_HEAP_ISOLATED
+    void update_collection_counts_for_no_gc();
+
+    PER_HEAP_ISOLATED
+    BOOL should_proceed_with_gc();
+
+    PER_HEAP_ISOLATED
+    void record_gcs_during_no_gc();
+
+    PER_HEAP
+    BOOL find_loh_free_for_no_gc();
+
+    PER_HEAP
+    BOOL find_loh_space_for_no_gc();
+
+    PER_HEAP
+    BOOL commit_loh_for_no_gc (heap_segment* seg);
+
+    PER_HEAP_ISOLATED
+    start_no_gc_region_status prepare_for_no_gc_region (ULONGLONG total_size, 
+                                                        BOOL loh_size_known, 
+                                                        ULONGLONG loh_size, 
+                                                        BOOL disallow_full_blocking);
+
+    PER_HEAP
+    BOOL loh_allocated_for_no_gc();
+
+    PER_HEAP_ISOLATED
+    void release_no_gc_loh_segments();    
+
+    PER_HEAP_ISOLATED
+    void thread_no_gc_loh_segments();
+
+    PER_HEAP
+    void allocate_for_no_gc_after_gc();
+
+    PER_HEAP
+    void set_loh_allocations_for_no_gc();
+
+    PER_HEAP
+    void set_soh_allocations_for_no_gc();
+
+    PER_HEAP
+    void prepare_for_no_gc_after_gc();
+
+    PER_HEAP_ISOLATED
+    void set_allocations_for_no_gc();
+
+    PER_HEAP_ISOLATED
+    BOOL should_proceed_for_no_gc();
+
+    PER_HEAP_ISOLATED
+    start_no_gc_region_status get_start_no_gc_region_status();
+
+    PER_HEAP_ISOLATED
+    end_no_gc_region_status end_no_gc_region();
+
+    PER_HEAP_ISOLATED
+    void handle_failure_for_no_gc();
 
     PER_HEAP
     void fire_etw_allocation_event (size_t allocation_amount, int gen_number, BYTE* object_address);
@@ -2800,6 +2885,11 @@ public:
 
     PER_HEAP
     heap_segment* new_heap_segment;
+
+#define alloc_quantum_balance_units (16)
+
+    PER_HEAP_ISOLATED
+    size_t min_balance_threshold;
 #else //MULTIPLE_HEAPS
 
     PER_HEAP
@@ -3203,6 +3293,21 @@ protected:
 
     PER_HEAP
     size_t alloc_contexts_used;
+
+    PER_HEAP_ISOLATED
+    no_gc_region_info current_no_gc_region_info;
+
+    PER_HEAP
+    size_t soh_allocation_no_gc;
+
+    PER_HEAP
+    size_t loh_allocation_no_gc;
+
+    PER_HEAP
+    heap_segment* saved_loh_segment_no_gc;
+
+    PER_HEAP_ISOLATED
+    BOOL proceed_with_gc_p;
 
 #define youngest_generation (generation_of (0))
 #define large_object_generation (generation_of (max_generation+1))
