@@ -99,6 +99,7 @@
   <ItemGroup>
     <Reference Include="System.Collections.Immutable">
       <HintPath>$(PackagesDir)\System.Collections.Immutable.1.1.33-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <Private>true</Private>
     </Reference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
