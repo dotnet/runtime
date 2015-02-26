@@ -223,12 +223,12 @@ namespace System.Diagnostics
                     throw new Win32Exception(); // match Windows exception
                 }
 
-                long bits = 0;
+                ulong bits = 0;
                 int maxCpu = IntPtr.Size == 4 ? 32 : 64;
                 for (int cpu = 0; cpu < maxCpu; cpu++)
                 {
                     if (Interop.libc.CPU_ISSET(cpu, &set))
-                        bits |= (1 << cpu);
+                        bits |= (1u << cpu);
                 }
                 return (IntPtr)bits;
             }
