@@ -185,6 +185,12 @@ public:
     static FCDECL1(void,    ReRegisterForFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
     
+    static 
+    int QCALLTYPE StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC);
+
+    static 
+    int QCALLTYPE EndNoGCRegion();
+
     static
     void QCALLTYPE _AddMemoryPressure(UINT64 bytesAllocated);
     
