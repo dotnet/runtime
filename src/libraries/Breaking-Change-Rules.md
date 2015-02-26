@@ -181,7 +181,7 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 &#10003; **Allowed**
 * Adding `params` to a parameter
 
-* Removing `readonly` from a field
+* Removing `readonly` from a field, unless the static type of the field is a mutable value type
 
 &#10007; **Disallowed**
 * Adding `readonly` to a field
