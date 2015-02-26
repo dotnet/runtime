@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -1126,6 +1127,24 @@ namespace System.Diagnostics
                 enc = new UTF8Encoding(false);
             }
             return enc;
+        }
+
+        public static Process Start(string fileName, string userName, SecureString password, string domain)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
+            startInfo.UserName = userName;
+            startInfo.Password = password;
+            startInfo.Domain = domain;
+            return Start(startInfo);
+        }
+
+        public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);
+            startInfo.UserName = userName;
+            startInfo.Password = password;
+            startInfo.Domain = domain;
+            return Start(startInfo);
         }
 
         /// <devdoc>
