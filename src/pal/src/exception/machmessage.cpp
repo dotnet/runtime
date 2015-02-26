@@ -26,8 +26,6 @@ Abstract:
 
 #if HAVE_MACH_EXCEPTIONS
 
-SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
-
 // The vast majority of Mach calls we make in this module are critical: we cannot recover from failures of
 // these methods (principally because we're handling hardware exceptions in the context of a single dedicated
 // handler thread). The following macro encapsulates checking the return code from Mach methods (we always
