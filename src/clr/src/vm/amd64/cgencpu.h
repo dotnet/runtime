@@ -56,10 +56,8 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 //#define HAS_REMOTING_PRECODE                  1    // TODO: Implement
-#if !defined(__APPLE__)
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1
-#endif
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
 #define HAS_THISPTR_RETBUF_PRECODE              1
