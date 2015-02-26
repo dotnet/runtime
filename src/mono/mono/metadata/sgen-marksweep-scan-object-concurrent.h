@@ -39,7 +39,7 @@ extern guint64 stat_scan_object_called_major;
 		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {		\
 			PREFETCH_READ (__old);			\
-			major_copy_or_mark_object_with_evacuation_concurrent ((ptr), __old, queue); \
+			major_copy_or_mark_object_concurrent ((ptr), __old, queue); \
 		} else {						\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
 				sgen_add_to_global_remset ((ptr), __old); \
@@ -49,7 +49,7 @@ extern guint64 stat_scan_object_called_major;
 /* FIXME: Unify this with optimized code in sgen-marksweep.c. */
 
 static void
-major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent_anywhere (char *start, mword desc, SgenGrayQueue *queue)
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
@@ -65,6 +65,19 @@ major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *qu
 
 	SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP;
 	HEAVY_STAT (++stat_scan_object_called_major);
+}
+
+static void
+major_scan_object_no_mark_concurrent_start_finish (char *start, mword desc, SgenGrayQueue *queue)
+{
+	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
+}
+
+static void
+major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *queue)
+{
+	SGEN_ASSERT (0, !sgen_ptr_in_nursery (start), "Why are we scanning nursery objects in the concurrent collector?");
+	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
 }
 
 static void

@@ -2700,9 +2700,9 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 		g_assert (major_collector.is_concurrent);
 		concurrent_collection_in_progress = TRUE;
 
-		object_ops = &major_collector.major_concurrent_ops;
+		object_ops = &major_collector.major_ops_concurrent_start;
 	} else {
-		object_ops = &major_collector.major_ops;
+		object_ops = &major_collector.major_ops_serial;
 	}
 
 	reset_pinned_from_failed_allocation ();
@@ -2737,7 +2737,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	TV_GETTIME (btv);
 
 	if (concurrent_collection_in_progress) {
-		object_ops = &major_collector.major_concurrent_ops;
+		object_ops = &major_collector.major_ops_concurrent_finish;
 
 		sgen_workers_signal_start_nursery_collection_and_wait ();
 
@@ -2760,7 +2760,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 			check_nursery_is_clean ();
 	} else {
 		SGEN_ASSERT (0, !scan_whole_nursery, "scan_whole_nursery only applies to concurrent collections");
-		object_ops = &major_collector.major_ops;
+		object_ops = &major_collector.major_ops_serial;
 	}
 
 	/*

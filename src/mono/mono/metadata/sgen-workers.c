@@ -257,6 +257,7 @@ marker_idle_func (void *data_untyped)
 	if (!continue_idle_func ())
 		return;
 
+	SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "The worker should only mark in concurrent collections.");
 	SGEN_ASSERT (0, sgen_get_current_collection_generation () != GENERATION_NURSERY, "Why are we doing work while there's a nursery collection happening?");
 
 	if (workers_state == STATE_WORK_ENQUEUED) {
@@ -265,9 +266,7 @@ marker_idle_func (void *data_untyped)
 	}
 
 	if (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data)) {
-		SgenObjectOperations *ops = sgen_concurrent_collection_in_progress ()
-			? &major->major_concurrent_ops
-			: &major->major_ops;
+		SgenObjectOperations *ops = &major->major_ops_concurrent;
 		ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (ops, &data->private_gray_queue);
 
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");

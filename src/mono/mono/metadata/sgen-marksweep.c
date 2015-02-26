@@ -1073,7 +1073,7 @@ pin_major_object (char *obj, SgenGrayQueue *queue)
 #include "sgen-major-copy-object.h"
 
 static void
-major_copy_or_mark_object_with_evacuation_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
+major_copy_or_mark_object_concurrent (void **ptr, void *obj, SgenGrayQueue *queue)
 {
 	SGEN_ASSERT (9, sgen_concurrent_collection_in_progress (), "Why are we scanning concurrently when there's no concurrent collection on?");
 	SGEN_ASSERT (9, !sgen_workers_are_working () || sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "We must not scan from two threads at the same time!");
@@ -1195,7 +1195,7 @@ major_copy_or_mark_object_canonical (void **ptr, SgenGrayQueue *queue)
 static void
 major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue)
 {
-	major_copy_or_mark_object_with_evacuation_concurrent (ptr, *ptr, queue);
+	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
 }
 
 static void
@@ -2460,12 +2460,18 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->describe_pointer = major_describe_pointer;
 	collector->count_cards = major_count_cards;
 
-	collector->major_ops.copy_or_mark_object = major_copy_or_mark_object_canonical;
-	collector->major_ops.scan_object = major_scan_object_with_evacuation;
+	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;
+	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
 	if (is_concurrent) {
-		collector->major_concurrent_ops.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_concurrent_ops.scan_object = major_scan_object_no_mark_concurrent;
-		collector->major_concurrent_ops.scan_vtype = major_scan_vtype_concurrent;
+		collector->major_ops_concurrent_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
+		collector->major_ops_concurrent_start.scan_object = major_scan_object_no_mark_concurrent_start_finish;
+
+		collector->major_ops_concurrent.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
+		collector->major_ops_concurrent.scan_object = major_scan_object_no_mark_concurrent;
+
+		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
+		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_mark_concurrent_start_finish;
+		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent;
 	}
 
 #if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)
