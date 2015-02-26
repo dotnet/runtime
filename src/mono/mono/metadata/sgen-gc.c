@@ -2426,9 +2426,14 @@ scan_nursery_objects (ScanCopyContext ctx)
 			(IterateObjectCallbackFunc)scan_nursery_objects_callback, (void*)&ctx, FALSE);
 }
 
+typedef enum {
+	COPY_OR_MARK_FROM_ROOTS_SERIAL,
+	COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT,
+	COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT
+} CopyOrMarkFromRootsMode;
+
 static void
-major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurrent_mark, gboolean finish_up_concurrent_mark, gboolean scan_whole_nursery,
-		SgenObjectOperations *object_ops)
+major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMode mode, gboolean scan_whole_nursery, SgenObjectOperations *object_ops)
 {
 	LOSObject *bigobj;
 	TV_DECLARE (atv);
@@ -2441,8 +2446,14 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	gboolean profile_roots = mono_profiler_get_events () & MONO_PROFILE_GC_ROOTS;
 	GCRootReport root_report = { 0 };
 	ScanCopyContext ctx = CONTEXT_FROM_OBJECT_OPERATIONS (object_ops, WORKERS_DISTRIBUTE_GRAY_QUEUE);
+	gboolean concurrent = mode != COPY_OR_MARK_FROM_ROOTS_SERIAL;
 
-	if (concurrent_collection_in_progress) {
+	SGEN_ASSERT (0, !!concurrent == !!concurrent_collection_in_progress, "We've been called with the wrong mode.");
+
+	if (scan_whole_nursery)
+		SGEN_ASSERT (0, mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, "Scanning whole nursery only makes sense when we're finishing a concurrent collection.");
+
+	if (concurrent) {
 		/*This cleans up unused fragments */
 		sgen_nursery_allocator_prepare_for_pinning ();
 
@@ -2461,7 +2472,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	sgen_clear_nursery_fragments ();
 
 	if (whole_heap_check_before_collection)
-		sgen_check_whole_heap (finish_up_concurrent_mark);
+		sgen_check_whole_heap (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT);
 
 	TV_GETTIME (btv);
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
@@ -2479,7 +2490,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 		sgen_check_for_xdomain_refs ();
 	}
 
-	if (!concurrent_collection_in_progress) {
+	if (!concurrent) {
 		/* Remsets are not useful for a major collection */
 		remset.clear_cards ();
 	}
@@ -2492,7 +2503,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, ctx);
 
-	if (!concurrent_collection_in_progress || finish_up_concurrent_mark) {
+	if (mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		if (major_collector.is_concurrent) {
 			/*
 			 * The concurrent major collector cannot evict
@@ -2537,7 +2548,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 #endif
 
 			if (sgen_los_object_is_pinned (bigobj->data)) {
-				g_assert (finish_up_concurrent_mark);
+				SGEN_ASSERT (0, mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, "LOS objects can only be pinned here after concurrent marking.");
 				continue;
 			}
 			sgen_los_pin_object (bigobj->data);
@@ -2581,12 +2592,12 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	 * Non-concurrent mark evacuates from the nursery, so it's
 	 * sufficient to just scan pinned nursery objects.
 	 */
-	if (scan_whole_nursery || finish_up_concurrent_mark || (concurrent_collection_in_progress && sgen_minor_collector.is_split)) {
+	if (scan_whole_nursery || mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT || (concurrent && sgen_minor_collector.is_split)) {
 		scan_nursery_objects (ctx);
 	} else {
-		pin_objects_in_nursery (concurrent_collection_in_progress, ctx);
+		pin_objects_in_nursery (concurrent, ctx);
 		if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
-			sgen_check_nursery_objects_pinned (!concurrent_collection_in_progress || finish_up_concurrent_mark);
+			sgen_check_nursery_objects_pinned (mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT);
 	}
 
 	major_collector.pin_objects (WORKERS_DISTRIBUTE_GRAY_QUEUE);
@@ -2606,7 +2617,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (start_concurrent_mark) {
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		sgen_workers_start_all_workers ();
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	}
@@ -2632,7 +2643,7 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, gboolean start_concurr
 	TV_GETTIME (btv);
 	time_major_scan_roots += TV_ELAPSED (atv, btv);
 
-	if (finish_up_concurrent_mark) {
+	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		ScanJob *sj;
 
 		/* Mod union card table */
@@ -2710,7 +2721,7 @@ major_start_collection (gboolean concurrent, size_t *old_next_pin_slot)
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
 
-	major_copy_or_mark_from_roots (old_next_pin_slot, concurrent, FALSE, FALSE, object_ops);
+	major_copy_or_mark_from_roots (old_next_pin_slot, concurrent ? COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT : COPY_OR_MARK_FROM_ROOTS_SERIAL, FALSE, object_ops);
 	major_finish_copy_or_mark ();
 }
 
@@ -2730,7 +2741,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 
 		sgen_workers_signal_start_nursery_collection_and_wait ();
 
-		major_copy_or_mark_from_roots (NULL, FALSE, TRUE, scan_whole_nursery, object_ops);
+		major_copy_or_mark_from_roots (NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, scan_whole_nursery, object_ops);
 
 		sgen_workers_signal_finish_nursery_collection ();
 
