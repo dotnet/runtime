@@ -92,7 +92,7 @@
 #include <mono/utils/mono-signal-handler.h>
 
 /* The process' environment strings */
-#if defined(__APPLE__) && !defined (__arm__)
+#if defined(__APPLE__) && !defined (__arm__) && !defined (__aarch64__)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
