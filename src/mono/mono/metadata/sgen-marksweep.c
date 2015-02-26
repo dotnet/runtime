@@ -2148,7 +2148,7 @@ static void
 scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanCopyContext ctx)
 {
 	SgenGrayQueue *queue = ctx.queue;
-	ScanObjectFunc scan_func = ctx.scan_func;
+	ScanObjectFunc scan_func = ctx.ops->scan_object;
 #ifndef SGEN_HAVE_OVERLAPPING_CARDS
 	guint8 cards_copy [CARDS_PER_BLOCK];
 #endif

@@ -232,7 +232,7 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 {
 	SgenGrayQueue *queue = ctx.queue;
 
-	SGEN_ASSERT (0, ctx.scan_func == major_scan_object_with_evacuation, "Wrong scan function");
+	SGEN_ASSERT (0, ctx.ops->scan_object == major_scan_object_with_evacuation, "Wrong scan function");
 
 	for (;;) {
 		char *obj;

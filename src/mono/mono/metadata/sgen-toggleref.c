@@ -92,7 +92,7 @@ sgen_process_togglerefs (void)
 
 void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
-	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
 	int i;
 
@@ -112,7 +112,7 @@ void sgen_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 
 void sgen_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
-	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
 	int i;
 

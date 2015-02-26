@@ -111,7 +111,7 @@ sgen_mark_bridge_object (MonoObject *obj)
 void
 sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 {
-	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	GrayQueue *queue = ctx.queue;
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
@@ -183,7 +183,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 void
 sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 {
-	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	GrayQueue *queue = ctx.queue;
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
@@ -663,7 +663,7 @@ add_or_remove_disappearing_link (MonoObject *obj, void **link, int generation)
 void
 sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyContext ctx)
 {
-	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	GrayQueue *queue = ctx.queue;
 	void **link;
 	gpointer dummy G_GNUC_UNUSED;

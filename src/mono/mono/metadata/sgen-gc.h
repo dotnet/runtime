@@ -462,13 +462,20 @@ typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char *obj, mword desc, SgenGrayQueue*);
 typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
 
+typedef struct {
+	CopyOrMarkObjectFunc copy_or_mark_object;
+	ScanObjectFunc scan_object;
+	ScanVTypeFunc scan_vtype;
+	/*FIXME add allocation function? */
+} SgenObjectOperations;
+
 typedef struct
 {
-	ScanObjectFunc scan_func;
-	ScanVTypeFunc scan_vtype_func;
-	CopyOrMarkObjectFunc copy_func;
+	SgenObjectOperations *ops;
 	SgenGrayQueue *queue;
 } ScanCopyContext;
+
+#define CONTEXT_FROM_OBJECT_OPERATIONS(ops, queue) ((ScanCopyContext) { (ops), (queue) })
 
 void sgen_report_internal_mem_usage (void);
 void sgen_dump_internal_mem_usage (FILE *heap_dump_file);
@@ -495,16 +502,6 @@ void sgen_add_to_global_remset (gpointer ptr, gpointer obj);
 int sgen_get_current_collection_generation (void);
 gboolean sgen_collection_is_concurrent (void);
 gboolean sgen_concurrent_collection_in_progress (void);
-
-typedef struct {
-	CopyOrMarkObjectFunc copy_or_mark_object;
-	ScanObjectFunc scan_object;
-	ScanVTypeFunc scan_vtype;
-	/*FIXME add allocation function? */
-} SgenObjectOperations;
-
-#define CONTEXT_FROM_OBJECT_OPERATIONS(ops, queue) ((ScanCopyContext) { (ops)->scan_object, (ops)->scan_vtype, (ops)->copy_or_mark_object, (queue) })
-#define CONTEXT_FROM_CONTEXT(ctx, queue) ((ScanCopyContext) { (ctx).scan_func, (ctx).scan_vtype_func, (ctx).copy_func, (queue) })
 
 typedef struct _SgenFragment SgenFragment;
 

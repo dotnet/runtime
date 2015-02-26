@@ -635,12 +635,12 @@ LOOP_HEAD:
 
 			elem = first_elem = (char*)mono_array_addr_with_size_fast ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
-				ScanVTypeFunc scan_vtype_func = ctx.scan_vtype_func;
+				ScanVTypeFunc scan_vtype_func = ctx.ops->scan_vtype;
 
 				for (; elem < card_end; elem += elem_size)
 					scan_vtype_func (elem, desc, ctx.queue BINARY_PROTOCOL_ARG (elem_size));
 			} else {
-				CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+				CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 
 				HEAVY_STAT (++los_array_cards);
 				for (; elem < card_end; elem += SIZEOF_VOID_P) {
@@ -672,9 +672,9 @@ LOOP_HEAD:
 		HEAVY_STAT (++bloby_objects);
 		if (cards) {
 			if (sgen_card_table_is_range_marked (cards, (mword)obj, block_obj_size))
-				ctx.scan_func (obj, sgen_obj_get_descriptor (obj), ctx.queue);
+				ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 		} else if (sgen_card_table_region_begin_scanning ((mword)obj, block_obj_size)) {
-			ctx.scan_func (obj, sgen_obj_get_descriptor (obj), ctx.queue);
+			ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 		}
 
 		binary_protocol_card_scan (obj, sgen_safe_object_get_size ((MonoObject*)obj));
