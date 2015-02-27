@@ -58,7 +58,25 @@ namespace System.IO.Tests
             {
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadUmsInvariants(stream);
+
+                var bytes = new byte[3];
+                Assert.Throws<NotSupportedException>(() => stream.Write(bytes, 0, bytes.Length));
                 Assert.Throws<NotSupportedException>(() => stream.WriteByte(1));
+            }
+        }
+
+        [Fact]
+        public static void CannotWriteWithOverflow()
+        {
+            using (var manager = new UmsManager(FileAccess.Write, 1000))
+            {
+                UnmanagedMemoryStream stream = manager.Stream;
+                UmsTests.WriteUmsInvariants(stream);
+                stream.Position = long.MaxValue;
+
+                var bytes = new byte[3];
+                Assert.Throws<IOException>(() => stream.Write(bytes, 0, bytes.Length));
+                Assert.Throws<IOException>(() => stream.WriteByte(1));
             }
         }
     }

@@ -42,93 +42,214 @@ namespace System.IO.Tests
         [Fact]
         public static void UmaReadWrite()
         {
-            var capacity = 99;
+            var capacity = 199;
 
-            Boolean v1 = true; // 1
-            Byte v2 = (Byte)123; // 1
-            Char v3 = (Char)255; // 1
-            Int16 v4 = Int16.MaxValue - 1; // 2
-            Int32 v5 = Int32.MinValue; // 4
-            Int64 v6 = 12345; // 8
-            Decimal v7 = 1.1m; //123.456m; // 16
-            Single v8 = 0.000123f; // 4
-            Double v9 = 1234567.890; // 8
-            SByte v10 = (SByte)(-128); // 1
-            UInt16 v11 = UInt16.MinValue; // 2
-            UInt32 v12 = 67890; // 4
-            UInt64 v13 = UInt32.MaxValue - 12345; // 8
+            const bool expectedBool = true; // 1
+            const byte expectedByte = 123; // 1
+            const sbyte expectedSByte = -128; // 1
+            const char expectedChar = (char)255; // 2
+            const ushort expectedUInt16 = ushort.MinValue; // 2
+            const short expectedInt16 = short.MaxValue - 1; // 2
+            const uint expectedUInt32 = 67890; // 4
+            const int expectedInt32 = int.MinValue; // 4
+            const float expectedSingle = 0.000123f; // 4
+            const ulong expectedUInt64 = ulong.MaxValue - 12345; // 8
+            const long expectedInt64 = 12345; // 8
+            const double expectedDouble = 1234567.890; // 8
+            const decimal expectedDecimal = 1.1m; //123.456m; // 16
 
             using (var buffer = new TestSafeBuffer(capacity))
             using (var uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
                 long pos = 0;
-                uma.Write(pos, v1);
-                pos += sizeof(Boolean);
-                uma.Write(pos, v2);
-                pos += sizeof(Byte);
-                uma.Write(pos, v3);
-                pos += sizeof(Char);
-                uma.Write(pos, v4);
-                pos += sizeof(Int16);
-                uma.Write(pos, v5);
-                pos += sizeof(Int32);
-                uma.Write(pos, v6);
-                pos += sizeof(Int64);
-                long pp = pos;
-                uma.Write(pos, v7);
-                pos += sizeof(Decimal);
-                uma.Write(pos, v8);
-                pos += sizeof(Single);
-                uma.Write(pos, v9);
-                pos += sizeof(Double);
-                uma.Write(pos, v10);
-                pos += sizeof(SByte);
-                uma.Write(pos, v11);
-                pos += sizeof(UInt16);
-                uma.Write(pos, v12);
-                pos += sizeof(UInt32);
-                uma.Write(pos, v13);
+
+                uma.Write(pos, expectedBool);
+                pos += sizeof(bool);
+
+                uma.Write(pos, expectedByte);
+                pos += sizeof(byte);
+
+                uma.Write(pos, expectedSByte);
+                pos += sizeof(sbyte);
+
+                pos = EnsureAligned(pos, sizeof(char));
+                uma.Write(pos, expectedChar);
+                pos += sizeof(char);
+
+                pos = EnsureNotAligned(pos, sizeof(char));
+                uma.Write(pos, expectedChar);
+                pos += sizeof(char);
+
+                pos = EnsureAligned(pos, sizeof(ushort));
+                uma.Write(pos, expectedUInt16);
+                pos += sizeof(ushort);
+
+                pos = EnsureNotAligned(pos, sizeof(ushort));
+                uma.Write(pos, expectedUInt16);
+                pos += sizeof(ushort);
+
+                pos = EnsureAligned(pos, sizeof(short));
+                uma.Write(pos, expectedInt16);
+                pos += sizeof(short);
+
+                pos = EnsureNotAligned(pos, sizeof(short));
+                uma.Write(pos, expectedInt16);
+                pos += sizeof(short);
+
+                pos = EnsureAligned(pos, sizeof(uint));
+                uma.Write(pos, expectedUInt32);
+                pos += sizeof(uint);
+
+                pos = EnsureNotAligned(pos, sizeof(uint));
+                uma.Write(pos, expectedUInt32);
+                pos += sizeof(uint);
+
+                pos = EnsureAligned(pos, sizeof(int));
+                uma.Write(pos, expectedInt32);
+                pos += sizeof(int);
+
+                pos = EnsureNotAligned(pos, sizeof(int));
+                uma.Write(pos, expectedInt32);
+                pos += sizeof(int);
+
+                pos = EnsureAligned(pos, sizeof(float));
+                uma.Write(pos, expectedSingle);
+                pos += sizeof(float);
+
+                pos = EnsureNotAligned(pos, sizeof(float));
+                uma.Write(pos, expectedSingle);
+                pos += sizeof(float);
+
+                pos = EnsureAligned(pos, sizeof(ulong));
+                uma.Write(pos, expectedUInt64);
+                pos += sizeof(ulong);
+
+                pos = EnsureNotAligned(pos, sizeof(ulong));
+                uma.Write(pos, expectedUInt64);
+                pos += sizeof(ulong);
+
+                pos = EnsureAligned(pos, sizeof(long));
+                uma.Write(pos, expectedInt64);
+                pos += sizeof(long);
+
+                pos = EnsureNotAligned(pos, sizeof(long));
+                uma.Write(pos, expectedInt64);
+                pos += sizeof(long);
+
+                pos = EnsureAligned(pos, sizeof(double));
+                uma.Write(pos, expectedDouble);
+                pos += sizeof(double);
+
+                pos = EnsureNotAligned(pos, sizeof(double));
+                uma.Write(pos, expectedDouble);
+                pos += sizeof(double);
+
+                pos = EnsureAligned(pos, sizeof(decimal));
+                uma.Write(pos, expectedDecimal);
+                pos += sizeof(decimal);
+
+                pos = EnsureNotAligned(pos, sizeof(decimal));
+                uma.Write(pos, expectedDecimal);
 
                 pos = 0;
-                var v01 = uma.ReadBoolean(pos);
-                Assert.Equal(v1, v01);
-                pos += sizeof(Boolean);
-                var v02 = uma.ReadByte(pos);
-                Assert.Equal(v2, v02);
-                pos += sizeof(Byte);
-                var v03 = uma.ReadChar(pos);
-                Assert.Equal(v3, v03);
-                pos += sizeof(Char);
-                var v04 = uma.ReadInt16(pos);
-                Assert.Equal(v4, v04);
-                pos += sizeof(Int16);
-                var v05 = uma.ReadInt32(pos);
-                Assert.Equal(v5, v05);
-                pos += sizeof(Int32);
-                var v06 = uma.ReadInt64(pos);
-                Assert.Equal(v6, v06);
-                pos += sizeof(Int64);
-                var v07 = uma.ReadDecimal(pos);
-                Assert.Equal(v7, v07);
-                pos += sizeof(Decimal);
-                var v08 = uma.ReadSingle(pos);
-                Assert.Equal(v8, v08);
-                pos += sizeof(Single);
-                var v09 = uma.ReadDouble(pos);
-                Assert.Equal(v9, v09);
-                pos += sizeof(Double);
-                var v010 = uma.ReadSByte(pos);
-                Assert.Equal(v10, v010);
-                pos += sizeof(SByte);
-                var v011 = uma.ReadUInt16(pos);
-                Assert.Equal(v11, v011);
-                pos += sizeof(UInt16);
-                var v012 = uma.ReadUInt32(pos);
-                Assert.Equal(v12, v012);
-                pos += sizeof(UInt32);
-                var v013 = uma.ReadUInt64(pos);
-                Assert.Equal(v13, v013);
+                Assert.Equal(expectedBool, uma.ReadBoolean(pos));
+                pos += sizeof(bool);
+
+                Assert.Equal(expectedByte, uma.ReadByte(pos));
+                pos += sizeof(byte);
+
+                Assert.Equal(expectedSByte, uma.ReadSByte(pos));
+                pos += sizeof(sbyte);
+
+                pos = EnsureAligned(pos, sizeof(char));
+                Assert.Equal(expectedChar, uma.ReadChar(pos));
+                pos += sizeof(char);
+
+                pos = EnsureNotAligned(pos, sizeof(char));
+                Assert.Equal(expectedChar, uma.ReadChar(pos));
+                pos += sizeof(char);
+
+                pos = EnsureAligned(pos, sizeof(ushort));
+                Assert.Equal(expectedUInt16, uma.ReadUInt16(pos));
+                pos += sizeof(ushort);
+
+                pos = EnsureNotAligned(pos, sizeof(ushort));
+                Assert.Equal(expectedUInt16, uma.ReadUInt16(pos));
+                pos += sizeof(ushort);
+
+                pos = EnsureAligned(pos, sizeof(short));
+                Assert.Equal(expectedInt16, uma.ReadInt16(pos));
+                pos += sizeof(short);
+
+                pos = EnsureNotAligned(pos, sizeof(short));
+                Assert.Equal(expectedInt16, uma.ReadInt16(pos));
+                pos += sizeof(short);
+
+                pos = EnsureAligned(pos, sizeof(uint));
+                Assert.Equal(expectedUInt32, uma.ReadUInt32(pos));
+                pos += sizeof(uint);
+
+                pos = EnsureNotAligned(pos, sizeof(uint));
+                Assert.Equal(expectedUInt32, uma.ReadUInt32(pos));
+                pos += sizeof(uint);
+
+                pos = EnsureAligned(pos, sizeof(int));
+                Assert.Equal(expectedInt32, uma.ReadInt32(pos));
+                pos += sizeof(int);
+
+                pos = EnsureNotAligned(pos, sizeof(int));
+                Assert.Equal(expectedInt32, uma.ReadInt32(pos));
+                pos += sizeof(int);
+
+                pos = EnsureAligned(pos, sizeof(float));
+                Assert.Equal(expectedSingle, uma.ReadSingle(pos));
+                pos += sizeof(float);
+
+                pos = EnsureNotAligned(pos, sizeof(float));
+                Assert.Equal(expectedSingle, uma.ReadSingle(pos));
+                pos += sizeof(float);
+
+                pos = EnsureAligned(pos, sizeof(ulong));
+                Assert.Equal(expectedUInt64, uma.ReadUInt64(pos));
+                pos += sizeof(ulong);
+
+                pos = EnsureNotAligned(pos, sizeof(ulong));
+                Assert.Equal(expectedUInt64, uma.ReadUInt64(pos));
+                pos += sizeof(ulong);
+
+                pos = EnsureAligned(pos, sizeof(long));
+                Assert.Equal(expectedInt64, uma.ReadInt64(pos));
+                pos += sizeof(long);
+
+                pos = EnsureNotAligned(pos, sizeof(long));
+                Assert.Equal(expectedInt64, uma.ReadInt64(pos));
+                pos += sizeof(long);
+
+                pos = EnsureAligned(pos, sizeof(double));
+                Assert.Equal(expectedDouble, uma.ReadDouble(pos));
+                pos += sizeof(double);
+
+                pos = EnsureNotAligned(pos, sizeof(double));
+                Assert.Equal(expectedDouble, uma.ReadDouble(pos));
+                pos += sizeof(double);
+
+                pos = EnsureAligned(pos, sizeof(decimal));
+                Assert.Equal(expectedDecimal, uma.ReadDecimal(pos));
+                pos += sizeof(decimal);
+
+                pos = EnsureNotAligned(pos, sizeof(decimal));
+                Assert.Equal(expectedDecimal, uma.ReadDecimal(pos));
             }
+        }
+
+        private static long EnsureAligned(long position, int n)
+        {
+            return ((position & (n - 1)) == 0) ? position : (position / n + 1) * n;
+        }
+
+        private static long EnsureNotAligned(long position, int n)
+        {
+            return ((position & (n - 1)) != 0) ? position : ++position;
         }
     }
 }

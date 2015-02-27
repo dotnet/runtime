@@ -20,6 +20,8 @@ namespace System.IO.Tests
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryStream(fakeBuffer, 2, -1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryStream(fakeBuffer, -1, 1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryStream(fakeBuffer, 1, 2, (FileAccess)(-1)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryStream(fakeBuffer, 1, 2, (FileAccess)42));
 
                 Assert.Throws<ArgumentException>(() => new UnmanagedMemoryStream(fakeBuffer, 2, 999));
                 Assert.Throws<ArgumentException>(() => new UnmanagedMemoryStream(fakeBuffer, 999, 9));
