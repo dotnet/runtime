@@ -135,10 +135,10 @@ private:
             ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED); 
         }
     };
-    static void ReleaseReadLock(SimpleRWLock *s);
+    static void ReleaseReadLock(SimpleRWLock *s) { };
 
     static void AcquireWriteLock(SimpleRWLock *s) { SUPPORTS_DAC; ThrowHR(CORDBG_E_TARGET_READONLY); };
-    static void ReleaseWriteLock(SimpleRWLock *s);
+    static void ReleaseWriteLock(SimpleRWLock *s) { };
 #endif // DACCESS_COMPILE
 
 public:

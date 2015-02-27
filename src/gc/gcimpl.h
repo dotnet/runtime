@@ -199,6 +199,9 @@ public:
     int WaitForFullGCApproach(int millisecondsTimeout);
     int WaitForFullGCComplete(int millisecondsTimeout);
 
+    int StartNoGCRegion(ULONGLONG totalSize, BOOL lohSizeKnown, ULONGLONG lohSize, BOOL disallowFullBlockingGC);
+    int EndNoGCRegion();
+
     PER_HEAP_ISOLATED     unsigned GetMaxGeneration();
  
     unsigned GetGcCount();

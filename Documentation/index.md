@@ -9,6 +9,8 @@ Book of the Runtime
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
 - [Type Loader](type-loader.md)
+- [Method Descriptor](method-descriptor.md)
+- [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 - [Stack Walking](stackwalking.md)
 - [Book of the Runtime FAQ](botr-faq.md)
 
