@@ -19,12 +19,13 @@ goto Usage
 
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=debug
-if not defined __TestWorkingDir set "__TestWorkingDir=%__ProjectFilesDir%\..\binaries\tests\%__BuildArch%\%__BuildType%"
+if not defined __BuildOS set __BuildOS=Windows_NT
+if not defined __TestWorkingDir set "__TestWorkingDir=%__ProjectFilesDir%\..\binaries\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 if not defined __LogsDir  set  "__LogsDir=%__ProjectFilesDir%..\binaries\Logs"
 
-set "__TestBuildLog=%__LogsDir%\Tests_%__BuildArch%__%__BuildType%.log"
-set "__XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildArch%__%__BuildType%.log"
+set "__TestBuildLog=%__LogsDir%\Tests_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+set "__XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 
 :: Switch to clean build mode if the binaries output folder does not exist
 if not exist "%__TestWorkingDir%" set __CleanBuild=1

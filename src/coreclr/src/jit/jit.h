@@ -667,6 +667,14 @@ private:
 #include "alloc.h"
 #include "target.h"
 
+#if FEATURE_TAILCALL_OPT
+// Switch to 1 or Remove, when no GetCallingAssembly artifacts are encountered.
+// Refer to TF: Bug: 824625 and its associated regression TF Bug: 1113265
+#define FEATURE_TAILCALL_OPT_SHARED_RETURN 0
+#else // !FEATURE_TAILCALL_OPT
+#define FEATURE_TAILLCALL_OPT_SHARED_RETURN 0
+#endif // !FEATURE_TAILCALL_OPT
+
 /*****************************************************************************/
 
 #ifndef INLINE_MATH
