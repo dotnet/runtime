@@ -41,6 +41,21 @@ typedef enum {
 	MONO_PROCESS_ERROR_OTHER
 } MonoProcessError;
 
+typedef struct _MonoCpuUsageState MonoCpuUsageState;
+#ifndef HOST_WIN32
+struct _MonoCpuUsageState {
+	gint64 kernel_time;
+	gint64 user_time;
+	gint64 current_time;
+};
+#else
+struct _MonoCpuUsageState {
+	guint64 kernel_time;
+	guint64 user_time;
+	guint64 idle_time;
+};
+#endif
+
 gpointer* mono_process_list     (int *size);
 
 char*     mono_process_get_name (gpointer pid, char *buf, int len);
@@ -52,6 +67,7 @@ int       mono_process_current_pid (void);
 
 int       mono_cpu_count    (void);
 gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error);
+gint32    mono_cpu_usage (MonoCpuUsageState *prev);
 
 int       mono_atexit (void (*func)(void));
 
