@@ -1,4 +1,4 @@
-// This is auto generated file. Please don’t modify manually.
+﻿// This is auto generated file. Please don’t modify manually.
 // The file is generated as part of the build through the ResourceGenerator tool 
 // which takes the project resx resource file and generated this source code file.
 // By default the tool will use Resources\Strings.resx but projects can customize
@@ -78,6 +78,9 @@ namespace System
         internal static string ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed {
               get { return SR.GetResourceString("ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed", null); }
         }
+        internal static string ArgumentOutOfRange_FileLengthTooBig {
+              get { return SR.GetResourceString("ArgumentOutOfRange_FileLengthTooBig", null); }
+        }
         internal static string ArgumentOutOfRange_NeedPositiveNumber {
               get { return SR.GetResourceString("ArgumentOutOfRange_NeedPositiveNumber", null); }
         }
@@ -116,6 +119,9 @@ namespace System
         }
         internal static string UnknownError_Num {
               get { return SR.GetResourceString("UnknownError_Num", null); }
+        }
+        internal static string PlatformNotSupported_NamedMaps {
+              get { return SR.GetResourceString("PlatformNotSupported_NamedMaps", null); }
         }
 #else
         internal static string ArgumentOutOfRange_NeedNonNegNum {
@@ -184,6 +190,9 @@ namespace System
         internal static string ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed {
               get { return SR.GetResourceString("ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed", @"The capacity cannot be greater than the size of the system's logical address space."); }
         }
+        internal static string ArgumentOutOfRange_FileLengthTooBig {
+              get { return SR.GetResourceString("ArgumentOutOfRange_FileLengthTooBig", @"Specified file length was too large for the file system."); }
+        }
         internal static string ArgumentOutOfRange_NeedPositiveNumber {
               get { return SR.GetResourceString("ArgumentOutOfRange_NeedPositiveNumber", @"A positive number is required."); }
         }
@@ -222,6 +231,9 @@ namespace System
         }
         internal static string UnknownError_Num {
               get { return SR.GetResourceString("UnknownError_Num", @"Unknown error '{0}'."); }
+        }
+        internal static string PlatformNotSupported_NamedMaps {
+              get { return SR.GetResourceString("PlatformNotSupported_NamedMaps", @"Named maps are not supported."); }
         }
 
 #endif
