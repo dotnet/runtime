@@ -787,7 +787,6 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     if  (!(ig->igFlags & IGF_EMIT_ADD))
     {
-        assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
         ig->igGCregs     = (regMaskSmall)emitInitGCrefRegs;
     }
 
@@ -1029,6 +1028,7 @@ void                emitter::emitBegFN(bool     hasFramePtr
 
     emitFwdJumps        = false;
     emitNoGCIG          = false;
+    emitForceNewIG      = false;
 
     /* We have not recorded any live sets */
 
@@ -1321,8 +1321,11 @@ void        *       emitter::emitAllocInstr(size_t sz, emitAttr opsz)
 
     /* Make sure we have enough space for the new instruction */
 
-    if  (emitCurIGfreeNext + sz >= emitCurIGfreeEndp)
+    if  ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) ||
+         emitForceNewIG)
+    {
         emitNxtIG(true);
+    }
 
     /* Grab the space for the instruction */
 
@@ -1720,6 +1723,20 @@ void                emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igT
     }
     else
     {
+        if (igType == IGPT_EPILOG
+#if FEATURE_EH_FUNCLETS
+            || igType == IGPT_FUNCLET_EPILOG
+#endif // FEATURE_EH_FUNCLETS
+            )
+        {
+            // If this was an epilog, then assume this is the end of any currently in progress
+            // no-GC region. If a block after the epilog needs to be no-GC, it needs to call
+            // emitter::emitDisableGC() directly. This behavior is depended upon by the fast
+            // tailcall implementation, which disables GC at the beginning of argument setup,
+            // but assumes that after the epilog it will be re-enabled.
+            emitNoGCIG = false;
+        }
+
         emitNewIG();
 
         // We don't know what the GC ref state will be at the end of the placeholder
@@ -6413,6 +6430,9 @@ void                emitter::emitNxtIG(bool emitAdd)
 
     if (emitAdd)
         emitCurIG->igFlags |= IGF_EMIT_ADD;
+
+    // We've created a new IG; no need to force another one.
+    emitForceNewIG = false;
 } 
 
 

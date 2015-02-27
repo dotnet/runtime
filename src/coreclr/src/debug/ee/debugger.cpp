@@ -16623,6 +16623,10 @@ void Debugger::AcquireDebuggerDataLock(Debugger *pDebugger)
         ThrowHR(CORDBG_E_PROCESS_NOT_SYNCHRONIZED);
     }
 }
+
+void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
+{
+}
 #endif // DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
