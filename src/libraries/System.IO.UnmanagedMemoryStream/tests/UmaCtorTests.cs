@@ -29,6 +29,8 @@ namespace System.IO.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 2, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryAccessor(fakeBuffer, -1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 1, 2, (FileAccess)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 1, 2, (FileAccess)42));
 
             Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 2, 999));
             Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 999, 9));
