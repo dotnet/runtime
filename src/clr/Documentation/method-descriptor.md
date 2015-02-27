@@ -87,9 +87,9 @@ Each MethodDesc has a slot, which contains the entry point of the method. The sl
 
 The slot is either in MethodTable or in MethodDesc itself. The location of the slot is determined by `mdcHasNonVtableSlot` bit on MethodDesc.
 
-The slot is stored in MethodTable for methods that require efficient lookup via slot index index efficiently, e.g. virtual methods or methods on generic types. The MethodDesc contains the slot index to allow fast lookup of the entry point when this is the case. 
+The slot is stored in MethodTable for methods that require efficient lookup via slot index, e.g. virtual methods or methods on generic types. The MethodDesc contains the slot index to allow fast lookup of the entry point in this case. 
 
-Otherwise, the slot is part of the MethodDesc itself. This arrangement improves data locality and saves working set. Also, it is not even always possible to preallocate a slot in a MethodTable upfront for dynamically created MethodDescs, such as methods added by Edit & Continue, instantiations of generic methods or [dynamic methods](https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Reflection/Emit/DynamicMethod.cs).
+Otherwise, the slot is part of the MethodDesc itself. This arrangement improves data locality and saves working set. Also, it is not even always possible to preallocate a slot in a MethodTable upfront for dynamically created MethodDescs, such as for methods added by Edit & Continue, instantiations of generic methods or [dynamic methods](https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Reflection/Emit/DynamicMethod.cs).
 
 MethodDesc Chunks
 -----------------
@@ -220,7 +220,7 @@ The type of precode has to be cheaply computable from the instruction sequence. 
 
 StubPrecode is the basic precode type. It loads MethodDesc into a scratch register and then jumps. It must be implemented for precodes to work. It is used as fallback when no other specialized precode type is available.
 
-All other precodes types are optional optimizations that the platform specific files turn on via HAS\_XXX\_PRECODE defines. StubPrecode is the only implemented precode type on IA64 for simplicity.
+All other precodes types are optional optimizations that the platform specific files turn on via HAS\_XXX\_PRECODE defines.
 
 StubPrecode looks like this on x86:
 
