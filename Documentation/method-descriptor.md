@@ -22,7 +22,7 @@ Design Goals and Non-goals
 
 ### Non-goals
 
-***Richness:** The MethodDesc does not cache all information about the method. It is expected that the underlying metadata has to be accessed for less frequently used information (e.g. method signature).
+**Richness:** The MethodDesc does not cache all information about the method. It is expected that the underlying metadata has to be accessed for less frequently used information (e.g. method signature).
 
 Design of MethodDesc
 ====================
