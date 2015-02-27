@@ -2261,7 +2261,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	/* 
 	 * Collect and convert arguments
 	 */
-	nargs = (sig->param_count * 2) + sig->hasthis + vretaddr + call->rgctx_reg + call->imt_arg_reg;
+	nargs = (sig->param_count * 16) + sig->hasthis + vretaddr + call->rgctx_reg + call->imt_arg_reg;
 	len = sizeof (LLVMValueRef) * nargs;
 	args = alloca (len);
 	memset (args, 0, len);
@@ -2350,6 +2350,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				args [pindex] = convert (ctx, args [pindex], type_to_llvm_arg_type (ctx, sig->params [i - sig->hasthis]));
 			break;
 		}
+		g_assert (pindex <= nargs);
 
 		l = l->next;
 	}
