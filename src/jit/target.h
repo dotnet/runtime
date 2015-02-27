@@ -821,9 +821,14 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_SCRATCH              REG_EAX
   #define RBM_SCRATCH              RBM_EAX
 
-  // Where is the exception object on entry to the handler block?
+// Where is the exception object on entry to the handler block?
+#ifndef UNIX_AMD64_ABI
   #define REG_EXCEPTION_OBJECT     REG_EDX
   #define RBM_EXCEPTION_OBJECT     RBM_EDX
+#else
+  #define REG_EXCEPTION_OBJECT     REG_ESI
+  #define RBM_EXCEPTION_OBJECT     RBM_ESI
+#endif // UNIX_AMD64_ABI
 
   #define REG_JUMP_THUNK_PARAM     REG_EAX
   #define RBM_JUMP_THUNK_PARAM     RBM_EAX

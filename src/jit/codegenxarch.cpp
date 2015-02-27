@@ -892,7 +892,7 @@ void                CodeGen::genCodeForBBlist()
             //      jmp         finally-return                  // Only for non-retless finally calls
             // The jmp can be a NOP if we're going to the next block.
 
-            getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_RCX, compiler->lvaPSPSym, 0);
+            getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
             getEmitter()->emitIns_J(INS_call, block->bbJumpDest);
 
             if (block->bbFlags & BBF_RETLESS_CALL)
