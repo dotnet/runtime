@@ -1013,7 +1013,7 @@ mono_profiler_coverage_free (MonoMethod *method)
 void 
 mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func)
 {
-	MonoProfileCoverageInfo* info;
+	MonoProfileCoverageInfo* info = NULL;
 	int i, offset;
 	guint32 code_size;
 	const unsigned char *start, *end, *cil_code;
@@ -1022,7 +1022,8 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 	MonoDebugMethodInfo *debug_minfo;
 
 	mono_profiler_coverage_lock ();
-	info = g_hash_table_lookup (coverage_hash, method);
+	if (coverage_hash)
+		info = g_hash_table_lookup (coverage_hash, method);
 	mono_profiler_coverage_unlock ();
 
 	if (!info)
