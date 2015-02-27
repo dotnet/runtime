@@ -10,17 +10,17 @@ namespace System.IO
     {
         internal static Exception GetStreamIsClosed()
         {
-            return new ObjectDisposedException(null, Strings.ObjectDisposed_StreamIsClosed);
+            return new ObjectDisposedException(null, SR.ObjectDisposed_StreamIsClosed);
         }
 
         internal static Exception GetReadNotSupported()
         {
-            return new NotSupportedException(Strings.NotSupported_UnreadableStream);
+            return new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
         internal static Exception GetWriteNotSupported()
         {
-            return new NotSupportedException(Strings.NotSupported_UnwritableStream);
+            return new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
     }
 }
