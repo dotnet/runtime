@@ -2617,8 +2617,9 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	 * before pinning has finished.  For the non-concurrent
 	 * collector we start the workers after pinning.
 	 */
-	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
-		sgen_workers_start_all_workers ();
+	if (mode != COPY_OR_MARK_FROM_ROOTS_SERIAL) {
+		SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
+		sgen_workers_start_all_workers (object_ops);
 		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 	}
 
@@ -2739,14 +2740,9 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	if (concurrent_collection_in_progress) {
 		object_ops = &major_collector.major_ops_concurrent_finish;
 
-		sgen_workers_signal_start_nursery_collection_and_wait ();
-
 		major_copy_or_mark_from_roots (NULL, COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, scan_whole_nursery, object_ops);
 
-		sgen_workers_signal_finish_nursery_collection ();
-
 		major_finish_copy_or_mark ();
-		gray_queue_enable_redirect (WORKERS_DISTRIBUTE_GRAY_QUEUE);
 
 		sgen_workers_join ();
 

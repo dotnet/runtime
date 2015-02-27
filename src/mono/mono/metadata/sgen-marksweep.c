@@ -118,7 +118,7 @@ struct _MSBlockInfo {
 	unsigned int is_to_space : 1;
 	void ** volatile free_list;
 	MSBlockInfo * volatile next_free;
-	guint8 *cardtable_mod_union;
+	guint8 * volatile cardtable_mod_union;
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
 
@@ -1031,6 +1031,51 @@ major_dump_heap (FILE *heap_dump_file)
 	} END_FOREACH_BLOCK_NO_LOCK;
 }
 
+static guint8*
+get_cardtable_mod_union_for_block (MSBlockInfo *block, gboolean allocate)
+{
+	guint8 *mod_union = block->cardtable_mod_union;
+	guint8 *other;
+	if (mod_union)
+		return mod_union;
+	else if (!allocate)
+		return NULL;
+	mod_union = sgen_card_table_alloc_mod_union (MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
+	other = SGEN_CAS_PTR ((gpointer*)&block->cardtable_mod_union, mod_union, NULL);
+	if (!other) {
+		SGEN_ASSERT (0, block->cardtable_mod_union == mod_union, "Why did CAS not replace?");
+		return mod_union;
+	}
+	sgen_card_table_free_mod_union (mod_union, MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
+	return other;
+}
+
+static inline guint8*
+major_get_cardtable_mod_union_for_reference (char *ptr)
+{
+	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (ptr);
+	size_t offset = sgen_card_table_get_card_offset (ptr, (char*)sgen_card_table_align_pointer (MS_BLOCK_FOR_BLOCK_INFO (block)));
+	guint8 *mod_union = get_cardtable_mod_union_for_block (block, TRUE);
+	SGEN_ASSERT (0, mod_union, "FIXME: optionally allocate the mod union if it's not here and CAS it in.");
+	return &mod_union [offset];
+}
+
+/*
+ * Mark the mod-union card for `ptr`, which must be a reference within the object `obj`.
+ */
+static void
+mark_mod_union_card (MonoObject *obj, void **ptr)
+{
+	int type = sgen_obj_get_descriptor ((char*)obj) & DESC_TYPE_MASK;
+	if (sgen_safe_object_is_small (obj, type)) {
+		guint8 *card_byte = major_get_cardtable_mod_union_for_reference ((char*)ptr);
+		SGEN_ASSERT (0, MS_BLOCK_FOR_OBJ (obj) == MS_BLOCK_FOR_OBJ (ptr), "How can an object and a reference inside it not be in the same block?");
+		*card_byte = 1;
+	} else {
+		sgen_los_mark_mod_union_card (obj, ptr);
+	}
+}
+
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
 #define MS_MARK_OBJECT_AND_ENQUEUE_CHECKED(obj,desc,block,queue) do {	\
@@ -1196,6 +1241,12 @@ static void
 major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue)
 {
 	major_copy_or_mark_object_concurrent (ptr, *ptr, queue);
+}
+
+static void
+major_copy_or_mark_object_concurrent_finish_canonical (void **ptr, SgenGrayQueue *queue)
+{
+	major_copy_or_mark_object_no_evacuation (ptr, *ptr, queue);
 }
 
 static void
@@ -1464,7 +1515,7 @@ ensure_block_is_checked_for_sweeping (int block_index, gboolean wait, gboolean *
 	count = MS_BLOCK_FREE / block->obj_size;
 
 	if (block->cardtable_mod_union) {
-		sgen_free_internal_dynamic (block->cardtable_mod_union, CARDS_PER_BLOCK, INTERNAL_MEM_CARDTABLE_MOD_UNION);
+		sgen_card_table_free_mod_union (block->cardtable_mod_union, MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE);
 		block->cardtable_mod_union = NULL;
 	}
 
@@ -2138,12 +2189,6 @@ initial_skip_card (guint8 *card_data)
 #define MS_BLOCK_OBJ_FAST(b,os,i)			((b) + MS_BLOCK_SKIP + (os) * (i))
 #define MS_OBJ_ALLOCED_FAST(o,b)		(*(void**)(o) && (*(char**)(o) < (b) || *(char**)(o) >= (b) + MS_BLOCK_SIZE))
 
-static size_t
-card_offset (char *obj, char *base)
-{
-	return (obj - base) >> CARD_BITS;
-}
-
 static void
 scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanCopyContext ctx)
 {
@@ -2249,7 +2294,7 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanCopyConte
 				HEAVY_STAT (++scanned_objects);
 				scan_func (obj, sgen_obj_get_descriptor (obj), queue);
 			} else {
-				size_t offset = card_offset (obj, block_start);
+				size_t offset = sgen_card_table_get_card_offset (obj, block_start);
 				sgen_cardtable_scan_object (obj, block_obj_size, card_base + offset, mod_union, ctx);
 			}
 		next_object:
@@ -2263,7 +2308,7 @@ scan_card_table_for_block (MSBlockInfo *block, gboolean mod_union, ScanCopyConte
 		if (small_objects)
 			++card_data;
 		else
-			card_data = card_base + card_offset (obj, block_start);
+			card_data = card_base + sgen_card_table_get_card_offset (obj, block_start);
 	}
 }
 
@@ -2335,20 +2380,10 @@ update_cardtable_mod_union (void)
 
 	FOREACH_BLOCK_NO_LOCK (block) {
 		size_t num_cards;
-
-		block->cardtable_mod_union = sgen_card_table_update_mod_union (block->cardtable_mod_union,
-				MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE, &num_cards);
-
+		guint8 *mod_union = get_cardtable_mod_union_for_block (block, TRUE);
+		sgen_card_table_update_mod_union (mod_union, MS_BLOCK_FOR_BLOCK_INFO (block), MS_BLOCK_SIZE, &num_cards);
 		SGEN_ASSERT (6, num_cards == CARDS_PER_BLOCK, "Number of cards calculation is wrong");
 	} END_FOREACH_BLOCK_NO_LOCK;
-}
-
-static guint8*
-major_get_cardtable_mod_union_for_object (char *obj)
-{
-	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	size_t offset = card_offset (obj, (char*)sgen_card_table_align_pointer (MS_BLOCK_FOR_BLOCK_INFO (block)));
-	return &block->cardtable_mod_union [offset];
 }
 
 #undef pthread_create
@@ -2434,7 +2469,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->iterate_live_block_ranges = (void*)(void*) major_iterate_live_block_ranges;
 	if (is_concurrent) {
 		collector->update_cardtable_mod_union = update_cardtable_mod_union;
-		collector->get_cardtable_mod_union_for_object = major_get_cardtable_mod_union_for_object;
+		collector->get_cardtable_mod_union_for_object = major_get_cardtable_mod_union_for_reference;
 	}
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
@@ -2464,14 +2499,14 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
 	if (is_concurrent) {
 		collector->major_ops_concurrent_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_ops_concurrent_start.scan_object = major_scan_object_no_mark_concurrent_start_finish;
+		collector->major_ops_concurrent_start.scan_object = major_scan_object_no_mark_concurrent_start;
 
 		collector->major_ops_concurrent.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
 		collector->major_ops_concurrent.scan_object = major_scan_object_no_mark_concurrent;
 
-		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
-		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_mark_concurrent_start_finish;
-		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent;
+		collector->major_ops_concurrent_finish.copy_or_mark_object = major_copy_or_mark_object_concurrent_finish_canonical;
+		collector->major_ops_concurrent_finish.scan_object = major_scan_object_no_evacuation;
+		collector->major_ops_concurrent_finish.scan_vtype = major_scan_vtype_concurrent_finish;
 	}
 
 #if !defined (FIXED_HEAP) && !defined (SGEN_PARALLEL_MARK)

@@ -290,37 +290,37 @@ sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char 
 }
 
 static void
-update_mod_union (guint8 *dest, gboolean init, guint8 *start_card, size_t num_cards)
+update_mod_union (guint8 *dest, guint8 *start_card, size_t num_cards)
 {
-	if (init) {
-		memcpy (dest, start_card, num_cards);
-	} else {
-		int i;
-		for (i = 0; i < num_cards; ++i)
-			dest [i] |= start_card [i];
-	}
-}
-
-static guint8*
-alloc_mod_union (size_t num_cards)
-{
-	return sgen_alloc_internal_dynamic (num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
+	int i;
+	for (i = 0; i < num_cards; ++i)
+		dest [i] |= start_card [i];
 }
 
 guint8*
+sgen_card_table_alloc_mod_union (char *obj, mword obj_size)
+{
+	size_t num_cards = cards_in_range ((mword) obj, obj_size);
+	guint8 *mod_union = sgen_alloc_internal_dynamic (num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION, TRUE);
+	memset (mod_union, 0, num_cards);
+	return mod_union;
+}
+
+void
+sgen_card_table_free_mod_union (guint8 *mod_union, char *obj, mword obj_size)
+{
+	size_t num_cards = cards_in_range ((mword) obj, obj_size);
+	sgen_free_internal_dynamic (mod_union, num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION);
+}
+
+void
 sgen_card_table_update_mod_union_from_cards (guint8 *dest, guint8 *start_card, size_t num_cards)
 {
-	gboolean init = dest == NULL;
-
-	if (init)
-		dest = alloc_mod_union (num_cards);
-
-	update_mod_union (dest, init, start_card, num_cards);
-
-	return dest;
+	SGEN_ASSERT (0, dest, "Why don't we have a mod union?");
+	update_mod_union (dest, start_card, num_cards);
 }
 
-guint8*
+void
 sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards)
 {
 	guint8 *start_card = sgen_card_table_get_card_address ((mword)obj);
@@ -328,7 +328,6 @@ sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_
 	guint8 *end_card = sgen_card_table_get_card_address ((mword)obj + obj_size - 1) + 1;
 #endif
 	size_t num_cards;
-	guint8 *result = NULL;
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	size_t rest;
@@ -337,9 +336,7 @@ sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_
 
 	while (start_card + rest > SGEN_CARDTABLE_END) {
 		size_t count = SGEN_CARDTABLE_END - start_card;
-		dest = sgen_card_table_update_mod_union_from_cards (dest, start_card, count);
-		if (!result)
-			result = dest;
+		sgen_card_table_update_mod_union_from_cards (dest, start_card, count);
 		dest += count;
 		rest -= count;
 		start_card = sgen_cardtable;
@@ -349,14 +346,10 @@ sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_
 	num_cards = end_card - start_card;
 #endif
 
-	dest = sgen_card_table_update_mod_union_from_cards (dest, start_card, num_cards);
-	if (!result)
-		result = dest;
+	sgen_card_table_update_mod_union_from_cards (dest, start_card, num_cards);
 
 	if (out_num_cards)
 		*out_num_cards = num_cards;
-
-	return result;
 }
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -638,7 +631,7 @@ LOOP_HEAD:
 				ScanVTypeFunc scan_vtype_func = ctx.ops->scan_vtype;
 
 				for (; elem < card_end; elem += elem_size)
-					scan_vtype_func (elem, desc, ctx.queue BINARY_PROTOCOL_ARG (elem_size));
+					scan_vtype_func (obj, elem, desc, ctx.queue BINARY_PROTOCOL_ARG (elem_size));
 			} else {
 				CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 

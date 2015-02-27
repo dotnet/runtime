@@ -64,7 +64,7 @@ SERIAL_SCAN_OBJECT (char *start, mword desc, SgenGrayQueue *queue)
 }
 
 static void
-SERIAL_SCAN_VTYPE (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
+SERIAL_SCAN_VTYPE (char *full_object, char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 

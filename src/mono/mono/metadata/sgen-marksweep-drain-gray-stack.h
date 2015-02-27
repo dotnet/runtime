@@ -152,7 +152,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 		desc = sgen_vtable_get_descriptor ((MonoVTable*)vtable_word);
 		type = desc & DESC_TYPE_MASK;
 
-		if (type <= DESC_TYPE_MAX_SMALL_OBJ || SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE) {
+		if (sgen_safe_object_is_small ((MonoObject*)obj, type)) {
 #ifdef HEAVY_STATISTICS
 			if (type <= DESC_TYPE_MAX_SMALL_OBJ)
 				++stat_optimized_copy_major_small_fast;

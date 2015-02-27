@@ -292,6 +292,8 @@ static int pagesize;
 void
 sgen_los_free_object (LOSObject *obj)
 {
+	/* FIXME: free cardtable_mod_union */
+
 #ifndef LOS_DUMMY
 	size_t size = obj->size;
 	SGEN_LOG (4, "Freed large object %p, size %lu", obj->data, (unsigned long)obj->size);
@@ -541,6 +543,23 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 	}
 }
 
+static guint8*
+get_cardtable_mod_union_for_object (LOSObject *obj)
+{
+	guint8 *mod_union = obj->cardtable_mod_union;
+	guint8 *other;
+	if (mod_union)
+		return mod_union;
+	mod_union = sgen_card_table_alloc_mod_union (obj->data, obj->size);
+	other = SGEN_CAS_PTR ((gpointer*)&obj->cardtable_mod_union, mod_union, NULL);
+	if (!other) {
+		SGEN_ASSERT (0, obj->cardtable_mod_union == mod_union, "Why did CAS not replace?");
+		return mod_union;
+	}
+	sgen_card_table_free_mod_union (mod_union, obj->data, obj->size);
+	return other;
+}
+
 void
 sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 {
@@ -556,7 +575,7 @@ sgen_los_scan_card_table (gboolean mod_union, ScanCopyContext ctx)
 			if (!sgen_los_object_is_pinned (obj->data))
 				continue;
 
-			cards = obj->cardtable_mod_union;
+			cards = get_cardtable_mod_union_for_object (obj);
 			g_assert (cards);
 		} else {
 			cards = NULL;
@@ -601,7 +620,7 @@ sgen_los_update_cardtable_mod_union (void)
 	for (obj = los_object_list; obj; obj = obj->next) {
 		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
 			continue;
-		obj->cardtable_mod_union = sgen_card_table_update_mod_union (obj->cardtable_mod_union,
+		sgen_card_table_update_mod_union (get_cardtable_mod_union_for_object (obj),
 				obj->data, obj->size, NULL);
 	}
 }
@@ -642,6 +661,17 @@ sgen_los_object_is_pinned (char *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	return obj->size & 1;
+}
+
+void
+sgen_los_mark_mod_union_card (MonoObject *mono_obj, void **ptr)
+{
+	LOSObject *obj = sgen_los_header_for_object ((char*)mono_obj);
+	guint8 *mod_union = get_cardtable_mod_union_for_object (obj);
+	size_t offset = sgen_card_table_get_card_offset ((char*)ptr, (char*)sgen_card_table_align_pointer ((char*)obj));
+	SGEN_ASSERT (0, mod_union, "FIXME: optionally allocate the mod union if it's not here and CAS it in.");
+	SGEN_ASSERT (0, (char*)obj == (char*)sgen_card_table_align_pointer ((char*)obj), "Why are LOS objects not card aligned?");
+	mod_union [offset] = 1;
 }
 
 #endif /* HAVE_SGEN_GC */

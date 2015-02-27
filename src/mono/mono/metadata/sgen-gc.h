@@ -460,7 +460,7 @@ struct _ObjectList {
 
 typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
 typedef void (*ScanObjectFunc) (char *obj, mword desc, SgenGrayQueue*);
-typedef void (*ScanVTypeFunc) (char*, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
+typedef void (*ScanVTypeFunc) (char *full_object, char *start, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
 
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
@@ -840,6 +840,14 @@ sgen_safe_object_get_size (MonoObject *obj)
        return sgen_par_object_get_size ((MonoVTable*)SGEN_LOAD_VTABLE (obj), obj);
 }
 
+static inline gboolean
+sgen_safe_object_is_small (MonoObject *obj, int type)
+{
+	if (type <= DESC_TYPE_MAX_SMALL_OBJ)
+		return TRUE;
+	return SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)obj)) <= SGEN_MAX_SMALL_OBJ_SIZE;
+}
+
 /*
  * This variant guarantees to return the exact size of the object
  * before alignment. Needed for canary support.
@@ -973,7 +981,7 @@ typedef struct _LOSObject LOSObject;
 struct _LOSObject {
 	LOSObject *next;
 	mword size; /* this is the object size, lowest bit used for pin/mark */
-	guint8 *cardtable_mod_union; /* only used by the concurrent collector */
+	guint8 * volatile cardtable_mod_union; /* only used by the concurrent collector */
 #if SIZEOF_VOID_P < 8
 	mword dummy;		/* to align object to sizeof (double) */
 #endif
@@ -999,6 +1007,7 @@ mword sgen_los_object_size (LOSObject *obj);
 void sgen_los_pin_object (char *obj);
 void sgen_los_unpin_object (char *obj);
 gboolean sgen_los_object_is_pinned (char *obj);
+void sgen_los_mark_mod_union_card (MonoObject *mono_obj, void **ptr);
 
 
 /* nursery allocator */

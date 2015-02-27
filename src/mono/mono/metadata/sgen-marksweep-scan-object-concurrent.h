@@ -42,15 +42,20 @@ extern guint64 stat_scan_object_called_major;
 			major_copy_or_mark_object_concurrent ((ptr), __old, queue); \
 		} else {						\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
-				sgen_add_to_global_remset ((ptr), __old); \
+				ADD_TO_GLOBAL_REMSET ((MonoObject*)(full_object), (ptr), __old); \
 		}							\
 	} while (0)
 
 /* FIXME: Unify this with optimized code in sgen-marksweep.c. */
 
+#undef ADD_TO_GLOBAL_REMSET
+#define ADD_TO_GLOBAL_REMSET(object,ptr,target)	mark_mod_union_card ((object), (ptr))
+
 static void
-major_scan_object_no_mark_concurrent_anywhere (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent_anywhere (char *full_object, mword desc, SgenGrayQueue *queue)
 {
+	char *start = full_object;
+
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
 #ifdef HEAVY_STATISTICS
@@ -68,7 +73,7 @@ major_scan_object_no_mark_concurrent_anywhere (char *start, mword desc, SgenGray
 }
 
 static void
-major_scan_object_no_mark_concurrent_start_finish (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent_start (char *start, mword desc, SgenGrayQueue *queue)
 {
 	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
 }
@@ -80,8 +85,11 @@ major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *qu
 	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
 }
 
+#undef ADD_TO_GLOBAL_REMSET
+#define ADD_TO_GLOBAL_REMSET(object,ptr,target)	sgen_add_to_global_remset ((ptr), (target))
+
 static void
-major_scan_vtype_concurrent (char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
+major_scan_vtype_concurrent_finish (char *full_object, char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
