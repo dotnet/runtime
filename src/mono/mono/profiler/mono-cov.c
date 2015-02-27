@@ -125,6 +125,12 @@ cov_method_leave (MonoProfiler *prof, MonoMethod *method)
 {
 }
 
+static gboolean
+cov_coverage_filter(MonoProfiler *prof, MonoMethod *method)
+{
+	return TRUE;
+}
+
 void
 mono_profiler_startup (const char *desc);
 
@@ -151,7 +157,7 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install (prof, cov_shutdown);
 	
 	mono_profiler_install_enter_leave (cov_method_enter, cov_method_leave);
-
+	mono_profiler_install_coverage_filter (cov_coverage_filter);
 	mono_profiler_set_events (MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_COVERAGE);
 }
 
