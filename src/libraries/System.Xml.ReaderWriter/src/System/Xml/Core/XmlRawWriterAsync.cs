@@ -60,7 +60,7 @@ namespace System.Xml
 
         public override Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
         {
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // Raw writers do not have to keep a stack of element names.
@@ -165,11 +165,11 @@ namespace System.Xml
         // Write the xml declaration.  This must be the first call.
         internal virtual Task WriteXmlDeclarationAsync(XmlStandalone standalone)
         {
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
         internal virtual Task WriteXmlDeclarationAsync(string xmldecl)
         {
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // Called after an element's attributes have been enumerated, but before any children have been

@@ -65,7 +65,7 @@ namespace System.Xml
                 return WriteProcessingInstructionAsync("xml", xmldecl);
             }
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // Serialize the document type declaration.
@@ -119,14 +119,14 @@ namespace System.Xml
             Task task;
             if (prefix != null && prefix.Length != 0)
             {
-                task = RawTextAsync(string.Concat(prefix, ":", localName));
+                task = RawTextAsync(prefix, ":", localName);
             }
             else
             {
                 task = RawTextAsync(localName);
             }
 
-            return task.CallVoidFuncWhenFinish(WriteStartElementAsync_SetAttEndPos);
+            return task.CallVoidFuncWhenFinishAsync(thisRef => thisRef.WriteStartElementAsync_SetAttEndPos(), this);
         }
 
         private void WriteStartElementAsync_SetAttEndPos()
@@ -150,11 +150,11 @@ namespace System.Xml
 
                 if (prefix != null && prefix.Length != 0)
                 {
-                    return RawTextAsync(string.Concat(prefix, ":", localName, ">"));
+                    return RawTextAsync(prefix, ":", localName, ">");
                 }
                 else
                 {
-                    return RawTextAsync(string.Concat(localName, ">"));
+                    return RawTextAsync(localName, ">");
                 }
             }
             else
@@ -165,7 +165,7 @@ namespace System.Xml
                 bufBytes[bufPos++] = (byte)'/';
                 bufBytes[bufPos++] = (byte)'>';
             }
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // Serialize a full element end tag: "</prefix:localName>"
@@ -180,11 +180,11 @@ namespace System.Xml
 
             if (prefix != null && prefix.Length != 0)
             {
-                return RawTextAsync(string.Concat(prefix, ":", localName, ">"));
+                return RawTextAsync(prefix, ":", localName, ">");
             }
             else
             {
-                return RawTextAsync(string.Concat(localName, ">"));
+                return RawTextAsync(localName, ">");
             }
         }
 
@@ -202,13 +202,13 @@ namespace System.Xml
             Task task;
             if (prefix != null && prefix.Length > 0)
             {
-                task = RawTextAsync(string.Concat(prefix, ":", localName, "=\""));
+                task = RawTextAsync(prefix, ":", localName, "=\"");
             }
             else
             {
-                task = RawTextAsync(string.Concat(localName, "=\""));
+                task = RawTextAsync(localName, "=\"");
             }
-            return task.CallVoidFuncWhenFinish(WriteStartAttribute_SetInAttribute);
+            return task.CallVoidFuncWhenFinishAsync(thisRef => thisRef.WriteStartAttribute_SetInAttribute(), this);
         }
 
         private void WriteStartAttribute_SetInAttribute()
@@ -225,7 +225,7 @@ namespace System.Xml
             inAttributeValue = false;
             attrEndPos = bufPos;
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         internal override async Task WriteNamespaceDeclarationAsync(string prefix, string namespaceName)
@@ -268,7 +268,7 @@ namespace System.Xml
             bufBytes[bufPos++] = (byte)'"';
             attrEndPos = bufPos;
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // Serialize a CData section.  If the "]]>" pattern is found within
@@ -549,7 +549,7 @@ namespace System.Xml
         {
             // intentionally empty
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         // Serialize text that is part of an attribute value.  The '&', '<', '>', and '"' characters
@@ -721,7 +721,7 @@ namespace System.Xml
                 return _WriteAttributeTextBlockAsync(text, curIndex, leftCount);
             }
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         private async Task _WriteAttributeTextBlockAsync(string text, int curIndex, int leftCount)
@@ -929,7 +929,7 @@ namespace System.Xml
                 return _WriteElementTextBlockAsync(false, text, curIndex, leftCount);
             }
 
-            return AsyncHelper.DoneTask;
+            return Task.CompletedTask;
         }
 
         private async Task _WriteElementTextBlockAsync(bool newLine, string text, int curIndex, int leftCount)
@@ -1031,25 +1031,80 @@ namespace System.Xml
             }
         }
 
+        // special-case the one string overload, as it's so common
         protected Task RawTextAsync(string text)
         {
-            int writeLen = 0;
-            int curIndex = 0;
-            int leftCount = text.Length;
-
-            writeLen = RawTextNoFlush(text, curIndex, leftCount);
-            curIndex += writeLen;
-            leftCount -= writeLen;
-            if (writeLen >= 0)
-            {
-                return _RawTextAsync(text, curIndex, leftCount);
-            }
-
-            return AsyncHelper.DoneTask;
+            int writeLen = RawTextNoFlush(text, 0, text.Length);
+            return writeLen >= 0 ?
+                _RawTextAsync(text, writeLen, text.Length - writeLen) :
+                Task.CompletedTask;
         }
 
-        private async Task _RawTextAsync(string text, int curIndex, int leftCount)
+        protected Task RawTextAsync(string text1, string text2 = null, string text3 = null, string text4 = null)
         {
+            Debug.Assert(text1 != null);
+            Debug.Assert(text2 != null || (text3 == null && text4 == null));
+            Debug.Assert(text3 != null || (text4 == null));
+
+            int writeLen;
+
+            // Write out the first string
+            writeLen = RawTextNoFlush(text1, 0, text1.Length);
+            if (writeLen >= 0)
+            {
+                // If we were only able to partially write it, write out the remainder
+                // and then write out the other strings.
+                return _RawTextAsync(text1, writeLen, text1.Length - writeLen, text2, text3, text4);
+            }
+
+            // We wrote out the first string.  Try to write out the second, if it exists.
+            if (text2 != null)
+            {
+                writeLen = RawTextNoFlush(text2, 0, text2.Length);
+                if (writeLen >= 0)
+                {
+                    // If we were only able to write out some of the second string,
+                    // write out the remainder and then the other strings, 
+                    return _RawTextAsync(text2, writeLen, text2.Length - writeLen, text3, text4);
+                }
+            }
+
+            // We wrote out the first and second strings.  Try to write out the third
+            // if it exists.
+            if (text3 != null)
+            {
+                writeLen = RawTextNoFlush(text3, 0, text3.Length);
+                if (writeLen >= 0)
+                {
+                    // If we were only able to write out some of the third string,
+                    // write out the remainder and then the last string.
+                    return _RawTextAsync(text3, writeLen, text3.Length - writeLen, text4);
+                }
+            }
+
+            // Finally, try to write out the fourth string, if it exists.
+            if (text4 != null)
+            {
+                writeLen = RawTextNoFlush(text4, 0, text4.Length);
+                if (writeLen >= 0)
+                {
+                    return _RawTextAsync(text4, writeLen, text4.Length - writeLen);
+                }
+            }
+
+            // All strings written successfully.
+            return Task.CompletedTask;
+        }
+
+        private async Task _RawTextAsync(
+            string text, int curIndex, int leftCount, 
+            string text2 = null, string text3 = null, string text4 = null)
+        {
+            Debug.Assert(text != null);
+            Debug.Assert(text2 != null || (text3 == null && text4 == null));
+            Debug.Assert(text3 != null || (text4 == null));
+
+            // Write out the remainder of the first string
             await FlushBufferAsync().ConfigureAwait(false);
             int writeLen = 0;
             do
@@ -1062,6 +1117,12 @@ namespace System.Xml
                     await FlushBufferAsync().ConfigureAwait(false);
                 }
             } while (writeLen >= 0);
+
+            // If there are additional strings, write them out as well
+            if (text2 != null)
+            {
+                await RawTextAsync(text2, text3, text4).ConfigureAwait(false);
+            }
         }
 
         [SecuritySafeCritical]

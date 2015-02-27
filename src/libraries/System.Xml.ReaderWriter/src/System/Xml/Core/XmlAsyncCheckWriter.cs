@@ -8,7 +8,7 @@ namespace System.Xml
     internal class XmlAsyncCheckWriter : XmlWriter
     {
         private readonly XmlWriter _coreWriter = null;
-        private Task _lastTask = AsyncHelper.DoneTask;
+        private Task _lastTask = Task.CompletedTask;
 
         internal XmlWriter CoreWriter
         {
