@@ -136,6 +136,7 @@ namespace System.Numerics.Tests
             VerifyASin(-1234000000, 0, -1.5707963267948966, 21.62667394298955);
 
             // Verify edge cases where imaginary part is positive.
+            VerifyASin(0, 1234000000, 0, 21.62667394298955);
         }
     }
 }
