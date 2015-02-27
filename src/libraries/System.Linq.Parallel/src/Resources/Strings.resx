@@ -132,17 +132,8 @@
   <data name="NoMatch" xml:space="preserve">
     <value>Sequence contains no matching element</value>
   </data>
-  <data name="ParallelEnumerable_BinaryOpMustUseAsParallel" xml:space="preserve">
-    <value>The second data source of a binary operator must be of type System.Linq.ParallelQuery&lt;T&gt; rather than System.Collections.Generic.IEnumerable&lt;T&gt;. To fix this problem, use the AsParallel() extension method to convert the right data source to System.Linq.ParallelQuery&lt;T&gt;.</value>
-  </data>
-  <data name="ParallelEnumerable_WithCancellation_TokenSourceDisposed" xml:space="preserve">
-    <value>The CancellationTokenSource associated with this CancellationToken has been disposed.</value>
-  </data>
-  <data name="ParallelEnumerable_WithMergeOptions_InvalidOptions" xml:space="preserve">
-    <value>The mergeOptions argument contains an invalid value.</value>
-  </data>
-  <data name="ParallelEnumerable_WithQueryExecutionMode_InvalidMode" xml:space="preserve">
-    <value>The executionMode argument contains an invalid value.</value>
+  <data name="ParallelPartitionable_NullReturn" xml:space="preserve">
+    <value>The return value must not be null.</value>
   </data>
   <data name="ParallelPartitionable_IncorretElementCount" xml:space="preserve">
     <value>The returned array's length must equal the number of partitions requested.</value>
@@ -150,8 +141,17 @@
   <data name="ParallelPartitionable_NullElement" xml:space="preserve">
     <value>Elements returned must not be null.</value>
   </data>
-  <data name="ParallelPartitionable_NullReturn" xml:space="preserve">
-    <value>The return value must not be null.</value>
+  <data name="PLINQ_CommonEnumerator_Current_NotStarted" xml:space="preserve">
+    <value>Enumeration has not started. MoveNext must be called to initiate enumeration.</value>
+  </data>
+  <data name="PLINQ_ExternalCancellationRequested" xml:space="preserve">
+    <value>The query has been canceled via the token supplied to WithCancellation.</value>
+  </data>
+  <data name="PLINQ_DisposeRequested" xml:space="preserve">
+    <value>The query enumerator has been disposed.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateTaskScheduler" xml:space="preserve">
+    <value>The WithTaskScheduler operator may be used at most once in a query.</value>
   </data>
   <data name="ParallelQuery_DuplicateDOP" xml:space="preserve">
     <value>The WithDegreeOfParallelism operator may be used at most once in a query.</value>
@@ -159,14 +159,26 @@
   <data name="ParallelQuery_DuplicateExecutionMode" xml:space="preserve">
     <value>The WithExecutionMode operator may be used at most once in a query.</value>
   </data>
-  <data name="ParallelQuery_DuplicateMergeOptions" xml:space="preserve">
-    <value>The WithMergeOptions operator may be used at most once in a query.</value>
+  <data name="PartitionerQueryOperator_NullPartitionList" xml:space="preserve">
+    <value>Partitioner returned null instead of a list of partitions.</value>
   </data>
-  <data name="ParallelQuery_DuplicateTaskScheduler" xml:space="preserve">
-    <value>The WithTaskScheduler operator may be used at most once in a query.</value>
+  <data name="PartitionerQueryOperator_WrongNumberOfPartitions" xml:space="preserve">
+    <value>Partitioner returned a wrong number of partitions.</value>
+  </data>
+  <data name="PartitionerQueryOperator_NullPartition" xml:space="preserve">
+    <value>Partitioner returned a null partition.</value>
   </data>
   <data name="ParallelQuery_DuplicateWithCancellation" xml:space="preserve">
     <value>The WithCancellation operator may by used at most once in a query.</value>
+  </data>
+  <data name="ParallelQuery_DuplicateMergeOptions" xml:space="preserve">
+    <value>The WithMergeOptions operator may be used at most once in a query.</value>
+  </data>
+  <data name="PLINQ_EnumerationPreviouslyFailed" xml:space="preserve">
+    <value>The query enumerator previously threw an exception.</value>
+  </data>
+  <data name="ParallelQuery_PartitionerNotOrderable" xml:space="preserve">
+    <value>AsOrdered may not be used with a partitioner that is not orderable.</value>
   </data>
   <data name="ParallelQuery_InvalidAsOrderedCall" xml:space="preserve">
     <value>AsOrdered may only be called on the result of AsParallel, ParallelEnumerable.Range, or ParallelEnumerable.Repeat.</value>
@@ -174,28 +186,16 @@
   <data name="ParallelQuery_InvalidNonGenericAsOrderedCall" xml:space="preserve">
     <value>Non-generic AsOrdered may only be called on the result of the non-generic AsParallel.</value>
   </data>
-  <data name="ParallelQuery_PartitionerNotOrderable" xml:space="preserve">
-    <value>AsOrdered may not be used with a partitioner that is not orderable.</value>
+  <data name="ParallelEnumerable_BinaryOpMustUseAsParallel" xml:space="preserve">
+    <value>The second data source of a binary operator must be of type System.Linq.ParallelQuery&lt;T&gt; rather than System.Collections.Generic.IEnumerable&lt;T&gt;. To fix this problem, use the AsParallel() extension method to convert the right data source to System.Linq.ParallelQuery&lt;T&gt;.</value>
   </data>
-  <data name="PartitionerQueryOperator_NullPartition" xml:space="preserve">
-    <value>Partitioner returned a null partition.</value>
+  <data name="ParallelEnumerable_WithCancellation_TokenSourceDisposed" xml:space="preserve">
+    <value>The CancellationTokenSource associated with this CancellationToken has been disposed.</value>
   </data>
-  <data name="PartitionerQueryOperator_NullPartitionList" xml:space="preserve">
-    <value>Partitioner returned null instead of a list of partitions.</value>
+  <data name="ParallelEnumerable_WithQueryExecutionMode_InvalidMode" xml:space="preserve">
+    <value>The executionMode argument contains an invalid value.</value>
   </data>
-  <data name="PartitionerQueryOperator_WrongNumberOfPartitions" xml:space="preserve">
-    <value>Partitioner returned a wrong number of partitions.</value>
-  </data>
-  <data name="PLINQ_CommonEnumerator_Current_NotStarted" xml:space="preserve">
-    <value>Enumeration has not started. MoveNext must be called to initiate enumeration.</value>
-  </data>
-  <data name="PLINQ_DisposeRequested" xml:space="preserve">
-    <value>The query enumerator has been disposed.</value>
-  </data>
-  <data name="PLINQ_EnumerationPreviouslyFailed" xml:space="preserve">
-    <value>The query enumerator previously threw an exception.</value>
-  </data>
-  <data name="PLINQ_ExternalCancellationRequested" xml:space="preserve">
-    <value>The query has been canceled via the token supplied to WithCancellation.</value>
+  <data name="ParallelEnumerable_WithMergeOptions_InvalidOptions" xml:space="preserve">
+    <value>The mergeOptions argument contains an invalid value.</value>
   </data>
 </root>

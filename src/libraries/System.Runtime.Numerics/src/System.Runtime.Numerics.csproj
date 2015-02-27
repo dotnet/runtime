@@ -12,25 +12,10 @@
     <ProjectGuid>{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "></PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Resources</CustomToolNamespace>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Resources\Strings.Designer.cs">
-      <DependentUpon>Strings.resx</DependentUpon>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Compile>
     <Compile Include="System\Numerics\BigInteger.cs" />
     <Compile Include="System\Numerics\BigIntegerBuilder.cs" />
     <Compile Include="System\Numerics\BigNumber.cs" />
@@ -43,12 +28,12 @@
     <Compile Include="$(CommonPath)\System\Globalization\FormatProvider.Number.cs">
       <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\SR.cs">
-      <Link>System\SR.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <ItemGroup>
+    <!--Resource.targets adds the resources associated with the project.-->
+  </ItemGroup>
 </Project>
