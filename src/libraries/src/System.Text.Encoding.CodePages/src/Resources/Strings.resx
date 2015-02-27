@@ -1,5 +1,110 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -12,41 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Arg_OutOfMemoryException" xml:space="preserve">
-    <value>Insufficient memory to continue the execution of the program.</value>
-  </data>
-  <data name="Argument_CodepageNotSupported" xml:space="preserve">
-    <value>{0} is not a supported code page.</value>
-  </data>
-  <data name="Argument_EncoderFallbackNotEmpty" xml:space="preserve">
-    <value>Must complete Convert() operation or call Encoder.Reset() before calling GetBytes() or GetByteCount(). Encoder '{0}' fallback '{1}'.</value>
-  </data>
-  <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
-    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
-  </data>
-  <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
-    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
-  </data>
-  <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
-    <value>String contains invalid Unicode code points.</value>
-  </data>
-  <data name="Argument_RecursiveFallback" xml:space="preserve">
-    <value>Recursive fallback not allowed for character \u{0:X4}.</value>
-  </data>
-  <data name="Argument_RecursiveFallbackBytes" xml:space="preserve">
-    <value>Recursive fallback not allowed for bytes {0}.</value>
-  </data>
   <data name="ArgumentNull_Array" xml:space="preserve">
     <value>Array cannot be null.</value>
   </data>
-  <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
-    <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
-  </data>
-  <data name="ArgumentOutOfRange_GetCharCountOverflow" xml:space="preserve">
-    <value>Too many bytes. The resulting number of chars is larger than what can be returned as an int.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
-    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
   </data>
   <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
     <value>Index and count must refer to a location within the string.</value>
@@ -54,59 +129,128 @@
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
+  <data name="NotSupported_NoCodepageData" xml:space="preserve">
+    <value>No data is available for encoding {0}.</value>
+  </data>
+  <data name="Arg_OutOfMemoryException" xml:space="preserve">
+    <value>Insufficient memory to continue the execution of the program.</value>
+  </data>
+  <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
+    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
+    <value>String contains invalid Unicode code points.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
+    <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
+  </data>
+  <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
+    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_GetCharCountOverflow" xml:space="preserve">
+    <value>Too many bytes. The resulting number of chars is larger than what can be returned as an int.</value>
+  </data>
+  <data name="Argument_EncoderFallbackNotEmpty" xml:space="preserve">
+    <value>Must complete Convert() operation or call Encoder.Reset() before calling GetBytes() or GetByteCount(). Encoder '{0}' fallback '{1}'.</value>
+  </data>
+  <data name="Argument_RecursiveFallback" xml:space="preserve">
+    <value>Recursive fallback not allowed for character \\u{0:X4}.</value>
+  </data>
+  <data name="Argument_RecursiveFallbackBytes" xml:space="preserve">
+    <value>Recursive fallback not allowed for bytes {0}.</value>
   </data>
   <data name="ArgumentOutOfRange_Range" xml:space="preserve">
     <value>Valid values are between {0} and {1}, inclusive.</value>
   </data>
-  <data name="Globalization_cp_10000" xml:space="preserve">
-    <value>Western European (Mac)</value>
+  <data name="Argument_CodepageNotSupported" xml:space="preserve">
+    <value>{0} is not a supported code page.</value>
   </data>
-  <data name="Globalization_cp_10001" xml:space="preserve">
-    <value>Japanese (Mac)</value>
+  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
-  <data name="Globalization_cp_10002" xml:space="preserve">
-    <value>Chinese Traditional (Mac)</value>
+  <data name="MissingEncodingNameResource" xml:space="preserve">
+    <value>Could not find a resource entry for the encoding codepage '{0} - {1}'</value>
   </data>
-  <data name="Globalization_cp_10003" xml:space="preserve">
-    <value>Korean (Mac)</value>
+  <data name="Globalization_cp_37" xml:space="preserve">
+    <value>IBM EBCDIC (US-Canada)</value>
   </data>
-  <data name="Globalization_cp_10004" xml:space="preserve">
-    <value>Arabic (Mac)</value>
+  <data name="Globalization_cp_437" xml:space="preserve">
+    <value>OEM United States</value>
   </data>
-  <data name="Globalization_cp_10005" xml:space="preserve">
-    <value>Hebrew (Mac)</value>
+  <data name="Globalization_cp_500" xml:space="preserve">
+    <value>IBM EBCDIC (International)</value>
   </data>
-  <data name="Globalization_cp_10006" xml:space="preserve">
-    <value>Greek (Mac)</value>
+  <data name="Globalization_cp_708" xml:space="preserve">
+    <value>Arabic (ASMO 708)</value>
   </data>
-  <data name="Globalization_cp_10007" xml:space="preserve">
-    <value>Cyrillic (Mac)</value>
+  <data name="Globalization_cp_720" xml:space="preserve">
+    <value>Arabic (DOS)</value>
   </data>
-  <data name="Globalization_cp_10008" xml:space="preserve">
-    <value>Chinese Simplified (Mac)</value>
+  <data name="Globalization_cp_737" xml:space="preserve">
+    <value>Greek (DOS)</value>
   </data>
-  <data name="Globalization_cp_10010" xml:space="preserve">
-    <value>Romanian (Mac)</value>
+  <data name="Globalization_cp_775" xml:space="preserve">
+    <value>Baltic (DOS)</value>
   </data>
-  <data name="Globalization_cp_10017" xml:space="preserve">
-    <value>Ukrainian (Mac)</value>
+  <data name="Globalization_cp_850" xml:space="preserve">
+    <value>Western European (DOS)</value>
   </data>
-  <data name="Globalization_cp_10021" xml:space="preserve">
-    <value>Thai (Mac)</value>
+  <data name="Globalization_cp_852" xml:space="preserve">
+    <value>Central European (DOS)</value>
   </data>
-  <data name="Globalization_cp_10029" xml:space="preserve">
-    <value>Central European (Mac)</value>
+  <data name="Globalization_cp_855" xml:space="preserve">
+    <value>OEM Cyrillic</value>
   </data>
-  <data name="Globalization_cp_10079" xml:space="preserve">
-    <value>Icelandic (Mac)</value>
+  <data name="Globalization_cp_857" xml:space="preserve">
+    <value>Turkish (DOS)</value>
   </data>
-  <data name="Globalization_cp_10081" xml:space="preserve">
-    <value>Turkish (Mac)</value>
+  <data name="Globalization_cp_858" xml:space="preserve">
+    <value>OEM Multilingual Latin I</value>
   </data>
-  <data name="Globalization_cp_10082" xml:space="preserve">
-    <value>Croatian (Mac)</value>
+  <data name="Globalization_cp_860" xml:space="preserve">
+    <value>Portuguese (DOS)</value>
+  </data>
+  <data name="Globalization_cp_861" xml:space="preserve">
+    <value>Icelandic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_862" xml:space="preserve">
+    <value>Hebrew (DOS)</value>
+  </data>
+  <data name="Globalization_cp_863" xml:space="preserve">
+    <value>French Canadian (DOS)</value>
+  </data>
+  <data name="Globalization_cp_864" xml:space="preserve">
+    <value>Arabic (864)</value>
+  </data>
+  <data name="Globalization_cp_865" xml:space="preserve">
+    <value>Nordic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_866" xml:space="preserve">
+    <value>Cyrillic (DOS)</value>
+  </data>
+  <data name="Globalization_cp_869" xml:space="preserve">
+    <value>Greek, Modern (DOS)</value>
+  </data>
+  <data name="Globalization_cp_870" xml:space="preserve">
+    <value>IBM EBCDIC (Multilingual Latin-2)</value>
+  </data>
+  <data name="Globalization_cp_874" xml:space="preserve">
+    <value>Thai (Windows)</value>
+  </data>
+  <data name="Globalization_cp_875" xml:space="preserve">
+    <value>IBM EBCDIC (Greek Modern)</value>
+  </data>
+  <data name="Globalization_cp_932" xml:space="preserve">
+    <value>Japanese (Shift-JIS)</value>
+  </data>
+  <data name="Globalization_cp_936" xml:space="preserve">
+    <value>Chinese Simplified (GB2312)</value>
+  </data>
+  <data name="Globalization_cp_949" xml:space="preserve">
+    <value>Korean</value>
+  </data>
+  <data name="Globalization_cp_950" xml:space="preserve">
+    <value>Chinese Traditional (Big5)</value>
   </data>
   <data name="Globalization_cp_1026" xml:space="preserve">
     <value>IBM EBCDIC (Turkish Latin-5)</value>
@@ -173,6 +317,54 @@
   </data>
   <data name="Globalization_cp_1361" xml:space="preserve">
     <value>Korean (Johab)</value>
+  </data>
+  <data name="Globalization_cp_10000" xml:space="preserve">
+    <value>Western European (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10001" xml:space="preserve">
+    <value>Japanese (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10002" xml:space="preserve">
+    <value>Chinese Traditional (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10003" xml:space="preserve">
+    <value>Korean (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10004" xml:space="preserve">
+    <value>Arabic (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10005" xml:space="preserve">
+    <value>Hebrew (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10006" xml:space="preserve">
+    <value>Greek (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10007" xml:space="preserve">
+    <value>Cyrillic (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10008" xml:space="preserve">
+    <value>Chinese Simplified (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10010" xml:space="preserve">
+    <value>Romanian (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10017" xml:space="preserve">
+    <value>Ukrainian (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10021" xml:space="preserve">
+    <value>Thai (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10029" xml:space="preserve">
+    <value>Central European (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10079" xml:space="preserve">
+    <value>Icelandic (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10081" xml:space="preserve">
+    <value>Turkish (Mac)</value>
+  </data>
+  <data name="Globalization_cp_10082" xml:space="preserve">
+    <value>Croatian (Mac)</value>
   </data>
   <data name="Globalization_cp_20000" xml:space="preserve">
     <value>Chinese Traditional (CNS)</value>
@@ -315,17 +507,8 @@
   <data name="Globalization_cp_29001" xml:space="preserve">
     <value>Europa</value>
   </data>
-  <data name="Globalization_cp_37" xml:space="preserve">
-    <value>IBM EBCDIC (US-Canada)</value>
-  </data>
   <data name="Globalization_cp_38598" xml:space="preserve">
     <value>Hebrew (ISO-Logical)</value>
-  </data>
-  <data name="Globalization_cp_437" xml:space="preserve">
-    <value>OEM United States</value>
-  </data>
-  <data name="Globalization_cp_500" xml:space="preserve">
-    <value>IBM EBCDIC (International)</value>
   </data>
   <data name="Globalization_cp_50000" xml:space="preserve">
     <value>User Defined</value>
@@ -410,83 +593,5 @@
   </data>
   <data name="Globalization_cp_57011" xml:space="preserve">
     <value>ISCII Punjabi</value>
-  </data>
-  <data name="Globalization_cp_708" xml:space="preserve">
-    <value>Arabic (ASMO 708)</value>
-  </data>
-  <data name="Globalization_cp_720" xml:space="preserve">
-    <value>Arabic (DOS)</value>
-  </data>
-  <data name="Globalization_cp_737" xml:space="preserve">
-    <value>Greek (DOS)</value>
-  </data>
-  <data name="Globalization_cp_775" xml:space="preserve">
-    <value>Baltic (DOS)</value>
-  </data>
-  <data name="Globalization_cp_850" xml:space="preserve">
-    <value>Western European (DOS)</value>
-  </data>
-  <data name="Globalization_cp_852" xml:space="preserve">
-    <value>Central European (DOS)</value>
-  </data>
-  <data name="Globalization_cp_855" xml:space="preserve">
-    <value>OEM Cyrillic</value>
-  </data>
-  <data name="Globalization_cp_857" xml:space="preserve">
-    <value>Turkish (DOS)</value>
-  </data>
-  <data name="Globalization_cp_858" xml:space="preserve">
-    <value>OEM Multilingual Latin I</value>
-  </data>
-  <data name="Globalization_cp_860" xml:space="preserve">
-    <value>Portuguese (DOS)</value>
-  </data>
-  <data name="Globalization_cp_861" xml:space="preserve">
-    <value>Icelandic (DOS)</value>
-  </data>
-  <data name="Globalization_cp_862" xml:space="preserve">
-    <value>Hebrew (DOS)</value>
-  </data>
-  <data name="Globalization_cp_863" xml:space="preserve">
-    <value>French Canadian (DOS)</value>
-  </data>
-  <data name="Globalization_cp_864" xml:space="preserve">
-    <value>Arabic (864)</value>
-  </data>
-  <data name="Globalization_cp_865" xml:space="preserve">
-    <value>Nordic (DOS)</value>
-  </data>
-  <data name="Globalization_cp_866" xml:space="preserve">
-    <value>Cyrillic (DOS)</value>
-  </data>
-  <data name="Globalization_cp_869" xml:space="preserve">
-    <value>Greek, Modern (DOS)</value>
-  </data>
-  <data name="Globalization_cp_870" xml:space="preserve">
-    <value>IBM EBCDIC (Multilingual Latin-2)</value>
-  </data>
-  <data name="Globalization_cp_874" xml:space="preserve">
-    <value>Thai (Windows)</value>
-  </data>
-  <data name="Globalization_cp_875" xml:space="preserve">
-    <value>IBM EBCDIC (Greek Modern)</value>
-  </data>
-  <data name="Globalization_cp_932" xml:space="preserve">
-    <value>Japanese (Shift-JIS)</value>
-  </data>
-  <data name="Globalization_cp_936" xml:space="preserve">
-    <value>Chinese Simplified (GB2312)</value>
-  </data>
-  <data name="Globalization_cp_949" xml:space="preserve">
-    <value>Korean</value>
-  </data>
-  <data name="Globalization_cp_950" xml:space="preserve">
-    <value>Chinese Traditional (Big5)</value>
-  </data>
-  <data name="MissingEncodingNameResource" xml:space="preserve">
-    <value>Could not find a resource entry for the encoding codepage '{0} - {1}'</value>
-  </data>
-  <data name="NotSupported_NoCodepageData" xml:space="preserve">
-    <value>No data is available for encoding {0}.</value>
   </data>
 </root>
