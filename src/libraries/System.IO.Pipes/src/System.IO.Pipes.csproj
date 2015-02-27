@@ -10,28 +10,18 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-
   <!-- References are resolved from packages.config -->
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\SR.cs">
-      <Link>Common\System\SR.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamAsyncHelper.cs">
       <Link>Common\System\IO\StreamAsyncHelper.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeClientStream.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.cs" />
@@ -43,7 +33,6 @@
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -67,9 +56,9 @@
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\PipeStreamAsyncResult.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <!-- TODO: Remove once implemented -->
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Unix.cs" />
@@ -78,18 +67,12 @@
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Unix.cs" />
   </ItemGroup>
-
   <!-- Resource files -->
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <SubType>Designer</SubType>
-      <CustomToolNamespace>Resources</CustomToolNamespace>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <ItemGroup>
+    <!--Resource.targets adds the resources associated with the project.-->
+  </ItemGroup>
 </Project>

@@ -117,14 +117,53 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Argument_EmptyFile" xml:space="preserve">
-    <value>A positive capacity must be specified for a Memory Mapped File backed by an empty file.</value>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non negative number is required.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create \"{0}\" because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_NoPermissionToDirectoryName" xml:space="preserve">
+    <value>&lt;Path discovery permission to the specified directory was denied.&gt;</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_DriveNotFound_Drive" xml:space="preserve">
+    <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
   </data>
   <data name="Argument_MapNameEmptyString" xml:space="preserve">
     <value>Map name cannot be an empty string.</value>
   </data>
-  <data name="Argument_NewMMFAppendModeNotAllowed" xml:space="preserve">
-    <value>FileMode.Append is not permitted when creating new memory mapped files. Instead, use MemoryMappedFileView to ensure write-only access within a specified region.</value>
+  <data name="Argument_EmptyFile" xml:space="preserve">
+    <value>A positive capacity must be specified for a Memory Mapped File backed by an empty file.</value>
   </data>
   <data name="Argument_NewMMFWriteAccessNotAllowed" xml:space="preserve">
     <value>MemoryMappedFileAccess.Write is not permitted when creating new memory mapped files. Use MemoryMappedFileAccess.ReadWrite instead.</value>
@@ -132,23 +171,17 @@
   <data name="Argument_ReadAccessWithLargeCapacity" xml:space="preserve">
     <value>When specifying MemoryMappedFileAccess.Read access, the capacity must not be larger than the file size.</value>
   </data>
-  <data name="ArgumentNull_FileStream" xml:space="preserve">
-    <value>fileStream cannot be null.</value>
+  <data name="Argument_NewMMFAppendModeNotAllowed" xml:space="preserve">
+    <value>FileMode.Append is not permitted when creating new memory mapped files. Instead, use MemoryMappedFileView to ensure write-only access within a specified region.</value>
   </data>
   <data name="ArgumentNull_MapName" xml:space="preserve">
     <value>Map name cannot be null.</value>
   </data>
-  <data name="ArgumentOutOfRange_CapacityGEFileSizeRequired" xml:space="preserve">
-    <value>The capacity may not be smaller than the file size.</value>
+  <data name="ArgumentNull_FileStream" xml:space="preserve">
+    <value>fileStream cannot be null.</value>
   </data>
   <data name="ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed" xml:space="preserve">
     <value>The capacity cannot be greater than the size of the system's logical address space.</value>
-  </data>
-  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
-    <value>Specified file length was too large for the file system.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non negative number is required.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedPositiveNumber" xml:space="preserve">
     <value>A positive number is required.</value>
@@ -159,47 +192,17 @@
   <data name="ArgumentOutOfRange_PositiveOrDefaultSizeRequired" xml:space="preserve">
     <value>The size must be greater than or equal to 0. If 0 is specified, the view extends from the specified offset to the end of the file mapping.</value>
   </data>
+  <data name="ArgumentOutOfRange_CapacityGEFileSizeRequired" xml:space="preserve">
+    <value>The capacity may not be smaller than the file size.</value>
+  </data>
+  <data name="IO_NotEnoughMemory" xml:space="preserve">
+    <value>Not enough memory to map view.</value>
+  </data>
   <data name="InvalidOperation_CantCreateFileMapping" xml:space="preserve">
     <value>Cannot create file mapping.</value>
   </data>
   <data name="InvalidOperation_ViewIsNull" xml:space="preserve">
     <value>The underlying MemoryMappedView object is null.</value>
-  </data>
-  <data name="IO_AlreadyExists_Name" xml:space="preserve">
-    <value>Cannot create "{0}" because a file or directory with the same name already exists.</value>
-  </data>
-  <data name="IO_DriveNotFound_Drive" xml:space="preserve">
-    <value>Could not find the drive '{0}'. The drive might not be ready or might not be mapped.</value>
-  </data>
-  <data name="IO_FileExists_Name" xml:space="preserve">
-    <value>The file '{0}' already exists.</value>
-  </data>
-  <data name="IO_FileNotFound" xml:space="preserve">
-    <value>Unable to find the specified file.</value>
-  </data>
-  <data name="IO_FileNotFound_FileName" xml:space="preserve">
-    <value>Could not find file '{0}'.</value>
-  </data>
-  <data name="IO_NoPermissionToDirectoryName" xml:space="preserve">
-    <value>&lt;Path discovery permission to the specified directory was denied.&gt;</value>
-  </data>
-  <data name="IO_NotEnoughMemory" xml:space="preserve">
-    <value>Not enough memory to map view.</value>
-  </data>
-  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
-    <value>Could not find a part of the path.</value>
-  </data>
-  <data name="IO_PathNotFound_Path" xml:space="preserve">
-    <value>Could not find a part of the path '{0}'.</value>
-  </data>
-  <data name="IO_PathTooLong" xml:space="preserve">
-    <value>The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, and the directory name must be less than 248 characters.</value>
-  </data>
-  <data name="IO_SharingViolation_File" xml:space="preserve">
-    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
-  </data>
-  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
-    <value>The process cannot access the file because it is being used by another process.</value>
   </data>
   <data name="NotSupported_MMViewStreamsFixedLength" xml:space="preserve">
     <value>MemoryMappedViewStreams are fixed length.</value>
@@ -210,22 +213,13 @@
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
   </data>
-  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
-  </data>
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
-  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
-    <value>Access to the path is denied.</value>
-  </data>
-  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
-    <value>Access to the path '{0}' is denied.</value>
+  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
   </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error '{0}'.</value>
-  </data>
-  <data name="PlatformNotSupported_NamedMaps" xml:space="preserve">
-    <value>Named maps are not supported.</value>
   </data>
 </root>
