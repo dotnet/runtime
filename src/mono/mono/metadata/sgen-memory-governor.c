@@ -175,9 +175,12 @@ sgen_memgov_major_collection_start (void)
 }
 
 void
-sgen_memgov_major_collection_end (void)
+sgen_memgov_major_collection_end (gboolean forced)
 {
 	last_collection_los_memory_usage = los_memory_usage;
+
+	if (forced)
+		sgen_memgov_calculate_minor_collection_allowance ();
 }
 
 void
