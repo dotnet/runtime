@@ -332,6 +332,10 @@ namespace System.Numerics
         }
         public static Complex Asin(Complex value) /* Arcsin */
         {
+            if ((value._imaginary == 0 && value._real < 0) || value._imaginary > 0)
+            {
+                return -Asin(-value);
+            }
             return (-ImaginaryOne) * Log(ImaginaryOne * value + Sqrt(One - value * value));
         }
 
@@ -351,6 +355,10 @@ namespace System.Numerics
         }
         public static Complex Acos(Complex value) /* Arccos */
         {
+            if ((value._imaginary == 0 && value._real > 0) || value._imaginary < 0)
+            {
+                return System.Math.PI - Acos(-value);
+            }
             return (-ImaginaryOne) * Log(value + ImaginaryOne * Sqrt(One - (value * value)));
         }
         public static Complex Tan(Complex value)
