@@ -75,7 +75,7 @@ namespace System.Xml
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
             {
-                return WriteStringAsync(value).CallTaskFuncWhenFinish(WriteEndAttributeAsync);
+                return WriteStringAsync(value).CallTaskFuncWhenFinishAsync(thisRef => thisRef.WriteEndAttributeAsync(), this);
             }
             else
             {
