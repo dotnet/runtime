@@ -11,22 +11,7 @@ extern "C"
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
-    
-    void ErectWriteBarrier_ASM(Object** dst, Object* ref)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
 
-    void ExternalMethodFixupPatchLabel()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void ExternalMethodFixupStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-    
     void GenericPInvokeCalliHelper()
     {
         PORTABILITY_ASSERT("Implement for PAL");
@@ -47,41 +32,12 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    void TheUMEntryPrestub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void UMThunkStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void VarargPInvokeStub()
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
     
-    void STDCALL UM2MThunk_WrapperHelper(void *pThunkArgs,
-                                         int argLen,
-                                         void *pAddr,
-                                         UMEntryThunk *pEntryThunk,
-                                         Thread *pThread)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void VarargPInvokeStub_RetBuffArg()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void VirtualMethodFixupPatchLabel()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void VirtualMethodFixupStub()
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
@@ -120,16 +76,4 @@ extern "C"
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
-
-#ifdef FEATURE_PREJIT
-    void StubDispatchFixupStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-#endif    
-
-    void StubDispatchFixupPatchLabel()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }    
 };

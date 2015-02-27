@@ -5273,7 +5273,7 @@ bool                Compiler::impIsTailCallILPattern(bool tailPrefixed,
         return false;
     }
 
-#if FEATURE_TAILCALL_OPT
+#if FEATURE_TAILCALL_OPT_SHARED_RETURN
     // we can actually handle if the ret is in a fallthrough block, as long as that is the only part of the sequence.
     // Make sure we don't go past the end of the IL however.
     codeEnd = min(codeEnd + 1, info.compCode+info.compILCodeSize);
@@ -5356,6 +5356,12 @@ bool                Compiler::impIsImplicitTailCallCandidate(OPCODE opcode,
     // must not be tail prefixed
     if (prefixFlags & PREFIX_TAILCALL_EXPLICIT)  
         return false;
+
+#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
+    // the block containing call is marked as BBJ_RETURN
+    if (compCurBB->bbJumpKind != BBJ_RETURN)
+        return false;
+#endif // !FEATURE_TAILCALL_OPT_SHARED_RETURN
 
     // must be call+ret or call+pop+ret 
     if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode,codeEnd)) 

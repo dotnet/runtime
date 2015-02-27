@@ -62,11 +62,19 @@ ASMCONSTANTS_C_ASSERT(ASM_CLRTASKHOSTED   == CLRTASKHOSTED);
 #define PINVOKE_CALLI_SIGTOKEN_REGNUM        11
 #define PINVOKE_CALLI_SIGTOKEN_REGISTER     r11
 
+#ifdef UNIX_AMD64_ABI
+// rdi, rsi, rdx, rcx, r8, r9
+#define SIZEOF_MAX_INT_ARG_SPILL  0x30
+// xmm0...xmm7
+#define SIZEOF_MAX_FP_ARG_SPILL             0x80
+#else
 // rcx, rdx, r8, r9
 #define SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES  0x20
-
 // xmm0...xmm3
 #define SIZEOF_MAX_FP_ARG_SPILL             0x40
+#endif
+
+
 
 #ifndef UNIX_AMD64_ABI
 #define SIZEOF_CalleeSavedRegisters         0x40
@@ -647,7 +655,6 @@ ASMCONSTANTS_C_ASSERT(TLS_GETTER_MAX_SIZE_ASM == TLS_GETTER_MAX_SIZE)
 
 #define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
 
-    
 #define UMTHUNKSTUB_HOST_NOTIFY_FLAG_RBPOFFSET (0x40)   // xmm save size
 
 #define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z 

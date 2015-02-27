@@ -1610,7 +1610,7 @@ ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, Va
 
     if (VNFuncIsComparison(func))
     {
-        assert(typ == TYP_INT);
+        assert(genActualType(typ) == TYP_INT);
         result = VNForIntCon(EvalComparison(func, arg0Val, arg1Val));
     }
     else
@@ -2886,7 +2886,22 @@ ValueNum ValueNumStore::EvalMathFunc(var_types typ, CorInfoIntrinsics gtMathFN, 
             vnf = VNF_Abs; 
             break;
         case CORINFO_INTRINSIC_Round:
-            vnf = VNF_Round; 
+            if (typ == TYP_DOUBLE)
+            {
+                vnf = VNF_RoundDouble;
+            }
+            else if (typ == TYP_FLOAT)
+            {
+                vnf = VNF_RoundFloat;
+            }
+            else if (typ == TYP_INT)
+            {
+                vnf = VNF_RoundInt;
+            }
+            else
+            {
+                noway_assert(!"Invalid INTRINSIC_Round");
+            }
             break;
         default:
             unreached(); // the above are the only math intrinsics at the time of this writing.
@@ -2894,6 +2909,7 @@ ValueNum ValueNumStore::EvalMathFunc(var_types typ, CorInfoIntrinsics gtMathFN, 
         assert(typ == TYP_DOUBLE 
             || typ == TYP_FLOAT
             || (typ == TYP_INT && gtMathFN == CORINFO_INTRINSIC_Round));
+
         return VNForFunc(typ, vnf, arg0VN);
     }
 }

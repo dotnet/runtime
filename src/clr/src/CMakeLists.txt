@@ -33,11 +33,11 @@ add_subdirectory(strongname)
 add_subdirectory(binder)
 add_subdirectory(classlibnative)
 add_subdirectory(dlls)
+add_subdirectory(ToolBox)
 add_subdirectory(unwinder)
 
 if(WIN32)
   add_subdirectory(ipcman)
-  add_subdirectory(ToolBox)
   add_subdirectory(tools)
 endif(WIN32)
 

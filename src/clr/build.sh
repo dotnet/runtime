@@ -10,41 +10,22 @@ usage()
     exit 1
 }
 
+setup_dirs()
+{
+    echo Setting up directories for build
+    
+    mkdir -p "$__RootBinDir"
+    mkdir -p "$__BinDir"
+    mkdir -p "$__LogsDir"
+    mkdir -p "$__IntermediatesDir"
+}
+
 # Performs "clean build" type actions (deleting and remaking directories)
 
 clean()
 {
-    echo Doing a clean build
-
-    # make projects would need a rebuild
-    MakeCleanArgs=clean
-
-    # Cleanup the binaries drop folder
-    if [ -d "$__BinDir" ]; then 
-        rm -r "$__BinDir"
-    fi
-    
-    mkdir -p "$__BinDir"
-
-    # Cleanup the CMake folder
-    if [ -d "$__CMakeSlnDir" ]; then
-         rm -r "$__CMakeSlnDir"
-    fi
-    mkdir -p "$__CMakeSlnDir"
-
-    # Cleanup the logs folder
-    if [ -d "$__LogsDir" ]; then
-        rm -r "$__LogsDir"
-    fi
-    
-    mkdir -p "$__LogsDir"
-
-    # Cleanup intermediates folder
-    if [ -d "$__IntermediatesDir" ]; then
-        rm -r "$__IntermediatesDir"
-    fi
-
-    mkdir -p "$__IntermediatesDir"
+    echo Cleaning binaries directory
+    rm -rf "$__RootBinDir"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -65,8 +46,8 @@ build_coreclr()
 {
     # All set to commence the build
     
-    echo "Commencing build of native components for $__BuildArch/$__BuildType"
-    cd "$__CMakeSlnDir"
+    echo "Commencing build of native components for $__BuildOS.$__BuildArch.$__BuildType"
+    cd "$__IntermediatesDir"
     
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__CMakeArgs"
@@ -74,7 +55,7 @@ build_coreclr()
     
     # Check that the makefiles were created.
     
-    if [ ! -f "$__CMakeSlnDir/Makefile" ]; then
+    if [ ! -f "$__IntermediatesDir/Makefile" ]; then
         echo "Failed to generate native component build project!"
         exit 1
     fi
@@ -106,7 +87,16 @@ echo "Commencing CoreCLR Repo build"
 
 # Obtain the location of the bash script to figure out whether the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-__BuildArch=amd64
+__BuildArch=x64
+# Use uname to determine what the OS is.  
+if [ $(uname -o | grep -i Linux) ]; then
+    __BuildOS=linux
+elif [ $(uname -s | grep -i Darwin) ]; then
+    __BuildOS=mac
+else
+    echo "Unsupported OS detected, assuming linux"
+    __BuildOS=linux
+fi
 __MSBuildBuildArch=x64
 __BuildType=debug
 __CMakeArgs=DEBUG
@@ -117,7 +107,6 @@ __SourceDir="$__ProjectDir/src"
 __PackagesDir="$__ProjectDir/packages"
 __RootBinDir="$__ProjectDir/binaries"
 __LogsDir="$__RootBinDir/Logs"
-__CMakeSlnDir="$__RootBinDir/CMake"
 __UnprocessedBuildArgs=
 __MSBCleanBuildArgs=
 __CleanBuild=false
@@ -131,7 +120,7 @@ for i in "$@"
         exit 1
         ;;
         amd64)
-        __BuildArch=amd64
+        __BuildArch=x64
         __MSBuildBuildArch=x64
         ;;
         debug)
@@ -150,25 +139,24 @@ for i in "$@"
 done
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/Product/$__BuildArch/$__BuildType"
+__BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 __ToolsDir="$__RootBinDir/tools"
-__TestWorkingDir="$__RootBinDir/tests/$__BuildArch/$__BuildType"
-__IntermediatesDir="$__RootBinDir/intermediates/$__BuildArch/$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/intermediates/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
 export __CMakeBinDir="$__BinDir"
 
-# Switch to clean build mode if the binaries output folder does not exist
-if [ ! -d "$__RootBinDir" ]; then
-    __CleanBuild=1
-fi
-
 # Configure environment if we are doing a clean build.
 if [ $__CleanBuild == 1 ]; then
     clean
 fi
+
+# Make the directories necessary for build if they don't exist
+
+setup_dirs
 
 # Check prereqs.
 

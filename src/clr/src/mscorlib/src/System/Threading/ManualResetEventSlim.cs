@@ -373,7 +373,7 @@ namespace System.Threading
             }
 
 #if DEBUG
-            m_lastSetTime = DateTime.Now.Ticks;
+            m_lastSetTime = DateTime.UtcNow.Ticks;
 #endif
         }
 
@@ -404,7 +404,7 @@ namespace System.Threading
             IsSet = false;
 
 #if DEBUG
-            m_lastResetTime = DateTime.Now.Ticks;
+            m_lastResetTime = DateTime.UtcNow.Ticks;
 #endif
         }
 
