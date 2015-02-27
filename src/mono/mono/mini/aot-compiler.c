@@ -125,6 +125,7 @@ typedef struct MonoAotOptions {
 	gboolean print_skipped_methods;
 	gboolean stats;
 	char *tool_prefix;
+	char *ld_flags;
 	gboolean autoreg;
 	char *mtriple;
 	char *llvm_path;
@@ -6434,6 +6435,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->autoreg = TRUE;
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
+		} else if (str_begins_with (arg, "ld-flags=")) {
+			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
@@ -8645,6 +8648,7 @@ compile_asm (MonoAotCompile *acfg)
 	char *command, *objfile;
 	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
 	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
+	const char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : "";;
 
 #if defined(TARGET_AMD64) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--64"
@@ -8745,9 +8749,10 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 #ifdef LD_NAME
-	command = g_strdup_printf ("%s -o %s %s %s.o", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname);
+	command = g_strdup_printf ("%s -o %s %s %s.o %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);
 #else
-	command = g_strdup_printf ("%sld %s -shared -o %s %s %s.o", tool_prefix, LD_OPTIONS, tmp_outfile_name, llvm_ofile, acfg->tmpfname);
+	command = g_strdup_printf ("%sld %s -shared -o %s %s %s.o %s", tool_prefix, LD_OPTIONS, tmp_outfile_name, llvm_ofile,
+		acfg->tmpfname, ld_flags);
 #endif
 	aot_printf (acfg, "Executing the native linker: %s\n", command);
 	if (system (command) != 0) {
