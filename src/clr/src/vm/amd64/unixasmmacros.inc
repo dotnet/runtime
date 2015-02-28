@@ -50,9 +50,9 @@ C_FUNC(\Name):
 #else
         .type \Name, %function
 #endif
+C_FUNC(\Name):
         .cfi_startproc
         .cfi_def_cfa_offset 8
-C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
