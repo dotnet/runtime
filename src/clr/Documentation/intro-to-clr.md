@@ -242,8 +242,8 @@ Phew!  The runtime does a lot! It has taken many pages just to describe _some_ o
 - The Runtime's goal is to make programming easy.
 - The Fundamental features of the runtime are:
   - Garbage Collection
-  - Type Safety
-  - High-Level Support for Language Features
+  - Memory and Type Safety
+  - Support for High-Level Language Features
 
 ## Useful Links
 
