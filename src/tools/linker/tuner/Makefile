@@ -1,5 +1,6 @@
 thisdir = tools/tuner
 SUBDIRS =
+DEP_DIRS = linker
 include ../../build/rules.make
 
 CECIL = $(topdir)/class/lib/$(PROFILE)/Mono.Cecil.dll
