@@ -18,10 +18,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
             message(FATAL_ERROR "Cannot find LLDB.h. Try installing lldb-3.5-dev (or the appropriate package for your platform)")
         endif()
     endif()
-
-    # Add the parent's parent's directory to the include path
-    get_filename_component(LLDB_H LLDB_H DIRECTORY)
-    get_filename_component(LLDB_H LLDB_H DIRECTORY)
     include_directories(LLDB_H)
 
     set(ENABLE_SOSPLUGIN ON)
