@@ -160,7 +160,7 @@ Thus, by verifying the [CIL][cil-spec] of the code and by doing a few run-time c
 
 The CLR strongly encourages the use of verifiable, type-safe code.  Even so, there are times (mostly when dealing with unmanaged code) that unverifiable programming is needed.  The CLR allows this, but the best practice here is to try to confine this unsafe code as much as possible.  Typical programs have only a very small fraction of their code that needs to be unsafe, and the rest can be type-safe.
 
-## High Level Support for Programming Languages.
+## High Level Features
 
 Supporting garbage collection had a profound effect on the runtime because it requires that all code must support extra bookkeeping.  The desire for type-safety also had a profound effect, requiring that the description of the program (the [CIL][cil-spec]) be at a high level, where fields and methods have detailed type information.  The desire for type safety also forces the [CIL][cil-spec] to support other high-level programming constructs that are type-safe.  Expressing these constructs in a type-safe manner also requires runtime support.  The two most important of these high-level features are used to support two essential elements of object oriented programming: inheritance and virtual call dispatch.
 
