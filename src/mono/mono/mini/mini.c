@@ -130,14 +130,6 @@ static MonoDebugOptions debug_options;
 static int valgrind_register = 0;
 #endif
 
-/*
- * Table written to by the debugger with a 1-based index into the
- * mono_breakpoint_info table, which contains changes made to
- * the JIT instructions by the debugger.
- */
-gssize
-mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
-
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
 

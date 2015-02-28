@@ -2663,8 +2663,6 @@ void      mono_debug_add_aot_method             (MonoDomain *domain,
 MONO_API void      mono_debug_print_vars                 (gpointer ip, gboolean only_arguments);
 MONO_API void      mono_debugger_run_finally             (MonoContext *start_ctx);
 
-extern gssize mono_breakpoint_info_index [MONO_BREAKPOINT_ARRAY_SIZE];
-
 MONO_API gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size);
 
 /* Tracing */
