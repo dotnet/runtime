@@ -57,7 +57,7 @@ namespace System.IO.Tests
             {
                 byte[] read = ReadAllBytes(stream);
                 Assert.Equal(stream.Position, read.Length);
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, manager.ToArray()));
+                Assert.Equal(manager.ToArray(), read, ArrayHelpers.Comparer<byte>());
             }
             else
             {
@@ -68,26 +68,34 @@ namespace System.IO.Tests
         [Fact]
         public static void InvalidReadWrite()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Read, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
 
                 //case#3: call Read with null, ArgumentNullException should be thrown.
                 Assert.Throws<ArgumentNullException>(() => stream.Read(null, 0, 3));
+                Assert.Throws<ArgumentNullException>(() => stream.ReadAsync(null, 0, 3).GetAwaiter().GetResult());
                 Assert.Throws<ArgumentNullException>(() => stream.Write(null, 0, 7));
+                Assert.Throws<ArgumentNullException>(() => stream.WriteAsync(null, 0, 7).GetAwaiter().GetResult());
 
                 //case#4: call Read with start<0, ArgumentOutOfRangeException should be thrown.
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(new byte[] { }, SByte.MinValue, 9));
+                Assert.Throws<ArgumentOutOfRangeException>(() => stream.ReadAsync(new byte[] { }, SByte.MinValue, 9).GetAwaiter().GetResult());
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(new byte[] { }, -1, 6));
+                Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteAsync(new byte[] { }, -1, 6).GetAwaiter().GetResult());
 
                 //case#5: call Read with count<0, ArgumentOutOfRangeException should be thrown.
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(new byte[] { }, 0, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => stream.ReadAsync(new byte[] { }, 0, -1).GetAwaiter().GetResult());
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(new byte[] { }, 1, -2));
+                Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteAsync(new byte[] { }, 1, -2).GetAwaiter().GetResult());
 
                 //case#6: call Read with count > ums.Length-startIndex, ArgumentOutOfRangeException should be thrown.
                 Assert.Throws<ArgumentException>(() => stream.Read(new byte[10], 0, 11)); // "Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection."
+                Assert.Throws<ArgumentException>(() => stream.ReadAsync(new byte[10], 0, 11).GetAwaiter().GetResult());
                 Assert.Throws<ArgumentException>(() => stream.Write(new byte[3], 0, 4));
+                Assert.Throws<ArgumentException>(() => stream.WriteAsync(new byte[3], 0, 4).GetAwaiter().GetResult());
 
                 //case#10: Call Read on a n length stream, (Capacity is implicitly n), position is set to end, call it,  should throw ArgumentException.
                 Assert.Throws<ArgumentException>(() => stream.Read(new byte[] { }, 0, 1));

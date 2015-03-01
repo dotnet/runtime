@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
+using System.Threading;
 
 // TODO: add WriteAsync, Timeout, Flush, CopyTo tests
 
@@ -70,30 +71,33 @@ namespace System.IO.Tests
             {
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadWriteUmsInvariants(stream);
-                // TODO: uncomment once we run againts core CLR; currently type load issues with IOException
-                // Assert.Throws<IOException>(() => stream.SetLength(1001)); 
+                Assert.Throws<IOException>(() => stream.SetLength(1001)); 
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.SetLength(SByte.MinValue));
+
+                const long expectedLength = 500;
+                stream.Position = 501;
+                stream.SetLength(expectedLength);
+                Assert.Equal(expectedLength, stream.Length);
+                Assert.Equal(expectedLength, stream.Position);
             }
         }
 
         [Fact]
         public static void SeekTests()
         {
-            int length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.ReadWrite, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadWriteUmsInvariants(stream);
 
-                // TODO: uncomment once we run againts core CLR; currently type load issues with IOException
-                //Assert.Throws<IOException>(() => stream.Seek(unchecked(Int32.MaxValue + 1), SeekOrigin.Begin)); 
-                //Assert.Throws<IOException>(() => stream.Seek(Int64.MinValue, SeekOrigin.End));
-                Assert.Throws<ArgumentException>(() => stream.Seek(0, (SeekOrigin)7)); // Invalid seek origin          
+                Assert.Throws<IOException>(() => stream.Seek(unchecked(Int32.MaxValue + 1), SeekOrigin.Begin));
+                Assert.Throws<IOException>(() => stream.Seek(Int64.MinValue, SeekOrigin.End));
+                Assert.Throws<ArgumentException>(() => stream.Seek(0, (SeekOrigin)7)); // Invalid seek origin
 
                 stream.Seek(10, SeekOrigin.Begin);
                 Assert.Equal(10, stream.Position);
 
-                /* TODO: uncomment once we run againts core CLR; currently type load issues with IOException
                 Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin)); // An attempt was made to move the position before the beginning of the stream 
                 Assert.Equal(10, stream.Position);
 
@@ -102,7 +106,6 @@ namespace System.IO.Tests
 
                 Assert.Throws<IOException>(() => stream.Seek(-(stream.Length + 1), SeekOrigin.End)); //  "An attempt was made to move the position before the beginning of the stream."
                 Assert.Equal(10, stream.Position);
-                */
 
                 // Seek from SeekOrigin.Begin
                 stream.Seek(0, SeekOrigin.Begin);
@@ -173,12 +176,17 @@ namespace System.IO.Tests
                 Assert.Throws<ObjectDisposedException>(() => stream.Seek(0, SeekOrigin.Current));
                 Assert.Throws<ObjectDisposedException>(() => stream.Seek(0, SeekOrigin.End));
 
+                Assert.Throws<ObjectDisposedException>(() => stream.Flush());
+                Assert.Throws<ObjectDisposedException>(() => stream.FlushAsync(CancellationToken.None).GetAwaiter().GetResult());
+
                 byte[] buffer = ArrayHelpers.CreateByteArray(10);
                 Assert.Throws<ObjectDisposedException>(() => stream.Read(buffer, 0, buffer.Length));
+                Assert.Throws<ObjectDisposedException>(() => stream.ReadAsync(buffer, 0, buffer.Length).GetAwaiter().GetResult());
                 Assert.Throws<ObjectDisposedException>(() => stream.ReadByte());
 
                 Assert.Throws<ObjectDisposedException>(() => stream.WriteByte(0));
                 Assert.Throws<ObjectDisposedException>(() => stream.Write(buffer, 0, buffer.Length));
+                Assert.Throws<ObjectDisposedException>(() => stream.WriteAsync(buffer, 0, buffer.Length).GetAwaiter().GetResult());
             }
         }
     }

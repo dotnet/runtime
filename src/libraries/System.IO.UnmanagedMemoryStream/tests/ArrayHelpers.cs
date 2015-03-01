@@ -26,10 +26,7 @@ namespace System.IO.Tests
         {
             var random = new Random(100);
             var data = new byte[length];
-            for (int index = 0; index < length; index++)
-            {
-                data[index] = (byte)random.Next();
-            }
+            random.NextBytes(data);
             return data;
         }
 
@@ -50,7 +47,7 @@ namespace System.IO.Tests
 
         private sealed class ArrayComparer<T> : IEqualityComparer<T[]>
         {
-            public static ArrayComparer<T> Instance = new ArrayComparer<T>();
+            public static readonly ArrayComparer<T> Instance = new ArrayComparer<T>();
 
             private ArrayComparer() // use the static Instance singleton
             {
