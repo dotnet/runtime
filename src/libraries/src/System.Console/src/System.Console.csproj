@@ -64,6 +64,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getenv.cs">
       <Link>Common\Interop\Unix\Interop.getenv.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
+      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek.cs">
       <Link>Common\Interop\Unix\Interop.lseek64.cs</Link>
     </Compile>

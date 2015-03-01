@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         internal static string strerror(int errno)
         {
-            string result = s_isGnu.Value ? strerror_gnu(errno) : strerror_xsi(errno);
+            string result = IsGnu ? strerror_gnu(errno) : strerror_xsi(errno);
             // System.Diagnostics.Debug.WriteLine("strerror: " + result + "\n" + System.Environment.StackTrace); // uncomment to aid debugging
             return result;
         }
@@ -27,21 +27,6 @@ internal static partial class Interop
         // and try to use a heuristic to deduce which version we're dealing with.  Instead,
         // we detect whether we're compiled against GNU's libc by trying to invoke its
         // version-getting method, and invoke the right signature based on that.
-
-        private static Lazy<bool> s_isGnu = new Lazy<bool>(() =>
-        {
-            try
-            {
-                // Just try to call the P/Invoke.  If it succeeds, this is GNU libc.
-                gnu_get_libc_version();
-                return true;
-            }
-            catch
-            {
-                // Otherwise, it's not.
-                return false;
-            }
-        });
 
         private const int MaxErrorMessageLength = 1024; // length long enough for most any Unix error messages
 
@@ -72,8 +57,5 @@ internal static partial class Interop
 
         [DllImport(Libraries.Libc, EntryPoint = "strerror_r")]
         private static extern unsafe int    strerror_r_xsi(int errnum, byte* buf, size_t buflen);
-
-        [DllImport(Libraries.Libc)]
-        private static extern IntPtr gnu_get_libc_version();
     }
 }
