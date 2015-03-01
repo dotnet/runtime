@@ -4048,22 +4048,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	GTimer *jit_timer;
 	MonoMethod *prof_method, *shared;
 
-#ifdef MONO_USE_AOT_COMPILER
-	if (opt & MONO_OPT_AOT) {
-		MonoDomain *domain = mono_domain_get ();
-
-		mono_class_init (method->klass);
-
-		if ((code = mono_aot_get_method (domain, method))) {
-			vtable = mono_class_vtable (domain, method->klass);
-			g_assert (vtable);
-			mono_runtime_class_init (vtable);
-
-			return code;
-		}
-	}
-#endif
-
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm;

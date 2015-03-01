@@ -1996,7 +1996,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 {
 	MonoDomain *target_domain, *domain = mono_domain_get ();
 	MonoJitInfo *info;
-	gpointer code, p;
+	gpointer code = NULL, p;
 	MonoJitInfo *ji;
 	MonoJitICallInfo *callinfo = NULL;
 	WrapperInfo *winfo = NULL;
@@ -2063,7 +2063,24 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException
 		}
 	}
 
-	code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
+#ifdef MONO_USE_AOT_COMPILER
+	if (opt & MONO_OPT_AOT) {
+		MonoDomain *domain = mono_domain_get ();
+
+		mono_class_init (method->klass);
+
+		if ((code = mono_aot_get_method (domain, method))) {
+			MonoVTable *vtable;
+
+			vtable = mono_class_vtable (domain, method->klass);
+			g_assert (vtable);
+			mono_runtime_class_init (vtable);
+		}
+	}
+#endif
+
+	if (!code)
+		code = mono_jit_compile_method_inner (method, target_domain, opt, ex);
 	if (!code)
 		return NULL;
 
