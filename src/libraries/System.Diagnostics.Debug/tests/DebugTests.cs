@@ -1,5 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
 
@@ -39,6 +39,10 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.Write((object)null, "category"); }, "category:");
             VerifyLogged(() => { Debug.Write("logged"); }, "logged");
             VerifyLogged(() => { Debug.Write("logged", "category"); }, "category:logged");
+            VerifyLogged(() => { Debug.Write("logged", (string)null); }, "logged");
+
+            string longString = new string('d', 8192);
+            VerifyLogged(() => { Debug.Write(longString); }, longString);
         }
 
         [Fact]
@@ -50,6 +54,7 @@ namespace System.Diagnostics.Tests
             VerifyLogged(() => { Debug.WriteLine((object)null, "category"); }, "category:" + Environment.NewLine);
             VerifyLogged(() => { Debug.WriteLine("logged"); }, "logged" + Environment.NewLine);         
             VerifyLogged(() => { Debug.WriteLine("logged", "category"); }, "category:logged" + Environment.NewLine);
+            VerifyLogged(() => { Debug.WriteLine("logged", (string)null); }, "logged" + Environment.NewLine);
             VerifyLogged(() => { Debug.WriteLine("{0} {1}", 'a', 'b'); }, "a b" + Environment.NewLine);
         }
 
@@ -88,6 +93,7 @@ namespace System.Diagnostics.Tests
 
         static void VerifyLogged(Action test, string expectedOutput)
         {
+            // First use our test logger to verify the output
             Debug.IDebugLogger oldLogger = Debug.s_logger;
             Debug.s_logger = WriteLogger.Instance;
 
@@ -105,6 +111,10 @@ namespace System.Diagnostics.Tests
             {
                 Debug.s_logger = oldLogger;
             }
+
+            // Then also use the actual logger for this platform, just to verify
+            // that nothing fails.
+            test();
         }
 
         static void VerifyAssert(Action test, params string[] expectedOutputStrings)
