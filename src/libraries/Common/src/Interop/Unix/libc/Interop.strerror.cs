@@ -49,7 +49,8 @@ internal static partial class Interop
         private static unsafe string strerror_gnu(int errno)
         {
             byte* buffer = stackalloc byte[MaxErrorMessageLength];
-            return strerror_r_gnu(errno, buffer, (IntPtr)MaxErrorMessageLength);
+            IntPtr result = strerror_r_gnu(errno, buffer, (IntPtr)MaxErrorMessageLength);
+            return Marshal.PtrToStringAnsi(result);
         }
 
         private static unsafe string strerror_xsi(int errno)
@@ -68,12 +69,12 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.Libc, EntryPoint = "strerror_r")]
-        private static extern unsafe string strerror_r_gnu(int errnum, byte* buf, size_t buflen);
+        private static extern unsafe IntPtr strerror_r_gnu(int errnum, byte* buf, size_t buflen);
 
         [DllImport(Libraries.Libc, EntryPoint = "strerror_r")]
         private static extern unsafe int    strerror_r_xsi(int errnum, byte* buf, size_t buflen);
 
         [DllImport(Libraries.Libc)]
-        private static extern string gnu_get_libc_version();
+        private static extern IntPtr gnu_get_libc_version();
     }
 }
