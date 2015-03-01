@@ -48,6 +48,7 @@ namespace System.Diagnostics
 
         public Type Target
         {
+            get { return _target; }
             set
             {
                 if (value == null)
@@ -59,7 +60,6 @@ namespace System.Diagnostics
                 _targetName = value.AssemblyQualifiedName;
                 _target = value;
             }
-            get { return _target; }
         }
 
         public string TargetTypeName

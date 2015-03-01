@@ -4,7 +4,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    class AttributeTests
+    public class AttributeTests
     {
         [Fact]
         void DebuggerBrowsableAttributeOnlyAllowsKnownModes()
@@ -18,14 +18,8 @@ namespace System.Diagnostics.Tests
             // it is not part of the enum.
             new DebuggerBrowsableAttribute((DebuggerBrowsableState)1);
 
-
-            // All other values are invalid.
-            for(int i = int.MinValue; i < 0; i++)
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => new DebuggerBrowsableAttribute((DebuggerBrowsableState)i));
-            }
-
-            for(int i = 4; i <= int.MaxValue; i++)
+            // All other values are invalid.  Test a few...
+            foreach (int i in new[] { int.MinValue, -10, -1, 4, 5, 10, int.MaxValue })
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => new DebuggerBrowsableAttribute((DebuggerBrowsableState)i));
             }
@@ -54,9 +48,9 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        void NullIsInvalidForDebuggerDisplayType()
+        void NullIsInvalidForDebuggerDisplayTarget()
         {
-            Assert.Throws<ArgumentNullException>(() => (new DebuggerDisplayAttribute("myValue")).Type = null);
+            Assert.Throws<ArgumentNullException>(() => (new DebuggerDisplayAttribute("myValue")).Target = null);
         }
 
         [Fact]
@@ -73,6 +67,35 @@ namespace System.Diagnostics.Tests
 
             d.TargetTypeName = typeof(DebugTests).AssemblyQualifiedName;
             Assert.Equal(typeof(DebugTests).AssemblyQualifiedName, d.TargetTypeName);
+
+            d.Type = "typeName";
+            Assert.Equal("typeName", d.Type);
+        }
+
+        [Fact]
+        void DebuggerTypeProxyAttributeConstruction()
+        {
+            Assert.Throws<ArgumentNullException>(() => new DebuggerTypeProxyAttribute((Type)null));
+
+            Assert.Null(new DebuggerTypeProxyAttribute((string)null).TargetTypeName);
+            Assert.Equal(typeof(DebugTests).AssemblyQualifiedName, new DebuggerTypeProxyAttribute(typeof(DebugTests)).ProxyTypeName);
+            Assert.Equal(typeof(DebugTests).AssemblyQualifiedName, new DebuggerTypeProxyAttribute(typeof(DebugTests).AssemblyQualifiedName).ProxyTypeName);
+        }
+
+        [Fact]
+        void DebuggerTypeProxyAttributePropertiesRoundTrip()
+        {
+            DebuggerTypeProxyAttribute d = new DebuggerTypeProxyAttribute(typeof(DebugTests));
+
+            d.Target = typeof(AttributeTests);
+            Assert.Equal(typeof(AttributeTests), d.Target);
+            Assert.Equal(typeof(AttributeTests).AssemblyQualifiedName, d.TargetTypeName);
+
+            Assert.Throws<ArgumentNullException>(() => d.Target = null);
+
+            d.TargetTypeName = typeof(DebugTests).AssemblyQualifiedName;
+            Assert.Equal(typeof(DebugTests).AssemblyQualifiedName, d.TargetTypeName);
+            Assert.Equal(typeof(AttributeTests), d.Target);
         }
     }
 }
