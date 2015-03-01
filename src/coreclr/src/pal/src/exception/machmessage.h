@@ -153,7 +153,7 @@ private:
     // The maximum size in bytes of any Mach message we can send or receive. Calculating an exact size for
     // this is non trivial (basically because of the security trailers that Mach appends) but the current
     // value has proven to be more than enough so far.
-    static const size_t kcbMaxMessageSize = 900;
+    static const size_t kcbMaxMessageSize = 1500;
 
     // The following are structures describing the formats of the Mach messages we understand.
 
