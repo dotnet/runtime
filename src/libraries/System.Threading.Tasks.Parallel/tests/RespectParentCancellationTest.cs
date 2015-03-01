@@ -25,7 +25,6 @@ namespace Microsoft.Test.PCP
     public sealed class RespectParentCancellationTest
     {
         private API _api;                                     // the API to be tested
-        private const int Max_Cancellation_Delay = 2000;      // max delay time before a cancel request is issued
 
         public RespectParentCancellationTest(API api)
         {
@@ -33,13 +32,21 @@ namespace Microsoft.Test.PCP
         }
 
         /// <summary>
-        /// This test cancels a Parallel.* loop in flight and checks that we get a OperationCanceledException / TaskCanceledException
+        /// This test cancels a Parallel.* loop in flight and checks that we get a OperationCanceledException.
         /// </summary>
         /// <returns></returns>
         internal void RealRun()
         {
             ParallelLoopResult result = new ParallelLoopResult();
             CancellationTokenSource cts = new CancellationTokenSource();
+            var allowCancel = new ManualResetEventSlim();
+            var wakeLoop = new ManualResetEventSlim();
+
+            Action body = () =>
+            {
+                allowCancel.Set();
+                wakeLoop.Wait();
+            };
 
             Task wrappedTask = Task.Factory.StartNew(delegate
             {
@@ -47,31 +54,24 @@ namespace Microsoft.Test.PCP
                 switch (_api)
                 {
                     case API.For:
-                        result = Parallel.For(0, Int32.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => { });
+                        result = Parallel.For(0, Int32.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => body());
                         break;
 
                     case API.For64:
-                        result = Parallel.For(0, Int64.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => { });
+                        result = Parallel.For(0, Int64.MaxValue, new ParallelOptions() { CancellationToken = ct }, (i) => body());
                         break;
 
                     case API.Foreach:
-                        result = Parallel.ForEach<int>(GetIEnumerable(), new ParallelOptions() { CancellationToken = ct }, (i) => { });
+                        result = Parallel.ForEach<int>(GetIEnumerable(), new ParallelOptions() { CancellationToken = ct }, (i) => body());
                         break;
                 }
             }, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
 
-            var task = Task.Delay(Max_Cancellation_Delay);
-            task.Wait();
+            allowCancel.Wait();
             cts.Cancel();
+            wakeLoop.Set();
 
-            try
-            {
-                wrappedTask.Wait();
-            }
-            catch (AggregateException ae)
-            {
-                ae.Flatten().Handle((e) => { return e is OperationCanceledException || e is TaskCanceledException; });
-            }
+            Assert.ThrowsAny<OperationCanceledException>(() => wrappedTask.GetAwaiter().GetResult());
 
             // verify result : Stopped <==> if Completed is false and LowestBreakIteration == null
             Assert.False(result.IsCompleted, "Should not be completed.");
