@@ -23,9 +23,8 @@ internal static partial class Interop
         // - XSI: int   strerror_r(int, char*, size_T);
         // The former may or may not use the supplied buffer, and returns the error message string.
         // The latter stores the error message string into the supplied buffer.
-        // Due to the different return values, we don't want to just choose one signature
-        // and try to use a heuristic to deduce which version we're dealing with, as that
-        // could result in a stack imbalance due to the varied return result size on 64-bit.  Instead,
+        // Due to the varied behaviors, we don't want to just choose one signature
+        // and try to use a heuristic to deduce which version we're dealing with.  Instead,
         // we detect whether we're compiled against GNU's libc by trying to invoke its
         // version-getting method, and invoke the right signature based on that.
 
