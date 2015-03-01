@@ -85,7 +85,7 @@ namespace System.IO.Tests
         [Fact]
         public static void SeekTests()
         {
-            int length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.ReadWrite, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;

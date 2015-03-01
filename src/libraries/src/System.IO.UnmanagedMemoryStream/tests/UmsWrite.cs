@@ -11,7 +11,7 @@ namespace System.IO.Tests
         [Fact]
         public static void Write()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Write, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
@@ -23,7 +23,7 @@ namespace System.IO.Tests
 
                 var memory = manager.ToArray();
 
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(bytes, memory));
+                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
 
                 stream.Write(new byte[0], 0, 0);
             }
@@ -32,7 +32,7 @@ namespace System.IO.Tests
         [Fact]
         public static void WriteByte()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Write, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
@@ -47,7 +47,7 @@ namespace System.IO.Tests
 
                 var memory = manager.ToArray();
 
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(bytes, memory));
+                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
             }
         }
 

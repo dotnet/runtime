@@ -57,7 +57,7 @@ namespace System.IO.Tests
             {
                 byte[] read = ReadAllBytes(stream);
                 Assert.Equal(stream.Position, read.Length);
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, manager.ToArray()));
+                Assert.Equal(manager.ToArray(), read, ArrayHelpers.Comparer<byte>());
             }
             else
             {
@@ -68,7 +68,7 @@ namespace System.IO.Tests
         [Fact]
         public static void InvalidReadWrite()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Read, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
