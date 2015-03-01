@@ -2285,6 +2285,7 @@ void     mono_save_trampoline_xdebug_info   (MonoTrampInfo *info) MONO_INTERNAL;
 void     mono_xdebug_flush                  (void);
 
 /* LLVM backend */
+/* Keep this in synch with mini-llvm.h */
 void     mono_llvm_init                     (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_cleanup                  (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_LLVM_INTERNAL;

@@ -10,7 +10,6 @@
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
-#define MONO_LLVM_IN_MINI 1
 #include <config.h>
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
