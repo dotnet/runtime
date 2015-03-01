@@ -10,7 +10,7 @@ namespace System.IO.Tests
         [Fact]
         public static void UmaInvalidReadWrite()
         {
-            var capacity = 99;
+            const int capacity = 99;
             FakeSafeBuffer sbuf = new FakeSafeBuffer((ulong)capacity);
 
             using (var uma = new UnmanagedMemoryAccessor(sbuf, 0, capacity, FileAccess.ReadWrite))
@@ -42,7 +42,7 @@ namespace System.IO.Tests
         [Fact]
         public static void UmaReadWrite()
         {
-            var capacity = 199;
+            const int capacity = 199;
 
             const bool expectedBool = true; // 1
             const byte expectedByte = 123; // 1
