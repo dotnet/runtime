@@ -37,6 +37,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
+      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
     </Compile>
