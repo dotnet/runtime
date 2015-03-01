@@ -373,6 +373,7 @@ endif
 
 common_sources = \
 	mini.c			\
+	mini-runtime.c	\
 	seq-points.c	\
 	seq-points.h	\
 	ir-emit.h		\

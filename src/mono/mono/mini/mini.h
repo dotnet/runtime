@@ -499,6 +499,10 @@ extern guint32 mono_single_method_regression_opt;
 extern MonoMethod *mono_current_single_method;
 extern GSList *mono_single_method_list;
 extern GHashTable *mono_single_method_hash;
+extern gboolean	mono_using_xdebug;
+extern int mini_verbose;
+extern gboolean check_for_pending_exc;
+extern int valgrind_register;
 
 #define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])
 
@@ -2050,6 +2054,8 @@ void        mini_cleanup                   (MonoDomain *domain) MONO_INTERNAL;
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
 
 /* helper methods */
+void      mini_jit_init                    (void) MONO_INTERNAL;
+void      mini_jit_cleanup                 (void) MONO_INTERNAL;
 void      mono_disable_optimizations       (guint32 opts) MONO_INTERNAL;
 void      mono_set_optimizations           (guint32 opts) MONO_INTERNAL;
 guint32   mono_get_optimizations_for_method (MonoMethod *method, guint32 default_opt) MONO_INTERNAL;
@@ -2114,6 +2120,7 @@ int       mono_load_membase_to_load_mem     (int opcode) MONO_INTERNAL;
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type) MONO_INTERNAL;
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type) MONO_INTERNAL;
+MonoJitInfo* mini_lookup_method             (MonoDomain *domain, MonoMethod *method, MonoMethod *shared) MONO_INTERNAL;
 guint32   mono_reverse_branch_op            (guint32 opcode) MONO_INTERNAL;
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id) MONO_INTERNAL;
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target) MONO_LLVM_INTERNAL;
@@ -2127,6 +2134,7 @@ gpointer  mono_resolve_patch_target         (MonoMethod *method, MonoDomain *dom
 gpointer  mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **ji) MONO_INTERNAL;
 gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *method) MONO_INTERNAL;
 gpointer  mono_jit_compile_method           (MonoMethod *method) MONO_INTERNAL;
+gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *target_domain, int opt, MonoException **jit_ex) MONO_INTERNAL;
 MonoLMF * mono_get_lmf                      (void) MONO_INTERNAL;
 MonoLMF** mono_get_lmf_addr                 (void) MONO_INTERNAL;
 void      mono_set_lmf                      (MonoLMF *lmf) MONO_INTERNAL;
@@ -2218,6 +2226,8 @@ void mono_nacl_gc(void);
 #define NACL_SIZE(a, b) (a)
 #endif
 
+extern MonoDebugOptions debug_options;
+
 static inline MonoMethod*
 jinfo_get_method (MonoJitInfo *ji)
 {
@@ -2300,6 +2310,8 @@ MONO_API void      mono_replace_ins                  (MonoCompile *cfg, MonoBasi
 int               mono_find_method_opcode      (MonoMethod *method) MONO_INTERNAL;
 MonoJitICallInfo *mono_register_jit_icall      (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save) MONO_INTERNAL;
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO_LLVM_INTERNAL;
+gconstpointer     mono_icall_get_wrapper_full  (MonoJitICallInfo* callinfo, gboolean do_compile) MONO_INTERNAL;
+void              mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw) MONO_INTERNAL;
 
 void              mono_trampolines_init (void) MONO_INTERNAL;
 void              mono_trampolines_cleanup (void) MONO_INTERNAL;
