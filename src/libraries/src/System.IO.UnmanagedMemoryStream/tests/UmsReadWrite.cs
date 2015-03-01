@@ -11,7 +11,7 @@ namespace System.IO.Tests
         [Fact]
         public static void ReadWrite()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.ReadWrite, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
@@ -23,15 +23,15 @@ namespace System.IO.Tests
                 stream.Write(copy, 0, length);
 
                 var memory = manager.ToArray();
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(bytes, memory));
+                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
 
                 stream.Seek(0, SeekOrigin.Begin);
                 byte[] read = UmsReadTests.ReadAllBytes(stream);
                 Assert.Equal(stream.Position, read.Length);
 
                 byte[] current = manager.ToArray();
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, current));
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(read, bytes));
+                Assert.Equal(current, read, ArrayHelpers.Comparer<byte>());
+                Assert.Equal(bytes, read, ArrayHelpers.Comparer<byte>());
 
                 stream.Write(new byte[0], 0, 0);
             }
@@ -40,7 +40,7 @@ namespace System.IO.Tests
         [Fact]
         public static void ReadWriteByte()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.ReadWrite, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
@@ -59,7 +59,7 @@ namespace System.IO.Tests
 
                 var memory = manager.ToArray();
 
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(bytes, memory));
+                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
             }
         }
     }
