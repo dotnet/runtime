@@ -38,7 +38,6 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/io-layer/io-layer.h>
 #include "mono/metadata/profiler.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
@@ -46,12 +45,9 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/verify.h>
-#include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -64,6 +60,7 @@
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/io-layer/io-layer.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -73,16 +70,11 @@
 #include <ctype.h>
 #include "trace.h"
 #include "version.h"
-#include "ir-emit.h"
 
 #include "jit-icalls.h"
 
 #include "mini-gc.h"
 #include "debugger-agent.h"
-#include "seq-points.h"
-
-static gpointer mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoException **ex);
-
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;

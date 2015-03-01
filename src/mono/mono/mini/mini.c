@@ -22,9 +22,6 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
 
 #include <mono/utils/memcheck.h>
 
@@ -38,7 +35,6 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/io-layer/io-layer.h>
 #include "mono/metadata/profiler.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
@@ -51,7 +47,6 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/runtime.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-counters.h>
@@ -62,8 +57,8 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/dtrace.h>
-#include <mono/utils/mono-signal-handler.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/io-layer/io-layer.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -79,7 +74,6 @@
 
 #include "mini-gc.h"
 #include "debugger-agent.h"
-#include "seq-points.h"
 
 MonoTraceSpec *mono_jit_trace_calls;
 MonoMethodDesc *mono_inject_async_exc_method;
@@ -92,8 +86,6 @@ gboolean mono_using_xdebug;
 #define mono_jit_lock() mono_mutex_lock (&jit_mutex)
 #define mono_jit_unlock() mono_mutex_unlock (&jit_mutex)
 static mono_mutex_t jit_mutex;
-
-static GHashTable *jit_icall_name_hash;
 
 /* Whenever to check for pending exceptions in managed-to-native wrappers */
 gboolean check_for_pending_exc = TRUE;
@@ -1119,8 +1111,6 @@ mono_get_array_new_va_icall (int rank)
 		esig = mono_get_array_new_va_signature (rank);
 		name = g_strdup (icall_name);
 		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
-
-		g_hash_table_insert (jit_icall_name_hash, name, name);
 	}
 	mono_jit_unlock ();
 
@@ -4583,7 +4573,6 @@ void
 mini_jit_init (void)
 {
 	mono_mutex_init_recursive (&jit_mutex);
-	jit_icall_name_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 }
 
 void
@@ -4591,5 +4580,4 @@ mini_jit_cleanup (void)
 {
 	g_free (emul_opcode_map);
 	g_free (emul_opcode_opcodes);
-	g_hash_table_destroy (jit_icall_name_hash);
 }
