@@ -1014,6 +1014,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
 
             SetLastError(dwLastError);
 
+#ifndef FEATURE_PAL
             //
             // At this point (the end of the 1st pass) we don't know where
             // we are going to resume to.  So, we pass in an address, which
@@ -1039,6 +1040,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord
             //
             // doesn't return
             //
+#else
+            // On Unix, we will return ExceptionStackUnwind back to the custom
+            // exception dispatch system. When it sees this disposition, it will
+            // know that we want to handle the exception and will commence unwind
+            // via the custom unwinder.
+            return ExceptionStackUnwind;
+
+#endif // FEATURE_PAL
         }
         else if (SecondPassComplete == status)
         {
@@ -4212,6 +4221,250 @@ static void DoEHLog(
     va_end(args);
 }
 #endif // _DEBUG
+
+#ifdef FEATURE_PAL
+//---------------------------------------------------------------------------------------
+//
+// This functions return True if the given stack address is
+// within the specified stack boundaries.
+//
+// Arguments:
+//      sp - a stack pointer that needs to be verified
+//      stackLowAddress, stackHighAddress - these values specify stack boundaries
+//
+bool IsSpInStackLimits(ULONG64 sp, ULONG64 stackLowAddress, ULONG64 stackHighAddress)
+{
+    return ((sp > stackLowAddress) && (sp < stackHighAddress));
+}
+
+//---------------------------------------------------------------------------------------
+//
+// This functions performs an unwind procedure for a managed exception. The stack is unwound
+// until the target frame is reached. For each frame we use the its PC value to find
+// a handler using information that has been built by JIT.
+//
+// Arguments:
+//      exceptionRecord          - an exception record that stores information about the managed exception
+//      originalExceptionContext - the context that caused this exception to be thrown
+//      targetFrameSp            - specifies the call frame that is the target of the unwind
+//
+VOID DECLSPEC_NORETURN UnwindManagedException(EXCEPTION_RECORD* exceptionRecord, CONTEXT* originalExceptionContext, UINT_PTR targetFrameSp)
+{
+    UINT_PTR controlPc;
+    EXCEPTION_DISPOSITION disposition;
+    CONTEXT* currentFrameContext;
+    CONTEXT* callerFrameContext;
+    CONTEXT contextStorage;
+    DISPATCHER_CONTEXT dispatcherContext;
+    EECodeInfo codeInfo;
+    ULONG64 establisherFrame = NULL;
+    PVOID handlerData;
+    ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
+    ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
+
+    // Indicate that we are performing second pass.
+    exceptionRecord->ExceptionFlags = EXCEPTION_UNWINDING;
+
+    currentFrameContext = originalExceptionContext;
+    callerFrameContext = &contextStorage;
+
+    memset(&dispatcherContext, 0, sizeof(DISPATCHER_CONTEXT));
+    disposition = ExceptionContinueSearch;
+
+    do
+    {
+        controlPc = currentFrameContext->Rip;
+
+        codeInfo.Init(controlPc);
+        dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
+        dispatcherContext.ControlPc = controlPc;
+        dispatcherContext.ImageBase = codeInfo.GetModuleBase();
+
+        // Check whether we have a function table entry for the current controlPC.
+        // If yes, then call RtlVirtualUnwind to get the establisher frame pointer.
+        if (dispatcherContext.FunctionEntry != NULL)
+        {
+            // Create a copy of the current context because we don't want
+            // the current context record to be updated by RtlVirtualUnwind.
+            memcpy(callerFrameContext, currentFrameContext, sizeof(CONTEXT));
+            RtlVirtualUnwind(UNW_FLAG_EHANDLER,
+                dispatcherContext.ImageBase,
+                dispatcherContext.ControlPc,
+                dispatcherContext.FunctionEntry,
+                callerFrameContext,
+                &handlerData,
+                &establisherFrame,
+                NULL);
+
+            // Make sure that the establisher frame pointer is within stack boundaries
+            // and we did not go below that target frame.
+            // TODO: make sure the establisher frame is properly aligned.
+            if (!IsSpInStackLimits(establisherFrame, stackLowAddress, stackHighAddress) ||
+                establisherFrame > targetFrameSp)
+            {
+                // TODO: add better error handling
+                UNREACHABLE();
+            }
+
+            dispatcherContext.EstablisherFrame = establisherFrame;
+            dispatcherContext.ContextRecord = currentFrameContext;
+
+            if (establisherFrame == targetFrameSp)
+            {
+                // We have reached the frame that will handle the exception.
+                exceptionRecord->ExceptionFlags |= EXCEPTION_TARGET_UNWIND;
+            }
+
+            // Perform unwinding of the current frame
+            disposition = ProcessCLRException(exceptionRecord,
+                establisherFrame,
+                currentFrameContext,
+                &dispatcherContext);
+
+            if (disposition == ExceptionContinueSearch)
+            {
+                // Exception handler not found. Try the parent frame.
+                CONTEXT* temp = currentFrameContext;
+                currentFrameContext = callerFrameContext;
+                callerFrameContext = temp;
+            }
+            else
+            {
+                // TODO: This needs to implemented. Make it fail for now.
+                UNREACHABLE();
+            }
+        }
+        else
+        {
+            controlPc = Thread::VirtualUnwindLeafCallFrame(currentFrameContext);
+        }
+
+        //
+        //TODO: check whether we are crossing managed-to-native boundary
+        // and add support for this case.
+        //
+    } while (IsSpInStackLimits(currentFrameContext->Rsp, stackLowAddress, stackHighAddress) &&
+        (establisherFrame != targetFrameSp));
+
+    printf("UnwindManagedException: Unwinding failed. Reached the end of the stack.\n");
+    UNREACHABLE();
+}
+
+//---------------------------------------------------------------------------------------
+//
+// This functions performs dispatching of a managed exception.
+// It tries to find an exception handler by examining each frame in the call stack.
+// The search is started from the managed frame caused the exception to be thrown.
+// For each frame we use the its PC value to find a handler using information that
+// has been built by JIT. If an exception handler is found then this function initiates
+// the second pass to unwind the stack and execute the handler.
+//
+// Arguments:
+//      ex - a PAL_SEHException that stores information about the managed
+//           exception that needs to be dispatched.
+//
+VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
+{
+    CONTEXT frameContext;
+    CONTEXT originalExceptionContext;
+    EXCEPTION_DISPOSITION disposition;
+    EXCEPTION_RECORD exceptionRecord;
+    DISPATCHER_CONTEXT dispatcherContext;
+    EECodeInfo codeInfo;
+    UINT_PTR controlPc;
+    ULONG64 establisherFrame = NULL;
+    PVOID handlerData;
+    ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
+    ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
+
+    // TODO: is there a better way to get the first managed frame?
+    originalExceptionContext.ContextFlags = CONTEXT_FULL;
+    GetThread()->GetThreadContext(&originalExceptionContext);
+    controlPc = Thread::VirtualUnwindToFirstManagedCallFrame(&originalExceptionContext);
+
+    // Preserve the context that caused the exception. We need to pass it
+    // to ProcessCLRException for each frame that will be unwound.
+    memcpy(&frameContext, &originalExceptionContext, sizeof(CONTEXT));
+
+    // Setup an exception record based on the information from the PAL exception and
+    // point it to the location in managed code where the exception has been thrown from.
+    memcpy(&exceptionRecord, &ex.ExceptionRecord, sizeof(EXCEPTION_RECORD));
+    exceptionRecord.ExceptionFlags = 0;
+    exceptionRecord.ExceptionAddress = (PVOID)controlPc;
+
+    memset(&dispatcherContext, 0, sizeof(DISPATCHER_CONTEXT));
+    disposition = ExceptionContinueSearch;
+
+    do
+    {
+        codeInfo.Init(controlPc);
+        dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
+        dispatcherContext.ControlPc = controlPc;
+        dispatcherContext.ImageBase = codeInfo.GetModuleBase();
+
+        // Check whether we have a function table entry for the current controlPC.
+        // If yes, then call RtlVirtualUnwind to get the establisher frame pointer
+        // and then check whether an exception handler exists for the frame.
+        if (dispatcherContext.FunctionEntry != NULL)
+        {
+            RtlVirtualUnwind(UNW_FLAG_EHANDLER,
+                dispatcherContext.ImageBase,
+                dispatcherContext.ControlPc,
+                dispatcherContext.FunctionEntry,
+                &frameContext,
+                &handlerData,
+                &establisherFrame,
+                NULL);
+
+            // Make sure that the establisher frame pointer is within stack boundaries.
+            // TODO: make sure the establisher frame is properly aligned.
+            if (!IsSpInStackLimits(establisherFrame, stackLowAddress, stackHighAddress))
+            {
+                // TODO: add better error handling
+                UNREACHABLE();
+            }
+
+            dispatcherContext.EstablisherFrame = establisherFrame;
+            dispatcherContext.ContextRecord = &frameContext;
+
+            // Find exception handler in the current frame
+            disposition = ProcessCLRException(&exceptionRecord,
+                establisherFrame,
+                &originalExceptionContext,
+                &dispatcherContext);
+
+            if (disposition == ExceptionContinueSearch)
+            {
+                // Exception handler not found. Try the parent frame.
+                controlPc = frameContext.Rip;
+            }
+            else if (disposition == ExceptionStackUnwind)
+            {
+                // The first pass is complete. We have found the frame that
+                // will handle the exception. Start the second pass.
+                UnwindManagedException(&exceptionRecord, &originalExceptionContext, establisherFrame);
+            }
+            else
+            {
+                // TODO: This needs to implemented. Make it fail for now.
+                UNREACHABLE();
+            }
+        }
+        else
+        {
+            controlPc = Thread::VirtualUnwindLeafCallFrame(&frameContext);
+        }
+
+        //
+        //TODO: check whether we are crossing managed-to-native boundary
+        // and add support for this case.
+        //
+    } while (IsSpInStackLimits(frameContext.Rsp, stackLowAddress, stackHighAddress));
+
+    printf("DispatchManagedException: Failed to find a handler. Reached the end of the stack.\n");
+    UNREACHABLE();
+}
+#endif // FEATURE_PAL
 
 void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_PTR TargetIP, UINT_PTR TargetFrameSp)
 {
