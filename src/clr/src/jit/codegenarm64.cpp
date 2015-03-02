@@ -1897,7 +1897,7 @@ void                CodeGen::genCodeForBBlist()
                 // Because of the way the flowgraph is connected, the liveness info for this one instruction
                 // after the call is not (can not be) correct in cases where a variable has a last use in the
                 // handler.  So turn off GC reporting for this single instruction.
-                getEmitter()->emitMakeRemainderNonInterruptible();
+                getEmitter()->emitDisableGC();
 
                 // Now go to where the finally funclet needs to return to.
                 if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
@@ -1912,6 +1912,8 @@ void                CodeGen::genCodeForBBlist()
                 {
                     inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
                 }
+
+                getEmitter()->emitEnableGC();
             }
 
             // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
@@ -2256,7 +2258,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
     switch (treeNode->gtOper)
     {
     case GT_START_NONGC:
-        getEmitter()->emitMakeRemainderNonInterruptible();
+        getEmitter()->emitDisableGC();
         break;
 
     case GT_PROF_HOOK:
