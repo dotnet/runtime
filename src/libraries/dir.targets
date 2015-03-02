@@ -75,7 +75,7 @@
           Outputs="$(RestorePackagesSemaphore)"
           Condition="'$(RestorePackages)' == 'true'">
     <Exec Command="$(NugetRestoreCommand) &quot;$(PackagesConfig)&quot;" StandardOutputImportance="Low" />
-    <Copy SourceFiles="$(PackagesConfig)" DestinationFiles="$(RestorePackagesSemaphore)" ContinueOnError="True" />
+    <Copy SourceFiles="$(PackagesConfig)" DestinationFiles="$(RestorePackagesSemaphore)" ContinueOnError="True" SkipUnchangedFiles="True" />
   </Target>
 
   <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
