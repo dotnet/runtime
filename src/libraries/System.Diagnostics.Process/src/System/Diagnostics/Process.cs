@@ -482,7 +482,7 @@ namespace System.Diagnostics
             {
                 if (_startInfo == null)
                 {
-                    _startInfo = new ProcessStartInfo(this);
+                    _startInfo = new ProcessStartInfo();
                 }
                 return _startInfo;
             }

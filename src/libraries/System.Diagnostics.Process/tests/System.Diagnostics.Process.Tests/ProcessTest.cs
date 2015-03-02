@@ -625,14 +625,12 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public static void Process_Environment()
         {
+            Assert.NotEqual(0, new Process().StartInfo.Environment.Count);
+
             ProcessStartInfo psi = new ProcessStartInfo();
 
             // Creating a detached ProcessStartInfo will pre-populate the environment
-            // with current environmental variables. 
-
-            // When used with an existing Process.ProcessStartInfo the following behavior
-            //  * Desktop - Populates with current EnvironmentVariable
-            //  * Project K - Does NOT pre-populate environment.
+            // with current environmental variables.
 
             var Environment2 = psi.Environment;
 
