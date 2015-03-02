@@ -6,7 +6,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <AssemblyName>Events.Tests</AssemblyName>
+    <AssemblyName>System.Xml.XDocument.Events.Tests</AssemblyName>
     <SignAssembly>false</SignAssembly>
     <ProjectGuid>{C560E194-5B14-4112-ABC6-3208491E53E6}</ProjectGuid>
     <TestCategories>OuterLoop</TestCategories>

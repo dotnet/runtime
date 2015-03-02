@@ -13,6 +13,13 @@ using Xunit;
 //
 public class FileVersionInfoTest
 {
+    private const string NativeConsoleAppFileName = "NativeConsoleApp.exe";
+    private const string NativeLibraryFileName = "NativeLibrary.dll";
+    private const string SecondNativeLibraryFileName = "SecondNativeLibrary.dll";
+    private const string TestAssemblyFileName = "System.Diagnostics.FileVersionInfo.TestAssembly.dll";
+    private const string TestCsFileName = "Assembly1.cs";
+    private const string TestNotFoundFileName = "notfound.dll";
+
     static FileVersionInfoTest()
     {
         InitializeExpectedValues();
@@ -27,37 +34,37 @@ public class FileVersionInfoTest
     [Fact]
     public static void FileVersionInfo_Normal()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), "NativeConsoleApp.exe"), s_fviNativeConsoleApp);
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName), s_fviNativeConsoleApp);
     }
 
     [Fact]
     public static void FileVersionInfo_Chinese()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), "NativeLibrary.dll"), s_fviNativeLibrary);
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName), s_fviNativeLibrary);
     }
 
     [Fact]
     public static void FileVersionInfo_DifferentFileVersionAndProductVersion()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), "SecondNativeLibrary.dll"), s_fviSecondNativeLibrary);
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName), s_fviSecondNativeLibrary);
     }
 
     [Fact]
     public static void FileVersionInfo_CustomManagedAssembly()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), "Assembly1.dll"), s_fviAssembly1);
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), s_fviAssembly1);
     }
 
     [Fact]
     public static void FileVersionInfo_EmptyFVI()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), "Assembly1.cs"), s_fviAssembly1_cs);
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), s_fviAssembly1_cs);
     }
 
     [Fact]
     public static void FileVersionInfo_FileNotFound()
     {
-        VerifyVersionInfoException<System.IO.FileNotFoundException>(Path.Combine(Directory.GetCurrentDirectory(), "notfound.dll"));
+        VerifyVersionInfoException<FileNotFoundException>(Path.Combine(Directory.GetCurrentDirectory(), TestNotFoundFileName));
     }
 
     // Additional Tests Wanted:
@@ -158,10 +165,10 @@ public class FileVersionInfoTest
         s_fviNativeConsoleApp.FileDescription = "This is the description for the native console application.";
         s_fviNativeConsoleApp.FileMajorPart = 5;
         s_fviNativeConsoleApp.FileMinorPart = 4;
-        s_fviNativeConsoleApp.FileName = Path.Combine(Directory.GetCurrentDirectory(), "NativeConsoleApp.exe");
+        s_fviNativeConsoleApp.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName);
         s_fviNativeConsoleApp.FilePrivatePart = 2;
         s_fviNativeConsoleApp.FileVersion = "5.4.3.2";
-        s_fviNativeConsoleApp.InternalName = "NativeConsoleApp.exe";
+        s_fviNativeConsoleApp.InternalName = NativeConsoleAppFileName;
         s_fviNativeConsoleApp.IsDebug = false;
         s_fviNativeConsoleApp.IsPatched = false;
         s_fviNativeConsoleApp.IsPrivateBuild = false;
@@ -170,12 +177,12 @@ public class FileVersionInfoTest
         s_fviNativeConsoleApp.Language = GetFileVersionLanguage(0x0409);//English (United States)
         s_fviNativeConsoleApp.LegalCopyright = "Copyright (C) 2050";
         s_fviNativeConsoleApp.LegalTrademarks = "";
-        s_fviNativeConsoleApp.OriginalFilename = "NativeConsoleApp.exe";
+        s_fviNativeConsoleApp.OriginalFilename = NativeConsoleAppFileName;
         s_fviNativeConsoleApp.PrivateBuild = "";
         s_fviNativeConsoleApp.ProductBuildPart = 3;
         s_fviNativeConsoleApp.ProductMajorPart = 5;
         s_fviNativeConsoleApp.ProductMinorPart = 4;
-        s_fviNativeConsoleApp.ProductName = "NativeConsoleApp";
+        s_fviNativeConsoleApp.ProductName = Path.GetFileNameWithoutExtension(NativeConsoleAppFileName);
         s_fviNativeConsoleApp.ProductPrivatePart = 2;
         s_fviNativeConsoleApp.ProductVersion = "5.4.3.2";
         s_fviNativeConsoleApp.SpecialBuild = "";
@@ -188,7 +195,7 @@ public class FileVersionInfoTest
         s_fviNativeLibrary.FileDescription = "Here is the description of the native library.";
         s_fviNativeLibrary.FileMajorPart = 9;
         s_fviNativeLibrary.FileMinorPart = 9;
-        s_fviNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), "NativeLibrary.dll");
+        s_fviNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName);
         s_fviNativeLibrary.FilePrivatePart = 3;
         s_fviNativeLibrary.FileVersion = "9.9.3.3";
         s_fviNativeLibrary.InternalName = "NativeLi.dll";
@@ -219,7 +226,7 @@ public class FileVersionInfoTest
         s_fviSecondNativeLibrary.FileDescription = "";
         s_fviSecondNativeLibrary.FileMajorPart = 0;
         s_fviSecondNativeLibrary.FileMinorPart = 65535;
-        s_fviSecondNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), "SecondNativeLibrary.dll");
+        s_fviSecondNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName);
         s_fviSecondNativeLibrary.FilePrivatePart = 2;
         s_fviSecondNativeLibrary.FileVersion = "0.65535.0.2";
         s_fviSecondNativeLibrary.InternalName = "SecondNa.dll";
@@ -249,10 +256,10 @@ public class FileVersionInfoTest
         s_fviAssembly1.FileDescription = "My File";
         s_fviAssembly1.FileMajorPart = 4;
         s_fviAssembly1.FileMinorPart = 3;
-        s_fviAssembly1.FileName = Path.Combine(Directory.GetCurrentDirectory(), "Assembly1.dll");
+        s_fviAssembly1.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
         s_fviAssembly1.FilePrivatePart = 1;
         s_fviAssembly1.FileVersion = "4.3.2.1";
-        s_fviAssembly1.InternalName = "Assembly1.dll";
+        s_fviAssembly1.InternalName = TestAssemblyFileName;
         s_fviAssembly1.IsDebug = false;
         s_fviAssembly1.IsPatched = false;
         s_fviAssembly1.IsPrivateBuild = false;
@@ -261,7 +268,7 @@ public class FileVersionInfoTest
         s_fviAssembly1.Language = GetFileVersionLanguage(0x0000);//Language Neutral
         s_fviAssembly1.LegalCopyright = "Copyright, you betcha!";
         s_fviAssembly1.LegalTrademarks = "TM";
-        s_fviAssembly1.OriginalFilename = "Assembly1.dll";
+        s_fviAssembly1.OriginalFilename = TestAssemblyFileName;
         s_fviAssembly1.PrivateBuild = "";
         s_fviAssembly1.ProductBuildPart = 2;
         s_fviAssembly1.ProductMajorPart = 4;
@@ -279,7 +286,7 @@ public class FileVersionInfoTest
         s_fviAssembly1_cs.FileDescription = null;
         s_fviAssembly1_cs.FileMajorPart = 0;
         s_fviAssembly1_cs.FileMinorPart = 0;
-        s_fviAssembly1_cs.FileName = Path.Combine(Directory.GetCurrentDirectory(), "Assembly1.cs");
+        s_fviAssembly1_cs.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName);
         s_fviAssembly1_cs.FilePrivatePart = 0;
         s_fviAssembly1_cs.FileVersion = null;
         s_fviAssembly1_cs.InternalName = null;
