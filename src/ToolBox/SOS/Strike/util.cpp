@@ -5,11 +5,13 @@
 
 // ==++==
 // 
- 
+
 // 
 // ==--==
 #include "sos.h"
+#ifndef FEATURE_PAL
 #include "disasm.h"
+#endif // FEATURE_PAL
 #include <dbghelp.h>
 
 #include "corhdr.h"
@@ -19,7 +21,9 @@
 #include "corerror.h"
 #include "safemath.h"
 
-#ifndef FEATURE_PAL
+#ifdef FEATURE_PAL
+#include "datatarget.h"
+#else
 #include <psapi.h>
 #include <cordebug.h>
 #include <xcordebug.h>
@@ -27,7 +31,7 @@
 #include <mscoree.h>
 #include <tchar.h>
 #include "debugshim.h"
-#endif //!FEATURE_PAL
+#endif // !FEATURE_PAL
 #include "gcinfo.h"
 
 #ifndef STRESS_LOG
@@ -36,10 +40,12 @@
 #define STRESS_LOG_READONLY
 #include "stresslog.h"
 
+#ifndef FEATURE_PAL
 #define MAX_SYMBOL_LEN 4096
 #define SYM_BUFFER_SIZE (sizeof(IMAGEHLP_SYMBOL) + MAX_SYMBOL_LEN)
 char symBuffer[SYM_BUFFER_SIZE];
 PIMAGEHLP_SYMBOL sym = (PIMAGEHLP_SYMBOL) symBuffer;
+#endif // !FEATURE_PAL
 
 const char * const CorElementTypeName[ELEMENT_TYPE_MAX]=
 {
@@ -58,9 +64,11 @@ const char * const CorElementTypeNamespace[ELEMENT_TYPE_MAX]=
 IXCLRDataProcess *g_clrData = NULL;
 ISOSDacInterface *g_sos = NULL;
 
-#ifndef FEATURE_PAL
+#ifdef FEATURE_PAL
+BOOL g_palInitialized = FALSE;
+#else
 ICorDebugProcess * g_pCorDebugProcess = NULL;
-#endif
+#endif // FEATURE_PAL
 
 #ifndef IfFailRet
 #define IfFailRet(EXPR) do { Status = (EXPR); if(FAILED(Status)) { return (Status); } } while (0)
@@ -76,7 +84,6 @@ ICorDebugProcess * g_pCorDebugProcess = NULL;
 
 // Max number of reverted rejit versions that !dumpmd and !ip2md will print
 const UINT kcMaxRevertedRejitData = 10;
-
 
 #ifndef FEATURE_PAL
 
@@ -633,7 +640,6 @@ HRESULT CreateInstanceCustom(
 }
 
 
-#endif // FEATURE_PAL
 
 
 /**********************************************************************\
@@ -697,6 +703,8 @@ DWORD_PTR GetValueFromExpression (__in __in_z const char *const instr)
     }
     return 0;
 }
+
+#endif // FEATURE_PAL
 
 ModuleInfo moduleInfo[MSCOREND] = {{0,FALSE,0},{0,FALSE,0},{0,FALSE,0}};
 
@@ -793,6 +801,9 @@ EEFLAVOR GetEEFlavor ()
 
 BOOL IsDumpFile ()
 {
+#ifdef FEATURE_PAL
+    return FALSE;
+#else
     static int g_fDumpFile = -1;
     if (g_fDumpFile == -1) {
         ULONG Class;
@@ -804,6 +815,7 @@ BOOL IsDumpFile ()
             g_fDumpFile = 0;
     }
     return g_fDumpFile != 0;
+#endif //FEATURE_PAL
 }
 
 BOOL g_InMinidumpSafeMode = FALSE;
@@ -847,18 +859,6 @@ BOOL IsMiniDumpFile ()
     
 #endif // FEATURE_PAL
     return FALSE;
-}
-
-ULONG TargetPlatform()
-{
-    static ULONG platform = -1;
-    if (platform == (ULONG)-1) {
-        ULONG major;
-        ULONG minor;
-        ULONG SPNum;
-        g_ExtControl->GetSystemVersion(&platform,&major,&minor,NULL,0,NULL,&SPNum,NULL,0,NULL);
-    }
-    return platform;
 }
 
 ULONG DebuggeeType()
@@ -973,6 +973,7 @@ size_t NextOSPageAddress (size_t addr)
     size_t pageSize = OSPageSize();
     return (addr+pageSize)&(~(pageSize-1));
 }
+
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -1941,6 +1942,8 @@ CLRDATA_ADDRESS GetAppDomainForMT(CLRDATA_ADDRESS mtPtr)
             assembly.ParentDomain;
 }
 
+#ifndef FEATURE_PAL
+
 CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
 {
     CLRDATA_ADDRESS appDomain = NULL;
@@ -2052,6 +2055,8 @@ CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
     return appDomain;
 }
 
+#endif // !FEATURE_PAL
+
 HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_PATH) WCHAR *fileName)
 {
     DacpModuleData ModuleData;
@@ -2095,12 +2100,13 @@ HRESULT FileNameForModule (DacpModuleData *pModule, __out_ecount (MAX_PATH) WCHA
             if (fileName[0] != L'\0')
                 return hr; // done
         }
-
+#ifndef FEATURE_PAL
         // Try the base *
         if (base)
         {
             hr = DllsName((ULONG_PTR) base, fileName);
         }
+#endif // !FEATURE_PAL
     }
     
     // If we got here, either DllsName worked, or we couldn't find a name
@@ -2204,7 +2210,7 @@ void DomainInfo (DacpAppDomainData *pDomain)
     }
     else
     {
-        ExtOut("%S\n", (g_mdName[0] != L'\0') ? g_mdName : L"None");
+        ExtOut("%S\n", (g_mdName[0] != L'\0') ? g_mdName : W("None"));
     }
 
     if (pDomain->AssemblyCount == 0)
@@ -2284,7 +2290,7 @@ BOOL NameForMD_s (DWORD_PTR pMD, __out_ecount (capacity_mdName) WCHAR *mdName, s
 
     if (g_sos->GetMethodDescName(StartAddr, mdNameLen, mdName, NULL) != S_OK)
     {
-        wcscpy_s(mdName, capacity_mdName, L"UNKNOWN");
+        wcscpy_s(mdName, capacity_mdName, W("UNKNOWN"));
         return FALSE;
     }
     return TRUE;
@@ -2303,6 +2309,8 @@ BOOL NameForMT_s(DWORD_PTR MTAddr, __out_ecount (capacity_mdName) WCHAR *mdName,
     return SUCCEEDED(hr);
 }
 
+#ifndef FEATURE_PAL
+
 wchar_t *CreateMethodTableName(TADDR mt, TADDR cmt)
 {
     bool array = false;
@@ -2311,7 +2319,7 @@ wchar_t *CreateMethodTableName(TADDR mt, TADDR cmt)
     if (mt == sos::MethodTable::GetFreeMT())
     {
         res = new wchar_t[5];
-        wcscpy_s(res, 5, L"Free");
+        wcscpy_s(res, 5, W("Free"));
         return res;
     }
     
@@ -2346,6 +2354,8 @@ wchar_t *CreateMethodTableName(TADDR mt, TADDR cmt)
 
     return res;
 }
+
+#endif // !FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -2450,6 +2460,8 @@ BOOL IsStringObject (size_t obj)
     return FALSE;
 }
 
+#ifndef FEATURE_PAL
+
 void DumpStackObjectsOutput(const char *location, DWORD_PTR objAddr, BOOL verifyFields)
 {
 #ifndef FEATURE_PAL
@@ -2550,7 +2562,6 @@ void DumpStackObjectsHelper (
     // Make certain StackTop is dword aligned:
     DumpStackObjectsInternal(StackTop & ~ALIGNCONST, StackBottom, verifyFields);
 }
-
 
 void AddToModuleList(DWORD_PTR * &moduleList, int &numModule, int &maxList,
                      DWORD_PTR dwModuleAddr)
@@ -2820,6 +2831,8 @@ Failure:
     delete [] moduleList;
     return NULL;
 }
+
+#endif // !FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -3315,7 +3328,7 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
     BOOL bFailed = FALSE;
     if (g_sos->GetMethodDescName(pMethodDescData->MethodDescPtr, 1024, wszNameBuffer, NULL) != S_OK)
     {
-        wcscpy_s(wszNameBuffer, _countof(wszNameBuffer),L"UNKNOWN");        
+        wcscpy_s(wszNameBuffer, _countof(wszNameBuffer), W("UNKNOWN"));        
         bFailed = TRUE;        
     }
 
@@ -3473,6 +3486,8 @@ HRESULT GetThreadList(DWORD_PTR **threadList, int *numThread)
     return S_OK;
 }
 
+#ifndef FEATURE_PAL
+
 CLRDATA_ADDRESS GetCurrentManagedThread ()
 {
     DacpThreadStoreData ThreadStore;
@@ -3512,10 +3527,8 @@ void ReloadSymbolWithLineInfo()
         {
             g_ExtSymbols->AddSymbolOptions(SYMOPT_LOAD_LINES);
             
-#ifndef FEATURE_PAL
             if (SUCCEEDED(g_ExtSymbols->GetModuleByModuleName(MSCOREE_SHIM_A, 0, NULL, NULL)))
                 g_ExtSymbols->Reload("/f " MSCOREE_SHIM_A);
-#endif // FEATURE_PAL
             
             EEFLAVOR flavor = GetEEFlavor();
             if (flavor == MSCORWKS)
@@ -3577,7 +3590,7 @@ size_t FunctionType (size_t EIP)
     return (size_t) pMD;
 }
 
-#ifndef FEATURE_PAL
+
 //
 // Gets version info for the CLR in the debuggee process.
 //
@@ -3622,7 +3635,6 @@ BOOL GetSOSVersion(VS_FIXEDFILEINFO *pFileInfo)
     return FALSE;
 }
 
-#endif // FEATURE_PAL
     
 size_t ObjectSize(DWORD_PTR obj,BOOL fIsLargeObject)
 {
@@ -3641,6 +3653,8 @@ size_t ObjectSize(DWORD_PTR obj, DWORD_PTR mt, BOOL fIsValueClass, BOOL fIsLarge
     }
     return size;
 }
+
+#endif // !FEATURE_PAL
 
 // This takes an array of values and sets every non-printable character
 // to be a period.
@@ -3808,9 +3822,8 @@ void StringObjectContent(size_t obj, BOOL fLiteral, const int length)
     }
 }
 
-#ifndef FEATURE_PAL
-
 #ifdef _TARGET_WIN64_
+
 #include <limits.h>
 
 __int64 str64hex(const char *ptr)
@@ -3854,9 +3867,9 @@ __int64 str64hex(const char *ptr)
     
     return value;    
 }
+
 #endif // _TARGET_WIN64_
 
-#endif // FEATURE_PAL
 BOOL GetValueForCMD (const char *ptr, const char *end, ARGTYPE type, size_t *value)
 {   
     if (type == COSTRING) {
@@ -4123,7 +4136,9 @@ void ResetGlobals(void)
     // another managed process. Reset them to a default state here, as this command
     // is called on every SOS entry point.
     g_sos->GetUsefulGlobals(&g_special_usefulGlobals);
+#ifndef FEATURE_PAL
     g_special_mtCache.Clear();
+#endif
     g_special_rvCacheSpace.Clear();
     Output::ResetIndent();
 }
@@ -4138,7 +4153,41 @@ void ResetGlobals(void)
 
 HRESULT LoadClrDebugDll(void)
 {
-#ifndef FEATURE_PAL
+#ifdef FEATURE_PAL
+    if (!g_palInitialized)
+    {
+        int err = PAL_Initialize(0, NULL);
+        if(err != 0)
+        {
+            return E_FAIL;
+        }
+        g_palInitialized = TRUE;
+    }
+    if (g_clrData == NULL)
+    {
+        // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
+        HMODULE hdac = LoadLibraryA(MAKEDLLNAME_A("mscordaccore"));
+        if (hdac == NULL)
+        {
+            return E_FAIL;
+        }
+        PFN_CLRDataCreateInstance pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
+        if (pCLRDataCreateInstance == NULL)
+        {
+            FreeLibrary(hdac);
+            return E_FAIL;
+        }
+        ICLRDataTarget *target = new DataTarget();
+        HRESULT hr = pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
+        if (FAILED(hr))
+        {
+            FreeLibrary(hdac);
+            g_clrData = NULL;
+            return hr;
+        }
+    }
+    g_clrData->AddRef();
+#else
     WDBGEXTS_CLR_DATA_INTERFACE Query;
 
     Query.Iid = &__uuidof(IXCLRDataProcess);
@@ -4148,17 +4197,13 @@ HRESULT LoadClrDebugDll(void)
     }
 
     g_clrData = (IXCLRDataProcess*)Query.Iface;
+#endif
+
     if (FAILED(g_clrData->QueryInterface(__uuidof(ISOSDacInterface), (void**)&g_sos)))
     {
-        g_sos = 0;
+        g_sos = NULL;
         return E_FAIL;
     }
-#else
-    if (g_clrData)
-        g_clrData->AddRef();
-    else
-        return E_UNEXPECTED;
-#endif
 
     return S_OK;
 }
@@ -4332,7 +4377,7 @@ public:
         }
 
         // if we are looking for the DAC, just load the one windbg already found
-        if(wcsncmp(pwszFileName, L"mscordac", wcslen(L"mscordac"))==0)
+        if(wcsncmp(pwszFileName, W("mscordac"), wcslen(W("mscordac")))==0)
         {
             FindFileInPathCallback(dacPath, &callbackData);
             *phModule = callbackData.hModule;
@@ -4732,7 +4777,8 @@ extern "C" HRESULT CALLBACK SetClrDebugDll(IXCLRDataProcess *data)
     g_clrData = data;
     return g_clrData ? S_OK : E_FAIL;
 }
-#endif
+
+#endif // FEATURE_PAL
 
 extern "C" void CALLBACK
 UnloadClrDebugDll(void)
@@ -4947,6 +4993,8 @@ HRESULT GetMTOfObject(TADDR obj, TADDR *mt)
     return hr;
 }
 
+#ifndef FEATURE_PAL
+
 StressLogMem::~StressLogMem ()
 {
     MemRange * range = list;
@@ -5019,6 +5067,8 @@ bool StressLogMem::IsInStressLog (ULONG64 addr)
 
     return false;
 }
+
+#endif // !FEATURE_PAL
 
 unsigned int Output::g_bSuppressOutput = 0;
 unsigned int Output::g_Indent = 0;
@@ -5417,7 +5467,7 @@ CachedString Output::BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG fra
 CachedString Output::BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG frame, int indexInArray, FormatType type)
 {
     WCHAR indexString[24];
-    swprintf_s(indexString, _countof(indexString), L"[%d]", indexInArray);
+    swprintf_s(indexString, _countof(indexString), W("[%d]"), indexInArray);
     return BuildManagedVarValue(expansionName, frame, indexString, type);
 }
 
@@ -6122,7 +6172,7 @@ HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __
     ToRelease<ISymUnmanagedBinder3> pSymBinder;
     if(FAILED(Status = CreateInstanceCustom(CLSID_CorSymBinder_SxS, 
                         IID_ISymUnmanagedBinder3, 
-                        L"diasymreader.dll",
+                        W("diasymreader.dll"),
                         cciLatestFx|cciDacColocated|cciDbgPath, 
                         (void**)&pSymBinder)))
     {
@@ -6209,7 +6259,7 @@ HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDeb
 
                 ULONG32 nameLen = 0; 
                 if(FAILED(pLocals[i]->GetName(paramNameLen, &nameLen, paramName)))
-                        swprintf_s(paramName, paramNameLen, L"local_%d\0", localIndex);
+                        swprintf_s(paramName, paramNameLen, W("local_%d\0"), localIndex);
 
                 if(SUCCEEDED(pILFrame->GetLocalVariable(varIndexInMethod, ppValue)) && (*ppValue != NULL))
                 {
@@ -6338,14 +6388,14 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
     MOVE(vtAddr, frameAddr);
 
     WString frameOutput;
-    frameOutput += L"[";
+    frameOutput += W("[");
 
     if (SUCCEEDED(g_sos->GetFrameName(vtAddr, mdNameLen, g_mdName, NULL)))
         frameOutput += g_mdName;
     else
-        frameOutput += L"Frame";
+        frameOutput += W("Frame");
         
-    frameOutput += WString(L": ") + Pointer(frameAddr) + L"] ";
+    frameOutput += WString(W(": ")) + Pointer(frameAddr) + W("] ");
 
     // Print the frame's associated function info, if it has any.
     CLRDATA_ADDRESS mdesc = 0;
@@ -6354,7 +6404,7 @@ WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
         if (SUCCEEDED(g_sos->GetMethodDescName(mdesc, mdNameLen, g_mdName, NULL)))
             frameOutput += g_mdName;
         else
-            frameOutput += L"<unknown method>";
+            frameOutput += W("<unknown method>");
     }
     else if (pStackWalk)
     {
@@ -6387,7 +6437,7 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
     
     if (FAILED(g_sos->GetMethodDescPtrFromIP(ip, &mdesc)))
     {
-        methodOutput = L"<unknown>";
+        methodOutput = W("<unknown>");
     }
     else
     {
@@ -6431,14 +6481,14 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
                             g_mdName, 
                             _countof(g_mdName));
                     methodOutput += g_mdName;
-                    methodOutput += L"!";
+                    methodOutput += W("!");
                 }
             }
-            methodOutput += L"<unknown method>";
+            methodOutput += W("<unknown method>");
         }
         else
         {
-            methodOutput = L"<unknown>";
+            methodOutput = W("<unknown>");
         }
             
         if (!bSuppressLines &&
@@ -6448,7 +6498,7 @@ WString MethodNameFromIP(CLRDATA_ADDRESS ip, BOOL bSuppressLines)
             ArrayHolder<wchar_t> wfilename = new wchar_t[len];
             MultiByteToWideChar(CP_ACP, 0, filename, -1, wfilename, len);
             
-            methodOutput += WString(L" [") + wfilename + L" @ " + Decimal(linenum) + L"]";
+            methodOutput += WString(W(" [")) + wfilename + W(" @ ") + Decimal(linenum) + W("]");
         }
     }
     

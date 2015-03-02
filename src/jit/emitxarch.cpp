@@ -8985,7 +8985,7 @@ BYTE*               emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 // The reg must currently be holding either a gcref or a byref
                 // and the instruction must be inc or dec
                 assert(((emitThisGCrefRegs | emitThisByrefRegs) & regMask) &&
-                        (ins == INS_inc || ins == INS_dec || ins == INS_inc_l));
+                        (ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l));
                 assert(id->idGCref() == GCT_BYREF);
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);

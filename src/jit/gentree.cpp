@@ -4228,7 +4228,7 @@ DONE:
 
 unsigned            GenTree::GetScaleIndexMul()
 {
-    if  (IsCnsIntOrI() && jitIsScaleIndexMul(gtIntConCommon.IconValue()))
+    if  (IsCnsIntOrI() && jitIsScaleIndexMul(gtIntConCommon.IconValue()) && gtIntConCommon.IconValue()!=1)
         return (unsigned)gtIntConCommon.IconValue();
 
     return 0;
@@ -10710,7 +10710,7 @@ GenTreePtr Compiler::gtBuildCommaList(GenTreePtr list, GenTreePtr expr)
         result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
 
         // 'list' and 'expr' should have valuenumbers defined for both or for neither one
-        assert(list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined());
+        noway_assert(list->gtVNPair.BothDefined() == expr->gtVNPair.BothDefined());
             
         // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
         //
@@ -12378,13 +12378,15 @@ void GenTree::ParseArrayAddress(Compiler* comp, ArrayInfo* arrayInfo, GenTreePtr
     assert(*pFldSeq == nullptr);
     while (fldSeqIter != nullptr)
     {
-        assert(fldSeqIter != FieldSeqStore::NotAField());
-
-        if (!FieldSeqStore::IsPseudoField(fldSeqIter->m_fieldHnd) &&
-            // TODO-Review: A NotAField here indicates a failure to properly maintain the field seuqence
+        if (fldSeqIter == FieldSeqStore::NotAField())
+        {
+            // TODO-Review: A NotAField here indicates a failure to properly maintain the field sequence
             // See test case self_host_tests_x86\jit\regression\CLR-x86-JIT\v1-m12-beta2\ b70992\ b70992.exe
-            fldSeqIter != FieldSeqStore::NotAField()
-            )
+            // Safest thing to do here is to drop back to MinOpts
+            noway_assert(!"fldSeqIter is NotAField() in ParseArrayAddress");
+        }
+
+        if (!FieldSeqStore::IsPseudoField(fldSeqIter->m_fieldHnd))
         {
             if (*pFldSeq == nullptr)
                 *pFldSeq = fldSeqIter;

@@ -15,6 +15,10 @@ include_directories(${CLR_DIR}/src/debug/ee)
 include_directories(${CLR_DIR}/src/gc)
 include_directories(${CLR_DIR}/src/gcdump)
 
+if(CLR_CMAKE_PLATFORM_UNIX)
+  add_compile_options(-fPIC)
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 set(DACCESS_SOURCES
   dacdbiimpl.cpp
   dacdbiimpllocks.cpp

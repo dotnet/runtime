@@ -155,11 +155,6 @@ namespace System.Diagnostics.Tracing
             {
                 throw new ArgumentException(Win32Native.GetMessage(unchecked((int)status)));
             }
-            else
-            {
-                // if we registered successfully ensure we unregister on ProcessExit
-                DisposeOnProcessExit(new WeakReference(this));
-            }
         }
 
         [System.Security.SecurityCritical]
@@ -187,19 +182,6 @@ namespace System.Diagnostics.Tracing
             }
 
             return status;
-        }
-
-        private static void DisposeOnProcessExit(WeakReference wrThis)
-        {
-#if !ES_BUILD_PCL && !FEATURE_CORECLR
-            EventHandler doDispose = (sender, e) => {
-                EventProvider ep = wrThis.Target as EventProvider;
-                if (ep != null)
-                    ep.Dispose(true);
-            };
-            AppDomain.CurrentDomain.ProcessExit += doDispose;
-            AppDomain.CurrentDomain.DomainUnload += doDispose;
-#endif
         }
 
         //
@@ -235,7 +217,7 @@ namespace System.Diagnostics.Tracing
             // Disable the provider.  
             m_enabled = false;
 
-            // Do most of the work under a lock to avoid shutdown race condition.  
+            // Do most of the work under a lock to avoid shutdown race.  
             lock (EventListener.EventListenersLock)
             {
                 // Double check
@@ -307,8 +289,6 @@ namespace System.Diagnostics.Tracing
                 byte[] data;
                 int keyIndex;
                 bool skipFinalOnControllerCommand = false;
-                EventSource.OutputDebugString(string.Format("EtwEnableCallBack(ctrl {0}, lvl {1}, any {2:x}, all {3:x})",
-                                              controlCode, setLevel, anyKeyword, allKeyword));
                 if (controlCode == UnsafeNativeMethods.ManifestEtw.EVENT_CONTROL_CODE_ENABLE_PROVIDER)
                 {
                     m_enabled = true;
@@ -322,9 +302,6 @@ namespace System.Diagnostics.Tracing
                         int sessionChanged = session.Item1.sessionIdBit;
                         int etwSessionId = session.Item1.etwSessionId;
                         bool bEnabling = session.Item2;
-
-                        EventSource.OutputDebugString(string.Format(CultureInfo.InvariantCulture, "EtwEnableCallBack: session changed {0}:{1}:{2}",
-                            sessionChanged, etwSessionId, bEnabling));
 
                         skipFinalOnControllerCommand = true;
                         args = null;                                // reinitialize args for every session...
