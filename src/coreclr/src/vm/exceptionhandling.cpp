@@ -4378,7 +4378,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
     ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
 
     // TODO: is there a better way to get the first managed frame?
-    originalExceptionContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    originalExceptionContext.ContextFlags = CONTEXT_FULL;
     GetThread()->GetThreadContext(&originalExceptionContext);
     controlPc = Thread::VirtualUnwindToFirstManagedCallFrame(&originalExceptionContext);
 
