@@ -688,7 +688,7 @@ ScaleResult(uint32_t *res, int hi_res, int scale)
 // Decimal multiply
 // Returns: MONO_DECIMAL_OVERFLOW or MONO_DECIMAL_OK
 static MonoDecimalStatus
-VarDecMul(MonoDecimal * left, MonoDecimal * right, MonoDecimal * result)
+MONO_VarDecMul(MonoDecimal * left, MonoDecimal * right, MonoDecimal * result)
 {
 	SPLIT64 tmp;
 	SPLIT64 tmp2;
@@ -1120,14 +1120,14 @@ RetDec:
 
 // Decimal addition
 static MonoDecimalStatus
-VarDecAdd(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
+MONO_VarDecAdd(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 {
     return DecAddSub (left, right, result, 0);
 }
 
 // Decimal subtraction
 static MonoDecimalStatus
-VarDecSub(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
+MONO_VarDecSub(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 {
     return DecAddSub (left, right, result, DECIMAL_NEG);
 }
@@ -1368,9 +1368,9 @@ OverflowUnscale (uint32_t *quo, gboolean remainder)
 	}
 }
 
-// VarDecDiv - Decimal divide
+// MONO_VarDecDiv - Decimal divide
 static MonoDecimalStatus
-VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
+MONO_VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 {
 	uint32_t   quo[3];
 	uint32_t   quoSave[3];
@@ -1714,26 +1714,26 @@ VarDecDiv(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 	return MONO_DECIMAL_OK;
 }
 
-// VarDecAbs - Decimal Absolute Value
+// MONO_VarDecAbs - Decimal Absolute Value
 static void
-VarDecAbs (MonoDecimal *pdecOprd, MonoDecimal *result)
+MONO_VarDecAbs (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	COPYDEC(*result, *pdecOprd);
 	result->u.u.sign &= ~DECIMAL_NEG;
 	// Microsoft does not set reserved here
 }
 
-// VarDecFix - Decimal Fix (chop to integer)
+// MONO_VarDecFix - Decimal Fix (chop to integer)
 static void
-VarDecFix (MonoDecimal *pdecOprd, MonoDecimal *result)
+MONO_VarDecFix (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	DecFixInt(result, pdecOprd);
 }
 
 
-// VarDecInt - Decimal Int (round down to integer)
+// MONO_VarDecInt - Decimal Int (round down to integer)
 static void
-VarDecInt (MonoDecimal *pdecOprd, MonoDecimal *result)
+MONO_VarDecInt (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	if (DecFixInt(result, pdecOprd) != 0 && (result->u.u.sign & DECIMAL_NEG)) {
 		// We have chopped off a non-zero amount from a negative value.  Since
@@ -1749,9 +1749,9 @@ VarDecInt (MonoDecimal *pdecOprd, MonoDecimal *result)
 }
 
 
-// VarDecNeg - Decimal Negate
+// MONO_VarDecNeg - Decimal Negate
 static void
-VarDecNeg (MonoDecimal *pdecOprd, MonoDecimal *result)
+MONO_VarDecNeg (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	COPYDEC(*result, *pdecOprd);
 	// Microsoft does not set result->reserved to zero on this case.
@@ -1762,7 +1762,7 @@ VarDecNeg (MonoDecimal *pdecOprd, MonoDecimal *result)
 // Returns: MONO_DECIMAL_INVALID_ARGUMENT, MONO_DECIMAL_OK
 //
 static MonoDecimalStatus
-VarDecRound(MonoDecimal *input, int cDecimals, MonoDecimal *result)
+MONO_VarDecRound(MonoDecimal *input, int cDecimals, MonoDecimal *result)
 {
 	uint32_t num[3];
 	uint32_t rem;
@@ -1819,7 +1819,7 @@ VarDecRound(MonoDecimal *input, int cDecimals, MonoDecimal *result)
 //
 // Returns MONO_DECIMAL_OK or MONO_DECIMAL_OVERFLOW
 static MonoDecimalStatus
-VarDecFromR4 (float input, MonoDecimal* result)
+MONO_VarDecFromR4 (float input, MonoDecimal* result)
 {
 	int         exp;    // number of bits to left of binary point
 	int         power;
@@ -1960,7 +1960,7 @@ VarDecFromR4 (float input, MonoDecimal* result)
 //
 // Returns MONO_DECIMAL_OK or MONO_DECIMAL_OVERFLOW
 static MonoDecimalStatus
-VarDecFromR8 (double input, MonoDecimal *result)
+MONO_VarDecFromR8 (double input, MonoDecimal *result)
 {
 	int         exp;    // number of bits to left of binary point
 	int         power;  // power-of-10 scale factor
@@ -2109,7 +2109,7 @@ VarDecFromR8 (double input, MonoDecimal *result)
 
 // Returns: MONO_DECIMAL_OK, or MONO_DECIMAL_INVALID_ARGUMENT
 static MonoDecimalStatus
-VarR8FromDec(MonoDecimal *input, double *result)
+MONO_VarR8FromDec(MonoDecimal *input, double *result)
 {
 	SPLIT64  tmp;
 	double   dbl;
@@ -2136,7 +2136,7 @@ VarR8FromDec(MonoDecimal *input, double *result)
 
 // Returns: MONO_DECIMAL_OK, or MONO_DECIMAL_INVALID_ARGUMENT
 static MonoDecimalStatus
-VarR4FromDec(MonoDecimal *input, float *result)
+MONO_VarR4FromDec(MonoDecimal *input, float *result)
 {
 	double   dbl;
 	
@@ -2145,7 +2145,7 @@ VarR4FromDec(MonoDecimal *input, float *result)
 	
 	// Can't overflow; no errors possible.
 	//
-	VarR8FromDec(input, &dbl);
+	MONO_VarR8FromDec(input, &dbl);
 	*result = (float)dbl;
 	return MONO_DECIMAL_OK;
 }
@@ -2255,7 +2255,7 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 void
 mono_decimal_init_single (MonoDecimal *_this, float value)
 {
-	if (VarDecFromR4 (value, _this) == MONO_DECIMAL_OVERFLOW) {
+	if (MONO_VarDecFromR4 (value, _this) == MONO_DECIMAL_OVERFLOW) {
 		mono_set_pending_exception (mono_get_exception_overflow ());
 		return;
 	}
@@ -2265,7 +2265,7 @@ mono_decimal_init_single (MonoDecimal *_this, float value)
 void
 mono_decimal_init_double (MonoDecimal *_this, double value)
 {
-	if (VarDecFromR8 (value, _this) == MONO_DECIMAL_OVERFLOW) {
+	if (MONO_VarDecFromR8 (value, _this) == MONO_DECIMAL_OVERFLOW) {
 		mono_set_pending_exception (mono_get_exception_overflow ());
 		return;
 	}
@@ -2277,7 +2277,7 @@ mono_decimal_floor (MonoDecimal *d)
 {
 	MonoDecimal decRes;
 
-	VarDecInt(d, &decRes);
+	MONO_VarDecInt(d, &decRes);
 	
 	// copy decRes into d
 	COPYDEC(*d, decRes);
@@ -2290,7 +2290,7 @@ mono_decimal_get_hash_code (MonoDecimal *d)
 {
 	double dbl;
 
-	if (VarR8FromDec(d, &dbl) != MONO_DECIMAL_OK)
+	if (MONO_VarR8FromDec(d, &dbl) != MONO_DECIMAL_OK)
 		return 0;
 	
 	if (dbl == 0.0) {
@@ -2316,7 +2316,7 @@ mono_decimal_multiply (MonoDecimal *d1, MonoDecimal *d2)
 {
 	MonoDecimal decRes;
 
-	MonoDecimalStatus status = VarDecMul(d1, d2, &decRes);
+	MonoDecimalStatus status = MONO_VarDecMul(d1, d2, &decRes);
 	if (status != MONO_DECIMAL_OK) {
 		mono_set_pending_exception (mono_get_exception_overflow ());
 		return;
@@ -2339,7 +2339,7 @@ mono_decimal_round (MonoDecimal *d, int32_t decimals)
 		return;
 	}
 
-	VarDecRound(d, decimals, &decRes);
+	MONO_VarDecRound(d, decimals, &decRes);
 
 	// copy decRes into d
 	COPYDEC(*d, decRes);
@@ -2359,7 +2359,7 @@ mono_decimal_to_double (MonoDecimal d)
 {
 	double result = 0.0;
 	// Note: this can fail if the input is an invalid decimal, but for compatibility we should return 0
-	VarR8FromDec(&d, &result);
+	MONO_VarR8FromDec(&d, &result);
 	return result;
 }
 
@@ -2369,11 +2369,11 @@ mono_decimal_to_int32 (MonoDecimal d)
 	MonoDecimal result;
 	
 	// The following can not return an error, it only returns INVALID_ARG if the decimals is < 0
-	VarDecRound(&d, 0, &result);
+	MONO_VarDecRound(&d, 0, &result);
 	
 	if (DECIMAL_SCALE(result) != 0) {
 		d = result;
-		VarDecFix (&d, &result);
+		MONO_VarDecFix (&d, &result);
 	}
 	
 	if (DECIMAL_HI32(result) == 0 && DECIMAL_MID32(result) == 0) {
@@ -2397,7 +2397,7 @@ mono_decimal_to_float (MonoDecimal d)
 {
 	float result = 0.0f;
 	// Note: this can fail if the input is an invalid decimal, but for compatibility we should return 0
-	VarR4FromDec(&d, &result);
+	MONO_VarR4FromDec(&d, &result);
 	return result;
 }
 
@@ -2406,7 +2406,7 @@ mono_decimal_truncate (MonoDecimal *d)
 {
 	MonoDecimal decRes;
 
-	VarDecFix(d, &decRes);
+	MONO_VarDecFix(d, &decRes);
 
 	// copy decRes into d
 	COPYDEC(*d, decRes);
