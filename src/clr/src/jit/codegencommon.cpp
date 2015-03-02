@@ -9615,11 +9615,11 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
     regMaskTP maskArgRegsLiveIn;
     if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
     {
-        maskArgRegsLiveIn = RBM_ECX;
+        maskArgRegsLiveIn = RBM_ARG_0;
     }
     else
     {
-        maskArgRegsLiveIn = RBM_ECX | RBM_EDX;
+        maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_1;
     }
 
     regNumber initReg = REG_EBP; // We already saved EBP, so it can be trashed

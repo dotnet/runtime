@@ -2055,9 +2055,7 @@ void                Compiler::compInitOptions(unsigned compileFlags)
             static ConfigMethodSet fJitDisasm;
             fJitDisasm.ensureInit(CLRConfig::INTERNAL_JitDisasm);
             if (fJitDisasm.contains(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig))
-            {
                 opts.disAsm = true;
-            }
 
             if (fJitDisasm.contains("SPILLED", NULL, NULL))
                 opts.disAsmSpilled = true;
