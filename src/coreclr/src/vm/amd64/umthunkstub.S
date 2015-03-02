@@ -55,11 +55,12 @@ NESTED_ENTRY UMThunkStub, _TEXT, UMThunkStubUnwindFrameChainHandler
 // rdx
 // r8
 // r9
-// rbp
 // r12
+// rbp
 // return address                           <-- entry RSP
-        push_nonvol_reg r12
-        push_nonvol_reg rbp                                                                     // stack_args
+        push_nonvol_reg rbp
+        mov             rbp, rsp
+        push_nonvol_reg r12                                                                     // stack_args
         alloc_stack     UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE
         save_reg_postrsp rdi, (UMThunkStubAMD64_INT_ARG_OFFSET)
         save_reg_postrsp rsi, (UMThunkStubAMD64_INT_ARG_OFFSET + 0x08)
@@ -68,7 +69,7 @@ NESTED_ENTRY UMThunkStub, _TEXT, UMThunkStubUnwindFrameChainHandler
         save_reg_postrsp r8,  (UMThunkStubAMD64_INT_ARG_OFFSET + 0x20)
         save_reg_postrsp r9,  (UMThunkStubAMD64_INT_ARG_OFFSET + 0x28)
         save_reg_postrsp METHODDESC_REGISTER, UMThunkStubAMD64_METHODDESC_OFFSET
-        set_frame       rbp, 0                                                                  // stack_args
+        set_cfa_register rbp, (UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE + 3*8)
         SAVE_FLOAT_ARGUMENT_REGISTERS UMThunkStubAMD64_XMM_SAVE_OFFSET
         END_PROLOGUE
 
@@ -140,9 +141,10 @@ LOCAL_LABEL(PostCall):
         mov             dword ptr [r12 + OFFSETOF__Thread__m_fPreemptiveGCDisabled], 0
 
         // epilog
-        lea             rsp, [rbp + UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE]
-        pop_nonvol_reg  rbp                                                                             // stack_args
+        lea             rsp, [rbp - 8]         // deallocate arguments
+        set_cfa_register rsp, (3*8)
         pop_nonvol_reg  r12
+        pop_nonvol_reg  rbp
         ret
 
 
