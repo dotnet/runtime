@@ -3075,7 +3075,7 @@ HCIMPLEND
 /*********************************************************************
 // Allocate a multi-dimensional array
 */
-OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, PVOID args)
+OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, va_list args)
 {
     CONTRACTL {
         THROWS;
@@ -3099,16 +3099,13 @@ OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, PVOID args)
         INT32 t = *p; *p = *q; *q = t;
         p++; q--;
     }
-#elif defined(_WIN64)
-    INT64* pArgs = (INT64 *)args;
+#else
     // create an array where fwdArgList[0] == arg[0] ...
     fwdArgList = (INT32*) _alloca(dwNumArgs * sizeof(INT32));
-    for (unsigned i = 0; i <dwNumArgs; i++)
+    for (unsigned i = 0; i < dwNumArgs; i++)
     {
-        fwdArgList[i] = (INT32)*(pArgs + i);
+        fwdArgList[i] = va_arg(args, INT32);
     }
-#else
-    fwdArgList = (INT32*) args;
 #endif
 
     return AllocateArrayEx(typeHnd, fwdArgList, dwNumArgs);
@@ -3133,7 +3130,7 @@ HCIMPL2VA(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumAr
     va_list dimsAndBounds;
     va_start(dimsAndBounds, dwNumArgs);
 
-    ret = allocNewMDArr(typeHnd, dwNumArgs, (PVOID)dimsAndBounds);
+    ret = allocNewMDArr(typeHnd, dwNumArgs, dimsAndBounds);
     va_end(dimsAndBounds);
 
     HELPER_METHOD_FRAME_END();
