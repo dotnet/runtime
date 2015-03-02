@@ -2285,7 +2285,7 @@ void     mono_save_trampoline_xdebug_info   (MonoTrampInfo *info) MONO_INTERNAL;
 void     mono_xdebug_flush                  (void);
 
 /* LLVM backend */
-/* Keep this in synch with mini-llvm.h */
+/* Keep this in synch with mini-llvm-loaded.c */
 void     mono_llvm_init                     (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_cleanup                  (void) MONO_LLVM_INTERNAL;
 void     mono_llvm_emit_method              (MonoCompile *cfg) MONO_LLVM_INTERNAL;
@@ -2295,6 +2295,7 @@ void     mono_llvm_emit_aot_module          (const char *filename, const char *c
 void     mono_llvm_check_method_supported   (MonoCompile *cfg) MONO_LLVM_INTERNAL;
 void     mono_llvm_free_domain_info         (MonoDomain *domain) MONO_LLVM_INTERNAL;
 MONO_API void mono_personality              (void);
+int      mono_llvm_load                     (const char* bpath) MONO_INTERNAL;
 
 gboolean mini_llvm_init                     (void);
 

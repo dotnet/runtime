@@ -61,7 +61,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "mini-llvm.h"
 #include "tasklets.h"
 #include <string.h>
 #include <ctype.h>

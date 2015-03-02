@@ -10,7 +10,6 @@
  * Copyright 2011-2015 Xamarin, Inc (http://www.xamarin.com)
  */
 
-#define MONO_LLVM_IN_MINI 1
 #include <config.h>
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
@@ -64,7 +63,6 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "mini-llvm.h"
 #include "tasklets.h"
 #include <string.h>
 #include <ctype.h>

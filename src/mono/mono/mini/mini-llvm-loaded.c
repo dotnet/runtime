@@ -2,11 +2,10 @@
  * Handle the differences between the llvm backend beeing embedded
  * or loaded at runtime.
  */
+
+#include "mini.h"
+
 #ifdef MONO_LLVM_LOADED
-
-int mono_llvm_load (const char* bpath) MONO_INTERNAL;
-
-#ifdef MONO_LLVM_IN_MINI
 
 #ifdef __MACH__
 #include <mach-o/dyld.h>
@@ -114,9 +113,12 @@ symbol_error:
 	return FALSE;
 }
 
-#endif
-
 #else
-#define mono_llvm_load(bpath) TRUE
+
+void
+mono_llvm_load (const char* bpath)
+{
+}
+
 #endif /* MONO_LLVM_LOADED */
 

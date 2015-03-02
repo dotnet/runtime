@@ -363,7 +363,8 @@ posix_sources = \
 
 if ENABLE_LLVM
 if LOADED_LLVM
-llvm_sources =
+llvm_sources = \
+	mini-llvm-loaded.c
 else
 llvm_sources = \
 	mini-llvm.c		\
@@ -432,7 +433,6 @@ common_sources = \
 	debugger-agent.h 	\
 	debugger-agent.c	\
 	xdebug.c			\
-	mini-llvm.h			\
 	mini-llvm-cpp.h	\
 	alias-analysis.c	\
 	mini-cross-helpers.c
