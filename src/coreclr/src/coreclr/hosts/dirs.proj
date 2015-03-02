@@ -13,6 +13,7 @@
     <ProjectFile Include="UAP\dirs.proj" />
     <ProjectFile Include="coreRun\coreRun.nativeproj" />
     <ProjectFile Include="fxprun\fxprun.nativeproj" />
+    <ProjectFile Include="coreconsole\CoreConsole.nativeproj" />
   </ItemGroup>
 
   <Import Project="$(_NTDRIVE)$(_NTROOT)\tools\Microsoft.DevDiv.Traversal.targets" />
