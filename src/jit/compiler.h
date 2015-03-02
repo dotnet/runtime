@@ -186,7 +186,6 @@ typedef ExpandArray<LclSsaVarDsc> PerSsaArray;
 class  LclVarDsc
 {
 public:
-
     // The constructor. Most things can just be zero'ed.
     LclVarDsc(Compiler* comp);
 
@@ -2274,11 +2273,11 @@ public :
 #endif // !LEGACY_BACKEND
 
     void                lvaAssignVirtualFrameOffsetsToArgs();
-    int                 lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs
 #ifdef UNIX_AMD64_ABI
-                                                         , int& callerArgOffset
-#endif // UNIX_AMD64_ABI
-        );
+    int                 lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs, int * callerArgOffset);
+#else // !UNIX_AMD64_ABI
+    int                 lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize, int argOffs);
+#endif // !UNIX_AMD64_ABI
     void                lvaAssignVirtualFrameOffsetsToLocals();
     int                 lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, int stkOffs);
 #ifdef _TARGET_AMD64_
@@ -8432,7 +8431,7 @@ LclVarDsc::LclVarDsc(Compiler* comp)
 #if ASSERTION_PROP
     lvRefBlks(BlockSetOps::UninitVal()),
 #endif // ASSERTION_PROP
-    lvPerSsaData(comp->getAllocator())
+    lvPerSsaData(comp->getAllocator()) 
 {
 }
 
