@@ -326,14 +326,16 @@ set(VM_SOURCES_WKS_AMD64_ASM
 
 else()
 set(VM_SOURCES_WKS_AMD64_ASM
+    ${AMD64_SOURCES_DIR}/calldescrworkeramd64.S
     ${AMD64_SOURCES_DIR}/crthelpers.S
+    ${AMD64_SOURCES_DIR}/externalmethodfixupthunk.S
+    ${AMD64_SOURCES_DIR}/getstate.S
+    ${AMD64_SOURCES_DIR}/jithelpers_fast.S
     ${AMD64_SOURCES_DIR}/jithelpers_fastwritebarriers.S
     ${AMD64_SOURCES_DIR}/jithelpers_slow.S
-    ${AMD64_SOURCES_DIR}/jithelpers_fast.S
-    ${AMD64_SOURCES_DIR}/getstate.S
-    ${AMD64_SOURCES_DIR}/calldescrworkeramd64.S
-    ${AMD64_SOURCES_DIR}/unixasmhelpers.S
     ${AMD64_SOURCES_DIR}/theprestubamd64.S
+    ${AMD64_SOURCES_DIR}/unixasmhelpers.S
+    ${AMD64_SOURCES_DIR}/umthunkstub.S
     ${AMD64_SOURCES_DIR}/virtualcallstubamd64.S
 )
 endif(WIN32)

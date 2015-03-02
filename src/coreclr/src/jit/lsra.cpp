@@ -950,6 +950,41 @@ LinearScan::LinearScan(Compiler * theCompiler)
     // Get the value of the environment variable that controls stress for register allocation
     static ConfigDWORD fJitStressRegs;
     lsraStressMask = fJitStressRegs.val(CLRConfig::INTERNAL_JitStressRegs);
+#if 0
+#ifdef DEBUG
+    if (lsraStressMask != 0)
+    {
+        // The code in this #if can be used to debug JitStressRegs issues according to
+        // method hash.  To use, simply set environment variables JitStressRegsHashLo and JitStressRegsHashHi
+        unsigned methHash = compiler->info.compMethodHash();
+        char* lostr = getenv("JitStressRegsHashLo");
+        unsigned methHashLo = 0;
+        bool dump = false;
+        if (lostr != nullptr)
+        {
+            sscanf_s(lostr, "%x", &methHashLo);
+            dump = true;
+        }
+        char* histr = getenv("JitStressRegsHashHi");
+        unsigned methHashHi = UINT32_MAX;
+        if (histr != nullptr)
+        {
+            sscanf_s(histr, "%x", &methHashHi);
+            dump = true;
+        }
+        if (methHash < methHashLo || methHash > methHashHi)
+        {
+            lsraStressMask = 0;
+        }
+        else if (dump == true)
+        {
+            printf("JitStressRegs = %x for method %s, hash = 0x%x.\n",
+                   lsraStressMask, compiler->info.compFullName, compiler->info.compMethodHash());
+            printf("");         // in our logic this causes a flush
+        }
+    }
+#endif // DEBUG
+#endif
 
     static ConfigDWORD fJitDumpTerseLsra;
     dumpTerse = (fJitDumpTerseLsra.val(CLRConfig::INTERNAL_JitDumpTerseLsra) != 0);
@@ -2642,17 +2677,34 @@ LinearScan::buildInternalRegisterDefsForNode(GenTree *tree,
 {
     int count;
     int internalIntCount = tree->gtLsraInfo.internalIntCount;
+    regMaskTP internalCands = tree->gtLsraInfo.getInternalCandidates(this);
+
+    // If this is a varArgs call, the internal candidates represent the integer registers that
+    // floating point arguments must be copied into.  These must be handled as fixed regs.
+    bool fixedRegs = false;
+    if ((internalIntCount != 0) && (tree->OperGet() == GT_CALL))
+    {
+        assert(tree->gtCall.IsVarargs());
+        fixedRegs = true;
+        assert((int)genCountBits(internalCands) == internalIntCount);
+    }
+
     for (count = 0; count < internalIntCount; count++)
     {
-        regMaskTP internalCands = (tree->gtLsraInfo.getInternalCandidates(this) & allRegs(TYP_INT));
-        temps[count] = defineNewInternalTemp(tree, IntRegisterType, currentLoc, internalCands);
+        regMaskTP internalIntCands = (internalCands & allRegs(TYP_INT));
+        if (fixedRegs)
+        {
+            internalIntCands = genFindLowestBit(internalIntCands);
+            internalCands &= ~internalIntCands;
+        }
+        temps[count] = defineNewInternalTemp(tree, IntRegisterType, currentLoc, internalIntCands);
     }
 
     int internalFloatCount = tree->gtLsraInfo.internalFloatCount;
     for (int i = 0; i < internalFloatCount; i++)
     {
-        regMaskTP internalCands = (tree->gtLsraInfo.getInternalCandidates(this) & internalFloatRegCandidates());
-        temps[count++] = defineNewInternalTemp(tree, FloatRegisterType, currentLoc, internalCands);
+        regMaskTP internalFPCands = (internalCands & internalFloatRegCandidates());
+        temps[count++] = defineNewInternalTemp(tree, FloatRegisterType, currentLoc, internalFPCands);
     }
 
     noway_assert(count < MaxInternalRegisters);
@@ -3189,7 +3241,11 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
 
         LsraLocation defLocation = (i == produce-1) ? lastDefLocation : currentLoc;
         RefPosition *pos = newRefPosition(interval, defLocation, defRefType, defNode, currCandidates);
-        pos->isLocalDefUse = info.isLocalDefUse;
+        if (info.isLocalDefUse)
+        {
+            pos->isLocalDefUse = true;
+            pos->lastUse = true;
+        }
         DBEXEC(VERBOSE, pos->dump());
         interval->updateRegisterPreferences(currCandidates);
         interval->updateRegisterPreferences(useCandidates);
@@ -4388,8 +4444,9 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
             continue;
         }
 
-        // If this is a constant interval, check to see if its value is already in this register.
+        // If this is a definition of a constant interval, check to see if its value is already in this register.
         if (currentInterval->isConstant &&
+            RefTypeIsDef(refPosition->refType) &&
             (physRegRecord->assignedInterval != nullptr) &&
             physRegRecord->assignedInterval->isConstant)
         {
@@ -4402,7 +4459,8 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
                 switch (otherTreeNode->OperGet())
                 {
                 case GT_CNS_INT:
-                    if (refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue())
+                    if ((refPosition->treeNode->AsIntCon()->IconValue() == otherTreeNode->AsIntCon()->IconValue()) &&
+                        (varTypeGCtype(refPosition->treeNode) == varTypeGCtype(otherTreeNode)))
                     {
                         score |= VALUE_AVAILABLE;
                     }
@@ -6816,6 +6874,7 @@ LinearScan::resolveRegisters()
          lclNum++)
     {
         localVarIntervals[lclNum]->recentRefPosition = nullptr;
+        localVarIntervals[lclNum]->isActive = false;
     }
 
     // handle incoming arguments and special temps
@@ -10014,7 +10073,7 @@ LinearScan::verifyFinalAllocation()
                     assert(interval->assignedReg != nullptr);
                     regRecord = interval->assignedReg;
                 }
-                if (currentRefPosition->spillAfter || currentRefPosition->lastUse || currentRefPosition->isLocalDefUse)
+                if (currentRefPosition->spillAfter || currentRefPosition->lastUse)
                 {
                     interval->physReg = REG_NA;
                     interval->assignedReg = nullptr;

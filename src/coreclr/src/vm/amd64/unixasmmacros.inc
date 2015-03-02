@@ -50,9 +50,9 @@ C_FUNC(\Name):
 #else
         .type \Name, %function
 #endif
+C_FUNC(\Name):
         .cfi_startproc
         .cfi_def_cfa_offset 8
-C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
@@ -112,28 +112,15 @@ C_FUNC(\Name\()_End):
         .cfi_adjust_cfa_offset -\Size
 .endm
 
-.macro set_frame Reg, Offset
-        lea     \Reg, \Offset[rsp]
+.macro set_cfa_register Reg, Offset
         .cfi_def_cfa_register \Reg
-.endm
-
-.macro restore_frame Reg, Offset
-        lea     rsp, \Offset[\Reg]
-        .cfi_def_cfa_register rsp
+        .cfi_def_cfa_offset \Offset
 .endm
 
 .macro save_reg_postrsp Reg, Offset
-
-        .ifdef ___FRAME_REG_SET
-        .error "save_reg_postrsp cannot be used after set_frame"
-        .endif
-
         __Offset = \Offset
         mov     qword ptr [rsp + __Offset], \Reg
         .cfi_rel_offset \Reg, __Offset
-
-        ___STACK_ADJUSTMENT_FORBIDDEN = 1
-
 .endm
 
 .macro restore_reg Reg, Offset
@@ -143,17 +130,9 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro save_xmm128_postrsp Reg, Offset
-
-        .ifdef ___FRAME_REG_SET
-        .error "save_reg_postrsp cannot be used after set_frame"
-        .endif
-
         __Offset = \Offset
         movdqa  [rsp + __Offset], \Reg
         .cfi_rel_offset \Reg, __Offset
-
-        ___STACK_ADJUSTMENT_FORBIDDEN = 1
-
 .endm
 
 .macro restore_xmm128 Reg, ofs
@@ -164,12 +143,12 @@ C_FUNC(\Name\()_End):
 
 .macro POP_CALLEE_SAVED_REGISTERS
 
-        pop_nonvol_reg rbx
-        pop_nonvol_reg rbp
         pop_nonvol_reg r12
         pop_nonvol_reg r13
         pop_nonvol_reg r14
         pop_nonvol_reg r15
+        pop_nonvol_reg rbx
+        pop_nonvol_reg rbp
 
 .endm
 
@@ -244,12 +223,12 @@ C_FUNC(\Name\()_End):
 // (stack parameters)
 // ...
 // return address
+// CalleeSavedRegisters::rbp
+// CalleeSavedRegisters::rbx
 // CalleeSavedRegisters::r15
 // CalleeSavedRegisters::r14
 // CalleeSavedRegisters::r13
 // CalleeSavedRegisters::r12
-// CalleeSavedRegisters::rbp
-// CalleeSavedRegisters::rbx
 // ArgumentRegisters::r9
 // ArgumentRegisters::r8
 // ArgumentRegisters::rcx
@@ -288,37 +267,39 @@ C_FUNC(\Name\()_End):
         // PUSH_CALLEE_SAVED_REGISTERS expanded here
 
         .if \stackAllocOnEntry < 8
-        push_nonvol_reg r15
+        push_nonvol_reg rbp
+        mov rbp, rsp
         .endif
 
         .if \stackAllocOnEntry < 2*8
-        push_nonvol_reg r14
+        push_nonvol_reg rbx
         .endif
 
         .if \stackAllocOnEntry < 3*8
-        push_nonvol_reg r13
+        push_nonvol_reg r15
         .endif
 
+        push_nonvol_reg r14
+        push_nonvol_reg r13
         push_nonvol_reg r12
-        push_nonvol_reg rbp
-        push_nonvol_reg rbx
 
         // ArgumentRegisters
         PUSH_ARGUMENT_REGISTERS
 
         .if \stackAllocOnEntry >= 3*8
         mov \stackAllocSpill3, [rsp + 0x48]
-        save_reg_postrsp    r13, 0x48
+        save_reg_postrsp    r15, 0x48
         .endif
 
         .if \stackAllocOnEntry >= 2*8
         mov \stackAllocSpill2, [rsp + 0x50]
-        save_reg_postrsp    r14, 0x50
+        save_reg_postrsp    rbx, 0x50
         .endif
 
         .if \stackAllocOnEntry >= 8
         mov \stackAllocSpill1, [rsp + 0x58]
-        save_reg_postrsp    r15, 0x58
+        save_reg_postrsp    rbp, 0x58
+        lea rbp, [rsp + 0x58]
         .endif
 
         alloc_stack     __PWTB_StackAlloc

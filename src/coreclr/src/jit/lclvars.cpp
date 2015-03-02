@@ -1934,6 +1934,26 @@ void Compiler::lvaRecursiveDecRefCounts(GenTreePtr tree)
     }
 }
 
+// Increment the ref counts for all locals contained in the tree and its children.
+void Compiler::lvaRecursiveIncRefCounts(GenTreePtr tree)
+{
+    assert(lvaLocalVarRefCounted);
+
+    // We could just use the recursive walker for all cases but that is a 
+    // fairly heavyweight thing to spin up when we're usually just handling a leaf.
+    if (tree->OperIsLeaf())
+    {
+        if (tree->OperIsLocal())
+        {
+            lvaIncRefCnts(tree);
+        }
+    }
+    else
+    {
+        fgWalkTreePre(&tree, Compiler::lvaIncRefCntsCB, (void *)this, true);
+    }
+}
+
 /*****************************************************************************
  *
  *  Helper passed to the tree walker to decrement the refCnts for

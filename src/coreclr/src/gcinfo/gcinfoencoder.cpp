@@ -593,8 +593,10 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
         UINT16 PreservedRegMask =
               (1 << 3)  // rbx
             | (1 << 5)  // rbp
+#ifndef UNIX_AMD64_ABI
             | (1 << 6)  // rsi
             | (1 << 7)  // rdi
+#endif // UNIX_AMD64_ABI
             | (1 << 12)  // r12
             | (1 << 13)  // r13
             | (1 << 14)  // r14

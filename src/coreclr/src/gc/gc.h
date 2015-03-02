@@ -297,6 +297,25 @@ enum wait_full_gc_status
     wait_full_gc_na = 4
 };
 
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs 
+// if you change this!
+enum start_no_gc_region_status
+{
+    start_no_gc_success = 0,
+    start_no_gc_no_memory = 1,
+    start_no_gc_too_large = 2,
+    start_no_gc_in_progress = 3
+};
+
+enum end_no_gc_region_status
+{
+    end_no_gc_success = 0,
+    end_no_gc_not_in_progress = 1,
+    end_no_gc_induced = 2,
+    end_no_gc_alloc_exceeded = 3
+};
+
 enum bgc_state
 {
     bgc_not_in_process = 0,
@@ -556,6 +575,9 @@ public:
     virtual BOOL CancelFullGCNotification() = 0;
     virtual int WaitForFullGCApproach(int millisecondsTimeout) = 0;
     virtual int WaitForFullGCComplete(int millisecondsTimeout) = 0;
+
+    virtual int StartNoGCRegion(ULONGLONG totalSize, BOOL lohSizeKnown, ULONGLONG lohSize, BOOL disallowFullBlockingGC) = 0;
+    virtual int EndNoGCRegion() = 0;
 
     virtual BOOL IsObjectInFixedHeap(Object *pObj) = 0;
     virtual size_t  GetTotalBytesInUse () = 0;
