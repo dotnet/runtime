@@ -318,12 +318,33 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException);
 
+#ifdef FEATURE_PAL
+VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex);
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+        try { \
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+        }                                           \
+        catch (PAL_SEHException& ex)                \
+        {                                           \
+            DispatchManagedException(ex);           \
+        }                                           \
+
+#else
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+
+#endif // FEATURE_PAL
+
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE                                        \
     {                                                                                       \
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
         bool       __fExceptionCatched = false;                                             \
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER                                                \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -346,6 +367,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
         bool       __fExceptionCatched = false;                                             \
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER                                                \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -371,6 +393,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
             SCAN_EHMARKER_CATCH();                                                          \
             UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException);    \
         }                                                                                   \
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER                                              \
     }                                                                                       \
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \

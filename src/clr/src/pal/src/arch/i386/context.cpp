@@ -24,6 +24,7 @@ Abstract:
 #include "pal/dbgmsg.h"
 #include "pal/context.h"
 #include "pal/debug.h"
+#include "pal/thread.hpp"
 
 #include <sys/ptrace.h> 
 #include <errno.h>
@@ -348,7 +349,7 @@ CONTEXT_GetThreadContext(
 
     if (dwProcessId == GetCurrentProcessId())
     {
-        if (dwThreadId != GetCurrentThreadId())
+        if (dwThreadId != THREADSilentGetCurrentThreadId())
         {
             DWORD flags;
             // There aren't any APIs for this. We can potentially get the
@@ -1013,7 +1014,7 @@ CONTEXT_GetThreadContext(
     
     if (GetCurrentProcessId() == dwProcessId)
     {
-        if (dwThreadId != GetCurrentThreadId())
+        if (dwThreadId != THREADSilentGetCurrentThreadId())
         {
             // the target thread is in the current process, but isn't 
             // the current one: extract the CONTEXT from the Mach thread.            
@@ -1256,7 +1257,7 @@ CONTEXT_SetThreadContext(
         goto EXIT;
     }
 
-    if (dwThreadId != GetCurrentThreadId()) 
+    if (dwThreadId != THREADSilentGetCurrentThreadId())
     {
         // hThread is in the current process, but isn't the current
         // thread.  Extract the CONTEXT from the Mach thread.
