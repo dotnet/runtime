@@ -88,7 +88,7 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 #endif
 }
 
-static void GetContextPointer(unw_cursor_t *cursor, int reg, PDWORD64 *contextPointer)
+static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, PDWORD64 *contextPointer)
 {
 #if defined(__APPLE__)
     //OSXTODO
@@ -97,20 +97,23 @@ static void GetContextPointer(unw_cursor_t *cursor, int reg, PDWORD64 *contextPo
     unw_get_save_loc(cursor, reg, &saveLoc);
     if (saveLoc.type == UNW_SLT_MEMORY)
     {
-        *contextPointer = (PDWORD64)saveLoc.u.addr;
+        PDWORD64 pLoc = (PDWORD64)saveLoc.u.addr;
+        // Filter out fake save locations that point to unwContext 
+        if ((pLoc < (PDWORD64)unwContext) || ((PDWORD64)(unwContext + 1) <= pLoc))
+            *contextPointer = (PDWORD64)saveLoc.u.addr;
     }
 #endif
 }
 
-static void GetContextPointers(unw_cursor_t *cursor, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
+static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
 #if defined(_AMD64_)
-    GetContextPointer(cursor, UNW_X86_64_RBP, &contextPointers->Rbp);
-    GetContextPointer(cursor, UNW_X86_64_RBX, &contextPointers->Rbx);
-    GetContextPointer(cursor, UNW_X86_64_R12, &contextPointers->R12);
-    GetContextPointer(cursor, UNW_X86_64_R13, &contextPointers->R13);
-    GetContextPointer(cursor, UNW_X86_64_R14, &contextPointers->R14);
-    GetContextPointer(cursor, UNW_X86_64_R15, &contextPointers->R15);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_RBP, &contextPointers->Rbp);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_RBX, &contextPointers->Rbx);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R12, &contextPointers->R12);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R13, &contextPointers->R13);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R14, &contextPointers->R14);
+    GetContextPointer(cursor, unwContext, UNW_X86_64_R15, &contextPointers->R15);
 #else
 #error unsupported architecture
 #endif
@@ -154,7 +157,7 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
     if (contextPointers != NULL)
     {
-        GetContextPointers(&cursor, contextPointers);
+        GetContextPointers(&cursor, &unwContext, contextPointers);
     }
 
     return TRUE;
