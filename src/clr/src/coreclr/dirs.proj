@@ -14,6 +14,7 @@
     <ProjectFile Include="hosts\dirs.proj" />
     <ProjectFile Include="snskipverf\snskipverf.nativeproj" />
     <ProjectFile Include="sandboxhelper\dirs.proj" />
+    <ProjectFile Include="uap\dirs.proj" Condition="'$(_BuildArch)'=='x86'"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(FeatureCoreSystem)' == 'true'">
