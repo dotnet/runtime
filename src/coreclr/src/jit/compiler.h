@@ -2395,6 +2395,7 @@ public :
     static fgWalkPreFn  lvaDecRefCntsCB;
     void                lvaDecRefCnts           (GenTreePtr tree);
     void                lvaRecursiveDecRefCounts(GenTreePtr tree);
+    void                lvaRecursiveIncRefCounts(GenTreePtr tree);
 
     void                lvaAdjustRefCnts    ();
 
@@ -3450,10 +3451,11 @@ public :
     VARSET_VALRET_TP    fgComputeLife     (VARSET_VALARG_TP life,
                                            GenTreePtr   startNode,
                                            GenTreePtr   endNode,
-                                           VARSET_VALARG_TP volatileVars
+                                           VARSET_VALARG_TP volatileVars,
+                                           bool*        pStmtInfoDirty
                                  DEBUGARG( bool *       treeModf));
 
-    bool fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP life, bool* doAgain DEBUGARG(bool* treeModf));
+    bool fgRemoveDeadStore(GenTree** pTree, LclVarDsc* varDsc, VARSET_TP life, bool* doAgain, bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
 
     // For updating liveset during traversal AFTER fgComputeLife has completed
     VARSET_VALRET_TP    fgGetVarBits    (GenTreePtr tree);

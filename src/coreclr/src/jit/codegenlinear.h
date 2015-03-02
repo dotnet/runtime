@@ -101,6 +101,8 @@
 
     void                genConsumeAddrMode(GenTreeAddrMode *mode);
 
+    void                genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumber srcReg, regNumber sizeReg);
+
     void                genConsumeRegs(GenTree* tree);
 
     void                genConsumeOperands(GenTreeOp* tree);
@@ -156,5 +158,12 @@
         const LclVarDsc * varDsc = &compiler->lvaTable[tree->gtLclVarCommon.gtLclNum];
         return(varDsc->lvIsRegCandidate());
     }
+
+#ifdef DEBUG
+    GenTree*            lastConsumedNode;
+    void                genCheckConsumeNode(GenTree* treeNode);
+#else // !DEBUG
+    inline void         genCheckConsumeNode(GenTree* treeNode) {}
+#endif // DEBUG
 
 #endif // !LEGACY_BACKEND

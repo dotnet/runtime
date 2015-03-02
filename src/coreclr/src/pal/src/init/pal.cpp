@@ -100,7 +100,7 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name);
 extern void PROCDumpThreadList(void);
 #endif
 
-char g_ExePath[MAX_PATH];
+char g_ExePath[MAX_PATH] = { 0 };
 
 #if defined(__APPLE__)
 static bool RunningNatively()
@@ -224,16 +224,6 @@ PAL_Initialize(
         }
 #endif  // _DEBUG
     
-        /* Output the ENTRY here, since it doesn't work before initializing
-           debug channels */
-        ENTRY("PAL_Initialize(argc = %d argv = %p)\n", argc, argv);
-
-        if(argc<1 || argv==NULL)
-        {
-            ERROR("First-time initialization attempted with bad parameters!\n");
-            goto done;
-        }
-
         if (!INIT_IncreaseDescriptorLimit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -356,43 +346,47 @@ PAL_Initialize(
             goto CLEANUP1c;
         }
 
-        /* build the command line */
-        command_line=INIT_FormatCommandLine(pThread, argc,argv);
-        if (NULL == command_line)
+        if (argc > 0 && argv != NULL)
         {
-            ERROR("Error building command line\n");
-            goto CLEANUP1d;
-        }
+            /* build the command line */
+            command_line = INIT_FormatCommandLine(pThread, argc, argv);
+            if (NULL == command_line)
+            {
+                ERROR("Error building command line\n");
+                goto CLEANUP1d;
+            }
 
-        /* find out the application's full path */
-        exe_path=INIT_FindEXEPath(pThread, argv[0]);
-        if (NULL == exe_path)
-        {
-            ERROR("Unable to find exe path\n");
-            goto CLEANUP1e;
-        }
+            /* find out the application's full path */
+            exe_path = INIT_FindEXEPath(pThread, argv[0]);
+            if (NULL == exe_path)
+            {
+                ERROR("Unable to find exe path\n");
+                goto CLEANUP1e;
+            }
 
-        if (!WideCharToMultiByte (CP_ACP, 0, exe_path, -1, g_ExePath,
-                                 sizeof (g_ExePath), NULL, NULL)) {
-            ERROR("Failed to store process executable path\n");
-            goto CLEANUP2;
-        }
+            if (!WideCharToMultiByte(CP_ACP, 0, exe_path, -1, g_ExePath,
+                sizeof(g_ExePath), NULL, NULL))
+            {
+                ERROR("Failed to store process executable path\n");
+                goto CLEANUP2;
+            }
 
-        if(NULL == command_line || NULL == exe_path)
-        {
-            ERROR("Failed to process command-line parameters!\n");
-            goto CLEANUP2;
-        }
+            if (NULL == command_line || NULL == exe_path)
+            {
+                ERROR("Failed to process command-line parameters!\n");
+                goto CLEANUP2;
+            }
 
 #ifdef PAL_PERF
-        // Initialize the Profiling structure
-        if(FALSE == PERFInitialize(command_line, exe_path)) 
-        {
-            ERROR("Performance profiling initial failed\n");
-            goto done;
-        }    
-        PERFAllocThreadInfo();
+            // Initialize the Profiling structure
+            if(FALSE == PERFInitialize(command_line, exe_path)) 
+            {
+                ERROR("Performance profiling initial failed\n");
+                goto done;
+            }    
+            PERFAllocThreadInfo();
 #endif
+        }
 
         //
         // Create the initial process and thread objects

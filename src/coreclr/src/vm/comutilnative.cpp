@@ -1753,6 +1753,41 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
 }
 FCIMPLEND
 
+int QCALLTYPE GCInterface::StartNoGCRegion(INT64 totalSize, BOOL lohSizeKnown, INT64 lohSize, BOOL disallowFullBlockingGC)
+{
+    QCALL_CONTRACT;
+
+    int retVal = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    retVal = GCHeap::GetGCHeap()->StartNoGCRegion((ULONGLONG)totalSize, 
+                                                  lohSizeKnown,
+                                                  (ULONGLONG)lohSize,
+                                                  disallowFullBlockingGC);
+
+    END_QCALL;
+
+    return retVal;
+}
+
+int QCALLTYPE GCInterface::EndNoGCRegion()
+{
+    QCALL_CONTRACT;
+
+    int retVal = FALSE;
+
+    BEGIN_QCALL;
+
+    retVal = GCHeap::GetGCHeap()->EndNoGCRegion();
+
+    END_QCALL;
+
+    return retVal;
+}
+
 /*===============================GetGenerationWR================================
 **Action: Returns the generation in which the object pointed to by a WeakReference is found.
 **Returns:

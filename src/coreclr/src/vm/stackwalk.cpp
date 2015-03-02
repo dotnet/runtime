@@ -606,10 +606,11 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                             ARM_ONLY((DWORD*))(&uImageBase),
                                             NULL);
 #else // !FEATURE_PAL
-        // For PAL, this method should never be called without valid pCodeInfo, since there is no
-        // other way to get the function entry.
-        pFunctionEntry = NULL;
-        UNREACHABLE_MSG("VirtualUnwindCallFrame called with NULL pCodeInfo");
+        EECodeInfo codeInfo;
+
+        codeInfo.Init(uControlPc);
+        pFunctionEntry = codeInfo.GetFunctionEntry();
+        uImageBase = (UINT_PTR)codeInfo.GetModuleBase();
 #endif // !FEATURE_PAL
     }
     else

@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -87,7 +88,7 @@ namespace System.Diagnostics.Tracing
                 {
                     ActivityInfo existingActivity = FindActiveActivity(fullActivityName, currentActivity);
                     if (existingActivity != null)
-                    {                       
+                    {
                         OnStop(providerName, activityName, task, ref activityId);
                         currentActivity = m_current.Value;
                     }
@@ -213,7 +214,6 @@ namespace System.Diagnostics.Tracing
         {
             if (m_current == null) 
             {
-                EventSource.OutputDebugString("Enabling Activity Tracking");
                 m_current = new AsyncLocal<ActivityInfo>(ActivityChanging);
             }
         }

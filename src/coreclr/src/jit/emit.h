@@ -1526,6 +1526,7 @@ private:
 
     bool            emitFwdJumps;           // forward jumps present?
     bool            emitNoGCIG;             // Are we generating IGF_NOGCINTERRUPT insGroups (for prologs, epilogs, etc.)
+    bool            emitForceNewIG;         // If we generate an instruction, and not another instruction group, force create a new emitAdd instruction group.
 
     BYTE        *   emitCurIGfreeNext;      // next available byte in buffer
     BYTE        *   emitCurIGfreeEndp;      // one byte past the last available byte in buffer
@@ -1605,7 +1606,6 @@ private:
     void            emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig);
 
     void            emitNewIG();
-    void            emitMakeRemainderNonInterruptible();
     void            emitDisableGC();
     void            emitEnableGC();
     void            emitGenIG(insGroup *ig);
@@ -2521,22 +2521,12 @@ void                emitter::emitNewIG()
     emitGenIG(ig);
 }
 
-// start a new instruction group that will be non-interruptible
-// this is used for the very last part of the callfinally block on 
-// x64
-inline void emitter::emitMakeRemainderNonInterruptible()
-{
-    emitNxtIG();
-
-    emitCurIG->igFlags |= IGF_NOGCINTERRUPT;
-}
-
 // Start a new instruction group that is not interruptable
 inline void emitter::emitDisableGC()
 {
     emitNoGCIG = true;
 
-    if (emitCurIGinsCnt > 0)
+    if (emitCurIGnonEmpty())
     {
         emitNxtIG(true);
     }
@@ -2550,14 +2540,15 @@ inline void emitter::emitDisableGC()
 inline void emitter::emitEnableGC()
 {
     emitNoGCIG = false;
-    if (emitCurIGinsCnt > 0)
-    {
-        emitNxtIG(true);
-    }
-    else
-    {
-        emitCurIG->igFlags &= ~IGF_NOGCINTERRUPT;
-    }
+
+    // The next time an instruction needs to be generated, force a new instruction group.
+    // It will be an emitAdd group in that case. Note that the next thing we see might be
+    // a label, which will force a non-emitAdd group.
+    //
+    // Note that we can't just create a new instruction group here, because we don't know
+    // if there are going to be any instructions added to it, and we don't support empty
+    // instruction groups.
+    emitForceNewIG = true;
 }
 
 

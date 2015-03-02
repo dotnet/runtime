@@ -9619,8 +9619,9 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
     }
     else
     {
-        maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_1;
+        maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
     }
+
 
     regNumber initReg = REG_EBP; // We already saved EBP, so it can be trashed
     bool initRegZeroed = false;
@@ -9634,7 +9635,8 @@ void                CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    getEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_ECX, genFuncletInfo.fiPSP_slot_InitialSP_offset);
+    getEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_ARG_0, genFuncletInfo.fiPSP_slot_InitialSP_offset);
+
     regTracker.rsTrackRegTrash(REG_FPBASE);
 
     getEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, genFuncletInfo.fiPSP_slot_InitialSP_offset);

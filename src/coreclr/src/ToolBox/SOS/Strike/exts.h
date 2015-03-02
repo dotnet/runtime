@@ -132,18 +132,21 @@ private:
 #define EXT_RELEASE(Unk) \
     ((Unk) != NULL ? ((Unk)->Release(), (Unk) = NULL) : NULL)
 
-// Global variables initialized by query.
 extern PDEBUG_CLIENT         g_ExtClient;
 extern PDEBUG_CONTROL2       g_ExtControl;
 extern PDEBUG_DATA_SPACES    g_ExtData;
+extern PDEBUG_SYMBOLS        g_ExtSymbols;
+
+#ifndef FEATURE_PAL
+
+// Global variables initialized by query.
 extern PDEBUG_DATA_SPACES2   g_ExtData2;
 extern PDEBUG_REGISTERS      g_ExtRegisters;
-extern PDEBUG_SYMBOLS        g_ExtSymbols;
 extern PDEBUG_SYMBOLS2       g_ExtSymbols2;
 extern PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
-#ifndef FEATURE_PAL
 extern PDEBUG_ADVANCED3      g_ExtAdvanced3;
-#endif
+
+#endif // !FEATURE_PAL
 
 HRESULT
 ExtQuery(PDEBUG_CLIENT Client);
@@ -160,7 +163,7 @@ extern DWORD_PTR g_filterHint;
 
 extern BOOL ControlC;
 
-inline BOOL IsInterrupt() 
+inline BOOL IsInterrupt()
 {
     if (!ControlC && g_ExtControl->GetInterrupt() == S_OK)
     {
@@ -170,7 +173,7 @@ inline BOOL IsInterrupt()
 
     return ControlC;
 }
-    
+
 //
 // undef the wdbgexts
 //
@@ -274,7 +277,6 @@ HRESULT CheckEEDll();
     ToRelease<ISOSDacInterface> spISD(g_sos);                   \
     ToRelease<IXCLRDataProcess> spIDP(g_clrData);
     
-
 extern BOOL g_bDacBroken;
 
 #define PAGE_ALIGN64(Va) ((ULONG64)((Va) & ~((ULONG64) ((LONG64) (LONG) PageSize - 1))))
@@ -414,14 +416,15 @@ inline CLRDATA_ADDRESS GetBP(const CROSS_PLATFORM_CONTEXT& context)
 //-----------------------------------------------------------------------------------------
 
 #ifndef FEATURE_PAL
+
 extern WINDBG_EXTENSION_APIS ExtensionApis;
 #define GetExpression (ExtensionApis.lpGetExpressionRoutine)
-#endif // FEATURE_PAL
 
 extern ULONG TargetMachine;
 extern ULONG g_TargetClass;
-
 extern ULONG g_VDbgEng;
+
+#endif // FEATURE_PAL
 
 #define CACHE_SIZE  DT_OS_PAGE_SIZE
  
