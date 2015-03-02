@@ -59,6 +59,10 @@ Revision History:
 #include <procfs.h>
 #endif // HAVE_PROCFS_H
 
+#if HAVE_MACH_EXCEPTIONS
+#include "../exception/machexception.h"
+#endif // HAVE_MACH_EXCEPTIONS
+
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(DEBUG);
@@ -530,7 +534,31 @@ RtlRestoreContext(
   IN PEXCEPTION_RECORD ExceptionRecord
 )
 {
-    ASSERT("UNIXTODO: Implement this");
+    //
+    //TODO: This needs to be properly implemented
+    // because this code does not restore XMM registers
+    //
+#if !HAVE_MACH_EXCEPTIONS
+#if HAVE_GETCONTEXT
+    native_context_t ucontext;
+    getcontext(&ucontext);
+#else
+#error Don't know how to get current context on this platform!
+#endif
+
+    CONTEXTToNativeContext(ContextRecord, &ucontext,
+        CONTEXT_CONTROL | CONTEXT_INTEGER);
+
+#if HAVE_SETCONTEXT
+    setcontext(&ucontext);
+#else
+#error Don't know how to set current context on this platform!
+#endif
+
+#else
+    MachSetThreadContext(const_cast<CONTEXT *>(ContextRecord));
+    ASSERT("MachSetThreadContext should never return\n");
+#endif // HAVE_MACH_EXCEPTIONS
 }
 
 /*++
