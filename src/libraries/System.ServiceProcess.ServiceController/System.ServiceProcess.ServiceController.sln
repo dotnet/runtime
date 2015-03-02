@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeTestService", "tests\NativeTestService\NativeTestService.vcxproj", "{CEB0775C-4273-4AC4-B50E-4492718051AE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "System.ServiceProcess.ServiceController.TestNativeService", "tests\System.ServiceProcess.ServiceController.TestNativeService\System.ServiceProcess.ServiceController.TestNativeService.vcxproj", "{CEB0775C-4273-4AC4-B50E-4492718051AE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ServiceProcess.ServiceController.Tests", "tests\System.ServiceProcess.ServiceController.Tests\System.ServiceProcess.ServiceController.Tests.csproj", "{F7D9984B-02EB-4573-84EF-00FFFBFB872C}"
 EndProject

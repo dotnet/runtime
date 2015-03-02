@@ -34,9 +34,9 @@
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ProcessTest_ConsoleApp\ProcessTest_ConsoleApp.csproj">
+    <ProjectReference Include="..\System.Diagnostics.Process.TestConsoleApp\System.Diagnostics.Process.TestConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>ProcessTest_ConsoleApp</Name>
+      <Name>System.Diagnostics.Process.TestConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
   <!--  <ItemGroup>

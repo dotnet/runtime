@@ -12,7 +12,7 @@
 //
 //   - When run like this:
 //
-//       NativeTestService.exe "TestService" "Test Service" create
+//       System.ServiceProcess.ServiceController.TestNativeService.exe "TestService" "Test Service" create
 //
 //     This creates a service named "TestService" with display name
 //     "Test Service", and starts the service. This also creates additional
@@ -21,14 +21,14 @@
 //
 //   - When run like this:
 //
-//       NativeTestService.exe "TestService" "Test Service" delete
+//       System.ServiceProcess.ServiceController.TestNativeService.exe "TestService" "Test Service" delete
 //
 //     This attempts to stop "TestService" and delete it and its dependent
 //     services.
 //
 //   - When run like this:
 //
-//       NativeTestService.exe "TestService" "Test Service"
+//       System.ServiceProcess.ServiceController.TestNativeService.exe "TestService" "Test Service"
 //
 //     This executable assumes it is being run as a service, and simply waits
 //     for and responds to control events.
@@ -85,7 +85,7 @@ int _tmain(int argc, _TCHAR* argv [])
 {
 	if (argc < 3 || argc > 4)
 	{
-		puts("usage: NativeTestService.exe <ServiceName> <DisplayName> [create|delete]");
+		puts("usage: System.ServiceProcess.ServiceController.TestNativeService.exe <ServiceName> <DisplayName> [create|delete]");
 		return 1;
 	}
 

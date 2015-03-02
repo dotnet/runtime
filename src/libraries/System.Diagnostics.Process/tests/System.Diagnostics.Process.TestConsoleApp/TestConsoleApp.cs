@@ -1,11 +1,11 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace ProcessTest_ConsoleApp
+namespace System.Diagnostics.ProcessTests
 {
     class Program
     {
+        private const string Name = "System.Diagnostics.Process.TestConsoleApp.exe";
+
         static int Main(string[] args)
         {
             if (args.Length > 0)
@@ -18,7 +18,7 @@ namespace ProcessTest_ConsoleApp
                 }
                 else if (args[0].Equals("error"))
                 {
-                    Console.Error.WriteLine("ProcessTest_ConsoleApp.exe error stream");
+                    Console.Error.WriteLine(Name + " error stream");
                     Sleep();
                 }
                 else if (args[0].Equals("input"))
@@ -27,8 +27,8 @@ namespace ProcessTest_ConsoleApp
                 }
                 else if (args[0].Equals("stream"))
                 {
-                    Console.WriteLine("ProcessTest_ConsoleApp.exe started");
-                    Console.WriteLine("ProcessTest_ConsoleApp.exe closed");
+                    Console.WriteLine(Name + " started");
+                    Console.WriteLine(Name + " closed");
                     Sleep();
                 }
                 else
