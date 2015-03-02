@@ -14,10 +14,6 @@
     <TargetFrameworkProfile>Profile259</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Collections.Immutable.xml</DocumentationFile>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <GenerateAppxPackageOnBuild>False</GenerateAppxPackageOnBuild>
     <AssemblyVersion>1.1.34</AssemblyVersion>
   </PropertyGroup>
