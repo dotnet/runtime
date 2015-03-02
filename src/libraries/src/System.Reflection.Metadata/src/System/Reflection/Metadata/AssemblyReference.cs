@@ -13,7 +13,6 @@ namespace System.Reflection.Metadata
         // Workaround: JIT doesn't generate good code for nested structures, so use raw uint.
         private readonly uint _treatmentAndRowId;
 
-        private static readonly Version s_version_1_1_0_0 = new Version(1, 1, 0, 0);
         private static readonly Version s_version_4_0_0_0 = new Version(4, 0, 0, 0);
 
         internal AssemblyReference(MetadataReader reader, uint treatmentAndRowId)
@@ -135,13 +134,8 @@ namespace System.Reflection.Metadata
         #region Virtual Rows
         private Version GetVirtualVersion()
         {
-            switch ((AssemblyReferenceHandle.VirtualIndex)RowId)
-            {
-                case AssemblyReferenceHandle.VirtualIndex.System_Numerics_Vectors:
-                    return s_version_1_1_0_0;
-                default:
-                    return s_version_4_0_0_0;
-            }
+            // currently all projected assembly references have version 4.0.0.0
+            return s_version_4_0_0_0;
         }
 
         private AssemblyFlags GetVirtualFlags()
