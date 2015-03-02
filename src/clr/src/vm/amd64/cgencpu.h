@@ -178,13 +178,17 @@ struct CalleeSavedRegisters {
 #ifndef UNIX_AMD64_ABI
     INT_PTR     rdi;
     INT_PTR     rsi;
-#endif
     INT_PTR     rbx;
     INT_PTR     rbp;
+#endif
     INT_PTR     r12;
     INT_PTR     r13;
     INT_PTR     r14;
     INT_PTR     r15;
+#ifdef UNIX_AMD64_ABI
+    INT_PTR     rbx;
+    INT_PTR     rbp;
+#endif
 };
 
 struct REGDISPLAY;
