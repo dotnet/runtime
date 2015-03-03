@@ -771,10 +771,12 @@ namespace System.IO {
 
             int flagsAndAttributes = (int) options;
 
+#if !PLATFORM_UNIX
             // For mitigating local elevation of privilege attack through named pipes
             // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
             // named pipe server can't impersonate a high privileged client security context
-            flagsAndAttributes|= (Win32Native.SECURITY_SQOS_PRESENT | Win32Native.SECURITY_ANONYMOUS);
+            flagsAndAttributes |= (Win32Native.SECURITY_SQOS_PRESENT | Win32Native.SECURITY_ANONYMOUS);
+#endif
 
             // Don't pop up a dialog for reading from an emtpy floppy drive
             int oldMode = Win32Native.SetErrorMode(Win32Native.SEM_FAILCRITICALERRORS);
