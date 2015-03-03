@@ -542,8 +542,7 @@ RtlRestoreContext(
 #error Don't know how to get current context on this platform!
 #endif
 
-    CONTEXTToNativeContext(ContextRecord, &ucontext,
-        CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT);
+    CONTEXTToNativeContext(ContextRecord, &ucontext);
 
 #if HAVE_SETCONTEXT
     setcontext(&ucontext);
