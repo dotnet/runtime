@@ -2650,8 +2650,8 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
                 }
                 else
                 {
-                    // If there are no calleeSaved registers, the call could kill all the registers. 
-                    // This is a valid state, so in that case assert should not trigger. The RA will spill to free a register later.
+                    // If there are no callee-saved registers, the call could kill all the registers. 
+                    // This is a valid state, so in that case assert should not trigger. The RA will spill in order to free a register later.
                     assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
                 }
             }
