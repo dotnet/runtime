@@ -2,10 +2,15 @@ project(sosplugin)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(ENABLE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_UNIX} CACHE BOOL "Enable building the SOS plugin for LLDB.")
 set(REQUIRE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_LINUX} CACHE BOOL "Require building the SOS plugin for LLDB.")
 
 set(WITH_LLDB_LIBS "" CACHE PATH "Path to LLDB libraries")
 set(WITH_LLDB_INCLUDES "" CACHE PATH "Path to LLDB headers")
+
+if(NOT ENABLE_LLDBPLUGIN)
+    return()
+endif()
 
 # Check for LLDB library
 find_library(LLDB NAMES lldb lldb-3.5 PATHS "${WITH_LLDB_LIBS}")
