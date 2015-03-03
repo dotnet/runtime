@@ -1980,11 +1980,8 @@ interface ICLRRuntimeHost : IUnknown
 };
 
 #ifdef FEATURE_CORECLR
-// This is the key that the host needs to pass to us in the call to ICLRRuntmeHost2::Authenticate.
-// This key is generated using the CalcFileTime utility under ndp\clr\src\coreclr\CalcFileTime.
-// See comments of CorHost2::Authenticate for details.
 
-// This key corresponds to 28th August 2006
+// Keys for ICLRRuntmeHost2::Authenticate. No longer required.
 cpp_quote("#define CORECLR_HOST_AUTHENTICATION_KEY 0x1C6CA6F94025800LL")
 cpp_quote("#define CORECLR_HOST_AUTHENTICATION_KEY_NONGEN 0x1C6CA6F94025801LL")
 
@@ -2018,8 +2015,7 @@ interface ICLRRuntimeHost2 : ICLRRuntimeHost
                                  [in] LPCWSTR wszMethodName,
                                  [out] INT_PTR* fnPtr);
 
-    // Authenticates a host based upon a key value. See CorHost2::Authenticate comments
-    // for details.
+    // Authenticates a host based upon a key value. No longer required.
     HRESULT Authenticate([in] ULONGLONG authKey);
 
     // Ensures CLR-set Mac (Mach) EH port is registered.
