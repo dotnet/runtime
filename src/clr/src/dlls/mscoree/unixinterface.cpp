@@ -16,6 +16,11 @@
 #include <utilcode.h>
 #include <corhost.h>
 
+typedef int (STDMETHODCALLTYPE *HostMain)(
+    const int argc,
+    const wchar_t** argv
+    );
+
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
 // Holder for const wide strings
@@ -94,7 +99,10 @@ static LPCWSTR* StringArrayToUnicode(int argc, LPCSTR* argv)
 //  propertyValues          - Values of properties of the app domain
 //  argc                    - Number of arguments passed to the executed assembly
 //  argv                    - Array of arguments passed to the executed assembly
-//  managedAssemblyPath     - Path of the managed assembly to execute
+//  managedAssemblyPath     - Path of the managed assembly to execute (or NULL if using a custom entrypoint).
+//  enntyPointAssemblyName  - Name of the assembly which holds the custom entry point (or NULL to use managedAssemblyPath).
+//  entryPointTypeName      - Name of the type which holds the custom entry point (or NULL to use managedAssemblyPath).
+//  entryPointMethodName    - Name of the method which is the custom entry point (or NULL to use managedAssemblyPath).
 //  exitCode                - Exit code returned by the executed assembly
 //
 // Returns:
@@ -111,6 +119,9 @@ HRESULT ExecuteAssembly(
             int argc,
             LPCSTR* argv,
             LPCSTR managedAssemblyPath,
+            LPCSTR entryPointAssemblyName,
+            LPCSTR entryPointTypeName,
+            LPCSTR entryPointMethodName,
             DWORD* exitCode)
 {
     *exitCode = 0;
@@ -177,11 +188,33 @@ HRESULT ExecuteAssembly(
     ConstWStringArrayHolder argvW;
     argvW.Set(StringArrayToUnicode(argc, argv), argc);
     
-    ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
+    if (entryPointAssemblyName == NULL || entryPointTypeName == NULL || entryPointMethodName == NULL)
+    {
+        ConstWStringHolder managedAssemblyPathW = StringToUnicode(managedAssemblyPath);
 
-    hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, exitCode);
-    IfFailRet(hr);
+        hr = host->ExecuteAssembly(domainId, managedAssemblyPathW, argc, argvW, exitCode);
+        IfFailRet(hr);
+    }
+    else
+    {
+        ConstWStringHolder entryPointAssemblyNameW = StringToUnicode(entryPointAssemblyName);
+        ConstWStringHolder entryPointTypeNameW = StringToUnicode(entryPointTypeName);
+        ConstWStringHolder entryPointMethodNameW = StringToUnicode(entryPointMethodName);
 
+        HostMain pHostMain;
+
+        hr = host->CreateDelegate(
+            domainId,
+            entryPointAssemblyNameW,
+            entryPointTypeNameW,
+            entryPointMethodNameW,
+            (INT_PTR*)&pHostMain);
+        
+        IfFailRet(hr);
+
+        *exitCode = pHostMain(argc, argvW);
+    }
+    
     hr = host->UnloadAppDomain(domainId,
                                true); // Wait until done
     IfFailRet(hr);
