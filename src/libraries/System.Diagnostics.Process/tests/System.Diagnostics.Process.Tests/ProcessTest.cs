@@ -2,581 +2,428 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.IO;
 using System.Diagnostics;
-
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 using System.Text;
 
 namespace System.Diagnostics.ProcessTests
 {
-    public partial class ProcessTest
+    public partial class ProcessTest : IDisposable
     {
-        static ProcessTest()
+
+        private const string _processName = "ProcessTest_ConsoleApp.exe";
+        private Process process;
+
+        public ProcessTest()
         {
-            TryKillExistingTestProcesses();
+            process = CreateProcessInfinite();
+            process.Start();
         }
 
-        private static void TryKillExistingTestProcesses()
+        public void Dispose()
         {
-            try
+            process.Kill();
+            process.WaitForExit();
+
+            // Also ensure that there are no open processes with the same name as _processName
+            foreach (Process p in Process.GetProcessesByName(_processName))
             {
-                foreach (Process p in Process.GetProcessesByName(s_ProcessName.Replace(".exe", "")))
+                if (!p.HasExited)
                 {
                     p.Kill();
+                    p.WaitForExit();
                 }
             }
-            catch { }; // do nothing 
         }
 
-        private const string s_ProcessName = "ProcessTest_ConsoleApp.exe";
-        static Process CreateProcessInfinite()
+        Process CreateProcessInfinite()
         {
-            // Create a process that will not exit 
             Process p = new Process();
-            p.StartInfo.FileName = s_ProcessName;
+            p.StartInfo.FileName = _processName;
             p.StartInfo.Arguments = "infinite";
             return p;
         }
 
-        static Process CreateProcessError()
-        {
-            // Create a process that will fail and write to std error stream
-            Process p = new Process();
-            p.StartInfo.FileName = s_ProcessName;
-            p.StartInfo.Arguments = "error";
-            return p;
-        }
-
-        static Process CreateProcessInput()
-        {
-            // Create a process that reads one line from std in, writes it back out to the console, and exits cleanly
-            Process p = new Process();
-            p.StartInfo.FileName = s_ProcessName;
-            p.StartInfo.Arguments = "input";
-            return p;
-        }
-
-        static Process CreateProcess()
+        Process CreateProcess()
         {
             // Create a process that immediately exits
             Process p = new Process();
-            p.StartInfo.FileName = s_ProcessName;
+            p.StartInfo.FileName = _processName;
             return p;
         }
 
-        [Fact, ActiveIssue(541)]
-        public static void Process_BasePriority()
+        public void SetAndCheckBasePriority(ProcessPriorityClass exPriorityClass, int priority)
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
+            process.PriorityClass = exPriorityClass;
+            process.Refresh();
+            Assert.Equal(priority, process.BasePriority);
+        }
+
+        [Fact]
+        public void Process_BasePriority()
+        {
+            ProcessPriorityClass originalPriority = process.PriorityClass;
+
             try
             {
-                Assert.Equal(8, p.BasePriority);
+                //SetAndCheckBasePriority(ProcessPriorityClass.RealTime, 24);
+                SetAndCheckBasePriority(ProcessPriorityClass.High, 13);
+                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 4);
+                SetAndCheckBasePriority(ProcessPriorityClass.Normal, 8);
             }
             finally
             {
-                p.Kill();
-                p.WaitForExit();
+                process.PriorityClass = originalPriority;
             }
         }
 
-        private static bool s_Process_EnableRaiseEvents_isExitedEventHandlerCalled = false;
-
-        [Fact]
-        public static void Process_EnableRaiseEvents()
+        public void DelayTask(double delayInMs)
         {
-            // Test behavior when EnableRaisingEvent = true;
-            // Ensure event is called.
-            Process p = CreateProcessInfinite();
-            p.EnableRaisingEvents = true;
-            p.Exited += p_Exited;
-            p.Start();
-            p.Kill();
-            p.WaitForExit();
-            Assert.True(s_Process_EnableRaiseEvents_isExitedEventHandlerCalled, String.Format("Process_CanRaiseEvents0001: {0}", "isExited Event not called when EnableRaisingEvent is set to true."));
-
-            s_Process_EnableRaiseEvents_isExitedEventHandlerCalled = false;
-
-            // Check with the default settings (false, events will not be raised)
-            p.Refresh();
-            p = CreateProcessInfinite();
-            p.Exited += p_Exited;
-            p.Start();
-            p.Kill();
-            p.WaitForExit();
-            Assert.False(s_Process_EnableRaiseEvents_isExitedEventHandlerCalled, String.Format("Process_CanRaiseEvents0002: {0}", "isExited Event called with the default settings for EnableRaiseEvents"));
-
-            s_Process_EnableRaiseEvents_isExitedEventHandlerCalled = false;
-
-            // Same test, this time explicitly set the property to false
-            p = CreateProcessInfinite();
-            p.EnableRaisingEvents = false;
-            p.Exited += p_Exited;
-            p.Start();
-            p.Kill();
-            p.WaitForExit();
-            Assert.False(s_Process_EnableRaiseEvents_isExitedEventHandlerCalled, String.Format("Process_CanRaiseEvents0003: {0}", "isExited Event called with the EnableRaiseEvents = false"));
-
-            s_Process_EnableRaiseEvents_isExitedEventHandlerCalled = false;
+            Task.Delay(TimeSpan.FromMilliseconds(delayInMs)).Wait();
         }
 
-        static void p_Exited(object sender, EventArgs e)
+        public void DelayTask()
         {
-            s_Process_EnableRaiseEvents_isExitedEventHandlerCalled = true;
+            DelayTask(50D);
+        }
+
+        public void StartAndKillProcessWithDelay(Process p)
+        {
+            p.Start();
+            DelayTask();
+            p.Kill();
+            p.WaitForExit();
         }
 
         [Fact]
-        public static void Process_ExitCode()
+        public void Process_EnableRaiseEvents()
         {
-            Process p = CreateProcess();
-            p.Start();
-            p.WaitForExit();
-            Assert.Equal(p.ExitCode, 100);
+            bool isExitedInvoked = false;
 
-            p = CreateProcessInfinite();
-            p.Start();
-            p.Kill();
-            p.WaitForExit();
-            Assert.True(p.ExitCode < 0, String.Format("Process_ExitCode: Unexpected Exit code {0}", p.ExitCode));
+            {
+                // Test behavior when EnableRaisingEvent = true;
+                // Ensure event is called.
+                Process p = CreateProcessInfinite();
+                p.EnableRaisingEvents = true;
+                p.Exited += delegate { isExitedInvoked = true; };
+                StartAndKillProcessWithDelay(p);
+                Assert.True(isExitedInvoked, String.Format("Process_CanRaiseEvents0001: {0}", "isExited Event not called when EnableRaisingEvent is set to true."));
+            }
+
+            {
+                isExitedInvoked = false;
+
+                // Check with the default settings (false, events will not be raised)
+                Process p = CreateProcessInfinite();
+                p.Exited += delegate { isExitedInvoked = true; };
+                StartAndKillProcessWithDelay(p);
+                Assert.False(isExitedInvoked, String.Format("Process_CanRaiseEvents0002: {0}", "isExited Event called with the default settings for EnableRaiseEvents"));
+            }
+
+            {
+                isExitedInvoked = false;
+
+                // Same test, this time explicitly set the property to false
+                Process p = CreateProcessInfinite();
+                p.EnableRaisingEvents = false;
+                p.Exited += delegate { isExitedInvoked = true; }; ;
+                StartAndKillProcessWithDelay(p);
+                Assert.False(isExitedInvoked, String.Format("Process_CanRaiseEvents0003: {0}", "isExited Event called with the EnableRaiseEvents = false"));
+            }
         }
 
         [Fact]
-        public static void Process_ExitTime()
+        public void Process_ExitCode()
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            p.Kill();
-            p.WaitForExit();
-            DateTime exitTime = p.ExitTime.ToUniversalTime();
-            DateTime dt2 = DateTime.UtcNow;
-            TimeSpan elapsedTime = new TimeSpan(dt2.Ticks - exitTime.Ticks);
-            Assert.True(elapsedTime.TotalSeconds <= 1, "Process_ExitTime is incorrect.");
+            {
+                Process p = CreateProcess();
+                p.Start();
+                p.WaitForExit();
+                Assert.Equal(p.ExitCode, 100);
+            }
+
+            {
+                Process p = CreateProcessInfinite();
+                StartAndKillProcessWithDelay(p);
+                Assert.True(p.ExitCode < 0, String.Format("Process_ExitCode: Unexpected Exit code {0}", p.ExitCode));
+            }
         }
 
-
-
         [Fact]
-        public static void Process_GetHandle()
+        public void Process_ExitTime()
         {
             Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.Equal(p.Id, Interop.GetProcessId(p.SafeHandle));
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
+            StartAndKillProcessWithDelay(p);
+            Assert.True(p.ExitTime < DateTime.Now, "Process_ExitTime is incorrect.");
         }
 
+
         [Fact]
-        public static void Process_HasExited()
+        public void Process_GetHandle()
         {
-            Process p = CreateProcess();
-            p.Start();
-            p.WaitForExit();
-            Assert.True(p.HasExited, "Process_HasExited001 failed");
-
-            p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.False(p.HasExited, "Process_HasExited002 failed");
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-            
-            Assert.True(p.HasExited, "Process_HasExited003 failed");
+            Assert.Equal(process.Id, Interop.GetProcessId(process.SafeHandle));
         }
 
         [Fact]
-        public static void Process_MachineName()
+        public void Process_HasExited()
+        {
+            {
+                Process p = CreateProcess();
+                p.Start();
+                p.WaitForExit();
+                Assert.True(p.HasExited, "Process_HasExited001 failed");
+            }
+
+            {
+                Process p = CreateProcessInfinite();
+                p.Start();
+                try
+                {
+                    Assert.False(p.HasExited, "Process_HasExited002 failed");
+                }
+                finally
+                {
+                    p.Kill();
+                    p.WaitForExit();
+                }
+
+                Assert.True(p.HasExited, "Process_HasExited003 failed");
+            }
+        }
+
+        [Fact]
+        public void Process_MachineName()
         {
             // Checking that the MachineName returns some value.
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Console.WriteLine(p.MachineName);
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
+            Assert.NotNull(process.MachineName);
         }
 
         [Fact]
-        public static void Process_MainModule()
+        public void Process_MainModule()
         {
             // Get MainModule property from a Process object
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                ProcessModule pMainModule = p.MainModule;
-                Assert.Equal(s_ProcessName, pMainModule.ModuleName);
-                Assert.True(pMainModule.FileName.Contains(pMainModule.ModuleName), "MainModule FileName invalid. " + GetModuleDescription(pMainModule));
+            string moduleName = process.MainModule.ModuleName;
+            Assert.Equal(_processName, moduleName);
 
-                // Check that the mainModule is present in the modules list.
-                ProcessModuleCollection allModules = p.Modules;
-                bool foundMainModule = false;
-                foreach (ProcessModule pModule in allModules)
+            // Check that the mainModule is present in the modules list.
+            bool foundMainModule = false;
+            foreach (ProcessModule pModule in process.Modules)
+            {
+                if (String.Equals(moduleName, _processName, StringComparison.OrdinalIgnoreCase))
                 {
-                    if ((pModule.BaseAddress == pMainModule.BaseAddress) && pModule.FileName.Equals(pMainModule.FileName))
-                    {
-                        foundMainModule = true;
-                        break;
-                    }
-                }
-                Assert.True(foundMainModule, "MainModule incorrect: " + GetModuleDescription(pMainModule) + Environment.NewLine + GetModulesDescription(allModules));
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        private static string GetModuleDescription(ProcessModule module)
-        {
-            return string.Format("Module: Base:{0} FileName:{1} ModuleName:{2}", module.BaseAddress, module.FileName, module.ModuleName);
-        }
-
-        private static string GetModulesDescription(ProcessModuleCollection modules)
-        {
-            var text = new StringBuilder();
-            text.AppendLine("Modules Collection:");
-            foreach (ProcessModule module in modules)
-            {
-                text.Append("    ");
-                text.AppendLine(GetModuleDescription(module));
-            }
-            return text.ToString();
-        }
-
-        [Fact]
-        public static void Process_MaxWorkingSet()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.NotNull(p.MaxWorkingSet);
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_MinWorkingSet()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.NotNull(p.MinWorkingSet);
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_Modules()
-        {
-            // Checking that the MachineName returns some value.
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                foreach (ProcessModule pModule in p.Modules)
-                {
-                    // Validated that we can get a value for each of the following.
-                    Assert.NotNull(pModule);
-                    Assert.NotNull(pModule.BaseAddress);
-                    Assert.NotNull(pModule.EntryPointAddress);
-                    Assert.NotNull(pModule.FileName);
-                    int memSize = pModule.ModuleMemorySize;
-                    Assert.NotNull(pModule.ModuleName);
+                    foundMainModule = true;
+                    break;
                 }
             }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-        [Fact]
-        public static void Process_WorkingSet()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                IntPtr minWorkingSet, maxWorkingset;
-                uint flags;
-                Interop.GetProcessWorkingSetSizeEx(p.SafeHandle, out minWorkingSet, out maxWorkingset, out flags);
-                Assert.Equal(p.MinWorkingSet, minWorkingSet);
-                Assert.Equal(p.MaxWorkingSet, maxWorkingset);
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
+            Assert.True(foundMainModule, "Could not found Module " + moduleName);
         }
 
-
         [Fact]
-        public static void Process_NonpagedSystemMemorySize64()
+        public void Process_MaxWorkingSet()
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
+            IntPtr min, max;
+            uint flags;
+
+            int intCurrValue = (Int32)process.MaxWorkingSet;
+
             try
             {
-                long x = p.NonpagedSystemMemorySize64;
+                process.MaxWorkingSet = (IntPtr)(intCurrValue + 1024);
+                Interop.GetProcessWorkingSetSizeEx(process.SafeHandle, out min, out max, out flags);
+                intCurrValue = (int)max;
+                process.Refresh();
+                Assert.Equal(intCurrValue, (int)process.MaxWorkingSet);
             }
             finally
             {
-                p.Kill();
-                p.WaitForExit();
+                process.MaxWorkingSet = (IntPtr)intCurrValue;
             }
         }
 
         [Fact]
-        public static void Process_PagedMemorySize64()
+        public void Process_MinWorkingSet()
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
+            int intCurrValue = (Int32)process.MinWorkingSet;
+            IntPtr min;
+            IntPtr max;
+            uint flags;
+
             try
             {
-                long x = p.PagedMemorySize64;
+                process.MinWorkingSet = (IntPtr)(intCurrValue - 1024);
+                Interop.GetProcessWorkingSetSizeEx(process.SafeHandle, out min, out max, out flags);
+                intCurrValue = (int)min;
+                process.Refresh();
+                Assert.Equal(intCurrValue, (int)process.MinWorkingSet);
             }
             finally
             {
-                p.Kill();
-                p.WaitForExit();
+                process.MinWorkingSet = (IntPtr)intCurrValue;
             }
         }
 
         [Fact]
-        public static void Process_PagedSystemMemorySize64()
+        public void Process_Modules()
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
+            foreach (ProcessModule pModule in process.Modules)
+            {
+                // Validated that we can get a value for each of the following.
+                Assert.NotNull(pModule);
+                Assert.NotNull(pModule.BaseAddress);
+                Assert.NotNull(pModule.EntryPointAddress);
+                Assert.NotNull(pModule.FileName);
+                int memSize = pModule.ModuleMemorySize;
+                Assert.NotNull(pModule.ModuleName);
+            }
+        }
+
+        public void DoNothing(TimeSpan ignoreValue)
+        {
+            // This method does nothing.
+        }
+
+        [Fact]
+        public void Process_NonpagedSystemMemorySize64()
+        {
+            Assert.NotEqual(0L, process.NonpagedSystemMemorySize64);
+        }
+
+        [Fact]
+        public void Process_PagedMemorySize64()
+        {
+            Assert.NotEqual(0L, process.PagedMemorySize64);
+        }
+
+        [Fact]
+        public void Process_PagedSystemMemorySize64()
+        {
+            Assert.NotEqual(0L, process.PagedSystemMemorySize64);
+        }
+
+        [Fact]
+        public void Process_PeakPagedMemorySize64()
+        {
+            Assert.NotEqual(0L, process.PeakPagedMemorySize64);
+        }
+
+        [Fact]
+        public void Process_PeakVirtualMemorySize64()
+        {
+            Assert.NotEqual(0L, process.PeakVirtualMemorySize64);
+        }
+
+        [Fact]
+        public void Process_PeakWorkingSet64()
+        {
+            Assert.NotEqual(0L, process.PeakWorkingSet64);
+        }
+
+        [Fact]
+        public void Process_PrivateMemorySize64()
+        {
+            Assert.NotEqual(0L, process.PrivateMemorySize64);
+        }
+
+        [Fact]
+        public void Process_PrivilegedProcessorTime()
+        {
+            // There is no good way to test the actual values of these
+            // w/o the user of Performance Counters or a ton of pinvokes, and so for now we simply check
+            // they do not throw exception when called.
+            DoNothing(process.UserProcessorTime);
+            DoNothing(process.PrivilegedProcessorTime);
+            DoNothing(process.TotalProcessorTime);
+        }
+
+        [Fact]
+        public void Process_ProcessorAffinity()
+        {
+            IntPtr curProcessorAffinity = process.ProcessorAffinity;
             try
             {
-                long x = p.PagedSystemMemorySize64;
+                process.ProcessorAffinity = new IntPtr(0x1);
+                Assert.Equal(new IntPtr(0x1), process.ProcessorAffinity);
             }
             finally
             {
-                p.Kill();
-                p.WaitForExit();
+                process.ProcessorAffinity = curProcessorAffinity;
+                Assert.Equal(curProcessorAffinity, process.ProcessorAffinity);
             }
         }
 
         [Fact]
-        public static void Process_PeakPagedMemorySize64()
+        public void Process_PriorityBoostEnabled()
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
+            bool isPriorityBoostEnabled = process.PriorityBoostEnabled;
+
             try
             {
-                long x = p.PeakPagedMemorySize64;
+                process.PriorityBoostEnabled = true;
+                Assert.True(process.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
+
+                process.PriorityBoostEnabled = false;
+                Assert.False(process.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
+            }
+
+            finally
+            {
+                process.PriorityBoostEnabled = isPriorityBoostEnabled;
+            }
+
+        }
+
+        public void Process_PriorityClass()
+        {
+
+            ProcessPriorityClass priorityClass = process.PriorityClass;
+
+            try
+            {
+                process.PriorityClass = ProcessPriorityClass.High;
+                Assert.Equal(process.PriorityClass, ProcessPriorityClass.High);
+
+                process.PriorityClass = ProcessPriorityClass.Normal;
+                Assert.Equal(process.PriorityClass, ProcessPriorityClass.Normal);
             }
             finally
             {
-                p.Kill();
-                p.WaitForExit();
+                process.PriorityClass = priorityClass;
             }
         }
 
         [Fact]
-        public static void Process_PeakVirtualMemorySize64()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                long x = p.PeakVirtualMemorySize64;
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_PeakWorkingSet64()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                long x = p.PeakWorkingSet64;
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_PrivateMemorySize64()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                long x = p.PrivateMemorySize64;
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_PrivilegedProcessorTime()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                TimeSpan x = p.PrivilegedProcessorTime;
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_ProcessorAffinity()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                IntPtr x = p.ProcessorAffinity;
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_SessionId()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                int x = p.SessionId;
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_PriorityBoostEnabled()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.True(p.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
-                p.PriorityBoostEnabled = false;
-                Assert.False(p.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact, ActiveIssue(541)]
-        public static void Process_PriorityClass()
-        {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.Equal(p.PriorityClass, ProcessPriorityClass.Normal);
-                p.PriorityClass = ProcessPriorityClass.High;
-                Assert.Equal(p.PriorityClass, ProcessPriorityClass.High);
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public static void Process_InvalidPriorityClass()
+        public void Process_InvalidPriorityClass()
         {
             Process p = new Process();
             Assert.Throws<ArgumentException>(() => { p.PriorityClass = ProcessPriorityClass.Normal | ProcessPriorityClass.Idle; });
         }
 
         [Fact]
-        public static void Process_ProcessName()
+        public void Process_ProcessName()
         {
-            Process p = CreateProcessInfinite();
-            p.Start();
-            try
-            {
-                Assert.Equal(p.ProcessName, "ProcessTest_ConsoleApp");
-            }
-            finally
-            {
-                p.Kill();
-                p.WaitForExit();
-            }
+            Assert.Equal(process.ProcessName, Path.ChangeExtension(_processName, null));
+        }
+
+
+        [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
+        internal static extern int GetCurrentProcessId();
+
+        [Fact]
+        public void Process_GetCurrentProcess()
+        {
+            int currentProcessId = ProcessTest.GetCurrentProcessId();
+
+            Assert.Equal(currentProcessId, Process.GetCurrentProcess().Id);
+            Assert.Equal(Process.GetProcessById(currentProcessId).ProcessName, Process.GetCurrentProcess().ProcessName);
         }
 
         [Fact]
-        public static void Process_GetCurrentProcess()
-        {
-            string processName = Process.GetCurrentProcess().ProcessName;
-            Assert.Equal(processName, "CoreRun");
-        }
-
-        [Fact]
-        public static void Process_GetProcessById()
-        {
-            Process p = Process.GetCurrentProcess();
-            Process p_copy = Process.GetProcessById(p.Id);
-            Assert.Equal(p.ProcessName, p_copy.ProcessName);
-            Assert.Equal(p.Id, p_copy.Id);
-        }
-
-        [Fact]
-        public static void Process_GetProcesses()
+        public void Process_GetProcesses()
         {
             // Get all the processes running on the machine.
             Process currentProcess = Process.GetCurrentProcess();
@@ -599,7 +446,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public static void Process_GetProcessesByName()
+        public void Process_GetProcessesByName()
         {
             // Get the current process using its name
             Process currentProcess = Process.GetCurrentProcess();
@@ -623,7 +470,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public static void Process_Environment()
+        public void Process_Environment()
         {
             Assert.NotEqual(0, new Process().StartInfo.Environment.Count);
 

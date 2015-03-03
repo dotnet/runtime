@@ -9,105 +9,112 @@ namespace System.Diagnostics.ProcessTests
 {
     public partial class ProcessTest
     {
+
+        Process CreateProcessError()
+        {
+            Process p = new Process();
+            p.StartInfo.FileName = _processName;
+            p.StartInfo.Arguments = "error";
+            return p;
+        }
+
+        Process CreateProcessInput()
+        {
+            Process p = new Process();
+            p.StartInfo.FileName = _processName;
+            p.StartInfo.Arguments = "input";
+            return p;
+        }
+
+        Process CreateProcessStream()
+        {
+            Process p = new Process();
+            p.StartInfo.FileName = _processName;
+            p.StartInfo.Arguments = "stream";
+            return p;
+        }
+
         [Fact]
-        public static void Process_SyncErrorStream()
+        public void Process_SyncErrorStream()
         {
             Process p = CreateProcessError();
             p.StartInfo.RedirectStandardError = true;
             p.Start();
-            if (!p.HasExited)
-            {
-                string s = p.StandardError.ReadToEnd();
-                p.WaitForExit();
-
-                s = s.Replace("\r", "").Replace("\n", "");
-
-                Assert.Equal("Unhandled Exception: Intentional Exception thrown", s);
-            }
+            Assert.Equal(p.StandardError.ReadToEnd(), "ProcessTest_ConsoleApp.exe error stream\r\n");
+            p.WaitForExit();
         }
 
-        private static StringBuilder s_process_AsyncErrorStream_sb = new StringBuilder();
+        private StringBuilder process_AsyncErrorStream_sb = new StringBuilder();
 
         [Fact]
-        public static void Process_AsyncErrorStream()
+        public void Process_AsyncErrorStream()
         {
-            s_process_AsyncErrorStream_sb.Clear();
+            process_AsyncErrorStream_sb.Clear();
             Process p = CreateProcessError();
             p.StartInfo.RedirectStandardError = true;
             p.ErrorDataReceived += process_AsyncErrorStream_ErrorDataReceived;
             p.Start();
-            if (!p.HasExited)
-            {
-                p.BeginErrorReadLine();
-                p.WaitForExit();
-                Assert.Equal("Unhandled Exception: Intentional Exception thrown", s_process_AsyncErrorStream_sb.ToString());
-            }
+            p.BeginErrorReadLine();
+            p.WaitForExit();
+            Assert.Equal("ProcessTest_ConsoleApp.exe error stream", process_AsyncErrorStream_sb.ToString());
         }
 
-        public static void process_AsyncErrorStream_ErrorDataReceived(object sender, DataReceivedEventArgs e)
+        public void process_AsyncErrorStream_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            s_process_AsyncErrorStream_sb.Append(e.Data);
+            process_AsyncErrorStream_sb.Append(e.Data);
         }
 
         [Fact]
-        public static void Process_SyncOutputStream()
+        public void Process_SyncOutputStream()
         {
-            Process p = CreateProcess();
+            Process p = CreateProcessStream();
             p.StartInfo.RedirectStandardOutput = true;
             p.Start();
-            if (!p.HasExited)
-            {
-                string s = p.StandardOutput.ReadToEnd();
-                p.WaitForExit();
-                Assert.Equal(s, "ProcessTest_ConsoleApp.exe started\r\nProcessTest_ConsoleApp.exe closed\r\n");
-            }
+            string s = p.StandardOutput.ReadToEnd();
+            p.WaitForExit();
+            Assert.Equal(s, "ProcessTest_ConsoleApp.exe started\r\nProcessTest_ConsoleApp.exe closed\r\n");
         }
 
-        private static StringBuilder s_process_AsyncOutputStream_sb = new StringBuilder();
+        private StringBuilder process_AsyncOutputStream_sb = new StringBuilder();
 
         [Fact]
-        public static void Process_AsyncOutputStream()
+        public void Process_AsyncOutputStream()
         {
-            s_process_AsyncOutputStream_sb.Clear();
-            Process p = CreateProcess();
+            process_AsyncOutputStream_sb.Clear();
+            Process p = CreateProcessStream();
             p.StartInfo.RedirectStandardOutput = true;
             p.OutputDataReceived += process_AsyncOutputStream_OutputDataReceived;
             p.Start();
-            if (!p.HasExited)
-            {
-                p.BeginOutputReadLine();
-                p.WaitForExit();
-                Assert.Equal(s_process_AsyncOutputStream_sb.ToString(), "ProcessTest_ConsoleApp.exe startedProcessTest_ConsoleApp.exe closed");
-            }
+            p.BeginOutputReadLine();
+            p.WaitForExit();
+            Assert.Equal(process_AsyncOutputStream_sb.ToString(), "ProcessTest_ConsoleApp.exe startedProcessTest_ConsoleApp.exe closed");
+
 
             // Now add the CancelAsyncAPI as well.
-            s_process_AsyncOutputStream_sb.Clear();
-            p = CreateProcess();
+            process_AsyncOutputStream_sb.Clear();
+            p = CreateProcessStream();
             p.StartInfo.RedirectStandardOutput = true;
             p.OutputDataReceived += process_AsyncOutputStream_OutputDataReceived2;
             p.Start();
-            if (!p.HasExited)
-            {
-                p.BeginOutputReadLine();
-                p.WaitForExit();
-                Assert.Equal(s_process_AsyncOutputStream_sb.ToString(), "ProcessTest_ConsoleApp.exe started");
-            }
+            p.BeginOutputReadLine();
+            p.WaitForExit();
+            Assert.Equal(process_AsyncOutputStream_sb.ToString(), "ProcessTest_ConsoleApp.exe started");
         }
 
-        static void process_AsyncOutputStream_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        void process_AsyncOutputStream_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            s_process_AsyncOutputStream_sb.Append(e.Data);
+            process_AsyncOutputStream_sb.Append(e.Data);
         }
 
-        static void process_AsyncOutputStream_OutputDataReceived2(object sender, DataReceivedEventArgs e)
+        void process_AsyncOutputStream_OutputDataReceived2(object sender, DataReceivedEventArgs e)
         {
-            s_process_AsyncOutputStream_sb.Append(e.Data);
+            process_AsyncOutputStream_sb.Append(e.Data);
             Process p = sender as Process;
             p.CancelOutputRead();
         }
 
         [Fact]
-        public static void Process_SyncStreams()
+        public void Process_SyncStreams()
         {
             // Check whether the input streams works correctly.
 
@@ -117,18 +124,14 @@ namespace System.Diagnostics.ProcessTests
             p.StartInfo.RedirectStandardOutput = true;
             p.OutputDataReceived += process_SyncStreams_OutputDataReceived;
             p.Start();
-            if (!p.HasExited)
+            using (StreamWriter writer = p.StandardInput)
             {
-                using (StreamWriter writer = p.StandardInput)
-                {
-                    string str = "This string should come as output";
-                    writer.WriteLine(str);
-                }
-                // Check that we get this as output
+                string str = "This string should come as output";
+                writer.WriteLine(str);
             }
         }
 
-        public static void process_SyncStreams_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        public void process_SyncStreams_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             if (e.Data != null)
             {
