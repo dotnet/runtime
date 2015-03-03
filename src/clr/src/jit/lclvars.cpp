@@ -4133,7 +4133,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
         if (varDsc->lvOnFrame)
 #endif
         {
-            // The offset for args need to be set only for the stack homed arguments for System V.
+            // The offset for args needs to be set only for the stack homed arguments for System V.
             varDsc->lvStkOffs = argOffs;
             argOffs += sizeof(void *);
         }
