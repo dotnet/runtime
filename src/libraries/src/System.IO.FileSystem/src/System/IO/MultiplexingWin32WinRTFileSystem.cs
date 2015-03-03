@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.IO
@@ -145,32 +146,62 @@ namespace System.IO
 
             do
             {
-                Interop.WIN32_FIND_DATA findData = new Interop.WIN32_FIND_DATA();
-                using (SafeFindHandle handle = Interop.mincore.FindFirstFile(fullPath, ref findData))
-                {
-                    int error = Marshal.GetLastWin32Error();
+                int error = Interop.ERROR_SUCCESS;
 
-                    if (handle.IsInvalid)
+                // first use GetFileAttributesEx as it is faster than FindFirstFile and requires minimum permissions
+                Interop.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.WIN32_FILE_ATTRIBUTE_DATA();
+                if (Interop.mincore.GetFileAttributesEx(fullPath, Interop.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+                {
+                    // got the attributes
+                    if ((data.fileAttributes & Interop.FILE_ATTRIBUTE_DIRECTORY) != 0 ||
+                        (data.fileAttributes & Interop.FILE_ATTRIBUTE_REPARSE_POINT) == 0)
                     {
-                        if (error == Interop.ERROR_ACCESS_DENIED)
-                        {
-                            // The path was not accessible with Win32, so try WinRT
-                            useWinRt = true;
-                            break;
-                        }
-                        else if (error != Interop.ERROR_PATH_NOT_FOUND && error != Interop.ERROR_FILE_NOT_FOUND)
-                        {
-                            // We hit some error other than ACCESS_DENIED or NOT_FOUND,
-                            // Default to Win32 to provide most accurate error behavior
-                            break;
-                        }
+                        // we have a directory or a file that is not a reparse point
+                        // useWinRt = false;
+                        break;
                     }
                     else
                     {
-                        // Use WinRT for placeholder files
-                        useWinRt = IsPlaceholderFile(findData);
-                        break;
+                        // we need to get the find data to determine if it is a placeholder file
+                        Interop.WIN32_FIND_DATA findData = new Interop.WIN32_FIND_DATA();
+                        using (SafeFindHandle handle = Interop.mincore.FindFirstFile(fullPath, ref findData))
+                        {
+                            if (!handle.IsInvalid)
+                            {
+                                // got the find data, use WinRT for placeholder files
+
+                                Debug.Assert((findData.dwFileAttributes & Interop.FILE_ATTRIBUTE_DIRECTORY) == 0);
+                                Debug.Assert((findData.dwFileAttributes & Interop.FILE_ATTRIBUTE_REPARSE_POINT) != 0);
+
+                                useWinRt = findData.dwReserved0 == Interop.IO_REPARSE_TAG_FILE_PLACEHOLDER;
+                                break;
+                            }
+                            else
+                            {
+                                // couldn't get the find data
+                                error = Marshal.GetLastWin32Error();
+                            }
+                        }
                     }
+                }
+                else
+                {
+                    // couldn't get the attributes
+                    error = Marshal.GetLastWin32Error();
+                }
+
+                Debug.Assert(error != Interop.ERROR_SUCCESS);
+                if (error == Interop.ERROR_ACCESS_DENIED)
+                {
+                    // The path was not accessible with Win32, so try WinRT
+                    useWinRt = true;
+                    break;
+                }
+                else if (error != Interop.ERROR_PATH_NOT_FOUND && error != Interop.ERROR_FILE_NOT_FOUND)
+                {
+                    // We hit some error other than ACCESS_DENIED or NOT_FOUND,
+                    // Default to Win32 to provide most accurate error behavior
+                    break;
                 }
 
                 // error was ERROR_PATH_NOT_FOUND or ERROR_FILE_NOT_FOUND
@@ -181,13 +212,6 @@ namespace System.IO
             } while (isCreate && !String.IsNullOrEmpty(fullPath));
 
             return useWinRt;
-        }
-
-        private static bool IsPlaceholderFile(Interop.WIN32_FIND_DATA findData)
-        {
-            return (findData.dwFileAttributes & Interop.FILE_ATTRIBUTE_DIRECTORY) == 0 &&
-                   (findData.dwFileAttributes & Interop.FILE_ATTRIBUTE_REPARSE_POINT) != 0 &&
-                   (findData.dwReserved0 == Interop.IO_REPARSE_TAG_FILE_PLACEHOLDER);
         }
     }
 }
