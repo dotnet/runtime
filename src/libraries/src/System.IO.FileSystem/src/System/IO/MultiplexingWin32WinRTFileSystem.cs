@@ -143,12 +143,18 @@ namespace System.IO
 
         private bool ShouldUseWinRT(string fullPath, bool isCreate)
         {
+            // The purpose of this method is to determine if we can access a path
+            // via Win32 or if we need to fallback to WinRT.
+            // We prefer Win32 since it is faster, WinRT's APIs eventually just
+            // call into Win32 after all, but it doesn't provide access to,
+            // brokered paths (like Pictures or Documents) nor does it handle 
+            // placeholder files.  So we'd like to fall back to WinRT whenever
+            // we can't access a path, or if it known to be a placeholder file.
+
             bool useWinRt = false;
 
             do
             {
-                int error = Interop.ERROR_SUCCESS;
-
                 // first use GetFileAttributesEx as it is faster than FindFirstFile and requires minimum permissions
                 Interop.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.WIN32_FILE_ATTRIBUTE_DATA();
                 if (Interop.mincore.GetFileAttributesEx(fullPath, Interop.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
@@ -177,21 +183,13 @@ namespace System.IO
                                 useWinRt = findData.dwReserved0 == Interop.IO_REPARSE_TAG_FILE_PLACEHOLDER;
                                 break;
                             }
-                            else
-                            {
-                                // couldn't get the find data
-                                error = Marshal.GetLastWin32Error();
-                            }
                         }
                     }
                 }
-                else
-                {
-                    // couldn't get the attributes
-                    error = Marshal.GetLastWin32Error();
-                }
 
+                int error = Marshal.GetLastWin32Error();
                 Debug.Assert(error != Interop.ERROR_SUCCESS);
+
                 if (error == Interop.ERROR_ACCESS_DENIED)
                 {
                     // The path was not accessible with Win32, so try WinRT
