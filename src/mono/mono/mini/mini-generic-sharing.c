@@ -27,7 +27,7 @@
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
-static gboolean partial_supported;
+static gboolean partial_supported = TRUE;
 
 static inline gboolean
 partial_sharing_supported (void)
