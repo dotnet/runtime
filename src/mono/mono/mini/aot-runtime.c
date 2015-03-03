@@ -4305,8 +4305,9 @@ mono_aot_get_plt_entry (guint8 *code)
 		return NULL;
 
 #ifdef TARGET_ARM
-	if (amodule->thumb_end && code < amodule->thumb_end) {
-		return mono_arm_get_thumb_plt_entry (code);
+	if (amodule->thumb_end) {
+		if (code >= amodule->llvm_code_start && code < amodule->llvm_code_end)
+			return mono_arm_get_thumb_plt_entry (code);
 	}
 #endif
 
