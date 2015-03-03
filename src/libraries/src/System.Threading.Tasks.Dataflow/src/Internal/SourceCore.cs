@@ -162,7 +162,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
             if (target == null) throw new ArgumentNullException("target");
             Contract.EndContractBlock();
 
@@ -219,7 +219,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal Boolean ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
             if (target == null) throw new ArgumentNullException("target");
             Contract.EndContractBlock();
 
@@ -247,19 +247,19 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
             if (target == null) throw new ArgumentNullException("target");
             Contract.EndContractBlock();
 
             lock (OutgoingLock)
             {
                 // If someone else holds the reservation, bail.
-                if (_nextMessageReservedFor != target) throw new InvalidOperationException(Strings.InvalidOperation_MessageNotReservedByTarget);
+                if (_nextMessageReservedFor != target) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
                 lock (ValueLock)
                 {
                     // If this is not the message at the head of the queue, bail
-                    if (messageHeader.Id != _nextMessageId.Value || _messages.IsEmpty) throw new InvalidOperationException(Strings.InvalidOperation_MessageNotReservedByTarget);
+                    if (messageHeader.Id != _nextMessageId.Value || _messages.IsEmpty) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
                     // Otherwise, release the reservation
                     _nextMessageReservedFor = null;

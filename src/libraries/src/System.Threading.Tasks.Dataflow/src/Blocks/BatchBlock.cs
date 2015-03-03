@@ -48,9 +48,9 @@ namespace System.Threading.Tasks.Dataflow
         public BatchBlock(Int32 batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", Strings.ArgumentOutOfRange_GenericPositive);
+            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", SR.ArgumentOutOfRange_GenericPositive);
             if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
-            if (dataflowBlockOptions.BoundedCapacity > 0 && dataflowBlockOptions.BoundedCapacity < batchSize) throw new ArgumentOutOfRangeException("batchSize", Strings.ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity);
+            if (dataflowBlockOptions.BoundedCapacity > 0 && dataflowBlockOptions.BoundedCapacity < batchSize) throw new ArgumentOutOfRangeException("batchSize", SR.ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity);
             Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
@@ -364,8 +364,8 @@ namespace System.Threading.Tasks.Dataflow
             internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
-                if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+                if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
                 Contract.EndContractBlock();
 
                 lock (IncomingLock)
@@ -1012,7 +1012,7 @@ namespace System.Threading.Tasks.Dataflow
                         // null out all of the messages we've already consumed, as a higher-level event handler
                         // should try to release everything in the reserved list.
                         for (int prev = 0; prev < i; prev++) reserved[prev] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>);
-                        throw new InvalidOperationException(Strings.InvalidOperation_FailedToConsumeReservedMessage);
+                        throw new InvalidOperationException(SR.InvalidOperation_FailedToConsumeReservedMessage);
                     }
 
                     var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue);

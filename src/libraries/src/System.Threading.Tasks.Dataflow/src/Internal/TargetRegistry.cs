@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             void IDataflowBlock.Fault(Exception exception) { _target.Fault(exception); }
 
             /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-            IDisposable ISourceBlock<T>.LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions) { throw new NotSupportedException(Strings.NotSupported_MemberNotNeeded); }
+            IDisposable ISourceBlock<T>.LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions) { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); }
 
             /// <summary>The data to display in the debugger display attribute.</summary>
             [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
