@@ -3990,7 +3990,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
                 argSize,
                 argOffs);
 #endif // !UNIX_AMD64_ABI
-                );
             argLcls++;
 
             // Early out if we can. If size is 8 and base reg is 2, then the mask is 0x1100
@@ -4023,7 +4022,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
                 eeGetArgSize(argLst, &info.compMethodInfo->args),
                 argOffs);
 #endif // !UNIX_AMD64_ABI
-                );
             argLcls++;
         }
         argLst = info.compCompHnd->getArgNext(argLst);
@@ -4058,7 +4056,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 #else // !UNIX_AMD64_ABI
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, sizeof(void *), argOffs);
 #endif // !UNIX_AMD64_ABI
-            );
     }
 
     if (info.compIsVarArgs)
