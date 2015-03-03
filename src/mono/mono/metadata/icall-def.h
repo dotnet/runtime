@@ -59,9 +59,6 @@ ICALL(KPAIR_4, "_ProtectMachine", ves_icall_Mono_Security_Cryptography_KeyPairPe
 ICALL(KPAIR_5, "_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser)
 #endif /* !PLATFORM_RO_FS */
 
-ICALL_TYPE(ACTIV, "System.Activator", ACTIV_1)
-ICALL(ACTIV_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal)
-
 ICALL_TYPE(APPDOM, "System.AppDomain", APPDOM_1)
 ICALL(APPDOM_1, "ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly)
 ICALL(APPDOM_2, "GetAssemblies", ves_icall_System_AppDomain_GetAssemblies)
@@ -751,6 +748,9 @@ ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethod_GetFunctionPointer)
+
+ICALL_TYPE(RT, "System.RuntimeType", RT_1)
+ICALL(RT_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal)
 
 ICALL_TYPE(RNG, "System.Security.Cryptography.RNGCryptoServiceProvider", RNG_1)
 ICALL(RNG_1, "RngClose", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngClose)
