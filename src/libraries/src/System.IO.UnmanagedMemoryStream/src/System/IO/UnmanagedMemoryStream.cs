@@ -132,15 +132,6 @@ namespace System.IO
             Initialize(buffer, offset, length, access, false);
         }
 
-        // We must create one of these without doing a security check.  This
-        // class is created while security is trying to start up.  Plus, doing
-        // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        [System.Security.SecurityCritical]  // auto-generated
-        private UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access, bool skipSecurityCheck)
-        {
-            Initialize(buffer, offset, length, access, skipSecurityCheck);
-        }
-
         /// <summary>
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
@@ -234,15 +225,6 @@ namespace System.IO
             Initialize(pointer, length, capacity, access, false);
         }
 
-        // We must create one of these without doing a security check.  This
-        // class is created while security is trying to start up.  Plus, doing
-        // a Demand from Assembly.GetManifestResourceStream isn't useful.
-        [System.Security.SecurityCritical]  // auto-generated
-        private unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access, bool skipSecurityCheck)
-        {
-            Initialize(pointer, length, capacity, access, skipSecurityCheck);
-        }
-
         /// <summary>
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
@@ -288,8 +270,7 @@ namespace System.IO
         public override bool CanRead
         {
             [Pure]
-            get
-            { return _isOpen && (_access & FileAccess.Read) != 0; }
+            get { return _isOpen && (_access & FileAccess.Read) != 0; }
         }
 
         /// <summary>
@@ -298,8 +279,7 @@ namespace System.IO
         public override bool CanSeek
         {
             [Pure]
-            get
-            { return _isOpen; }
+            get { return _isOpen; }
         }
 
         /// <summary>
@@ -308,8 +288,7 @@ namespace System.IO
         public override bool CanWrite
         {
             [Pure]
-            get
-            { return _isOpen && (_access & FileAccess.Write) != 0; }
+            get { return _isOpen && (_access & FileAccess.Write) != 0; }
         }
 
         /// <summary>
@@ -439,18 +418,6 @@ namespace System.IO
                 if (value < _mem) throw new IOException(SR.IO_SeekBeforeBegin);
 
                 Interlocked.Exchange(ref _position, value - _mem);
-            }
-        }
-
-        private unsafe byte* Pointer
-        {
-            [System.Security.SecurityCritical]  // auto-generated
-            get
-            {
-                if (_buffer != null)
-                    throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-
-                return _mem;
             }
         }
 
