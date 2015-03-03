@@ -135,9 +135,6 @@ HRESULT ExecuteAssembly(
                                 STARTUP_FLAGS::STARTUP_SINGLE_APPDOMAIN));
     IfFailRet(hr);
 
-    hr = host->Authenticate(CORECLR_HOST_AUTHENTICATION_KEY);
-    IfFailRet(hr);
-
     hr = host->Start();
     IfFailRet(hr);
     
