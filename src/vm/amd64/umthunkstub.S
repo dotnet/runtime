@@ -69,8 +69,8 @@ NESTED_ENTRY UMThunkStub, _TEXT, UMThunkStubUnwindFrameChainHandler
         save_reg_postrsp r8,  (UMThunkStubAMD64_INT_ARG_OFFSET + 0x20)
         save_reg_postrsp r9,  (UMThunkStubAMD64_INT_ARG_OFFSET + 0x28)
         save_reg_postrsp METHODDESC_REGISTER, UMThunkStubAMD64_METHODDESC_OFFSET
-        set_cfa_register rbp, (UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE + 3*8)
         SAVE_FLOAT_ARGUMENT_REGISTERS UMThunkStubAMD64_XMM_SAVE_OFFSET
+        set_cfa_register rbp, (2*8)
         END_PROLOGUE
 
         //
