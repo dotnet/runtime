@@ -93,7 +93,7 @@ LOCAL_LABEL(HaveThread):
         // catch returning thread here if a GC is in progress
         //
         PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax
-        cmp                  [rax], 0
+        cmp                  dword ptr [rax], 0
         jnz                  LOCAL_LABEL(DoTrapReturningThreadsTHROW)
 
 LOCAL_LABEL(InCooperativeMode):

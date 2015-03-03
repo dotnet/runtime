@@ -65,12 +65,21 @@ if [ $OS = "Linux" ]; then
   [[ $? -eq 0 ]] || { echo "Unable to locate llvm-objdump"; exit 1; }
 fi
 
-cmake "-DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/clang-compiler-override.txt" \
+cmake_extra_defines=
+if [[ -n "$LLDB_LIB_DIR" ]]; then
+    cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_LIBS=$LLDB_LIB_DIR"
+fi
+if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
+    cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_INCLUDES=$LLDB_INCLUDE_DIR"
+fi
+
+cmake \
+  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=$1/src/pal/tools/clang-compiler-override.txt" \
   "-DCMAKE_AR=$llvm_ar" \
   "-DCMAKE_LINKER=$llvm_link" \
   "-DCMAKE_NM=$llvm_nm" \
   "-DCMAKE_OBJDUMP=$llvm_objdump" \
   "-DCMAKE_RANLIB=$llvm_ranlib" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
+  $cmake_extra_defines \
   "$1"
-
