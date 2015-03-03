@@ -147,13 +147,13 @@ namespace System.Collections.Immutable
                         case KeyCollisionBehavior.ThrowIfValueDifferent:
                             if (!valueComparer.Equals(_firstValue.Value, value))
                             {
-                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
+                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }
@@ -179,13 +179,13 @@ namespace System.Collections.Immutable
                             var existingEntry = _additionalElements[keyCollisionIndex];
                             if (!valueComparer.Equals(existingEntry.Value, value))
                             {
-                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
+                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
                             }
 
                             result = OperationResult.NoChangeRequired;
                             return this;
                         case KeyCollisionBehavior.ThrowAlways:
-                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
                         default:
                             throw new InvalidOperationException(); // unreachable
                     }

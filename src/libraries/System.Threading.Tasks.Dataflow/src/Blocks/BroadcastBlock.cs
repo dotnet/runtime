@@ -167,8 +167,8 @@ namespace System.Threading.Tasks.Dataflow
         DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
-            if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
             Contract.EndContractBlock();
 
             lock (IncomingLock)
@@ -1061,7 +1061,7 @@ namespace System.Threading.Tasks.Dataflow
             internal TOutput ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target, out Boolean messageConsumed)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
                 if (target == null) throw new ArgumentNullException("target");
                 Contract.EndContractBlock();
 
@@ -1102,7 +1102,7 @@ namespace System.Threading.Tasks.Dataflow
             internal Boolean ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
                 if (target == null) throw new ArgumentNullException("target");
                 Contract.EndContractBlock();
 
@@ -1130,20 +1130,20 @@ namespace System.Threading.Tasks.Dataflow
             internal void ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<TOutput> target)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
                 if (target == null) throw new ArgumentNullException("target");
                 Contract.EndContractBlock();
 
                 lock (OutgoingLock)
                 {
                     // If someone else holds the reservation, bail.
-                    if (_nextMessageReservedFor != target) throw new InvalidOperationException(Strings.InvalidOperation_MessageNotReservedByTarget);
+                    if (_nextMessageReservedFor != target) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
                     TOutput messageToReoffer;
                     lock (ValueLock)
                     {
                         // If this is not the message at the head of the queue, bail
-                        if (messageHeader.Id != _nextMessageId) throw new InvalidOperationException(Strings.InvalidOperation_MessageNotReservedByTarget);
+                        if (messageHeader.Id != _nextMessageId) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
                         // Otherwise, release the reservation, and reoffer the message to all targets.
                         _nextMessageReservedFor = null;

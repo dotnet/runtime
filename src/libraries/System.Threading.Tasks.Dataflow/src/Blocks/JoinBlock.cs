@@ -680,7 +680,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // In that case complete the target and signal to the owning block to shut down gracefully.
             if (!consumed)
             {
-                _sharedResources._exceptionAction(new InvalidOperationException(Strings.InvalidOperation_FailedToConsumeReservedMessage));
+                _sharedResources._exceptionAction(new InvalidOperationException(SR.InvalidOperation_FailedToConsumeReservedMessage));
 
                 // Complete this target, which will trigger completion of the owning join block.
                 CompleteOncePossible();
@@ -842,8 +842,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
-            if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
             Contract.EndContractBlock();
 
             lock (_sharedResources.IncomingLock)
@@ -961,7 +961,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
-        public Task Completion { get { throw new NotSupportedException(Strings.NotSupported_MemberNotNeeded); } }
+        public Task Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
         /// <summary>The completion task on Join targets is only hidden from the public. It still exists for internal purposes.</summary>
         internal Task CompletionTaskInternal { get { return _completionTask.Task; } }
 
