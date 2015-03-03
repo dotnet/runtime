@@ -88,15 +88,22 @@ echo "Commencing CoreCLR Repo build"
 # Obtain the location of the bash script to figure out whether the root of the repo is.
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __BuildArch=x64
-# Use uname to determine what the OS is.  
-if [ $(uname -o | grep -i Linux) ]; then
-    __BuildOS=linux
-elif [ $(uname -s | grep -i Darwin) ]; then
-    __BuildOS=mac
-else
-    echo "Unsupported OS detected, assuming linux"
-    __BuildOS=linux
-fi
+# Use uname to determine what the OS is.
+OSName=$(uname -s)
+case $OSName in
+    Linux)
+        __BuildOS=linux
+        ;;
+
+    Darwin)
+        __BuildOS=mac
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        __BuildOS=linux
+        ;;
+esac
 __MSBuildBuildArch=x64
 __BuildType=debug
 __CMakeArgs=DEBUG
