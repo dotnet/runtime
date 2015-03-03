@@ -45,9 +45,8 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHand
         push_nonvol_reg rbp
         mov     rbp, rsp
         push_nonvol_reg rbx
-        lea     rsp, [rsp - 8]          // ensure proper alignment of the rsp 
-        set_cfa_register rbp, (4*8)
-
+        alloc_stack 8                   // ensure proper alignment of the rsp 
+        set_cfa_register rbp, (2*8)
         END_PROLOGUE
 
         mov     rbx, rdi                // save pCallDescrData in rbx
