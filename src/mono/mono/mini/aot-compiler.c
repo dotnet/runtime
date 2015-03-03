@@ -8648,7 +8648,7 @@ compile_asm (MonoAotCompile *acfg)
 	char *command, *objfile;
 	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
 	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
-	const char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : "";;
+	char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : g_strdup("");
 
 #if defined(TARGET_AMD64) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--64"
@@ -8748,6 +8748,9 @@ compile_asm (MonoAotCompile *acfg)
 		llvm_ofile = g_strdup ("");
 	}
 
+	/* replace the ; flags separators with spaces */
+	g_strdelimit (ld_flags, ";", ' ');
+
 #ifdef LD_NAME
 	command = g_strdup_printf ("%s -o %s %s %s.o %s", LD_NAME, tmp_outfile_name, llvm_ofile, acfg->tmpfname, ld_flags);
 #else
@@ -8760,6 +8763,7 @@ compile_asm (MonoAotCompile *acfg)
 		g_free (outfile_name);
 		g_free (command);
 		g_free (objfile);
+		g_free (ld_flags);
 		return 1;
 	}
 
