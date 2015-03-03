@@ -778,11 +778,6 @@ CorHost2::CorHost2()
     m_fStarted = FALSE;
     m_fFirstToLoadCLR = FALSE;
     m_fAppDomainCreated = FALSE;
-
-    // By default, the host is assumed to be unauthenticated and is expected to invoke
-    // ICLRRuntimeHost2::Authenticate to authenticate before invoking 
-    // ICLRRuntimeHost2::Start.
-    m_fIsHostAuthenticated = FALSE;
 #endif // FEATURE_CORECLR
 }
 
@@ -797,17 +792,7 @@ STDMETHODIMP CorHost2::Start()
         ENTRY_POINT;
     }CONTRACTL_END;
 
-
     HRESULT hr;
-
-#ifdef FEATURE_CORECLR
-    // Is the host authenticated?
-    if (FALSE == m_fIsHostAuthenticated)
-    {
-        // Attempting to start the runtime without authentication is an invalid operation.
-        return HOST_E_INVALIDOPERATION;
-    }
-#endif // FEATURE_CORECLR
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
@@ -1918,14 +1903,6 @@ HRESULT CorHost2::CreateDelegate(
     return _CreateDelegate(appDomainID, wszAssemblyName, wszClassName, wszMethodName, fnPtr);
 }
 
-// To prevent any unmanaged application from hosting CoreCLR, we require the host to authenticate
-// with the runtime by passing a secret key. This key is a constant value, CORECLR_HOST_AUTHENTICATION_KEY,
-// defined in mscoree.h. If the authentication fails, E_FAIL will be returned. S_OK is returned on 
-// successful authentication.
-//
-// If the host is not authentication and ICLRRuntimeHost2::Start is invoked, it will return
-// HOST_E_INVALIDOPERATION.
-
 HRESULT CorHost2::Authenticate(ULONGLONG authKey)
 {
     CONTRACTL
@@ -1936,53 +1913,8 @@ HRESULT CorHost2::Authenticate(ULONGLONG authKey)
     }
     CONTRACTL_END;
 
-    // Initialize...
-    HRESULT hr = E_FAIL;
-
-#ifdef FEATURE_CORECLR
-    // Host is not yet authenticated - playing safe here though we set this to FALSE
-    // in CorHost2 constructor.
-    m_fIsHostAuthenticated = FALSE;
-
-    // Is the authentication key valid?
-    if (CORECLR_HOST_AUTHENTICATION_KEY == authKey ||
-        CORECLR_HOST_AUTHENTICATION_KEY_NONGEN == authKey)
-    {
-        hr = S_OK;
-        m_fIsHostAuthenticated = TRUE;
-    }
-
-    //
-    // For Silverlight 4, we overload this API to tell us if we are not allowed
-    // to use native images.
-    //
-    // This was added to address Silverlight bug #88577: crash loading Silverlight netflix player.
-    // The basic scenario is:
-    // 1. install Silverlight 4. At the end of setup, coregen.exe is invoked asynchronously to generate
-    //    native images.
-    // 2. start IE (while native images are still being generated) and load a Silverlight application.
-    //    This SL app loads some native images (mscorlib.ni.dll, System.ni.dll), but not others, since
-    //    they don't exist yet, as coregen.exe is still working in the background.
-    // 3. Navigate to a different Silverlight app (in the case of the bug, the Netflix movie player). By
-    //    now, all the native images have been generated. When we go to load a native image for an
-    //    assembly that was not loaded by the first application, we get confused -- we check its native
-    //    image dependencies early in loading and it looks good. Then, we choose to use shared assemblies
-    //    that it depends on, that were only loaded as IL assemblies by the first Silverlight application.
-    //    It is also hard-bound to the native images of these dependent native images. At the end, we
-    //    re-check the native image dependencies, and throw an exception (in DomainFile::FinishLoad()).
-    //
-    if (CORECLR_HOST_AUTHENTICATION_KEY_NONGEN == authKey)
-    {
-        g_fAllowNativeImages = false; // The host told us not to use native images in this process
-    }
-    
-#else
-    // Host authentication is (currently) only supported for CoreCLR. For all other CLR implementations,
-    // we return S_OK incase someone calls us.
-    hr = S_OK;
-#endif 
-
-    return hr;
+    // Host authentication was used by Silverlight. It is no longer relevant for CoreCLR.
+    return S_OK;
 }
 
 HRESULT CorHost2::RegisterMacEHPort()
