@@ -144,17 +144,16 @@ Function :
     Converts a CONTEXT record to a native context.
 
 Parameters :
-    CONST CONTEXT *lpContext : CONTEXT to convert
+    CONST CONTEXT *lpContext : CONTEXT to convert, including 
+                               flags that determine which registers are valid in
+                               lpContext and which ones to set in native
     native_context_t *native : native context to fill in
-    ULONG contextFlags : flags that determine which registers are valid in
-                         lpContext and which ones to set in native
 
 Return value :
     None
 
 --*/
-void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native,
-                            ULONG contextFlags);
+void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native);
 
 /*++
 Function :
