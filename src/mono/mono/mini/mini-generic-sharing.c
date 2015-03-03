@@ -34,10 +34,12 @@ partial_sharing_supported (void)
 {
 	if (!ALLOW_PARTIAL_SHARING)
 		return FALSE;
-	/* Enable this only when AOT compiling or running in full-aot mode */
-	if (partial_supported || mono_aot_only)
-		return TRUE;
-	return FALSE;
+	/* Disable this when AOT compiling or running in full-aot mode */
+	if (mono_aot_only)
+		return FALSE;
+	if (!partial_supported)
+		return FALSE;
+	return TRUE;
 }
 
 static int
