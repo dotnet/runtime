@@ -8433,7 +8433,7 @@ LclVarDsc::LclVarDsc(Compiler* comp)
 #if ASSERTION_PROP
     lvRefBlks(BlockSetOps::UninitVal()),
 #endif // ASSERTION_PROP
-    lvPerSsaData(comp->getAllocator()) 
+    lvPerSsaData(comp->getAllocator())
 {
 }
 
