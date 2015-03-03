@@ -13,10 +13,6 @@
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <DefaultLanguage>en-US</DefaultLanguage>
     <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
