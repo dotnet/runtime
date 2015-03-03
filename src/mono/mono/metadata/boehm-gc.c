@@ -148,7 +148,22 @@ mono_gc_base_init (void)
 	/* If GC_no_dls is set to true, GC_find_limit is not called. This causes a seg fault on Android. */
 	GC_no_dls = TRUE;
 #endif
+	{
+		if ((env = g_getenv ("MONO_GC_DEBUG"))) {
+			char **opts = g_strsplit (env, ",", -1);
+			for (char **ptr = opts; ptr && *ptr; ptr ++) {
+				char *opt = *ptr;
+				if (!strcmp (opt, "do-not-finalize")) {
+					do_not_finalize = 1;
+				} else if (!strcmp (opt, "log-finalizers")) {
+					log_finalizers = 1;
+				}
+			}
+		}
+	}
+
 	GC_init ();
+
 	GC_oom_fn = mono_gc_out_of_memory;
 	GC_set_warn_proc (mono_gc_warning);
 	GC_finalize_on_demand = 1;

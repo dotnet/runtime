@@ -390,5 +390,11 @@ guint mono_gc_get_vtable_bits (MonoClass *klass) MONO_INTERNAL;
 
 void mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size) MONO_INTERNAL;
 
+/* If set, print debugging messages around finalizers. */
+extern gboolean log_finalizers;
+
+/* If set, do not run finalizers. */
+extern gboolean do_not_finalize;
+
 #endif /* __MONO_METADATA_GC_INTERNAL_H__ */
 
