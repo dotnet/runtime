@@ -115,9 +115,10 @@ symbol_error:
 
 #else
 
-void
+int
 mono_llvm_load (const char* bpath)
 {
+	return TRUE;
 }
 
 #endif /* MONO_LLVM_LOADED */

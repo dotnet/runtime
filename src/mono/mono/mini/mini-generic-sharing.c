@@ -37,7 +37,7 @@ partial_sharing_supported (void)
 	/* Enable this only when AOT compiling or running in full-aot mode */
 	if (partial_supported || mono_aot_only)
 		return TRUE;
-	return FALSE;
+	return TRUE;
 }
 
 static int

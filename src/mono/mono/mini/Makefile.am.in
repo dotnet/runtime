@@ -368,6 +368,7 @@ llvm_sources = \
 else
 llvm_sources = \
 	mini-llvm.c		\
+	mini-llvm-loaded.c \
 	mini-llvm-cpp.cpp
 endif
 endif
