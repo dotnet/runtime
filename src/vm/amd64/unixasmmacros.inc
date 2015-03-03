@@ -52,7 +52,6 @@ C_FUNC(\Name):
 #endif
 C_FUNC(\Name):
         .cfi_startproc
-        .cfi_def_cfa_offset 8
 .endm
 
 .macro LEAF_END_MARKED Name, Section
