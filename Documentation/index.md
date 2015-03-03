@@ -18,7 +18,7 @@ Book of the Runtime
 ==================
 
 - [CLR Coding Guide](clr-code-guide.md)
-- [.NET Standards](dotnet-standards.md)
+- [.NET Standards (ECMA)](dotnet-standards.md)
 
 Decoder Rings
 =============
