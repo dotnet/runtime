@@ -75,6 +75,46 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
 
+#define FPREG_Xmm(uc, index) *(M128A*)&((uc)->__fpregs_mem._xmm[index])
+
+#define FPREG_Xmm0(uc)      FPREG_Xmm((uc), 0)
+#define FPREG_Xmm1(uc)      FPREG_Xmm((uc), 1)
+#define FPREG_Xmm2(uc)      FPREG_Xmm((uc), 2)
+#define FPREG_Xmm3(uc)      FPREG_Xmm((uc), 3)
+#define FPREG_Xmm4(uc)      FPREG_Xmm((uc), 4)
+#define FPREG_Xmm5(uc)      FPREG_Xmm((uc), 5)
+#define FPREG_Xmm6(uc)      FPREG_Xmm((uc), 6)
+#define FPREG_Xmm7(uc)      FPREG_Xmm((uc), 7)
+#define FPREG_Xmm8(uc)      FPREG_Xmm((uc), 8)
+#define FPREG_Xmm9(uc)      FPREG_Xmm((uc), 9)
+#define FPREG_Xmm10(uc)     FPREG_Xmm((uc), 10)
+#define FPREG_Xmm11(uc)     FPREG_Xmm((uc), 11)
+#define FPREG_Xmm12(uc)     FPREG_Xmm((uc), 12)
+#define FPREG_Xmm13(uc)     FPREG_Xmm((uc), 13)
+#define FPREG_Xmm14(uc)     FPREG_Xmm((uc), 14)
+#define FPREG_Xmm15(uc)     FPREG_Xmm((uc), 15)
+
+#define FPREG_St(uc, index) *(M128A*)&((uc)->__fpregs_mem._st[index])
+
+#define FPREG_St0(uc)       FPREG_St((uc), 0)
+#define FPREG_St1(uc)       FPREG_St((uc), 1)
+#define FPREG_St2(uc)       FPREG_St((uc), 2)
+#define FPREG_St3(uc)       FPREG_St((uc), 3)
+#define FPREG_St4(uc)       FPREG_St((uc), 4)
+#define FPREG_St5(uc)       FPREG_St((uc), 5)
+#define FPREG_St6(uc)       FPREG_St((uc), 6)
+#define FPREG_St7(uc)       FPREG_St((uc), 7)
+
+#define FPREG_ControlWord(uc) ((uc)->__fpregs_mem.cwd)
+#define FPREG_StatusWord(uc) ((uc)->__fpregs_mem.swd)
+#define FPREG_TagWord(uc) ((uc)->__fpregs_mem.ftw)
+#define FPREG_ErrorOffset(uc) *(DWORD*)&((uc)->__fpregs_mem.rip)
+#define FPREG_ErrorSelector(uc) *(((WORD*)&((uc)->__fpregs_mem.rip)) + 2)
+#define FPREG_DataOffset(uc) *(DWORD*)&((uc)->__fpregs_mem.rdp)
+#define FPREG_DataSelector(uc) *(((WORD*)&((uc)->__fpregs_mem.rdp)) + 2)
+#define FPREG_MxCsr(uc) ((uc)->__fpregs_mem.mxcsr)
+#define FPREG_MxCsr_Mask(uc) ((uc)->__fpregs_mem.mxcr_mask)
+
 #else // BIT64
 
 #define MCREG_Ebx(mc)       ((mc).gregs[REG_EBX])
@@ -197,6 +237,34 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
         ASSIGN_REG(R14)     \
         ASSIGN_REG(R15)     \
 
+#define ASSIGN_XMM_REGS \
+        ASSIGN_XMM_REG(0) \
+        ASSIGN_XMM_REG(1) \
+        ASSIGN_XMM_REG(2) \
+        ASSIGN_XMM_REG(3) \
+        ASSIGN_XMM_REG(4) \
+        ASSIGN_XMM_REG(5) \
+        ASSIGN_XMM_REG(6) \
+        ASSIGN_XMM_REG(7) \
+        ASSIGN_XMM_REG(8) \
+        ASSIGN_XMM_REG(9) \
+        ASSIGN_XMM_REG(10) \
+        ASSIGN_XMM_REG(11) \
+        ASSIGN_XMM_REG(12) \
+        ASSIGN_XMM_REG(13) \
+        ASSIGN_XMM_REG(14) \
+        ASSIGN_XMM_REG(15) \
+
+#define ASSIGN_ST_REGS \
+        ASSIGN_ST_REG(0) \
+        ASSIGN_ST_REG(1) \
+        ASSIGN_ST_REG(2) \
+        ASSIGN_ST_REG(3) \
+        ASSIGN_ST_REG(4) \
+        ASSIGN_ST_REG(5) \
+        ASSIGN_ST_REG(6) \
+        ASSIGN_ST_REG(7) \
+        
 #else // BIT64
 #define ASSIGN_CONTROL_REGS \
         ASSIGN_REG(Ebp)     \
@@ -506,7 +574,7 @@ Return value :
 void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native,
                             ULONG contextFlags)
 {
-    if (contextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER))
+    if ((contextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER)) != (CONTEXT_CONTROL | CONTEXT_INTEGER))
     {
         ASSERT("Invalid contextFlags in CONTEXTToNativeContext!");
     }
@@ -514,6 +582,27 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native,
 #define ASSIGN_REG(reg) MCREG_##reg(native->uc_mcontext) = lpContext->reg;
     ASSIGN_ALL_REGS
 #undef ASSIGN_REG
+
+    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
+        FPREG_StatusWord(native) = lpContext->FltSave.StatusWord;
+        FPREG_TagWord(native) = lpContext->FltSave.TagWord;
+        FPREG_ErrorOffset(native) = lpContext->FltSave.ErrorOffset;
+        FPREG_ErrorSelector(native) = lpContext->FltSave.ErrorSelector;
+        FPREG_DataOffset(native) = lpContext->FltSave.DataOffset;
+        FPREG_DataSelector(native) = lpContext->FltSave.DataSelector;
+        FPREG_MxCsr(native) = lpContext->FltSave.MxCsr;
+        FPREG_MxCsr_Mask(native) = lpContext->FltSave.MxCsr_Mask;
+
+#define ASSIGN_ST_REG(regIndex) FPREG_St##regIndex(native) = lpContext->FltSave.FloatRegisters[regIndex];
+        ASSIGN_ST_REGS
+#undef ASSIGN_ST_REG
+ 
+#define ASSIGN_XMM_REG(regIndex) FPREG_Xmm##regIndex(native) = lpContext->Xmm##regIndex;
+        ASSIGN_XMM_REGS
+#undef ASSIGN_XMM_REG        
+    }
 }
 
 /*++
@@ -535,7 +624,7 @@ Return value :
 void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContext,
                               ULONG contextFlags)
 {
-    if (contextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER))
+    if ((contextFlags & (CONTEXT_CONTROL | CONTEXT_INTEGER)) != (CONTEXT_CONTROL | CONTEXT_INTEGER))
     {
         ASSERT("Invalid contextFlags in CONTEXTFromNativeContext!");
     }
@@ -544,6 +633,27 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(native->uc_mcontext);
     ASSIGN_ALL_REGS
 #undef ASSIGN_REG
+    
+    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
+        lpContext->FltSave.StatusWord = FPREG_StatusWord(native);
+        lpContext->FltSave.TagWord = FPREG_TagWord(native);
+        lpContext->FltSave.ErrorOffset = FPREG_ErrorOffset(native);
+        lpContext->FltSave.ErrorSelector = FPREG_ErrorSelector(native);
+        lpContext->FltSave.DataOffset = FPREG_DataOffset(native);
+        lpContext->FltSave.DataSelector = FPREG_DataSelector(native);
+        lpContext->FltSave.MxCsr = FPREG_MxCsr(native);
+        lpContext->FltSave.MxCsr_Mask = FPREG_MxCsr_Mask(native);
+
+#define ASSIGN_ST_REG(regIndex) lpContext->FltSave.FloatRegisters[regIndex] = FPREG_St##regIndex(native);
+        ASSIGN_ST_REGS
+#undef ASSIGN_ST_REG
+ 
+#define ASSIGN_XMM_REG(regIndex) lpContext->Xmm##regIndex = FPREG_Xmm##regIndex(native);
+        ASSIGN_XMM_REGS
+#undef ASSIGN_XMM_REG        
+    }
 }
 
 /*++
