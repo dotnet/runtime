@@ -15,7 +15,7 @@ namespace System.ComponentModel.Tests
         {
             ConvertFrom_WithContext(new object[2, 3]
                 {
-                    { "1.1  ", (Double)1.1, null },
+                    { 1.1 + " ", (Double)1.1, null },
                     { "+7", (Double)7, CultureInfo.InvariantCulture }
                 },
                 DoubleConverterTests.s_converter);
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Tests
         {
             ConvertTo_WithContext(new object[3, 3]
                 {
-                    { (Double)1.1, "1.1", null },
+                    { (Double)1.1, 1.1.ToString(), null },
                     { (Double)1.1, (Single)1.1, CultureInfo.InvariantCulture },
                     { (Double)1.1, (Single)1.1, null }
                 },

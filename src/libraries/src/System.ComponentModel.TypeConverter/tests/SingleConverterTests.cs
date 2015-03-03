@@ -15,7 +15,7 @@ namespace System.ComponentModel.Tests
         {
             ConvertFrom_WithContext(new object[2, 3]
                 {
-                    { "1.1  ", (Single)1.1, null },
+                    { 1.1f + " ", (Single)1.1, null },
                     { "+7", (Single)7, CultureInfo.InvariantCulture }
                 },
                 SingleConverterTests.s_converter);
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Tests
         {
             ConvertTo_WithContext(new object[2, 3]
                 {
-                    { (Single)1.1, "1.1", null },
+                    { (Single)1.1, 1.1f.ToString(), null },
                     { (Single)1.1, 1, CultureInfo.InvariantCulture }
                 },
                 SingleConverterTests.s_converter);
