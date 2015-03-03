@@ -75,6 +75,20 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #define MCREG_R14(mc)       ((mc).gregs[REG_R14])
 #define MCREG_R15(mc)       ((mc).gregs[REG_R15])
 
+#define FPREG_Xmm(uc, index) *(M128A*)&((uc)->__fpregs_mem._xmm[index])
+
+#define FPREG_St(uc, index) *(M128A*)&((uc)->__fpregs_mem._st[index])
+
+#define FPREG_ControlWord(uc) ((uc)->__fpregs_mem.cwd)
+#define FPREG_StatusWord(uc) ((uc)->__fpregs_mem.swd)
+#define FPREG_TagWord(uc) ((uc)->__fpregs_mem.ftw)
+#define FPREG_ErrorOffset(uc) *(DWORD*)&((uc)->__fpregs_mem.rip)
+#define FPREG_ErrorSelector(uc) *(((WORD*)&((uc)->__fpregs_mem.rip)) + 2)
+#define FPREG_DataOffset(uc) *(DWORD*)&((uc)->__fpregs_mem.rdp)
+#define FPREG_DataSelector(uc) *(((WORD*)&((uc)->__fpregs_mem.rdp)) + 2)
+#define FPREG_MxCsr(uc) ((uc)->__fpregs_mem.mxcsr)
+#define FPREG_MxCsr_Mask(uc) ((uc)->__fpregs_mem.mxcr_mask)
+
 #else // BIT64
 
 #define MCREG_Ebx(mc)       ((mc).gregs[REG_EBX])
@@ -380,16 +394,7 @@ CONTEXT_GetThreadContext(
             goto EXIT;
         }
 
-#define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(registers.uc_mcontext);
-        if (lpContext->ContextFlags & CONTEXT_CONTROL)
-        {
-            ASSIGN_CONTROL_REGS
-        }
-        if (lpContext->ContextFlags & CONTEXT_INTEGER)
-        {
-            ASSIGN_INTEGER_REGS
-        }
-#undef ASSIGN_REG
+        CONTEXTFromNativeContext(&registers, lpContext, lpContext->ContextFlags);        
     }
 
     ret = TRUE;
@@ -503,17 +508,42 @@ Return value :
     None
 
 --*/
-void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native,
-                            ULONG contextFlags)
+void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 {
-    if (contextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER))
-    {
-        ASSERT("Invalid contextFlags in CONTEXTToNativeContext!");
-    }
-    
 #define ASSIGN_REG(reg) MCREG_##reg(native->uc_mcontext) = lpContext->reg;
-    ASSIGN_ALL_REGS
+    if ((lpContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        ASSIGN_CONTROL_REGS
+    }
+
+    if ((lpContext->ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        ASSIGN_INTEGER_REGS
+    }
 #undef ASSIGN_REG
+
+    if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        FPREG_ControlWord(native) = lpContext->FltSave.ControlWord;
+        FPREG_StatusWord(native) = lpContext->FltSave.StatusWord;
+        FPREG_TagWord(native) = lpContext->FltSave.TagWord;
+        FPREG_ErrorOffset(native) = lpContext->FltSave.ErrorOffset;
+        FPREG_ErrorSelector(native) = lpContext->FltSave.ErrorSelector;
+        FPREG_DataOffset(native) = lpContext->FltSave.DataOffset;
+        FPREG_DataSelector(native) = lpContext->FltSave.DataSelector;
+        FPREG_MxCsr(native) = lpContext->FltSave.MxCsr;
+        FPREG_MxCsr_Mask(native) = lpContext->FltSave.MxCsr_Mask;
+
+        for (int i = 0; i < 8; i++)
+        {
+            FPREG_St(native, i) = lpContext->FltSave.FloatRegisters[i];
+        }
+
+        for (int i = 0; i < 16; i++)
+        {
+            FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
+        }        
+    }
 }
 
 /*++
@@ -535,15 +565,42 @@ Return value :
 void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContext,
                               ULONG contextFlags)
 {
-    if (contextFlags != (CONTEXT_CONTROL | CONTEXT_INTEGER))
-    {
-        ASSERT("Invalid contextFlags in CONTEXTFromNativeContext!");
-    }
     lpContext->ContextFlags = contextFlags;
 
 #define ASSIGN_REG(reg) lpContext->reg = MCREG_##reg(native->uc_mcontext);
-    ASSIGN_ALL_REGS
+    if ((contextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        ASSIGN_CONTROL_REGS
+    }
+
+    if ((contextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        ASSIGN_INTEGER_REGS
+    }
 #undef ASSIGN_REG
+    
+    if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        lpContext->FltSave.ControlWord = FPREG_ControlWord(native);
+        lpContext->FltSave.StatusWord = FPREG_StatusWord(native);
+        lpContext->FltSave.TagWord = FPREG_TagWord(native);
+        lpContext->FltSave.ErrorOffset = FPREG_ErrorOffset(native);
+        lpContext->FltSave.ErrorSelector = FPREG_ErrorSelector(native);
+        lpContext->FltSave.DataOffset = FPREG_DataOffset(native);
+        lpContext->FltSave.DataSelector = FPREG_DataSelector(native);
+        lpContext->FltSave.MxCsr = FPREG_MxCsr(native);
+        lpContext->FltSave.MxCsr_Mask = FPREG_MxCsr_Mask(native);
+
+        for (int i = 0; i < 8; i++)
+        {
+            lpContext->FltSave.FloatRegisters[i] = FPREG_St(native, i);
+        }
+
+        for (int i = 0; i < 16; i++)
+        {
+            lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
+        }        
+    }
 }
 
 /*++
