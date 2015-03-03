@@ -534,10 +534,6 @@ RtlRestoreContext(
   IN PEXCEPTION_RECORD ExceptionRecord
 )
 {
-    //
-    //TODO: This needs to be properly implemented
-    // because this code does not restore XMM registers
-    //
 #if !HAVE_MACH_EXCEPTIONS
 #if HAVE_GETCONTEXT
     native_context_t ucontext;
@@ -546,8 +542,7 @@ RtlRestoreContext(
 #error Don't know how to get current context on this platform!
 #endif
 
-    CONTEXTToNativeContext(ContextRecord, &ucontext,
-        CONTEXT_CONTROL | CONTEXT_INTEGER);
+    CONTEXTToNativeContext(ContextRecord, &ucontext);
 
 #if HAVE_SETCONTEXT
     setcontext(&ucontext);

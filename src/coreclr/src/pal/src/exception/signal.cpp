@@ -553,8 +553,7 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
         // Use sigreturn, in case the exception handler has changed some
         // registers. sigreturn allows us to set the context and terminate
         // the signal handling.
-        CONTEXTToNativeContext(&context, ucontext,
-                               CONTEXT_CONTROL | CONTEXT_INTEGER);
+        CONTEXTToNativeContext(&context, ucontext);
 
 #if HAVE_SETCONTEXT
         setcontext(ucontext);
