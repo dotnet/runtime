@@ -2617,6 +2617,7 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
         // to be done before making this change.
         // if (!blockSequence[curBBSeqNum]->isRunRarely())
         {
+
             VARSET_ITER_INIT(compiler, iter, currentLiveVars, varIndex);
             while (iter.NextElem(compiler, &varIndex))
             {
@@ -2642,13 +2643,16 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
                     interval->preferCalleeSave = true;
                 }
                 regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
+
                 if (newPreferences != RBM_NONE)
                 {
                     interval->updateRegisterPreferences(newPreferences);
                 }
                 else
                 {
-                    assert(compiler->opts.compDbgEnC);
+                    // If there are no callee-saved registers, the call could kill all the registers. 
+                    // This is a valid state, so in that case assert should not trigger. The RA will spill in order to free a register later.
+                    assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
                 }
             }
         }
