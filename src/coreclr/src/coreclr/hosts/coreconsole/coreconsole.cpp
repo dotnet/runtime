@@ -424,17 +424,6 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
         return false;
     }
 
-    log << W("Authenticating ICLRRuntimeHost2") << Logger::endl;
-
-    // Authenticate with either
-    //  CORECLR_HOST_AUTHENTICATION_KEY  or
-    //  CORECLR_HOST_AUTHENTICATION_KEY_NONGEN  
-    hr = host->Authenticate(CORECLR_HOST_AUTHENTICATION_KEY); 
-    if (FAILED(hr)) {
-        log << W("Failed authenticate. ") << hr << Logger::endl;
-        return false;
-    }
-
     log << W("Starting ICLRRuntimeHost2") << Logger::endl;
 
     hr = host->Start();
