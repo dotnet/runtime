@@ -1080,8 +1080,9 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 	i2 = (s ^ j2) ? 0 : 1;
 
 	imm32 = (imm11 << 1) | (imm10 << 12) | (i2 << 22) | (i1 << 23);
-	// FIXME:
-	g_assert (s == 0);
+	if (s)
+		/* Sign extend from 24 bits to 32 bits */
+		imm32 = ((gint32)imm32 << 8) >> 8;
 
 	target = code + imm32;
 
