@@ -654,6 +654,9 @@ ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
 ICALL(PARAMI_1, "GetMetadataToken", mono_reflection_get_token)
 ICALL(PARAMI_2, "GetTypeModifiers", param_info_get_type_modifiers)
 
+ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
+ICALL(RTFIELD_1, "UnsafeGetValue", ves_icall_MonoField_GetValueInternal)
+
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
 ICALL(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue)
 	 /* REMOVEME: no longer needed, just so we dont break things when not needed */
