@@ -484,7 +484,7 @@ FCIMPL1(UINT, SafeBuffer::AlignedSizeOfType, ReflectClassBaseObject* typeUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL3(void, SafeBuffer::PtrToStructure, BYTE* ptr, TypedByRef structure, UINT32 sizeofT)
+FCIMPL3(void, SafeBuffer::PtrToStructure, BYTE* ptr, FC_TypedByRef structure, UINT32 sizeofT)
 {
 	FCALL_CONTRACT;
 
@@ -495,7 +495,7 @@ FCIMPL3(void, SafeBuffer::PtrToStructure, BYTE* ptr, TypedByRef structure, UINT3
 }
 FCIMPLEND
 
-FCIMPL3(void, SafeBuffer::StructureToPtr, TypedByRef structure, BYTE* ptr, UINT32 sizeofT)
+FCIMPL3(void, SafeBuffer::StructureToPtr, FC_TypedByRef structure, BYTE* ptr, UINT32 sizeofT)
 {
 	FCALL_CONTRACT;
 
