@@ -103,14 +103,8 @@
     <CLSCompliant Condition="'$(IsTestProject)'=='true'">false</CLSCompliant>
   </PropertyGroup>
   
-  <PropertyGroup>
-    <ResourcesSourceOutputDirectory Condition="'$(ResourcesSourceOutputDirectory)' == ''">$(MSBuildProjectDirectory)\Resources</ResourcesSourceOutputDirectory>
-    <StringResourcesPath Condition="'$(StringResourcesPath)'=='' And Exists('$(ResourcesSourceOutputDirectory)\Strings.resx')">$(ResourcesSourceOutputDirectory)\Strings.resx</StringResourcesPath>
-    <ResourceSRPath Condition="'$(ResourceSRPath)'=='' And Exists('$(ResourcesSourceOutputDirectory)\SR.cs')">$(ResourcesSourceOutputDirectory)\SR.cs</ResourceSRPath>
-  </PropertyGroup>
-
   <!-- VS does not evaluate the conditions when loading the projects and so we add this via a target file and import it with a condition -->
-  <Import Project="resources.targets" Condition="Exists('$(StringResourcesPath)') And Exists('$(ResourceSRPath)') And'$(ExcludeResourcesTarget)'==''"/>
+  <Import Project="$(ToolsDir)resources.targets" />
 
   <!-- sign.targets relies on the value of IsTestProject so be sure to import it after it's defined -->
   <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />

@@ -186,7 +186,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Collections
         {
             get
             {
-                throw new NotSupportedException(Strings.ConcurrentCollection_SyncRoot_NotSupported);
+                throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported);
             }
         }
 
