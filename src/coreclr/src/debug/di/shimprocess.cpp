@@ -1747,7 +1747,7 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
     DWORD dwPid = m_pLiveDataTarget->GetPid();
 #if defined(FEATURE_PAL)
     baseAddress = PTR_TO_CORDB_ADDRESS (GetDynamicLibraryAddressInProcess(dwPid, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A)));
-#else //FEATURE_PAL    
+#elif !defined(FEATURE_CORESYSTEM)
     // get a "snapshot" of all modules in the target
     HandleHolder hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPid);
     MODULEENTRY32 moduleEntry = { 0 };
@@ -1802,12 +1802,10 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 //    
 HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
 {
-    //
-    // Look up the image base of mscorwks from shared memory.
-    // Note that we could instead use OS facilities to look at the real module list,
-    // such as CreateToolHelp32Snapshot, and LoadModuleFirst
-    //
-
+#if defined(FEATURE_CORESYSTEM) && !defined(FEATURE_PAL)
+    _ASSERTE(!"Attempting to get CLR base address on Windows-core platform");
+    return E_NOTIMPL;
+#else
     *pClrInstanceId = GetCLRInstanceBaseAddress();
     
     if (*pClrInstanceId == 0)
@@ -1816,6 +1814,7 @@ HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
     }
 
     return S_OK;
+#endif
 }
 
 //---------------------------------------------------------------------------------------
