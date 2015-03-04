@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
                 {
                     if (value < _count)
                     {
-                        throw new ArgumentException(Strings.CapacityMustBeGreaterThanOrEqualToCount, paramName: "value");
+                        throw new ArgumentException(SR.CapacityMustBeGreaterThanOrEqualToCount, paramName: "value");
                     }
 
                     if (value != _elements.Length)
@@ -192,7 +192,7 @@ namespace System.Collections.Immutable
             {
                 if (Capacity != Count)
                 {
-                    throw new InvalidOperationException(Strings.CapacityMustEqualCountOnMove);
+                    throw new InvalidOperationException(SR.CapacityMustEqualCountOnMove);
                 }
 
                 T[] temp = _elements;
