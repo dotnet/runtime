@@ -113,8 +113,7 @@ namespace System.Xml.Linq
 #if !SILVERLIGHT 
                     Thread.MemoryBarrier();
 #else // SILVERLIGHT
-                    // According to this document "http://my/sites/juddhall/ThreadingFeatureCrew/Shared Documents/System.Threading - FX Audit Proposal.docx"
-                    // The MemoryBarrier method usage is busted (mostly - don't know about ours) and should be removed.
+                    // The MemoryBarrier method usage is probably incorrect and should be removed.
 
                     // Replacing with Interlocked.CompareExchange for now (with no effect)
                     //   which will do a very similar thing to MemoryBarrier (it's just slower)
@@ -305,8 +304,7 @@ namespace System.Xml.Linq
 #if !SILVERLIGHT
                 Thread.MemoryBarrier();
 #else // SILVERLIGHT
-                // According to this document "http://my/sites/juddhall/ThreadingFeatureCrew/Shared Documents/System.Threading - FX Audit Proposal.docx"
-                // The MemoryBarrier method usage is busted (mostly - don't know about ours) and should be removed.
+                // The MemoryBarrier method usage is probably incorrect and should be removed.
 
                 // Replacing with Interlocked.CompareExchange for now (with no effect)
                 //   which will do a very similar thing to MemoryBarrier (it's just slower)
