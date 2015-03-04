@@ -133,5 +133,15 @@ namespace System.Numerics.Tests
                 }
             }
         }
+
+        [Fact]
+        public static void RunTests_EdgeCases()
+        {
+            // Verify edge cases where imaginary part is zero and real part is positive.
+            VerifyACos(1234000000, 0, 0, 21.62667394298955);
+
+            // Verify edge cases where imaginary part is negative.
+            VerifyACos(0, -1234000000, 1.5707963267948966, 21.62667394298955);
+        }
     }
 }
