@@ -21,45 +21,45 @@ namespace System.Numerics.Tests
         {
             String test;
 
-            //Scenario 1: Large BigInteger - positive
+            // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, s_random);
-                Assert.True(VerifyToString(test, test), " Verification Failed");
+                VerifyToString(test, test);
             }
 
-            //Scenario 2: Small BigInteger - positive
+            // Scenario 2: Small BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, s_random);
-                Assert.True(VerifyToString(test, test), " Verification Failed");
+                VerifyToString(test, test);
             }
 
-            //Scenario 3: Large BigInteger - negative
+            // Scenario 3: Large BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, s_random);
-                Assert.True(VerifyToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test, CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test), " Verification Failed");
+                VerifyToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test, CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test);
             }
 
-            //Scenario 4: Small BigInteger - negative
+            // Scenario 4: Small BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, s_random);
-                Assert.True(VerifyToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test, CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test), " Verification Failed");
+                VerifyToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test, CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + test);
             }
 
-            //Scenario 5: Constant values
-            Assert.True(VerifyToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1"), " Verification Failed");
-            Assert.True(VerifyToString("0", "0"), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MinValue.ToString(), Int16.MinValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MinValue.ToString(), Int32.MinValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MinValue.ToString(), Int64.MinValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Decimal.MinValue.ToString(), Decimal.MinValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MaxValue.ToString(), Int16.MaxValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MaxValue.ToString(), Int32.MaxValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MaxValue.ToString(), Int64.MaxValue.ToString()), " Verification Failed");
-            Assert.True(VerifyToString(Decimal.MaxValue.ToString(), Decimal.MaxValue.ToString()), " Verification Failed");
+            // Scenario 5: Constant values
+            VerifyToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1");
+            VerifyToString("0", "0");
+            VerifyToString(Int16.MinValue.ToString(), Int16.MinValue.ToString());
+            VerifyToString(Int32.MinValue.ToString(), Int32.MinValue.ToString());
+            VerifyToString(Int64.MinValue.ToString(), Int64.MinValue.ToString());
+            VerifyToString(Decimal.MinValue.ToString(), Decimal.MinValue.ToString());
+            VerifyToString(Int16.MaxValue.ToString(), Int16.MaxValue.ToString());
+            VerifyToString(Int32.MaxValue.ToString(), Int32.MaxValue.ToString());
+            VerifyToString(Int64.MaxValue.ToString(), Int64.MaxValue.ToString());
+            VerifyToString(Decimal.MaxValue.ToString(), Decimal.MaxValue.ToString());
         }
 
         [Fact]
@@ -68,16 +68,16 @@ namespace System.Numerics.Tests
             NumberFormatInfo nfi = new NumberFormatInfo();
             nfi = MarkUp(nfi);
 
-            Assert.True(RunSimpleProviderToStringTests(s_random, "", nfi, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "C", nfi, nfi.CurrencyDecimalDigits, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "D", nfi, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "E", nfi, 6, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "F", nfi, nfi.NumberDecimalDigits, FixedFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "G", nfi, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "N", nfi, nfi.NumberDecimalDigits, NumberFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "P", nfi, nfi.PercentDecimalDigits, PercentFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "X", nfi, 0, HexFormatter), " Verification Failed");
-            Assert.True(RunSimpleProviderToStringTests(s_random, "R", nfi, 0, DecimalFormatter), " Verification Failed");
+            RunSimpleProviderToStringTests(s_random, "", nfi, 0, DecimalFormatter);
+            RunSimpleProviderToStringTests(s_random, "C", nfi, nfi.CurrencyDecimalDigits, CurrencyFormatter);
+            RunSimpleProviderToStringTests(s_random, "D", nfi, 0, DecimalFormatter);
+            RunSimpleProviderToStringTests(s_random, "E", nfi, 6, ExponentialFormatter);
+            RunSimpleProviderToStringTests(s_random, "F", nfi, nfi.NumberDecimalDigits, FixedFormatter);
+            RunSimpleProviderToStringTests(s_random, "G", nfi, 0, DecimalFormatter);
+            RunSimpleProviderToStringTests(s_random, "N", nfi, nfi.NumberDecimalDigits, NumberFormatter);
+            RunSimpleProviderToStringTests(s_random, "P", nfi, nfi.PercentDecimalDigits, PercentFormatter);
+            RunSimpleProviderToStringTests(s_random, "X", nfi, 0, HexFormatter);
+            RunSimpleProviderToStringTests(s_random, "R", nfi, 0, DecimalFormatter);
         }
 
         [Fact]
@@ -86,358 +86,350 @@ namespace System.Numerics.Tests
             String test;
             String format;
 
-            //Currency
-            Assert.True(RunStandardFormatToStringTests(s_random, "C", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.CurrencyDecimalDigits, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "c0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "C1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "c2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "C5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "c33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, CurrencyFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "C99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, CurrencyFormatter), " Verification Failed");
+            // Currency
+            RunStandardFormatToStringTests(s_random, "C", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.CurrencyDecimalDigits, CurrencyFormatter);
+            RunStandardFormatToStringTests(s_random, "c0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, CurrencyFormatter);
+            RunStandardFormatToStringTests(s_random, "C1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, CurrencyFormatter);
+            RunStandardFormatToStringTests(s_random, "c2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CurrencyFormatter);
+            RunStandardFormatToStringTests(s_random, "C5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, CurrencyFormatter);
+            RunStandardFormatToStringTests(s_random, "c33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, CurrencyFormatter);
+            RunStandardFormatToStringTests(s_random, "C99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, CurrencyFormatter);
 
-            //Decimal
-            Assert.True(RunStandardFormatToStringTests(s_random, "D", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "d0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "D1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "d2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "D5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "d33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "D99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, DecimalFormatter), " Verification Failed");
+            // Decimal
+            RunStandardFormatToStringTests(s_random, "D", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "d0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "d2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "d33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "D99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, DecimalFormatter);
 
-            //Exponential (note: negative percision means lower case e)
-            Assert.True(RunStandardFormatToStringTests(s_random, "E", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "E0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "E1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "e2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -2, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "E5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "e33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -33, ExponentialFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "E99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, ExponentialFormatter), " Verification Failed");
-            //test exponent of 4 digits
+            // Exponential (note: negative percision means lower case e)
+            RunStandardFormatToStringTests(s_random, "E", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ExponentialFormatter);
+            RunStandardFormatToStringTests(s_random, "E0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ExponentialFormatter);
+            RunStandardFormatToStringTests(s_random, "E1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExponentialFormatter);
+            RunStandardFormatToStringTests(s_random, "e2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -2, ExponentialFormatter);
+            RunStandardFormatToStringTests(s_random, "E5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, ExponentialFormatter);
+            RunStandardFormatToStringTests(s_random, "e33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -33, ExponentialFormatter);
+            RunStandardFormatToStringTests(s_random, "E99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, ExponentialFormatter);
+            // Test exponent of 4 digits
             test = GetDigitSequence(2000, 2000, s_random);
-            Assert.True(VerifyToString(test, "E", ExponentialFormatter(test, 6, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+            VerifyToString(test, "E", ExponentialFormatter(test, 6, CultureInfo.CurrentUICulture.NumberFormat));
 
-            //Fixed-Point
-            Assert.True(RunStandardFormatToStringTests(s_random, "f", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalDigits, FixedFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "F0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, FixedFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "f1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, FixedFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "F2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, FixedFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "f5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, FixedFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "F33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, FixedFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "f99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, FixedFormatter), " Verification Failed");
+            // Fixed-Point
+            RunStandardFormatToStringTests(s_random, "f", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalDigits, FixedFormatter);
+            RunStandardFormatToStringTests(s_random, "F0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, FixedFormatter);
+            RunStandardFormatToStringTests(s_random, "f1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, FixedFormatter);
+            RunStandardFormatToStringTests(s_random, "F2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, FixedFormatter);
+            RunStandardFormatToStringTests(s_random, "f5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, FixedFormatter);
+            RunStandardFormatToStringTests(s_random, "F33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, FixedFormatter);
+            RunStandardFormatToStringTests(s_random, "f99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, FixedFormatter);
 
-            //General
-            Assert.True(RunStandardFormatToStringTests(s_random, "g", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "G0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "G1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "G2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "g5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "G33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "g99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, DecimalFormatter), " Verification Failed");
+            // General
+            RunStandardFormatToStringTests(s_random, "g", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "G0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "G1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "G2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "g5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "G33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "g99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, DecimalFormatter);
 
-            //Number
-            Assert.True(RunStandardFormatToStringTests(s_random, "n", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalDigits, NumberFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "N0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, NumberFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "N1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, NumberFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "N2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, NumberFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "n5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, NumberFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "N33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, NumberFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "n99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, NumberFormatter), " Verification Failed");
+            // Number
+            RunStandardFormatToStringTests(s_random, "n", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalDigits, NumberFormatter);
+            RunStandardFormatToStringTests(s_random, "N0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, NumberFormatter);
+            RunStandardFormatToStringTests(s_random, "N1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, NumberFormatter);
+            RunStandardFormatToStringTests(s_random, "N2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, NumberFormatter);
+            RunStandardFormatToStringTests(s_random, "n5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, NumberFormatter);
+            RunStandardFormatToStringTests(s_random, "N33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, NumberFormatter);
+            RunStandardFormatToStringTests(s_random, "n99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, NumberFormatter);
 
-            //Percent
-            Assert.True(RunStandardFormatToStringTests(s_random, "p", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.PercentDecimalDigits, PercentFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "P0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, PercentFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "P1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, PercentFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "P2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, PercentFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "p5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, PercentFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "P33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, PercentFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "p99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, PercentFormatter), " Verification Failed");
+            // Percent
+            RunStandardFormatToStringTests(s_random, "p", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, CultureInfo.CurrentUICulture.NumberFormat.PercentDecimalDigits, PercentFormatter);
+            RunStandardFormatToStringTests(s_random, "P0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, PercentFormatter);
+            RunStandardFormatToStringTests(s_random, "P1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, PercentFormatter);
+            RunStandardFormatToStringTests(s_random, "P2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, PercentFormatter);
+            RunStandardFormatToStringTests(s_random, "p5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, PercentFormatter);
+            RunStandardFormatToStringTests(s_random, "P33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, PercentFormatter);
+            RunStandardFormatToStringTests(s_random, "p99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, PercentFormatter);
 
-            //Hex
-            Assert.True(RunStandardFormatToStringTests(s_random, "X", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, HexFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "X0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, HexFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "x1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -1, HexFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "X2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, HexFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "x5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -5, HexFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "X33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, HexFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "x99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -99, HexFormatter), " Verification Failed");
+            // Hex
+            RunStandardFormatToStringTests(s_random, "X", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, HexFormatter);
+            RunStandardFormatToStringTests(s_random, "X0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, HexFormatter);
+            RunStandardFormatToStringTests(s_random, "x1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -1, HexFormatter);
+            RunStandardFormatToStringTests(s_random, "X2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, HexFormatter);
+            RunStandardFormatToStringTests(s_random, "x5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -5, HexFormatter);
+            RunStandardFormatToStringTests(s_random, "X33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, HexFormatter);
+            RunStandardFormatToStringTests(s_random, "x99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -99, HexFormatter);
 
-            //RoundTrip
-            Assert.True(RunStandardFormatToStringTests(s_random, "R", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "R0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "r1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "R2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "r5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "R33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, DecimalFormatter), " Verification Failed");
-            Assert.True(RunStandardFormatToStringTests(s_random, "r99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, DecimalFormatter), " Verification Failed");
+            // RoundTrip
+            RunStandardFormatToStringTests(s_random, "R", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "R0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "r1", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "R2", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "r5", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 5, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "R33", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 33, DecimalFormatter);
+            RunStandardFormatToStringTests(s_random, "r99", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 99, DecimalFormatter);
 
-            //other - invalid format characters
+            // Other - invalid format characters
             for (int i = 0; i < s_samples; i++)
             {
                 format = GetRandomInvalidFormatChar(s_random);
                 test = GetDigitSequence(10, 100, s_random);
-                Assert.True(VerifyToString(test, true, format, false, null, true, null), " Verification Failed");
+                VerifyToString(test, format, null, true, null);
             }
         }
 
         [Fact]
         public static void RunCustomFormatZeroPlaceholder()
         {
-            //Zero Placeholder
-            Assert.True(RunCustomFormatToStringTests(s_random, "0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ZeroFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 4, ZeroFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, new String('0', 500), CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 500, ZeroFormatter), " Verification Failed");
+            // Zero Placeholder
+            RunCustomFormatToStringTests(s_random, "0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ZeroFormatter);
+            RunCustomFormatToStringTests(s_random, "0000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 4, ZeroFormatter);
+            RunCustomFormatToStringTests(s_random, new String('0', 500), CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 500, ZeroFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatDigitPlaceholder()
         {
-            //Digit Placeholder
-            Assert.True(RunCustomFormatToStringTests(s_random, "#", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ZeroFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "####", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ZeroFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, new String('#', 500), CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ZeroFormatter), " Verification Failed");
+            // Digit Placeholder
+            RunCustomFormatToStringTests(s_random, "#", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
+            RunCustomFormatToStringTests(s_random, "####", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
+            RunCustomFormatToStringTests(s_random, new String('#', 500), CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ZeroFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatDecimalPoint()
         {
-            //Decimal Point (match required digits before and after point with percision)
-            Assert.True(RunCustomFormatToStringTests(s_random, "#.#", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalPointFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "00.00", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalPointFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0000.0.00.0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 4, DecimalPointFormatter), " Verification Failed");
+            // Decimal Point (match required digits before and after point with percision)
+            RunCustomFormatToStringTests(s_random, "#.#", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, DecimalPointFormatter);
+            RunCustomFormatToStringTests(s_random, "00.00", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, DecimalPointFormatter);
+            RunCustomFormatToStringTests(s_random, "0000.0.00.0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 4, DecimalPointFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatThousandsSeparator()
         {
-            //Thousands Seperator
-            Assert.True(RunCustomFormatToStringTests(s_random, "#,#", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ThousandsFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "00,00", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 4, ThousandsFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0000,0,00,0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 8, ThousandsFormatter), " Verification Failed");
+            // Thousands Seperator
+            RunCustomFormatToStringTests(s_random, "#,#", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ThousandsFormatter);
+            RunCustomFormatToStringTests(s_random, "00,00", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 4, ThousandsFormatter);
+            RunCustomFormatToStringTests(s_random, "0000,0,00,0", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 8, ThousandsFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatNumberScaling()
         {
-            //Number Scaling (match scale factor to decimal places+3
-            Assert.True(RunCustomFormatToStringTests(s_random, "#,", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, ScalingFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#,,.000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ScalingFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#,,,.000000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 9, ScalingFormatter), " Verification Failed");
+            // Number Scaling (match scale factor to decimal places+3
+            RunCustomFormatToStringTests(s_random, "#,", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, ScalingFormatter);
+            RunCustomFormatToStringTests(s_random, "#,,.000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ScalingFormatter);
+            RunCustomFormatToStringTests(s_random, "#,,,.000000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 9, ScalingFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatPercentSign()
         {
-            //Percent Sign
-            Assert.True(RunCustomFormatToStringTests(s_random, "#%", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, PercentSymbolFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#%000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, PercentSymbolFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#%000000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, PercentSymbolFormatter), " Verification Failed");
+            // Percent Sign
+            RunCustomFormatToStringTests(s_random, "#%", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, PercentSymbolFormatter);
+            RunCustomFormatToStringTests(s_random, "#%000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, PercentSymbolFormatter);
+            RunCustomFormatToStringTests(s_random, "#%000000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, PercentSymbolFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatScientificNotation()
         {
-            //Scientific Notation
-            Assert.True(RunCustomFormatToStringTests(s_random, "0.000000E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ScientificFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0.000000E-000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ScientificFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0.000000E+000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, SignedScientificFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0.000000e000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -6, ScientificFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0.000000e-000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -6, ScientificFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0.000000e+000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -6, SignedScientificFormatter), " Verification Failed");
+            // Scientific Notation
+            RunCustomFormatToStringTests(s_random, "0.000000E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ScientificFormatter);
+            RunCustomFormatToStringTests(s_random, "0.000000E-000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, ScientificFormatter);
+            RunCustomFormatToStringTests(s_random, "0.000000E+000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, SignedScientificFormatter);
+            RunCustomFormatToStringTests(s_random, "0.000000e000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -6, ScientificFormatter);
+            RunCustomFormatToStringTests(s_random, "0.000000e-000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -6, ScientificFormatter);
+            RunCustomFormatToStringTests(s_random, "0.000000e+000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, -6, SignedScientificFormatter);
         }
 
         [Fact]
         public static void RunCustomFormatEscapeChar()
         {
-            //Escape Character
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\\\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\'")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\\\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\"")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\\%", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "%")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\n", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\n")), " Verification Failed");
+            // Escape Character
+            RunCustomFormatToStringTests(s_random, "0\\\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\'"));
+            RunCustomFormatToStringTests(s_random, "0\\\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\""));
+            RunCustomFormatToStringTests(s_random, "0\\%", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "%"));
+            RunCustomFormatToStringTests(s_random, "0\n", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\n"));
         }
 
         [Fact]
         public static void RunCustomFormatLiterals()
         {
-            //Literals
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\'.0\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ".0")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\".0\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ".0")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\',0\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ",0")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\",0\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ",0")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\',\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ",")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\",\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ",")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\'%\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "%")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\"%\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "%")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\'E+0\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "E+0")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\"E+0\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "E+0")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\'\\\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\\")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "0\"\\\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\\")), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#\',\'%", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ExtraFormatter(PercentSymbolFormatter, ",", CultureInfo.CurrentUICulture.NumberFormat.PercentSymbol.Length)), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "000\",\".000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, ExtraFormatter(DecimalPointFormatter, ",", CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator.Length + 3)), " Verification Failed");
+            // Literals
+            RunCustomFormatToStringTests(s_random, "0\'.0\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ".0"));
+            RunCustomFormatToStringTests(s_random, "0\".0\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ".0"));
+            RunCustomFormatToStringTests(s_random, "0\',0\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ",0"));
+            RunCustomFormatToStringTests(s_random, "0\",0\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ",0"));
+            RunCustomFormatToStringTests(s_random, "0\',\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ","));
+            RunCustomFormatToStringTests(s_random, "0\",\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, ","));
+            RunCustomFormatToStringTests(s_random, "0\'%\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "%"));
+            RunCustomFormatToStringTests(s_random, "0\"%\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "%"));
+            RunCustomFormatToStringTests(s_random, "0\'E+0\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "E+0"));
+            RunCustomFormatToStringTests(s_random, "0\"E+0\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "E+0"));
+            RunCustomFormatToStringTests(s_random, "0\'\\\'", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\\"));
+            RunCustomFormatToStringTests(s_random, "0\"\\\"", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 1, ExtraFormatter(ZeroFormatter, "\\"));
+            RunCustomFormatToStringTests(s_random, "#\',\'%", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, ExtraFormatter(PercentSymbolFormatter, ",", CultureInfo.CurrentUICulture.NumberFormat.PercentSymbol.Length));
+            RunCustomFormatToStringTests(s_random, "000\",\".000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, ExtraFormatter(DecimalPointFormatter, ",", CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator.Length + 3));
         }
 
         [Fact]
         public static void RunCustomFormatSeparator()
         {
-            //Seperator
-            Assert.True(RunCustomFormatToStringTests(s_random, "00.00;0.00E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(DecimalPointFormatter, ScientificFormatter)), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "00.00;;0.00E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(DecimalPointFormatter, DecimalPointFormatter, ScientificFormatter, true)), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "00.00;#%00;0.00E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(DecimalPointFormatter, PercentSymbolFormatter, ScientificFormatter)), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "00000000000000000000000000000.00000000000000000000000000000;", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 29, DecimalPointFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "00000000000000000000000000000.00000000000000000000000000000;;", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 29, DecimalPointFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, ";", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(EmptyFormatter, EmptyFormatter, EmptyFormatter, true)), " Verification Failed");
+            // Seperator
+            RunCustomFormatToStringTests(s_random, "00.00;0.00E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(DecimalPointFormatter, ScientificFormatter));
+            RunCustomFormatToStringTests(s_random, "00.00;;0.00E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(DecimalPointFormatter, DecimalPointFormatter, ScientificFormatter, true));
+            RunCustomFormatToStringTests(s_random, "00.00;#%00;0.00E000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(DecimalPointFormatter, PercentSymbolFormatter, ScientificFormatter));
+            RunCustomFormatToStringTests(s_random, "00000000000000000000000000000.00000000000000000000000000000;", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 29, DecimalPointFormatter);
+            RunCustomFormatToStringTests(s_random, "00000000000000000000000000000.00000000000000000000000000000;;", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 29, DecimalPointFormatter);
+            RunCustomFormatToStringTests(s_random, ";", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 2, CombinedFormatter(EmptyFormatter, EmptyFormatter, EmptyFormatter, true));
         }
 
         [Fact]
         public static void CustomFormatPerMille()
         {
-            //PerMillie Symbol
-            Assert.True(RunCustomFormatToStringTests(s_random, "#\u2030", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, PerMilleSymbolFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#\u2030000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, PerMilleSymbolFormatter), " Verification Failed");
-            Assert.True(RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter), " Verification Failed");
+            // PerMillie Symbol
+            RunCustomFormatToStringTests(s_random, "#\u2030", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 0, PerMilleSymbolFormatter);
+            RunCustomFormatToStringTests(s_random, "#\u2030000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 3, PerMilleSymbolFormatter);
+            RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter);
         }
 
-        private static bool RunSimpleProviderToStringTests(Random random, String format, NumberFormatInfo provider, int percision, StringFormatter formatter)
+        private static void RunSimpleProviderToStringTests(Random random, String format, NumberFormatInfo provider, int percision, StringFormatter formatter)
         {
-            bool ret = true;
             String test;
-            bool hasFormat = (format != String.Empty);
 
-            //Scenario 1: Large BigInteger - positive
+            // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, random);
-                Assert.True(VerifyToString(test, hasFormat, format, true, provider, false, formatter(test, percision, provider)), " Verification Failed");
+                VerifyToString(test, format, provider, false, formatter(test, percision, provider));
             }
 
-            //Scenario 2: Small BigInteger - positive
+            // Scenario 2: Small BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, random);
-                Assert.True(VerifyToString(test, hasFormat, format, true, provider, false, formatter(test, percision, provider)), " Verification Failed");
+                VerifyToString(test, format, provider, false, formatter(test, percision, provider));
             }
 
-            //Scenario 3: Large BigInteger - negative
+            // Scenario 3: Large BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, random);
-                Assert.True(VerifyToString(provider.NegativeSign + test, hasFormat, format, true, provider, false, formatter(provider.NegativeSign + test, percision, provider)), " Verification Failed");
+                VerifyToString(provider.NegativeSign + test, format, provider, false, formatter(provider.NegativeSign + test, percision, provider));
             }
 
-            //Scenario 4: Small BigInteger - negative
+            // Scenario 4: Small BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, random);
-                Assert.True(VerifyToString(provider.NegativeSign + test, hasFormat, format, true, provider, false, formatter(provider.NegativeSign + test, percision, provider)), " Verification Failed");
+                VerifyToString(provider.NegativeSign + test, format, provider, false, formatter(provider.NegativeSign + test, percision, provider));
             }
 
-            //Scenario 5: Constant values
-            Assert.True(VerifyToString(provider.NegativeSign + "1", hasFormat, format, true, provider, false, formatter(provider.NegativeSign + "1", percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(provider.NegativeSign + "0", hasFormat, format, true, provider, false, formatter("0", percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString("0", hasFormat, format, true, provider, false, formatter("0", percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MinValue.ToString("d", provider), hasFormat, format, true, provider, false, formatter(Int16.MinValue.ToString("d", provider), percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MinValue.ToString("d", provider), hasFormat, format, true, provider, false, formatter(Int32.MinValue.ToString("d", provider), percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MinValue.ToString("d", provider), hasFormat, format, true, provider, false, formatter(Int64.MinValue.ToString("d", provider), percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MaxValue.ToString("d", provider), hasFormat, format, true, provider, false, formatter(Int16.MaxValue.ToString("d", provider), percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MaxValue.ToString("d", provider), hasFormat, format, true, provider, false, formatter(Int32.MaxValue.ToString("d", provider), percision, provider)), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MaxValue.ToString("d", provider), hasFormat, format, true, provider, false, formatter(Int64.MaxValue.ToString("d", provider), percision, provider)), " Verification Failed");
-
-            return ret;
+            // Scenario 5: Constant values
+            VerifyToString(provider.NegativeSign + "1", format, provider, false, formatter(provider.NegativeSign + "1", percision, provider));
+            VerifyToString(provider.NegativeSign + "0", format, provider, false, formatter("0", percision, provider));
+            VerifyToString("0", format, provider, false, formatter("0", percision, provider));
+            VerifyToString(Int16.MinValue.ToString("d", provider), format, provider, false, formatter(Int16.MinValue.ToString("d", provider), percision, provider));
+            VerifyToString(Int32.MinValue.ToString("d", provider), format, provider, false, formatter(Int32.MinValue.ToString("d", provider), percision, provider));
+            VerifyToString(Int64.MinValue.ToString("d", provider), format, provider, false, formatter(Int64.MinValue.ToString("d", provider), percision, provider));
+            VerifyToString(Int16.MaxValue.ToString("d", provider), format, provider, false, formatter(Int16.MaxValue.ToString("d", provider), percision, provider));
+            VerifyToString(Int32.MaxValue.ToString("d", provider), format, provider, false, formatter(Int32.MaxValue.ToString("d", provider), percision, provider));
+            VerifyToString(Int64.MaxValue.ToString("d", provider), format, provider, false, formatter(Int64.MaxValue.ToString("d", provider), percision, provider));
         }
-        private static bool RunStandardFormatToStringTests(Random random, String format, String negativeSign, int percision, StringFormatter formatter)
+
+        private static void RunStandardFormatToStringTests(Random random, String format, String negativeSign, int percision, StringFormatter formatter)
         {
-            bool ret = true;
             String test;
 
-            //Scenario 1: Large BigInteger - positive
+            // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, random);
-                Assert.True(VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 2: Small BigInteger - positive
+            // Scenario 2: Small BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, random);
-                Assert.True(VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 3: Large BigInteger - negative
+            // Scenario 3: Large BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, random);
-                Assert.True(VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 4: Small BigInteger - negative
+            // Scenario 4: Small BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, random);
-                Assert.True(VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 5: Constant values
-            Assert.True(VerifyToString(negativeSign + "1", format, formatter(negativeSign + "1", percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(negativeSign + "0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString("0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MinValue.ToString(), format, formatter(Int16.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MinValue.ToString(), format, formatter(Int32.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MinValue.ToString(), format, formatter(Int64.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Decimal.MinValue.ToString(), format, formatter(Decimal.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MaxValue.ToString(), format, formatter(Int16.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MaxValue.ToString(), format, formatter(Int32.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MaxValue.ToString(), format, formatter(Int64.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Decimal.MaxValue.ToString(), format, formatter(Decimal.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-
-            return ret;
+            // Scenario 5: Constant values
+            VerifyToString(negativeSign + "1", format, formatter(negativeSign + "1", percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(negativeSign + "0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString("0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int16.MinValue.ToString(), format, formatter(Int16.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int32.MinValue.ToString(), format, formatter(Int32.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int64.MinValue.ToString(), format, formatter(Int64.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Decimal.MinValue.ToString(), format, formatter(Decimal.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int16.MaxValue.ToString(), format, formatter(Int16.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int32.MaxValue.ToString(), format, formatter(Int32.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int64.MaxValue.ToString(), format, formatter(Int64.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Decimal.MaxValue.ToString(), format, formatter(Decimal.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
         }
-        private static bool RunCustomFormatToStringTests(Random random, String format, String negativeSign, int percision, StringFormatter formatter)
+
+        private static void RunCustomFormatToStringTests(Random random, String format, String negativeSign, int percision, StringFormatter formatter)
         {
-            bool ret = true;
             String test;
 
-            //Scenario 1: Large BigInteger - positive
+            // Scenario 1: Large BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, random);
-                Assert.True(VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 2: Small BigInteger - positive
+            // Scenario 2: Small BigInteger - positive
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, random);
-                Assert.True(VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(test, format, formatter(test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 3: Large BigInteger - negative
+            // Scenario 3: Large BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(100, 1000, random);
-                Assert.True(VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 4: Small BigInteger - negative
+            // Scenario 4: Small BigInteger - negative
             for (int i = 0; i < s_samples; i++)
             {
                 test = GetDigitSequence(1, 20, random);
-                Assert.True(VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
+                VerifyToString(negativeSign + test, format, formatter(negativeSign + test, percision, CultureInfo.CurrentUICulture.NumberFormat));
             }
 
-            //Scenario 5: Constant values
-            Assert.True(VerifyToString(negativeSign + "1", format, formatter(negativeSign + "1", percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(negativeSign + "0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString("0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MinValue.ToString(), format, formatter(Int16.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MinValue.ToString(), format, formatter(Int32.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MinValue.ToString(), format, formatter(Int64.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Decimal.MinValue.ToString(), format, formatter(Decimal.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int16.MaxValue.ToString(), format, formatter(Int16.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int32.MaxValue.ToString(), format, formatter(Int32.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Int64.MaxValue.ToString(), format, formatter(Int64.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-            Assert.True(VerifyToString(Decimal.MaxValue.ToString(), format, formatter(Decimal.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat)), " Verification Failed");
-
-            return ret;
+            // Scenario 5: Constant values
+            VerifyToString(negativeSign + "1", format, formatter(negativeSign + "1", percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(negativeSign + "0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString("0", format, formatter("0", percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int16.MinValue.ToString(), format, formatter(Int16.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int32.MinValue.ToString(), format, formatter(Int32.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int64.MinValue.ToString(), format, formatter(Int64.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Decimal.MinValue.ToString(), format, formatter(Decimal.MinValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int16.MaxValue.ToString(), format, formatter(Int16.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int32.MaxValue.ToString(), format, formatter(Int32.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Int64.MaxValue.ToString(), format, formatter(Int64.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
+            VerifyToString(Decimal.MaxValue.ToString(), format, formatter(Decimal.MaxValue.ToString(), percision, CultureInfo.CurrentUICulture.NumberFormat));
         }
 
         private static String CurrencyFormatter(String input, int percision, NumberFormatInfo nfi)
@@ -530,6 +522,7 @@ namespace System.Numerics.Tests
 
             return pre + GroupFormatDigits(input, nfi.CurrencyGroupSeparator, nfi.CurrencyGroupSizes, nfi.CurrencyDecimalSeparator, percision) + post;
         }
+
         private static String DecimalFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -550,6 +543,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ExponentialFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -624,6 +618,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String FixedFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -647,6 +642,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String GeneralFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             String output = input;
@@ -695,6 +691,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String NumberFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             String pre = String.Empty;
@@ -727,6 +724,7 @@ namespace System.Numerics.Tests
 
             return pre + GroupFormatDigits(input, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, nfi.NumberDecimalSeparator, percision) + post;
         }
+
         private static String PercentFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             String pre = String.Empty;
@@ -805,6 +803,7 @@ namespace System.Numerics.Tests
             }
             return pre + GroupFormatDigits(input, nfi.PercentGroupSeparator, nfi.PercentGroupSizes, nfi.PercentDecimalSeparator, percision) + post;
         }
+
         private static String HexFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool upper = true;
@@ -827,6 +826,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ZeroFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -857,6 +857,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String DecimalPointFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -892,6 +893,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ThousandsFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             String pre = String.Empty;
@@ -909,6 +911,7 @@ namespace System.Numerics.Tests
 
             return pre + GroupFormatDigits(input, nfi.NumberGroupSeparator, nfi.NumberGroupSizes, String.Empty, 0);
         }
+
         private static String ScalingFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -992,6 +995,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String PercentSymbolFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -1028,6 +1032,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String PerMilleSymbolFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -1064,6 +1069,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ScientificFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -1138,6 +1144,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String SignedScientificFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             bool IsNeg = false;
@@ -1212,6 +1219,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String EmptyFormatter(String input, int percision, NumberFormatInfo nfi)
         {
             String temp = String.Empty;
@@ -1228,6 +1236,7 @@ namespace System.Numerics.Tests
         {
             return ExtraFormatter(formatter, added, 0);
         }
+
         private static StringFormatter ExtraFormatter(StringFormatter formatter, String added, int placesAfter)
         {
             StringFormatter sf = delegate (String input, int percision, NumberFormatInfo nfi)
@@ -1242,14 +1251,17 @@ namespace System.Numerics.Tests
             };
             return sf;
         }
+
         private static StringFormatter CombinedFormatter(StringFormatter posFormatter, StringFormatter negFormatter)
         {
             return CombinedFormatter(posFormatter, negFormatter, posFormatter);
         }
+
         private static StringFormatter CombinedFormatter(StringFormatter posFormatter, StringFormatter negFormatter, StringFormatter zeroFormatter)
         {
             return CombinedFormatter(posFormatter, negFormatter, zeroFormatter, false);
         }
+
         private static StringFormatter CombinedFormatter(StringFormatter posFormatter, StringFormatter negFormatter, StringFormatter zeroFormatter, bool negInherited)
         {
             StringFormatter sf = delegate (String input, int percision, NumberFormatInfo nfi)
@@ -1279,106 +1291,66 @@ namespace System.Numerics.Tests
             return sf;
         }
 
-        private static bool VerifyToString(String test, String expectedResult)
+        private static void VerifyToString(String test, String expectedResult)
         {
-            return VerifyToString(test, false, null, false, null, false, expectedResult);
+            VerifyToString(test, format: null, provider: null, expectError: false, expectedResult: expectedResult);
         }
-        private static bool VerifyToString(String test, String format, String expectedResult)
-        {
-            return VerifyToString(test, true, format, false, null, false, expectedResult);
-        }
-        private static bool VerifyToString(String test, bool hasFormat, String format, bool hasProvider, IFormatProvider provider, bool expectError, String expectedResult)
-        {
-            bool ret = true;
-            string result = null;
 
+        private static void VerifyToString(String test, String format, String expectedResult)
+        {
+            VerifyToString(test, format: format, provider: null, expectError: false, expectedResult: expectedResult);
+        }
+
+        private static void VerifyToString(String test, String format, IFormatProvider provider, bool expectError, String expectedResult)
+        {
+            bool hasFormat = !String.IsNullOrEmpty(format);
+            bool hasProvider = provider != null;
+            string result = null;
+            
             try
             {
                 if (hasFormat)
                 {
-                    if (hasProvider)
-                    {
-                        result = BigInteger.Parse(test, provider).ToString(format, provider);
-                    }
-                    else
-                    {
-                        result = BigInteger.Parse(test).ToString(format);
-                    }
+                    result = hasProvider ? BigInteger.Parse(test, provider).ToString(format, provider) :
+                                           BigInteger.Parse(test).ToString(format);
                 }
                 else
                 {
-                    if (hasProvider)
-                    {
-                        result = BigInteger.Parse(test, provider).ToString(provider);
-                    }
-                    else
-                    {
-                        result = BigInteger.Parse(test).ToString();
-                    }
+                    result = hasProvider ? BigInteger.Parse(test, provider).ToString(provider) :
+                                           BigInteger.Parse(test).ToString();
                 }
 
-                if (expectError)
+                Assert.False(expectError, "Expected exception not encountered.");
+
+                if (expectedResult != result)
                 {
-                    Console.WriteLine("Expected Exception not encountered.");
-                    ret = false;
+                    Assert.Equal(expectedResult.Length, result.Length);
+
+                    int index = expectedResult.LastIndexOf("E", StringComparison.OrdinalIgnoreCase);
+                    Assert.False(index == 0, "'E' found at beginning of expectedResult");
+
+                    bool equal = false;
+                    if (index > 0)
+                    {
+                        var dig1 = (byte)expectedResult[index - 1];
+                        var dig2 = (byte)result[index - 1];
+
+                        equal |= (dig2 == dig1 - 1 || dig2 == dig1 + 1);
+                        equal |= (dig1 == '9' && dig2 == '0' || dig2 == '9' && dig1 == '0');
+                        equal |= (index == 1 && (dig1 == '9' && dig2 == '1' || dig2 == '9' && dig1 == '1'));
+                    }
+
+                    Assert.True(equal);
                 }
                 else
                 {
-                    if (expectedResult != result)
-                    {
-                        ret = false;
-                        if (expectedResult.Length != result.Length)
-                        {
-                            Console.WriteLine("ToString values did not match: Expected:\r\n{0}.\r\nActual:\r\n{1}", expectedResult, result);
-                        }
-                        else
-                        {
-                            int index = expectedResult.LastIndexOf("E", StringComparison.OrdinalIgnoreCase);
-                            if (index == 0)
-                                throw new ArgumentException("E found at beginning of String: {0}", expectedResult);
-                            if (index > 0)
-                            {
-                                var dig1 = (byte)expectedResult[index - 1];
-                                var dig2 = (byte)result[index - 1];
-
-                                if (dig2 == dig1 - 1 || dig2 == dig1 + 1)
-                                    ret = true;
-                                if (dig1 == '9' && dig2 == '0' || dig2 == '9' && dig1 == '0')
-                                    ret = true;
-                                if (index == 1 && (dig1 == '9' && dig2 == '1' || dig2 == '9' && dig1 == '1'))
-                                    ret = true;
-                            }
-                        }
-                    }
-
-                    if (ret == false)
-                    {
-                        Console.WriteLine("ToString values did not match: Expected:\r\n{0}.\r\nActual:\r\n{1}", expectedResult, result);
-                    }
+                    Assert.Equal(expectedResult, result);
                 }
             }
             catch (Exception e)
             {
-                if (e.GetType() == typeof(FormatException))
-                {
-                    if (expectError)
-                    {
-                        //Intentionally left blank.
-                    }
-                    else
-                    {
-                        Console.WriteLine("Unexpected Exception:" + e);
-                        ret = false;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Unexpected Exception:" + e);
-                    ret = false;
-                }
+                Assert.True(expectError && e.GetType() == typeof(FormatException), "Unexpected Exception:" + e);
             }
-
-            return ret;
         }
 
         private static String GetDigitSequence(int min, int max, Random random)
@@ -1431,13 +1403,14 @@ namespace System.Numerics.Tests
                         result = 'C';
                 }
             }
-            String res = new String(result, 1);
-            return res;
+            return new String(result, 1);
         }
+
         private static String Fix(String input)
         {
             return Fix(input, false);
         }
+
         private static String Fix(String input, bool isHex)
         {
             String output = input;
@@ -1462,6 +1435,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ConvertHexToDecimal(string input)
         {
             char[] inArr = input.ToCharArray();
@@ -1509,6 +1483,7 @@ namespace System.Numerics.Tests
             String y2 = new String(number.ToArray());
             return y2;
         }
+
         private static String ConvertDecimalToHex(string input, bool upper, NumberFormatInfo nfi)
         {
             String output = string.Empty;
@@ -1541,6 +1516,7 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ConvertToExp(string input, int places)
         {
             Char[] temp = input.Substring(0, places + 2).ToCharArray();
@@ -1582,6 +1558,7 @@ namespace System.Numerics.Tests
 
             return ret;
         }
+
         private static String GenerateGroups(int[] sizes, string seperator, Random random)
         {
             List<int> total_sizes = new List<int>();
@@ -1617,7 +1594,9 @@ namespace System.Numerics.Tests
             for (int j = total_sizes.Count - 1; j > 0; j--)
             {
                 if ((first) && (total_sizes[j] >= num_digits))
+                {
                     continue;
+                }
                 int group_size = num_digits - total_sizes[j - 1];
                 if (first)
                 {
@@ -1707,15 +1686,12 @@ namespace System.Numerics.Tests
 
             return output;
         }
+
         private static String ZeroString(int size)
         {
-            String ret = String.Empty;
-            if (size >= 1)
-            {
-                ret = new String('0', size);
-            }
-            return ret;
+            return size >= 1 ? new String('0', size) : String.Empty;
         }
+
         private static String FString(int size, bool upper)
         {
             String ret = String.Empty;
@@ -1762,66 +1738,6 @@ namespace System.Numerics.Tests
             nfi.PositiveSign = ">>";
 
             return nfi;
-        }
-
-        public static bool Eval<T>(T expected, T actual, String errorMsg)
-        {
-            bool retValue = expected == null ? actual == null : expected.Equals(actual);
-            return Eval(retValue, errorMsg + " Expected:" + (null == expected ? "<null>" : expected.ToString()) + " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-
-            //if (!retValue)
-            //{
-            //    Eval(retValue, errorMsg + " Expected:" + (null == expected ? "<null>" : expected.ToString()) + " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-            //    throw new ApplicationException();
-            //}
-
-
-            //return true;
-        }
-        public static bool Eval(BigInteger x, String y, String errorMsg)
-        {
-            bool IsPos = (x >= 0);
-            bool ret = true;
-            String y2 = null;
-
-            if (!IsPos)
-            {
-                x = -x;
-            }
-
-            if (x == 0)
-            {
-                Assert.True(y.Equals("0"), " Verification Failed");
-            }
-            else
-            {
-                List<char> number = new List<char>();
-                while (x > 0)
-                {
-                    number.Add((x % 10).ToString().ToCharArray()[0]);
-                    x = x / 10;
-                }
-                number.Reverse();
-                y2 = new String(number.ToArray());
-                Assert.True(y2.Equals(y, StringComparison.OrdinalIgnoreCase), " Verification Failed");
-            }
-
-            if (!ret)
-            {
-                Console.WriteLine("Error: " + errorMsg);
-                Console.WriteLine("got:      " + y2);
-                Console.WriteLine("expected: " + y);
-            }
-            return ret;
-        }
-        public static bool Eval(bool expression, string message)
-        {
-            if (!expression)
-            {
-                Console.WriteLine(message);
-            }
-
-            return expression;
         }
     }
 }
