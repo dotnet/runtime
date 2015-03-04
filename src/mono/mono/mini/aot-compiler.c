@@ -9229,6 +9229,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mono_set_partial_sharing_supported (TRUE);
 	*/
 
+	mono_set_partial_sharing_supported (FALSE);
+
 	res = collect_methods (acfg);
 	if (!res)
 		return 1;
