@@ -23,6 +23,7 @@ bld/
 [Oo]bj/
 msbuild.log
 binaries
+intermediates
 
 # Roslyn stuff
 *.sln.ide
