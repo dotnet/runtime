@@ -38,6 +38,7 @@ NESTED_ENTRY UMThunkStub, _TEXT, UMThunkStubUnwindFrameChainHandler
 #define UMThunkStubAMD64_XMM_SAVE_OFFSET 0x0
 #define UMThunkStubAMD64_INT_ARG_OFFSET (SIZEOF_MAX_FP_ARG_SPILL + 0x8)
 #define UMThunkStubAMD64_METHODDESC_OFFSET SIZEOF_MAX_FP_ARG_SPILL
+#define UMThunkStubAMD64_RBP_OFFSET (UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE + 8)
 
 // {optional stack args passed to callee}   <-- new RSP
 // xmm0                                     <-- RBP
@@ -98,7 +99,7 @@ LOCAL_LABEL(HaveThread):
 
 LOCAL_LABEL(InCooperativeMode):
 
-        mov             METHODDESC_REGISTER, [rbp + UMThunkStubAMD64_METHODDESC_OFFSET]
+        mov             METHODDESC_REGISTER, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_METHODDESC_OFFSET]
 
 #if _DEBUG
         mov             rax, [r12 + OFFSETOF__Thread__m_pDomain]
@@ -116,20 +117,20 @@ LOCAL_LABEL(InCooperativeMode):
         jnz             LOCAL_LABEL(UMThunkStub_CopyStackArgs)                                          // stack_args
         
 LOCAL_LABEL(UMThunkStub_ArgumentsSetup):
-        mov    rdi, [rbp + UMThunkStubAMD64_INT_ARG_OFFSET]
-        mov    rsi, [rbp + UMThunkStubAMD64_INT_ARG_OFFSET + 0x08]
-        mov    rdx, [rbp + UMThunkStubAMD64_INT_ARG_OFFSET + 0x10]
-        mov    rcx, [rbp + UMThunkStubAMD64_INT_ARG_OFFSET + 0x18]
-        mov    r8,  [rbp + UMThunkStubAMD64_INT_ARG_OFFSET + 0x20]
-        mov    r9,  [rbp + UMThunkStubAMD64_INT_ARG_OFFSET + 0x28]
-        movdqa xmm0, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET]
-        movdqa xmm1, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x10]
-        movdqa xmm2, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x20]
-        movdqa xmm3, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x30]
-        movdqa xmm4, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x40]
-        movdqa xmm5, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x50]
-        movdqa xmm6, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x60]
-        movdqa xmm7, [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x70]
+        mov    rdi, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_INT_ARG_OFFSET]
+        mov    rsi, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_INT_ARG_OFFSET + 0x08]
+        mov    rdx, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_INT_ARG_OFFSET + 0x10]
+        mov    rcx, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_INT_ARG_OFFSET + 0x18]
+        mov    r8,  [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_INT_ARG_OFFSET + 0x20]
+        mov    r9,  [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_INT_ARG_OFFSET + 0x28]
+        movdqa xmm0, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET]
+        movdqa xmm1, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x10]
+        movdqa xmm2, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x20]
+        movdqa xmm3, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x30]
+        movdqa xmm4, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x40]
+        movdqa xmm5, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x50]
+        movdqa xmm6, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x60]
+        movdqa xmm7, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_XMM_SAVE_OFFSET + 0x70]
 
         mov             rax, [r11 + OFFSETOF__UMThunkMarshInfo__m_pILStub]                              // rax <- Stub*
         call            rax
@@ -153,8 +154,8 @@ LOCAL_LABEL(DoThreadSetup):
         jmp             LOCAL_LABEL(HaveThread)
         
 LOCAL_LABEL(DoTrapReturningThreadsTHROW):
-        mov             rdi, r12                                                                  // Thread* pThread
-        mov             rsi, [rbp + UMThunkStubAMD64_METHODDESC_OFFSET]                           // UMEntryThunk* pUMEntry
+        mov             rdi, r12                                                                        // Thread* pThread
+        mov             rsi, [rbp - UMThunkStubAMD64_RBP_OFFSET + UMThunkStubAMD64_METHODDESC_OFFSET]   // UMEntryThunk* pUMEntry
         call            C_FUNC(UMThunkStubRareDisableWorker)
 
         jmp             LOCAL_LABEL(InCooperativeMode)
@@ -167,7 +168,7 @@ LOCAL_LABEL(UMThunkStub_CopyStackArgs):
 
         // rax = number of bytes
 
-        lea             rdi, [rbp + UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE + 0x18] // stack + r12 + rbp + ra
+        lea             rdi, [rbp + 0x10] // rbp + ra
         lea             rsi, [rsp]
 
 LOCAL_LABEL(CopyLoop):
