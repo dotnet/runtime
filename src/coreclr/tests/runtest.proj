@@ -203,7 +203,28 @@ using CoreclrTestLib%3B
 
 namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
 {
-public class $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))
+
+]]>
+      </_XunitProlog>
+    <_XunitEpilog Condition=" '$(_XunitEpilog)'=='' ">
+      <![CDATA[
+}
+
+]]>
+       </_XunitEpilog>
+    </PropertyGroup>
+    <ItemGroup>
+        <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
+        <AllCMDExcludeFilter Include="@(AllCMDsPresent)" Exclude="@AllRunnableTestPaths"/>
+        <AllCMDs Include="@(AllCMDsPresent)" Exclude="@AllCMDExcludeFilter"/>
+        
+      <AllCommamds Include="@(AllCMDs)" >
+
+        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_"))</_FactName>
+        <_XunitFact >
+          <![CDATA[
+             
+public class $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))
     {
                static bool category_initlialized = false%3B
                static bool runningInWindows = false%3B
@@ -237,28 +258,6 @@ public class $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","
                        category_initlialized = true%3B
                    }
                }
-
-]]>
-      </_XunitProlog>
-    <_XunitEpilog Condition=" '$(_XunitEpilog)'=='' ">
-      <![CDATA[
-       }
-}
-
-]]>
-       </_XunitEpilog>
-    </PropertyGroup>
-    <ItemGroup>
-        <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
-        <AllCMDExcludeFilter Include="@(AllCMDsPresent)" Exclude="@AllRunnableTestPaths"/>
-        <AllCMDs Include="@(AllCMDsPresent)" Exclude="@AllCMDExcludeFilter"/>
-        
-      <AllCommamds Include="@(AllCMDs)" >
-
-        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_"))</_FactName>
-        <_XunitFact >
-          <![CDATA[
-             
     
                 [Fact]
                 public void $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))()
@@ -300,6 +299,7 @@ public class $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","
                     Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, msg)%3B
                 }
                     
+       }
    
 
         ]]>
