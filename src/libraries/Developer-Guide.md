@@ -32,12 +32,7 @@ project, e.g.:
 ```
 cd src\System.Collections.Immutable\tests
 msbuild /t:BuildAndTest (or /t:Test to just re-run the tests)
-
-// To build with code coverage pass the /p:Coverage=true property
-msbuild /t:BuildAndTest /p:Coverage=true 
 ```
-
-
 In some test directories there may be multiple test projects or directories so you may need to specify the specific test project to get it to build and run the tests.
 
 ### Running tests from Visual Studio
@@ -53,6 +48,22 @@ In some test directories there may be multiple test projects or directories so y
 3. Right click test project and select 'Set as startup project'
 4. Set breakpoint appropriately
 5. F5 (Debug)
+
+### Code Coverage
+
+Code coverage is built into the corefx build system.  It utilizes OpenCover for generating coverage data and ReportGenerator for generating reports about that data.  To run:
+
+```
+// Run full coverage
+build.cmd /p:Coverage=true
+
+// To run a single project with code coverage enabled pass the /p:Coverage=true property
+cd src\System.Collections.Immutable\tests
+msbuild /t:BuildAndTest /p:Coverage=true
+```
+If coverage succeeds, the code coverage report will be generated automatically and placed in the bin\tests\coverage directory.  You can view the full report by opening index.htm
+
+Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
 ### Notes 
 * Running tests from using the VS test explorer does not currently work 
