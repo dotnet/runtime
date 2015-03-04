@@ -35,7 +35,7 @@ LEAF_ENTRY JIT_MemCpy, _TEXT
         cmp  byte ptr [rdi], 0
         cmp  byte ptr [rsi], 0
 
-        jmp  C_PLTFUNC(memset)
+        jmp  C_PLTFUNC(memcpy)
 
 Exit_MemCpy:
         ret
