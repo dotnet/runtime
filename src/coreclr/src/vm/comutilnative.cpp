@@ -2469,7 +2469,7 @@ FCIMPL2(LPVOID,COMInterlocked::ExchangeObject, LPVOID*location, LPVOID value)
 }
 FCIMPLEND
 
-FCIMPL2_VV(void,COMInterlocked::ExchangeGeneric, TypedByRef location, TypedByRef value)
+FCIMPL2_VV(void,COMInterlocked::ExchangeGeneric, FC_TypedByRef location, FC_TypedByRef value)
 {
     FCALL_CONTRACT;
 
@@ -2487,7 +2487,7 @@ FCIMPL2_VV(void,COMInterlocked::ExchangeGeneric, TypedByRef location, TypedByRef
 }
 FCIMPLEND
 
-FCIMPL3_VVI(void,COMInterlocked::CompareExchangeGeneric, TypedByRef location, TypedByRef value, LPVOID comparand)
+FCIMPL3_VVI(void,COMInterlocked::CompareExchangeGeneric, FC_TypedByRef location, FC_TypedByRef value, LPVOID comparand)
 {
     FCALL_CONTRACT;
 
