@@ -1315,6 +1315,14 @@ typedef UINT16 FC_UINT16_RET;
 #endif
 
 
+// FC_TypedByRef should be used for TypedReferences in FCall signatures
+#ifdef UNIX_AMD64_ABI
+// Explicitly pass the TypedReferences by reference 
+// UNIXTODO: Remove once the proper managed calling convention for struct is in place
+#define FC_TypedByRef   TypedByRef&
+#else
+#define FC_TypedByRef   TypedByRef
+#endif
 
 
 // The fcall entrypoints has to be at unique addresses. Use this helper macro to make 
