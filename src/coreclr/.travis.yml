@@ -5,4 +5,3 @@ env:
         - BUILD_CONFIG=debug
 script:
     - ./build.sh $BUILD_CONFIG
-    - src/pal/tests/palsuite/runpaltests.sh $TRAVIS_BUILD_DIR/binaries/intermediates/mac.x64.debug $TRAVIS_BUILD_DIR/binaries/paltestout
