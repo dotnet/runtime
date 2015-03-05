@@ -266,8 +266,8 @@ static const GUID CLSID_CorDebug_V1 = {0x6fef44d0,0x39e7,0x4c77, { 0xbe,0x8e,0xc
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
-// GUID for Mac SilverLight debugging
-const GUID CLSID_CorDebug_Mac_SilverLight = {0x8bd1daae, 0x188e, 0x42f4, {0xb0, 0x09, 0x08, 0xfa, 0xfd, 0x17, 0x81, 0x3b}};
+// GUID for pipe-based debugging (Unix platforms)
+const GUID CLSID_CorDebug_Telesto = {0x8bd1daae, 0x188e, 0x42f4, {0xb0, 0x09, 0x08, 0xfa, 0xfd, 0x17, 0x81, 0x3b}};
 
 // The debug engine needs to implement an internal Visual Studio debugger interface (defined by the CPDE)
 // which augments launch and attach requests so that we can obtain information from the port supplier (the
@@ -299,7 +299,7 @@ STDAPI DllGetClassObjectInternal(               // Return code.
     else
 #endif
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    if (rclsid == CLSID_CorDebug_Mac_SilverLight)
+    if (rclsid == CLSID_CorDebug_Telesto)
     {
         pfnCreateObject = Cordb::CreateObjectTelesto;
     }
