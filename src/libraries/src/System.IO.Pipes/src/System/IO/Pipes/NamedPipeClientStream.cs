@@ -141,6 +141,40 @@ namespace System.IO.Pipes
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
 
+        [SecurityCritical]
+        private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
+        {
+            // This is the main connection loop. It will loop until the timeout expires.  
+            int elapsed = 0;
+            var sw = new SpinWait();
+            do
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Determine how long we should wait in this connection attempt
+                int waitTime = timeout - elapsed;
+                if (cancellationToken.CanBeCanceled && waitTime > CancellationCheckInterval)
+                {
+                    waitTime = CancellationCheckInterval;
+                }
+
+                // Try to connect.
+                if (TryConnect(waitTime, cancellationToken))
+                {
+                    return;
+                }
+
+                // Some platforms may return immediately from TryConnect if the connection could not be made, 
+                // e.g. WaitNamedPipe on Win32 will return immediately if the pipe hasn't yet been created,
+                // and open on Unix will fail if the file isn't yet available.  Rather than just immediately
+                // looping around again, do slightly smarter busy waiting.
+                sw.SpinOnce();
+            }
+            while (timeout == Timeout.Infinite || (elapsed = unchecked(Environment.TickCount - startTime)) < timeout);
+
+            throw new TimeoutException();
+        }
+
         public Task ConnectAsync()
         {
             // We cannot avoid creating lambda here by using Connect method

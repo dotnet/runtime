@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,6 +15,14 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeServerStream : PipeStream
     {
+        private bool _createdFifo;
+        private string _path;
+        private PipeDirection _direction;
+        private PipeOptions _options;
+        private int _inBufferSize;
+        private int _outBufferSize;
+        private HandleInheritability _inheritability;
+
         [SecurityCritical]
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
@@ -29,40 +35,99 @@ namespace System.IO.Pipes
             Debug.Assert((maxNumberOfServerInstances >= 1 && maxNumberOfServerInstances <= 254) || (maxNumberOfServerInstances == MaxAllowedServerInstances), "maxNumberOfServerInstances is invalid");
             Debug.Assert(transmissionMode >= PipeTransmissionMode.Byte && transmissionMode <= PipeTransmissionMode.Message, "transmissionMode is out of range");
 
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            if (transmissionMode == PipeTransmissionMode.Message)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // NOTE: We don't have a good way to enforce maxNumberOfServerInstances, and don't currently try.
+            // It's a Windows-specific concept.
+
+            // Make sure the FIFO exists, but don't open it until WaitForConnection is called.
+            _path = GetPipePath(".", pipeName);
+            while (true)
+            {
+                int result = Interop.libc.mkfifo(_path, (int)Interop.libc.Permissions.S_IRWXU);
+                if (result == 0)
+                {
+                    _createdFifo = true;
+                    break;
+                }
+
+                int errno = Marshal.GetLastWin32Error();
+                if (errno == Interop.Errors.EINTR)
+                {
+                    // interrupted; try again
+                    continue;
+                }
+                else if (errno == Interop.Errors.EEXIST)
+                {
+                    // FIFO already exists; nothing more to do
+                    break;
+                }
+                else
+                {
+                    // something else; fail
+                    throw Interop.GetExceptionForIoErrno(errno, _path);
+                }
+            }
+
+            // Store the rest of the creation arguments.  They'll be used when we open the connection
+            // in WaitForConnection.
+            _direction = direction;
+            _options = options;
+            _inBufferSize = inBufferSize;
+            _outBufferSize = outBufferSize;
+            _inheritability = inheritability;
         }
 
-        // This will wait until the client calls Connect().  If we return from this method, we guarantee that
-        // the client has returned from its Connect call.   The client may have done so before this method 
-        // was called (but not before this server is been created, or, if we were servicing another client, 
-        // not before we called Disconnect), in which case, there may be some buffer already in the pipe waiting
-        // for us to read.  See NamedPipeClientStream.Connect for more information.
         [SecurityCritical]
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
             CheckConnectOperationsServer();
 
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            // Open the file.  For In or Out, this will block until a client has connected.
+            // Unfortunately for InOut it won't, which is different from the Windows behavior;
+            // on Unix it won't block for InOut until it actually performs a read or write operation.
+            var serverHandle = Microsoft.Win32.SafeHandles.SafePipeHandle.Open(
+                _path, 
+                TranslateFlags(_direction, _options, _inheritability), 
+                (int)Interop.libc.Permissions.S_IRWXU);
+
+            // Ignore _inBufferSize and _outBufferSize.  They're optional, and the fcntl F_SETPIPE_SZ for changing 
+            // a pipe's buffer size is Linux specific.
+
+            InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
+            State = PipeState.Connected;
         }
 
         public Task WaitForConnectionAsync(CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-
-            return Task.Factory.StartNew(s => ((NamedPipeServerStream)s).WaitForConnection(),
-                this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.Factory.StartNew(s => ((NamedPipeServerStream)s).WaitForConnection(),
+                    this, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [SecurityCritical]
         public void Disconnect()
         {
             CheckDisconnectOperations();
+            State = PipeState.Disconnected;
+            InternalHandle.Dispose();
+            InitializeHandle(null, false, false);
+        }
 
-            throw NotImplemented.ByDesign; // TODO: Implement this
+        protected override void Dispose(bool disposing)
+        {
+            // If we created the FIFO object, be a good citizen and clean it up.
+            // If this doesn't happen, worst case is we leave a temp file around.
+            if (_createdFifo && _path != null)
+            {
+                Interop.libc.unlink(_path); // ignore any errors
+            }
+            base.Dispose(disposing);
         }
 
         // Gets the username of the connected client.  Not that we will not have access to the client's 
@@ -72,8 +137,12 @@ namespace System.IO.Pipes
         public String GetImpersonationUserName()
         {
             CheckWriteOperations();
-
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            throw new PlatformNotSupportedException();
         }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
     }
 }
