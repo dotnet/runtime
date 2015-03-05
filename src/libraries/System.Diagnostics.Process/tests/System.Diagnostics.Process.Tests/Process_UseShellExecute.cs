@@ -10,7 +10,7 @@ namespace System.Diagnostics.ProcessTests
     public partial class ProcessTest
     {
         [Fact]
-        public static void ProcessStartInfo_UseShellExecute()
+        public void ProcessStartInfo_UseShellExecute()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
 
