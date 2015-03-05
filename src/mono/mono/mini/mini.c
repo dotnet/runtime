@@ -1627,66 +1627,63 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 		if (cfg->disable_reuse_stack_slots)
 			reuse_slot = FALSE;
 
-		if (t->byref) {
-			slot_info = &scalar_stack_slots [MONO_TYPE_I];
-		} else {
-			switch (t->type) {
-			case MONO_TYPE_GENERICINST:
-				if (!mono_type_generic_inst_is_valuetype (t)) {
-					slot_info = &scalar_stack_slots [t->type];
-					break;
-				}
-				/* Fall through */
-			case MONO_TYPE_VALUETYPE:
-				if (!vtype_stack_slots)
-					vtype_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * 256);
-				for (i = 0; i < nvtypes; ++i)
-					if (t->data.klass == vtype_stack_slots [i].vtype)
-						break;
-				if (i < nvtypes)
-					slot_info = &vtype_stack_slots [i];
-				else {
-					g_assert (nvtypes < 256);
-					vtype_stack_slots [nvtypes].vtype = t->data.klass;
-					slot_info = &vtype_stack_slots [nvtypes];
-					nvtypes ++;
-				}
-				if (cfg->disable_reuse_ref_stack_slots)
-					reuse_slot = FALSE;
-				break;
-
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
-#if SIZEOF_VOID_P == 4
-			case MONO_TYPE_I4:
-#else
-			case MONO_TYPE_I8:
-#endif
-				if (cfg->disable_ref_noref_stack_slot_share) {
-					slot_info = &scalar_stack_slots [MONO_TYPE_I];
-					break;
-				}
-				/* Fall through */
-
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_STRING:
-				/* Share non-float stack slots of the same size */
-				slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
-				if (cfg->disable_reuse_ref_stack_slots)
-					reuse_slot = FALSE;
-				break;
-			case MONO_TYPE_VAR:
-			case MONO_TYPE_MVAR:
-				slot_info = &scalar_stack_slots [t->type];
-				break;
-			default:
+		t = mini_get_underlying_type (cfg, t);
+		switch (t->type) {
+		case MONO_TYPE_GENERICINST:
+			if (!mono_type_generic_inst_is_valuetype (t)) {
 				slot_info = &scalar_stack_slots [t->type];
 				break;
 			}
+			/* Fall through */
+		case MONO_TYPE_VALUETYPE:
+			if (!vtype_stack_slots)
+				vtype_stack_slots = mono_mempool_alloc0 (cfg->mempool, sizeof (StackSlotInfo) * 256);
+			for (i = 0; i < nvtypes; ++i)
+				if (t->data.klass == vtype_stack_slots [i].vtype)
+					break;
+			if (i < nvtypes)
+				slot_info = &vtype_stack_slots [i];
+			else {
+				g_assert (nvtypes < 256);
+				vtype_stack_slots [nvtypes].vtype = t->data.klass;
+				slot_info = &vtype_stack_slots [nvtypes];
+				nvtypes ++;
+			}
+			if (cfg->disable_reuse_ref_stack_slots)
+				reuse_slot = FALSE;
+			break;
+
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I4:
+#else
+		case MONO_TYPE_I8:
+#endif
+			if (cfg->disable_ref_noref_stack_slot_share) {
+				slot_info = &scalar_stack_slots [MONO_TYPE_I];
+				break;
+			}
+			/* Fall through */
+
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_STRING:
+			/* Share non-float stack slots of the same size */
+			slot_info = &scalar_stack_slots [MONO_TYPE_CLASS];
+			if (cfg->disable_reuse_ref_stack_slots)
+				reuse_slot = FALSE;
+			break;
+		case MONO_TYPE_VAR:
+		case MONO_TYPE_MVAR:
+			slot_info = &scalar_stack_slots [t->type];
+			break;
+		default:
+			slot_info = &scalar_stack_slots [t->type];
+			break;
 		}
 
 		slot = 0xffffff;
