@@ -3,13 +3,11 @@
 
 using System.Runtime.InteropServices;
 
-using size_t  = System.IntPtr;
-
 internal static partial class Interop
 {
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern unsafe size_t write(int fd, byte* buf, size_t count);
+        internal static extern unsafe int pipe2(int* pipefd, int flags);
     }
 }

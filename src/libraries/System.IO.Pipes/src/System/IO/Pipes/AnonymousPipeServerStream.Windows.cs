@@ -60,5 +60,9 @@ namespace System.IO.Pipes
             State = PipeState.Connected;
         }
 
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
     }
 }

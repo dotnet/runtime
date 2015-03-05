@@ -10,13 +10,13 @@ namespace Microsoft.Win32.SafeHandles
     [SecurityCritical]
     public sealed partial class SafePipeHandle : SafeHandle
     {
-        private SafePipeHandle() 
-            : base(IntPtr.Zero, true) 
+        private SafePipeHandle()
+            : base(new IntPtr(DefaultInvalidHandle), true) 
         {
         }
 
         public SafePipeHandle(IntPtr preexistingHandle, bool ownsHandle)
-            : base(IntPtr.Zero, ownsHandle)
+            : base(new IntPtr(DefaultInvalidHandle), ownsHandle)
         {
             SetHandle(preexistingHandle);
         }

@@ -796,17 +796,21 @@ namespace System.IO
         {
             VerifyOSHandlePosition();
 
-            long bytesWritten;
             fixed (byte* bufPtr = array)
             {
-                bytesWritten = SysCall((fd, ptr, len) =>
+                while (count > 0)
                 {
-                    long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
-                    Debug.Assert(result <= len);
-                    return result;
-                }, (IntPtr)(bufPtr + offset), count);
+                    int bytesWritten = (int)SysCall((fd, ptr, len) =>
+                    {
+                        long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
+                        Debug.Assert(result <= len);
+                        return result;
+                    }, (IntPtr)(bufPtr + offset), count);
+                    _filePosition += bytesWritten;
+                    count -= bytesWritten;
+                    offset += bytesWritten;
+                }
             }
-            _filePosition += bytesWritten;
         }
 
         /// <summary>
