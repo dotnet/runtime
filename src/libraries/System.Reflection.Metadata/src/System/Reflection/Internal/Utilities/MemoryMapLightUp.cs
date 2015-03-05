@@ -21,6 +21,8 @@ namespace System.Reflection.Internal
         private static MethodInfo s_lazyCreateViewAccessor;
         private static PropertyInfo s_lazySafeMemoryMappedViewHandle;
         private static PropertyInfo s_lazyPointerOffset;
+        private static FieldInfo s_lazyInternalViewField;
+        private static PropertyInfo s_lazyInternalPointerOffset;
 
         private static readonly object s_MemoryMappedFileAccess_Read = 1;
         private static readonly object s_HandleInheritability_None = 0;
@@ -119,10 +121,23 @@ namespace System.Reflection.Internal
                 return false;
             }
 
+            // .NET Core, .NET 4.5.1+
             s_lazyPointerOffset = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
+
+            // .NET < 4.5.1
             if (s_lazyPointerOffset == null)
             {
-                return false;
+                s_lazyInternalViewField = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredField("m_view");
+                if (s_lazyInternalViewField == null)
+                {
+                    return false;
+                }
+
+                s_lazyInternalPointerOffset = s_lazyInternalViewField.FieldType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
+                if (s_lazyInternalPointerOffset == null)
+                {
+                    return false;
+                }
             }
 
             return true;
@@ -206,7 +221,17 @@ namespace System.Reflection.Internal
             byte* ptr = null;
             safeBuffer.AcquirePointer(ref ptr);
 
-            long offset = (long)s_lazyPointerOffset.GetValue(accessor);
+            long offset;
+            if (s_lazyPointerOffset != null)
+            {
+                offset = (long)s_lazyPointerOffset.GetValue(accessor);
+            }
+            else
+            {
+                object internalView = s_lazyInternalViewField.GetValue(accessor);
+                offset = (long)s_lazyInternalPointerOffset.GetValue(internalView);
+            }
+
             return ptr + offset;
         }
     }
