@@ -559,85 +559,85 @@ assembly_is_dynamic (MonoAssembly *assembly)
 }
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
-guint mono_aligned_addr_hash (gconstpointer ptr) MONO_INTERNAL;
+guint mono_aligned_addr_hash (gconstpointer ptr);
 
 void
-mono_image_check_for_module_cctor (MonoImage *image) MONO_INTERNAL;
+mono_image_check_for_module_cctor (MonoImage *image);
 
 gpointer
-mono_image_alloc  (MonoImage *image, guint size) MONO_INTERNAL;
+mono_image_alloc  (MonoImage *image, guint size);
 
 gpointer
-mono_image_alloc0 (MonoImage *image, guint size) MONO_INTERNAL;
+mono_image_alloc0 (MonoImage *image, guint size);
 
 #define mono_image_new0(image,type,size) ((type *) mono_image_alloc0 (image, sizeof (type)* (size)))
 
 char*
-mono_image_strdup (MonoImage *image, const char *s) MONO_INTERNAL;
+mono_image_strdup (MonoImage *image, const char *s);
 
 GList*
-g_list_prepend_image (MonoImage *image, GList *list, gpointer data) MONO_INTERNAL;
+g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 
 GSList*
-g_slist_append_image (MonoImage *image, GSList *list, gpointer data) MONO_INTERNAL;
+g_slist_append_image (MonoImage *image, GSList *list, gpointer data);
 
 void
-mono_image_lock (MonoImage *image) MONO_INTERNAL;
+mono_image_lock (MonoImage *image);
 
 void
-mono_image_unlock (MonoImage *image) MONO_INTERNAL;
+mono_image_unlock (MonoImage *image);
 
 gpointer
-mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property) MONO_INTERNAL;
+mono_image_property_lookup (MonoImage *image, gpointer subject, guint32 property);
 
 void
-mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property, gpointer value) MONO_INTERNAL;
+mono_image_property_insert (MonoImage *image, gpointer subject, guint32 property, gpointer value);
 
 void
-mono_image_property_remove (MonoImage *image, gpointer subject) MONO_INTERNAL;
+mono_image_property_remove (MonoImage *image, gpointer subject);
 
 gboolean
-mono_image_close_except_pools (MonoImage *image) MONO_INTERNAL;
+mono_image_close_except_pools (MonoImage *image);
 
 void
-mono_image_close_finish (MonoImage *image) MONO_INTERNAL;
+mono_image_close_finish (MonoImage *image);
 
 typedef void  (*MonoImageUnloadFunc) (MonoImage *image, gpointer user_data);
 
 void
-mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
+mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data);
 
 void
-mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data) MONO_INTERNAL;
+mono_remove_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data);
 
 void
-mono_image_append_class_to_reflection_info_set (MonoClass *klass) MONO_INTERNAL;
+mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
 gpointer
-mono_image_set_alloc  (MonoImageSet *set, guint size) MONO_INTERNAL;
+mono_image_set_alloc  (MonoImageSet *set, guint size);
 
 gpointer
-mono_image_set_alloc0 (MonoImageSet *set, guint size) MONO_INTERNAL;
+mono_image_set_alloc0 (MonoImageSet *set, guint size);
 
 char*
-mono_image_set_strdup (MonoImageSet *set, const char *s) MONO_INTERNAL;
+mono_image_set_strdup (MonoImageSet *set, const char *s);
 
 #define mono_image_set_new0(image,type,size) ((type *) mono_image_set_alloc0 (image, sizeof (type)* (size)))
 
 MonoType*
-mono_metadata_get_shared_type (MonoType *type) MONO_INTERNAL;
+mono_metadata_get_shared_type (MonoType *type);
 
 void
-mono_metadata_clean_for_image (MonoImage *image) MONO_INTERNAL;
+mono_metadata_clean_for_image (MonoImage *image);
 
 void
-mono_metadata_clean_generic_classes_for_image (MonoImage *image) MONO_INTERNAL;
+mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
 MONO_API void
 mono_metadata_cleanup (void);
 
-const char *   mono_meta_table_name              (int table) MONO_INTERNAL;
-void           mono_metadata_compute_table_bases (MonoImage *meta) MONO_INTERNAL;
+const char *   mono_meta_table_name              (int table);
+void           mono_metadata_compute_table_bases (MonoImage *meta);
 
 gboolean
 mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
@@ -646,13 +646,13 @@ mono_metadata_interfaces_from_typedef_full  (MonoImage             *image,
 											 guint                 *count,
 											 gboolean               heap_alloc_result,
 											 MonoGenericContext    *context,
-											 MonoError *error) MONO_INTERNAL;
+											 MonoError *error);
 
 MonoArrayType *
 mono_metadata_parse_array_full              (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     const char            *ptr,
-					     const char           **rptr) MONO_INTERNAL;
+					     const char           **rptr);
 
 MONO_API MonoType *
 mono_metadata_parse_type_full               (MonoImage             *image,
@@ -665,7 +665,7 @@ mono_metadata_parse_type_full               (MonoImage             *image,
 MonoMethodSignature *
 mono_metadata_parse_signature_full          (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
-					     guint32                token) MONO_INTERNAL;
+					     guint32                token);
 
 MONO_API MonoMethodSignature *
 mono_metadata_parse_method_signature_full   (MonoImage             *image,
@@ -681,84 +681,84 @@ mono_metadata_parse_mh_full                 (MonoImage             *image,
 					     const char            *ptr);
 
 gboolean
-mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary) MONO_INTERNAL;
+mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *summary);
 
-int* mono_metadata_get_param_attrs          (MonoImage *m, int def, int param_count) MONO_INTERNAL;
-gboolean mono_metadata_method_has_param_attrs (MonoImage *m, int def) MONO_INTERNAL;
+int* mono_metadata_get_param_attrs          (MonoImage *m, int def, int param_count);
+gboolean mono_metadata_method_has_param_attrs (MonoImage *m, int def);
 
 guint
-mono_metadata_generic_context_hash          (const MonoGenericContext *context) MONO_INTERNAL;
+mono_metadata_generic_context_hash          (const MonoGenericContext *context);
 
 gboolean
 mono_metadata_generic_context_equal         (const MonoGenericContext *g1,
-					     const MonoGenericContext *g2) MONO_INTERNAL;
+					     const MonoGenericContext *g2);
 
 MonoGenericInst *
 mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     MonoGenericContainer  *container,
 					     int                    count,
 					     const char            *ptr,
-					     const char           **rptr) MONO_INTERNAL;
+					     const char           **rptr);
 
 MonoGenericInst *
 mono_metadata_get_generic_inst              (int 		    type_argc,
-					     MonoType 		  **type_argv) MONO_INTERNAL;
+					     MonoType 		  **type_argv);
 
 MonoGenericClass *
 mono_metadata_lookup_generic_class          (MonoClass		   *gclass,
 					     MonoGenericInst	   *inst,
-					     gboolean		    is_dynamic) MONO_INTERNAL;
+					     gboolean		    is_dynamic);
 
-MonoGenericInst * mono_metadata_inflate_generic_inst  (MonoGenericInst *ginst, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+MonoGenericInst * mono_metadata_inflate_generic_inst  (MonoGenericInst *ginst, MonoGenericContext *context, MonoError *error);
 
-void mono_dynamic_stream_reset  (MonoDynamicStream* stream) MONO_INTERNAL;
-void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;
-void mono_assembly_load_friends (MonoAssembly* ass) MONO_INTERNAL;
-gboolean mono_assembly_has_skip_verification (MonoAssembly* ass) MONO_INTERNAL;
+void mono_dynamic_stream_reset  (MonoDynamicStream* stream);
+void mono_assembly_addref       (MonoAssembly *assembly);
+void mono_assembly_load_friends (MonoAssembly* ass);
+gboolean mono_assembly_has_skip_verification (MonoAssembly* ass);
 
-void mono_assembly_release_gc_roots (MonoAssembly *assembly) MONO_INTERNAL;
-gboolean mono_assembly_close_except_image_pools (MonoAssembly *assembly) MONO_INTERNAL;
-void mono_assembly_close_finish (MonoAssembly *assembly) MONO_INTERNAL;
+void mono_assembly_release_gc_roots (MonoAssembly *assembly);
+gboolean mono_assembly_close_except_image_pools (MonoAssembly *assembly);
+void mono_assembly_close_finish (MonoAssembly *assembly);
 
 
-gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2) MONO_INTERNAL;
+gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2);
 
-void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info) MONO_INTERNAL;
+void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
 void mono_config_parse_assembly_bindings (const char *filename, int major, int minor, void *user_data,
-					  void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data)) MONO_INTERNAL;
+					  void (*infocb)(MonoAssemblyBindingInfo *info, void *user_data));
 
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,
 					      MonoAssemblyName	   *aname,
 					      gboolean save_public_key,
 					      gboolean *is_version_defined,
-						  gboolean *is_token_defined) MONO_INTERNAL;
+						  gboolean *is_token_defined);
 
 MONO_API guint32 mono_metadata_get_generic_param_row (MonoImage *image, guint32 token, guint32 *owner);
 
-void mono_unload_interface_ids (MonoBitSet *bitset) MONO_INTERNAL;
+void mono_unload_interface_ids (MonoBitSet *bitset);
 
 
-MonoType *mono_metadata_type_dup (MonoImage *image, const MonoType *original) MONO_INTERNAL;
-MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig) MONO_INTERNAL;
-MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig) MONO_INTERNAL;
+MonoType *mono_metadata_type_dup (MonoImage *image, const MonoType *original);
+MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
 
 MonoGenericInst *
-mono_get_shared_generic_inst (MonoGenericContainer *container) MONO_INTERNAL;
+mono_get_shared_generic_inst (MonoGenericContainer *container);
 
 int
-mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open) MONO_INTERNAL;
+mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open);
 
 MONO_API void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
 
 gboolean
-mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only) MONO_INTERNAL;
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only);
 
 MonoMarshalSpec *
-mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image, const char *ptr) MONO_INTERNAL;
+mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image, const char *ptr);
 
-guint	       mono_metadata_generic_inst_hash (gconstpointer data) MONO_INTERNAL;
-gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb) MONO_INTERNAL;
+guint	       mono_metadata_generic_inst_hash (gconstpointer data);
+gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer kb);
 
 MONO_API void
 mono_metadata_field_info_with_mempool (
@@ -769,47 +769,47 @@ mono_metadata_field_info_with_mempool (
 				      MonoMarshalSpec **marshal_spec);
 
 MonoClassField*
-mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassField *field) MONO_INTERNAL;
+mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassField *field);
 
 MonoEvent*
-mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *event) MONO_INTERNAL;
+mono_metadata_get_corresponding_event_from_generic_type_definition (MonoEvent *event);
 
 MonoProperty*
-mono_metadata_get_corresponding_property_from_generic_type_definition (MonoProperty *property) MONO_INTERNAL;
+mono_metadata_get_corresponding_property_from_generic_type_definition (MonoProperty *property);
 
 guint32
-mono_metadata_signature_size (MonoMethodSignature *sig) MONO_INTERNAL;
+mono_metadata_signature_size (MonoMethodSignature *sig);
 
-guint mono_metadata_str_hash (gconstpointer v1) MONO_INTERNAL;
+guint mono_metadata_str_hash (gconstpointer v1);
 
-gboolean mono_image_load_pe_data (MonoImage *image) MONO_INTERNAL;
+gboolean mono_image_load_pe_data (MonoImage *image);
 
-gboolean mono_image_load_cli_data (MonoImage *image) MONO_INTERNAL;
+gboolean mono_image_load_cli_data (MonoImage *image);
 
-void mono_image_load_names (MonoImage *image) MONO_INTERNAL;
+void mono_image_load_names (MonoImage *image);
 
-MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status) MONO_INTERNAL;
+MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status);
 
-MonoException *mono_get_exception_field_access_msg (const char *msg) MONO_INTERNAL;
+MonoException *mono_get_exception_field_access_msg (const char *msg);
 
-MonoException *mono_get_exception_method_access_msg (const char *msg) MONO_INTERNAL;
+MonoException *mono_get_exception_method_access_msg (const char *msg);
 
-MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error);
 
-MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
-MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context, MonoMethod **cil_method, MonoError *error) MONO_INTERNAL;
+MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context, MonoError *error);
+MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context, MonoMethod **cil_method, MonoError *error);
 
-void mono_type_set_alignment (MonoTypeEnum type, int align) MONO_INTERNAL;
+void mono_type_set_alignment (MonoTypeEnum type, int align);
 
-MonoAotCacheConfig *mono_get_aot_cache_config (void) MONO_INTERNAL;
+MonoAotCacheConfig *mono_get_aot_cache_config (void);
 MonoType *
-mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error) MONO_INTERNAL;
+mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, MonoError *error);
 
 MonoMethodSignature*
-mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
 	
 MonoMethod *
-mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error) MONO_INTERNAL;
+mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

@@ -32,19 +32,19 @@ STDAPI MonoFixupCorEE(HMODULE ModuleHandle);
 #define __ImageBase _image_base__
 #endif
 #endif
-extern IMAGE_DOS_HEADER __ImageBase MONO_INTERNAL;
+extern IMAGE_DOS_HEADER __ImageBase;
 
-extern HMODULE coree_module_handle MONO_INTERNAL;
+extern HMODULE coree_module_handle;
 
-HMODULE WINAPI MonoLoadImage(LPCWSTR FileName) MONO_INTERNAL;
-STDAPI MonoFixupExe(HMODULE ModuleHandle) MONO_INTERNAL;
+HMODULE WINAPI MonoLoadImage(LPCWSTR FileName);
+STDAPI MonoFixupExe(HMODULE ModuleHandle);
 
-gchar* mono_get_module_file_name (HMODULE module_handle) MONO_INTERNAL;
-void mono_load_coree (const char* file_name) MONO_INTERNAL;
-void mono_fixup_exe_image (MonoImage* image) MONO_INTERNAL;
+gchar* mono_get_module_file_name (HMODULE module_handle);
+void mono_load_coree (const char* file_name);
+void mono_fixup_exe_image (MonoImage* image);
 
 /* Declared in image.c. */
-MonoImage* mono_image_open_from_module_handle (HMODULE module_handle, char* fname, gboolean has_entry_point, MonoImageOpenStatus* status) MONO_INTERNAL;
+MonoImage* mono_image_open_from_module_handle (HMODULE module_handle, char* fname, gboolean has_entry_point, MonoImageOpenStatus* status);
 
 #endif /* HOST_WIN32 */
 

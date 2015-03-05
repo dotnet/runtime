@@ -20,18 +20,18 @@ typedef struct {
 	void (*shutdown) (gpointer event_data);
 } SocketIOData;
 
-void mono_thread_pool_remove_socket (int sock) MONO_INTERNAL;
-gboolean mono_thread_pool_is_queue_array (MonoArray *o) MONO_INTERNAL;
-void mono_internal_thread_unhandled_exception (MonoObject* exc) MONO_INTERNAL;
+void mono_thread_pool_remove_socket (int sock);
+gboolean mono_thread_pool_is_queue_array (MonoArray *o);
+void mono_internal_thread_unhandled_exception (MonoObject* exc);
 
 //TP implementations
-gpointer tp_poll_init (SocketIOData *data) MONO_INTERNAL;
+gpointer tp_poll_init (SocketIOData *data);
 
 //TP internals the impls use
-void check_for_interruption_critical (void) MONO_INTERNAL;
-void socket_io_cleanup (SocketIOData *data) MONO_INTERNAL;
-MonoObject *get_io_event (MonoMList **list, gint event) MONO_INTERNAL;
-int get_events_from_list (MonoMList *list) MONO_INTERNAL;
-void threadpool_append_async_io_jobs (MonoObject **jobs, gint njobs) MONO_INTERNAL;
+void check_for_interruption_critical (void);
+void socket_io_cleanup (SocketIOData *data);
+MonoObject *get_io_event (MonoMList **list, gint event);
+int get_events_from_list (MonoMList *list);
+void threadpool_append_async_io_jobs (MonoObject **jobs, gint njobs);
 
 #endif

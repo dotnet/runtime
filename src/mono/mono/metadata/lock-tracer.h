@@ -24,10 +24,10 @@ typedef enum {
 
 #ifdef LOCK_TRACER
 
-void mono_locks_tracer_init (void) MONO_INTERNAL;
+void mono_locks_tracer_init (void);
 
-void mono_locks_lock_acquired (RuntimeLocks kind, gpointer lock) MONO_INTERNAL;
-void mono_locks_lock_released (RuntimeLocks kind, gpointer lock) MONO_INTERNAL;
+void mono_locks_lock_acquired (RuntimeLocks kind, gpointer lock);
+void mono_locks_lock_released (RuntimeLocks kind, gpointer lock);
 
 #else
 

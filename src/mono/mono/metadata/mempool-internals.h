@@ -58,6 +58,6 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
 }
 
 long
-mono_mempool_get_bytes_allocated (void) MONO_INTERNAL;
+mono_mempool_get_bytes_allocated (void);
 
 #endif

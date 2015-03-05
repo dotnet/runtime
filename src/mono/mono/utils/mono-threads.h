@@ -230,88 +230,88 @@ Snapshot iteration.
  * a single block with info from both camps. 
  */
 void
-mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t thread_info_size) MONO_INTERNAL;
+mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t thread_info_size);
 
 void
-mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks) MONO_INTERNAL;
+mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks);
 
 MonoThreadInfoCallbacks *
-mono_threads_get_callbacks (void) MONO_INTERNAL;
+mono_threads_get_callbacks (void);
 
 MonoThreadInfoRuntimeCallbacks *
-mono_threads_get_runtime_callbacks (void) MONO_INTERNAL;
+mono_threads_get_runtime_callbacks (void);
 
 int
-mono_thread_info_register_small_id (void) MONO_INTERNAL;
+mono_thread_info_register_small_id (void);
 
 THREAD_INFO_TYPE *
-mono_thread_info_attach (void *baseptr) MONO_INTERNAL;
+mono_thread_info_attach (void *baseptr);
 
 void
-mono_thread_info_detach (void) MONO_INTERNAL;
+mono_thread_info_detach (void);
 
 gboolean
-mono_thread_info_is_exiting (void) MONO_INTERNAL;
+mono_thread_info_is_exiting (void);
 
 THREAD_INFO_TYPE *
-mono_thread_info_current (void) MONO_INTERNAL;
+mono_thread_info_current (void);
 
 int
-mono_thread_info_get_small_id (void) MONO_INTERNAL;
+mono_thread_info_get_small_id (void);
 
 MonoLinkedListSet*
-mono_thread_info_list_head (void) MONO_INTERNAL;
+mono_thread_info_list_head (void);
 
 THREAD_INFO_TYPE*
-mono_thread_info_lookup (MonoNativeThreadId id) MONO_INTERNAL;
+mono_thread_info_lookup (MonoNativeThreadId id);
 
 THREAD_INFO_TYPE*
-mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel) MONO_INTERNAL;
+mono_thread_info_safe_suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel);
 
 gboolean
-mono_thread_info_resume (MonoNativeThreadId tid) MONO_INTERNAL;
+mono_thread_info_resume (MonoNativeThreadId tid);
 
 void
-mono_thread_info_set_name (MonoNativeThreadId tid, const char *name) MONO_INTERNAL;
+mono_thread_info_set_name (MonoNativeThreadId tid, const char *name);
 
 void
-mono_thread_info_finish_suspend (MonoThreadInfo *info) MONO_INTERNAL;
+mono_thread_info_finish_suspend (MonoThreadInfo *info);
 
 void
-mono_thread_info_finish_suspend_and_resume (MonoThreadInfo *info) MONO_INTERNAL;
+mono_thread_info_finish_suspend_and_resume (MonoThreadInfo *info);
 
 void
-mono_thread_info_self_suspend (void) MONO_INTERNAL;
+mono_thread_info_self_suspend (void);
 
 gboolean
-mono_thread_info_new_interrupt_enabled (void) MONO_INTERNAL;
+mono_thread_info_new_interrupt_enabled (void);
 
 void
-mono_thread_info_setup_async_call (THREAD_INFO_TYPE *info, void (*target_func)(void*), void *user_data) MONO_INTERNAL;
+mono_thread_info_setup_async_call (THREAD_INFO_TYPE *info, void (*target_func)(void*), void *user_data);
 
 void
-mono_thread_info_suspend_lock (void) MONO_INTERNAL;
+mono_thread_info_suspend_lock (void);
 
 void
-mono_thread_info_suspend_unlock (void) MONO_INTERNAL;
+mono_thread_info_suspend_unlock (void);
 
 void
-mono_thread_info_disable_new_interrupt (gboolean disable) MONO_INTERNAL;
+mono_thread_info_disable_new_interrupt (gboolean disable);
 
 void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid) MONO_INTERNAL;
+mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
 
 void
-mono_thread_info_set_is_async_context (gboolean async_context) MONO_INTERNAL;
+mono_thread_info_set_is_async_context (gboolean async_context);
 
 gboolean
-mono_thread_info_is_async_context (void) MONO_INTERNAL;
+mono_thread_info_is_async_context (void);
 
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 
 gboolean
-mono_thread_info_yield (void) MONO_INTERNAL;
+mono_thread_info_yield (void);
 
 gpointer
 mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
@@ -341,16 +341,16 @@ void
 mono_thread_info_clear_interruption (void);
 
 gboolean
-mono_thread_info_is_live (THREAD_INFO_TYPE *info) MONO_INTERNAL;
+mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 
 HANDLE
 mono_threads_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
 
 int
-mono_threads_get_max_stack_size (void) MONO_INTERNAL;
+mono_threads_get_max_stack_size (void);
 
 HANDLE
-mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INTERNAL;
+mono_threads_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 
 /*
 This is the async job submission/consumption API.
@@ -358,10 +358,10 @@ XXX: This is a PROVISIONAL API only meant to be used by the statistical profiler
 If you want to use/extend it anywhere else, understand that you'll have to do some API design work to better fit this puppy.
 */
 gboolean
-mono_threads_add_async_job (THREAD_INFO_TYPE *info, MonoAsyncJob job) MONO_INTERNAL;
+mono_threads_add_async_job (THREAD_INFO_TYPE *info, MonoAsyncJob job);
 
 MonoAsyncJob
-mono_threads_consume_async_jobs (void) MONO_INTERNAL;
+mono_threads_consume_async_jobs (void);
 
 MONO_API void
 mono_threads_attach_tools_thread (void);
@@ -371,42 +371,42 @@ mono_threads_attach_tools_thread (void);
 
 /*Use this instead of pthread_kill */
 int
-mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum) MONO_INTERNAL;
+mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum);
 
 #endif /* !defined(HOST_WIN32) */
 
 /* Plartform specific functions DON'T use them */
-void mono_threads_init_platform (void) MONO_INTERNAL; //ok
-gboolean mono_threads_core_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel) MONO_INTERNAL;
-gboolean mono_threads_core_resume (THREAD_INFO_TYPE *info) MONO_INTERNAL;
-void mono_threads_platform_register (THREAD_INFO_TYPE *info) MONO_INTERNAL; //ok
-void mono_threads_platform_free (THREAD_INFO_TYPE *info) MONO_INTERNAL;
-void mono_threads_core_interrupt (THREAD_INFO_TYPE *info) MONO_INTERNAL;
-void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info) MONO_INTERNAL;
-gboolean mono_threads_core_needs_abort_syscall (void) MONO_INTERNAL;
-HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid) MONO_INTERNAL;
-void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid) MONO_INTERNAL;
-void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize) MONO_INTERNAL;
-gboolean mono_threads_core_yield (void) MONO_INTERNAL;
-void mono_threads_core_exit (int exit_code) MONO_INTERNAL;
-void mono_threads_core_unregister (THREAD_INFO_TYPE *info) MONO_INTERNAL;
-HANDLE mono_threads_core_open_handle (void) MONO_INTERNAL;
-HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid) MONO_INTERNAL;
-void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name) MONO_INTERNAL;
+void mono_threads_init_platform (void); //ok
+gboolean mono_threads_core_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
+gboolean mono_threads_core_resume (THREAD_INFO_TYPE *info);
+void mono_threads_platform_register (THREAD_INFO_TYPE *info); //ok
+void mono_threads_platform_free (THREAD_INFO_TYPE *info);
+void mono_threads_core_interrupt (THREAD_INFO_TYPE *info);
+void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info);
+gboolean mono_threads_core_needs_abort_syscall (void);
+HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
+void mono_threads_core_resume_created (THREAD_INFO_TYPE *info, MonoNativeThreadId tid);
+void mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize);
+gboolean mono_threads_core_yield (void);
+void mono_threads_core_exit (int exit_code);
+void mono_threads_core_unregister (THREAD_INFO_TYPE *info);
+HANDLE mono_threads_core_open_handle (void);
+HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
+void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name);
 gpointer mono_threads_core_prepare_interrupt (HANDLE thread_handle);
 void mono_threads_core_finish_interrupt (gpointer wait_handle);
 void mono_threads_core_self_interrupt (void);
 void mono_threads_core_clear_interruption (void);
 
-MonoNativeThreadId mono_native_thread_id_get (void) MONO_INTERNAL;
+MonoNativeThreadId mono_native_thread_id_get (void);
 
-gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2) MONO_INTERNAL;
+gboolean mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
 
 gboolean
-mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg) MONO_INTERNAL;
+mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg);
 
 /*Mach specific internals */
-void mono_threads_init_dead_letter (void) MONO_INTERNAL;
-void mono_threads_install_dead_letter (void) MONO_INTERNAL;
+void mono_threads_init_dead_letter (void);
+void mono_threads_install_dead_letter (void);
 
 #endif /* __MONO_THREADS_H__ */

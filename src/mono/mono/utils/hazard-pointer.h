@@ -19,11 +19,11 @@ typedef struct {
 typedef void (*MonoHazardousFreeFunc) (gpointer p);
 
 void mono_thread_hazardous_free_or_queue (gpointer p, MonoHazardousFreeFunc free_func,
-		gboolean free_func_might_lock, gboolean lock_free_context) MONO_INTERNAL;
-void mono_thread_hazardous_try_free_all (void) MONO_INTERNAL;
-void mono_thread_hazardous_try_free_some (void) MONO_INTERNAL;
-MonoThreadHazardPointers* mono_hazard_pointer_get (void) MONO_INTERNAL;
-gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index) MONO_INTERNAL;
+		gboolean free_func_might_lock, gboolean lock_free_context);
+void mono_thread_hazardous_try_free_all (void);
+void mono_thread_hazardous_try_free_some (void);
+MonoThreadHazardPointers* mono_hazard_pointer_get (void);
+gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
 
 #define mono_hazard_pointer_set(hp,i,v)	\
 	do { g_assert ((i) >= 0 && (i) < HAZARD_POINTER_COUNT); \
@@ -40,12 +40,12 @@ gpointer get_hazardous_pointer (gpointer volatile *pp, MonoThreadHazardPointers 
 	} while (0)
 
 
-void mono_thread_small_id_free (int id) MONO_INTERNAL;
-int mono_thread_small_id_alloc (void) MONO_INTERNAL;
+void mono_thread_small_id_free (int id);
+int mono_thread_small_id_alloc (void);
 
-int mono_hazard_pointer_save_for_signal_handler (void) MONO_INTERNAL;
-void mono_hazard_pointer_restore_for_signal_handler (int small_id) MONO_INTERNAL;
+int mono_hazard_pointer_save_for_signal_handler (void);
+void mono_hazard_pointer_restore_for_signal_handler (int small_id);
 
-void mono_thread_smr_init (void) MONO_INTERNAL;
-void mono_thread_smr_cleanup (void) MONO_INTERNAL;
+void mono_thread_smr_init (void);
+void mono_thread_smr_cleanup (void);
 #endif /*__MONO_HAZARD_POINTER_H__*/

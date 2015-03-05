@@ -134,28 +134,28 @@ extern guint64 stat_gray_queue_enqueue_slow_path;
 extern guint64 stat_gray_queue_dequeue_slow_path;
 #endif
 
-void sgen_init_gray_queues (void) MONO_INTERNAL;
+void sgen_init_gray_queues (void);
 
-void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc) MONO_INTERNAL;
-GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue) MONO_INTERNAL;
-GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
-void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
-void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data) MONO_INTERNAL;
+void sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc);
+GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue);
+GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue);
+void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section);
+void sgen_gray_object_queue_trim_free_list (SgenGrayQueue *queue);
+void sgen_gray_object_queue_init (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func);
+void sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue);
+void sgen_gray_queue_set_alloc_prepare (SgenGrayQueue *queue, GrayQueueAllocPrepareFunc alloc_prepare_func, void *data);
 void sgen_gray_object_queue_init_with_alloc_prepare (SgenGrayQueue *queue, GrayQueueEnqueueCheckFunc enqueue_check_func,
-		GrayQueueAllocPrepareFunc func, void *data) MONO_INTERNAL;
-void sgen_gray_object_queue_deinit (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_object_queue_disable_alloc_prepare (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue) MONO_INTERNAL;
-void sgen_gray_object_free_queue_section (GrayQueueSection *section) MONO_INTERNAL;
+		GrayQueueAllocPrepareFunc func, void *data);
+void sgen_gray_object_queue_deinit (SgenGrayQueue *queue);
+void sgen_gray_object_queue_disable_alloc_prepare (SgenGrayQueue *queue);
+void sgen_gray_object_alloc_queue_section (SgenGrayQueue *queue);
+void sgen_gray_object_free_queue_section (GrayQueueSection *section);
 
 void sgen_section_gray_queue_init (SgenSectionGrayQueue *queue, gboolean locked,
-		GrayQueueEnqueueCheckFunc enqueue_check_func) MONO_INTERNAL;
-gboolean sgen_section_gray_queue_is_empty (SgenSectionGrayQueue *queue) MONO_INTERNAL;
-GrayQueueSection* sgen_section_gray_queue_dequeue (SgenSectionGrayQueue *queue) MONO_INTERNAL;
-void sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *section) MONO_INTERNAL;
+		GrayQueueEnqueueCheckFunc enqueue_check_func);
+gboolean sgen_section_gray_queue_is_empty (SgenSectionGrayQueue *queue);
+GrayQueueSection* sgen_section_gray_queue_dequeue (SgenSectionGrayQueue *queue);
+void sgen_section_gray_queue_enqueue (SgenSectionGrayQueue *queue, GrayQueueSection *section);
 
 gboolean sgen_gray_object_fill_prefetch (SgenGrayQueue *queue);
 

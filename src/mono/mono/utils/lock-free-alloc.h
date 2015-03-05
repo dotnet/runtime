@@ -47,12 +47,12 @@ typedef struct {
 #define LOCK_FREE_ALLOC_SB_HEADER_SIZE				(sizeof (MonoLockFreeAllocator))
 #define LOCK_FREE_ALLOC_SB_USABLE_SIZE(block_size)	((block_size) - LOCK_FREE_ALLOC_SB_HEADER_SIZE)
 
-void mono_lock_free_allocator_init_size_class (MonoLockFreeAllocSizeClass *sc, unsigned int slot_size, unsigned int block_size) MONO_INTERNAL;
-void mono_lock_free_allocator_init_allocator (MonoLockFreeAllocator *heap, MonoLockFreeAllocSizeClass *sc) MONO_INTERNAL;
+void mono_lock_free_allocator_init_size_class (MonoLockFreeAllocSizeClass *sc, unsigned int slot_size, unsigned int block_size);
+void mono_lock_free_allocator_init_allocator (MonoLockFreeAllocator *heap, MonoLockFreeAllocSizeClass *sc);
 
-gpointer mono_lock_free_alloc (MonoLockFreeAllocator *heap) MONO_INTERNAL;
-void mono_lock_free_free (gpointer ptr, size_t block_size) MONO_INTERNAL;
+gpointer mono_lock_free_alloc (MonoLockFreeAllocator *heap);
+void mono_lock_free_free (gpointer ptr, size_t block_size);
 
-gboolean mono_lock_free_allocator_check_consistency (MonoLockFreeAllocator *heap) MONO_INTERNAL;
+gboolean mono_lock_free_allocator_check_consistency (MonoLockFreeAllocator *heap);
 
 #endif

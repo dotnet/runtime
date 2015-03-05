@@ -140,25 +140,25 @@ enum {
 
 /* missing: finalizers, roots, non-store wbarriers */
 
-void binary_protocol_init (const char *filename, long long limit) MONO_INTERNAL;
-gboolean binary_protocol_is_enabled (void) MONO_INTERNAL;
+void binary_protocol_init (const char *filename, long long limit);
+gboolean binary_protocol_is_enabled (void);
 
-void binary_protocol_flush_buffers (gboolean force) MONO_INTERNAL;
+void binary_protocol_flush_buffers (gboolean force);
 
 #define BEGIN_PROTOCOL_ENTRY0(method) \
-	void method (void) MONO_INTERNAL;
+	void method (void);
 #define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
-	void method (t1 f1) MONO_INTERNAL;
+	void method (t1 f1);
 #define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
-	void method (t1 f1, t2 f2) MONO_INTERNAL;
+	void method (t1 f1, t2 f2);
 #define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
-	void method (t1 f1, t2 f2, t3 f3) MONO_INTERNAL;
+	void method (t1 f1, t2 f2, t3 f3);
 #define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
-	void method (t1 f1, t2 f2, t3 f3, t4 f4) MONO_INTERNAL;
+	void method (t1 f1, t2 f2, t3 f3, t4 f4);
 #define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
-	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) MONO_INTERNAL;
+	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5);
 #define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
-	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) MONO_INTERNAL;
+	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
 #define binary_protocol_is_heavy_enabled()	binary_protocol_is_enabled ()

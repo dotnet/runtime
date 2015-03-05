@@ -25,10 +25,10 @@ enum {
 
 #else
 
-void mono_portability_helpers_init (void) MONO_INTERNAL;
-gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists) MONO_INTERNAL;
+void mono_portability_helpers_init (void);
+gchar *mono_portability_find_file (const gchar *pathname, gboolean last_exists);
 
-extern int __mono_io_portability_helpers MONO_INTERNAL;
+extern int __mono_io_portability_helpers;
 
 #define IS_PORTABILITY_NONE (__mono_io_portability_helpers & PORTABILITY_NONE)
 #define IS_PORTABILITY_UNKNOWN (__mono_io_portability_helpers & PORTABILITY_UNKNOWN)

@@ -132,15 +132,15 @@ enum {
 	ROOT_DESC_TYPE_SHIFT = 3,
 };
 
-gsize* sgen_get_complex_descriptor (mword desc) MONO_INTERNAL;
-void* sgen_get_complex_descriptor_bitmap (mword desc) MONO_INTERNAL;
-MonoGCRootMarkFunc sgen_get_user_descriptor_func (mword desc) MONO_INTERNAL;
+gsize* sgen_get_complex_descriptor (mword desc);
+void* sgen_get_complex_descriptor_bitmap (mword desc);
+MonoGCRootMarkFunc sgen_get_user_descriptor_func (mword desc);
 
-void sgen_init_descriptors (void) MONO_INTERNAL;
+void sgen_init_descriptors (void);
 
 #ifdef HEAVY_STATISTICS
-void sgen_descriptor_count_scanned_object (mword desc) MONO_INTERNAL;
-void sgen_descriptor_count_copied_object (mword desc) MONO_INTERNAL;
+void sgen_descriptor_count_scanned_object (mword desc);
+void sgen_descriptor_count_copied_object (mword desc);
 #endif
 
 static inline gboolean

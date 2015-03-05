@@ -242,14 +242,12 @@ typedef SSIZE_T ssize_t;
 #endif /* _MSC_VER */
 
 #if !defined(_MSC_VER) && !defined(PLATFORM_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
-#define MONO_INTERNAL __attribute__ ((visibility ("hidden")))
 #if MONO_LLVM_LOADED
 #define MONO_LLVM_INTERNAL MONO_API
 #else
-#define MONO_LLVM_INTERNAL MONO_INTERNAL
+#define MONO_LLVM_INTERNAL
 #endif
 #else
-#define MONO_INTERNAL 
 #define MONO_LLVM_INTERNAL 
 #endif
 

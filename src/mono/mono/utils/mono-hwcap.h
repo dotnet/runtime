@@ -21,13 +21,13 @@
  * To get at feature variables, include the appropriate header,
  * e.g. mono-hwcap-x86.h for x86(-64).
  */
-void mono_hwcap_init (void) MONO_INTERNAL;
+void mono_hwcap_init (void);
 
 /* Implemented in mono-hwcap-$TARGET.c. Do not call. */
-void mono_hwcap_arch_init (void) MONO_INTERNAL;
+void mono_hwcap_arch_init (void);
 
 /* Print detected features to the given file. */
-void mono_hwcap_print (FILE *f) MONO_INTERNAL;
+void mono_hwcap_print (FILE *f);
 
 /* Please note: If you're going to use the Linux auxiliary vector
  * to detect CPU features, don't use any of the constant names in

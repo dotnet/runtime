@@ -47,21 +47,21 @@ struct _JobQueueEntry {
 	volatile JobQueueEntry *next;
 };
 
-void sgen_workers_init (int num_workers) MONO_INTERNAL;
-void sgen_workers_start_all_workers (void) MONO_INTERNAL;
-gboolean sgen_workers_have_started (void) MONO_INTERNAL;
-void sgen_workers_ensure_awake (void) MONO_INTERNAL;
-void sgen_workers_init_distribute_gray_queue (void) MONO_INTERNAL;
-void sgen_workers_enqueue_job (JobFunc func, void *data) MONO_INTERNAL;
-void sgen_workers_wait_for_jobs_finished (void) MONO_INTERNAL;
-void sgen_workers_distribute_gray_queue_sections (void) MONO_INTERNAL;
-void sgen_workers_reset_data (void) MONO_INTERNAL;
-void sgen_workers_join (void) MONO_INTERNAL;
-gboolean sgen_workers_all_done (void) MONO_INTERNAL;
-gboolean sgen_workers_are_working (void) MONO_INTERNAL;
-SgenSectionGrayQueue* sgen_workers_get_distribute_section_gray_queue (void) MONO_INTERNAL;
+void sgen_workers_init (int num_workers);
+void sgen_workers_start_all_workers (void);
+gboolean sgen_workers_have_started (void);
+void sgen_workers_ensure_awake (void);
+void sgen_workers_init_distribute_gray_queue (void);
+void sgen_workers_enqueue_job (JobFunc func, void *data);
+void sgen_workers_wait_for_jobs_finished (void);
+void sgen_workers_distribute_gray_queue_sections (void);
+void sgen_workers_reset_data (void);
+void sgen_workers_join (void);
+gboolean sgen_workers_all_done (void);
+gboolean sgen_workers_are_working (void);
+SgenSectionGrayQueue* sgen_workers_get_distribute_section_gray_queue (void);
 
-void sgen_workers_signal_start_nursery_collection_and_wait (void) MONO_INTERNAL;
-void sgen_workers_signal_finish_nursery_collection (void) MONO_INTERNAL;
+void sgen_workers_signal_start_nursery_collection_and_wait (void);
+void sgen_workers_signal_finish_nursery_collection (void);
 
 #endif

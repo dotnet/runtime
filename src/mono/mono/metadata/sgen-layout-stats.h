@@ -27,12 +27,12 @@
 
 #define SGEN_OBJECT_LAYOUT_BITMAP_BITS	16
 
-void sgen_object_layout_scanned_bitmap (unsigned int bitmap) MONO_INTERNAL;
-void sgen_object_layout_scanned_bitmap_overflow (void) MONO_INTERNAL;
-void sgen_object_layout_scanned_ref_array (void) MONO_INTERNAL;
-void sgen_object_layout_scanned_vtype_array (void) MONO_INTERNAL;
+void sgen_object_layout_scanned_bitmap (unsigned int bitmap);
+void sgen_object_layout_scanned_bitmap_overflow (void);
+void sgen_object_layout_scanned_ref_array (void);
+void sgen_object_layout_scanned_vtype_array (void);
 
-void sgen_object_layout_dump (FILE *out) MONO_INTERNAL;
+void sgen_object_layout_dump (FILE *out);
 
 #define SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP	unsigned int __object_layout_bitmap = 0
 #define SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP(o,p)	do {		\

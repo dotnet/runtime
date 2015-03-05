@@ -24,28 +24,28 @@ typedef enum {
 } MonoTraceMask;
 
 void 
-mono_trace_cleanup (void) MONO_INTERNAL;
+mono_trace_cleanup (void);
 
 void 
-mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...) MONO_INTERNAL;
+mono_trace (GLogLevelFlags level, MonoTraceMask mask, const char *format, ...);
 
 void 
-mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args) MONO_INTERNAL;
+mono_tracev (GLogLevelFlags level, MonoTraceMask mask, const char *format, va_list args);
 
 void 
-mono_trace_set_level (GLogLevelFlags level) MONO_INTERNAL;
+mono_trace_set_level (GLogLevelFlags level);
 
 void 
-mono_trace_set_mask (MonoTraceMask mask) MONO_INTERNAL;
+mono_trace_set_mask (MonoTraceMask mask);
 
 void 
-mono_trace_push (GLogLevelFlags level, MonoTraceMask mask) MONO_INTERNAL;
+mono_trace_push (GLogLevelFlags level, MonoTraceMask mask);
 
 void 
-mono_trace_pop (void) MONO_INTERNAL;
+mono_trace_pop (void);
 
 gboolean
-mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask) MONO_INTERNAL;
+mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 
 #ifdef G_HAVE_ISO_VARARGS
 #define mono_trace_error(...)	mono_trace(G_LOG_LEVEL_ERROR, \

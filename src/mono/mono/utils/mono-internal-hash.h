@@ -51,13 +51,13 @@ void
 mono_internal_hash_table_init (MonoInternalHashTable *table,
 			       GHashFunc hash_func,
 			       MonoInternalHashKeyExtractFunc key_extract,
-			       MonoInternalHashNextValueFunc next_value) MONO_INTERNAL;
+			       MonoInternalHashNextValueFunc next_value);
 
 void
-mono_internal_hash_table_destroy (MonoInternalHashTable *table) MONO_INTERNAL;
+mono_internal_hash_table_destroy (MonoInternalHashTable *table);
 
 gpointer
-mono_internal_hash_table_lookup (MonoInternalHashTable *table, gpointer key) MONO_INTERNAL;
+mono_internal_hash_table_lookup (MonoInternalHashTable *table, gpointer key);
 
 /* mono_internal_hash_table_insert requires that there is no entry for
    key in the hash table.  If you want to change the value for a key
@@ -68,9 +68,9 @@ mono_internal_hash_table_lookup (MonoInternalHashTable *table, gpointer key) MON
    assertion and to make the API look more familiar. */
 void
 mono_internal_hash_table_insert (MonoInternalHashTable *table,
-				 gpointer key, gpointer value) MONO_INTERNAL;
+				 gpointer key, gpointer value);
 
 void
-mono_internal_hash_table_remove (MonoInternalHashTable *table, gpointer key) MONO_INTERNAL;
+mono_internal_hash_table_remove (MonoInternalHashTable *table, gpointer key);
 
 #endif

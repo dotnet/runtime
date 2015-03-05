@@ -19,14 +19,14 @@
 
 G_BEGIN_DECLS
 
-void mono_console_init (void) MONO_INTERNAL;
-void mono_console_handle_async_ops (void) MONO_INTERNAL;
-MonoBoolean ves_icall_System_ConsoleDriver_Isatty (HANDLE handle) MONO_INTERNAL;
-gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout) MONO_INTERNAL;
-MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo) MONO_INTERNAL;
-MonoBoolean ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break) MONO_INTERNAL;
-MonoBoolean ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_characters, int **size) MONO_INTERNAL;
-void ves_icall_System_ConsoleDriver_Suspend (void) MONO_INTERNAL;
+void mono_console_init (void);
+void mono_console_handle_async_ops (void);
+MonoBoolean ves_icall_System_ConsoleDriver_Isatty (HANDLE handle);
+gint32 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout);
+MonoBoolean ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean echo);
+MonoBoolean ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break);
+MonoBoolean ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_characters, int **size);
+void ves_icall_System_ConsoleDriver_Suspend (void);
 
 G_END_DECLS
 

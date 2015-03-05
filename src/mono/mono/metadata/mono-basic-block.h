@@ -19,18 +19,18 @@ struct _MonoSimpleBasicBlock {
 };
 
 MonoSimpleBasicBlock*
-mono_basic_block_split (MonoMethod *method, MonoError *error) MONO_INTERNAL;
+mono_basic_block_split (MonoMethod *method, MonoError *error);
 
 void
-mono_basic_block_free (MonoSimpleBasicBlock *bb) MONO_INTERNAL;
+mono_basic_block_free (MonoSimpleBasicBlock *bb);
 
 
 /*This function is here because opcodes.h is a public header*/
 int
-mono_opcode_value_and_size (const unsigned char **ip, const unsigned char *end, int *value) MONO_INTERNAL;
+mono_opcode_value_and_size (const unsigned char **ip, const unsigned char *end, int *value);
 
 int
-mono_opcode_size (const unsigned char *ip, const unsigned char *end) MONO_INTERNAL;
+mono_opcode_size (const unsigned char *ip, const unsigned char *end);
 
 G_END_DECLS
 

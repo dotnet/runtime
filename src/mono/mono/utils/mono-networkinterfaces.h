@@ -21,8 +21,8 @@ typedef enum {
 	MONO_NETWORK_ERROR_OTHER
 } MonoNetworkError;
 
-gpointer *mono_networkinterface_list (int *size) MONO_INTERNAL;
-gint64    mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error) MONO_INTERNAL;
+gpointer *mono_networkinterface_list (int *size);
+gint64    mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error);
 
 #endif /* __MONO_NETWORK_INTERFACES_H__ */
 

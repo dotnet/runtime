@@ -29,20 +29,20 @@ MonoDl*     mono_dl_open       (const char *name, int flags, char **error_msg) M
 char*       mono_dl_symbol     (MonoDl *module, const char *name, void **symbol) MONO_LLVM_INTERNAL;
 void        mono_dl_close      (MonoDl *module) MONO_LLVM_INTERNAL;
 
-char*       mono_dl_build_path (const char *directory, const char *name, void **iter) MONO_INTERNAL;
+char*       mono_dl_build_path (const char *directory, const char *name, void **iter);
 
-MonoDl*     mono_dl_open_runtime_lib (const char *lib_name, int flags, char **error_msg) MONO_INTERNAL;
+MonoDl*     mono_dl_open_runtime_lib (const char *lib_name, int flags, char **error_msg);
 
 
 //Platform API for mono_dl
-const char* mono_dl_get_so_prefix (void) MONO_INTERNAL;
-const char** mono_dl_get_so_suffixes (void) MONO_INTERNAL;
-void* mono_dl_open_file (const char *file, int flags) MONO_INTERNAL;
-void mono_dl_close_handle (MonoDl *module) MONO_INTERNAL;
-void* mono_dl_lookup_symbol (MonoDl *module, const char *name) MONO_INTERNAL;
-int mono_dl_convert_flags (int flags) MONO_INTERNAL;
-char* mono_dl_current_error_string (void) MONO_INTERNAL;
-int mono_dl_get_executable_path (char *buf, int buflen) MONO_INTERNAL;
+const char* mono_dl_get_so_prefix (void);
+const char** mono_dl_get_so_suffixes (void);
+void* mono_dl_open_file (const char *file, int flags);
+void mono_dl_close_handle (MonoDl *module);
+void* mono_dl_lookup_symbol (MonoDl *module, const char *name);
+int mono_dl_convert_flags (int flags);
+char* mono_dl_current_error_string (void);
+int mono_dl_get_executable_path (char *buf, int buflen);
 
 #endif /* __MONO_UTILS_DL_H__ */
 

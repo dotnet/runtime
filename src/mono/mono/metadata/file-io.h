@@ -114,142 +114,142 @@ typedef struct _MonoFSAsyncResult {
 /* System.IO.MonoIO */
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_CreateDirectory (MonoString *path, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_RemoveDirectory (MonoString *path, gint32 *error);
 
 MonoArray *
 ves_icall_System_IO_MonoIO_GetFileSystemEntries (MonoString *path,
 						 MonoString *path_with_pattern,
 						 gint mask, gint attrs,
-						 gint32 *error) MONO_INTERNAL;
+						 gint32 *error);
 
 extern MonoString *
 ves_icall_System_IO_MonoIO_FindFirst (MonoString *path,
 				      MonoString *path_with_pattern,
 				      gint32 *result_mask,
 				      gint32 *error,
-				      gpointer *handle) MONO_INTERNAL;
+				      gpointer *handle);
 extern MonoString *
-ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_mask, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_FindNext (gpointer handle, gint32 *result_mask, gint32 *error);
 
 extern int
-ves_icall_System_IO_MonoIO_FindClose (gpointer handle) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_FindClose (gpointer handle);
 
 extern MonoString *
-ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_GetCurrentDirectory (gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_SetCurrentDirectory (MonoString *path,
-						gint32 *error) MONO_INTERNAL;
+						gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_MoveFile (MonoString *path, MonoString *dest,
-				     gint32 *error) MONO_INTERNAL;
+				     gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_CopyFile (MonoString *path, MonoString *dest,
-				     MonoBoolean overwrite, gint32 *error) MONO_INTERNAL;
+				     MonoBoolean overwrite, gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_DeleteFile (MonoString *path, gint32 *error);
 
 extern gint32 
-ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_GetFileAttributes (MonoString *path, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_SetFileAttributes (MonoString *path, gint32 attrs,
-					      gint32 *error) MONO_INTERNAL;
+					      gint32 *error);
 
 extern gint32
-ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_GetFileType (HANDLE handle, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_GetFileStat (MonoString *path, MonoIOStat *stat,
-					gint32 *error) MONO_INTERNAL;
+					gint32 *error);
 
 extern HANDLE 
 ves_icall_System_IO_MonoIO_Open (MonoString *filename, gint32 mode,
 				 gint32 access_mode, gint32 share, gint32 options,
-				 gint32 *error) MONO_INTERNAL;
+				 gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_Close (HANDLE handle, gint32 *error);
 
 extern gint32 
 ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArray *dest,
 				 gint32 dest_offset, gint32 count,
-				 gint32 *error) MONO_INTERNAL;
+				 gint32 *error);
 
 extern gint32 
 ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArray *src,
 				  gint32 src_offset, gint32 count,
-				  gint32 *error) MONO_INTERNAL;
+				  gint32 *error);
 
 extern gint64 
 ves_icall_System_IO_MonoIO_Seek (HANDLE handle, gint64 offset, gint32 origin,
-				 gint32 *error) MONO_INTERNAL;
+				 gint32 *error);
 
 extern MonoBoolean
-ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_Flush (HANDLE handle, gint32 *error);
 
 extern gint64 
-ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_GetLength (HANDLE handle, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_SetLength (HANDLE handle, gint64 length,
-				      gint32 *error) MONO_INTERNAL;
+				      gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_SetFileTime (HANDLE handle, gint64 creation_time,
 					gint64 last_access_time,
-					gint64 last_write_time, gint32 *error) MONO_INTERNAL;
+					gint64 last_write_time, gint32 *error);
 
 extern HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleOutput (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_ConsoleOutput (void);
 
 extern HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleInput (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_ConsoleInput (void);
 
 extern HANDLE 
-ves_icall_System_IO_MonoIO_get_ConsoleError (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_ConsoleError (void);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_CreatePipe (HANDLE *read_handle,
-				       HANDLE *write_handle) MONO_INTERNAL;
+				       HANDLE *write_handle);
 
 extern MonoBoolean ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, 
 						HANDLE source_handle, HANDLE target_process_handle, HANDLE *target_handle, 
-						gint32 access, gint32 inherit, gint32 options) MONO_INTERNAL;
+						gint32 access, gint32 inherit, gint32 options);
 
 extern gunichar2 
-ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_VolumeSeparatorChar (void);
 
 extern gunichar2 
-ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_DirectorySeparatorChar (void);
 
 extern gunichar2 
-ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_AltDirectorySeparatorChar (void);
 
 extern gunichar2 
-ves_icall_System_IO_MonoIO_get_PathSeparator (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_PathSeparator (void);
 
 extern MonoArray *
-ves_icall_System_IO_MonoIO_get_InvalidPathChars (void) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_get_InvalidPathChars (void);
 
 extern gint32
-ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name) MONO_INTERNAL;
+ves_icall_System_IO_MonoIO_GetTempPath (MonoString **mono_name);
 
 extern void ves_icall_System_IO_MonoIO_Lock (HANDLE handle, gint64 position,
-					     gint64 length, gint32 *error) MONO_INTERNAL;
+					     gint64 length, gint32 *error);
 extern void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
-					       gint64 length, gint32 *error) MONO_INTERNAL;
+					       gint64 length, gint32 *error);
 
 extern MonoBoolean
 ves_icall_System_IO_MonoIO_ReplaceFile (MonoString *sourceFileName, MonoString *destinationFileName,
 					MonoString *destinationBackupFileName, MonoBoolean ignoreMetadataErrors,
-					gint32 *error) MONO_INTERNAL;
+					gint32 *error);
 
 extern gint64
 mono_filesize_from_path (MonoString *path);

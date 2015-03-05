@@ -9,6 +9,6 @@
 #include <mono/utils/mono-error.h>
 
 MonoObject*
-mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error) MONO_INTERNAL;
+mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
 
 #endif

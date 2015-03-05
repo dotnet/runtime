@@ -38,19 +38,19 @@ typedef gpointer (*MonoValueHashKeyExtractFunc) (gpointer value);
 
 MonoValueHashTable* mono_value_hash_table_new (GHashFunc hash_func,
 											   GEqualFunc key_equal_func,
-											   MonoValueHashKeyExtractFunc key_extract) MONO_INTERNAL;
+											   MonoValueHashKeyExtractFunc key_extract);
 
 void
-mono_value_hash_table_destroy (MonoValueHashTable *table) MONO_INTERNAL;
+mono_value_hash_table_destroy (MonoValueHashTable *table);
 
 gpointer
-mono_value_hash_table_lookup (MonoValueHashTable *table, gconstpointer key) MONO_INTERNAL;
+mono_value_hash_table_lookup (MonoValueHashTable *table, gconstpointer key);
 
 /* The key pointer is actually only passed here to check a debugging
    assertion and to make the API look more familiar. */
 void
 mono_value_hash_table_insert (MonoValueHashTable *table,
-				 gpointer key, gpointer value) MONO_INTERNAL;
+				 gpointer key, gpointer value);
 
 G_END_DECLS
 

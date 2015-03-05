@@ -55,13 +55,13 @@ typedef struct {
 	volatile gint32 has_dummy;
 } MonoLockFreeQueue;
 
-void mono_lock_free_queue_init (MonoLockFreeQueue *q) MONO_INTERNAL;
+void mono_lock_free_queue_init (MonoLockFreeQueue *q);
 
-void mono_lock_free_queue_node_init (MonoLockFreeQueueNode *node, gboolean to_be_freed) MONO_INTERNAL;
-void mono_lock_free_queue_node_free (MonoLockFreeQueueNode *node) MONO_INTERNAL;
+void mono_lock_free_queue_node_init (MonoLockFreeQueueNode *node, gboolean to_be_freed);
+void mono_lock_free_queue_node_free (MonoLockFreeQueueNode *node);
 
-void mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node) MONO_INTERNAL;
+void mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node);
 
-MonoLockFreeQueueNode* mono_lock_free_queue_dequeue (MonoLockFreeQueue *q) MONO_INTERNAL;
+MonoLockFreeQueueNode* mono_lock_free_queue_dequeue (MonoLockFreeQueue *q);
 
 #endif

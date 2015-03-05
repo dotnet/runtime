@@ -6,45 +6,45 @@
 #include <mono/metadata/socket-io.h>
 
 /* No managed code here */
-void mono_thread_pool_init (void) MONO_INTERNAL;
-void mono_thread_pool_init_tls (void) MONO_INTERNAL;
+void mono_thread_pool_init (void);
+void mono_thread_pool_init_tls (void);
 
-void icall_append_job (MonoObject *ar) MONO_INTERNAL;
-void icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state) MONO_INTERNAL;
+void icall_append_job (MonoObject *ar);
+void icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state);
 MonoAsyncResult *
 mono_thread_pool_add     (MonoObject *target, MonoMethodMessage *msg, 
-			  MonoDelegate *async_callback, MonoObject *state) MONO_INTERNAL;
+			  MonoDelegate *async_callback, MonoObject *state);
 
 MonoObject *
 mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, 
-			 MonoObject **exc) MONO_INTERNAL;
+			 MonoObject **exc);
 
-void mono_thread_pool_cleanup (void) MONO_INTERNAL;
+void mono_thread_pool_cleanup (void);
 
-gboolean mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout) MONO_INTERNAL;
+gboolean mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout);
 
-void mono_thread_pool_suspend (void) MONO_INTERNAL;
-void mono_thread_pool_resume (void) MONO_INTERNAL;
+void mono_thread_pool_suspend (void);
+void mono_thread_pool_resume (void);
 
 void
 ves_icall_System_Threading_ThreadPool_GetAvailableThreads (int *workerThreads,
-							   int *completionPortThreads) MONO_INTERNAL;
+							   int *completionPortThreads);
 
 void
 ves_icall_System_Threading_ThreadPool_GetMaxThreads (int *workerThreads,
-						     int *completionPortThreads) MONO_INTERNAL;
+						     int *completionPortThreads);
 
 void
 ves_icall_System_Threading_ThreadPool_GetMinThreads (gint *workerThreads, 
-								gint *completionPortThreads) MONO_INTERNAL;
+								gint *completionPortThreads);
 
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMinThreads (gint workerThreads, 
-								gint completionPortThreads) MONO_INTERNAL;
+								gint completionPortThreads);
 
 MonoBoolean
 ves_icall_System_Threading_ThreadPool_SetMaxThreads (gint workerThreads, 
-								gint completionPortThreads) MONO_INTERNAL;
+								gint completionPortThreads);
 
 typedef void  (*MonoThreadPoolFunc) (gpointer user_data);
 MONO_API void mono_install_threadpool_thread_hooks (MonoThreadPoolFunc start_func, MonoThreadPoolFunc finish_func, gpointer user_data);

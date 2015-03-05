@@ -107,8 +107,8 @@ int sgen_nursery_bits = 22;
 #endif
 #endif
 
-char *sgen_space_bitmap MONO_INTERNAL;
-size_t sgen_space_bitmap_size MONO_INTERNAL;
+char *sgen_space_bitmap;
+size_t sgen_space_bitmap_size;
 
 #ifdef HEAVY_STATISTICS
 

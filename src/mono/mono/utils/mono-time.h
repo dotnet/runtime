@@ -5,13 +5,13 @@
 #include <glib.h>
 
 /* Returns the number of milliseconds from boot time: this should be monotonic */
-guint32 mono_msec_ticks      (void) MONO_INTERNAL;
+guint32 mono_msec_ticks      (void);
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
-gint64  mono_100ns_ticks     (void) MONO_INTERNAL;
+gint64  mono_100ns_ticks     (void);
 
 /* Returns the number of 100ns ticks since 1/1/1, UTC timezone */
-gint64  mono_100ns_datetime  (void) MONO_INTERNAL;
+gint64  mono_100ns_datetime  (void);
 
 /* Stopwatch class for internal runtime use */
 typedef struct {

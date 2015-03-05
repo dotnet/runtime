@@ -41,19 +41,19 @@ typedef enum {
 	MONO_PROCESS_ERROR_OTHER
 } MonoProcessError;
 
-gpointer* mono_process_list     (int *size) MONO_INTERNAL;
+gpointer* mono_process_list     (int *size);
 
-char*     mono_process_get_name (gpointer pid, char *buf, int len) MONO_INTERNAL;
+char*     mono_process_get_name (gpointer pid, char *buf, int len);
 
-gint64    mono_process_get_data (gpointer pid, MonoProcessData data) MONO_INTERNAL;
-gint64    mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error) MONO_INTERNAL;
+gint64    mono_process_get_data (gpointer pid, MonoProcessData data);
+gint64    mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error);
 
-int       mono_process_current_pid (void) MONO_INTERNAL;
+int       mono_process_current_pid (void);
 
-int       mono_cpu_count    (void) MONO_INTERNAL;
-gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error) MONO_INTERNAL;
+int       mono_cpu_count    (void);
+gint64    mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error);
 
-int       mono_atexit (void (*func)(void)) MONO_INTERNAL;
+int       mono_atexit (void (*func)(void));
 
 #endif /* __MONO_PROC_LIB_H__ */
 

@@ -13,39 +13,39 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 
-void mono_remoting_init (void) MONO_INTERNAL;
+void mono_remoting_init (void);
 
 #ifndef DISABLE_REMOTING
 
 MonoMethod *
-mono_marshal_get_remoting_invoke (MonoMethod *method) MONO_INTERNAL;
+mono_marshal_get_remoting_invoke (MonoMethod *method);
 
 MonoMethod *
-mono_marshal_get_xappdomain_invoke (MonoMethod *method) MONO_INTERNAL;
+mono_marshal_get_xappdomain_invoke (MonoMethod *method);
 
 MonoMethod *
-mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type) MONO_INTERNAL;
+mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type);
 
 MonoMethod *
-mono_marshal_get_remoting_invoke_with_check (MonoMethod *method) MONO_INTERNAL;
+mono_marshal_get_remoting_invoke_with_check (MonoMethod *method);
 
 MonoMethod *
-mono_marshal_get_stfld_wrapper (MonoType *type) MONO_INTERNAL;
+mono_marshal_get_stfld_wrapper (MonoType *type);
 
 MonoMethod *
-mono_marshal_get_ldfld_wrapper (MonoType *type) MONO_INTERNAL;
+mono_marshal_get_ldfld_wrapper (MonoType *type);
 
 MonoMethod *
-mono_marshal_get_ldflda_wrapper (MonoType *type) MONO_INTERNAL;
+mono_marshal_get_ldflda_wrapper (MonoType *type);
 
 MonoMethod *
-mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
+mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass);
 
 MonoMethod *
-mono_marshal_get_stfld_remote_wrapper (MonoClass *klass) MONO_INTERNAL;
+mono_marshal_get_stfld_remote_wrapper (MonoClass *klass);
 
 MonoMethod *
-mono_marshal_get_proxy_cancast (MonoClass *klass) MONO_INTERNAL;
+mono_marshal_get_proxy_cancast (MonoClass *klass);
 
 #endif
 

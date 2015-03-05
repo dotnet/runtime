@@ -30,15 +30,15 @@ typedef struct {
 #define SGEN_HASH_TABLE_INIT(table_type,entry_type,data_size,hash_func,equal_func)	{ (table_type), (entry_type), (data_size), (hash_func), (equal_func), NULL, 0, 0 }
 #define SGEN_HASH_TABLE_ENTRY_SIZE(data_size)			((data_size) + sizeof (SgenHashTableEntry*) + sizeof (gpointer))
 
-gpointer sgen_hash_table_lookup (SgenHashTable *table, gpointer key) MONO_INTERNAL;
-gboolean sgen_hash_table_replace (SgenHashTable *table, gpointer key, gpointer new_value, gpointer old_value) MONO_INTERNAL;
-gboolean sgen_hash_table_set_value (SgenHashTable *table, gpointer key, gpointer new_value, gpointer old_value) MONO_INTERNAL;
-gboolean sgen_hash_table_set_key (SgenHashTable *hash_table, gpointer old_key, gpointer new_key) MONO_INTERNAL;
-gboolean sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpointer data_return) MONO_INTERNAL;
+gpointer sgen_hash_table_lookup (SgenHashTable *table, gpointer key);
+gboolean sgen_hash_table_replace (SgenHashTable *table, gpointer key, gpointer new_value, gpointer old_value);
+gboolean sgen_hash_table_set_value (SgenHashTable *table, gpointer key, gpointer new_value, gpointer old_value);
+gboolean sgen_hash_table_set_key (SgenHashTable *hash_table, gpointer old_key, gpointer new_key);
+gboolean sgen_hash_table_remove (SgenHashTable *table, gpointer key, gpointer data_return);
 
-void sgen_hash_table_clean (SgenHashTable *table) MONO_INTERNAL;
+void sgen_hash_table_clean (SgenHashTable *table);
 
-void sgen_init_hash_table (void) MONO_INTERNAL;
+void sgen_init_hash_table (void);
 
 #define sgen_hash_table_num_entries(h)	((h)->num_entries)
 

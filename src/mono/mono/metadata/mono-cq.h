@@ -10,11 +10,11 @@ G_BEGIN_DECLS
 
 typedef struct _MonoCQ MonoCQ;
 
-MonoCQ *mono_cq_create (void) MONO_INTERNAL;
-void mono_cq_destroy (MonoCQ *cq) MONO_INTERNAL;
-gint mono_cq_count (MonoCQ *cq) MONO_INTERNAL;
-void mono_cq_enqueue (MonoCQ *cq, MonoObject *obj) MONO_INTERNAL;
-gboolean mono_cq_dequeue (MonoCQ *cq, MonoObject **result) MONO_INTERNAL;
+MonoCQ *mono_cq_create (void);
+void mono_cq_destroy (MonoCQ *cq);
+gint mono_cq_count (MonoCQ *cq);
+void mono_cq_enqueue (MonoCQ *cq, MonoObject *obj);
+gboolean mono_cq_dequeue (MonoCQ *cq, MonoObject **result);
 
 G_END_DECLS
 

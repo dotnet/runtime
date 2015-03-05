@@ -39,24 +39,24 @@ typedef enum {
 
 extern gboolean mono_security_core_clr_test;
 
-extern void mono_security_core_clr_check_inheritance (MonoClass *klass) MONO_INTERNAL;
-extern void mono_security_core_clr_check_override (MonoClass *klass, MonoMethod *override, MonoMethod *base) MONO_INTERNAL;
+extern void mono_security_core_clr_check_inheritance (MonoClass *klass);
+extern void mono_security_core_clr_check_override (MonoClass *klass, MonoMethod *override, MonoMethod *base);
 
-extern void mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field) MONO_INTERNAL;
-extern void mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method) MONO_INTERNAL;
-extern gboolean mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure) MONO_INTERNAL;
-extern MonoException* mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, MonoClass *handle_class) MONO_INTERNAL;
+extern void mono_security_core_clr_ensure_reflection_access_field (MonoClassField *field);
+extern void mono_security_core_clr_ensure_reflection_access_method (MonoMethod *method);
+extern gboolean mono_security_core_clr_ensure_delegate_creation (MonoMethod *method, gboolean throwOnBindFailure);
+extern MonoException* mono_security_core_clr_ensure_dynamic_method_resolved_object (gpointer ref, MonoClass *handle_class);
 
-extern gboolean mono_security_core_clr_can_access_internals (MonoImage *accessing, MonoImage* accessed) MONO_INTERNAL;
+extern gboolean mono_security_core_clr_can_access_internals (MonoImage *accessing, MonoImage* accessed);
 
-extern MonoException* mono_security_core_clr_is_field_access_allowed (MonoMethod *caller, MonoClassField *field) MONO_INTERNAL;
-extern MonoException* mono_security_core_clr_is_call_allowed (MonoMethod *caller, MonoMethod *callee) MONO_INTERNAL;
+extern MonoException* mono_security_core_clr_is_field_access_allowed (MonoMethod *caller, MonoClassField *field);
+extern MonoException* mono_security_core_clr_is_call_allowed (MonoMethod *caller, MonoMethod *callee);
 
-extern MonoSecurityCoreCLRLevel mono_security_core_clr_class_level (MonoClass *klass) MONO_INTERNAL;
-extern MonoSecurityCoreCLRLevel mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level) MONO_INTERNAL;
+extern MonoSecurityCoreCLRLevel mono_security_core_clr_class_level (MonoClass *klass);
+extern MonoSecurityCoreCLRLevel mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level);
 
-extern gboolean mono_security_core_clr_is_platform_image (MonoImage *image) MONO_INTERNAL;
-extern gboolean mono_security_core_clr_determine_platform_image (MonoImage *image) MONO_INTERNAL;
+extern gboolean mono_security_core_clr_is_platform_image (MonoImage *image);
+extern gboolean mono_security_core_clr_determine_platform_image (MonoImage *image);
 
 extern MONO_API gboolean mono_security_core_clr_require_elevated_permissions (void);
 

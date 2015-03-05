@@ -29,15 +29,15 @@ typedef struct {
 	int mem_type;
 } SgenPointerQueue;
 
-void sgen_pointer_queue_add (SgenPointerQueue *queue, void *ptr) MONO_INTERNAL;
-void sgen_pointer_queue_clear (SgenPointerQueue *queue) MONO_INTERNAL;
-void sgen_pointer_queue_remove_nulls (SgenPointerQueue *queue) MONO_INTERNAL;
-void sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue) MONO_INTERNAL;
-size_t sgen_pointer_queue_search (SgenPointerQueue *queue, void *addr) MONO_INTERNAL;
-size_t sgen_pointer_queue_find (SgenPointerQueue *queue, void *ptr) MONO_INTERNAL;
-void sgen_pointer_queue_init (SgenPointerQueue *queue, int mem_type) MONO_INTERNAL;
-void* sgen_pointer_queue_pop (SgenPointerQueue *queue) MONO_INTERNAL;
-gboolean sgen_pointer_queue_is_empty (SgenPointerQueue *queue) MONO_INTERNAL;
-void sgen_pointer_queue_free (SgenPointerQueue *queue) MONO_INTERNAL;
+void sgen_pointer_queue_add (SgenPointerQueue *queue, void *ptr);
+void sgen_pointer_queue_clear (SgenPointerQueue *queue);
+void sgen_pointer_queue_remove_nulls (SgenPointerQueue *queue);
+void sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue);
+size_t sgen_pointer_queue_search (SgenPointerQueue *queue, void *addr);
+size_t sgen_pointer_queue_find (SgenPointerQueue *queue, void *ptr);
+void sgen_pointer_queue_init (SgenPointerQueue *queue, int mem_type);
+void* sgen_pointer_queue_pop (SgenPointerQueue *queue);
+gboolean sgen_pointer_queue_is_empty (SgenPointerQueue *queue);
+void sgen_pointer_queue_free (SgenPointerQueue *queue);
 
 #endif

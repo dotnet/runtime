@@ -24,18 +24,18 @@
 #ifndef __MONO_SGEN_CARD_TABLE_INLINES_H__
 #define __MONO_SGEN_CARD_TABLE_INLINES_H__
 
-void sgen_card_table_reset_region (mword start, mword end) MONO_INTERNAL;
-void* sgen_card_table_align_pointer (void *ptr) MONO_INTERNAL;
-void sgen_card_table_mark_range (mword address, mword size) MONO_INTERNAL;
+void sgen_card_table_reset_region (mword start, mword end);
+void* sgen_card_table_align_pointer (void *ptr);
+void sgen_card_table_mark_range (mword address, mword size);
 void sgen_cardtable_scan_object (char *obj, mword obj_size, guint8 *cards,
-		gboolean mod_union, SgenGrayQueue *queue) MONO_INTERNAL;
+		gboolean mod_union, SgenGrayQueue *queue);
 
-gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards) MONO_INTERNAL;
+gboolean sgen_card_table_get_card_data (guint8 *dest, mword address, mword cards);
 
-guint8* sgen_card_table_update_mod_union_from_cards (guint8 *dest, guint8 *start_card, size_t num_cards) MONO_INTERNAL;
-guint8* sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards) MONO_INTERNAL;
+guint8* sgen_card_table_update_mod_union_from_cards (guint8 *dest, guint8 *start_card, size_t num_cards);
+guint8* sgen_card_table_update_mod_union (guint8 *dest, char *obj, mword obj_size, size_t *out_num_cards);
 
-void sgen_card_table_init (SgenRemeberedSet *remset) MONO_INTERNAL;
+void sgen_card_table_init (SgenRemeberedSet *remset);
 
 /*How many bytes a single card covers*/
 #define CARD_BITS 9
@@ -54,7 +54,7 @@ void sgen_card_table_init (SgenRemeberedSet *remset) MONO_INTERNAL;
 #define SGEN_HAVE_OVERLAPPING_CARDS	1
 #endif
 
-extern guint8 *sgen_cardtable MONO_INTERNAL;
+extern guint8 *sgen_cardtable;
 
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -65,7 +65,7 @@ sgen_card_table_get_card_address (mword address)
 	return sgen_cardtable + ((address >> CARD_BITS) & CARD_MASK);
 }
 
-extern guint8 *sgen_shadow_cardtable MONO_INTERNAL;
+extern guint8 *sgen_shadow_cardtable;
 
 static inline guint8*
 sgen_card_table_get_shadow_card_address (mword address)

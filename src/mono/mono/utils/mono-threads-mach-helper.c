@@ -21,9 +21,9 @@
  * which conflicts with objc.
  * Hence the hack here.
 */
-void mono_threads_init_dead_letter (void) MONO_INTERNAL;
-void mono_threads_install_dead_letter (void) MONO_INTERNAL;
-void mono_thread_info_detach (void) MONO_INTERNAL;
+void mono_threads_init_dead_letter (void);
+void mono_threads_install_dead_letter (void);
+void mono_thread_info_detach (void);
 
 static Class nsobject, nsthread, mono_dead_letter_class;
 static SEL dealloc, release, currentThread, threadDictionary, init, alloc, objectForKey, setObjectForKey;

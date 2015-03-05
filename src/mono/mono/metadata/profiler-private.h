@@ -23,62 +23,62 @@ typedef struct {
         } data [1];
 } MonoProfileCoverageInfo;
 
-void mono_profiler_shutdown        (void) MONO_INTERNAL;
+void mono_profiler_shutdown        (void);
 
-void mono_profiler_method_enter    (MonoMethod *method) MONO_INTERNAL;
-void mono_profiler_method_leave    (MonoMethod *method) MONO_INTERNAL;
-void mono_profiler_method_jit      (MonoMethod *method) MONO_INTERNAL;
-void mono_profiler_method_end_jit  (MonoMethod *method, MonoJitInfo* jinfo, int result) MONO_INTERNAL;
-void mono_profiler_method_free     (MonoMethod *method) MONO_INTERNAL;
-void mono_profiler_method_start_invoke (MonoMethod *method) MONO_INTERNAL;
-void mono_profiler_method_end_invoke   (MonoMethod *method) MONO_INTERNAL;
+void mono_profiler_method_enter    (MonoMethod *method);
+void mono_profiler_method_leave    (MonoMethod *method);
+void mono_profiler_method_jit      (MonoMethod *method);
+void mono_profiler_method_end_jit  (MonoMethod *method, MonoJitInfo* jinfo, int result);
+void mono_profiler_method_free     (MonoMethod *method);
+void mono_profiler_method_start_invoke (MonoMethod *method);
+void mono_profiler_method_end_invoke   (MonoMethod *method);
 
-void mono_profiler_code_transition (MonoMethod *method, int result) MONO_INTERNAL;
-void mono_profiler_allocation      (MonoObject *obj, MonoClass *klass) MONO_INTERNAL;
-void mono_profiler_monitor_event   (MonoObject *obj, MonoProfilerMonitorEvent event) MONO_INTERNAL;
-void mono_profiler_stat_hit        (guchar *ip, void *context) MONO_INTERNAL;
-void mono_profiler_stat_call_chain (int call_chain_depth, guchar **ips, void *context) MONO_INTERNAL;
-int  mono_profiler_stat_get_call_chain_depth (void) MONO_INTERNAL;
-MonoProfilerCallChainStrategy  mono_profiler_stat_get_call_chain_strategy (void) MONO_INTERNAL;
-void mono_profiler_thread_start    (gsize tid) MONO_INTERNAL;
-void mono_profiler_thread_end      (gsize tid) MONO_INTERNAL;
-void mono_profiler_thread_name     (gsize tid, const char *name) MONO_INTERNAL;
+void mono_profiler_code_transition (MonoMethod *method, int result);
+void mono_profiler_allocation      (MonoObject *obj, MonoClass *klass);
+void mono_profiler_monitor_event   (MonoObject *obj, MonoProfilerMonitorEvent event);
+void mono_profiler_stat_hit        (guchar *ip, void *context);
+void mono_profiler_stat_call_chain (int call_chain_depth, guchar **ips, void *context);
+int  mono_profiler_stat_get_call_chain_depth (void);
+MonoProfilerCallChainStrategy  mono_profiler_stat_get_call_chain_strategy (void);
+void mono_profiler_thread_start    (gsize tid);
+void mono_profiler_thread_end      (gsize tid);
+void mono_profiler_thread_name     (gsize tid, const char *name);
 
-void mono_profiler_exception_thrown         (MonoObject *exception) MONO_INTERNAL;
-void mono_profiler_exception_method_leave   (MonoMethod *method) MONO_INTERNAL;
-void mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num) MONO_INTERNAL;
+void mono_profiler_exception_thrown         (MonoObject *exception);
+void mono_profiler_exception_method_leave   (MonoMethod *method);
+void mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num);
 
-void mono_profiler_assembly_event  (MonoAssembly *assembly, int code) MONO_INTERNAL;
-void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result) MONO_INTERNAL;
+void mono_profiler_assembly_event  (MonoAssembly *assembly, int code);
+void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result);
 
-void mono_profiler_module_event  (MonoImage *image, int code) MONO_INTERNAL;
-void mono_profiler_module_loaded (MonoImage *image, int result) MONO_INTERNAL;
+void mono_profiler_module_event  (MonoImage *image, int code);
+void mono_profiler_module_loaded (MonoImage *image, int result);
 
-void mono_profiler_class_event  (MonoClass *klass, int code) MONO_INTERNAL;
-void mono_profiler_class_loaded (MonoClass *klass, int result) MONO_INTERNAL;
+void mono_profiler_class_event  (MonoClass *klass, int code);
+void mono_profiler_class_loaded (MonoClass *klass, int result);
 
-void mono_profiler_appdomain_event  (MonoDomain *domain, int code) MONO_INTERNAL;
-void mono_profiler_appdomain_loaded (MonoDomain *domain, int result) MONO_INTERNAL;
+void mono_profiler_appdomain_event  (MonoDomain *domain, int code);
+void mono_profiler_appdomain_loaded (MonoDomain *domain, int result);
 
-void mono_profiler_iomap (char *report, const char *pathname, const char *new_pathname) MONO_INTERNAL;
+void mono_profiler_iomap (char *report, const char *pathname, const char *new_pathname);
 
-MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries) MONO_INTERNAL;
-void                     mono_profiler_coverage_free  (MonoMethod *method) MONO_INTERNAL;
+MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries);
+void                     mono_profiler_coverage_free  (MonoMethod *method);
 
-void mono_profiler_gc_event       (MonoGCEvent e, int generation) MONO_INTERNAL;
-void mono_profiler_gc_heap_resize (gint64 new_size) MONO_INTERNAL;
-void mono_profiler_gc_moves       (void **objects, int num) MONO_INTERNAL;
-void mono_profiler_gc_handle      (int op, int type, uintptr_t handle, MonoObject *obj) MONO_INTERNAL;
-void mono_profiler_gc_roots       (int num, void **objects, int *root_types, uintptr_t *extra_info) MONO_INTERNAL;
+void mono_profiler_gc_event       (MonoGCEvent e, int generation);
+void mono_profiler_gc_heap_resize (gint64 new_size);
+void mono_profiler_gc_moves       (void **objects, int num);
+void mono_profiler_gc_handle      (int op, int type, uintptr_t handle, MonoObject *obj);
+void mono_profiler_gc_roots       (int num, void **objects, int *root_types, uintptr_t *extra_info);
 
-void mono_profiler_code_chunk_new (gpointer chunk, int size) MONO_INTERNAL;
-void mono_profiler_code_chunk_destroy (gpointer chunk) MONO_INTERNAL;
-void mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, gconstpointer data) MONO_INTERNAL;
+void mono_profiler_code_chunk_new (gpointer chunk, int size);
+void mono_profiler_code_chunk_destroy (gpointer chunk);
+void mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, gconstpointer data);
 
-void mono_profiler_runtime_initialized (void) MONO_INTERNAL;
+void mono_profiler_runtime_initialized (void);
 
-int64_t mono_profiler_get_sampling_rate (void) MONO_INTERNAL;
-MonoProfileSamplingMode mono_profiler_get_sampling_mode (void) MONO_INTERNAL;
+int64_t mono_profiler_get_sampling_rate (void);
+MonoProfileSamplingMode mono_profiler_get_sampling_mode (void);
 
 #endif /* __MONO_PROFILER_PRIVATE_H__ */
 

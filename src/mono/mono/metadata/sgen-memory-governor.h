@@ -25,23 +25,23 @@
 #define __MONO_SGEN_MEMORY_GOVERNOR_H__
 
 /* Heap limits */
-void sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double min_allowance_ratio, double save_target) MONO_INTERNAL;
-void sgen_memgov_release_space (mword size, int space) MONO_INTERNAL;
-gboolean sgen_memgov_try_alloc_space (mword size, int space) MONO_INTERNAL;
+void sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double min_allowance_ratio, double save_target);
+void sgen_memgov_release_space (mword size, int space);
+gboolean sgen_memgov_try_alloc_space (mword size, int space);
 
 /* GC trigger heuristics */
-void sgen_memgov_minor_collection_start (void) MONO_INTERNAL;
-void sgen_memgov_minor_collection_end (void) MONO_INTERNAL;
+void sgen_memgov_minor_collection_start (void);
+void sgen_memgov_minor_collection_end (void);
 
-void sgen_memgov_major_collection_start (void) MONO_INTERNAL;
-void sgen_memgov_major_collection_end (void) MONO_INTERNAL;
+void sgen_memgov_major_collection_start (void);
+void sgen_memgov_major_collection_end (void);
 
-void sgen_memgov_collection_start (int generation) MONO_INTERNAL;
-void sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count) MONO_INTERNAL;
+void sgen_memgov_collection_start (int generation);
+void sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count);
 
-void sgen_register_major_sections_alloced (size_t num_sections) MONO_INTERNAL;
-mword sgen_get_minor_collection_allowance (void) MONO_INTERNAL;
-gboolean sgen_need_major_collection (mword space_needed) MONO_INTERNAL;
+void sgen_register_major_sections_alloced (size_t num_sections);
+mword sgen_get_minor_collection_allowance (void);
+gboolean sgen_need_major_collection (mword space_needed);
 
 
 typedef enum {
@@ -51,12 +51,12 @@ typedef enum {
 } SgenAllocFlags;
 
 /* OS memory allocation */
-void* sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description) MONO_INTERNAL;
-void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags, const char *assert_description) MONO_INTERNAL;
-void sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags) MONO_INTERNAL;
+void* sgen_alloc_os_memory (size_t size, SgenAllocFlags flags, const char *assert_description);
+void* sgen_alloc_os_memory_aligned (size_t size, mword alignment, SgenAllocFlags flags, const char *assert_description);
+void sgen_free_os_memory (void *addr, size_t size, SgenAllocFlags flags);
 
 /* Error handling */
-void sgen_assert_memory_alloc (void *ptr, size_t requested_size, const char *assert_description) MONO_INTERNAL;
+void sgen_assert_memory_alloc (void *ptr, size_t requested_size, const char *assert_description);
 
 #endif
 
