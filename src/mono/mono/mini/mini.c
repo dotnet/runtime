@@ -423,10 +423,7 @@ mono_reverse_branch_op (guint32 opcode)
 guint
 mono_type_to_store_membase (MonoCompile *cfg, MonoType *type)
 {
-	if (type->byref)
-		return OP_STORE_MEMBASE_REG;
-
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 
 handle_enum:
 	switch (type->type) {
@@ -474,10 +471,8 @@ handle_enum:
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (mini_type_var_is_vt (cfg, type))
-			return OP_STOREV_MEMBASE;
-		else
-			return OP_STORE_MEMBASE_REG;
+		g_assert (mini_type_var_is_vt (cfg, type));
+		return OP_STOREV_MEMBASE;
 	default:
 		g_error ("unknown type 0x%02x in type_to_store_membase", type->type);
 	}
@@ -487,10 +482,7 @@ handle_enum:
 guint
 mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 {
-	if (type->byref)
-		return OP_LOAD_MEMBASE;
-
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -539,10 +531,8 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (cfg->generic_sharing_context);
-		if (mini_type_var_is_vt (cfg, type))
-			return OP_LOADV_MEMBASE;
-		else
-			return OP_LOAD_MEMBASE;
+		g_assert (mini_type_var_is_vt (cfg, type));
+		return OP_LOADV_MEMBASE;
 	default:
 		g_error ("unknown type 0x%02x in type_to_load_membase", type->type);
 	}
@@ -552,13 +542,10 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 static guint
 mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 {
-	if (cfg->generic_sharing_context && !type->byref) {
-		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
-			if (mini_type_var_is_vt (cfg, type))
-				return CEE_LDOBJ;
-			else
-				return CEE_LDIND_REF;
-		}
+	type = mini_get_underlying_type (cfg, type);
+	if (cfg->generic_sharing_context && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+		g_assert (mini_type_var_is_vt (cfg, type));
+		return CEE_LDOBJ;
 	}
 	return mono_type_to_ldind (type);
 }
@@ -568,15 +555,10 @@ mini_type_to_ldind (MonoCompile* cfg, MonoType *type)
 guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
-	type = mini_replace_type (type);
-
-	if (cfg->generic_sharing_context && !type->byref) {
-		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
-			if (mini_type_var_is_vt (cfg, type))
-				return CEE_STOBJ;
-			else
-				return CEE_STIND_REF;
-		}
+	type = mini_get_underlying_type (cfg, type);
+	if (cfg->generic_sharing_context && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+		g_assert (mini_type_var_is_vt (cfg, type));
+		return CEE_STOBJ;
 	}
 	return mono_type_to_stind (type);
 }
@@ -751,7 +733,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	int num = cfg->num_varinfo;
 	gboolean regpair;
 
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 
 	if ((num + 1) >= cfg->varinfo_count) {
 		int orig_count = cfg->varinfo_count;
@@ -779,8 +761,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		if (type->byref) {
 			mono_mark_vreg_as_mp (cfg, vreg);
 		} else {
-			MonoType *t = mini_replace_type (type);
-			if ((MONO_TYPE_ISSTRUCT (t) && inst->klass->has_references) || mini_type_is_reference (cfg, t)) {
+			if ((MONO_TYPE_ISSTRUCT (type) && inst->klass->has_references) || mini_type_is_reference (cfg, type)) {
 				inst->flags |= MONO_INST_GC_TRACK;
 				mono_mark_vreg_as_ref (cfg, vreg);
 			}
@@ -861,7 +842,7 @@ MonoInst*
 mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 
 	if (mono_type_is_long (type))
 		dreg = mono_alloc_dreg (cfg, STACK_I8);
@@ -878,7 +859,8 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
  * Transform a MonoInst into a load from the variable of index var_index.
  */
 void
-mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index) {
+mono_compile_make_var_load (MonoCompile *cfg, MonoInst *dest, gssize var_index)
+{
 	memset (dest, 0, sizeof (MonoInst));
 	dest->inst_i0 = cfg->varinfo [var_index];
 	dest->opcode = mini_type_to_ldind (cfg, dest->inst_i0->inst_vtype);
@@ -4548,6 +4530,20 @@ MonoType*
 mini_replace_type (MonoType *type)
 {
 	type = mono_type_get_underlying_type (type);
+	return mini_native_type_replace_type (type);
+}
+
+/*
+ * mini_get_underlying_type:
+ *
+ *   Return the type the JIT will use during compilation.
+ * Handles: byref, enums, native types, generic sharing.
+ * For gsharedvt types, it will return the original VAR/MVAR.
+ */
+MonoType*
+mini_get_underlying_type (MonoCompile *cfg, MonoType *type)
+{
+	type = mini_type_get_underlying_type (cfg->generic_sharing_context, type);
 	return mini_native_type_replace_type (type);
 }
 

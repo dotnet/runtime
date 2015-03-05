@@ -276,7 +276,7 @@ mono_type_to_regmove (MonoCompile *cfg, MonoType *type)
 	if (type->byref)
 		return OP_MOVE;
 
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -738,7 +738,7 @@ type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 {
 	MonoClass *klass;
 
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 	inst->klass = klass = mono_class_from_mono_type (type);
 	if (type->byref) {
 		inst->type = STACK_MP;
@@ -2140,12 +2140,8 @@ emit_instrumentation_call (MonoCompile *cfg, void *func)
 static int
 ret_type_to_call_opcode (MonoCompile *cfg, MonoType *type, int calli, int virt, MonoGenericSharingContext *gsctx)
 {
-	if (type->byref)
-		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
-
 handle_enum:
-	type = mini_get_basic_type_from_generic (gsctx, type);
-	type = mini_replace_type (type);
+	type = mini_get_underlying_type (cfg, type);
 	switch (type->type) {
 	case MONO_TYPE_VOID:
 		return calli? OP_VOIDCALL_REG: virt? OP_VOIDCALL_MEMBASE: OP_VOIDCALL;
@@ -2217,7 +2213,6 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	MonoType *simple_type;
 	MonoClass *klass;
 
-	target = mini_replace_type (target);
 	if (target->byref) {
 		/* FIXME: check that the pointed to types match */
 		if (arg->type == STACK_MP)
@@ -2227,7 +2222,7 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		return 1;
 	}
 
-	simple_type = mono_type_get_underlying_type (target);
+	simple_type = mini_get_underlying_type (cfg, target);
 	switch (simple_type->type) {
 	case MONO_TYPE_VOID:
 		return 1;
@@ -2612,7 +2607,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	call->args = args;
 	call->signature = sig;
 	call->rgctx_reg = rgctx;
-	sig_ret = mini_replace_type (sig->ret);
+	sig_ret = mini_get_underlying_type (cfg, sig->ret);
 
 	type_to_eval_stack_type ((cfg), sig_ret, &call->inst);
 
@@ -6671,7 +6666,7 @@ emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 	MonoInst *ins;
 	int t;
 
-	rtype = mini_replace_type (rtype);
+	rtype = mini_get_underlying_type (cfg, rtype);
 	t = rtype->type;
 
 	if (rtype->byref) {
@@ -6707,7 +6702,7 @@ emit_dummy_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 {
 	int t;
 
-	rtype = mini_replace_type (rtype);
+	rtype = mini_get_underlying_type (cfg, rtype);
 	t = rtype->type;
 
 	if (rtype->byref) {
@@ -7410,7 +7405,7 @@ emit_optimized_ldloca_ir (MonoCompile *cfg, unsigned char *ip, unsigned char *en
 		token = read32 (ip + 2);
 		klass = mini_get_class (cfg->current_method, token, cfg->generic_context);
 		CHECK_TYPELOAD (klass);
-		type = mini_replace_type (&klass->byval_arg);
+		type = mini_get_underlying_type (cfg, &klass->byval_arg);
 		emit_init_local (cfg, local, type, TRUE);
 		return ip + 6;
 	}
@@ -9548,7 +9543,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_pop_lmf (cfg);
 
 				if (cfg->ret) {
-					MonoType *ret_type = mini_replace_type (mono_method_signature (method)->ret);
+					MonoType *ret_type = mini_get_underlying_type (cfg, mono_method_signature (method)->ret);
 
 					if (seq_points && !sym_seq_points) {
 						/* 

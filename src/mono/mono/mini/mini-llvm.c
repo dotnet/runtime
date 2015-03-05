@@ -372,10 +372,10 @@ create_llvm_type_for_type (MonoClass *klass)
 static LLVMTypeRef
 type_to_llvm_type (EmitContext *ctx, MonoType *t)
 {
-	t = mini_replace_type (t);
-
 	if (t->byref)
 		return LLVMPointerType (LLVMInt8Type (), 0);
+
+	t = mini_get_underlying_type (ctx->cfg, t);
 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		return LLVMVoidType ();
@@ -1152,7 +1152,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	if (sinfo)
 		memset (sinfo, 0, sizeof (LLVMSigInfo));
 
-	rtype = mini_replace_type (sig->ret);
+	rtype = mini_get_underlying_type (ctx->cfg, sig->ret);
 	ret_type = type_to_llvm_type (ctx, rtype);
 	CHECK_FAILURE (ctx);
 
