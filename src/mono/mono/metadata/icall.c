@@ -2954,7 +2954,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this, MonoA
 #endif
 
 static guint64
-read_enum_value (char *mem, int type)
+read_enum_value (const char *mem, int type)
 {
 	switch (type) {
 	case MONO_TYPE_BOOLEAN:
@@ -3016,43 +3016,22 @@ write_enum_value (char *mem, int type, guint64 value)
 }
 
 ICALL_EXPORT MonoObject *
-ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, MonoObject *value)
+ves_icall_System_Enum_ToObject (MonoReflectionType *enumType, guint64 value)
 {
 	MonoDomain *domain; 
-	MonoClass *enumc, *objc;
+	MonoClass *enumc;
 	MonoObject *res;
 	MonoType *etype;
-	guint64 val;
-	
-	MONO_CHECK_ARG_NULL (enumType, NULL);
-	MONO_CHECK_ARG_NULL (value, NULL);
 
 	domain = mono_object_domain (enumType); 
 	enumc = mono_class_from_mono_type (enumType->type);
 
 	mono_class_init_or_throw (enumc);
 
-	objc = value->vtable->klass;
-
-	if (!enumc->enumtype) {
-		mono_set_pending_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
-		return NULL;
-	}
-	if (!((objc->enumtype) || (objc->byval_arg.type >= MONO_TYPE_BOOLEAN && objc->byval_arg.type <= MONO_TYPE_U8))) {
-		mono_set_pending_exception (mono_get_exception_argument ("value", "The value passed in must be an enum base or an underlying type for an enum, such as an Int32."));
-		return NULL;
-	}
-
 	etype = mono_class_enum_basetype (enumc);
-	if (!etype) {
-		/* MS throws this for typebuilders */
-		mono_set_pending_exception (mono_get_exception_argument ("Type must be a type provided by the runtime.", "enumType"));
-		return NULL;
-	}
 
 	res = mono_object_new (domain, enumc);
-	val = read_enum_value ((char *)value + sizeof (MonoObject), objc->enumtype? mono_class_enum_basetype (objc)->type: objc->byval_arg.type);
-	write_enum_value ((char *)res + sizeof (MonoObject), etype->type, val);
+	write_enum_value ((char *)res + sizeof (MonoObject), etype->type, value);
 
 	return res;
 }
@@ -3105,8 +3084,7 @@ ves_icall_System_Enum_get_underlying_type (MonoReflectionType *type)
 
 	etype = mono_class_enum_basetype (klass);
 	if (!etype) {
-		/* MS throws this for typebuilders */
-		mono_set_pending_exception (mono_get_exception_argument ("Type must be a type provided by the runtime.", "enumType"));
+		mono_set_pending_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
 		return NULL;
 	}
 
@@ -3120,6 +3098,12 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 	gpointer odata = (char *)other + sizeof (MonoObject);
 	MonoType *basetype = mono_class_enum_basetype (this->vtable->klass);
 	g_assert (basetype);
+
+	if (other == NULL)
+		return 1;
+
+	if (this->vtable->klass != other->vtable->klass)
+		return 2;
 
 #define COMPARE_ENUM_VALUES(ENUM_TYPE) do { \
 		ENUM_TYPE me = *((ENUM_TYPE*)tdata); \
@@ -3147,11 +3131,10 @@ ves_icall_System_Enum_compare_value_to (MonoObject *this, MonoObject *other)
 			COMPARE_ENUM_VALUES (guint64);
 		case MONO_TYPE_I8:
 			COMPARE_ENUM_VALUES (gint64);
-		default:
-			g_error ("Implement type 0x%02x in get_hashcode", basetype->type);
 	}
 #undef COMPARE_ENUM_VALUES
-	return 0;
+	/* indicates that the enum was of an unsupported unerlying type */
+	return 3;
 }
 
 ICALL_EXPORT int
@@ -3187,21 +3170,30 @@ ves_icall_System_Enum_get_hashcode (MonoObject *this)
 	return 0;
 }
 
-ICALL_EXPORT void
-ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionType *type, MonoArray **values, MonoArray **names)
 {
 	MonoDomain *domain = mono_object_domain (type); 
 	MonoClass *enumc = mono_class_from_mono_type (type->type);
 	guint j = 0, nvalues, crow;
 	gpointer iter;
 	MonoClassField *field;
+	int base_type;
+	guint64 field_value, previous_value = 0;
+	gboolean sorted = TRUE;
 
 	mono_class_init_or_throw (enumc);
 
-	MONO_STRUCT_SETREF (info, utype, mono_type_get_object (domain, mono_class_enum_basetype (enumc)));
+	if (!enumc->enumtype) {
+		mono_set_pending_exception (mono_get_exception_argument ("enumType", "Type provided must be an Enum."));
+		return TRUE;
+	}
+
+	base_type = mono_class_enum_basetype (enumc)->type;
+
 	nvalues = mono_class_num_fields (enumc) ? mono_class_num_fields (enumc) - 1 : 0;
-	MONO_STRUCT_SETREF (info, names, mono_array_new (domain, mono_defaults.string_class, nvalues));
-	MONO_STRUCT_SETREF (info, values, mono_array_new (domain, enumc, nvalues));
+	*names = mono_array_new (domain, mono_defaults.string_class, nvalues);
+	*values = mono_array_new (domain, mono_defaults.uint64_class, nvalues);
 
 	crow = -1;
 	iter = NULL;
@@ -3209,40 +3201,29 @@ ves_icall_get_enum_info (MonoReflectionType *type, MonoEnumInfo *info)
 		const char *p;
 		int len;
 		MonoTypeEnum def_type;
-		
+
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (strcmp ("value__", mono_field_get_name (field)) == 0)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		mono_array_setref (info->names, j, mono_string_new (domain, mono_field_get_name (field)));
+		mono_array_setref (*names, j, mono_string_new (domain, mono_field_get_name (field)));
 
 		p = mono_class_get_field_default_value (field, &def_type);
 		len = mono_metadata_decode_blob_size (p, &p);
-		switch (mono_class_enum_basetype (enumc)->type) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-			mono_array_set (info->values, gchar, j, *p);
-			break;
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-			mono_array_set (info->values, gint16, j, read16 (p));
-			break;
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-			mono_array_set (info->values, gint32, j, read32 (p));
-			break;
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-			mono_array_set (info->values, gint64, j, read64 (p));
-			break;
-		default:
-			g_error ("Implement type 0x%02x in get_enum_info", mono_class_enum_basetype (enumc)->type);
-		}
+
+		field_value = read_enum_value (p, base_type);
+		mono_array_set (*values, guint64, j, field_value);
+
+		if (previous_value > field_value)
+			sorted = FALSE;
+
+		previous_value = field_value;
 		++j;
 	}
+
+	return sorted;
 }
 
 enum {
