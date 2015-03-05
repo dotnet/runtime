@@ -118,15 +118,6 @@ namespace System.IO
             options &= ~FileOptions.Asynchronous;
 #endif
 
-#if USE_WINRT
-            // FILE_ATTRIBUTE_ENCRYPTED is not allowed from a store app per documentation.
-            // On ARM we see that CreateFile2 will fail with ACCESS_DENIED, other architectures 
-            // it works but we should not rely on this behavior.
-            // Instead of failing we just ignore this attribute as is done on filesystems that
-            // don't support encryption (FAT).
-            options &= ~FileOptions.Encrypted;
-#endif
-
             int flagsAndAttributes = (int)options;
 
             // For mitigating local elevation of privilege attack through named pipes
