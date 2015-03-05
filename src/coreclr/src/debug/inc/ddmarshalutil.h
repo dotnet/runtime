@@ -15,7 +15,6 @@ typedef IDacDbiInterface::HeapWalkHandle HeapWalkHandle;
 typedef IDacDbiInterface::IStringHolder IStringHolder;
 
 #include "stringcopyholder.h"
-#include "ddshared.h"
 
 // @dbgtodo  Mac - cleanup the buffer classes here. (are there pre-existing classes we could use instead?)
 // These ultimately get included in the signature for IDacDbiMarshalStub::DoRequest.
@@ -226,12 +225,6 @@ void WriteToBuffer(WriteBuffer * p, T * pData)
 }
 
 inline
-void WriteToBuffer(WriteBuffer * p, enum DD_MessageId data)
-{
-    p->WriteBlob(&data, sizeof(data));
-}
-
-inline
 void WriteToBuffer(WriteBuffer * p, StringCopyHolder * pString)
 {
     const WCHAR * pData = NULL;
@@ -325,13 +318,6 @@ void ReadFromBuffer(ReadBuffer * p, T * pData)
     // Used to copy-back a By-ref / out parameter
     p->ReadBlob(pData, sizeof(T));
 }
-
-inline
-void ReadFromBuffer(ReadBuffer * p, enum DD_MessageId & data)
-{
-    p->ReadBlob(&data, sizeof(DD_MessageId));
-}
-
 
 inline
 void ReadFromBuffer(ReadBuffer * p, IStringHolder * pString)
