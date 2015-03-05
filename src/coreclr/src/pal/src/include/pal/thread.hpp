@@ -33,6 +33,7 @@ Abstract:
 #include "threadsusp.hpp"
 #include "tls.hpp"
 #include "synchobjects.hpp"
+#include <errno.h>
 
 namespace CorUnix
 {
@@ -283,7 +284,6 @@ namespace CorUnix
         friend CPalThread *InternalGetCurrentThread();
 #endif
         
-        DWORD m_dwLastError;
         DWORD m_dwExitCode;
         BOOL m_fExitCodeSet;
         CRITICAL_SECTION m_csLock;
@@ -392,7 +392,6 @@ namespace CorUnix
 #ifdef _DEBUG
             m_dwGuard(0),
 #endif
-            m_dwLastError(0),
             m_dwExitCode(STILL_ACTIVE),
             m_fExitCodeSet(FALSE),
             m_fLockInitialized(FALSE),
@@ -500,7 +499,7 @@ namespace CorUnix
             DWORD dwLastError
             )
         {
-            m_dwLastError = dwLastError;    
+            errno = dwLastError;    
         };
 
         DWORD
@@ -508,7 +507,7 @@ namespace CorUnix
             void
             )
         {
-            return m_dwLastError;
+            return errno;
         };
 
         void
