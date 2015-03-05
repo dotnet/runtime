@@ -331,7 +331,7 @@ handle_enum:
 		if (mini_type_var_is_vt (cfg, type))
 			return OP_VMOVE;
 		else
-			return OP_MOVE;
+			return mono_type_to_regmove (cfg, mini_get_underlying_type (cfg, type));
 	default:
 		g_error ("unknown type 0x%02x in type_to_regstore", type->type);
 	}
@@ -806,7 +806,7 @@ handle_enum:
 			g_assert (cfg->gsharedvt);
 			inst->type = STACK_VTYPE;
 		} else {
-			inst->type = STACK_OBJ;
+			type_to_eval_stack_type (cfg, mini_get_underlying_type (cfg, type), inst);
 		}
 		return;
 	default:
@@ -2345,8 +2345,7 @@ check_call_signature (MonoCompile *cfg, MonoMethodSignature *sig, MonoInst **arg
 				return 1;
 			continue;
 		}
-		simple_type = sig->params [i];
-		simple_type = mini_get_basic_type_from_generic (cfg->generic_sharing_context, simple_type);
+		simple_type = mini_get_underlying_type (cfg, sig->params [i]);
 handle_enum:
 		switch (simple_type->type) {
 		case MONO_TYPE_VOID:
@@ -6245,7 +6244,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->sreg3 = is_float ? f2i_cmp->dreg : args [2]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			switch (fsig->params [0]->type) {
+			switch (fsig->params [1]->type) {
 			case MONO_TYPE_I4:
 				ins->type = STACK_I4;
 				break;
@@ -6264,7 +6263,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				ins->type = STACK_R8;
 				break;
 			default:
-				g_assert (mini_type_is_reference (cfg, fsig->params [0]));
+				g_assert (mini_type_is_reference (cfg, fsig->params [1]));
 				ins->type = STACK_OBJ;
 				break;
 			}

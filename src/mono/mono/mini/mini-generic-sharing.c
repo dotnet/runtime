@@ -2663,12 +2663,9 @@ mini_type_var_is_vt (MonoCompile *cfg, MonoType *type)
 gboolean
 mini_type_is_reference (MonoCompile *cfg, MonoType *type)
 {
-	if (mono_type_is_reference (type))
-		return TRUE;
-	if (!cfg->generic_sharing_context)
-		return FALSE;
-	/*FIXME the probably needs better handle under partial sharing*/
-	return ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && !mini_type_var_is_vt (cfg, type));
+	if (cfg->generic_sharing_context)
+		type = mini_get_underlying_type (cfg, type);
+	return mono_type_is_reference (type);
 }
 
 /*
