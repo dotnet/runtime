@@ -23,6 +23,7 @@
 #include "ndpversion.h"
 #include "pedecoder.h"
 
+
 // ====== READ BEFORE ADDING CONTRACTS ==================================================
 // The functions in this file propagate SetLastError codes to their callers.
 // Contracts are not guaranteed to preserve these codes (and no, we're not taking
@@ -130,6 +131,61 @@ class WinWrapperContract
 #endif
 
 ULONG g_dwMaxDBCSCharByteSize = 0;
+
+// The only purpose of this function is to make a local copy of lpCommandLine.
+// Because windows implementation of CreateProcessW can actually change lpCommandLine,
+// but we'd like to keep it const.
+BOOL
+WszCreateProcess(
+    LPCWSTR lpApplicationName,
+    LPCWSTR lpCommandLine,
+    LPSECURITY_ATTRIBUTES lpProcessAttributes,
+    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    BOOL bInheritHandles,
+    DWORD dwCreationFlags,
+    LPVOID lpEnvironment,
+    LPCWSTR lpCurrentDirectory,
+    LPSTARTUPINFOW lpStartupInfo,
+    LPPROCESS_INFORMATION lpProcessInformation
+    )
+{
+    WINWRAPPER_NO_CONTRACT(SetLastError(ERROR_OUTOFMEMORY); return 0;);
+
+    BOOL fResult;
+    DWORD err;
+    {
+        size_t commandLineLength = wcslen(lpCommandLine) + 1;
+        NewArrayHolder<WCHAR> nonConstCommandLine(new (nothrow) WCHAR[commandLineLength]);
+        if (nonConstCommandLine == NULL)
+        {
+            SetLastError(ERROR_OUTOFMEMORY);
+            return 0;
+        }
+            
+        memcpy(nonConstCommandLine, lpCommandLine, commandLineLength * sizeof(WCHAR));
+            
+        fResult = CreateProcessW(lpApplicationName,
+                                   nonConstCommandLine,
+                                   lpProcessAttributes,
+                                   lpThreadAttributes,
+                                   bInheritHandles,
+                                   dwCreationFlags,
+                                   lpEnvironment,
+                                   (LPWSTR)lpCurrentDirectory,
+                                   lpStartupInfo,
+                                   lpProcessInformation);
+
+        // At the end of the current scope, the last error code will be overwritten by the destructor of
+        // NewArrayHolder. So we save the error code here, and restore it after the end of the current scope.
+        err = GetLastError();
+    }
+
+    SetLastError(err);
+    return fResult;
+}
+
+#ifndef FEATURE_PAL
+
 
 #include "psapi.h"
 #include "tlhelp32.h"
@@ -371,55 +427,6 @@ lExit:
     
 }
 
-BOOL
-WszCreateProcess(
-    LPCWSTR lpApplicationName,
-    LPCWSTR lpCommandLine,
-    LPSECURITY_ATTRIBUTES lpProcessAttributes,
-    LPSECURITY_ATTRIBUTES lpThreadAttributes,
-    BOOL bInheritHandles,
-    DWORD dwCreationFlags,
-    LPVOID lpEnvironment,
-    LPCWSTR lpCurrentDirectory,
-    LPSTARTUPINFOW lpStartupInfo,
-    LPPROCESS_INFORMATION lpProcessInformation
-    )
-{
-    WINWRAPPER_NO_CONTRACT(SetLastError(ERROR_OUTOFMEMORY); return 0;);
-
-    BOOL fResult;
-    DWORD err;
-    {
-        size_t commandLineLength = wcslen(lpCommandLine) + 1;
-        NewArrayHolder<WCHAR> nonConstCommandLine(new (nothrow) WCHAR[commandLineLength]);
-        if (nonConstCommandLine == NULL)
-        {
-            SetLastError(ERROR_OUTOFMEMORY);
-            return 0;
-        }
-            
-        memcpy(nonConstCommandLine, lpCommandLine, commandLineLength * sizeof(WCHAR));
-            
-        fResult = CreateProcessW(lpApplicationName,
-                                   nonConstCommandLine,
-                                   lpProcessAttributes,
-                                   lpThreadAttributes,
-                                   bInheritHandles,
-                                   dwCreationFlags,
-                                   lpEnvironment,
-                                   (LPWSTR)lpCurrentDirectory,
-                                   lpStartupInfo,
-                                   lpProcessInformation);
-
-        // At the end of the current scope, the last error code will be overwritten by the destructor of
-        // NewArrayHolder. So we save the error code here, and restore it after the end of the current scope.
-        err = GetLastError();
-    }
-
-    SetLastError(err);
-    return fResult;
-}
-
 
 DWORD
 WszGetWorkingSet()
@@ -513,3 +520,4 @@ WszGetProcessHandleCount()
     return dwHandleCount;
 }
 
+#endif //!FEATURE_PAL

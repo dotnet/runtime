@@ -130,11 +130,6 @@ void ShimRemoteDataTarget::Dispose()
         m_pProxy->ReleaseTransport(m_pTransport);
     }
 
-    if (m_pProxy != NULL)
-    {
-        g_pDbgTransportManager->ReleaseTarget(m_pProxy);
-    }
-
     m_hr = CORDBG_E_OBJECT_NEUTERED;
 }
 
@@ -163,14 +158,8 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     HRESULT hr = E_FAIL;
 
     ShimRemoteDataTarget * pRemoteDataTarget = NULL;
-    DbgTransportTarget *   pProxy = NULL;
+    DbgTransportTarget *   pProxy = g_pDbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
-
-    hr = g_pDbgTransportManager->ConnectToTarget(machineInfo.GetIPAddress(), machineInfo.GetPort(), &pProxy);
-    if (FAILED(hr))
-    {
-        goto Label_Exit;
-    }
 
     hr = pProxy->GetTransportForProcess(processId, &pTransport, &hDummy);
     if (FAILED(hr))
@@ -210,10 +199,6 @@ Label_Exit:
             {
                 pProxy->ReleaseTransport(pTransport);
             }
-            if (pProxy != NULL)
-            {
-                g_pDbgTransportManager->ReleaseTarget(pProxy);
-            }
         }
     }
 
@@ -225,14 +210,28 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform( 
         CorDebugPlatform *pPlatform)
 {
-    // Assume that we're running on Windows debugging a process on Mac for now.
-#if defined(DBG_TARGET_ARM)
-    *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-#elif defined(DBG_TARGET_X86)
-    *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
+#ifdef FEATURE_PAL
+     #if defined(DBG_TARGET_X86)
+         *pPlatform = CORDB_PLATFORM_MAC_X86;
+     #elif defined(DBG_TARGET_AMD64)
+         *pPlatform = CORDB_PLATFORM_MAC_AMD64;
+     #else
+         #error Unknown Processor.
+     #endif
 #else
-#error Unknown Processor.
+    #if defined(DBG_TARGET_X86)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
+    #elif defined(DBG_TARGET_AMD64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
+    #elif defined(DBG_TARGET_ARM)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
+    #elif defined(DBG_TARGET_ARM64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
+    #else
+        #error Unknown Processor.
+    #endif
 #endif
+
     return S_OK;
 }
 
