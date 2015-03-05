@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 
 using dev_t = System.Int64;
@@ -86,7 +85,8 @@ internal static partial class Interop
 
         internal static class FileTypes 
         { 
-            internal const int S_IFMT = 0xF000;
+            internal const int S_IFMT  = 0xF000;
+            internal const int S_IFIFO = 0x1000;
             internal const int S_IFDIR = 0x4000;
             internal const int S_IFREG = 0x8000;
         } 
