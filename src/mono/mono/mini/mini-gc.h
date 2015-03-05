@@ -18,16 +18,16 @@ typedef enum {
 	SLOT_PIN = 2
 } GCSlotType;
 
-void mini_gc_init (void) MONO_INTERNAL;
+void mini_gc_init (void);
 
-void mini_gc_init_cfg (MonoCompile *cfg) MONO_INTERNAL;
+void mini_gc_init_cfg (MonoCompile *cfg);
 
-void mini_gc_enable_gc_maps_for_aot (void) MONO_INTERNAL;
+void mini_gc_enable_gc_maps_for_aot (void);
 
-void mini_gc_create_gc_map (MonoCompile *cfg) MONO_INTERNAL;
+void mini_gc_create_gc_map (MonoCompile *cfg);
 
-void mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType type) MONO_INTERNAL;
+void mini_gc_set_slot_type_from_fp (MonoCompile *cfg, int slot_offset, GCSlotType type);
 
-void mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType type) MONO_INTERNAL;
+void mini_gc_set_slot_type_from_cfa (MonoCompile *cfg, int slot_offset, GCSlotType type);
 
 #endif

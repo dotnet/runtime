@@ -54,11 +54,11 @@ enum {
 };
 
 /* Prototypes */
-MonoBoolean mono_method_has_declsec (MonoMethod *method) MONO_INTERNAL;
-void mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo) MONO_INTERNAL;
-MonoSecurityFrame* mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo) MONO_INTERNAL;
+MonoBoolean mono_method_has_declsec (MonoMethod *method);
+void mono_declsec_cache_stack_modifiers (MonoJitInfo *jinfo);
+MonoSecurityFrame* mono_declsec_create_frame (MonoDomain *domain, MonoJitInfo *jinfo);
 
-guint32 mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee) MONO_INTERNAL;
+guint32 mono_declsec_linkdemand (MonoDomain *domain, MonoMethod *caller, MonoMethod *callee);
 
 #ifndef DISABLE_SECURITY
 #define mono_security_method_has_declsec(method) (mono_method_has_declsec(method))

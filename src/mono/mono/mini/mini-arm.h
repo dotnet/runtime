@@ -192,7 +192,7 @@ void
 mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
 
 gpointer
-mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg) MONO_INTERNAL;
+mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg);
 
 typedef enum {
 	MONO_ARM_FPU_NONE = 0,
@@ -328,10 +328,10 @@ gboolean
 mono_arm_thumb_supported (void);
 
 GSList*
-mono_arm_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
+mono_arm_get_exception_trampolines (gboolean aot);
 
 guint8*
-mono_arm_get_thumb_plt_entry (guint8 *code) MONO_INTERNAL;
+mono_arm_get_thumb_plt_entry (guint8 *code);
 
 guint8*
 mono_arm_patchable_b (guint8 *code, int cond);
@@ -341,13 +341,13 @@ mono_arm_patchable_bl (guint8 *code, int cond);
 
 #ifdef USE_JUMP_TABLES
 guint8*
-mono_arm_load_jumptable_entry_addr (guint8 *code, gpointer *jte, ARMReg reg) MONO_INTERNAL;
+mono_arm_load_jumptable_entry_addr (guint8 *code, gpointer *jte, ARMReg reg);
 
 guint8*
-mono_arm_load_jumptable_entry (guint8 *code, gpointer *jte, ARMReg reg) MONO_INTERNAL;
+mono_arm_load_jumptable_entry (guint8 *code, gpointer *jte, ARMReg reg);
 #endif
 
 gboolean
-mono_arm_is_hard_float (void) MONO_INTERNAL;
+mono_arm_is_hard_float (void);
 
 #endif /* __MONO_MINI_ARM_H__ */

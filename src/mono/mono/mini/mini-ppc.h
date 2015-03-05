@@ -263,7 +263,7 @@ typedef struct {
 } MonoPPCFunctionDescriptor;
 
 #define PPC_FTNPTR_SIZE			sizeof (MonoPPCFunctionDescriptor)
-extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
+extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code);
 #else
 #define PPC_FTNPTR_SIZE			0
 #define mono_ppc_create_pre_code_ftnptr(c)	c
@@ -295,13 +295,13 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code) MONO_INTERNAL;
 #endif
 
 gboolean
-mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig) MONO_INTERNAL;
+mono_ppc_tail_call_supported (MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig);
 
 void
-mono_ppc_patch (guchar *code, const guchar *target) MONO_INTERNAL;
+mono_ppc_patch (guchar *code, const guchar *target);
 
 void
-mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow) MONO_INTERNAL;
+mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow);
 
 #ifdef __mono_ppc64__
 #define MONO_PPC_32_64_CASE(c32,c64)	c64
@@ -310,10 +310,10 @@ extern void mono_ppc_emitted (guint8 *code, gint64 length, const char *format, .
 #define MONO_PPC_32_64_CASE(c32,c64)	c32
 #endif
 
-gboolean mono_ppc_is_direct_call_sequence (guint32 *code) MONO_INTERNAL;
+gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
 
-void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr) MONO_INTERNAL;
+void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr);
 
-void mono_ppc_set_func_into_sigctx (void *sigctx, void *func) MONO_INTERNAL;
+void mono_ppc_set_func_into_sigctx (void *sigctx, void *func);
 
 #endif /* __MONO_MINI_PPC_H__ */

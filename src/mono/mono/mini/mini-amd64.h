@@ -372,31 +372,31 @@ typedef struct {
        } while (0)
 
 void 
-mono_amd64_patch (unsigned char* code, gpointer target) MONO_INTERNAL;
+mono_amd64_patch (unsigned char* code, gpointer target);
 
 void
 mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 							guint64 dummy5, guint64 dummy6,
 							mgreg_t *regs, mgreg_t rip,
-							MonoObject *exc, gboolean rethrow) MONO_INTERNAL;
+							MonoObject *exc, gboolean rethrow);
 
 void
 mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 								   guint64 dummy5, guint64 dummy6,
 								   mgreg_t *regs, mgreg_t rip,
-								   guint32 ex_token_index, gint64 pc_offset) MONO_INTERNAL;
+								   guint32 ex_token_index, gint64 pc_offset);
 
 guint64
-mono_amd64_get_original_ip (void) MONO_INTERNAL;
+mono_amd64_get_original_ip (void);
 
 guint8*
-mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset) MONO_INTERNAL;
+mono_amd64_emit_tls_get (guint8* code, int dreg, int tls_offset);
 
 gboolean
-mono_amd64_have_tls_get (void) MONO_INTERNAL;
+mono_amd64_have_tls_get (void);
 
 GSList*
-mono_amd64_get_exception_trampolines (gboolean aot) MONO_INTERNAL;
+mono_amd64_get_exception_trampolines (gboolean aot);
 
 int
 mono_amd64_get_tls_gs_offset (void) MONO_LLVM_INTERNAL;

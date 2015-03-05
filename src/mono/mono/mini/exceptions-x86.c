@@ -31,7 +31,7 @@
 static gpointer signal_exception_trampoline;
 
 gpointer
-mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot) MONO_INTERNAL;
+mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot);
 
 #ifdef TARGET_WIN32
 static void (*restore_stack) (void *);
