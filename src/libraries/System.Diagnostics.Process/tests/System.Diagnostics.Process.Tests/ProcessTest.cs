@@ -155,10 +155,10 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void Process_ExitTime()
         {
-            DateTime timeBeforeProcessStart = DateTime.Now;
+            DateTime timeBeforeProcessStart = DateTime.UtcNow;
             Process p = CreateProcessInfinite();
             StartAndKillProcessWithDelay(p);
-            Assert.True(p.ExitTime > timeBeforeProcessStart, "Process_ExitTime is incorrect.");
+            Assert.True(p.ExitTime.ToUniversalTime() > timeBeforeProcessStart, "Process_ExitTime is incorrect.");
         }
 
 
