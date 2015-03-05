@@ -17,8 +17,6 @@
 #include "dbgtransportpipeline.cpp"
 #include "shimremotedatatarget.cpp"
 #include "remoteeventchannel.cpp"
-#include "ddpack.cpp"
-#elif FEATURE_PAL
 #else
 #include "WindowsPipeline.cpp"
 #include "EventRedirectionPipeline.cpp"

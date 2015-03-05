@@ -249,6 +249,9 @@ Temporary Items
 # We have some checked in prebuilt generated files
 !src/pal/prebuilt/idl/*_i.c
 
+# Valid 'debug' folder, that contains CLR debuggin code
+!src/debug
+
 # Ignore folders created by the test build
 TestWrappers_x64_debug
 TestWrappers_x64_release

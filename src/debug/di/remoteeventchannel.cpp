@@ -101,14 +101,8 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
     RemoteEventChannel *      pEventChannel = NULL;
     DebuggerIPCControlBlock * pDCBBuffer    = NULL;
 
-    DbgTransportTarget *   pProxy     = NULL;
+    DbgTransportTarget *   pProxy     = g_pDbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
-
-    hr = g_pDbgTransportManager->ConnectToTarget(machineInfo.GetIPAddress(), machineInfo.GetPort(), &pProxy);
-    if (FAILED(hr))
-    {
-        goto Label_Exit;
-    }
 
     hr = pProxy->GetTransportForProcess(dwProcessId, &pTransport, &hDummy);
     if (FAILED(hr))
@@ -154,12 +148,6 @@ Label_Exit:
             {
                 pProxy->ReleaseTransport(pTransport);
             }
-
-            if (pProxy != NULL)
-            {
-                g_pDbgTransportManager->ReleaseTarget(pProxy);
-            }
-
             if (pDCBBuffer != NULL)
             {
                 delete pDCBBuffer;
@@ -220,11 +208,6 @@ void RemoteEventChannel::Delete()
     if (m_pTransport != NULL)
     {
         m_pProxy->ReleaseTransport(m_pTransport);
-    }
-
-    if (m_pProxy != NULL)
-    {
-        g_pDbgTransportManager->ReleaseTarget(m_pProxy);
     }
 
     delete this;
@@ -315,7 +298,7 @@ HRESULT RemoteEventChannel::SendEventToLeftSide(DebuggerIPCEvent * pEvent, SIZE_
 HRESULT RemoteEventChannel::GetReplyFromLeftSide(DebuggerIPCEvent * pReplyEvent, SIZE_T eventSize)
 {
     // Delegate to the transport.
-    m_pTransport->GetNextEvent(pReplyEvent, eventSize);
+    m_pTransport->GetNextEvent(pReplyEvent, (DWORD)eventSize);
     return S_OK;
 }
 

@@ -58,7 +58,7 @@
 //         - LS: code:DebuggerRCThread::SendIPCEvent
 //
 //    In a sense, you can think of the LS and the RS sharing 3 channels: one for debug events (see 
-//    code:INativeEventPipeline), one for DDI calls (see code:IDacDbiInterface and code:DDMarshal::SendDDMessage), 
+//    code:INativeEventPipeline), one for DDI calls (see code:IDacDbiInterface), 
 //    and one for "IPC" events.  This is the interface for the "IPC" events.
 //    
 
