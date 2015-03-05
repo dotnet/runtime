@@ -667,6 +667,9 @@ else
 	exit $$(cat regressionexitcode.out)
 endif
 
+rcheck2: mono $(regtests)
+	$(RUNTIME) --regression $(regtests)
+
 check-seq-points: mono $(regtests)
 	rm -f TestResults_op_il_seq_point.xml
 	for i in $(regtests); do ./test_op_il_seq_point.sh $$i || (./test_op_il_seq_point_headerfooter.sh; exit 1) || exit 1; done
