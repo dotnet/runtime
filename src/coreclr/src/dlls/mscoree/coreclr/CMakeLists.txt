@@ -42,9 +42,9 @@ endif (CLR_CMAKE_PLATFORM_UNIX)
 # library.
 set(CORECLR_LIBRARIES
     utilcode
-    debug-pal
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cordbee_wks
+    debug-pal
     ${LIB_UNWINDER}
     cee_wks
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
