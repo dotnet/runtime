@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -15,59 +16,56 @@ namespace System.Diagnostics.ProcessTests
 {
     public partial class ProcessTest : IDisposable
     {
-
-        private const string _processName = "ProcessTest_ConsoleApp.exe";
-        private Process process;
+        private const int WaitInMS = 100 * 1000; 
+        private const string ProcessName = "ProcessTest_ConsoleApp.exe";
+        private Process _process;
 
         public ProcessTest()
         {
-            process = CreateProcessInfinite();
-            process.Start();
+            _process = CreateProcessInfinite();
+            _process.Start();
         }
 
         public void Dispose()
         {
-            process.Kill();
-            process.WaitForExit();
+            _process.Kill();
+            _process.WaitForExit(WaitInMS);
 
-            // Also ensure that there are no open processes with the same name as _processName
-            foreach (Process p in Process.GetProcessesByName(_processName))
+            // Also ensure that there are no open processes with the same name as ProcessName
+            foreach (Process p in Process.GetProcessesByName(ProcessName))
             {
                 if (!p.HasExited)
                 {
                     p.Kill();
-                    p.WaitForExit();
+                    p.WaitForExit(WaitInMS);
                 }
             }
         }
 
-        Process CreateProcessInfinite()
+        Process CreateProcess(string optionalArgument = ""/*String.Empty is not a constant*/)
         {
             Process p = new Process();
-            p.StartInfo.FileName = _processName;
-            p.StartInfo.Arguments = "infinite";
+            p.StartInfo.FileName = ProcessName;
+            p.StartInfo.Arguments = optionalArgument;
             return p;
         }
 
-        Process CreateProcess()
+        Process CreateProcessInfinite()
         {
-            // Create a process that immediately exits
-            Process p = new Process();
-            p.StartInfo.FileName = _processName;
-            return p;
+            return CreateProcess("infinite");
         }
 
         public void SetAndCheckBasePriority(ProcessPriorityClass exPriorityClass, int priority)
         {
-            process.PriorityClass = exPriorityClass;
-            process.Refresh();
-            Assert.Equal(priority, process.BasePriority);
+            _process.PriorityClass = exPriorityClass;
+            _process.Refresh();
+            Assert.Equal(priority, _process.BasePriority);
         }
 
         [Fact]
         public void Process_BasePriority()
         {
-            ProcessPriorityClass originalPriority = process.PriorityClass;
+            ProcessPriorityClass originalPriority = _process.PriorityClass;
 
             try
             {
@@ -78,34 +76,34 @@ namespace System.Diagnostics.ProcessTests
             }
             finally
             {
-                process.PriorityClass = originalPriority;
+                _process.PriorityClass = originalPriority;
             }
         }
 
-        public void DelayTask(double delayInMs)
+        public void Sleep(double delayInMs)
         {
             Task.Delay(TimeSpan.FromMilliseconds(delayInMs)).Wait();
         }
 
-        public void DelayTask()
+        public void Sleep()
         {
-            DelayTask(50D);
+            Sleep(50D);
         }
 
         public void StartAndKillProcessWithDelay(Process p)
         {
             p.Start();
-            DelayTask();
+            Sleep();
             p.Kill();
-            p.WaitForExit();
+            p.WaitForExit(WaitInMS);
         }
 
         [Fact]
         public void Process_EnableRaiseEvents()
         {
-            bool isExitedInvoked = false;
-
             {
+                bool isExitedInvoked = false;
+
                 // Test behavior when EnableRaisingEvent = true;
                 // Ensure event is called.
                 Process p = CreateProcessInfinite();
@@ -116,7 +114,7 @@ namespace System.Diagnostics.ProcessTests
             }
 
             {
-                isExitedInvoked = false;
+                bool isExitedInvoked = false;
 
                 // Check with the default settings (false, events will not be raised)
                 Process p = CreateProcessInfinite();
@@ -126,7 +124,7 @@ namespace System.Diagnostics.ProcessTests
             }
 
             {
-                isExitedInvoked = false;
+                bool isExitedInvoked = false;
 
                 // Same test, this time explicitly set the property to false
                 Process p = CreateProcessInfinite();
@@ -143,7 +141,7 @@ namespace System.Diagnostics.ProcessTests
             {
                 Process p = CreateProcess();
                 p.Start();
-                p.WaitForExit();
+                p.WaitForExit(WaitInMS);
                 Assert.Equal(p.ExitCode, 100);
             }
 
@@ -157,16 +155,17 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void Process_ExitTime()
         {
+            DateTime timeBeforeProcessStart = DateTime.Now;
             Process p = CreateProcessInfinite();
             StartAndKillProcessWithDelay(p);
-            Assert.True(p.ExitTime < DateTime.Now, "Process_ExitTime is incorrect.");
+            Assert.True(p.ExitTime > timeBeforeProcessStart, "Process_ExitTime is incorrect.");
         }
 
 
         [Fact]
         public void Process_GetHandle()
         {
-            Assert.Equal(process.Id, Interop.GetProcessId(process.SafeHandle));
+            Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
         }
 
         [Fact]
@@ -175,7 +174,7 @@ namespace System.Diagnostics.ProcessTests
             {
                 Process p = CreateProcess();
                 p.Start();
-                p.WaitForExit();
+                p.WaitForExit(WaitInMS);
                 Assert.True(p.HasExited, "Process_HasExited001 failed");
             }
 
@@ -189,7 +188,7 @@ namespace System.Diagnostics.ProcessTests
                 finally
                 {
                     p.Kill();
-                    p.WaitForExit();
+                    p.WaitForExit(WaitInMS);
                 }
 
                 Assert.True(p.HasExited, "Process_HasExited003 failed");
@@ -200,21 +199,21 @@ namespace System.Diagnostics.ProcessTests
         public void Process_MachineName()
         {
             // Checking that the MachineName returns some value.
-            Assert.NotNull(process.MachineName);
+            Assert.NotNull(_process.MachineName);
         }
 
         [Fact]
         public void Process_MainModule()
         {
             // Get MainModule property from a Process object
-            string moduleName = process.MainModule.ModuleName;
-            Assert.Equal(_processName, moduleName);
+            string moduleName = _process.MainModule.ModuleName;
+            Assert.Equal(ProcessName, moduleName);
 
             // Check that the mainModule is present in the modules list.
             bool foundMainModule = false;
-            foreach (ProcessModule pModule in process.Modules)
+            foreach (ProcessModule pModule in _process.Modules)
             {
-                if (String.Equals(moduleName, _processName, StringComparison.OrdinalIgnoreCase))
+                if (String.Equals(moduleName, ProcessName, StringComparison.OrdinalIgnoreCase))
                 {
                     foundMainModule = true;
                     break;
@@ -229,48 +228,48 @@ namespace System.Diagnostics.ProcessTests
             IntPtr min, max;
             uint flags;
 
-            int intCurrValue = (Int32)process.MaxWorkingSet;
+            int intCurrValue = (Int32)_process.MaxWorkingSet;
 
             try
             {
-                process.MaxWorkingSet = (IntPtr)(intCurrValue + 1024);
-                Interop.GetProcessWorkingSetSizeEx(process.SafeHandle, out min, out max, out flags);
+                _process.MaxWorkingSet = (IntPtr)(intCurrValue + 1024);
+                Interop.GetProcessWorkingSetSizeEx(_process.SafeHandle, out min, out max, out flags);
                 intCurrValue = (int)max;
-                process.Refresh();
-                Assert.Equal(intCurrValue, (int)process.MaxWorkingSet);
+                _process.Refresh();
+                Assert.Equal(intCurrValue, (int)_process.MaxWorkingSet);
             }
             finally
             {
-                process.MaxWorkingSet = (IntPtr)intCurrValue;
+                _process.MaxWorkingSet = (IntPtr)intCurrValue;
             }
         }
 
         [Fact]
         public void Process_MinWorkingSet()
         {
-            int intCurrValue = (Int32)process.MinWorkingSet;
+            int intCurrValue = (Int32)_process.MinWorkingSet;
             IntPtr min;
             IntPtr max;
             uint flags;
 
             try
             {
-                process.MinWorkingSet = (IntPtr)(intCurrValue - 1024);
-                Interop.GetProcessWorkingSetSizeEx(process.SafeHandle, out min, out max, out flags);
+                _process.MinWorkingSet = (IntPtr)(intCurrValue - 1024);
+                Interop.GetProcessWorkingSetSizeEx(_process.SafeHandle, out min, out max, out flags);
                 intCurrValue = (int)min;
-                process.Refresh();
-                Assert.Equal(intCurrValue, (int)process.MinWorkingSet);
+                _process.Refresh();
+                Assert.Equal(intCurrValue, (int)_process.MinWorkingSet);
             }
             finally
             {
-                process.MinWorkingSet = (IntPtr)intCurrValue;
+                _process.MinWorkingSet = (IntPtr)intCurrValue;
             }
         }
 
         [Fact]
         public void Process_Modules()
         {
-            foreach (ProcessModule pModule in process.Modules)
+            foreach (ProcessModule pModule in _process.Modules)
             {
                 // Validated that we can get a value for each of the following.
                 Assert.NotNull(pModule);
@@ -290,43 +289,43 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void Process_NonpagedSystemMemorySize64()
         {
-            Assert.NotEqual(0L, process.NonpagedSystemMemorySize64);
+            Assert.NotEqual(0L, _process.NonpagedSystemMemorySize64);
         }
 
         [Fact]
         public void Process_PagedMemorySize64()
         {
-            Assert.NotEqual(0L, process.PagedMemorySize64);
+            Assert.NotEqual(0L, _process.PagedMemorySize64);
         }
 
         [Fact]
         public void Process_PagedSystemMemorySize64()
         {
-            Assert.NotEqual(0L, process.PagedSystemMemorySize64);
+            Assert.NotEqual(0L, _process.PagedSystemMemorySize64);
         }
 
         [Fact]
         public void Process_PeakPagedMemorySize64()
         {
-            Assert.NotEqual(0L, process.PeakPagedMemorySize64);
+            Assert.NotEqual(0L, _process.PeakPagedMemorySize64);
         }
 
         [Fact]
         public void Process_PeakVirtualMemorySize64()
         {
-            Assert.NotEqual(0L, process.PeakVirtualMemorySize64);
+            Assert.NotEqual(0L, _process.PeakVirtualMemorySize64);
         }
 
         [Fact]
         public void Process_PeakWorkingSet64()
         {
-            Assert.NotEqual(0L, process.PeakWorkingSet64);
+            Assert.NotEqual(0L, _process.PeakWorkingSet64);
         }
 
         [Fact]
         public void Process_PrivateMemorySize64()
         {
-            Assert.NotEqual(0L, process.PrivateMemorySize64);
+            Assert.NotEqual(0L, _process.PrivateMemorySize64);
         }
 
         [Fact]
@@ -335,44 +334,44 @@ namespace System.Diagnostics.ProcessTests
             // There is no good way to test the actual values of these
             // w/o the user of Performance Counters or a ton of pinvokes, and so for now we simply check
             // they do not throw exception when called.
-            DoNothing(process.UserProcessorTime);
-            DoNothing(process.PrivilegedProcessorTime);
-            DoNothing(process.TotalProcessorTime);
+            DoNothing(_process.UserProcessorTime);
+            DoNothing(_process.PrivilegedProcessorTime);
+            DoNothing(_process.TotalProcessorTime);
         }
 
         [Fact]
         public void Process_ProcessorAffinity()
         {
-            IntPtr curProcessorAffinity = process.ProcessorAffinity;
+            IntPtr curProcessorAffinity = _process.ProcessorAffinity;
             try
             {
-                process.ProcessorAffinity = new IntPtr(0x1);
-                Assert.Equal(new IntPtr(0x1), process.ProcessorAffinity);
+                _process.ProcessorAffinity = new IntPtr(0x1);
+                Assert.Equal(new IntPtr(0x1), _process.ProcessorAffinity);
             }
             finally
             {
-                process.ProcessorAffinity = curProcessorAffinity;
-                Assert.Equal(curProcessorAffinity, process.ProcessorAffinity);
+                _process.ProcessorAffinity = curProcessorAffinity;
+                Assert.Equal(curProcessorAffinity, _process.ProcessorAffinity);
             }
         }
 
         [Fact]
         public void Process_PriorityBoostEnabled()
         {
-            bool isPriorityBoostEnabled = process.PriorityBoostEnabled;
+            bool isPriorityBoostEnabled = _process.PriorityBoostEnabled;
 
             try
             {
-                process.PriorityBoostEnabled = true;
-                Assert.True(process.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
+                _process.PriorityBoostEnabled = true;
+                Assert.True(_process.PriorityBoostEnabled, "Process_PriorityBoostEnabled001 failed");
 
-                process.PriorityBoostEnabled = false;
-                Assert.False(process.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
+                _process.PriorityBoostEnabled = false;
+                Assert.False(_process.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
             }
 
             finally
             {
-                process.PriorityBoostEnabled = isPriorityBoostEnabled;
+                _process.PriorityBoostEnabled = isPriorityBoostEnabled;
             }
 
         }
@@ -380,19 +379,19 @@ namespace System.Diagnostics.ProcessTests
         public void Process_PriorityClass()
         {
 
-            ProcessPriorityClass priorityClass = process.PriorityClass;
+            ProcessPriorityClass priorityClass = _process.PriorityClass;
 
             try
             {
-                process.PriorityClass = ProcessPriorityClass.High;
-                Assert.Equal(process.PriorityClass, ProcessPriorityClass.High);
+                _process.PriorityClass = ProcessPriorityClass.High;
+                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.High);
 
-                process.PriorityClass = ProcessPriorityClass.Normal;
-                Assert.Equal(process.PriorityClass, ProcessPriorityClass.Normal);
+                _process.PriorityClass = ProcessPriorityClass.Normal;
+                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Normal);
             }
             finally
             {
-                process.PriorityClass = priorityClass;
+                _process.PriorityClass = priorityClass;
             }
         }
 
@@ -404,9 +403,9 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        public void Process_ProcessName()
+        public void ProcessProcessName()
         {
-            Assert.Equal(process.ProcessName, Path.ChangeExtension(_processName, null));
+            Assert.Equal(_process.ProcessName, Path.ChangeExtension(ProcessName, null));
         }
 
 
@@ -427,21 +426,16 @@ namespace System.Diagnostics.ProcessTests
         {
             // Get all the processes running on the machine.
             Process currentProcess = Process.GetCurrentProcess();
-            bool foundCurrentProcess = false;
-            foreach (Process p in Process.GetProcesses())
-            {
-                if ((p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)))
-                    foundCurrentProcess = true;
-            }
+
+            var foundCurrentProcess = (from p in Process.GetProcesses()
+                            where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                            select p).Any();
+
             Assert.True(foundCurrentProcess, "Process_GetProcesses001 failed");
 
-            foundCurrentProcess = false;
-            string machineName = currentProcess.MachineName;
-            foreach (Process p in Process.GetProcesses(machineName))
-            {
-                if ((p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)))
-                    foundCurrentProcess = true;
-            }
+            foundCurrentProcess = (from p in Process.GetProcesses(currentProcess.MachineName)
+                                  where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                  select p).Any();
             Assert.True(foundCurrentProcess, "Process_GetProcesses002 failed");
         }
 
@@ -450,23 +444,9 @@ namespace System.Diagnostics.ProcessTests
         {
             // Get the current process using its name
             Process currentProcess = Process.GetCurrentProcess();
-            string processName = currentProcess.ProcessName;
-            string machineName = currentProcess.MachineName;
-            bool found = false;
-            foreach (Process p in Process.GetProcessesByName(processName))
-            {
-                found = true;
-                break;
-            }
-            Assert.True(found, "Process_GetProcessesByName001 failed");
 
-            found = false;
-            foreach (Process p in Process.GetProcessesByName(processName, machineName))
-            {
-                found = true;
-                break;
-            }
-            Assert.True(found, "Process_GetProcessesByName002 failed");
+            Assert.True(Process.GetProcessesByName(currentProcess.ProcessName).Count() > 0, "Process_GetProcessesByName001 failed");
+            Assert.True(Process.GetProcessesByName(currentProcess.ProcessName, currentProcess.MachineName).Count() > 0, "Process_GetProcessesByName001 failed");
         }
 
         [Fact]

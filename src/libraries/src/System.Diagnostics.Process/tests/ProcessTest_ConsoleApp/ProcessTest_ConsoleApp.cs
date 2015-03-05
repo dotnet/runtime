@@ -13,13 +13,13 @@ namespace ProcessTest_ConsoleApp
                 if (args[0].Equals("infinite"))
                 {
                     // To avoid potential issues with orphaned processes (say, the test exits before
-                    // exiting the process), we'll say "infinite" is actually 30 seconds.
-                    Thread.Sleep(30 * 1000);
+                    // exiting the process), we'll say "infinite" is actually 100 seconds.
+                    Sleep(100 * 1000);
                 }
                 else if (args[0].Equals("error"))
                 {
                     Console.Error.WriteLine("ProcessTest_ConsoleApp.exe error stream");
-                    DelayTask();
+                    Sleep();
                 }
                 else if (args[0].Equals("input"))
                 {
@@ -29,7 +29,7 @@ namespace ProcessTest_ConsoleApp
                 {
                     Console.WriteLine("ProcessTest_ConsoleApp.exe started");
                     Console.WriteLine("ProcessTest_ConsoleApp.exe closed");
-                    DelayTask();
+                    Sleep();
                 }
                 else
                 {
@@ -39,9 +39,14 @@ namespace ProcessTest_ConsoleApp
             return 100;
         }
 
-        public static void DelayTask()
+        private static void Sleep()
         {
-            Task.Delay(TimeSpan.FromMilliseconds(100)).Wait();
+            Sleep(100d);
+        }
+
+        private static void Sleep(double timeinMs)
+        {
+            Task.Delay(TimeSpan.FromMilliseconds(timeinMs)).Wait();
         }
     }
 }
