@@ -210,7 +210,12 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 #endif
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-            g_pDbgTransportManager = NULL;
+            g_pDbgTransportTarget = new (nothrow) DbgTransportTarget();
+            if (g_pDbgTransportTarget == NULL)
+                return FALSE;
+
+            if (FAILED(g_pDbgTransportTarget->Init()))
+                return FALSE;
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
         }
         break;
@@ -238,6 +243,16 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
             TlsFree(DbgRSThread::s_TlsSlot);
             DbgRSThread::s_TlsSlot = TLS_OUT_OF_INDEXES;
 #endif
+
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+            if (g_pDbgTransportTarget != NULL)
+            {
+                g_pDbgTransportTarget->Shutdown();
+                delete g_pDbgTransportTarget;
+                g_pDbgTransportTarget = NULL;
+            }
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
+
         }
         break;
     }
@@ -245,51 +260,14 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
     return TRUE;
 }
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-// Routines to initialize and shutdown the debugger transport manager. Can't do these operations from DllMain
-// since they perform blocking network operations which can easily cause deadlocks on the loader lock.
-// Note: These routines are *not* thread safe (it's assumed the caller implements its own serialization).
-extern "C" HRESULT __stdcall InitDbgTransportManager()
-{
-    if (g_pDbgTransportManager)
-        return S_OK;
-
-    DbgTransportManager *pManager = new (nothrow) DbgTransportManager();
-    if (pManager == NULL)
-        return E_OUTOFMEMORY;
-
-    HRESULT hr = pManager->Init();
-    if (FAILED(hr))
-    {
-        pManager->Shutdown();
-        delete pManager;
-        return hr;
-    }
-
-    _ASSERTE(g_pDbgTransportManager == NULL);
-    g_pDbgTransportManager = pManager;
-
-    return S_OK;
-}
-
-extern "C" void __stdcall ShutdownDbgTransportManager()
-{
-    if (g_pDbgTransportManager)
-    {
-        g_pDbgTransportManager->Shutdown();
-        delete g_pDbgTransportManager;
-        g_pDbgTransportManager = NULL;
-    }
-}
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
 // The obsolete v1 CLSID - see comment above for details.
 static const GUID CLSID_CorDebug_V1 = {0x6fef44d0,0x39e7,0x4c77, { 0xbe,0x8e,0xc9,0xf8,0xcf,0x98,0x86,0x30}};
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
-// include the GUID for Mac SilverLight debugging
-#include <maccoreclrdebugguids.h>
+// GUID for pipe-based debugging (Unix platforms)
+const GUID CLSID_CorDebug_Telesto = {0x8bd1daae, 0x188e, 0x42f4, {0xb0, 0x09, 0x08, 0xfa, 0xfd, 0x17, 0x81, 0x3b}};
 
 // The debug engine needs to implement an internal Visual Studio debugger interface (defined by the CPDE)
 // which augments launch and attach requests so that we can obtain information from the port supplier (the
@@ -321,7 +299,7 @@ STDAPI DllGetClassObjectInternal(               // Return code.
     else
 #endif
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    if (rclsid == CLSID_CorDebug_Mac_SilverLight)
+    if (rclsid == CLSID_CorDebug_Telesto)
     {
         pfnCreateObject = Cordb::CreateObjectTelesto;
     }
@@ -571,7 +549,7 @@ DbiSetThreadContext(HANDLE hThread,
             *ctx = *(CONTEXT*)lpContext;
             res = ::SetThreadContext(hThread, ctx);
             _aligned_free(ctx);
-        }	
+        }   
         else
         {
             // malloc does not set the last error, but the caller of SetThreadContext
