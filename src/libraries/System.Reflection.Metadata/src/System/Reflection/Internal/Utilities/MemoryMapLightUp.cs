@@ -90,8 +90,8 @@ namespace System.Reflection.Internal
                         typeof(string),
                         typeof(long),
                         s_lazyMemoryMappedFileAccessType,
-                        s_lazyHandleInheritabilityType,
                         s_lazyMemoryMappedFileSecurityType,
+                        s_lazyHandleInheritabilityType,
                         typeof(bool));
                 }
 
