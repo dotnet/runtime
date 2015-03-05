@@ -267,15 +267,17 @@ namespace System
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="offset">The offset at which the data to write starts in the buffer.</param>
         /// <param name="count">The number of bytes to write.</param>
-        /// <returns>The number of bytes written, or a negative value if there's an error.</returns>
-        private static unsafe int Write(int fd, byte[] buffer, int offset, int count)
+        private static unsafe void Write(int fd, byte[] buffer, int offset, int count)
         {
             fixed (byte* bufPtr = buffer)
             {
-                long result;
-                while (Interop.CheckIo(result = (long)Interop.libc.write(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
-                Debug.Assert(result == count);
-                return (int)result;
+                while (count > 0)
+                {
+                    int bytesWritten;
+                    while (Interop.CheckIo(bytesWritten = (int)Interop.libc.write(fd, bufPtr + offset, (IntPtr)count))) ;
+                    count -= bytesWritten;
+                    offset += bytesWritten;
+                }
             }
         }
 

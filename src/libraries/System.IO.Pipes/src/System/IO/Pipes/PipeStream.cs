@@ -90,12 +90,11 @@ namespace System.IO.Pipes
 
         // Once a PipeStream has a handle ready, it should call this method to set up the PipeStream.  If
         // the pipe is in a connected state already, it should also set the IsConnected (protected) property.
+        // This method may also be called to uninitialize a handle, setting it to null.
         [SecuritySafeCritical]
         internal void InitializeHandle(SafePipeHandle handle, bool isExposed, bool isAsync)
         {
-            Debug.Assert(handle != null, "handle is null");
-
-            if (isAsync)
+            if (isAsync && handle != null)
             {
                 InitializeAsyncHandle(handle);
             }

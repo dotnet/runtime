@@ -176,6 +176,9 @@ namespace System
         internal static string UnknownError_Num {
               get { return SR.GetResourceString("UnknownError_Num", null); }
         }
+        internal static string ArgumentOutOfRange_FileLengthTooBig {
+              get { return SR.GetResourceString("ArgumentOutOfRange_FileLengthTooBig", null); }
+        }
 #else
         internal static string ArgumentOutOfRange_NeedNonNegNum {
               get { return SR.GetResourceString("ArgumentOutOfRange_NeedNonNegNum", @"Non negative number is required."); }
@@ -344,6 +347,9 @@ namespace System
         }
         internal static string UnknownError_Num {
               get { return SR.GetResourceString("UnknownError_Num", @"Unknown error '{0}'."); }
+        }
+        internal static string ArgumentOutOfRange_FileLengthTooBig {
+              get { return SR.GetResourceString("ArgumentOutOfRange_FileLengthTooBig", @"Specified file length was too large for the file system."); }
         }
 
 #endif
