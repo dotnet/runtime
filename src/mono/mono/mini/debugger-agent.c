@@ -3986,6 +3986,15 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 	/* We might be called for threads started before we registered the start callback */
 	if (thread) {
 		DEBUG_PRINTF (1, "[%p] Thread terminated, obj=%p, tls=%p.\n", (gpointer)tid, thread, tls);
+
+		if (GetCurrentThreadId () == tid && !mono_native_tls_get_value (debugger_tls_id)) {
+			/*
+			 * This can happen on darwin since we deregister threads using pthread dtors.
+			 * process_profiler_event () and the code it calls cannot handle a null TLS value.
+			 */
+			return;
+		}
+
 		process_profiler_event (EVENT_KIND_THREAD_DEATH, thread);
 	}
 }
