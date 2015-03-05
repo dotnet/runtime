@@ -411,7 +411,6 @@ mono_test_marshal_unicode_char_array (gunichar2 *s)
 	return 0;
 }
 
-
 LIBTEST_API int STDCALL 
 mono_test_empty_pinvoke (int i)
 {
@@ -506,6 +505,22 @@ mono_test_marshal_out_array (int *a1)
 		a1 [i] = i;
 	}
 	
+	return 0;
+}
+
+LIBTEST_API int STDCALL
+mono_test_marshal_out_byref_array_out_size_param (int **out_arr, int *out_len)
+{
+	int *arr;
+	int i, len;
+
+	len = 4;
+	arr = marshal_alloc (sizeof (gint32) * len);
+	for (i = 0; i < len; ++i)
+		arr [i] = i;
+	*out_arr = arr;
+	*out_len = len;
+
 	return 0;
 }
 

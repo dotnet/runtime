@@ -6000,6 +6000,31 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		need_free = mono_marshal_need_free (&klass->element_class->byval_arg, 
 											m->piinfo, spec);
 
+		if ((t->attrs & PARAM_ATTRIBUTE_OUT) && spec && spec->native == MONO_NATIVE_LPARRAY && spec->data.array_data.param_num != -1) {
+			int param_num = spec->data.array_data.param_num;
+			MonoType *param_type;
+
+			param_type = m->sig->params [param_num];
+
+			if (param_type->byref && param_type->type != MONO_TYPE_I4) {
+				char *msg = g_strdup ("Not implemented.");
+				mono_mb_emit_exception_marshal_directive (mb, msg);
+				break;
+			}
+
+			mono_mb_emit_ldarg (mb, argnum);
+
+			/* Create the managed array */
+			mono_mb_emit_ldarg (mb, param_num);
+			if (m->sig->params [param_num]->byref)
+				// FIXME: Support other types
+				mono_mb_emit_byte (mb, CEE_LDIND_I4);
+			mono_mb_emit_byte (mb, CEE_CONV_OVF_I);
+			mono_mb_emit_op (mb, CEE_NEWARR, klass->element_class);
+			/* Store into argument */
+			mono_mb_emit_byte (mb, CEE_STIND_I);
+		}
+
 		if (need_convert || need_free) {
 			/* FIXME: Optimize blittable case */
 			MonoClass *eklass;
@@ -6115,6 +6140,8 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			/* free memory allocated (if any) by MONO_MARSHAL_CONV_ARRAY_LPARRAY */
 
 			mono_mb_emit_ldarg (mb, argnum);
+			if (t->byref)
+				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_FREE_LPARRAY));
 		}
@@ -6937,7 +6964,9 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	int type, param_shift = 0;
 	static MonoMethodSignature *get_last_error_sig = NULL;
 
+	memset (&m, 0, sizeof (m));
 	m.mb = mb;
+	m.sig = sig;
 	m.piinfo = piinfo;
 
 	/* we copy the signature, so that we can set pinvoke to 0 */
@@ -7799,6 +7828,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
+	memset (&m, 0, sizeof (m));
 	m.mb = mb;
 	m.sig = sig;
 	m.piinfo = NULL;
@@ -7945,6 +7975,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		csig->hasthis = 0;
 		csig->pinvoke = 1;
 
+		memset (&m, 0, sizeof (m));
 		m.mb = mb;
 		m.sig = sig;
 		m.piinfo = NULL;
