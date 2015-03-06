@@ -7153,6 +7153,24 @@ mono_aot_patch_info_dup (MonoJumpInfo* ji)
 	return res;
 }
 
+static int
+execute_system (const char * command)
+{
+	int status;
+
+#if _WIN32
+	int size =  MultiByteToWideChar (CP_UTF8, 0 , command , -1, NULL , 0);
+	wchar_t* wstr = g_malloc (sizeof (wchar_t) * size);
+	MultiByteToWideChar (CP_UTF8, 0, command, -1, wstr , size);
+	status = _wsystem (wstr);
+	g_free (wstr);
+#else
+	status = system (command);
+#endif
+
+	return status;
+}
+
 #ifdef ENABLE_LLVM
 
 /*
@@ -7202,7 +7220,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 #if 1
 	command = g_strdup_printf ("%sopt -f %s -o \"%s.opt.bc\" \"%s.bc\"", acfg->aot_opts.llvm_path, opts, acfg->tmpbasename, acfg->tmpbasename);
 	aot_printf (acfg, "Executing opt: %s\n", command);
-	if (system (command) != 0)
+	if (execute_system (command) != 0)
 		return FALSE;
 #endif
 	g_free (opts);
@@ -7247,7 +7265,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	aot_printf (acfg, "Executing llc: %s\n", command);
 
-	if (system (command) != 0)
+	if (execute_system (command) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -8710,7 +8728,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 	command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", objfile, acfg->tmpfname);
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
-	if (system (command) != 0) {
+	if (execute_system (command) != 0) {
 		g_free (command);
 		g_free (objfile);
 		return 1;
@@ -8719,7 +8737,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->llvm_separate && !acfg->llvm_owriter) {
 		command = g_strdup_printf ("%s%s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", acfg->llvm_ofile, acfg->llvm_sfile);
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
-		if (system (command) != 0) {
+		if (execute_system (command) != 0) {
 			g_free (command);
 			g_free (objfile);
 			return 1;
@@ -8758,7 +8776,7 @@ compile_asm (MonoAotCompile *acfg)
 		acfg->tmpfname, ld_flags);
 #endif
 	aot_printf (acfg, "Executing the native linker: %s\n", command);
-	if (system (command) != 0) {
+	if (execute_system (command) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
 		g_free (command);
@@ -8771,7 +8789,7 @@ compile_asm (MonoAotCompile *acfg)
 
 	/*com = g_strdup_printf ("strip --strip-unneeded %s%s", acfg->image->name, MONO_SOLIB_EXT);
 	printf ("Stripping the binary: %s\n", com);
-	system (com);
+	execute_system (com);
 	g_free (com);*/
 
 #if defined(TARGET_ARM) && !defined(TARGET_MACH)
@@ -8781,7 +8799,7 @@ compile_asm (MonoAotCompile *acfg)
 	 */
 	command = g_strdup_printf ("%sstrip --strip-symbol=\\$a --strip-symbol=\\$d %s", tool_prefix, tmp_outfile_name);
 	aot_printf (acfg, "Stripping the binary: %s\n", command);
-	if (system (command) != 0) {
+	if (execute_system (command) != 0) {
 		g_free (tmp_outfile_name);
 		g_free (outfile_name);
 		g_free (command);
@@ -8795,7 +8813,7 @@ compile_asm (MonoAotCompile *acfg)
 #if defined(TARGET_MACH)
 	command = g_strdup_printf ("dsymutil %s", outfile_name);
 	aot_printf (acfg, "Executing dsymutil: %s\n", command);
-	if (system (command) != 0) {
+	if (execute_system (command) != 0) {
 		return 1;
 	}
 #endif
