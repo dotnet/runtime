@@ -31,7 +31,7 @@ namespace System.Globalization
             for (int i = 0; i < source.Length; i++)
             {
                 for (int j = 0; j < value.Length; j++) {
-                   if (source[i + j] != value[i]) {
+                   if (source[i + j] != value[j]) {
                        break;
                    }
 
